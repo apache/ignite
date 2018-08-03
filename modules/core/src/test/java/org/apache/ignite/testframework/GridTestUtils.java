@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
@@ -1671,8 +1672,10 @@ public final class GridTestUtils {
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
 
-        keyStore.load(new FileInputStream(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path"))),
-            storePass);
+        try(InputStream in = new FileInputStream(U.resolveIgnitePath(GridTestProperties
+            .getProperty("ssl.keystore.path")))) {
+            keyStore.load(in, storePass);
+        }
 
         keyMgrFactory.init(keyStore, storePass);
 

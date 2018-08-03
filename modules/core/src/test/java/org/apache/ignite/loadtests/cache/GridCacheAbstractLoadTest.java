@@ -20,6 +20,7 @@ package org.apache.ignite.loadtests.cache;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.net.MalformedURLException;
 import java.util.Map;
 import java.util.Properties;
@@ -119,9 +120,9 @@ abstract class GridCacheAbstractLoadTest {
     protected GridCacheAbstractLoadTest() {
         Properties props = new Properties();
 
-        try {
-            props.load(new FileReader(GridTestUtils.resolveIgnitePath(
-                    "modules/tests/config/cache-load.properties")));
+        try(Reader reader = new FileReader(GridTestUtils.resolveIgnitePath(
+            "modules/tests/config/cache-load.properties"))) {
+            props.load(reader);
         }
         catch (IOException e) {
             throw new RuntimeException(e);

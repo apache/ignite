@@ -66,14 +66,14 @@ public class HttpIgniteUpdatesChecker {
             if (in == null)
                 return null;
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in, charset));
+            try(BufferedReader reader = new BufferedReader(new InputStreamReader(in, charset))) {
+                StringBuilder res = new StringBuilder();
 
-            StringBuilder res = new StringBuilder();
+                for (String line; (line = reader.readLine()) != null; )
+                    res.append(line).append('\n');
 
-            for (String line; (line = reader.readLine()) != null; )
-                res.append(line).append('\n');
-
-            return res.toString();
+                return res.toString();
+            }
         }
     }
 }

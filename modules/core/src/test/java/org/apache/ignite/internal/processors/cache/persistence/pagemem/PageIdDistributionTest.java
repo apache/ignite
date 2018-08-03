@@ -216,9 +216,8 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
                 }
             }
 
-            try (FileOutputStream out = new FileOutputStream("histo.txt")) {
-                PrintWriter w = new PrintWriter(new OutputStreamWriter(out));
-
+            try (FileOutputStream out = new FileOutputStream("histo.txt");
+                PrintWriter w = new PrintWriter(new OutputStreamWriter(out))) {
                 for (int scan : scans) {
                     if (scan != 0)
                         w.println(scan);

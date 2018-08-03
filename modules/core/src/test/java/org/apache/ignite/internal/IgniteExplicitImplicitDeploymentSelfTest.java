@@ -479,7 +479,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
                         return Integer.parseInt(Character.toString(res));
                     }
                     finally {
-                        U.close(in, null);
+                        U.close(reader, null);
                     }
                 }
 

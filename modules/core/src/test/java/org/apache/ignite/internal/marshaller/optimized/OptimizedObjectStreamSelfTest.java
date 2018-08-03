@@ -790,16 +790,16 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadLine() throws Exception {
-        OptimizedObjectInputStream in = new OptimizedObjectInputStream(new GridUnsafeDataInput());
+        try(OptimizedObjectInputStream in = new OptimizedObjectInputStream(new GridUnsafeDataInput())) {
+            byte[] bytes = "line1\nline2\r\nli\rne3\nline4".getBytes();
 
-        byte[] bytes = "line1\nline2\r\nli\rne3\nline4".getBytes();
+            in.in().bytes(bytes, bytes.length);
 
-        in.in().bytes(bytes, bytes.length);
-
-        assertEquals("line1", in.readLine());
-        assertEquals("line2", in.readLine());
-        assertEquals("line3", in.readLine());
-        assertEquals("line4", in.readLine());
+            assertEquals("line1", in.readLine());
+            assertEquals("line2", in.readLine());
+            assertEquals("line3", in.readLine());
+            assertEquals("line4", in.readLine());
+        }
     }
 
     /**
