@@ -173,9 +173,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
 
-    /** For debug purposes. */
-    public transient volatile boolean debugPreventClear;
-
     /**
      * @param ctx Context.
      * @param grp Cache group.
@@ -524,6 +521,29 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * For testing purposes only.
+     * @param toState State to set.
+     */
+    public void setState(GridDhtPartitionState toState) {
+        if (grp.persistenceEnabled() && grp.walEnabled()) {
+            synchronized (this) {
+                long state0 = state.get();
+
+                this.state.compareAndSet(state0, setPartState(state0, toState));
+
+                try {
+                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Error while writing to log", e);
+                }
+            }
+        }
+        else
+            restoreState(toState);
+    }
+
+    /**
      * @param state Current aggregated value.
      * @param toState State to switch to.
      * @return {@code true} if cas succeeds.
@@ -654,9 +674,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param updateSeq Update sequence.
      */
     private void clearAsync0(boolean updateSeq) {
-        if (U.IGNITE_TEST_FEATURES_ENABLED && debugPreventClear)
-            return;
-
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);
@@ -737,10 +754,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (cnt != 0)
                 return false;
 
-            if (evictGuard.compareAndSet(cnt, cnt + 1)) {
-
+            if (evictGuard.compareAndSet(cnt, cnt + 1))
                 return true;
-            }
         }
     }
 

@@ -662,8 +662,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (locPart == null)
                     updateLocal(p, EVICTED, updateSeq, topVer);
-                else
-                    updateLocal(p, locPart.state(), updateSeq, topVer);
+                else {
+                    GridDhtPartitionState state = locPart.state();
+
+                    updateLocal(p, state, updateSeq, topVer);
+
+                    // Restart cleaning.
+                    if (state == RENTING)
+                        locPart.clearAsync();
+                }
             }
         }
         finally {

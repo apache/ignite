@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -28,9 +31,14 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -93,7 +101,9 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            int toEvictPart = evictingPartitionsAfterJoin(g0, g0.cache(DEFAULT_CACHE_NAME), 20).get(0);
+            List<Integer> parts = evictingPartitionsAfterJoin(g0, g0.cache(DEFAULT_CACHE_NAME), 20);
+
+            int toEvictPart = parts.get(0);
 
             int k = 0;
 
@@ -106,17 +116,36 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             g0.cache(DEFAULT_CACHE_NAME).put(k, k);
 
-            GridDhtLocalPartition part = dht(g0.cache(DEFAULT_CACHE_NAME)).topology().localPartition(toEvictPart);
+            GridDhtPartitionTopology top = dht(g0.cache(DEFAULT_CACHE_NAME)).topology();
+
+            GridDhtLocalPartition part = top.localPartition(toEvictPart);
 
             assertNotNull(part);
 
-            IgniteEx g2 = startGrid(2);
+            // Prevent eviction.
+            part.reserve();
 
-            part.debugPreventClear = true;
+            startGrid(2);
 
             g0.cluster().setBaselineTopology(3);
 
-            awaitPartitionMapExchange();
+            // Wait until all is evicted except first partition.
+            assertTrue("Failed to wait for partition eviction", waitForCondition(() -> {
+                for (int i = 1; i < parts.size(); i++) { // Skip reserved partition.
+                    Integer p = parts.get(i);
+
+                    if (top.localPartition(p).state() != GridDhtPartitionState.EVICTED)
+                        return false;
+                }
+
+                return true;
+            }, 5000));
+
+            /**
+             * Force renting state before node stop.
+             * This also could be achieved by stopping node just after RENTING state is set.
+             */
+            part.setState(GridDhtPartitionState.RENTING);
 
             assertEquals(GridDhtPartitionState.RENTING, part.state());
 
@@ -126,19 +155,22 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            doSleep(5_000);
-
             part = dht(g0.cache(DEFAULT_CACHE_NAME)).topology().localPartition(toEvictPart);
 
             assertNotNull(part);
 
             final GridDhtLocalPartition finalPart = part;
 
-            part.onClearFinished(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> future) {
-                    assertEquals(GridDhtPartitionState.EVICTED, finalPart.state());
-                }
+            CountDownLatch clearLatch = new CountDownLatch(1);
+
+            part.onClearFinished(fut -> {
+                assertEquals(GridDhtPartitionState.EVICTED, finalPart.state());
+
+                clearLatch.countDown();
             });
+
+            assertTrue("Failed to wait for partition eviction after restart",
+                clearLatch.await(5_000, TimeUnit.MILLISECONDS));
         }
         finally {
             stopAllGrids();
