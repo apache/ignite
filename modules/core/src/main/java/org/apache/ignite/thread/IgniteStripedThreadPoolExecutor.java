@@ -53,7 +53,9 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
         ThreadFactory factory = new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, eHnd);
 
         for (int i = 0; i < concurrentLvl; i++)
-            execs[i] = Executors.newSingleThreadExecutor(factory);
+           // Don't use a single thread pool because it adds a level of obfuscation
+           // which is unnecessary and breaks the MXBean adapter.
+           execs[i] = Executors.newFixedThreadPool(1, factory);
     }
 
     /**
@@ -174,5 +176,22 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteStripedThreadPoolExecutor.class, this);
+    }
+     
+    /**
+     * @return Stripes count.
+     */
+    public int stripes() {
+        return execs.length;
+    }
+    
+    /**
+     * @return The executor service for stripe idx or null if out of range
+     */
+    public ExecutorService stripe(int idx) {
+        if ( idx >= execs.length ) {
+           return null;
+        }
+        return execs[idx];
     }
 }
