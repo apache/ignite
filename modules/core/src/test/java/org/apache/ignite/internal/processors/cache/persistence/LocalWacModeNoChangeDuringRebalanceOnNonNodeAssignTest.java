@@ -69,6 +69,7 @@ public class LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
                 .setWalArchivePath(walArchivePath(name))
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                         .setPersistenceEnabled(true)
                 )
         );

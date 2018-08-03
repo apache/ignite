@@ -305,7 +305,9 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
 
         cfg.setDiscoverySpi(new IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi().setIpFinder(IP_FINDER));
 
-        DataRegionConfiguration regionCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
         DataRegionConfiguration volatileRegionCfg = new DataRegionConfiguration().setName(REGION_VOLATILE)
             .setPersistenceEnabled(false);
