@@ -689,9 +689,9 @@ public class GridDhtPartitionDemander {
             log.debug("Received supply message [grp=" + grp.cacheOrGroupName() + ", msg=" + supply + ']');
 
         // Check whether there were error during supplying process.
-        if (supply.classError() != null) {
+        if (supply.error() != null) {
             U.warn(log, "Rebalancing from node cancelled [grp=" + grp.cacheOrGroupName() + ", node=" + nodeId +
-                "]. Supplier has failed with error: " + supply.classError());
+                "]. Supplier has failed with error: " + supply.error());
 
             fut.cancel(nodeId);
 

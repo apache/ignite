@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -235,7 +234,7 @@ class GridDhtPartitionSupplier {
                     scMap.put(contextId, sctx);
 
                     if (log.isDebugEnabled())
-                        log.debug("Stale demand message [grp=" + grp.cacheOrGroupName()
+                        log.debug("Stale demand message [cache=" + grp.cacheOrGroupName()
                             + ", actualContext=" + sctx
                             + ", from=" + nodeId
                             + ", demandMsg=" + d + "]");
@@ -247,7 +246,7 @@ class GridDhtPartitionSupplier {
             // Demand request should not contain empty partitions if no supply context is associated with it.
             if (sctx == null && (d.partitions() == null || d.partitions().isEmpty())) {
                 if (log.isDebugEnabled())
-                    log.debug("Empty demand message [grp=" + grp.cacheOrGroupName()
+                    log.debug("Empty demand message [cache=" + grp.cacheOrGroupName()
                         + ", from=" + nodeId
                         + ", topicId=" + topicId
                         + ", demandMsg=" + d + "]");
@@ -431,19 +430,23 @@ class GridDhtPartitionSupplier {
                     ", topology=" + demTop + ", rebalanceId=" + d.rebalanceId() +
                     ", topicId=" + topicId + "]");
         }
-        catch (IgniteCheckedException | IgniteException e) {
+        catch (Throwable t) {
+            if (grp.shared().kernalContext().isStopping())
+                return;
+
             boolean sendErrMsg = true;
 
-            if (e instanceof IgniteSpiException) {
+            if (t instanceof IgniteSpiException) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send message to node (current node is stopping?) [node=" + node.id() +
-                        ", msg=" + e.getMessage() + ']');
+                        ", msg=" + t.getMessage() + ']');
 
                 sendErrMsg = false;
             }
             else
                 U.error(log, "Failed to continue supplying process for " +
-                    "[node=" + nodeId + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", e);
+                    "[cache=" + grp.cacheOrGroupName() + ", node=" + nodeId
+                    + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t);
 
             try {
                 if (sctx != null)
@@ -451,34 +454,29 @@ class GridDhtPartitionSupplier {
                 else if (iter != null)
                     iter.close();
             }
-            catch (Throwable t) {
-                U.error(log, "Failed to cleanup supplying context.", t);
+            catch (Throwable t1) {
+                U.error(log, "Failed to cleanup supplying context " +
+                        "[cache=" + grp.cacheOrGroupName() + ", node=" + nodeId
+                        + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t1);
             }
 
             if (!sendErrMsg)
                 return;
 
             try {
-                // Error to response to demander.
-                IgniteCheckedException supplyErr;
-
-                if (e instanceof IgniteCheckedException)
-                    supplyErr = (IgniteCheckedException) e;
-                else
-                    supplyErr = new IgniteCheckedException(e);
-
                 GridDhtPartitionSupplyMessage errMsg = new GridDhtPartitionSupplyMessage(d.rebalanceId(),
                     grp.groupId(),
                     d.topologyVersion(),
                     grp.deploymentEnabled());
 
-                errMsg.onClassError(supplyErr);
+                errMsg.error(t);
 
                 reply(node, d, errMsg, contextId);
             }
-            catch (Throwable t) {
+            catch (Throwable t1) {
                 U.error(log, "Failed to send supply error message for " +
-                    "[node=" + nodeId + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t);
+                    "[cache=" + grp.cacheOrGroupName() + ", node=" + nodeId
+                        + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t1);
             }
         }
     }
