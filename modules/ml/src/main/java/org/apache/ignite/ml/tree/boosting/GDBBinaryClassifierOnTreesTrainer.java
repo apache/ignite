@@ -30,8 +30,12 @@ import org.jetbrains.annotations.NotNull;
 public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTrainer {
     /** Max depth. */
     private final int maxDepth;
+
     /** Min impurity decrease. */
     private final double minImpurityDecrease;
+
+    /** Use index structure instead of using sorting while learning. */
+    private boolean useIndex = true;
 
     /**
      * Constructs instance of GDBBinaryClassifierOnTreesTrainer.
@@ -51,6 +55,17 @@ public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTraine
 
     /** {@inheritDoc} */
     @NotNull @Override protected DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer() {
-        return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease);
+        return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease).withUseIndex(useIndex);
+    }
+
+    /**
+     * Sets useIndex parameter and returns trainer instance.
+     *
+     * @param useIndex Use index.
+     * @return Decision tree trainer.
+     */
+    public GDBBinaryClassifierOnTreesTrainer withUseIndex(boolean useIndex) {
+        this.useIndex = useIndex;
+        return this;
     }
 }

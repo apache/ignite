@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.tree.data;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.ml.tree.TreeFilter;
 
 /**
@@ -29,17 +31,29 @@ public class DecisionTreeData implements AutoCloseable {
     /** Vector with labels. */
     private final double[] labels;
 
+    /** Indexes cache. */
+    private final List<TreeDataIndex> indexesCache;
+
+    /** Build index. */
+    private final boolean buildIndex;
+
     /**
      * Constructs a new instance of decision tree data.
      *
      * @param features Matrix with features.
      * @param labels Vector with labels.
+     * @param buildIdx Build index.
      */
-    public DecisionTreeData(double[][] features, double[] labels) {
+    public DecisionTreeData(double[][] features, double[] labels, boolean buildIdx) {
         assert features.length == labels.length : "Features and labels have to be the same length";
 
         this.features = features;
         this.labels = labels;
+        this.buildIndex = buildIdx;
+
+        indexesCache = new ArrayList<>();
+        if (buildIdx)
+            indexesCache.add(new TreeDataIndex(features, labels));
     }
 
     /**
@@ -69,7 +83,7 @@ public class DecisionTreeData implements AutoCloseable {
             }
         }
 
-        return new DecisionTreeData(newFeatures, newLabels);
+        return new DecisionTreeData(newFeatures, newLabels, buildIndex);
     }
 
     /**
@@ -89,8 +103,10 @@ public class DecisionTreeData implements AutoCloseable {
             int i = from, j = to;
 
             while (i <= j) {
-                while (features[i][col] < pivot) i++;
-                while (features[j][col] > pivot) j--;
+                while (features[i][col] < pivot)
+                    i++;
+                while (features[j][col] > pivot)
+                    j--;
 
                 if (i <= j) {
                     double[] tmpFeature = features[i];
@@ -124,5 +140,32 @@ public class DecisionTreeData implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() {
         // Do nothing, GC will clean up.
+    }
+
+    /**
+     * Builds index in according to current tree depth and cached indexes in upper levels. Uses depth as key of cached
+     * index and replaces cached index with same key.
+     *
+     * @param depth Tree Depth.
+     * @param filter Filter.
+     */
+    public TreeDataIndex createIndexByFilter(int depth, TreeFilter filter) {
+        assert depth >= 0 && depth <= indexesCache.size();
+
+        if (depth > 0 && depth <= indexesCache.size() - 1) {
+            for (int i = indexesCache.size() - 1; i >= depth; i--)
+                indexesCache.remove(i);
+        }
+
+        if (depth == indexesCache.size()) {
+            if (depth == 0)
+                indexesCache.add(new TreeDataIndex(features, labels));
+            else {
+                TreeDataIndex lastIndex = indexesCache.get(depth - 1);
+                indexesCache.add(lastIndex.filter(filter));
+            }
+        }
+
+        return indexesCache.get(depth);
     }
 }

@@ -52,9 +52,21 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
         super(maxDeep, minImpurityDecrease, compressor, new MeanDecisionTreeLeafBuilder());
     }
 
+    /**
+     * Sets useIndex parameter and returns trainer instance.
+     *
+     * @param useIndex Use index.
+     * @return Decision tree trainer.
+     */
+    public DecisionTreeRegressionTrainer withUseIndex(boolean useIndex) {
+        this.useIndex = useIndex;
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(
         Dataset<EmptyContext, DecisionTreeData> dataset) {
-        return new MSEImpurityMeasureCalculator();
+
+        return new MSEImpurityMeasureCalculator(useIndex);
     }
 }
