@@ -1719,8 +1719,13 @@ public abstract class GridAbstractTest extends TestCase {
                     err = e;
                 }
 
-                if(isSafeTopology())
+                if (isSafeTopology()) {
                     stopAllGrids(false);
+
+                    if (stopGridErr)
+                        err = new RuntimeException("Not all Ignite instances has been stopped. " +
+                            "Please, see log for details.", err);
+                }
 
                 // Remove counters.
                 tests.remove(getClass());
@@ -1738,10 +1743,9 @@ public abstract class GridAbstractTest extends TestCase {
 
             cleanReferences();
 
-            if (isLastTest() && ((isSafeTopology() && stopGridErr) || err != null))
-                throw new RuntimeException("Please, see log for details.", err);
-            }
-
+            if (err != null)
+                throw err;
+        }
     }
 
     /**
