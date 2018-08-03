@@ -17,17 +17,33 @@
 
 package org.apache.ignite.ml.tree.boosting;
 
+import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.GDBBinaryClassifierTrainer;
+import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.logging.MLLogger;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
+import org.apache.ignite.ml.tree.data.TreeDataIndex;
+import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
+import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasure;
+import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureCalculator;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Implementation of Gradient Boosting Classifier Trainer on trees.
  */
-public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTrainer {
+public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTrainer<DecisionTreeRegressionTrainer> {
     /** Max depth. */
     private final int maxDepth;
 
@@ -53,8 +69,43 @@ public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTraine
         this.minImpurityDecrease = minImpurityDecrease;
     }
 
-    /** {@inheritDoc} */
-    @NotNull @Override protected DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer() {
+    protected <K, V> void learnModels(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, Double mean,
+        Long sampleSize, List<Model<Vector, Double>> models, double[] compositionWeights) {
+
+        try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
+            new EmptyContextBuilder<>(),
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIndex)
+        )) {
+            for (int i = 0; i < cntOfIterations; i++) {
+                double[] weights = Arrays.copyOf(compositionWeights, i);
+                WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, mean);
+                Model<Vector, Double> currComposition = new ModelsComposition(models, aggregator);
+
+                dataset.compute(part -> {
+                    if(part.getCopyOfOriginalLabels() == null)
+                        part.setCopyOfOriginalLabels(Arrays.copyOf(part.getLabels(), part.getLabels().length));
+
+                    for(int j = 0; j < part.getLabels().length; j++) {
+                        double mdlAnswer = currComposition.apply(VectorUtils.of(part.getFeatures()[j]));
+                        double originalLabelValue = externalLabelToInternal(part.getCopyOfOriginalLabels()[j]);
+                        double grad = -lossGradient.apply(sampleSize, originalLabelValue, mdlAnswer);
+                        part.getLabels()[j] = grad;
+                    }
+                });
+
+                long startTs = System.currentTimeMillis();
+                models.add(buildBaseModelTrainer().fit(dataset));
+                double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+                environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
+            }
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @NotNull @Override protected DecisionTreeRegressionTrainer buildBaseModelTrainer() {
         return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease).withUseIndex(useIndex);
     }
 

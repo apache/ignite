@@ -53,16 +53,16 @@ import org.jetbrains.annotations.NotNull;
  *
  * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
-abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
+abstract class GDBTrainer<M extends DatasetTrainer<? extends Model<Vector, Double>, Double>> extends DatasetTrainer<Model<Vector, Double>, Double> {
     /** Gradient step. */
-    private final double gradientStep;
+    protected final double gradientStep;
     /** Count of iterations. */
-    private final int cntOfIterations;
+    protected final int cntOfIterations;
     /**
      * Gradient of loss function. First argument is sample size, second argument is valid answer, third argument is
      * current model prediction.
      */
-    private final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
+    protected final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
 
     /**
      * Constructs GDBTrainer instance.
@@ -97,22 +97,7 @@ abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> 
         WeightedPredictionsAggregator resAggregator = new WeightedPredictionsAggregator(compositionWeights, mean);
 
         long learningStartTs = System.currentTimeMillis();
-        for (int i = 0; i < cntOfIterations; i++) {
-            double[] weights = Arrays.copyOf(compositionWeights, i);
-            WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, mean);
-            Model<Vector, Double> currComposition = new ModelsComposition(models, aggregator);
-
-            IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
-                Double realAnswer = externalLabelToInternal(lbExtractor.apply(k, v));
-                Double mdlAnswer = currComposition.apply(featureExtractor.apply(k, v));
-                return -lossGradient.apply(sampleSize, realAnswer, mdlAnswer);
-            };
-
-            long startTs = System.currentTimeMillis();
-            models.add(buildBaseModelTrainer().fit(datasetBuilder, featureExtractor, lbExtractorWrap));
-            double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
-            environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
-        }
+        learnModels(datasetBuilder, featureExtractor, lbExtractor, mean, sampleSize, models, compositionWeights);
         double learningTime = (double)(System.currentTimeMillis() - learningStartTs) / 1000.0;
         environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
 
@@ -120,6 +105,39 @@ abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> 
             @Override public Double apply(Vector features) {
                 return internalLabelToExternal(super.apply(features));
             }
+        };
+    }
+
+    protected <K, V> void learnModels(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor,
+        Double mean, Long sampleSize, List<Model<Vector, Double>> models,
+        double[] compositionWeights) {
+
+        for (int i = 0; i < cntOfIterations; i++) {
+            double[] weights = Arrays.copyOf(compositionWeights, i);
+            IgniteBiFunction<K, V, Double> lbExtractorWrap = getCurrentLabelExtractor(featureExtractor, lbExtractor,
+                mean, sampleSize, models, weights);
+
+            long startTs = System.currentTimeMillis();
+            models.add(buildBaseModelTrainer().fit(datasetBuilder, featureExtractor, lbExtractorWrap));
+            double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+            environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
+        }
+    }
+
+    @NotNull protected <K, V> IgniteBiFunction<K, V, Double> getCurrentLabelExtractor(
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> origLbExtractor,
+        Double mean, Long sampleSize,
+        List<Model<Vector, Double>> models, double[] weights) {
+
+        WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, mean);
+        Model<Vector, Double> currComposition = new ModelsComposition(models, aggregator);
+
+        return (k, v) -> {
+            Double realAnswer = externalLabelToInternal(origLbExtractor.apply(k, v));
+            Double mdlAnswer = currComposition.apply(featureExtractor.apply(k, v));
+            double v1 = -lossGradient.apply(sampleSize, realAnswer, mdlAnswer);
+            return v1;
         };
     }
 
@@ -136,7 +154,8 @@ abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> 
     /**
      * Returns regressor model trainer for one step of GDB.
      */
-    @NotNull protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
+    @NotNull
+    protected abstract M buildBaseModelTrainer();
 
     /**
      * Maps external representation of label to internal.

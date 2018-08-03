@@ -17,15 +17,17 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
+import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
  * Trainer for regressor using Gradient Boosting.
  * This algorithm uses gradient of Mean squared error loss metric [MSE] in each step of learning.
  */
-public abstract class GDBRegressionTrainer extends GDBTrainer {
+public abstract class GDBRegressionTrainer<M extends DatasetTrainer<? extends Model<Vector, Double>, Double>> extends GDBTrainer<M> {
     /**
      * Constructs instance of GDBRegressionTrainer.
      *
