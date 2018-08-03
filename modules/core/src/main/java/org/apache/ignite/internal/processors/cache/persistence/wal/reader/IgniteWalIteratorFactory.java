@@ -326,7 +326,7 @@ public class IgniteWalIteratorFactory {
         return new GridCacheSharedContext<>(
             kernalCtx, null, null, null,
             null, null, null, dbMgr, null,
-            null, null, null, null,
+            null, null, null, null, null,
             null, null, null
         );
     }

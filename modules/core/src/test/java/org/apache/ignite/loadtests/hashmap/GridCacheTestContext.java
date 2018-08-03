@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridOsCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheNoopJtaManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.txdr.IgniteCacheTransactionalDrManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheOsStoreManager;
@@ -73,6 +74,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new WalStateManager(null),
                 new IgniteCacheDatabaseSharedManager(),
                 new IgniteCacheSnapshotManager(),
+                new IgniteCacheTransactionalDrManager(),
                 new GridCacheDeploymentManager<K, V>(),
                 new GridCachePartitionExchangeManager<K, V>(),
                 new CacheAffinitySharedManager<K, V>(),

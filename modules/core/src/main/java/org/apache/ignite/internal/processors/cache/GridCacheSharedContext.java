@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.txdr.IgniteCacheTransactionalDrManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -126,6 +127,9 @@ public class GridCacheSharedContext<K, V> {
     /** Ttl cleanup manager. */
     private GridCacheSharedTtlCleanupManager ttlMgr;
 
+    /** Transactional DR manager. */
+    private IgniteCacheTransactionalDrManager txDrMgr;
+
     /** Cache contexts map. */
     private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -176,6 +180,7 @@ public class GridCacheSharedContext<K, V> {
      * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
      * @param walMgr WAL manager. {@code Null} if persistence is not enabled.
      * @param walStateMgr WAL state manager.
+     * @param txDrMgr Transactional DR manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
@@ -194,6 +199,7 @@ public class GridCacheSharedContext<K, V> {
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
+        IgniteCacheTransactionalDrManager txDrMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager<K, V> affMgr,
@@ -204,8 +210,8 @@ public class GridCacheSharedContext<K, V> {
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, walStateMgr, dbMgr, snpMgr, depMgr,
-            exchMgr, affMgr, ioMgr, ttlMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, walStateMgr, dbMgr, snpMgr, txDrMgr,
+            depMgr, exchMgr, affMgr, ioMgr, ttlMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -236,6 +242,8 @@ public class GridCacheSharedContext<K, V> {
         stateAwareMgrs.add(dbMgr);
 
         stateAwareMgrs.add(snpMgr);
+
+        stateAwareMgrs.add(txDrMgr);
 
         for (PluginProvider prv : kernalCtx.plugins().allProviders())
             if (prv instanceof IgniteChangeGlobalStateSupport)
@@ -373,6 +381,7 @@ public class GridCacheSharedContext<K, V> {
             walStateMgr,
             dbMgr,
             snpMgr,
+            txDrMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
@@ -412,6 +421,7 @@ public class GridCacheSharedContext<K, V> {
      * @param mvccMgr MVCC manager.
      * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
      * @param walStateMgr WAL state manager.
+     * @param txDrMgr Transactional DR manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
@@ -429,6 +439,7 @@ public class GridCacheSharedContext<K, V> {
         WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
+        IgniteCacheTransactionalDrManager txDrMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
@@ -442,6 +453,7 @@ public class GridCacheSharedContext<K, V> {
         this.walStateMgr = add(mgrs, walStateMgr);
         this.dbMgr = add(mgrs, dbMgr);
         this.snpMgr = add(mgrs, snpMgr);
+        this.txDrMgr = add(mgrs, txDrMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
         this.exchMgr = add(mgrs, exchMgr);
@@ -679,6 +691,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgniteCacheSnapshotManager snapshot() {
         return snpMgr;
+    }
+
+    /**
+     * @return Transactional DR manager.
+     */
+    public IgniteCacheTransactionalDrManager txDr() {
+        return txDrMgr;
     }
 
     /**
