@@ -624,20 +624,50 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @return Future.
      */
     public IgniteFuture<?> addDataInternal(Collection<? extends DataStreamerEntry> entries) {
+        return addDataInternal(entries, true);
+    }
+
+    /**
+     * @param entries Entries.
+     * @param useThreadBuffer
+     * @return Future.
+     */
+    public IgniteFuture<?> addDataInternal(Collection<? extends DataStreamerEntry> entries, boolean useThreadBuffer) {
         IgniteCacheFutureImpl fut = null;
 
         GridFutureAdapter internalFut = null;
 
-        List entriesList;
+        Collection entriesList;
 
         lock(false);
 
         try {
             long threadId = Thread.currentThread().getId();
 
-            ThreadBuffer threadBuf = threadBufMap.get(threadId);
+            if (useThreadBuffer) {
+                ThreadBuffer threadBuf = threadBufMap.get(threadId);
 
-            if (threadBuf == null) {
+                if (threadBuf == null) {
+                    // Initial capacity should be more than batch by 12.5% in order to avoid resizing.
+                    threadBuf = new ThreadBuffer(fut,
+                        new ArrayList<>(bufLdrSzPerThread + (bufLdrSzPerThread >> 3)));
+
+                    threadBufMap.put(threadId, threadBuf);
+                }
+                else {
+                    fut = threadBuf.getFuture();
+
+                    internalFut = (GridFutureAdapter)fut.internalFuture();
+                }
+
+                entriesList = threadBuf.getEntries();
+
+                entriesList.addAll(entries);
+            }
+            else
+                entriesList = entries;
+
+            if (fut == null) {
                 internalFut = new GridFutureAdapter();
 
                 fut = new IgniteCacheFutureImpl(internalFut);
@@ -645,27 +675,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 internalFut.listen(rmvActiveFut);
 
                 activeFuts.add(internalFut);
-
-                // Initial capacity should be more than batch by 12.5% in order to avoid resizing.
-                threadBuf = new ThreadBuffer(fut,
-                    new ArrayList<>(bufLdrSzPerThread + (bufLdrSzPerThread >> 3)));
-
-                threadBufMap.put(threadId, threadBuf);
-            }
-            else {
-                fut = threadBuf.getFuture();
-
-                internalFut = (GridFutureAdapter)fut.internalFuture();
             }
 
-            entriesList = threadBuf.getEntries();
-
-            entriesList.addAll(entries);
-
-            if (entriesList.size() >= bufLdrSzPerThread) {
+            if (!useThreadBuffer || entriesList.size() >= bufLdrSzPerThread) {
                 loadData(entriesList, internalFut);
 
-                threadBufMap.remove(threadId);
+                if (useThreadBuffer)
+                    threadBufMap.remove(threadId);
             }
 
             return fut;
