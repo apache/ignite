@@ -2135,8 +2135,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         if (closeClientSock)
             testSockNio = true;
 
-        long stopTime = System.currentTimeMillis() + 60_000;
-
         AtomicBoolean stop = new AtomicBoolean();
 
         IgniteInternalFuture<?> fut1 = null;
@@ -2144,12 +2142,15 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut2 = null;
 
         try {
-            fut1 = restartZk ? startRestartZkServers(stopTime, stop) : null;
-            fut2 = closeClientSock ? startCloseZkClientSocket(stopTime, stop) : null;
 
             int INIT_NODES = 10;
 
             startGridsMultiThreaded(INIT_NODES);
+
+            long stopTime = System.currentTimeMillis() + 60_000;
+
+            fut1 = restartZk ? startRestartZkServers(stopTime, stop) : null;
+            fut2 = closeClientSock ? startCloseZkClientSocket(stopTime, stop) : null;
 
             final int MAX_NODES = 20;
 
