@@ -2092,6 +2092,7 @@ header.header-with-selector {
 
     div {
         display: flex;
+        align-items: center;
 
         &:nth-child(2) {
             .btn-ignite {
