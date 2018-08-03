@@ -121,4 +121,10 @@ queries-notebook {
     .btn.btn-default.select-toggle.tipLabel {
         padding-right: 25px;
     }
+
+    .form-field__sensitive {
+        input:checked + span {
+            color: #0067b9;
+        }
+    }
 }

@@ -16,6 +16,24 @@
 
 include /app/helpers/jade/mixins
 
+mixin form-field__sensitive({ label, modelFilter, modelSensitive, name, placeholder })
+    .form-field.form-field__sensitive.ignite-form-field
+        +form-field__label({ label, name })
+            +form-field__tooltip({ title: 'You can set case sensitive search' })
+        .form-field__control.form-field__control-group
+            +form-field__input({ name, model: modelFilter, placeholder })(
+                type='text'
+            )
+            label.btn-ignite.btn-ignite--secondary
+                +form-field__input({ name: `${ name } + "Sensitive"`, model: modelSensitive, placeholder })(
+                    type='checkbox'
+                )
+                span Cs
+        .form-field__errors(
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
+        )
+
 mixin btn-toolbar(btn, click, tip, focusId)
     i.btn.btn-default.fa(class=btn ng-click=click bs-tooltip='' data-title=tip ignite-on-click-focus=focusId data-trigger='hover' data-placement='bottom')
 
@@ -305,10 +323,14 @@ mixin paragraph-scan
             .col-sm-3
                 +dropdown-required('Cache:', 'paragraph.cacheName', '"cache"', 'true', 'false', 'Choose cache', 'caches')
             .col-sm-3
-                +text-enabled('Filter:', 'paragraph.filter', '"filter"', true, false, 'Enter filter')
-                    label.btn.btn-default.ignite-form-field__btn(ng-click='paragraph.caseSensitive = !paragraph.caseSensitive')
-                        input(type='checkbox' ng-model='paragraph.caseSensitive')
-                        span(bs-tooltip data-title='Select this checkbox for case sensitive search') Cs
+                +form-field__sensitive({
+                    label: 'Filter:',
+                    modelFilter: 'paragraph.filter',
+                    modelSensitive: 'paragraph.caseSensitive',
+                    name: '"filter"',
+                    placeholder: 'Enter filter'
+                })
+
             .col-sm-3
                 +form-field__dropdown({
                     label: 'Rows per page:',
@@ -372,13 +394,6 @@ mixin paragraph-query
                             name: '"cache_" + [paragraph.id, $index].join("_")',
                             value: 'cache.name'
                         })
-                    //- table.links
-                        tbody.scrollable-y(style='max-height: 15em; display: block;')
-                            tr(ng-repeat='cache in displayedCaches track by cache.name')
-                                td(style='width: 100%')
-                                    
-                                    //- input.labelField(id='cache_{{ [paragraph.id, $index].join("_") }}' type='radio' value='{{cache.name}}' ng-model='paragraph.cacheName')
-                                    //- label(for='cache_{{ [paragraph.id, $index].join("_") }} ' ng-bind-html='cache.label')
                     .settings-row
                         .row(ng-if='ddlAvailable(paragraph)')
                             +form-field__checkbox({
@@ -389,14 +404,6 @@ mixin paragraph-query
                                     This will allow to execute query on specified cache without specify schema name.<br/>\
                                     <b>NOTE:</b> In future version of Ignite this feature will be removed.'
                             })
-                            //- label.tipLabel.use-cache(bs-tooltip data-placement='bottom'
-                            //-     data-title=
-                            //-         'Use selected cache as default schema name.<br/>\
-                            //-         This will allow to execute query on specified cache without specify schema name.<br/>\
-                            //-         <b>NOTE:</b> In future version of Ignite this feature will be removed.'
-                            //-     data-trigger='hover')
-                            //-     input(type='checkbox' ng-model='paragraph.useAsDefaultSchema')
-                            //-     span Use selected cache as default schema name
                 .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                     label Wrong caches filter
                 .empty-caches(ng-show='caches.length == 0')
