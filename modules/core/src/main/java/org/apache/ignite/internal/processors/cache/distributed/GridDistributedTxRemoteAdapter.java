@@ -47,9 +47,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.DeferredPartitionUpdates;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -774,7 +776,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
-                            updateLocalCounters();
+                            applyDeferredUpdates();
 
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
                                 // Set new update counters for data entries received from persisted tx entries.
@@ -814,29 +816,51 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         }
     }
 
-    /**
-     * Applies update counters to the local partitions.
-     */
-    private void updateLocalCounters() {
-        Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap = updateCountersMap();
+    /** */
+    private void applyDeferredUpdates() {
+        Map<Integer, DeferredPartitionUpdates> deferredUpdates = deferredUpdates();
 
-        if (F.isEmpty(updCntrsMap))
+        if (F.isEmpty(deferredUpdates))
             return;
 
-        for (Map.Entry<Integer, GridDhtPartitionsUpdateCountersMap> entry : updCntrsMap.entrySet()) {
-            GridCacheContext cacheCtx = cctx.cacheContext(entry.getKey());
+        for (Map.Entry<Integer, DeferredPartitionUpdates> entry : deferredUpdates.entrySet()) {
+            int cacheId = entry.getKey();
 
-            GridDhtPartitionsUpdateCountersMap cacheUpdCntrs = entry.getValue();
+            GridDhtPartitionTopology topology = cctx.cacheContext(cacheId).topology();
 
-            assert cacheUpdCntrs != null && !F.isEmpty(cacheUpdCntrs.updateCounters());
+            DeferredPartitionUpdates cacheUpdates = entry.getValue();
 
-            for (Map.Entry<Integer, Long> e : cacheUpdCntrs.updateCounters().entrySet()) {
-                Long updCntr = e.getValue();
-                GridDhtLocalPartition part = cacheCtx.topology().localPartition(e.getKey());
+            assert cacheUpdates != null;
 
-                assert part != null && updCntr != null && updCntr > 0;
+            for (Map.Entry<Integer, Long> e : cacheUpdates.updateCounters().entrySet()) {
+                long updCntr = e.getValue();
 
-                part.updateCounter(updCntr);
+                GridDhtLocalPartition dhtPart = topology.localPartition(e.getKey());
+
+                assert dhtPart != null && updCntr > 0;
+
+                dhtPart.updateCounter(updCntr);
+            }
+
+            for (Map.Entry<Integer, Long> e : cacheUpdates.sizeDeltas().entrySet()) {
+                long sizeDelta = e.getValue();
+
+                GridDhtLocalPartition dhtPart = topology.localPartition(e.getKey());
+
+                assert dhtPart != null;
+
+                // TODO optimize and cleanup
+                IgniteCacheOffheapManagerImpl.CacheDataStoreImpl ds = (IgniteCacheOffheapManagerImpl.CacheDataStoreImpl)dhtPart.dataStore();
+                if (sizeDelta > 0) {
+                    for (int i = 0; i < sizeDelta; i++) {
+                        ds.incrementSize(cacheId);
+                    }
+                }
+                else {
+                    for (int i = 0; i < -sizeDelta; i++) {
+                        ds.decrementSize(cacheId);
+                    }
+                }
             }
         }
     }
@@ -990,12 +1014,12 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCountersMap(Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap) {
+    @Override public void deferredUpdates(Map<Integer, DeferredPartitionUpdates> deferredUpdates) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap() {
+    @Override public Map<Integer, DeferredPartitionUpdates> deferredUpdates() {
         return null;
     }
 

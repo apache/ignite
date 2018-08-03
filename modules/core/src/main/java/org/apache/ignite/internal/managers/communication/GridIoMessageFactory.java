@@ -68,7 +68,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.DeferredPartitionUpdates;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
@@ -1055,7 +1055,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 157:
-                msg = new GridDhtPartitionsUpdateCountersMap();
+                msg = new DeferredPartitionUpdates();
 
                 break;
 

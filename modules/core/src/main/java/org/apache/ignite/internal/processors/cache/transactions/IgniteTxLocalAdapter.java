@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -62,7 +63,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.DeferredPartitionUpdates;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -1645,31 +1646,60 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /**
      * @return Partition counters map for the given backup node.
      */
-    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersForNode(ClusterNode node) {
-        if (F.isEmpty(updCntrs))
+    public Map<Integer, DeferredPartitionUpdates> deferredUpdatesForNode(ClusterNode node) {
+        if (F.isEmpty(updCntrs) && F.isEmpty(sizeDeltas))
             return null;
 
-        Map<Integer, GridDhtPartitionsUpdateCountersMap> res = new HashMap<>();
+        Map<Integer, DeferredPartitionUpdates> res = new HashMap<>();
 
-        for (Map.Entry<Integer, ? extends Map<Integer, Long>> entry : updCntrs.entrySet()) {
-            Map<Integer, Long> partsCntrs = entry.getValue();
+        if (updCntrs != null) {
+            for (Map.Entry<Integer, ? extends Map<Integer, Long>> entry : updCntrs.entrySet()) {
+                Integer cacheId = entry.getKey();
+                Map<Integer, Long> partsCntrs = entry.getValue();
 
-            assert !F.isEmpty(partsCntrs);
+                assert !F.isEmpty(partsCntrs);
 
-            GridCacheContext ctx0 = cctx.cacheContext(entry.getKey());
+                GridCacheAffinityManager affinity = cctx.cacheContext(cacheId).affinity();
 
-            GridDhtPartitionsUpdateCountersMap resBackupCntrs = new GridDhtPartitionsUpdateCountersMap();
+                DeferredPartitionUpdates resBackupUpdates = res.get(cacheId);
 
-            res.putIfAbsent(entry.getKey(), resBackupCntrs);
+                if (resBackupUpdates == null)
+                    res.put(cacheId, resBackupUpdates = new DeferredPartitionUpdates());
 
-            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
-                Long cntr = partsCntrs.get(e.getKey());
+                for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
+                    Integer p = e.getKey();
+                    Long cntr = e.getValue();
 
-                if (ctx0.affinity().backupByPartition(node, e.getKey(), topologyVersionSnapshot())) {
-                    assert cntr != null && cntr > 0 : cntr;
+                    if (affinity.backupByPartition(node, p, topologyVersionSnapshot())) {
+                        assert cntr != null && cntr > 0 : cntr;
 
-                    resBackupCntrs.updateCounters().put(e.getKey(), cntr);
+                        resBackupUpdates.updateCounters().put(p, cntr);
+                    }
                 }
+            }
+        }
+
+        for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
+            Integer cacheId = entry.getKey();
+            Map<Integer, AtomicLong> partDeltas = entry.getValue();
+
+            assert !F.isEmpty(partDeltas);
+
+            GridCacheAffinityManager affinity = cctx.cacheContext(cacheId).affinity();
+
+            DeferredPartitionUpdates resBackupUpdates = res.get(cacheId);
+
+            if (resBackupUpdates == null)
+                res.put(cacheId, resBackupUpdates = new DeferredPartitionUpdates());
+
+            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
+                Integer p = e.getKey();
+                long delta = e.getValue().get();
+
+                assert delta > 0 : delta;
+
+                if (affinity.backupByPartition(node, p, topologyVersionSnapshot()))
+                    resBackupUpdates.sizeDeltas().put(p, delta);
             }
         }
 

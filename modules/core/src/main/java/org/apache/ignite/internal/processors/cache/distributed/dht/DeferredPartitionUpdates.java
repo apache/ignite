@@ -27,32 +27,28 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Partitions update counters message.
+ * Message containing changes which should be applied only on MVCC transaction commit.
  */
-public class GridDhtPartitionsUpdateCountersMap implements Message {
+public class DeferredPartitionUpdates implements Message {
     /** Map of update counters made by this tx. Mapping: partId -> updCntr. */
     @GridDirectMap(keyType = Integer.class, valueType = Long.class)
-    private  Map<Integer, Long> updCntrs;
+    private Map<Integer, Long> updCntrs = new HashMap<>();
+    /** Partition size changes by this tx. */
+    @GridDirectMap(keyType = Integer.class, valueType = Long.class)
+    private Map<Integer, Long> sizeDeltas = new HashMap<>();
 
     /**
-     *
-     */
-    public GridDhtPartitionsUpdateCountersMap() {
-        updCntrs = new HashMap<>();
-    }
-
-    /**
-     * @return Update counters.
+     * @return Partition update counters.
      */
     public Map<Integer, Long> updateCounters() {
         return updCntrs;
     }
 
     /**
-     * @param updCntrs Update counters.
+     * @return Partition size deltas.
      */
-    public void updateCounters(Map<Integer, Long> updCntrs) {
-        this.updCntrs = updCntrs;
+    public Map<Integer, Long> sizeDeltas() {
+        return sizeDeltas;
     }
 
     /** {@inheritDoc} */
@@ -69,6 +65,11 @@ public class GridDhtPartitionsUpdateCountersMap implements Message {
         switch (writer.state()) {
             case 0:
                 if (!writer.writeMap("updCntrs", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
+                    return false;
+
+                writer.incrementState();
+            case 1:
+                if (!writer.writeMap("sizeDeltas", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -93,10 +94,16 @@ public class GridDhtPartitionsUpdateCountersMap implements Message {
                     return false;
 
                 reader.incrementState();
+            case 1:
+                sizeDeltas = reader.readMap("sizeDeltas", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
 
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridDhtPartitionsUpdateCountersMap.class);
+        return reader.afterMessageRead(DeferredPartitionUpdates.class);
     }
 
     /** {@inheritDoc} */

@@ -73,9 +73,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** */
     private MvccSnapshot mvccSnapshot;
 
-    /** Map of update counters made by this tx. Mapping: cacheId -> partId -> updCntr. */
-    @GridDirectMap(keyType = Integer.class, valueType = GridDhtPartitionsUpdateCountersMap.class)
-    private Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs;
+    /** */
+    @GridDirectMap(keyType = Integer.class, valueType = DeferredPartitionUpdates.class)
+    private Map<Integer, DeferredPartitionUpdates> deferredUpdates;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -220,7 +221,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean retVal,
         boolean waitRemoteTxs,
         MvccSnapshot mvccSnapshot,
-        Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs
+        Map<Integer, DeferredPartitionUpdates> deferredUpdates
     ) {
         this(nearNodeId,
             futId,
@@ -255,7 +256,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 partUpdateCnt.add(idx);
         }
 
-        this.updCntrs = updCntrs;
+        this.deferredUpdates = deferredUpdates;
     }
 
     /**
@@ -362,11 +363,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     public void needReturnValue(boolean retVal) {
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
     }
+
     /**
-     * @return Partition update counters map.
+     * @return Partition updates deferred until transaction commit.
      */
-    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap() {
-        return updCntrs;
+    public Map<Integer, DeferredPartitionUpdates> deferredUpdates() {
+        return deferredUpdates;
     }
 
     /** {@inheritDoc} */
@@ -421,7 +423,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeMap("updCntrs", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+                if (!writer.writeMap("deferredUpdates", deferredUpdates, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -501,7 +503,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 27:
-                updCntrs = reader.readMap("updCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                deferredUpdates = reader.readMap("deferredUpdates", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;

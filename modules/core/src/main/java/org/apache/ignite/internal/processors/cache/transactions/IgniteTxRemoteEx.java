@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.DeferredPartitionUpdates;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -54,12 +54,12 @@ public interface IgniteTxRemoteEx extends IgniteInternalTx {
     public void setPartitionUpdateCounters(long[] cntrs);
 
     /**
-     * @param updCntrsMap Partition update counters map: cacheId -> partId -> updateCntr.
+     * @param deferredUpdates Partition updates deferred until transaction commit.
      */
-    public void updateCountersMap(Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap);
+    public void deferredUpdates(Map<Integer, DeferredPartitionUpdates> deferredUpdates);
 
     /**
      * @return Partition update counters map: cacheId -> partId -> updateCntr.
      */
-    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap();
+    public Map<Integer, DeferredPartitionUpdates> deferredUpdates();
 }
