@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.OpenOption;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -33,18 +35,29 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
@@ -61,6 +74,9 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
     /** Failure handler. */
     private DummyFailureHandler failureHnd;
+
+    /** Failing FileIO factory. */
+    private FailingFileIOFactory failingFileIOFactory;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -86,12 +102,15 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
+        failingFileIOFactory = new FailingFileIOFactory();
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setMaxSize(100 * 1024 * 1024)
                     .setPersistenceEnabled(true)
-            );
+            )
+            .setFileIOFactory(failingFileIOFactory);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -304,12 +323,97 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test node invalidation when meta store is read only.
+     */
+    public void testReadOnlyMetaStore() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        IgniteInternalCache cache = ignite0.cachex(CACHE_NAME1);
+
+        cache.put(1, 1);
+
+        ignite0.cluster().active(false);
+
+        FilePageStoreManager storeMgr = ((FilePageStoreManager)ignite0.context().cache().context().pageStore());
+
+        File workDir = storeMgr.workDir();
+        File metaStoreDir = new File(workDir, MetaStorage.METASTORAGE_CACHE_NAME.toLowerCase());
+        File metaStoreFile = new File(metaStoreDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0));
+
+        metaStoreFile.setWritable(false);
+
+        try {
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        ignite0.cluster().active(true);
+                    }
+                    catch (Exception ignore) {
+                        // No-op.
+                    }
+                }
+            });
+
+            waitFailure(IOException.class);
+
+            fut.cancel();
+        }
+        finally {
+            metaStoreFile.setWritable(true);
+        }
+    }
+
+
+    /**
+     * Test node invalidation due to checkpoint error.
+     */
+    public void testCheckpointFailure() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        failingFileIOFactory.createClosure(new IgniteBiClosure<File, OpenOption[], FileIO>() {
+            @Override public FileIO apply(File file, OpenOption[] options) {
+                if (file.getName().indexOf("-END.bin") >= 0) {
+                    FileIO delegate;
+
+                    try {
+                        delegate = failingFileIOFactory.delegateFactory().create(file, options);
+                    }
+                    catch (IOException ignore) {
+                        return null;
+                    }
+
+                    return new FileIODecorator(delegate) {
+                        @Override public void close() throws IOException {
+                            throw new IOException("Checkpoint failed");
+                        }
+                    };
+                }
+
+                return null;
+            }
+        });
+
+        ignite.cluster().active(true);
+
+        try {
+            forceCheckpoint(ignite);
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
+
+        waitFailure(IOException.class);
+    }
+
+    /**
      * @param expError Expected error.
      */
     private void waitFailure(Class<? extends Throwable> expError) throws IgniteInterruptedCheckedException {
         assertTrue(GridTestUtils.waitForCondition(() -> failureHnd.failure(), 5_000L));
 
-        assertTrue(expError.isInstance(failureHnd.error()));
+        assertTrue(X.hasCause(failureHnd.error(), expError));
     }
 
     /**
@@ -342,6 +446,45 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
             error = failureCtx.error();
 
             return true;
+        }
+    }
+
+    /**
+     * Create File I/O which can fail according to implemented closure.
+     */
+    private static class FailingFileIOFactory implements FileIOFactory {
+        /** Delegate factory. */
+        private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
+
+        /** Create FileIO closure. */
+        private volatile IgniteBiClosure<File, OpenOption[], FileIO> createClo;
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file) throws IOException {
+            return create(file, CREATE, READ, WRITE);
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
+            FileIO fileIO = null;
+            if (createClo != null)
+                fileIO = createClo.apply(file, openOption);
+
+            return fileIO != null ? fileIO : delegateFactory.create(file, openOption);
+        }
+
+        /**
+         * @param createClo FileIO create closure.
+         */
+        public void createClosure(IgniteBiClosure<File, OpenOption[], FileIO> createClo) {
+            this.createClo = createClo;
+        }
+
+        /**
+         *
+         */
+        public FileIOFactory delegateFactory() {
+            return delegateFactory;
         }
     }
 }

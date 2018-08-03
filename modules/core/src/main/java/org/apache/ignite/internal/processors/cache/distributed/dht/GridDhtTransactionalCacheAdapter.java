@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -916,39 +917,85 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             GridDhtLockFuture fut = null;
 
-            if (!req.inTx()) {
-                GridDhtPartitionTopology top = null;
+            GridDhtPartitionTopology top = null;
 
-                if (req.firstClientRequest()) {
-                    assert CU.clientNode(nearNode);
+            if (req.firstClientRequest()) {
+                assert CU.clientNode(nearNode);
 
-                    top = topology();
+                top = topology();
 
-                    top.readLock();
+                top.readLock();
 
-                    if (!top.topologyVersionFuture().isDone()) {
-                        top.readUnlock();
+                if (!top.topologyVersionFuture().isDone()) {
+                    top.readUnlock();
 
-                        return null;
-                    }
+                    return null;
                 }
+            }
 
-                try {
-                    if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Client topology version mismatch, need remap lock request [" +
+            try {
+                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Client topology version mismatch, need remap lock request [" +
                                 "reqTopVer=" + req.topologyVersion() +
                                 ", locTopVer=" + top.readyTopologyVersion() +
                                 ", req=" + req + ']');
-                        }
-
-                        GridNearLockResponse res = sendClientLockRemapResponse(nearNode,
-                            req,
-                            top.lastTopologyChangeVersion());
-
-                        return new GridFinishedFuture<>(res);
                     }
 
+                    GridNearLockResponse res = sendClientLockRemapResponse(nearNode,
+                        req,
+                        top.lastTopologyChangeVersion());
+
+                    return new GridFinishedFuture<>(res);
+                }
+
+                if (req.inTx()) {
+                    if (tx == null) {
+                        tx = new GridDhtTxLocal(
+                            ctx.shared(),
+                            req.topologyVersion(),
+                            nearNode.id(),
+                            req.version(),
+                            req.futureId(),
+                            req.miniId(),
+                            req.threadId(),
+                            /*implicitTx*/false,
+                            /*implicitSingleTx*/false,
+                            ctx.systemTx(),
+                            false,
+                            ctx.ioPolicy(),
+                            PESSIMISTIC,
+                            req.isolation(),
+                            req.timeout(),
+                            req.isInvalidate(),
+                            !req.skipStore(),
+                            false,
+                            req.txSize(),
+                            null,
+                            req.subjectId(),
+                            req.taskNameHash());
+
+                        if (req.syncCommit())
+                            tx.syncMode(FULL_SYNC);
+
+                        tx = ctx.tm().onCreated(null, tx);
+
+                        if (tx == null || !tx.init()) {
+                            String msg = "Failed to acquire lock (transaction has been completed): " +
+                                    req.version();
+
+                            U.warn(log, msg);
+
+                            if (tx != null)
+                                tx.rollbackDhtLocal();
+
+                            return new GridDhtFinishedFuture<>(new IgniteTxRollbackCheckedException(msg));
+                        }
+
+                        tx.topologyVersion(req.topologyVersion());
+                    }
+                }
+                else {
                     fut = new GridDhtLockFuture(ctx,
                         nearNode.id(),
                         req.version(),
@@ -969,10 +1016,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (!ctx.mvcc().addFuture(fut))
                         throw new IllegalStateException("Duplicate future ID: " + fut);
                 }
-                finally {
-                    if (top != null)
-                        top.readUnlock();
-                }
+            }
+            finally {
+                if (top != null)
+                    top.readUnlock();
             }
 
             boolean timedOut = false;
@@ -1021,88 +1068,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             // Handle implicit locks for pessimistic transactions.
             if (req.inTx()) {
-                if (tx == null) {
-                    GridDhtPartitionTopology top = null;
-
-                    if (req.firstClientRequest()) {
-                        assert CU.clientNode(nearNode);
-
-                        top = topology();
-
-                        top.readLock();
-
-                        if (!top.topologyVersionFuture().isDone()) {
-                            top.readUnlock();
-
-                            return null;
-                        }
-                    }
-
-                    try {
-                        if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Client topology version mismatch, need remap lock request [" +
-                                    "reqTopVer=" + req.topologyVersion() +
-                                    ", locTopVer=" + top.readyTopologyVersion() +
-                                    ", req=" + req + ']');
-                            }
-
-                            GridNearLockResponse res = sendClientLockRemapResponse(nearNode,
-                                req,
-                                top.lastTopologyChangeVersion());
-
-                            return new GridFinishedFuture<>(res);
-                        }
-
-                        tx = new GridDhtTxLocal(
-                            ctx.shared(),
-                            req.topologyVersion(),
-                            nearNode.id(),
-                            req.version(),
-                            req.futureId(),
-                            req.miniId(),
-                            req.threadId(),
-                            /*implicitTx*/false,
-                            /*implicitSingleTx*/false,
-                            ctx.systemTx(),
-                            false,
-                            ctx.ioPolicy(),
-                            PESSIMISTIC,
-                            req.isolation(),
-                            req.timeout(),
-                            req.isInvalidate(),
-                            !req.skipStore(),
-                            false,
-                            req.txSize(),
-                            null,
-                            req.subjectId(),
-                            req.taskNameHash());
-
-                        if (req.syncCommit())
-                            tx.syncMode(FULL_SYNC);
-
-                        tx = ctx.tm().onCreated(null, tx);
-
-                        if (tx == null || !tx.init()) {
-                            String msg = "Failed to acquire lock (transaction has been completed): " +
-                                req.version();
-
-                            U.warn(log, msg);
-
-                            if (tx != null)
-                                tx.rollbackDhtLocal();
-
-                            return new GridDhtFinishedFuture<>(new IgniteTxRollbackCheckedException(msg));
-                        }
-
-                        tx.topologyVersion(req.topologyVersion());
-                    }
-                    finally {
-                        if (top != null)
-                            top.readUnlock();
-                    }
-                }
-
                 ctx.tm().txContext(tx);
 
                 if (log.isDebugEnabled())
@@ -1194,6 +1159,20 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 catch (IgniteCheckedException ex) {
                     U.error(log, "Failed to rollback the transaction: " + tx, ex);
                 }
+            }
+
+            try {
+                GridNearLockResponse res = createLockReply(nearNode,
+                    Collections.emptyList(),
+                    req,
+                    tx,
+                    tx != null ? tx.xidVersion() : req.version(),
+                    e);
+
+                sendLockReply(nearNode, null, req, res);
+            }
+            catch (Exception ex) {
+                U.error(log, "Failed to send response for request message: " + req, ex);
             }
 
             return new GridDhtFinishedFuture<>(

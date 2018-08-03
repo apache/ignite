@@ -1,31 +1,24 @@
 {
   "name": "ignite-web-console",
-  "version": "1.0.0",
+  "version": "2.7.0",
   "description": "Interactive Web console for configuration, executing SQL queries and monitoring of Apache Ignite Cluster",
   "private": true,
+  "main": "index.js",
   "scripts": {
     "ci-test": "cross-env NODE_ENV=test MOCHA_REPORTER=mocha-teamcity-reporter node ./test/index.js",
     "test": "cross-env NODE_ENV=test CONFIG_PATH='./test/config/settings.json' node ./test/index.js",
     "eslint": "eslint --env node --format node_modules/eslint-friendly-formatter ./ -- --eff-by-issue",
     "start": "node ./index.js",
-    "build": "pkg . --out-path build",
-    "mongodb-download": "./node_modules/.bin/mongodb-download"
+    "build": "pkg . --out-path build"
   },
-  "author": "",
-  "contributors": [
-    {
-      "name": "",
-      "email": ""
-    }
-  ],
   "license": "Apache-2.0",
   "keywords": [
     "Apache Ignite Web console"
   ],
   "homepage": "https://ignite.apache.org/",
   "engines": {
-    "npm": "^3.x.x",
-    "node": "^6.5.x"
+    "npm": ">=5.x.x",
+    "node": ">=8.x.x <10.x.x"
   },
   "os": [
     "darwin",
@@ -35,49 +28,52 @@
   "bin": "index.js",
   "pkg": {
     "assets": [
+      "app/*",
+      "errors/*",
+      "middlewares/*",
+      "migrations/*",
+      "routes/*",
+      "services/*",
+      "node_modules/getos/logic/*",
+      "node_modules/mongodb-download/node_modules/getos/logic/*"
+    ],
+    "scripts": [
       "app/*.js",
       "errors/*.js",
-      "ignite_modules/*",
-      "injector.js",
       "middlewares/*.js",
-      "migrations/*",
-      "node_modules/getos/logic/*.js",
+      "migrations/*.js",
       "routes/*.js",
-      "routes/**/*.json",
       "services/*.js"
     ]
   },
   "dependencies": {
     "app-module-path": "2.2.0",
     "body-parser": "1.17.2",
-    "common-tags": "1.4.0",
     "connect-mongo": "1.3.2",
     "cookie-parser": "1.4.3",
     "express": "4.15.3",
     "express-session": "1.15.4",
     "fire-up": "1.0.0",
     "glob": "7.1.2",
-    "getos": "3.1.0",
     "jszip": "3.1.3",
     "lodash": "4.17.4",
     "migrate-mongoose": "3.2.2",
     "mongodb-prebuilt": "6.3.3",
     "mongoose": "4.11.4",
     "morgan": "1.8.2",
-    "nexmo": "2.0.2",
     "nconf": "0.8.4",
     "nodemailer": "4.0.1",
     "passport": "0.3.2",
     "passport-local": "1.0.0",
     "passport-local-mongoose": "4.0.0",
     "passport.socketio": "3.7.0",
+    "pkg": "4.3.1",
     "socket.io": "1.7.3",
-    "uuid": "3.1.0",
-    "pkg": "4.2.4"
+    "uuid": "3.1.0"
   },
   "devDependencies": {
     "chai": "4.1.0",
-    "cross-env": "5.0.1",
+    "cross-env": "5.1.6",
     "eslint": "4.3.0",
     "eslint-friendly-formatter": "3.0.0",
     "mocha": "3.4.2",

@@ -33,17 +33,18 @@ import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.util.ModelTrace;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * kNN algorithm model to solve multi-class classification task.
  */
-public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Exportable<KNNModelFormat> {
+public class KNNClassificationModel implements Model<Vector, Double>, Exportable<KNNModelFormat> {
     /** */
     private static final long serialVersionUID = -127386523291350345L;
 
@@ -88,7 +89,7 @@ public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Expo
      * @param k Amount of nearest neighbors.
      * @return Model.
      */
-    public KNNClassificationModel<K, V> withK(int k) {
+    public KNNClassificationModel withK(int k) {
         this.k = k;
         return this;
     }
@@ -98,7 +99,7 @@ public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Expo
      * @param stgy Strategy of calculations.
      * @return Model.
      */
-    public KNNClassificationModel<K, V> withStrategy(KNNStrategy stgy) {
+    public KNNClassificationModel withStrategy(KNNStrategy stgy) {
         this.stgy = stgy;
         return this;
     }
@@ -108,7 +109,7 @@ public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Expo
      * @param distanceMeasure Distance measure.
      * @return Model.
      */
-    public KNNClassificationModel<K, V> withDistanceMeasure(DistanceMeasure distanceMeasure) {
+    public KNNClassificationModel withDistanceMeasure(DistanceMeasure distanceMeasure) {
         this.distanceMeasure = distanceMeasure;
         return this;
     }
@@ -269,5 +270,19 @@ public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Expo
         KNNClassificationModel that = (KNNClassificationModel)obj;
 
         return k == that.k && distanceMeasure.equals(that.distanceMeasure) && stgy.equals(that.stgy);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toString(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return ModelTrace.builder("KNNClassificationModel", pretty)
+            .addField("k", String.valueOf(k))
+            .addField("measure", distanceMeasure.getClass().getSimpleName())
+            .addField("strategy", stgy.name())
+            .toString();
     }
 }

@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
+#include <vector>
+#include <map>
+#include <algorithm>
+
 #include <ignite/common/concurrent.h>
 
 #include "ignite/impl/binary/binary_type_manager.h"
-#include <algorithm>
 
 using namespace ignite::common::concurrent;
 
@@ -98,10 +101,14 @@ namespace ignite
 
             bool BinaryTypeManager::ProcessPendingUpdates(IgniteError& err)
             {
-                if (!updater)
-                    return false;
-
                 CsLockGuard guard(cs);
+
+                if (!updater)
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Updater is not set");
+
+                    return false;
+                }
 
                 for (std::vector<SPSnap>::iterator it = pending->begin(); it != pending->end(); ++it)
                 {
@@ -111,7 +118,11 @@ namespace ignite
                         continue; // Snapshot has been processed already.
 
                     if (!updater->Update(*pendingSnap, err))
+                    {
+                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not send update");
+
                         return false; // Stop as we cannot move further.
+                    }
 
                     std::map<int32_t, SPSnap>::iterator elem = snapshots->lower_bound(pendingSnap->GetTypeId());
 
@@ -140,24 +151,32 @@ namespace ignite
                 return true;
             }
 
+            void BinaryTypeManager::SetUpdater(BinaryTypeUpdater* updater)
+            {
+                CsLockGuard guard(cs);
+
+                this->updater = updater;
+            }
+
             SPSnap BinaryTypeManager::GetMeta(int32_t typeId)
             {
-                { // Locking scope.
-                    CsLockGuard guard(cs);
+                CsLockGuard guard(cs);
 
-                    std::map<int32_t, SPSnap>::iterator it = snapshots->find(typeId);
+                std::map<int32_t, SPSnap>::iterator it = snapshots->find(typeId);
 
-                    if (it != snapshots->end() && it->second.Get())
-                        return it->second;
+                if (it != snapshots->end() && it->second.Get())
+                    return it->second;
 
-                    for (int32_t i = 0; i < pending->size(); ++i)
-                    {
-                        SPSnap& snap = (*pending)[i];
+                for (int32_t i = 0; i < pending->size(); ++i)
+                {
+                    SPSnap& snap = (*pending)[i];
 
-                        if (snap.Get()->GetTypeId() == typeId)
-                            return snap;
-                    }
+                    if (snap.Get()->GetTypeId() == typeId)
+                        return snap;
                 }
+
+                if (!updater)
+                    throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "Metadata updater is not available.");
 
                 IgniteError err;
 
@@ -166,11 +185,7 @@ namespace ignite
                 IgniteError::ThrowIfNeeded(err);
 
                 // Caching meta snapshot for faster access in future.
-                { // Locking scope.
-                    CsLockGuard guard(cs);
-
-                    snapshots->insert(std::make_pair(typeId, snap));
-                }
+                snapshots->insert(std::make_pair(typeId, snap));
 
                 return snap;
             }

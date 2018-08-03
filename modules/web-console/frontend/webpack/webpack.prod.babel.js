@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 
+import path from 'path';
 import merge from 'webpack-merge';
 
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 import UglifyJSPlugin from 'uglifyjs-webpack-plugin';
 
 import commonCfg from './webpack.common';
+
+const basedir = path.join(__dirname, '../');
 
 export default merge(commonCfg, {
     bail: true, // Cancel build on error.
@@ -33,7 +36,12 @@ export default merge(commonCfg, {
             },
             {
                 test: /\.scss$/,
-                use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
+                use: [MiniCssExtractPlugin.loader, 'css-loader', {
+                    loader: 'sass',
+                    options: {
+                        includePaths: [basedir]
+                    }
+                }]
             }
         ]
     },

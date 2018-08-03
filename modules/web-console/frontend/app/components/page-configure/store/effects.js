@@ -23,44 +23,42 @@ import {merge} from 'rxjs/observable/merge';
 import {empty} from 'rxjs/observable/empty';
 import {of} from 'rxjs/observable/of';
 import {fromPromise} from 'rxjs/observable/fromPromise';
-import {uniqueName} from 'app/utils/uniqueName';
 import uniq from 'lodash/uniq';
 
 import {
-    clustersActionTypes,
     cachesActionTypes,
-    shortClustersActionTypes,
-    shortCachesActionTypes,
-    shortModelsActionTypes,
-    shortIGFSsActionTypes,
+    clustersActionTypes,
+    igfssActionTypes,
     modelsActionTypes,
-    igfssActionTypes
-} from './../reducer';
+    shortCachesActionTypes,
+    shortClustersActionTypes,
+    shortIGFSsActionTypes,
+    shortModelsActionTypes
+} from '../reducer';
 
 import {
-    REMOVE_CLUSTER_ITEMS,
-    REMOVE_CLUSTER_ITEMS_CONFIRMED,
-    CONFIRM_CLUSTERS_REMOVAL,
-    CONFIRM_CLUSTERS_REMOVAL_OK,
-    COMPLETE_CONFIGURATION,
-    ADVANCED_SAVE_CLUSTER,
     ADVANCED_SAVE_CACHE,
+    ADVANCED_SAVE_CLUSTER,
+    ADVANCED_SAVE_COMPLETE_CONFIGURATION,
     ADVANCED_SAVE_IGFS,
     ADVANCED_SAVE_MODEL,
     BASIC_SAVE,
     BASIC_SAVE_AND_DOWNLOAD,
-    BASIC_SAVE_OK
+    BASIC_SAVE_OK,
+    COMPLETE_CONFIGURATION,
+    CONFIRM_CLUSTERS_REMOVAL,
+    CONFIRM_CLUSTERS_REMOVAL_OK,
+    REMOVE_CLUSTER_ITEMS,
+    REMOVE_CLUSTER_ITEMS_CONFIRMED
 } from './actionTypes';
 
 import {
-    removeClusterItemsConfirmed,
     advancedSaveCompleteConfiguration,
-    confirmClustersRemoval,
-    confirmClustersRemovalOK,
-    completeConfiguration,
-    basicSave,
+    basicSaveErr,
     basicSaveOK,
-    basicSaveErr
+    completeConfiguration,
+    confirmClustersRemovalOK,
+    removeClusterItemsConfirmed
 } from './actionCreators';
 
 import ConfigureState from 'app/components/page-configure/services/ConfigureState';
@@ -141,7 +139,7 @@ export default class ConfigEffects {
             ].filter((v) => v)));
 
         this.saveCompleteConfigurationEffect$ = this.ConfigureState.actions$
-            .let(ofType('ADVANCED_SAVE_COMPLETE_CONFIGURATION'))
+            .let(ofType(ADVANCED_SAVE_COMPLETE_CONFIGURATION))
             .switchMap((action) => {
                 const actions = [
                     {
@@ -267,12 +265,14 @@ export default class ConfigEffects {
             .exhaustMap((a) => {
                 return this.ConfigureState.state$.let(this.ConfigSelectors.selectCache(a.cacheID)).take(1)
                     .switchMap((cache) => {
-                        if (cache) return of({type: `${a.type}_OK`, cache});
+                        if (cache)
+                            return of({type: `${a.type}_OK`, cache});
+
                         return fromPromise(this.Caches.getCache(a.cacheID))
-                        .switchMap(({data}) => of(
-                            {type: 'CACHE', cache: data},
-                            {type: `${a.type}_OK`, cache: data}
-                        ));
+                            .switchMap(({data}) => of(
+                                {type: 'CACHE', cache: data},
+                                {type: `${a.type}_OK`, cache: data}
+                            ));
                     })
                     .catch((error) => of({
                         type: `${a.type}_ERR`,
@@ -289,7 +289,9 @@ export default class ConfigEffects {
         this.loadShortCachesEffect$ = ConfigureState.actions$
             .let(ofType('LOAD_SHORT_CACHES'))
             .exhaustMap((a) => {
-                if (!(a.ids || []).length) return of({type: `${a.type}_OK`});
+                if (!(a.ids || []).length)
+                    return of({type: `${a.type}_OK`});
+
                 return this.ConfigureState.state$.let(this.ConfigSelectors.selectShortCaches()).take(1)
                     .switchMap((items) => {
                         if (!items.pristine && a.ids && a.ids.every((_id) => items.value.has(_id)))
@@ -315,12 +317,14 @@ export default class ConfigEffects {
             .exhaustMap((a) => {
                 return this.ConfigureState.state$.let(this.ConfigSelectors.selectIGFS(a.igfsID)).take(1)
                     .switchMap((igfs) => {
-                        if (igfs) return of({type: `${a.type}_OK`, igfs});
+                        if (igfs)
+                            return of({type: `${a.type}_OK`, igfs});
+
                         return fromPromise(this.IGFSs.getIGFS(a.igfsID))
-                        .switchMap(({data}) => of(
-                            {type: 'IGFS', igfs: data},
-                            {type: `${a.type}_OK`, igfs: data}
-                        ));
+                            .switchMap(({data}) => of(
+                                {type: 'IGFS', igfs: data},
+                                {type: `${a.type}_OK`, igfs: data}
+                            ));
                     })
                     .catch((error) => of({
                         type: `${a.type}_ERR`,
@@ -368,12 +372,14 @@ export default class ConfigEffects {
             .exhaustMap((a) => {
                 return this.ConfigureState.state$.let(this.ConfigSelectors.selectModel(a.modelID)).take(1)
                     .switchMap((model) => {
-                        if (model) return of({type: `${a.type}_OK`, model});
+                        if (model)
+                            return of({type: `${a.type}_OK`, model});
+
                         return fromPromise(this.Models.getModel(a.modelID))
-                        .switchMap(({data}) => of(
-                            {type: 'MODEL', model: data},
-                            {type: `${a.type}_OK`, model: data}
-                        ));
+                            .switchMap(({data}) => of(
+                                {type: 'MODEL', model: data},
+                                {type: `${a.type}_OK`, model: data}
+                            ));
                     })
                     .catch((error) => of({
                         type: `${a.type}_ERR`,
@@ -427,9 +433,21 @@ export default class ConfigEffects {
             .do((a) => this.configurationDownload.downloadClusterConfiguration(a.changedItems.cluster))
             .ignoreElements();
 
+        this.advancedDownloadAfterSaveEffect$ = merge(
+            this.ConfigureState.actions$.let(ofType(ADVANCED_SAVE_CLUSTER)),
+            this.ConfigureState.actions$.let(ofType(ADVANCED_SAVE_CACHE)),
+            this.ConfigureState.actions$.let(ofType(ADVANCED_SAVE_IGFS)),
+            this.ConfigureState.actions$.let(ofType(ADVANCED_SAVE_MODEL)),
+        )
+            .filter((a) => a.download)
+            .zip(this.ConfigureState.actions$.let(ofType('ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK')))
+            .pluck('1')
+            .do((a) => this.configurationDownload.downloadClusterConfiguration(a.changedItems.cluster))
+            .ignoreElements();
+
         this.advancedSaveRedirectEffect$ = this.ConfigureState.actions$
             .let(ofType('ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK'))
-            .withLatestFrom(this.ConfigureState.actions$.let(ofType('ADVANCED_SAVE_COMPLETE_CONFIGURATION')))
+            .withLatestFrom(this.ConfigureState.actions$.let(ofType(ADVANCED_SAVE_COMPLETE_CONFIGURATION)))
             .pluck('1', 'changedItems')
             .map((req) => {
                 const firstChangedItem = Object.keys(req).filter((k) => k !== 'cluster')
@@ -442,39 +460,48 @@ export default class ConfigEffects {
                 const go = (state, params = {}) => this.$state.go(
                     state, {...params, clusterID: cluster._id}, {location: 'replace', custom: {justIDUpdate: true}}
                 );
+
                 switch (type) {
                     case 'models': {
                         const state = 'base.configuration.edit.advanced.models.model';
                         this.IgniteMessages.showInfo(`Model "${value.valueType}" saved`);
-                        if (
-                            this.$state.is(state) && this.$state.params.modelID !== value._id
-                        ) return go(state, {modelID: value._id});
+
+                        if (this.$state.is(state) && this.$state.params.modelID !== value._id)
+                            return go(state, {modelID: value._id});
+
                         break;
                     }
+
                     case 'caches': {
                         const state = 'base.configuration.edit.advanced.caches.cache';
                         this.IgniteMessages.showInfo(`Cache "${value.name}" saved`);
-                        if (
-                            this.$state.is(state) && this.$state.params.cacheID !== value._id
-                        ) return go(state, {cacheID: value._id});
+
+                        if (this.$state.is(state) && this.$state.params.cacheID !== value._id)
+                            return go(state, {cacheID: value._id});
+
                         break;
                     }
+
                     case 'igfss': {
                         const state = 'base.configuration.edit.advanced.igfs.igfs';
                         this.IgniteMessages.showInfo(`IGFS "${value.name}" saved`);
-                        if (
-                            this.$state.is(state) && this.$state.params.igfsID !== value._id
-                        ) return go(state, {igfsID: value._id});
+
+                        if (this.$state.is(state) && this.$state.params.igfsID !== value._id)
+                            return go(state, {igfsID: value._id});
+
                         break;
                     }
+
                     case 'cluster': {
                         const state = 'base.configuration.edit.advanced.cluster';
                         this.IgniteMessages.showInfo(`Cluster "${value.name}" saved`);
-                        if (
-                            this.$state.is(state) && this.$state.params.clusterID !== value._id
-                        ) return go(state);
+
+                        if (this.$state.is(state) && this.$state.params.clusterID !== value._id)
+                            return go(state);
+
                         break;
                     }
+
                     default: break;
                 }
             })
@@ -485,7 +512,7 @@ export default class ConfigEffects {
             .exhaustMap((a) => {
                 return a.confirm
                     // TODO: list items to remove in confirmation
-                    ? fromPromise(this.Confirm.confirm('Are you sure want to remove these items?'))
+                    ? fromPromise(this.Confirm.confirm('Are you sure you want to remove these items?'))
                         .mapTo(a)
                         .catch(() => empty())
                     : of(a);
@@ -510,7 +537,7 @@ export default class ConfigEffects {
             .switchMap((ids) => this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterNames(ids)).take(1))
             .exhaustMap((names) => {
                 return fromPromise(this.Confirm.confirm(`
-                    <p>Are you sure want to remove these clusters?</p>
+                    <p>Are you sure you want to remove these clusters?</p>
                     <ul>${names.map((name) => `<li>${name}</li>`).join('')}</ul>
                 `))
                 .map(confirmClustersRemovalOK)
@@ -577,7 +604,7 @@ export default class ConfigEffects {
         )
             .withLatestFrom(this.ConfigureState.state$.pluck('edit'))
             .map(([action, edit]) => ({
-                type: 'ADVANCED_SAVE_COMPLETE_CONFIGURATION',
+                type: ADVANCED_SAVE_COMPLETE_CONFIGURATION,
                 changedItems: _applyChangedIDs(edit, action)
             }));
 
@@ -644,6 +671,7 @@ export default class ConfigEffects {
         const err = `${action.type}_ERR`;
 
         setTimeout(() => this.ConfigureState.dispatchAction(action));
+
         return this.ConfigureState.actions$
             .filter((a) => a.type === ok || a.type === err)
             .take(1)

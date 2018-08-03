@@ -34,6 +34,7 @@ page-configure {
         flex-direction: row;
         padding: 10px 20px 10px 30px;
         box-shadow: 0 0px 4px 0 rgba(0, 0, 0, 0.2), 0px 3px 4px -1px rgba(0, 0, 0, 0.2);
+        position: -webkit-sticky;
         position: sticky;
         bottom: 0px;
         // margin: 20px -30px -30px;
@@ -186,6 +187,22 @@ list-editable .pc-form-group__text-title {
     }
 }
 
+// Add this class to list-editable when a pc-form-grid is used inside list-editable-item-edit
+.pc-list-editable-with-form-grid > .le-body > .le-row {
+    & > .le-row-index,
+    & > .le-row-cross {
+        margin-top: 28px;
+    }
+}
+
+// Add this class to list-editable when legacy settings-row classes are used inside list-editable-item-edit
+.pc-list-editable-with-legacy-settings-rows > .le-body > .le-row {
+    & > .le-row-index,
+    & > .le-row-cross {
+        margin-top: 18px;
+    }
+}
+
 .pc-form-grid-row {
     &>.pc-form-grid-col-10 {
         flex-basis: calc(100% / 6);
@@ -205,6 +222,10 @@ list-editable .pc-form-group__text-title {
 
     &>.pc-form-grid-col-60 {
         flex-basis: calc(100% / 1);
+    }
+
+    &>.pc-form-grid-col-free {
+        flex: 1;
     }
 
     @media(max-width: 992px) {

@@ -128,9 +128,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      * {@code null} means no specific folder is configured.
      * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
      */
-    StandaloneGridKernalContext(IgniteLogger log,
+    public StandaloneGridKernalContext(
+        IgniteLogger log,
         @Nullable File binaryMetadataFileStoreDir,
-        @Nullable File marshallerMappingFileStoreDir) throws IgniteCheckedException {
+        @Nullable File marshallerMappingFileStoreDir
+    ) throws IgniteCheckedException {
         this.log = log;
 
         try {
@@ -179,7 +181,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /**
      * @return Ignite configuration which allows to start requied processors for WAL reader
      */
-    private IgniteConfiguration prepareIgniteConfiguration() {
+    protected IgniteConfiguration prepareIgniteConfiguration() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
@@ -466,6 +468,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public boolean invalid() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean segmented() {
         return false;
     }
 

@@ -27,15 +27,13 @@ import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.preprocessing.imputer.ImputerTrainer;
-import org.apache.ignite.ml.preprocessing.imputer.ImputingStrategy;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
+import org.apache.ignite.ml.preprocessing.imputing.ImputingStrategy;
 
 /**
- * Example that shows how to use binarization preprocessor to binarize data.
- *
- * Machine learning preprocessors are built as a chain. Most often a first preprocessor is a feature extractor as shown
- * in this example. The second preprocessor here is a normalization preprocessor which is built on top of the feature
- * extractor and represents a chain of itself and the underlying feature extractor.
+ * Example that shows how to use Imputing preprocessor to impute the missing values in the given data.
  */
 public class ImputingExampleWithMostFrequentValues {
     /** Run example. */
@@ -46,13 +44,13 @@ public class ImputingExampleWithMostFrequentValues {
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
             // Defines first preprocessor that extracts features from an upstream data.
-            IgniteBiFunction<Integer, Person, double[]> featureExtractor = (k, v) -> new double[] {
+            IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
                 v.getAge(),
                 v.getSalary()
-            };
+            );
 
             // Defines second preprocessor that normalizes features.
-            IgniteBiFunction<Integer, Person, double[]> preprocessor = new ImputerTrainer<Integer, Person>()
+            IgniteBiFunction<Integer, Person, Vector> preprocessor = new ImputerTrainer<Integer, Person>()
                 .withImputingStrategy(ImputingStrategy.MOST_FREQUENT)
                 .fit(ignite, persons, featureExtractor);
 
