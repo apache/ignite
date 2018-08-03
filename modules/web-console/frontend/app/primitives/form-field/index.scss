@@ -513,6 +513,7 @@
                 border: none;
                 box-shadow: none;
 
+                background-position: 1px 25px;
                 &:hover, &:focus {
                     text-shadow: 0 0 0 change-color($ignite-brand-success, $lightness: 26%);
                 }
