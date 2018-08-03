@@ -249,6 +249,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 cache.put(k, new IndexedObject(k - 1));
         }
 
+        forceCheckpoint();
+
         stopAllGrids();
 
         IgniteEx ig0 = (IgniteEx) startGrids(2);
@@ -261,6 +263,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         for (int k = 0; k < entryCnt; k++)
             cache.put(k, new IndexedObject(k));
+
+        forceCheckpoint();
 
         // This node should rebalance data from other nodes and shouldn't have WAL history.
         Ignite ignite = startGrid(2);
@@ -279,6 +283,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             else if (k % 3 == 1) // Spread removes across all partitions.
                 cache.remove(k);
         }
+
+        forceCheckpoint();
 
         // Stop grids which have actual WAL history.
         stopGrid(0);
@@ -331,6 +337,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 cache.put(k, new IndexedObject(k - 1));
         }
 
+        forceCheckpoint();
+
         stopAllGrids();
 
         // Rewrite data with globally disabled WAL.
@@ -346,6 +354,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         for (int k = 0; k < entryCnt; k++)
             cache.put(k, new IndexedObject(k));
+
+        forceCheckpoint();
 
         crd.cluster().enableWal(CACHE_NAME);
 
@@ -408,7 +418,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        // Rewrite data with to trigger further rebalance.
+        // Rewrite data to trigger further rebalance.
         IgniteEx supplierNode = (IgniteEx) startGrid(0);
 
         supplierNode.cluster().active(true);
@@ -455,7 +465,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Wait till rebalance will be failed and cancelled.
         Boolean result = preloader.rebalanceFuture().get();
 
-        Assert.assertEquals(false, result);
+        Assert.assertEquals("Rebalance should be cancelled on demander node: " + preloader.rebalanceFuture(), false, result);
 
         // Stop blocking messages and fail WAL during read.
         blockMessagePredicate = null;
