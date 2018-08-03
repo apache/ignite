@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link LSQROnHeap}.
@@ -73,6 +73,8 @@ public class LSQROnHeapTest {
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
 
+        assertEquals(3, res.getIterations());
+
         assertArrayEquals(new double[]{1, -2, -2}, res.getX(), 1e-6);
     }
 
@@ -96,6 +98,8 @@ public class LSQROnHeapTest {
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false,
             new double[] {999, 999, 999});
+
+        assertEquals(3, res.getIterations());
 
         assertArrayEquals(new double[]{1, -2, -2}, res.getX(), 1e-6);
     }
@@ -125,6 +129,8 @@ public class LSQROnHeapTest {
             )
         )) {
             LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
+
+            assertEquals(8, res.getIterations());
 
             assertArrayEquals(new double[]{72.26948107,  15.95144674,  24.07403921,  66.73038781}, res.getX(), 1e-6);
         }
