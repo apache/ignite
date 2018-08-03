@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.IgniteCacheEntryProcessorSequentialCallTest;
 import org.apache.ignite.cache.IgniteWarmupClosureSelfTest;
@@ -52,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.CacheNamesSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheNamesWithSpecialCharactersTest;
 import org.apache.ignite.internal.processors.cache.CachePutEventListenerErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheTxFastFinishTest;
+import org.apache.ignite.internal.processors.cache.DataStorageConfigurationValidationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityApiSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityMapperSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
@@ -83,7 +83,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSwapPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTxPartitionedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridDataStorageConfigurationConsistencySelfTest;
-import org.apache.ignite.internal.processors.cache.DataStorageConfigurationValidationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalWithStoreInvokeTest;
@@ -150,6 +149,9 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerMultinodeC
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerTimeoutTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerUpdateAfterLoadTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
+
+import java.util.Set;
 
 /**
  * Test suite.
@@ -169,6 +171,8 @@ public class IgniteCacheTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+
         TestSuite suite = new TestSuite("IgniteCache Test Suite");
 
         suite.addTestSuite(IgniteCacheEntryListenerAtomicTest.class);

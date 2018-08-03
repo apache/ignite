@@ -17,7 +17,6 @@
 
 package org.apache.ignite.tensorflow.core.longrunning;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
@@ -41,22 +39,18 @@ import org.apache.ignite.tensorflow.core.longrunning.task.util.LongRunningProces
  * Long running process manager that allows to start, stop and make other actions with long running processes.
  */
 public class LongRunningProcessManager implements ProcessManager<LongRunningProcess> {
-    /** */
-    private static final long serialVersionUID = 1151455641358063287L;
-
-    /** Ignite instance supplier. */
-    private final Supplier<Ignite> igniteSupplier;
+    /** Ignite instance. */
+    private final Ignite ignite;
 
     /**
      * Constructs a new instance of long running process manager.
      *
-     * @param igniteSupplier Ignite instance supplier.
-     * @param <T> Type of serializable supplier.
+     * @param ignite Ignite instance.
      */
-    public <T extends Supplier<Ignite> & Serializable> LongRunningProcessManager(T igniteSupplier) {
-        assert igniteSupplier != null : "Ignite supplier should not be null";
+    public LongRunningProcessManager(Ignite ignite) {
+        assert ignite != null : "Ignite instance should not be null";
 
-        this.igniteSupplier = igniteSupplier;
+        this.ignite = ignite;
     }
 
     /** {@inheritDoc} */
@@ -100,7 +94,6 @@ public class LongRunningProcessManager implements ProcessManager<LongRunningProc
                 List<T> nodeProcesses = params.get(nodeId);
                 LongRunningProcessTask<List<E>> task = taskSupplier.apply(nodeProcesses);
 
-                Ignite ignite = igniteSupplier.get();
                 ClusterGroup clusterGrp = ignite.cluster().forNodeId(nodeId);
 
                 try {

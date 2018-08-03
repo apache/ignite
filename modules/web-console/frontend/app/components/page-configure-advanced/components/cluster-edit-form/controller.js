@@ -44,8 +44,6 @@ export default class ClusterEditFormController {
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
 
-        let __original_value;
-
         const rebuildDropdowns = () => {
             this.eventStorage = [
                 {value: 'Memory', label: 'Memory'},

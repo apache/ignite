@@ -39,8 +39,8 @@ export class NotebooksListCtrl {
 
         const columnDefs = [
             { name: 'name', displayName: 'Notebook name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, pinnedLeft: true, filter: { placeholder: 'Filter by Name...' } },
-            { name: 'sqlQueryNum', displayName: 'SQL Queries', categoryDisplayName: 'SQL Queries', field: 'sqlQueriesParagraphsLength', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false },
-            { name: 'scanQueryNum', displayName: 'Scan Queries', categoryDisplayName: 'Scan Queries', field: 'scanQueriesParagraphsLength', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false }
+            { name: 'sqlQueryNum', displayName: 'SQL Queries', categoryDisplayName: 'SQL Queries', field: 'sqlQueriesParagraphsLength', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: '10%', enableFiltering: false },
+            { name: 'scanQueryNum', displayName: 'Scan Queries', categoryDisplayName: 'Scan Queries', field: 'scanQueriesParagraphsLength', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: '10%', enableFiltering: false }
         ];
 
         this.gridOptions = {

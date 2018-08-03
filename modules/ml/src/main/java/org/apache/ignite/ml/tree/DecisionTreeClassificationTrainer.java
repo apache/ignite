@@ -46,6 +46,14 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
     }
 
     /**
+     * Constructs a new decision tree classifier with default impurity function compressor
+     * and default maxDeep = 5 and minImpurityDecrease = 0.
+     */
+    public DecisionTreeClassificationTrainer() {
+        this(5, 0, null);
+    }
+
+    /**
      * Constructs a new instance of decision tree classifier.
      *
      * @param maxDeep Max tree deep.
@@ -54,6 +62,36 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
     public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease,
         StepFunctionCompressor<GiniImpurityMeasure> compressor) {
         super(maxDeep, minImpurityDecrease, compressor, new MostCommonDecisionTreeLeafBuilder());
+    }
+
+    /**
+     * Set up the max deep of decision tree.
+     * @param maxDeep The parameter value.
+     * @return Trainer with new maxDeep parameter value.
+     */
+    public DecisionTreeClassificationTrainer withMaxDeep(Double maxDeep){
+        this.maxDeep = maxDeep.intValue();
+        return this;
+    }
+
+    /**
+     * Set up the min impurity decrease of decision tree.
+     * @param minImpurityDecrease The parameter value.
+     * @return Trainer with new minImpurityDecrease parameter value.
+     */
+    public DecisionTreeClassificationTrainer withMinImpurityDecrease(Double minImpurityDecrease){
+        this.minImpurityDecrease = minImpurityDecrease;
+        return this;
+    }
+
+    /**
+     * Set up the step function compressor of decision tree.
+     * @param compressor The parameter value.
+     * @return Trainer with new compressor parameter value.
+     */
+    public DecisionTreeClassificationTrainer withCompressor(StepFunctionCompressor compressor){
+        this.compressor = compressor;
+        return this;
     }
 
     /** {@inheritDoc} */
