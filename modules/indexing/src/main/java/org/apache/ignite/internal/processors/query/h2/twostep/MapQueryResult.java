@@ -97,7 +97,7 @@ class MapQueryResult {
     private final Object[] params;
 
     /** Lazy worker. */
-    private final MapQueryLazyWorker lazyWorker;
+    private MapQueryLazyWorker lazyWorker;
 
     /**
      * @param rs Result set.
@@ -284,5 +284,12 @@ class MapQueryResult {
             if (lazyWorker != null)
                 lazyWorker.stop(false);
         }
+    }
+
+    /**
+     * @param lazyWorker Lazy worker.
+     */
+    public void lazyWorker(MapQueryLazyWorker lazyWorker) {
+        this.lazyWorker = lazyWorker;
     }
 }

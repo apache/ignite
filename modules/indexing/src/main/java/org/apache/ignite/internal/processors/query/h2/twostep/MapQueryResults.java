@@ -104,6 +104,9 @@ class MapQueryResults {
      */
     void lazyWorker(MapQueryLazyWorker lazyWorker) {
         this.lazyWorker = lazyWorker;
+
+        for (int i  = 0; i < results.length(); ++i)
+            results.get(i).lazyWorker(lazyWorker);
     }
 
     /**
