@@ -24,7 +24,7 @@ include /app/helpers/jade/mixins
 })
     +form-field__tooltip({ title: '{{::$ctrl.tip}}' })
 
-.form-field__control(ng-form='$ctrl.innerForm')
+.form-field__control.form-field__control-group(ng-form='$ctrl.innerForm')
     input(
         type='number'
         id='{{::$ctrl.id}}Input'
