@@ -21,6 +21,8 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
@@ -276,6 +278,56 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             assertEquals("Washington", (String)city.field("name"));
             assertEquals("DC", (String)city.field("state"));
             assertEquals(2500000, (int)city.field("population"));
+        }
+
+        cache.destroy();
+    }
+
+    /**
+     * Tests that we can add dynamically UUID column to tables.
+     *
+     * @throws SQLException
+     */
+    @SuppressWarnings("unchecked")
+    public void testAddColumnUUID() throws SQLException {
+        CacheConfiguration<Integer, Object> ccfg = defaultCacheConfiguration().setName("GuidTest")
+                .setIndexedTypes(Integer.class, GuidTest.class);
+
+        IgniteCache<Integer, Object> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
+
+        run(cache, "ALTER TABLE \"GuidTest\".GuidTest ADD COLUMN GUID UUID");
+
+        doSleep(500);
+
+        QueryField c = c("GUID", Object.class.getName());
+
+        checkTableState("GuidTest", "GUIDTEST", c);
+
+        UUID guid1 = UUID.randomUUID();
+        UUID guid2 = UUID.randomUUID();
+
+        run(cache, "INSERT INTO \"GuidTest\".GuidTest (_key, id, guid) values " +
+                "(1, 1, '" + guid1.toString() + "')");
+
+        cache.put(2, new GuidTest(2, guid2));
+
+        List<List<?>> res = run(cache, "select _key, id, guid from \"GuidTest\".GuidTest order by id");
+
+        assertEquals(Arrays.asList(Arrays.asList(1, 1, guid1), Arrays.asList(2, 2, guid2)), res);
+
+        if (!Boolean.valueOf(GridTestProperties.getProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER))) {
+            GuidTest val1 = (GuidTest)cache.get(1);
+            GuidTest val2 = (GuidTest)cache.get(2);
+
+            assertEquals(guid1, val1.guid());
+            assertEquals(guid2, val2.guid());
+        }
+        else {
+            BinaryObject val1 = (BinaryObject)cache.withKeepBinary().get(1);
+            BinaryObject val2 = (BinaryObject)cache.withKeepBinary().get(2);
+
+            assertEquals(guid1, (UUID)val1.field("guid"));
+            assertEquals(guid2, (UUID)val2.field("guid"));
         }
 
         cache.destroy();
@@ -768,6 +820,39 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
          */
         public void state(String state) {
             this.state = state;
+        }
+    }
+
+    /**  */
+    private final static class GuidTest {
+        /** */
+        @QuerySqlField
+        private int id;
+
+        /** */
+        private UUID guid;
+
+        /**
+         * @param id Id.
+         * @param guid Guid.
+         */
+        public GuidTest(int id, UUID guid) {
+            this.id = id;
+            this.guid = guid;
+        }
+
+        /**
+         * @return Id.
+         */
+        public int id() {
+            return id;
+        }
+
+        /**
+         * @return Guid.
+         */
+        public UUID guid() {
+            return guid;
         }
     }
 }

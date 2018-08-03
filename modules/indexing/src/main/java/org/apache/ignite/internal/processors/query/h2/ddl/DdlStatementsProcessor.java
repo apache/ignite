@@ -25,6 +25,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cache.QueryEntity;
@@ -430,7 +432,7 @@ public class DdlStatementsProcessor {
                         }
 
                         QueryField field = new QueryField(col.columnName(),
-                            DataType.getTypeClassName(col.column().getType()),
+                            getTypeClassName(col),
                             col.column().isNullable(), col.defaultValue(),
                             col.precision(), col.scale());
 
@@ -627,7 +629,7 @@ public class DdlStatementsProcessor {
 
             Column col = gridCol.column();
 
-            res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
+            res.addQueryField(e.getKey(), getTypeClassName(gridCol), null);
 
             if (!col.isNullable()) {
                 if (notNullFields == null)
@@ -666,7 +668,7 @@ public class DdlStatementsProcessor {
         if (!createTbl.wrapKey()) {
             GridSqlColumn pkCol = createTbl.columns().get(createTbl.primaryKeyColumns().iterator().next());
 
-            keyTypeName = DataType.getTypeClassName(pkCol.column().getType());
+            keyTypeName = getTypeClassName(pkCol);
 
             res.setKeyFieldName(pkCol.columnName());
         }
@@ -686,7 +688,7 @@ public class DdlStatementsProcessor {
 
             assert valCol != null;
 
-            valTypeName = DataType.getTypeClassName(valCol.column().getType());
+            valTypeName = getTypeClassName(valCol);
 
             res.setValueFieldName(valCol.columnName());
         }
@@ -712,5 +714,23 @@ public class DdlStatementsProcessor {
     public static boolean isDdlStatement(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
             cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
+    }
+
+    /**
+     * Helper function for obtaining type class name for H2.
+     *
+     * @param col Column.
+     * @return Type class name.
+     */
+    private static String getTypeClassName(GridSqlColumn col) {
+        int type = col.column().getType();
+
+        switch (type) {
+            case Value.UUID :
+                return UUID.class.getName();
+
+            default:
+                return DataType.getTypeClassName(type);
+        }
     }
 }
