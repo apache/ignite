@@ -15,24 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.encoding.stringencoder;
+package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.util.Map;
 
 /**
- * Partition data used in String Encoder preprocessor.
- *
- * @see StringEncoderTrainer
- * @see StringEncoderPreprocessor
+ * Partition data used in Encoder preprocessor.
  */
-public class StringEncoderPartitionData implements AutoCloseable {
+public class EncoderPartitionData implements AutoCloseable {
     /** Frequencies of categories for each categorial feature presented as strings. */
     private Map<String, Integer>[] categoryFrequencies;
 
     /**
      * Constructs a new instance of String Encoder partition data.
      */
-    public StringEncoderPartitionData() {
+    public EncoderPartitionData() {
     }
 
     /**
@@ -50,7 +47,7 @@ public class StringEncoderPartitionData implements AutoCloseable {
      * @param categoryFrequencies The given value.
      * @return The partition data.
      */
-    public StringEncoderPartitionData withCategoryFrequencies(Map<String, Integer>[] categoryFrequencies) {
+    public EncoderPartitionData withCategoryFrequencies(Map<String, Integer>[] categoryFrequencies) {
         this.categoryFrequencies = categoryFrequencies;
         return this;
     }
