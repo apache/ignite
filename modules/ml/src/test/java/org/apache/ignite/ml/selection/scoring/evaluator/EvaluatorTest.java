@@ -51,7 +51,7 @@ import org.apache.ignite.thread.IgniteThread;
 import static org.junit.Assert.*;
 
 /**
- * Tests for {@link EvaluatorTest} that require to start the whole Ignite infrastructure. IMPL NOTE based on
+ * Tests for {@link Evaluator} that require to start the whole Ignite infrastructure. IMPL NOTE based on
  * Step_8_CV_with_Param_Grid example.
  */
 public class EvaluatorTest extends GridCommonAbstractTest {
