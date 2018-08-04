@@ -83,6 +83,7 @@ public class LSQROnHeapTest {
         assertEquals(3.000000000000001, res.getXnorm(), 0.0001);
         assertArrayEquals(new double[]{0.0, 0.0, 0.0}, res.getVar(), 1e-6);
         assertArrayEquals(new double[]{1, -2, -2}, res.getX(), 1e-6);
+        assertTrue(res.toString().length() > 0);
     }
 
     /** Tests solving simple linear system with specified x0. */
