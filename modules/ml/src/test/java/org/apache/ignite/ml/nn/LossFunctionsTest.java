@@ -17,9 +17,7 @@
 
 package org.apache.ignite.ml.nn;
 
-import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.optimization.LossFunctions;
@@ -34,44 +32,60 @@ public class LossFunctionsTest {
     /** */
     @Test
     public void testMSE() {
-        test(new double[] {1.0, 3.0}, LossFunctions.MSE);
+        IgniteDifferentiableVectorToDoubleFunction f = LossFunctions.MSE.apply(new DenseVector(new double[] {2.0, 1.0}));
+
+        assertNotNull(f);
+
+        test(new double[] {1.0, 3.0}, f);
     }
 
     /** */
     @Test
     public void testLOG() {
-        test(new double[] {1.0, 3.0}, LossFunctions.LOG);
+        IgniteDifferentiableVectorToDoubleFunction f = LossFunctions.LOG.apply(new DenseVector(new double[] {2.0, 1.0}));
+
+        assertNotNull(f);
+
+        test(new double[] {1.0, 3.0}, f);
     }
 
     /** */
     @Test
     public void testL2() {
-        test(new double[] {1.0, 3.0}, LossFunctions.L2);
+        IgniteDifferentiableVectorToDoubleFunction f = LossFunctions.L2.apply(new DenseVector(new double[] {2.0, 1.0}));
+
+        assertNotNull(f);
+
+        test(new double[] {1.0, 3.0}, f);
     }
 
     /** */
     @Test
     public void testL1() {
-        test(new double[] {1.0, 3.0}, LossFunctions.L1);
+        IgniteDifferentiableVectorToDoubleFunction f = LossFunctions.L1.apply(new DenseVector(new double[] {2.0, 1.0}));
+
+        assertNotNull(f);
+
+        test(new double[] {1.0, 3.0}, f);
     }
 
     /** */
     @Test
     public void testHINGE() {
-        test(new double[] {1.0, 3.0}, LossFunctions.HINGE);
+        IgniteDifferentiableVectorToDoubleFunction f = LossFunctions.HINGE.apply(new DenseVector(new double[] {2.0, 1.0}));
+
+        assertNotNull(f);
+
+        test(new double[] {1.0, 3.0}, f);
     }
 
     /** */
-    private void test(double[] expData, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
-        verify(expData, loss
-            .apply(new DenseVector(new double[] {2.0, 1.0}))
-            .differential(new DenseVector(new double[] {3.0, 4.0})));
+    private void test(double[] expData, IgniteDifferentiableVectorToDoubleFunction f) {
+        verify(expData, f.differential(new DenseVector(new double[] {3.0, 4.0})));
     }
 
     /** */
     private void verify(double[] expData, Vector actual) {
-        Tracer.showAscii(actual);
-
         assertArrayEquals(expData, new DenseVector(actual.size()).assign(actual).getStorage().data(), 0);
     }
 }
