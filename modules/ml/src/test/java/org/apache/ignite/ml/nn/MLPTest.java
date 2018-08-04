@@ -231,4 +231,26 @@ public class MLPTest {
         Assert.assertEquals(mlp.architecture().parametersCount(), grad.size());
         Assert.assertEquals(trueGrad, grad);
     }
+
+    /**
+     * Test methods related to per-neuron bias.
+     */
+    @Test
+    public void testNeuronBias() {
+        int inputSize = 3;
+        int firstLayerNeuronsCnt = 2;
+        int secondLayerNeurons = 1;
+
+        MLPArchitecture conf = new MLPArchitecture(inputSize).
+            withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID).
+            withAddedLayer(secondLayerNeurons, true, Activators.SIGMOID);
+
+        MultilayerPerceptron mlp = new MultilayerPerceptron(conf, new MLPConstInitializer(100, 200));
+
+        mlp.setBias(2, 0, 1.);
+        Assert.assertEquals(1., mlp.bias(2, 0), 0);
+
+        mlp.setBias(2, 0, 0.5);
+        Assert.assertEquals(0.5, mlp.bias(2, 0), 0);
+    }
 }
