@@ -147,7 +147,7 @@ public class KNNRegressionTest {
             (k, v) -> v[0]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(KNNStrategy.SIMPLE);
+            .withStrategy(KNNStrategy.WEIGHTED);
 
         Vector vector = new DenseVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
         System.out.println(knnMdl.apply(vector));
