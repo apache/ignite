@@ -102,6 +102,16 @@ class BinaryType
     {
         return $this->hasSchema($schemaId) ? $this->schemas[$schemaId] : null;
     }
+    
+    public function isEnum(): bool
+    {
+        return $this->isEnum;
+    }
+    
+    public function getEnumValues(): ?array
+    {
+        return $this->enumValues;
+    }
 
     public function merge(BinaryType $binaryType, BinarySchema $binarySchema): void
     {

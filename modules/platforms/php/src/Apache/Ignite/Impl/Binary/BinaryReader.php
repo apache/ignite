@@ -19,12 +19,15 @@
 namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
+use Brick\Math\BigDecimal;
+use Brick\Math\BigInteger;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
 use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
+use Apache\Ignite\Data\EnumItem;
 use Apache\Ignite\Data\BinaryObject;
 
 class BinaryReader
@@ -54,6 +57,11 @@ class BinaryReader
                 return $buffer->readString();
             case ObjectType::DATE:
                 return BinaryReader::readDate($buffer);
+            case ObjectType::ENUM:
+            case ObjectType::BINARY_ENUM:
+                return BinaryReader::readEnum($buffer);
+            case ObjectType::DECIMAL:
+                return BinaryReader::readDecimal($buffer);
             case ObjectType::TIME:
                 return BinaryReader::readTime($buffer);
             case ObjectType::TIMESTAMP:
@@ -98,6 +106,39 @@ class BinaryReader
 
     private static function readTimestamp(MessageBuffer $buffer): Timestamp {
         return new Timestamp($buffer->readLong(), $buffer->readInteger());
+    }
+    
+    private static function readEnum(MessageBuffer $buffer): EnumItem
+    {
+        $enumItem = new EnumItem(0);
+        $numItem->read($buffer);
+        return $enumItem;
+    }
+
+    private static function readDecimal(MessageBuffer $buffer): BigDecimal
+    {
+        $scale = $buffer->readInteger();
+        $value = $buffer->readString();
+        $isNegative = (ord($value[0]) & 0x80) !== 0;
+        if ($isNegative) {
+            $value[0] = chr(ord($value[0]) & 0x7F);
+        }
+        $hexValue = '';
+        for ($i = 0; $i < strlen($value); $i++) {
+            $hex = dechex(ord($value[$i]));
+            if (strlen($hex) < 2) {
+                $hex = str_repeat('0', 2 - strlen($hex)) . $hex;
+            }
+            $hexValue .= $hex;
+        }
+        $result = BigDecimal::ofUnscaledValue(BigInteger::parse($hexValue, 16), $scale >= 0 ? $scale : 0);
+        if ($isNegative) {
+            $result = $result->negated();
+        }
+        if ($scale < 0) {
+            $result = $result->multipliedBy((new BigInteger(10))->power(-$scale));
+        }
+        return $result;
     }
     
     private static function readArray(MessageBuffer $buffer, int $arrayTypeCode, $arrayType): array

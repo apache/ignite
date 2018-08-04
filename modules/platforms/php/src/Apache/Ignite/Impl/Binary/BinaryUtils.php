@@ -20,6 +20,7 @@ namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
 use Ds\Set;
+use Brick\Math\BigDecimal;
 use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
@@ -82,6 +83,10 @@ class BinaryUtils
             return ObjectType::TIMESTAMP;
         } elseif ($object instanceof Date) {
             return ObjectType::DATE;
+        } elseif ($object instanceof EnumItem) {
+            return ObjectType::ENUM;
+        } elseif ($object instanceof BigDecimal) {
+            return ObjectType::DECIMAL;
         } elseif ($object instanceof Set) {
             return new CollectionObjectType(CollectionObjectType::HASH_SET);
         } elseif ($object instanceof Map) {

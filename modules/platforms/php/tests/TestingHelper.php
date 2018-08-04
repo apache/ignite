@@ -20,6 +20,7 @@ namespace Apache\Ignite\Tests;
 
 use \DateTime;
 use Ds\Map;
+use Brick\Math\BigDecimal;
 use Apache\Ignite\Client;
 use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\Exception\OperationException;
@@ -104,6 +105,8 @@ class TestingHelper
                    TestingHelper::defaultComparator($value1->getNanos(), $value2->getNanos());
         } elseif ($value1 instanceof Date && $value2 instanceof Date) {
             return TestingHelper::floatComparator($value1->getMillis(), $value2->getMillis());
+        } elseif ($value1 instanceof BigDecimal && $value2 instanceof BigDecimal) {
+            return $value1->isEqualTo($value2);
         } elseif ($value1 instanceof Map && $value2 instanceof Map) {
             if ($value1->count() !== $value2->count()) {
                 TestingHelper::logDebug('compare: map sizes are different');
@@ -187,6 +190,15 @@ class TestingHelper
                 'isArrayKey' => false,
                 'typeOptional' => true
             ],
+            ObjectType::DECIMAL => [
+                'values' => [
+                    BigDecimal::of('123456789.6789345'),
+                    BigDecimal::of(0),
+                    BigDecimal::of('-98765.4321e15')],
+                'isMapKey' => false,
+                'isArrayKey' => false,
+                'typeOptional' => true
+            ],
             ObjectType::TIME => [
                 'values' => [
                     new Time(1234567),
@@ -217,6 +229,7 @@ class TestingHelper
             ObjectType::BOOLEAN_ARRAY => [ 'elemType' => ObjectType::BOOLEAN, 'typeOptional' => true ],
             ObjectType::STRING_ARRAY => [ 'elemType' => ObjectType::STRING, 'typeOptional' => true ],
             ObjectType::DATE_ARRAY => [ 'elemType' => ObjectType::DATE, 'typeOptional' => true ],
+            ObjectType::DECIMAL_ARRAY => [ 'elemType' => ObjectType::DECIMAL, 'typeOptional' => true ],
             ObjectType::TIMESTAMP_ARRAY => [ 'elemType' => ObjectType::TIMESTAMP, 'typeOptional' => true ],
             ObjectType::TIME_ARRAY => [ 'elemType' => ObjectType::TIME, 'typeOptional' => true ],
         ];

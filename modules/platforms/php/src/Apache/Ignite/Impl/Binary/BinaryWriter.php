@@ -19,12 +19,14 @@
 namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
+use Brick\Math\BigDecimal;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
 use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
+use Apache\Ignite\Data\EnumItem;
 use Apache\Ignite\Data\BinaryObject;
 
 class BinaryWriter
@@ -68,6 +70,12 @@ class BinaryWriter
                 break;
             case ObjectType::DATE:
                 BinaryWriter::writeDate($buffer, $object);
+                break;
+            case ObjectType::ENUM:
+                BinaryWriter::writeEnum($buffer, $object);
+                break;
+            case ObjectType::DECIMAL:
+                BinaryWriter::writeDecimal($buffer, $object);
                 break;
             case ObjectType::TIME:
                 BinaryWriter::writeTime($buffer, $object);
@@ -121,6 +129,28 @@ class BinaryWriter
     {
         $buffer->writeLong($timestamp->getMillis());
         $buffer->writeInteger($timestamp->getNanos());
+    }
+
+    private static function writeEnum(MessageBuffer $buffer, EnumItem $enumValue): void
+    {
+        $enumValue->write($buffer);
+    }
+
+    private static function writeDecimal(MessageBuffer $buffer, BigDecimal $decimal): void
+    {
+        $scale = $decimal->getScale();
+        $isNegative = $decimal->isNegative();
+        $hexValue = $decimal->getUnscaledValue()->abs()->toBase(16);
+        $hexValue = ((strlen($hexValue) % 2 !== 0) ? '000' : '00') . $hexValue;
+        if ($isNegative) {
+            $hexValue[0] = '8';
+        }
+        $value = '';
+        for ($i = 0; $i < strlen($hexValue); $i += 2) {
+            $value .= chr(hexdec(substr($hexValue, $i, 2)));
+        }
+        $buffer->writeInteger($scale);
+        $buffer->writeString($value);
     }
     
     private static function writeArray(MessageBuffer $buffer, array $array, $arrayType, int $arrayTypeCode): void

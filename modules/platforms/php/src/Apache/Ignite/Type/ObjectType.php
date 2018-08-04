@@ -47,8 +47,9 @@ namespace Apache\Ignite\Type;
  * ----------------
  * It is a PHP primitive or a PHP object: http://php.net/manual/en/language.types.intro.php
  * Plus additional types:
- *   - Ds/Set, Ds/Map - ???
- *   - Date, Time, Timestamp, ???, BinaryObject - are PHP classes introduced by the Ignite client.
+ *   - Ds\Set, Ds\Map - PHP Data Structures extension classes (http://php.net/manual/en/book.ds.php)
+ *   - Date, Time, Timestamp, EnumItem, BinaryObject - are PHP classes introduced by the Ignite client.
+ *   - Brick\Math\BigDecimal - ??? https://github.com/brick/math
  *
  * Ignite type code
  * ----------------
@@ -72,9 +73,9 @@ namespace Apache\Ignite\Type;
  * | Date                          | DATE                  |
  * | Time                          | TIME                  |
  * | Timestamp                     | TIMESTAMP             |
- * | ???                           | ENUM                  |
- * | ???                           | DECIMAL               |
- * | BinaryObject ???              | COMPLEX_OBJECT        |
+ * | EnumItem                      | ENUM                  |
+ * | Brick\Math\BigDecimal         | DECIMAL               |
+ * | BinaryObject                  | COMPLEX_OBJECT        |
  * | any other PHP Object          | COMPLEX_OBJECT        |
  * | associative array of          |                       |
  * |    any PHP supported type     | MAP (HASH_MAP)        |
@@ -85,13 +86,14 @@ namespace Apache\Ignite\Type;
  * | indexed array of Date         | DATE_ARRAY            |
  * | indexed array of Time         | TIME_ARRAY            |
  * | indexed array of Timestamp    | TIMESTAMP_ARRAY       |
- * | indexed array of ???          | ENUM_ARRAY            |
- * | indexed array of ???          | DECIMAL_ARRAY         |
+ * | indexed array of EnumItem     | ENUM_ARRAY            |
+ * | indexed array of              |                       |
+ * |    Brick\Math\BigDecimal      | DECIMAL_ARRAY         |
  * | indexed array of BinaryObject | OBJECT_ARRAY          |
  * | indexed array of              |                       |
  * |       any other PHP Object    | OBJECT_ARRAY          |
- * | Ds/Set                        | COLLECTION (HASH_SET) |
- * | Ds/Map                        | MAP (HASH_MAP)        |
+ * | Ds\Set                        | COLLECTION (HASH_SET) |
+ * | Ds\Map                        | MAP (HASH_MAP)        |
  * </pre>
  *
  * All other PHP types have no default mapping.
@@ -119,7 +121,7 @@ namespace Apache\Ignite\Type;
  * | LONG                         | float                                 |
  * | FLOAT                        | float                                 |
  * | DOUBLE                       | float                                 |
- * | DECIMAL                      | ???                                   |
+ * | DECIMAL                      | Brick\Math\BigDecimal                 |
  * | BOOLEAN                      | boolean                               |
  * | STRING                       | string                                |
  * | CHAR                         | string (one character)                |
@@ -127,15 +129,15 @@ namespace Apache\Ignite\Type;
  * | DATE                         | Date                                  |
  * | TIME                         | Time                                  |
  * | TIMESTAMP                    | Timestamp                             |
- * | ENUM                         | ???                                   |
- * | COMPLEX_OBJECT               | BinaryObject ???                      |
+ * | ENUM                         | EnumItem                              |
+ * | COMPLEX_OBJECT               | BinaryObject                          |
  * | BYTE_ARRAY                   | array of integer                      |
  * | SHORT_ARRAY                  | array of integer                      |
  * | INTEGER_ARRAY                | array of integer                      |
  * | LONG_ARRAY                   | array of float                        |
  * | FLOAT_ARRAY                  | array of float                        |
  * | DOUBLE_ARRAY                 | array of float                        |
- * | DECIMAL_ARRAY                | ???                                   |
+ * | DECIMAL_ARRAY                | array of Brick\Math\BigDecimal        |
  * | BOOLEAN_ARRAY                | array of boolean                      |
  * | STRING_ARRAY                 | array of string                       |
  * | CHAR_ARRAY                   | array of string (one character)       |
@@ -143,17 +145,17 @@ namespace Apache\Ignite\Type;
  * | DATE_ARRAY                   | array of Date                         |
  * | TIME_ARRAY                   | array of Time                         |
  * | TIMESTAMP_ARRAY              | array of Timestamp                    |
- * | ENUM_ARRAY                   | ???                                   |
+ * | ENUM_ARRAY                   | array of EnumItem                     |
  * | OBJECT_ARRAY                 | ???                                   |
  * | COLLECTION (USER_COL)        | array                                 |
  * | COLLECTION (ARR_LIST)        | array                                 |
  * | COLLECTION (LINKED_LIST)     | array                                 |
  * | COLLECTION (SINGLETON_LIST)  | array                                 |
- * | COLLECTION (HASH_SET)        | Ds/Set                                |
- * | COLLECTION (LINKED_HASH_SET) | Ds/Set                                |
- * | COLLECTION (USER_SET)        | Ds/Set                                |
- * | MAP (HASH_MAP)               | Ds/Map                                |
- * | MAP (LINKED_HASH_MAP)        | Ds/Map                                |
+ * | COLLECTION (HASH_SET)        | Ds\Set                                |
+ * | COLLECTION (LINKED_HASH_SET) | Ds\Set                                |
+ * | COLLECTION (USER_SET)        | Ds\Set                                |
+ * | MAP (HASH_MAP)               | Ds\Map                                |
+ * | MAP (LINKED_HASH_MAP)        | Ds\Map                                |
  * | NULL                         | null                                  |
  * </pre>
  *

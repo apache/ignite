@@ -25,9 +25,6 @@ namespace Apache\Ignite\Query;
  */
 abstract class Query
 {
-    /**
-     * Default cursor page size.
-     */
     const PAGE_SIZE_DEFAULT = 1024;
     
     protected $local;

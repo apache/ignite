@@ -4,8 +4,51 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cf8bf1ed94950bbb33b546928bda3f50",
+    "content-hash": "060c19a6c7d4814ba1c174432b062c71",
     "packages": [
+        {
+            "name": "brick/math",
+            "version": "0.7.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/brick/math.git",
+                "reference": "726a8f271b440d6788a81edf486dd756fb23b6fc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/brick/math/zipball/726a8f271b440d6788a81edf486dd756fb23b6fc",
+                "reference": "726a8f271b440d6788a81edf486dd756fb23b6fc",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.1"
+            },
+            "require-dev": {
+                "php-coveralls/php-coveralls": "2.*",
+                "phpunit/phpunit": "7.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Brick\\Math\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Arbitrary-precision arithmetic library",
+            "keywords": [
+                "Arbitrary-precision",
+                "BigInteger",
+                "BigRational",
+                "arithmetic",
+                "bigdecimal",
+                "brick",
+                "math"
+            ],
+            "time": "2018-07-21T23:35:12+00:00"
+        },
         {
             "name": "php-ds/php-ds",
             "version": "v1.2.0",
@@ -1519,7 +1562,8 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=7.2.0"
+        "php": ">=7.2.0",
+        "ext-mbstring": "*"
     },
     "platform-dev": []
 }

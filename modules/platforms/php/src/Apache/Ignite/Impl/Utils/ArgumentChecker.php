@@ -75,7 +75,7 @@ class ArgumentChecker
         }
     }
     
-    private static function illegalArgument($message): void
+    public static function illegalArgument($message): void
     {
         throw new ClientException($message);
     }
