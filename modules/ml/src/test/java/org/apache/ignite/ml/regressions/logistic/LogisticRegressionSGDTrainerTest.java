@@ -34,7 +34,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Tests for {@LogisticRegressionSGDTrainer}.
+ * Tests for {@link LogisticRegressionSGDTrainer}.
  */
 @RunWith(Parameterized.class)
 public class LogisticRegressionSGDTrainerTest {
