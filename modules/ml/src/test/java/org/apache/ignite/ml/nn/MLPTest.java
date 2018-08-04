@@ -106,6 +106,32 @@ public class MLPTest {
     }
 
     /**
+     * Test three layer MLP.
+     */
+    @Test
+    public void testStackedTwiceMLP() {
+        int firstLayerNeuronsCnt = 3;
+        int secondLayerNeuronsCnt = 2;
+        int thirdLayerNeuronsCnt = 4;
+        MLPConstInitializer initer = new MLPConstInitializer(1, 2);
+
+        MLPArchitecture mlpLayer1Conf = new MLPArchitecture(4).
+            withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID);
+        MLPArchitecture mlpLayer2Conf = new MLPArchitecture(firstLayerNeuronsCnt).
+            withAddedLayer(secondLayerNeuronsCnt, false, Activators.SIGMOID);
+        MLPArchitecture mlpLayer3Conf = new MLPArchitecture(secondLayerNeuronsCnt).
+            withAddedLayer(thirdLayerNeuronsCnt, false, Activators.SIGMOID);
+
+        MultilayerPerceptron mlp1 = new MultilayerPerceptron(mlpLayer1Conf, initer);
+        MultilayerPerceptron mlp2 = new MultilayerPerceptron(mlpLayer2Conf, initer);
+        MultilayerPerceptron mlp3 = new MultilayerPerceptron(mlpLayer3Conf, initer);
+
+        MultilayerPerceptron stackedMLP = mlp1.add(mlp2).add(mlp3);
+
+        Assert.assertEquals(4, stackedMLP.architecture.outputSize());
+    }
+
+    /**
      * Test parameters count works well.
      */
     @Test
