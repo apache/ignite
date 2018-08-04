@@ -85,6 +85,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
     /** */
     public void testBasic() throws InterruptedException {
         AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
+        AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
         AtomicReference<CrossValidationResult> res = new AtomicReference<>(null);
         List<double[]> actualScores = new ArrayList<>();
 
@@ -188,17 +189,24 @@ public class EvaluatorTest extends GridCommonAbstractTest {
             );
 
             actualAccuracy.set(accuracy);
+            actualAccuracy2.set(Evaluator.evaluate(
+                dataCache,
+                bestMdl,
+                normalizationPreprocessor,
+                lbExtractor,
+                new Accuracy<>()
+            ));
         });
 
         igniteThread.start();
 
         igniteThread.join();
 
-        assertResults(res.get(), actualScores, actualAccuracy.get());
+        assertResults(res.get(), actualScores, actualAccuracy.get(), actualAccuracy2.get());
     }
 
     /** */
-    private void assertResults(CrossValidationResult res, List<double[]> scores, double accuracy) {
+    private void assertResults(CrossValidationResult res, List<double[]> scores, double accuracy, double accuracy2) {
         assertEquals("Best maxDeep", 1.0, res.getBest("maxDeep"));
         assertEquals("Best minImpurityDecrease", 0.0, res.getBest("minImpurityDecrease"));
         assertArrayEquals("Best score", new double[] {0.6666666666666666, 0.4, 0}, res.getBestScore(), 0);
@@ -212,6 +220,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
             assertEquals("Score size at index " + idx++, 3, actualScore.length);
 
         assertEquals("Accuracy", 1.0, accuracy);
+        assertTrue("Accuracy without filter", accuracy2 > 0.);
     }
 
     /**
