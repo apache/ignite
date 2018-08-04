@@ -75,7 +75,8 @@ public class RandomForestClassifierTrainerTest {
             sample.put(new double[] {x1, x2, x3, x4}, (double)(i % 2));
         }
 
-        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4, 3, 5, 0.3, 4, 0.1);
+        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4, 3, 5, 0.3, 4, 0.1)
+            .withUseIndex(false);
 
         ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
 
