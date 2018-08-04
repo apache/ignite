@@ -52,7 +52,9 @@ public class GDBTrainerTest {
             learningSample.put(i, new double[] {xs[i], ys[i]});
         }
 
-        DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0);
+        DatasetTrainer<Model<Vector, Double>, Double> trainer
+            = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0).withUseIndex(true);
+
         Model<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
             (k, v) -> VectorUtils.of(v[0]),
@@ -94,7 +96,9 @@ public class GDBTrainerTest {
         for (int i = 0; i < sampleSize; i++)
             learningSample.put(i, new double[] {xs[i], ys[i]});
 
-        DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0);
+        DatasetTrainer<Model<Vector, Double>, Double> trainer
+            = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0).withUseIndex(true);
+
         Model<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
             (k, v) -> VectorUtils.of(v[0]),
