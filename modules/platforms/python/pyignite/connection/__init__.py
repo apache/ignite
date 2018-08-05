@@ -30,9 +30,16 @@ __all__ = ['Connection', 'PrefetchConnection']
 
 class Connection:
     """
-    Socket wrapper. Detects fragmentation and network errors.
+    This class represents a connection to Ignite node. It serves multiple
+    purposes:
 
-    https://docs.python.org/3/howto/sockets.html
+     * socket wrapper. Detects fragmentation and network errors. See also
+       https://docs.python.org/3/howto/sockets.html,
+     * binary protocol connector. Incapsulates handshake and failover
+       connection,
+     * cache factory. Cache objects are used for key-value operations,
+     * Ignite SQL endpoint. See also https://apacheignite-sql.readme.io/docs,
+     * binary types registration endpoint.
     """
 
     nodes = None
@@ -128,39 +135,15 @@ class Connection:
             )
         self.host, self.port = host, port
 
-    def connect(self, *args):
+    def connect(self, host: str, port: int):
         """
-        Connect to the server. Pass either `host` and `port` or `nodes`. The
-        latter argument can be a generator (see `RoundRobin` class).
+        Connect to the server.
 
         :param host: Ignite server host,
-        :param port: Ignite server port,
-        :param nodes: iterable of tuples (host, port).
-        """
-        if len(args) == 0:
-            nodes = [
-                (IGNITE_DEFAULT_HOST, IGNITE_DEFAULT_PORT),
-            ]
-        elif len(args) == 1:
-            nodes = args
-        elif len(args) == 2:
-            nodes = [args]
-        else:
-            raise ConnectionError('Connection parameters mismatch.')
-        self.nodes = iter(nodes)
-        self._connect(*next(self.nodes))
+        :param port: Ignite server port.
 
-    def reconnect(self):
         """
-        Restore connection to the server.
-        """
-        try:
-            self._connect(*next(self.nodes))
-        except (TypeError, StopIteration):
-            raise ConnectionError(
-                'Can not reconnect. Please provide connection parameters '
-                'via `conn.connect(host, port)` or `conn.connect(nodes)`.'
-            )
+        self._connect(host, port)
 
     def clone(self) -> object:
         """

@@ -1,3 +1,4 @@
 # these pip packages are necessary for the pyignite to run
 
+typing==3.6.4
 attrs==18.1.0
