@@ -48,13 +48,6 @@ public class LocalPendingTransactionsTracker {
     /** Tracker enabled. */
     private final boolean enabled = IgniteSystemProperties.getBoolean(IGNITE_PENDING_TX_TRACKER_ENABLED, false);
 
-    /**
-     * @param cctx Cctx.
-     */
-    public LocalPendingTransactionsTracker(GridCacheSharedContext<?, ?> cctx) {
-        this.cctx = cctx;
-    }
-
     /** Currently pending transactions. */
     private final ConcurrentHashMap<GridCacheVersion, WALPointer> currentlyPreparedTxs = new ConcurrentHashMap<>();
 
@@ -67,9 +60,7 @@ public class LocalPendingTransactionsTracker {
      */
     private volatile ConcurrentHashMap<GridCacheVersion, WALPointer> trackedPreparedTxs = new ConcurrentHashMap<>();
 
-    /**
-     * Transactions that were transitioned to committed state since last {@link #startTrackingCommitted()} call.
-     */
+    /** Transactions that were transitioned to committed state since last {@link #startTrackingCommitted()} call. */
     private volatile ConcurrentHashMap<GridCacheVersion, WALPointer> trackedCommittedTxs = new ConcurrentHashMap<>();
 
     /** Written keys to near xid version. */
@@ -95,7 +86,17 @@ public class LocalPendingTransactionsTracker {
     private volatile GridFutureAdapter<Map<GridCacheVersion, WALPointer>> txFinishAwaitFut = null;
 
     /**
+     * @param cctx Cctx.
+     */
+    public LocalPendingTransactionsTracker(GridCacheSharedContext<?, ?> cctx) {
+        this.cctx = cctx;
+    }
+
+    /**
+     * Returns a collection of  transactions {@code P2} that are prepared but yet not committed
+     * between phase {@code Cut1} and phase {@code Cut2}.
      *
+     * @return Collection of prepared transactions.
      */
     public Map<GridCacheVersion, WALPointer> currentlyPreparedTxs() {
         assert stateLock.writeLock().isHeldByCurrentThread();
@@ -104,7 +105,8 @@ public class LocalPendingTransactionsTracker {
     }
 
     /**
-     *
+     * Starts tracking transactions that will form a set of transactions {@code P23}
+     * that were prepared since phase {@code Cut2} to phase {@code Cut3}.
      */
     public void startTrackingPrepared() {
         assert stateLock.writeLock().isHeldByCurrentThread();
@@ -128,7 +130,7 @@ public class LocalPendingTransactionsTracker {
     }
 
     /**
-     *
+     * Starts tracking committed transactions {@code C12} between phase {@code Cut1} and phase {@code Cut2}.
      */
     public void startTrackingCommitted() {
         assert stateLock.writeLock().isHeldByCurrentThread();
@@ -149,6 +151,8 @@ public class LocalPendingTransactionsTracker {
         Map<GridCacheVersion, Set<GridCacheVersion>> dependentTxs = U.sealMap(dependentTransactionsGraph);
 
         trackedCommittedTxs = new ConcurrentHashMap<>();
+
+        writtenKeysToNearXidVer = new ConcurrentHashMap<>();
 
         dependentTransactionsGraph = new ConcurrentHashMap<>();
 
