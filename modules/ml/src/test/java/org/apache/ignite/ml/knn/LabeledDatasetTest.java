@@ -92,6 +92,10 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
         assertEquals(dataset.colSize(), 2);
         assertEquals(dataset.rowSize(), 6);
 
+        assertEquals(dataset.label(0), lbs[0], 0);
+
+        assertEquals(dataset.copy().colSize(), 2);
+
         @SuppressWarnings("unchecked")
         final LabeledVector<Vector, Double> row = (LabeledVector<Vector, Double>)dataset.getRow(0);
 
@@ -99,6 +103,11 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
         assertEquals(row.label(), 1.0);
         dataset.setLabel(0, 2.0);
         assertEquals(row.label(), 2.0);
+
+        assertEquals(0, new LabeledDataset().rowSize());
+        assertEquals(1, new LabeledDataset(1, 2).rowSize());
+        assertEquals(1, new LabeledDataset(1, 2, true).rowSize());
+        assertEquals(1, new LabeledDataset(1, 2, null, true).rowSize());
     }
 
     /** */
