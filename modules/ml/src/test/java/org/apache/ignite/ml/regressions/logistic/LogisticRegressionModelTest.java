@@ -42,6 +42,10 @@ public class LogisticRegressionModelTest {
 
         assertEquals(0.1, new LogisticRegressionModel(weights, 1.0).withThreshold(0.1).threshold(), 0);
 
+        assertTrue(new LogisticRegressionModel(weights, 1.0).toString().length() > 0);
+        assertTrue(new LogisticRegressionModel(weights, 1.0).toString(true).length() > 0);
+        assertTrue(new LogisticRegressionModel(weights, 1.0).toString(false).length() > 0);
+
         verifyPredict(new LogisticRegressionModel(weights, 1.0).withRawLabels(true));
         verifyPredict(new LogisticRegressionModel(null, 1.0).withRawLabels(true).withWeights(weights));
         verifyPredict(new LogisticRegressionModel(weights, 1.0).withRawLabels(true).withThreshold(0.5));
