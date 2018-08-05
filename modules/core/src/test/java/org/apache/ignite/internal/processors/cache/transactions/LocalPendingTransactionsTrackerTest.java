@@ -16,13 +16,16 @@
 */
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -32,7 +35,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridDebug;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -536,6 +541,112 @@ public class LocalPendingTransactionsTrackerTest {
         assertEquals(2, dependentFrom2.size());
         assertTrue(dependentFrom2.contains(nearXidVersion(5)));
         assertTrue(dependentFrom2.contains(nearXidVersion(6)));
+    }
+
+    /**
+     * Transaction tracker memory leak test.
+     */
+    @Test
+    public void testTrackerMemoryLeak() throws Exception {
+        int allowedLeakSize = 100 * 1024;
+
+        // Warmup phase.
+        long sizeBefore = memoryFootprintForTransactionTracker(1000, 20);
+
+        // Main phase.
+        long sizeAfter = memoryFootprintForTransactionTracker(5000, 20);
+
+        assertTrue("Possible memory leak detected. Memory consumed before transaction tracking: " + sizeBefore +
+            ", memory consumed after transaction tracking: " + sizeAfter, sizeAfter - sizeBefore < allowedLeakSize);
+    }
+
+    /**
+     * @param iterationsCnt Iterations count.
+     * @param threadsCnt Threads count.
+     */
+    private long memoryFootprintForTransactionTracker(int iterationsCnt, int threadsCnt) throws Exception {
+        AtomicInteger txCnt = new AtomicInteger();
+
+        AtomicInteger trackerState = new AtomicInteger();
+
+        File dumpFile = new File(U.defaultWorkDirectory(), "test.hprof");
+
+        String heapDumpFileName = dumpFile.getAbsolutePath();
+
+        Runnable txRunnable = new Runnable() {
+            @Override public void run() {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                for (int iteration = 0; iteration < iterationsCnt; iteration++) {
+                    int txId = txCnt.incrementAndGet();
+
+                    txPrepare(txId);
+
+                    int opCnt = rnd.nextInt(100);
+
+                    for (int i = 0; i < opCnt; i++) {
+                        if (rnd.nextBoolean())
+                            txKeyRead(txId, rnd.nextInt());
+                        else
+                            txKeyWrite(txId, rnd.nextInt());
+                    }
+
+                    if (rnd.nextInt(10) == 0)
+                        txRollback(txId);
+                    else
+                        txCommit(txId);
+
+                    // Change tracker state
+                    if (rnd.nextInt(20) == 0) {
+                        tracker.writeLockState();
+
+                        try {
+                            int state = trackerState.getAndIncrement();
+
+                            switch (state % 4) {
+                                case 0:
+                                    tracker.startTrackingPrepared();
+
+                                    break;
+                                case 1:
+                                    tracker.stopTrackingPrepared();
+
+                                    break;
+                                case 2:
+                                    tracker.startTrackingCommitted();
+
+                                    break;
+                                case 3:
+                                    tracker.stopTrackingCommitted();
+                            }
+                        }
+                        finally {
+                            tracker.writeUnlockState();
+                        }
+                    }
+                }
+            }
+        };
+
+        GridTestUtils.runMultiThreaded(txRunnable, threadsCnt, "tx-runner");
+
+        tracker.writeLockState();
+
+        try {
+            tracker.stopTrackingPrepared();
+            tracker.stopTrackingCommitted();
+        }
+        finally {
+            tracker.writeUnlockState();
+        }
+
+        GridDebug.dumpHeap(heapDumpFileName, true);
+
+        long fileSize = dumpFile.length();
+
+        dumpFile.delete();
+
+        return fileSize;
     }
 
     /**
