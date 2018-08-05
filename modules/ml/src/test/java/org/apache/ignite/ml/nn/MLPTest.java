@@ -58,13 +58,13 @@ public class MLPTest {
             withAddedLayer(2, true, Activators.SIGMOID).
             withAddedLayer(1, true, Activators.SIGMOID);
 
-        MultilayerPerceptron mlp = new MultilayerPerceptron(conf, new MLPConstInitializer(1, 2));
+        MultilayerPerceptron mlp1 = new MultilayerPerceptron(conf, new MLPConstInitializer(1, 2));
 
-        mlp.setWeights(1, new DenseMatrix(new double[][] {{20.0, 20.0}, {-20.0, -20.0}}));
-        mlp.setBiases(1, new DenseVector(new double[] {-10.0, 30.0}));
+        mlp1.setWeights(1, new DenseMatrix(new double[][] {{20.0, 20.0}, {-20.0, -20.0}}));
+        mlp1.setBiases(1, new DenseVector(new double[] {-10.0, 30.0}));
 
-        mlp.setWeights(2, new DenseMatrix(new double[][] {{20.0, 20.0}}));
-        mlp.setBiases(2, new DenseVector(new double[] {-30.0}));
+        MultilayerPerceptron mlp2 = mlp1.setWeights(2, new DenseMatrix(new double[][] {{20.0, 20.0}}));
+        MultilayerPerceptron mlp = mlp2.setBiases(2, new DenseVector(new double[] {-30.0}));
 
         Matrix input = new DenseMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}});
 
@@ -128,7 +128,8 @@ public class MLPTest {
 
         MultilayerPerceptron stackedMLP = mlp1.add(mlp2).add(mlp3);
 
-        Assert.assertEquals(4, stackedMLP.architecture.outputSize());
+        Assert.assertEquals(4, stackedMLP.architecture().outputSize());
+        Assert.assertEquals(8, stackedMLP.architecture().layersCount());
     }
 
     /**
@@ -195,10 +196,10 @@ public class MLPTest {
         MLPArchitecture conf = new MLPArchitecture(inputSize).
             withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID);
 
-        MultilayerPerceptron mlp = new MultilayerPerceptron(conf);
+        MultilayerPerceptron mlp1 = new MultilayerPerceptron(conf);
 
-        mlp.setWeight(1, 0, 0, w10);
-        mlp.setWeight(1, 1, 0, w11);
+        mlp1.setWeight(1, 0, 0, w10);
+        MultilayerPerceptron mlp = mlp1.setWeight(1, 1, 0, w11);
         double x0 = 1.0;
         double x1 = 3.0;
 
@@ -245,9 +246,9 @@ public class MLPTest {
             withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID).
             withAddedLayer(secondLayerNeurons, true, Activators.SIGMOID);
 
-        MultilayerPerceptron mlp = new MultilayerPerceptron(conf, new MLPConstInitializer(100, 200));
+        MultilayerPerceptron mlp1 = new MultilayerPerceptron(conf, new MLPConstInitializer(100, 200));
 
-        mlp.setBias(2, 0, 1.);
+        MultilayerPerceptron mlp = mlp1.setBias(2, 0, 1.);
         Assert.assertEquals(1., mlp.bias(2, 0), 0);
 
         mlp.setBias(2, 0, 0.5);
