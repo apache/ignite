@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -44,6 +44,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER
 public class LocalPendingTransactionsTracker {
     /** Cctx. */
     private final GridCacheSharedContext<?, ?> cctx;
+
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /** Currently committing transactions. */
+    private final Set<GridCacheVersion> currentlyCommittingTxs = U.newConcurrentHashSet();
 
     /** Tracker enabled. */
     private final boolean enabled = IgniteSystemProperties.getBoolean(IGNITE_PENDING_TX_TRACKER_ENABLED, false);
@@ -79,17 +85,164 @@ public class LocalPendingTransactionsTracker {
     /** Track committed flag. */
     private final AtomicBoolean trackCommitted = new AtomicBoolean(false);
 
-    /** Failed to finish in timeout txs. */
-    private volatile ConcurrentHashMap<GridCacheVersion, WALPointer> failedToFinishInTimeoutTxs = null;
+    /** Tx finish awaiting. */
+    private volatile TxFinishAwaiting txFinishAwaiting = null;
 
-    /** Tx finish await future. */
-    private volatile GridFutureAdapter<Map<GridCacheVersion, WALPointer>> txFinishAwaitFut = null;
+    /**
+     * Tx finish awaiting facility.
+     */
+    private class TxFinishAwaiting {
+        /** Future. */
+        private final GridFutureAdapter<Map<GridCacheVersion, WALPointer>> fut;
+
+        /** Not committed in timeout txs. */
+        private final Map<GridCacheVersion, WALPointer> notCommittedInTimeoutTxs;
+
+        /** Committing txs. */
+        private final Set<GridCacheVersion> committingTxs;
+
+        /** Global committing txs added. */
+        private volatile boolean globalCommittingTxsAdded;
+
+        /** Awaiting prepared is done. */
+        private volatile boolean awaitingPreparedIsDone;
+
+        /** Timeout. */
+        private volatile boolean timeout;
+
+        /**
+         * @param preparedTxsTimeout Prepared txs timeout.
+         * @param committingTxsTimeout Committing txs timeout.
+         */
+        private TxFinishAwaiting(final long preparedTxsTimeout, final long committingTxsTimeout) {
+            assert preparedTxsTimeout > 0 : preparedTxsTimeout;
+            assert committingTxsTimeout > 0 : committingTxsTimeout;
+            assert committingTxsTimeout >= preparedTxsTimeout : committingTxsTimeout + " < " + preparedTxsTimeout;
+
+            fut = new GridFutureAdapter<>();
+
+            notCommittedInTimeoutTxs = new ConcurrentHashMap<>(currentlyPreparedTxs);
+
+            committingTxs = U.newConcurrentHashSet(currentlyCommittingTxs);
+
+            if (committingTxsTimeout > preparedTxsTimeout) {
+                cctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(preparedTxsTimeout) {
+                    @Override public void onTimeout() {
+                        awaitingPreparedIsDone = true;
+
+                        if (TxFinishAwaiting.this != txFinishAwaiting || fut.isDone())
+                            return;
+
+                        stateLock.readLock().lock();
+
+                        try {
+                            if (allCommittingIsFinished())
+                                finish();
+                            else
+                                log.warning("Committing transactions not completed in " + preparedTxsTimeout + " ms: "
+                                    + committingTxs);
+                        }
+                        finally {
+                            stateLock.readLock().unlock();
+                        }
+                    }
+                });
+            }
+
+            cctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(committingTxsTimeout) {
+                @Override public void onTimeout() {
+                    timeout = true;
+
+                    if (committingTxsTimeout == preparedTxsTimeout)
+                        awaitingPreparedIsDone = true;
+
+                    if (TxFinishAwaiting.this != txFinishAwaiting || fut.isDone())
+                        return;
+
+                    stateLock.readLock().lock();
+
+                    try {
+                        if (!allCommittingIsFinished())
+                            log.warning("Committing transactions not completed in " + committingTxsTimeout + " ms: "
+                                + committingTxs);
+
+                        finish();
+                    }
+                    finally {
+                        stateLock.readLock().unlock();
+                    }
+                }
+            });
+        }
+
+        /**
+         * @param nearXidVer Near xid version.
+         */
+        void onTxFinished(GridCacheVersion nearXidVer) {
+            notCommittedInTimeoutTxs.remove(nearXidVer);
+
+            checkTxsFinished();
+        }
+
+        /**
+         *
+         */
+        void checkTxsFinished() {
+            if (notCommittedInTimeoutTxs.isEmpty() || awaitingPreparedIsDone && allCommittingIsFinished())
+                finish();
+        }
+
+        /**
+         *
+         */
+        void finish() {
+            if (globalCommittingTxsAdded || timeout) {
+                txFinishAwaiting = null;
+
+                fut.onDone(notCommittedInTimeoutTxs.isEmpty() ?
+                    Collections.emptyMap() :
+                    U.sealMap(notCommittedInTimeoutTxs));
+            }
+        }
+
+        /**
+         *
+         */
+        boolean allCommittingIsFinished() {
+            committingTxs.retainAll(notCommittedInTimeoutTxs.keySet());
+
+            return committingTxs.isEmpty();
+        }
+
+        /**
+         * @param globalCommittingTxs Global committing txs.
+         */
+        void addGlobalCommittingTxs(Set<GridCacheVersion> globalCommittingTxs) {
+            assert stateLock.writeLock().isHeldByCurrentThread();
+
+            notCommittedInTimeoutTxs.putAll(currentlyPreparedTxs);
+
+            Set<GridCacheVersion> pendingTxs = new HashSet<>(notCommittedInTimeoutTxs.keySet());
+
+            pendingTxs.retainAll(globalCommittingTxs);
+
+            committingTxs.addAll(pendingTxs);
+
+            globalCommittingTxsAdded = true;
+
+            assert !fut.isDone() || timeout;
+
+            checkTxsFinished();
+        }
+    }
 
     /**
      * @param cctx Cctx.
      */
     public LocalPendingTransactionsTracker(GridCacheSharedContext<?, ?> cctx) {
         this.cctx = cctx;
+
+        this.log = cctx.logger(getClass());
     }
 
     /**
@@ -160,31 +313,39 @@ public class LocalPendingTransactionsTracker {
     }
 
     /**
-     * @param timeoutTs Timeout in milliseconds.
-     * @return Future with collection of transactions that failed to finish within timeout.
+     * @param preparedTxsTimeout Timeout in milliseconds for awaiting of prepared transactions.
+     * @param committingTxsTimeout Timeout in milliseconds for awaiting of committing transactions.
+     * @return Collection of local transactions in committing state.
      */
-    public IgniteInternalFuture<Map<GridCacheVersion, WALPointer>> awaitFinishOfPreparedTxs(long timeoutTs) {
+    public Set<GridCacheVersion> startTxFinishAwaiting(
+        long preparedTxsTimeout, long committingTxsTimeout) {
+
         assert stateLock.writeLock().isHeldByCurrentThread();
 
-        assert txFinishAwaitFut == null : txFinishAwaitFut;
+        assert txFinishAwaiting == null : txFinishAwaiting;
 
-        if (currentlyPreparedTxs.isEmpty())
-            return new GridFinishedFuture<>(Collections.emptyMap());
+        TxFinishAwaiting awaiting = new TxFinishAwaiting(preparedTxsTimeout, committingTxsTimeout);
 
-        failedToFinishInTimeoutTxs = new ConcurrentHashMap<>(currentlyPreparedTxs);
+        txFinishAwaiting = awaiting;
 
-        final GridFutureAdapter<Map<GridCacheVersion, WALPointer>> txFinishAwaitFut0 = new GridFutureAdapter<>();
+        return awaiting.committingTxs;
+    }
 
-        txFinishAwaitFut = txFinishAwaitFut0;
+    /**
+     * @param globalCommittingTxs Global committing transactions.
+     * @return Future with collection of transactions that failed to finish within timeout.
+     */
+    public IgniteInternalFuture<Map<GridCacheVersion, WALPointer>> awaitPendingTxsFinished(
+        Set<GridCacheVersion> globalCommittingTxs) {
+        assert stateLock.writeLock().isHeldByCurrentThread();
 
-        cctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(timeoutTs) {
-            @Override public void onTimeout() {
-                if (txFinishAwaitFut0 == txFinishAwaitFut && !txFinishAwaitFut0.isDone())
-                    txFinishAwaitFut0.onDone(U.sealMap(failedToFinishInTimeoutTxs));
-            }
-        });
+        TxFinishAwaiting awaiting = txFinishAwaiting;
 
-        return txFinishAwaitFut;
+        assert awaiting != null;
+
+        awaiting.addGlobalCommittingTxs(globalCommittingTxs);
+
+        return awaiting.fut;
     }
 
     /**
@@ -250,6 +411,8 @@ public class LocalPendingTransactionsTracker {
             if (cnt == 0) {
                 preparedCommittedTxsCounters.remove(nearXidVer);
 
+                currentlyCommittingTxs.remove(nearXidVer);
+
                 WALPointer preparedPtr = currentlyPreparedTxs.remove(nearXidVer);
 
                 assert preparedPtr != null;
@@ -277,6 +440,8 @@ public class LocalPendingTransactionsTracker {
         try {
             currentlyPreparedTxs.remove(nearXidVer);
 
+            currentlyCommittingTxs.remove(nearXidVer);
+
             preparedCommittedTxsCounters.remove(nearXidVer);
 
             checkTxFinishFutureDone(nearXidVer);
@@ -297,11 +462,13 @@ public class LocalPendingTransactionsTracker {
         stateLock.readLock().lock();
 
         try {
-            if (!trackCommitted.get())
-                return;
-
             if (!currentlyPreparedTxs.containsKey(nearXidVer))
                 throw new AssertionError("Tx should be in PREPARED state when logging data records: " + nearXidVer);
+
+            currentlyCommittingTxs.add(nearXidVer);
+
+            if (!trackCommitted.get())
+                return;
 
             for (KeyCacheObject key : keys) {
                 writtenKeysToNearXidVer.compute(key, (keyObj, keyTxsSet) -> {
@@ -339,11 +506,13 @@ public class LocalPendingTransactionsTracker {
         stateLock.readLock().lock();
 
         try {
-            if (!trackCommitted.get())
-                return;
-
             if (!currentlyPreparedTxs.containsKey(nearXidVer))
                 throw new AssertionError("Tx should be in PREPARED state when logging data records: " + nearXidVer);
+
+            currentlyCommittingTxs.add(nearXidVer);
+
+            if (!trackCommitted.get())
+                return;
 
             for (KeyCacheObject key : keys) {
                 writtenKeysToNearXidVer.computeIfPresent(key, (keyObj, keyTxsSet) -> {
@@ -373,16 +542,9 @@ public class LocalPendingTransactionsTracker {
         if (!enabled)
             return;
 
-        GridFutureAdapter<Map<GridCacheVersion, WALPointer>> txFinishAwaitFut0 = txFinishAwaitFut;
+        TxFinishAwaiting awaiting = txFinishAwaiting;
 
-        if (txFinishAwaitFut0 != null) {
-            failedToFinishInTimeoutTxs.remove(nearXidVer);
-
-            if (failedToFinishInTimeoutTxs.isEmpty()) {
-                txFinishAwaitFut0.onDone(Collections.emptyMap());
-
-                txFinishAwaitFut = null;
-            }
-        }
+        if (awaiting != null)
+            awaiting.onTxFinished(nearXidVer);
     }
 }

@@ -21,11 +21,13 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -38,6 +40,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridDebug;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -98,6 +101,7 @@ public class LocalPendingTransactionsTrackerTest {
 
         GridCacheSharedContext<?, ?> cctx = Mockito.mock(GridCacheSharedContext.class);
         Mockito.when(cctx.time()).thenReturn(time);
+        Mockito.when(cctx.logger(LocalPendingTransactionsTracker.class)).thenReturn(new GridTestLog4jLogger());
 
         tracker = new LocalPendingTransactionsTracker(cctx);
     }
@@ -208,7 +212,7 @@ public class LocalPendingTransactionsTrackerTest {
 
             fail("We should fail if number of commits is more than number of prepares.");
         }
-        catch (Throwable t) {
+        catch (Throwable ignored) {
             // Expected.
         }
     }
@@ -271,7 +275,9 @@ public class LocalPendingTransactionsTrackerTest {
 
         IgniteInternalFuture<Map<GridCacheVersion, WALPointer>> fut;
         try {
-            fut = tracker.awaitFinishOfPreparedTxs(1_000);
+            tracker.startTxFinishAwaiting(1_000, 10_000);
+
+            fut = tracker.awaitPendingTxsFinished(Collections.emptySet());
         }
         finally {
             tracker.writeUnlockState();
@@ -301,13 +307,115 @@ public class LocalPendingTransactionsTrackerTest {
         tracker.writeLockState();
 
         try {
-            fut = tracker.awaitFinishOfPreparedTxs(1_000);
+            tracker.startTxFinishAwaiting(1_000, 10_000);
+
+            fut = tracker.awaitPendingTxsFinished(Collections.emptySet());
         }
         finally {
             tracker.writeUnlockState();
         }
 
         assertTrue(fut.get().isEmpty());
+    }
+
+    /**
+     *
+     */
+    @Test(timeout = 10_000)
+    public void testAwaitFinishOfPreparedTxsTimeouts() throws Exception {
+        txPrepare(1);
+        txCommit(1);
+
+        txPrepare(2);
+        txKeyRead(2, 10);
+
+        txPrepare(3);
+        txKeyWrite(3, 11);
+
+        txPrepare(4);
+
+        long curTs, waitMs;
+
+        Map<GridCacheVersion, WALPointer> pendingTxs;
+
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final CountDownLatch latch3 = new CountDownLatch(1);
+        final CountDownLatch latch4 = new CountDownLatch(1);
+
+        new Thread(() -> {
+            try {
+                latch1.countDown();
+
+                latch2.await();
+
+                txCommit(2);
+
+                latch3.await();
+
+                Thread.sleep(200);
+                txCommit(3);
+
+                latch4.await();
+
+                Thread.sleep(200);
+                txCommit(4);
+            }
+            catch (InterruptedException ignored) {
+                // No-op
+            }
+        }).start();
+
+        latch1.await();
+
+        pendingTxs = awaitFinishOfPreparedTxs(100, 200);
+
+        assertEquals(3, pendingTxs.size());
+        assertTrue(pendingTxs.keySet().contains(nearXidVersion(2)));
+        assertTrue(pendingTxs.keySet().contains(nearXidVersion(3)));
+        assertTrue(pendingTxs.keySet().contains(nearXidVersion(4)));
+
+        latch2.countDown();
+
+        curTs = U.currentTimeMillis();
+
+        pendingTxs = awaitFinishOfPreparedTxs(100, 200);
+
+        waitMs = U.currentTimeMillis() - curTs;
+
+        assertTrue("Waiting for awaitFinishOfPreparedTxs future too short: " + waitMs, waitMs > 200 - 50);
+        assertTrue("Waiting for awaitFinishOfPreparedTxs future too long: " + waitMs, waitMs < 200 + 500);
+
+        assertEquals(2, pendingTxs.size());
+        assertTrue(pendingTxs.keySet().contains(nearXidVersion(3)));
+        assertTrue(pendingTxs.keySet().contains(nearXidVersion(4)));
+
+        latch3.countDown();
+
+        curTs = U.currentTimeMillis();
+
+        pendingTxs = awaitFinishOfPreparedTxs(100, 300);
+
+        waitMs = U.currentTimeMillis() - curTs;
+
+        assertTrue("Waiting for awaitFinishOfPreparedTxs future too short: " + waitMs, waitMs > 200 - 50);
+        assertTrue("Waiting for awaitFinishOfPreparedTxs future too long: " + waitMs, waitMs < 200 + 500);
+
+        assertEquals(1, pendingTxs.size());
+        assertTrue(pendingTxs.keySet().contains(nearXidVersion(4)));
+
+        latch4.countDown();
+
+        curTs = U.currentTimeMillis();
+
+        pendingTxs = awaitFinishOfPreparedTxs(300, 500);
+
+        waitMs = U.currentTimeMillis() - curTs;
+
+        assertTrue("Waiting for awaitFinishOfPreparedTxs future too short: " + waitMs, waitMs > 200 - 50);
+        assertTrue("Waiting for awaitFinishOfPreparedTxs future too long: " + waitMs, waitMs < 200 + 500);
+
+        assertTrue(pendingTxs.isEmpty());
     }
 
     /**
@@ -407,7 +515,9 @@ public class LocalPendingTransactionsTrackerTest {
         try {
             tracker.startTrackingCommitted();
 
-            awaitFutCut1 = tracker.awaitFinishOfPreparedTxs(1_000);
+            tracker.startTxFinishAwaiting(1_000, 10_000);
+
+            awaitFutCut1 = tracker.awaitPendingTxsFinished(Collections.emptySet());
         }
         finally {
             tracker.writeUnlockState();
@@ -695,5 +805,27 @@ public class LocalPendingTransactionsTrackerTest {
      */
     private GridCacheVersion nearXidVersion(int txId) {
         return new GridCacheVersion(0, txId, 0);
+    }
+
+    /**
+     * @param preparedTxsTimeout Prepared transactions timeout.
+     * @param committingTxsTimeout Committing transactions timeout.
+     */
+    private Map<GridCacheVersion, WALPointer> awaitFinishOfPreparedTxs(long preparedTxsTimeout,
+        long committingTxsTimeout) throws IgniteCheckedException {
+        IgniteInternalFuture<Map<GridCacheVersion, WALPointer>> fut;
+
+        tracker.writeLockState();
+
+        try {
+            tracker.startTxFinishAwaiting(preparedTxsTimeout, committingTxsTimeout);
+
+            fut = tracker.awaitPendingTxsFinished(Collections.emptySet());
+        }
+        finally {
+            tracker.writeUnlockState();
+        }
+
+        return fut.get();
     }
 }

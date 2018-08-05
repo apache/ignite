@@ -1846,6 +1846,17 @@ public abstract class IgniteUtils {
      * @param <E> Entry type
      * @return Sealed collection.
      */
+    public static <E> Set<E> sealSet(Collection<E> c) {
+        return Collections.unmodifiableSet(new HashSet<>(c));
+    }
+
+    /**
+     * Seal collection.
+     *
+     * @param c Collection to seal.
+     * @param <E> Entry type
+     * @return Sealed collection.
+     */
     public static <E> List<E> sealList(Collection<E> c) {
         return Collections.unmodifiableList(new ArrayList<>(c));
     }
@@ -9503,6 +9514,32 @@ public abstract class IgniteUtils {
      */
     public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
         return new LinkedHashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link Set} based on {@link ConcurrentHashMap}.
+     *
+     * @param <T> Type of elements.
+     * @return New concurrent set.
+     */
+    public static <T> Set<T> newConcurrentHashSet() {
+        return Collections.newSetFromMap(new ConcurrentHashMap<>());
+    }
+
+    /**
+     * Constructs a new {@link Set} based on {@link ConcurrentHashMap},
+     * containing the elements in the specified collection.
+     *
+     * @param <T> Type of elements.
+     * @param c Source collection.
+     * @return New concurrent set.
+     */
+    public static <T> Set<T> newConcurrentHashSet(Collection<T> c) {
+        Set<T> set = newConcurrentHashSet();
+
+        set.addAll(c);
+
+        return set;
     }
 
     /**
