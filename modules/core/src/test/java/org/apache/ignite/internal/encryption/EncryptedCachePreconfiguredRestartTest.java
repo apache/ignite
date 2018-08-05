@@ -41,7 +41,7 @@ public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestar
     }
 
     /** @throws Exception If failed. */
-    public void testCreateEncryptedCacheDifferentCachesPreconfiguredOnNodes() throws Exception {
+    public void testDifferentPreconfiguredCachesOnNodes() throws Exception {
         differentCachesOnNodes = true;
 
         super.testCreateEncryptedCache();

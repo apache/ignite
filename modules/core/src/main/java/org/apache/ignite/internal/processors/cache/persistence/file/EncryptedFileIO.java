@@ -23,7 +23,6 @@ import java.nio.MappedByteBuffer;
 import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.EncryptedDataPageIO;
 
 /**
  * Implementation of {@code FileIO} that supports encryption(decryption) of pages written(readed) to(from) file.
@@ -163,6 +162,7 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+        assert position() != 0;
         assert srcBuf.capacity() == pageSize;
 
         byte[] srcArr = new byte[pageSize];

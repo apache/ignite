@@ -92,7 +92,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected char[] keystorePassword() {
+    private char[] keystorePassword() {
         return KEYSTORE_PASSWORD.toCharArray();
     }
 
@@ -108,12 +108,14 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         cacheNames.addAll(grid1.cacheNames());
 
         for (String cacheName : cacheNames) {
-            if (!grid0.cachex(cacheName).configuration().isEncrypted())
+            CacheConfiguration ccfg = grid1.cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+            if (!ccfg.isEncrypted())
                 continue;
 
             IgniteInternalCache<?, ?> encrypted0 = grid0.cachex(cacheName);
 
-            int grpId = CU.cacheGroupId(cacheName, encrypted0.configuration().getGroupName());
+            int grpId = CU.cacheGroupId(cacheName, ccfg.getGroupName());
 
             assertNotNull(encrypted0);
 
@@ -129,7 +131,6 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
             assertNotNull(encKey0.key());
 
             if (!grid1.configuration().isClientMode()) {
-
                 EncryptionKey encKey1 = grid1.context().encryption().groupKey(grpId);
 
                 assertNotNull(encKey1);

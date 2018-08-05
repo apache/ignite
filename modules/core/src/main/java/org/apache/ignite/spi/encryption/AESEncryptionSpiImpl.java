@@ -190,7 +190,7 @@ public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements Encryption
 
             System.arraycopy(iv, 0, res, 0, iv.length);
 
-            cipher.init(ENCRYPT_MODE, keySpec, new IvParameterSpec(res, 0, iv.length));
+            cipher.init(ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
 
             cipher.doFinal(data, start, length, res, iv.length);
 
@@ -215,7 +215,7 @@ public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements Encryption
 
             cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(data, 0, cipher.getBlockSize()));
 
-            return cipher.doFinal(data, cipher.getBlockSize(), data.length-cipher.getBlockSize());
+            return cipher.doFinal(data, cipher.getBlockSize(), data.length - cipher.getBlockSize());
         }
         catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
             NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {

@@ -94,7 +94,6 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
         }
     }
 
-
     /** @throws Exception If failed. */
     public void testCreateEncryptedCacheGroup() throws Exception {
         IgniteEx g0 = (IgniteEx)IgnitionEx.start(
