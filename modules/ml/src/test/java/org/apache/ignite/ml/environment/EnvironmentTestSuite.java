@@ -25,6 +25,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    LearningEnvironmentBuilderTest.class,
     LearningEnvironmentTest.class
 })
 public class EnvironmentTestSuite {
