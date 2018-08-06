@@ -24,8 +24,13 @@ use Apache\Ignite\Impl\Binary\BinaryUtils;
 /**
  * Class representing a complex type of Ignite object.
  *
- * It is described by ObjectType::COMPLEX_OBJECT and by a name of PHP Class which is mapped to/from
- * the Ignite complex type.
+ * It corresponds to the ObjectType::COMPLEX_OBJECT Ignite type code.
+ *
+ * This class may be needed to help Ignite client to:
+ *   - deserialize an Ignite complex object to a PHP object when reading data,
+ *   - serialize a PHP object to an Ignite complex object when writing data.
+ *
+ * Note: only public properties of PHP objects can be serialized/deserialized.
  */
 class ComplexObjectType extends ObjectType
 {
@@ -36,18 +41,9 @@ class ComplexObjectType extends ObjectType
     /**
      * Public constructor.
      *
-     * Specifies a name of PHP Class which will be mapped to/from the complex type.
-     *
-     * If an object of the complex type is going to be received (deserialized),
-     * the PHP Class must have a constructor without parameters or with optional parameters only.
-     *
-     * By default, the fields have no types specified. It means during operations the Ignite client
-     * will try to make automatic mapping between PHP types and Ignite object types -
-     * according to the mapping table defined in the description of the ObjectType class.
-     *
-     * A type of any field may be specified later by setFieldType() method.
-     *
-     * The name of the complex type is the name of the PHP Class.
+     * Creates a default representation of Ignite complex object type.
+     * setPhpClassName(), setIgniteTypeName(), setFieldType() methods may be used
+     * to change the default representation.
      * 
      * @return ComplexObjectType new ComplexObjectType instance.
      */
@@ -60,14 +56,80 @@ class ComplexObjectType extends ObjectType
     }
     
     /**
-     * Specifies a type of the field in the complex type.
+     * Sets the name of the PHP class.
      *
-     * If the type is not specified then during operations the Ignite client
-     * will try to make automatic mapping between PHP types and Ignite object types -
+     * Affects data reading operations only.
+     *
+     * The specified name will be used as PHP class name to instantiate a PHP object
+     * the received Ignite complex object is deserialized to.
+     *
+     * By default (if the name is not specified), the Ignite complex type name of the received complex object
+     * is used as PHP class name to instantiate a PHP object during deserialization.
+     *
+     * @param string|null $phpClassName name of the PHP class or null (the name is not specified).
+     * 
+     * @return ComplexObjectType the same instance of the ComplexObjectType. ???
+     */
+    public function setPhpClassName(?string $phpClassName): void
+    {
+        $this->phpClassName = $phpClassName;
+    }
+    
+    /**
+     * Gets the name of the PHP class.
+     *
+     * @return string|null name of the PHP class or null (the name is not specified).
+     */
+    public function getPhpClassName(): ?string
+    {
+        return $this->phpClassName;
+    }
+    
+    /**
+     * Rename to setIgniteTypeName ???
+     * Sets the name of the Ignite complex type.
+     *
+     * Affects data writing operations only.
+     *
+     * The specified name will be used as the Ignite complex type name during the complex object's writing operations.
+     *
+     * By default (if the name is not specified), the Ignite complex type name of the serialized complex object
+     * is taken from the name of the PHP class which instance is provided in a data writing operation.
+     *
+     * @param string|null $typeName name of the Ignite complex type or null (the name is not specified).
+     * 
+     * @return ComplexObjectType the same instance of the ComplexObjectType. ???
+     */
+    public function setTypeName(?string $typeName): void
+    {
+        $this->typeName = $typeName;
+    }
+
+    /**
+     * Rename to getIgniteTypeName ???
+     * Gets the name of the Ignite complex type.
+     * 
+     * @return string|null name of the Ignite complex type or null (the name is not specified).
+     */
+    public function getTypeName(): ?string
+    {
+        return $this->typeName;
+    }
+
+    /**
+     * Specifies Ignite type of the indicated field in the complex type.
+     *
+     * Affects data writing operations only.
+     *
+     * During data serialization Ignite client will assume that the indicated field
+     * has the Ignite type specified by this method.
+     *
+     * By default (if the type of the field is not specified),
+     * Ignite client tries to make automatic mapping between PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
      * @param string $fieldName name of the field.
-     * @param int|ObjectType|null $fieldType type of the field:
+     * @param int|ObjectType|null $fieldType Ignite type of the field:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
@@ -84,9 +146,14 @@ class ComplexObjectType extends ObjectType
     }
 
     /**
-     * 
-     * @param string $fieldName
-     * @return int|ObjectType|null
+     * Gets Ignite type of the indicated field in the complex type.
+     *
+     * @param string $fieldName name of the field.
+     *
+     * @return int|ObjectType|null Ignite type of the field:
+     *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null that means the type is not specified
      */
     public function getFieldType(string $fieldName)
     {
@@ -94,41 +161,5 @@ class ComplexObjectType extends ObjectType
             return $this->fieldTypes[$fieldName];
         }
         return null;
-    }
-    
-    /**
-     * 
-     * @param string $phpClassName
-     */
-    public function setPhpClassName(?string $phpClassName): void
-    {
-        $this->phpClassName = $phpClassName;
-    }
-    
-    /**
-     * 
-     * @return string
-     */
-    public function getPhpClassName(): ?string
-    {
-        return $this->phpClassName;
-    }
-    
-    /**
-     * 
-     * @param string $typeName
-     */
-    public function setTypeName(?string $typeName): void
-    {
-        $this->typeName = $typeName;
-    }
-
-    /**
-     * 
-     * @return string
-     */
-    public function getTypeName(): ?string
-    {
-        return $this->typeName;
     }
 }
