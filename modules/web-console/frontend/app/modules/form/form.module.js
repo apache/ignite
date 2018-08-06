@@ -22,9 +22,6 @@ import './field/field.scss';
 import './field/feedback.scss';
 import './field/input/text.scss';
 
-// Panel.
-import igniteFormPanelChevron from './panel/chevron.directive';
-
 // Field.
 import placeholder from './field/bs-select-placeholder.directive';
 
@@ -49,8 +46,6 @@ angular
 .module('ignite-console.Form', [
 
 ])
-// Panel.
-.directive(...igniteFormPanelChevron)
 // Field.
 .directive(...placeholder)
 // Validators.
