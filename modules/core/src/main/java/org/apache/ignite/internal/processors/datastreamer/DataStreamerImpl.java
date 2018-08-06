@@ -114,6 +114,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -648,34 +649,29 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 ThreadBuffer threadBuf = threadBufMap.get(threadId);
 
                 if (threadBuf == null) {
+                    fut = createDataLoadFuture();
+
                     // Initial capacity should be more than batch by 12.5% in order to avoid resizing.
                     threadBuf = new ThreadBuffer(fut,
                         new ArrayList<>(bufLdrSzPerThread + (bufLdrSzPerThread >> 3)));
 
                     threadBufMap.put(threadId, threadBuf);
                 }
-                else {
+                else
+                    // Use existed thread-buffer future.
                     fut = threadBuf.getFuture();
-
-                    internalFut = (GridFutureAdapter)fut.internalFuture();
-                }
 
                 entriesList = threadBuf.getEntries();
 
                 entriesList.addAll(entries);
             }
-            else
+            else {
                 entriesList = entries;
 
-            if (fut == null) {
-                internalFut = new GridFutureAdapter();
-
-                fut = new IgniteCacheFutureImpl(internalFut);
-
-                internalFut.listen(rmvActiveFut);
-
-                activeFuts.add(internalFut);
+                fut = createDataLoadFuture();
             }
+
+            internalFut = (GridFutureAdapter)fut.internalFuture();
 
             if (!useThreadBuffer || entriesList.size() >= bufLdrSzPerThread) {
                 loadData(entriesList, internalFut);
@@ -698,6 +694,22 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         finally {
             unlock(false);
         }
+    }
+
+    /**
+     * Creates data load future and register its as active future.
+     * @return Data load future.
+     */
+    @NotNull protected IgniteCacheFutureImpl createDataLoadFuture() {
+        GridFutureAdapter internalFut0 = new GridFutureAdapter();
+
+        IgniteCacheFutureImpl fut = new IgniteCacheFutureImpl(internalFut0);
+
+        internalFut0.listen(rmvActiveFut);
+
+        activeFuts.add(internalFut0);
+
+        return fut;
     }
 
     /**
