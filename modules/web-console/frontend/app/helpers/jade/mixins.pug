@@ -22,68 +22,6 @@ include ../../primitives/tooltip/index
 include ../../primitives/switcher/index
 include ../../primitives/form-field/index
 
-//- Mixin for main table on screen with list of items.
-mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
-    .padding-bottom-dflt(ng-show=`${rows} && ${rows}.length > 0`)
-        table.links(st-table='displayedRows' st-safe-src=`${rows}`)
-            thead
-                tr
-                    th
-                        label.labelHeader.labelFormField #{title}:
-                        .col-sm-3.pull-right(style='padding: 0')
-                            input.form-control(type='text' st-search=`${searchField}` placeholder=`Filter ${title}...`)
-            tbody
-                tr
-                    td
-                        .scrollable-y(ng-show='displayedRows.length > 0' style='max-height: 200px')
-                            table
-                                tbody
-                                    tr(ng-repeat='row in displayedRows track by row._id' ignite-bs-affix-update)
-                                        td
-                                            a(ng-class='{active: row._id == selectedItem._id}' ignite-on-click-focus=focusId ng-click=click) #{rowTemplate}
-                        label.placeholder(ng-show='displayedRows.length == 0') No #{title} found
-
-//- Mixin with save, remove, clone and undo buttons.
-mixin save-remove-clone-undo-buttons(objectName)
-    -var removeTip = 'Remove current ' + objectName
-    -var cloneTip = '"Clone current ' + objectName + '"'
-    -var undoTip = '"Undo all changes for current ' + objectName + '"'
-
-    button.btn-ignite.btn-ignite--success(
-        ng-disabled='!ui.inputForm.$dirty'
-        ng-click='ui.inputForm.$dirty && saveItem()'
-    ) Save
-    button.btn-ignite.btn-ignite--success(
-        ng-show='backupItem._id && contentVisible()'
-        type='button'
-        id='clone-item'
-        ng-click='cloneItem()'
-    ) Clone
-
-    .btn-ignite-group(ng-show='backupItem._id && contentVisible()')
-        button.btn-ignite.btn-ignite--success(
-            ng-click='removeItem()'
-            type='button'
-        )
-            | Remove
-        button.btn-ignite.btn-ignite--success(
-            bs-dropdown='$ctrl.extraFormActions'
-            data-placement='top-right'
-            type='button'
-        )
-            span.icon.fa.fa-caret-up
-
-    button.btn-ignite.btn-ignite--success(
-        ng-show='contentVisible()'
-        id='undo-item'
-        ng-disabled='!ui.inputForm.$dirty'
-        ng-click='ui.inputForm.$dirty && resetAll()'
-        bs-tooltip=undoTip
-        data-placement='top'
-        data-trigger='hover'
-    )
-        i.icon.fa.fa-undo()
-
 //- Mixin for feedback on specified error.
 mixin error-feedback(visible, error, errorMessage, name)
     i.fa.fa-exclamation-triangle.form-control-feedback(
