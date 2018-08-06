@@ -59,7 +59,7 @@ public interface IgniteTxRemoteEx extends IgniteInternalTx {
     public void deferredUpdates(Map<Integer, DeferredPartitionUpdates> deferredUpdates);
 
     /**
-     * @return Partition update counters map: cacheId -> partId -> updateCntr.
+     * @return Partition updates deferred until transaction commit.
      */
     public Map<Integer, DeferredPartitionUpdates> deferredUpdates();
 }
