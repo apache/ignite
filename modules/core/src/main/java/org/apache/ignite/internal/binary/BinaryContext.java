@@ -120,7 +120,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
-import sun.tools.jar.resources.jar;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
