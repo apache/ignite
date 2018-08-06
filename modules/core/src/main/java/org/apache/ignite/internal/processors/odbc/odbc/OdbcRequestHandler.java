@@ -123,6 +123,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         this.cliCtx = new SqlClientContext(
             ctx,
+            null, //FIXME
             distributedJoins,
             enforceJoinOrder,
             collocated,

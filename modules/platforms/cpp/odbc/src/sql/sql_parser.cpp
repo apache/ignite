@@ -21,7 +21,8 @@ namespace ignite
 {
     namespace odbc
     {
-        SqlParser::SqlParser()
+        SqlParser::SqlParser(const std::string& sql) :
+            lexer(sql)
         {
             // No-op.
         }
@@ -34,6 +35,20 @@ namespace ignite
         bool SqlParser::ParseSql(const std::string& sql, SqlCommand& cmd)
         {
             return false;
+        }
+
+        bool SqlParser::ShiftToNextCommand()
+        {
+            while (true)
+            {
+                if (!lexer.Shift())
+                    return false;
+
+//                switch (lexer.GetCurrentTokenType())
+//                {
+//                    
+//                }
+            }
         }
     }
 }
