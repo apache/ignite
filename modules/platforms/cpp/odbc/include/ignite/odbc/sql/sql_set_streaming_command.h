@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_SQL_SQL_PARSER
-#define _IGNITE_ODBC_SQL_SQL_PARSER
+#ifndef _IGNITE_ODBC_SQL_SQL_SET_STREAMING_COMMAND
+#define _IGNITE_ODBC_SQL_SQL_SET_STREAMING_COMMAND
 
+#include <stdint.h>
 #include <string>
-#include <memory>
 
-#include <ignite/odbc/sql/sql_lexer.h>
 #include <ignite/odbc/sql/sql_command.h>
 
 namespace ignite
@@ -29,40 +28,40 @@ namespace ignite
     namespace odbc
     {
         /**
-         * SQL parser.
+         * SQL set streaming command.
          */
-        class SqlParser
+        class SqlSetStreamingCommand : public SqlCommand
         {
         public:
             /**
              * Default constructor.
-             *
-             * @param sql SQL request.
              */
-            SqlParser(const std::string& sql);
+            SqlSetStreamingCommand()
+            {
+                // No-op.
+            }
 
             /**
              * Destructor.
              */
-            ~SqlParser();
+            virtual ~SqlSetStreamingCommand()
+            {
+                // No-op.
+            }
 
             /**
-             * Get next command.
+             * Parse from lexer.
              *
-             * @return Parsed command on success and null on failure.
+             * @param lexer Lexer.
              */
-            std::auto_ptr<SqlCommand> GetNextCommand();
+            virtual void Parse(SqlLexer& lexer)
+            {
+                // No-op.
+            }
 
         private:
-            /**
-             * 
-             */
-            std::auto_ptr<SqlCommand> ProcessCommand();
-
-            /** SQL lexer. */
-            SqlLexer lexer;
         };
     }
 }
 
-#endif //_IGNITE_ODBC_SQL_SQL_PARSER
+#endif //_IGNITE_ODBC_SQL_SQL_SET_STREAMING_COMMAND
