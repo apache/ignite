@@ -343,11 +343,8 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
 
         if (filePos == FILE_POS_USE_CURRENT)
             rd = IgniteNativeIoLib.read(fdCheckOpened(), ptr, nl(toRead)).intValue();
-        else {
-            U.warn(log, "Enter: RIAB read=" + toRead + ", pos=" + filePos + ", size=" + size());
+        else
             rd = IgniteNativeIoLib.pread(fdCheckOpened(), ptr, nl(toRead), nl(filePos)).intValue();
-            U.warn(log, "Leave: RIAB read=" + toRead + ", pos=" + filePos + ", size=" + size() + ", rd=" + rd);
-        }
 
         if (rd == 0)
             return -1; //Tried to read past EOF for file
