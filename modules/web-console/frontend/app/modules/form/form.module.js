@@ -17,10 +17,6 @@
 
 import angular from 'angular';
 
-// Fields styles.
-import './field/field.scss';
-import './field/input/text.scss';
-
 // Field.
 import placeholder from './field/bs-select-placeholder.directive';
 
