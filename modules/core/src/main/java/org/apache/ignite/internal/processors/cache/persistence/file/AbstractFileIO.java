@@ -86,8 +86,6 @@ public abstract class AbstractFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int readFully(final ByteBuffer destBuf, final long position) throws IOException {
-        assert available(destBuf.remaining(), position) == destBuf.remaining();
-        
         return fully(new IOOperation() {
             @Override public int run(int offs) throws IOException {
                 return read(destBuf, position + offs);
@@ -134,6 +132,8 @@ public abstract class AbstractFileIO implements FileIO {
     /**
      * @param requested Requested.
      * @param position Position.
+     *
+     * @return Bytes available.
      */
     private int available(int requested, long position) throws IOException {
         long avail = size() - position;
