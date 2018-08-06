@@ -45,9 +45,6 @@ import uuid from './validator/uuid.directive';
 // Helpers.
 import igniteFormFieldInputAutofocus from './field/input/autofocus.directive';
 import igniteFormControlFeedback from './field/form-control-feedback.directive';
-import igniteFormFieldUp from './field/up.directive';
-import igniteFormFieldDown from './field/down.directive';
-
 import IgniteFormGUID from './services/FormGUID.service.js';
 
 angular
@@ -74,8 +71,6 @@ angular
 // Helpers.
 .directive(...igniteFormFieldInputAutofocus)
 .directive(...igniteFormControlFeedback)
-.directive(...igniteFormFieldUp)
-.directive(...igniteFormFieldDown)
 
 // Generator of globally unique identifier.
 .service('IgniteFormGUID', IgniteFormGUID);
