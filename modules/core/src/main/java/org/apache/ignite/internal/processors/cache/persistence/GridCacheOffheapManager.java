@@ -1552,6 +1552,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
+        @Override public void updateSize(int cacheId, long delta) {
+            try {
+                CacheDataStore delegate0 = init0(false);
+
+                if (delegate0 != null)
+                    delegate0.updateSize(cacheId, delta);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
         /** {@inheritDoc} */
         @Override public long updateCounter() {
             try {

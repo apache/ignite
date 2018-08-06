@@ -1388,8 +1388,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      *
      */
-    // TODO change visibility back
-    public class CacheDataStoreImpl implements CacheDataStore {
+    protected class CacheDataStoreImpl implements CacheDataStore {
         /** */
         private final int partId;
 
@@ -1451,39 +1450,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /**
          * @param cacheId Cache ID.
          */
-        // TODO change visibility back
-        public void incrementSize(int cacheId) {
-            storageSize.incrementAndGet();
-
-            if (grp.sharedGroup()) {
-                AtomicLong size = cacheSizes.get(cacheId);
-
-                if (size == null) {
-                    AtomicLong old = cacheSizes.putIfAbsent(cacheId, size = new AtomicLong());
-
-                    if (old != null)
-                        size = old;
-                }
-
-                size.incrementAndGet();
-            }
+        void incrementSize(int cacheId) {
+            updateSize0(cacheId, 1);
         }
 
         /**
          * @param cacheId Cache ID.
          */
-        // TODO change visibility back
-        public void decrementSize(int cacheId) {
-            storageSize.decrementAndGet();
-
-            if (grp.sharedGroup()) {
-                AtomicLong size = cacheSizes.get(cacheId);
-
-                if (size == null)
-                    return;
-
-                size.decrementAndGet();
-            }
+        void decrementSize(int cacheId) {
+            updateSize0(cacheId, -1);
         }
 
         /** {@inheritDoc} */
@@ -1518,6 +1493,29 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public long fullSize() {
             return storageSize.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateSize(int cacheId, long delta) {
+            updateSize0(cacheId, delta);
+        }
+
+        /** */
+        private void updateSize0(int cacheId, long delta) {
+            storageSize.addAndGet(delta);
+
+            if (grp.sharedGroup()) {
+                AtomicLong size = cacheSizes.get(cacheId);
+
+                if (size == null) {
+                    AtomicLong old = cacheSizes.putIfAbsent(cacheId, size = new AtomicLong());
+
+                    if (old != null)
+                        size = old;
+                }
+
+                size.addAndGet(delta);
+            }
         }
 
         /** {@inheritDoc} */

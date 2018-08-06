@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -1795,18 +1796,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 assert dhtPart != null;
 
-                // TODO optimize and cleanup
-                IgniteCacheOffheapManagerImpl.CacheDataStoreImpl ds = (IgniteCacheOffheapManagerImpl.CacheDataStoreImpl)dhtPart.dataStore();
-                if (delta > 0) {
-                    for (int i = 0; i < delta; i++) {
-                        ds.incrementSize(cacheId);
-                    }
-                }
-                else {
-                    for (int i = 0; i < -delta; i++) {
-                        ds.decrementSize(cacheId);
-                    }
-                }
+                dhtPart.dataStore().updateSize(cacheId, delta);
             }
         }
     }

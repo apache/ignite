@@ -849,18 +849,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 assert dhtPart != null;
 
-                // TODO optimize and cleanup
-                IgniteCacheOffheapManagerImpl.CacheDataStoreImpl ds = (IgniteCacheOffheapManagerImpl.CacheDataStoreImpl)dhtPart.dataStore();
-                if (sizeDelta > 0) {
-                    for (int i = 0; i < sizeDelta; i++) {
-                        ds.incrementSize(cacheId);
-                    }
-                }
-                else {
-                    for (int i = 0; i < -sizeDelta; i++) {
-                        ds.decrementSize(cacheId);
-                    }
-                }
+                dhtPart.dataStore().updateSize(cacheId, sizeDelta);
             }
         }
     }
