@@ -2174,8 +2174,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 GridCacheContext ctx = sharedCtx.cacheContext(CU.cacheId(cacheName));
 
-                if (ctx == null)
+                if (ctx == null) {
+                    for (CacheGroupContext grp : cacheGrps.values()) {
+                        if (grp.cacheOrGroupName().equals(cacheName))
+                            cacheGrps.remove(grp.groupId());
+                    }
+
                     continue;
+                }
 
                 if (retClientCaches && !ctx.affinityNode()) {
                     if (ids == null)

@@ -831,6 +831,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
+        Map<Integer, Boolean> startedCaches = new HashMap<>();
+
         for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
             DynamicCacheDescriptor cacheDesc = action.descriptor();
 
@@ -878,6 +880,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         if (fut.events().discoveryCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
                             U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
                     }
+
+                    startedCaches.put(action.descriptor().groupId(), true);
                 }
             }
             catch (IgniteCheckedException e) {
@@ -895,7 +899,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
             int grpId = action.descriptor().groupId();
 
-            if (gprs.add(grpId)) {
+            if (gprs.add(grpId) && startedCaches.get(grpId) != null) {
                 if (crd)
                     initStartedGroupOnCoordinator(fut, action.descriptor().groupDescriptor());
                 else {
