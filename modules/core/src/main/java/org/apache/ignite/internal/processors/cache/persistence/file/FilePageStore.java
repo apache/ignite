@@ -352,23 +352,14 @@ public class FilePageStore implements PageStore {
             assert off <= (allocated.get() - headerSize()) : "calculatedOffset=" + off +
                 ", allocated=" + allocated.get() + ", headerSize="+headerSize();
 
-            int len = pageSize;
+            int n = readWithFailover(pageBuf, off);
 
-            do {
-                int n = readWithFailover(pageBuf, off);
+            // If page was not written yet, nothing to read.
+            if (n < 0) {
+                pageBuf.put(new byte[pageBuf.remaining()]);
 
-                // If page was not written yet, nothing to read.
-                if (n < 0) {
-                    pageBuf.put(new byte[pageBuf.remaining()]);
-
-                    return;
-                }
-
-                off += n;
-
-                len -= n;
+                return;
             }
-            while (len > 0);
 
             int savedCrc32 = PageIO.getCrc(pageBuf);
 
@@ -738,7 +729,7 @@ public class FilePageStore implements PageStore {
             try {
                 assert destBuf.remaining() > 0;
 
-                int bytesRead = fileIO.read(destBuf, position);
+                int bytesRead = fileIO.readFully(destBuf, position);
 
                 if (interrupted)
                     Thread.currentThread().interrupt();
