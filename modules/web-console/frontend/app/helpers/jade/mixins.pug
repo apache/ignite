@@ -22,16 +22,6 @@ include ../../primitives/tooltip/index
 include ../../primitives/switcher/index
 include ../../primitives/form-field/index
 
-//- Mixin for feedback on specified error.
-mixin error-feedback(visible, error, errorMessage, name)
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-if=visible
-        bs-tooltip=`'${errorMessage}'`
-        ignite-error=error
-        ignite-error-message=errorMessage
-        name=name
-    )
-
 //- Mixin for feedback on unique violation.
 mixin unique-feedback(name, errorMessage)
     +form-field__error({ error: 'igniteUnique', message: errorMessage })
