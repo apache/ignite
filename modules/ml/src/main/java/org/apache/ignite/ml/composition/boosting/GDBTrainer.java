@@ -52,7 +52,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
-public abstract class GDBTrainer<M extends DatasetTrainer<? extends Model<Vector, Double>, Double>> extends DatasetTrainer<Model<Vector, Double>, Double> {
+public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
     /** Gradient step. */
     private final double gradientStep;
 
@@ -133,7 +133,7 @@ public abstract class GDBTrainer<M extends DatasetTrainer<? extends Model<Vector
      * Returns regressor model trainer for one step of GDB.
      */
     @NotNull
-    protected abstract M buildBaseModelTrainer();
+    protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
 
     /**
      * Maps external representation of label to internal.
@@ -194,7 +194,7 @@ public abstract class GDBTrainer<M extends DatasetTrainer<? extends Model<Vector
      *
      * @return learning strategy.
      */
-    protected GDBLearningStrategy<M> getLearningStrategy() {
-        return new GDBLearningStrategy<>();
+    protected GDBLearningStrategy getLearningStrategy() {
+        return new GDBLearningStrategy();
     }
 }

@@ -25,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Implementation of Gradient Boosting Classifier Trainer on trees.
  */
-public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTrainer<DecisionTreeRegressionTrainer> {
+public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTrainer {
     /** Max depth. */
     private final int maxDepth;
 
@@ -51,6 +51,7 @@ public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTraine
         this.minImpurityDecrease = minImpurityDecrease;
     }
 
+    /** {@inheritDoc} */
     @NotNull @Override protected DecisionTreeRegressionTrainer buildBaseModelTrainer() {
         return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease).withUseIndex(useIndex);
     }
@@ -67,7 +68,7 @@ public class GDBBinaryClassifierOnTreesTrainer extends GDBBinaryClassifierTraine
     }
 
     /** {@inheritDoc} */
-    @Override protected GDBLearningStrategy<DecisionTreeRegressionTrainer> getLearningStrategy() {
-        return new GDBOnTreesLearningStrategy<>(useIndex);
+    @Override protected GDBLearningStrategy getLearningStrategy() {
+        return new GDBOnTreesLearningStrategy(useIndex);
     }
 }

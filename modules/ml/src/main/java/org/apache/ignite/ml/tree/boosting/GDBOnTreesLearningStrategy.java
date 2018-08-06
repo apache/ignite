@@ -40,10 +40,8 @@ import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 /**
  * Gradient boosting on trees specific learning strategy reusing learning dataset with index between
  * several learning iterations.
- *
- * @param <M> Model type.
  */
-public class GDBOnTreesLearningStrategy<M extends DatasetTrainer<? extends Model<Vector, Double>, Double>>  extends GDBLearningStrategy<M> {
+public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
     private boolean useIndex;
 
     /**
@@ -59,7 +57,7 @@ public class GDBOnTreesLearningStrategy<M extends DatasetTrainer<? extends Model
     @Override public <K, V> List<Model<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        M trainer = baseMdlTrainerBuilder.get();
+        DatasetTrainer<? extends Model<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         assert trainer instanceof DecisionTree;
         DecisionTree decisionTreeTrainer = (DecisionTree) trainer;
 

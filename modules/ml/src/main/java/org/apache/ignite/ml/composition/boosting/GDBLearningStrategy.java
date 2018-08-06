@@ -35,10 +35,8 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
  * Learning strategy for gradient boosting.
- *
- * @param <M> Model type.
  */
-public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector, Double>, Double>> {
+public class GDBLearningStrategy {
     /** Learning environment. */
     protected LearningEnvironment environment;
 
@@ -52,7 +50,7 @@ public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector
     protected IgniteFunction<Double, Double> externalLbToInternalMapping;
 
     /** Base model trainer builder. */
-    protected IgniteSupplier<M> baseMdlTrainerBuilder;
+    protected IgniteSupplier<DatasetTrainer<? extends Model<Vector, Double>, Double>> baseMdlTrainerBuilder;
 
     /** Mean label value. */
     protected double meanLabelValue;
@@ -76,7 +74,7 @@ public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         List<Model<Vector, Double>> models = new ArrayList<>();
-        M trainer = baseMdlTrainerBuilder.get();
+        DatasetTrainer<? extends Model<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         for (int i = 0; i < cntOfIterations; i++) {
             double[] weights = Arrays.copyOf(compositionWeights, i);
 
@@ -103,7 +101,7 @@ public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector
      *
      * @param environment Learning Environment.
      */
-    public GDBLearningStrategy<M> withEnvironment(LearningEnvironment environment) {
+    public GDBLearningStrategy withEnvironment(LearningEnvironment environment) {
         this.environment = environment;
         return this;
     }
@@ -113,7 +111,7 @@ public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector
      *
      * @param cntOfIterations Count of iterations.
      */
-    public GDBLearningStrategy<M> withCntOfIterations(int cntOfIterations) {
+    public GDBLearningStrategy withCntOfIterations(int cntOfIterations) {
         this.cntOfIterations = cntOfIterations;
         return this;
     }
@@ -123,7 +121,7 @@ public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector
      *
      * @param lossGradient Loss gradient.
      */
-    public GDBLearningStrategy<M> withLossGradient(IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
+    public GDBLearningStrategy withLossGradient(IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
         this.lossGradient = lossGradient;
         return this;
     }
@@ -133,7 +131,7 @@ public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector
      *
      * @param externalLbToInternal External label to internal.
      */
-    public GDBLearningStrategy<M> withExternalLabelToInternal(IgniteFunction<Double, Double> externalLbToInternal) {
+    public GDBLearningStrategy withExternalLabelToInternal(IgniteFunction<Double, Double> externalLbToInternal) {
         this.externalLbToInternalMapping = externalLbToInternal;
         return this;
     }
@@ -143,7 +141,7 @@ public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector
      *
      * @param buildBaseMdlTrainer Build base model trainer.
      */
-    public GDBLearningStrategy<M> withBaseModelTrainerBuilder(IgniteSupplier<M> buildBaseMdlTrainer) {
+    public GDBLearningStrategy withBaseModelTrainerBuilder(IgniteSupplier<DatasetTrainer<? extends Model<Vector, Double>, Double>> buildBaseMdlTrainer) {
         this.baseMdlTrainerBuilder = buildBaseMdlTrainer;
         return this;
     }
@@ -153,7 +151,7 @@ public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector
      *
      * @param meanLabelValue Mean label value.
      */
-    public GDBLearningStrategy<M> withMeanLabelValue(double meanLabelValue) {
+    public GDBLearningStrategy withMeanLabelValue(double meanLabelValue) {
         this.meanLabelValue = meanLabelValue;
         return this;
     }
@@ -163,7 +161,7 @@ public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector
      *
      * @param sampleSize Sample size.
      */
-    public GDBLearningStrategy<M> withSampleSize(long sampleSize) {
+    public GDBLearningStrategy withSampleSize(long sampleSize) {
         this.sampleSize = sampleSize;
         return this;
     }
@@ -173,7 +171,7 @@ public class GDBLearningStrategy<M extends DatasetTrainer<? extends Model<Vector
      *
      * @param compositionWeights Composition weights.
      */
-    public GDBLearningStrategy<M> withCompositionWeights(double[] compositionWeights) {
+    public GDBLearningStrategy withCompositionWeights(double[] compositionWeights) {
         this.compositionWeights = compositionWeights;
         return this;
     }

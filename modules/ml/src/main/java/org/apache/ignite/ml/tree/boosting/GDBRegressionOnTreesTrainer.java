@@ -25,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Implementation of Gradient Boosting Regression Trainer on trees.
  */
-public class GDBRegressionOnTreesTrainer extends GDBRegressionTrainer<DecisionTreeRegressionTrainer> {
+public class GDBRegressionOnTreesTrainer extends GDBRegressionTrainer {
     /** Max depth. */
     private final int maxDepth;
 
@@ -68,7 +68,7 @@ public class GDBRegressionOnTreesTrainer extends GDBRegressionTrainer<DecisionTr
     }
 
     /** {@inheritDoc} */
-    @Override protected GDBLearningStrategy<DecisionTreeRegressionTrainer> getLearningStrategy() {
-        return new GDBOnTreesLearningStrategy<>(useIndex);
+    @Override protected GDBLearningStrategy getLearningStrategy() {
+        return new GDBOnTreesLearningStrategy(useIndex);
     }
 }

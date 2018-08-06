@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -33,14 +32,13 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
  * Trainer for binary classifier using Gradient Boosting.
  * As preparing stage this algorithm learn labels in dataset and create mapping dataset labels to 0 and 1.
  * This algorithm uses gradient of Logarithmic Loss metric [LogLoss] by default in each step of learning.
  */
-public abstract class GDBBinaryClassifierTrainer<M extends DatasetTrainer<? extends Model<Vector, Double>, Double>> extends GDBTrainer<M> {
+public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     /** External representation of first class. */
     private double externalFirstCls; //internal 0.0
     /** External representation of second class. */

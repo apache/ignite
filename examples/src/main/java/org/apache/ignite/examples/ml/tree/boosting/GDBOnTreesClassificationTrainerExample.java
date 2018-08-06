@@ -93,7 +93,7 @@ public class GDBOnTreesClassificationTrainerExample {
     @NotNull private static CacheConfiguration<Integer, double[]> createCacheConfiguration() {
         CacheConfiguration<Integer, double[]> trainingSetCfg = new CacheConfiguration<>();
         trainingSetCfg.setName("TRAINING_SET");
-        trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 1));
+        trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         return trainingSetCfg;
     }
 
