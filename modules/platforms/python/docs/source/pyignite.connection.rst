@@ -17,4 +17,12 @@ pyignite.connection.handshake module
     :undoc-members:
     :show-inheritance:
 
+pyignite.connection.ssl module
+------------------------------
+
+.. automodule:: pyignite.connection.ssl
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

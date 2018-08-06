@@ -38,7 +38,7 @@ class Connection:
      * binary protocol connector. Incapsulates handshake and failover
        connection,
      * cache factory. Cache objects are used for key-value operations,
-     * Ignite SQL endpoint. See also https://apacheignite-sql.readme.io/docs,
+     * Ignite SQL endpoint,
      * binary types registration endpoint.
     """
 

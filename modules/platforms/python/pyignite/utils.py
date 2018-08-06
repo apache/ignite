@@ -59,7 +59,7 @@ def unwrap_binary(conn, wrapped: tuple, recurse: bool=True):
     :param conn: connection to Ignite cluster,
     :param wrapped: `WrappedDataObject` value,
     :param recurse: unwrap recursively using a simple heuristic to detect
-     nested `WrappedDataObject`s,
+     nested `WrappedDataObject`\ s,
     :return: dict representing wrapped BinaryObject.
     """
     from pyignite.datatypes import BinaryObject

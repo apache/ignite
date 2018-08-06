@@ -17,6 +17,14 @@ pyignite.api.binary module
     :undoc-members:
     :show-inheritance:
 
+pyignite.api.cache module
+-------------------------
+
+.. automodule:: pyignite.api.cache
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pyignite.api.cache\_config module
 ---------------------------------
 
