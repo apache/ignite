@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
@@ -91,6 +92,8 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(IgniteDynamicCacheStartFailWithPersistenceTest.class);
 
         suite.addTestSuite(TxWithSmallTimeoutAndContentionOneKeyTest.class);
+
+        suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
 
         return suite;
     }
