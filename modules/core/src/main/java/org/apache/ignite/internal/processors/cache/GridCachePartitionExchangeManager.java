@@ -2605,10 +2605,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 assignsMap.put(grp.groupId(), assigns);
 
-                                if (resVer == null)
+                                if (resVer == null && !grp.isLocal())
                                     resVer = grp.topology().readyTopologyVersion();
                             }
                         }
+
+                        if (resVer == null)
+                            resVer = exchId.topologyVersion();
                     }
                     finally {
                         // Must flip busy flag before assignments are given to demand workers.
