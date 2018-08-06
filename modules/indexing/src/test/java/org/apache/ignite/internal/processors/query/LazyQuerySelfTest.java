@@ -100,9 +100,9 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         Ignite srv1 = startGrid(1);
         Ignite srv2 = startGrid(2);
 
-        srv1.createCache(cacheConfiguration(2));
+        srv2.createCache(cacheConfiguration(2));
 
-        populateBaseQueryData(srv1);
+        populateBaseQueryData(srv2);
 
         // Test full iteration.
         ArrayList rows = new ArrayList<>();
@@ -116,6 +116,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
 
         assertNoWorkers();
 
+        System.out.println("+++ SHORT: " + rows.size());
         cursor = execute(srv2, query(195).setPageSize(PAGE_SIZE_SMALL));
 
         rows.clear();
@@ -142,16 +143,18 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
 
         FieldsQueryCursor<List<?>> cursor0 = execute(srv2, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL));
 
-
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
-                FieldsQueryCursor<List<?>> cursor = execute(srv2, query(10).setPageSize(PAGE_SIZE_SMALL));
+                for (int i = 0; i < 10; ++i) {
+                    FieldsQueryCursor<List<?>> cursor = execute(srv2, query(10).setPageSize(PAGE_SIZE_SMALL));
 
-                cursor.getAll();
+                    cursor.getAll();
+                }
             }
         }, 20, "query");
 
 
+        log.info("+++ read cur0");
         for (List<?> row : cursor0)
             rows.add(row);
 
@@ -404,7 +407,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
 
                 return MapQueryLazyWorker.activeCount() == 0;
             }
-        }, 1000L) : "Workers count=" + MapQueryLazyWorker.activeCount();
+        }, 5000L) : "Workers count=" + MapQueryLazyWorker.activeCount();
     }
 
     /**

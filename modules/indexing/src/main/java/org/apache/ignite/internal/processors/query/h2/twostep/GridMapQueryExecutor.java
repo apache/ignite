@@ -775,49 +775,52 @@ public class GridMapQueryExecutor {
                 if (!lazy || qr.isAllClosed())
                     releaseReservations();
                 else {
-                    MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
+//                    MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
+//
+//                    if (worker == null) {
+//                        // Lazy queries must be re-submitted to dedicated workers.
+//                        MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
+//                        worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
+//
+//                        log.info("+++ key=" + key + ", QRY=" + F.first(qrys));
+//
+//                        if (lazyWorkerBusyLock.enterBusy()) {
+//                            try {
+//                                MapQueryLazyWorker oldWorker = lazyWorkers.put(key, worker);
+//
+//                                if (oldWorker != null)
+//                                    oldWorker.stop(false);
+//
+//                                IgniteThread thread = new IgniteThread(worker);
+//
+//                                thread.start();
+//                            }
+//                            finally {
+//                                lazyWorkerBusyLock.leaveBusy();
+//                            }
+//                        }
+//                        else {
+//                            log.info("Ignored query request (node is stopping) [nodeId=" + node.id() +
+//                                ", reqId=" + reqId + ']');
+//                        }
+//
+//                        qctx.lazyWorker(worker);
+//
+//                        worker.submit(new Runnable() {
+//                            @Override public void run() {
+//                                GridH2QueryContext.set(qctx);
+//                            }
+//                        });
+//
+//                        // Set up worker to handle 'nextPage' requests.
+//                        qr.lazyWorker(worker);
 
-                    if (worker == null) {
-                        // Lazy queries must be re-submitted to dedicated workers.
-                        MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
-                        worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
-
-                        log.info("+++ key=" + key + ", QRY=" + F.first(qrys));
-
-                        if (lazyWorkerBusyLock.enterBusy()) {
-                            try {
-                                MapQueryLazyWorker oldWorker = lazyWorkers.put(key, worker);
-
-                                if (oldWorker != null)
-                                    oldWorker.stop(false);
-
-                                IgniteThread thread = new IgniteThread(worker);
-
-                                thread.start();
-                            }
-                            finally {
-                                lazyWorkerBusyLock.leaveBusy();
-                            }
-                        }
-                        else {
-                            log.info("Ignored query request (node is stopping) [nodeId=" + node.id() +
-                                ", reqId=" + reqId + ']');
-                        }
-
-                        qctx.lazyWorker(worker);
-
-                        worker.submit(new Runnable() {
-                            @Override public void run() {
-                                GridH2QueryContext.set(qctx);
-                            }
-                        });
-
-                        // Set up worker to handle 'nextPage' requests.
-                        qr.lazyWorker(worker);
-
-                        GridH2QueryContext.clearThreadLocal();
-                    }
+//                        GridH2QueryContext.clearThreadLocal();
+//                    }
+                    GridH2QueryContext.clearThreadLocal();
                 }
+
+//                GridH2QueryContext.clearThreadLocal();
             }
             catch (Throwable e){
                 releaseReservations();
