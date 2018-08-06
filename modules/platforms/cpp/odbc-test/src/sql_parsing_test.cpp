@@ -83,10 +83,7 @@ void CheckNextToken(odbc::SqlLexer& lexer, odbc::TokenType::Type tokenType, cons
     BOOST_REQUIRE(token.GetValue());
     BOOST_CHECK_GT(token.GetSize(), 0);
     BOOST_CHECK_EQUAL(token.GetType(), tokenType);
-
-    std::string strToken(token.GetValue(), static_cast<size_t>(token.GetSize()));
-
-    BOOST_CHECK_EQUAL(strToken, expected);
+    BOOST_CHECK_EQUAL(token.ToString(), expected);
 }
 
 BOOST_FIXTURE_TEST_SUITE(SqlParsingTestSuite, SqlParsingTestSuiteFixture)

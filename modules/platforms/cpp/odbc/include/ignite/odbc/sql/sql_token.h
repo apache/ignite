@@ -19,6 +19,7 @@
 #define _IGNITE_ODBC_SQL_SQL_TOKEN
 
 #include <stdint.h>
+#include "ignite/common/utils.h"
 
 namespace ignite
 {
@@ -112,6 +113,33 @@ namespace ignite
             int32_t GetSize() const
             {
                 return size;
+            }
+
+            /**
+             * Convert to string.
+             *
+             * @return String token.
+             */
+            std::string ToString() const
+            {
+                if (!token || size <= 0)
+                    return std::string();
+
+                return std::string(token, static_cast<size_t>(size));
+            }
+
+            /**
+             * Convert to lowercase string.
+             *
+             * @return Lowercase string token.
+             */
+            std::string ToLower() const
+            {
+                std::string str(ToString());
+
+                common::IntoLower(str);
+
+                return str;
             }
 
         private:
