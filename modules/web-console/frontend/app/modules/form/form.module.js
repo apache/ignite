@@ -26,8 +26,6 @@ import './field/input/text.scss';
 import igniteFormPanelChevron from './panel/chevron.directive';
 
 // Field.
-import igniteFormFieldLabel from './field/label.directive';
-import igniteFormFieldTooltip from './field/tooltip.directive';
 import placeholder from './field/bs-select-placeholder.directive';
 
 // Validators.
@@ -54,8 +52,6 @@ angular
 // Panel.
 .directive(...igniteFormPanelChevron)
 // Field.
-.directive(...igniteFormFieldLabel)
-.directive(...igniteFormFieldTooltip)
 .directive(...placeholder)
 // Validators.
 .directive(...ipaddress)
