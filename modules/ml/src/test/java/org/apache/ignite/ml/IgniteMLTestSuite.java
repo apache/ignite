@@ -18,6 +18,7 @@
 package org.apache.ignite.ml;
 
 import org.apache.ignite.ml.clustering.ClusteringTestSuite;
+import org.apache.ignite.ml.common.CommonTestSuite;
 import org.apache.ignite.ml.composition.CompositionTestSuite;
 import org.apache.ignite.ml.dataset.DatasetTestSuite;
 import org.apache.ignite.ml.environment.EnvironmentTestSuite;
@@ -54,7 +55,8 @@ import org.junit.runners.Suite;
     SelectionTestSuite.class,
     CompositionTestSuite.class,
     EnvironmentTestSuite.class,
-    StructuresTestSuite.class
+    StructuresTestSuite.class,
+    CommonTestSuite.class
 })
 public class IgniteMLTestSuite {
     // No-op.

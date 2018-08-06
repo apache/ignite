@@ -38,7 +38,7 @@ import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.fail;
 
-/** Tests behaviour of KNNClassificationTest. */
+/** Tests behaviour of LabeledDataset. */
 public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
     /** */
     private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";

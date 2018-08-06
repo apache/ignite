@@ -116,7 +116,7 @@ public class MLPTest {
         MLPConstInitializer initer = new MLPConstInitializer(1, 2);
 
         MLPArchitecture mlpLayer1Conf = new MLPArchitecture(4).
-            withAddedLayer(firstLayerNeuronsCnt, false, Activators.SIGMOID);
+            withAddedLayer(firstLayerNeuronsCnt, true, Activators.SIGMOID);
         MLPArchitecture mlpLayer2Conf = new MLPArchitecture(firstLayerNeuronsCnt).
             withAddedLayer(secondLayerNeuronsCnt, false, Activators.SIGMOID);
         MLPArchitecture mlpLayer3Conf = new MLPArchitecture(secondLayerNeuronsCnt).
@@ -126,7 +126,13 @@ public class MLPTest {
         MultilayerPerceptron mlp2 = new MultilayerPerceptron(mlpLayer2Conf, initer);
         MultilayerPerceptron mlp3 = new MultilayerPerceptron(mlpLayer3Conf, initer);
 
+        Assert.assertEquals(1., mlp1.weight(1, 0, 1), 0);
+
         MultilayerPerceptron stackedMLP = mlp1.add(mlp2).add(mlp3);
+
+        Assert.assertTrue(stackedMLP.toString().length() > 0);
+        Assert.assertTrue(stackedMLP.toString(true).length() > 0);
+        Assert.assertTrue(stackedMLP.toString(false).length() > 0);
 
         Assert.assertEquals(4, stackedMLP.architecture().outputSize());
         Assert.assertEquals(8, stackedMLP.architecture().layersCount());
