@@ -65,7 +65,7 @@ public abstract class AbstractFileIO implements FileIO {
                             "Probably disk is too busy, please check your device.");
                 }
                 else
-                    throw new EOFException("EOF at position [" + position() + "] expected to read [" + num + "] bytes.");
+                    return -1;
             }
         }
 
