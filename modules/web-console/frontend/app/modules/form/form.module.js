@@ -30,10 +30,6 @@ import igniteFormFieldLabel from './field/label.directive';
 import igniteFormFieldTooltip from './field/tooltip.directive';
 import placeholder from './field/bs-select-placeholder.directive';
 
-// Group.
-import igniteFormGroupAdd from './group/add.directive';
-import igniteFormGroupTooltip from './group/tooltip.directive';
-
 // Validators.
 import ipaddress from './validator/ipaddress.directive';
 import javaKeywords from './validator/java-keywords.directive';
@@ -64,9 +60,6 @@ angular
 .directive(...igniteFormFieldLabel)
 .directive(...igniteFormFieldTooltip)
 .directive(...placeholder)
-// Group.
-.directive(...igniteFormGroupAdd)
-.directive(...igniteFormGroupTooltip)
 // Validators.
 .directive(...ipaddress)
 .directive(...javaKeywords)
