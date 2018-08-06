@@ -64,7 +64,7 @@ public abstract class AbstractFileIO implements FileIO {
                     if (time == 0)
                         time = U.currentTimeMillis();
                     else if ((U.currentTimeMillis() - time) >= MAX_IO_TIMEOUT_MS)
-                        throw new IOException(write && position() == size() ? "Failed to extend file." :
+                        throw new IOException(write && (position + i) == size() ? "Failed to extend file." :
                             "Probably disk is too busy, please check your device.");
                 }
                 else
