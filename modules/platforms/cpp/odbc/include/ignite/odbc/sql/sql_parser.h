@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <string>
 
+#include <ignite/odbc/sql/sql_lexer.h>
+
 namespace ignite
 {
     namespace odbc
@@ -52,8 +54,10 @@ namespace ignite
         public:
             /**
              * Default constructor.
+             *
+             * @param sql SQL request.
              */
-            SqlParser();
+            SqlParser(const std::string& sql);
 
             /**
              * Destructor.
@@ -69,7 +73,16 @@ namespace ignite
              */
             bool ParseSql(const std::string& sql, SqlCommand& cmd);
 
+            /**
+             * Shift to the next command.
+             *
+             * @return @c true if the next command is found.
+             */
+            bool ShiftToNextCommand();
+
         private:
+            /** SQL lexer. */
+            SqlLexer lexer;
         };
     }
 }

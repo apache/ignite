@@ -28,9 +28,7 @@ namespace ignite
         SqlLexer::SqlLexer(const std::string& sql) :
             sql(sql),
             pos(0),
-            tokenBegin(0),
-            tokenSize(0),
-            tokenType(TokenType::EOD)
+            currentToken(0, 0, TokenType::EOD)
         {
             // No-op.
         }
@@ -49,11 +47,11 @@ namespace ignite
                 return false;
             }
 
-            tokenType = TokenType::EOD;
+            TokenType::Type tokenType = TokenType::EOD;
 
             while (!IsEod())
             {
-                tokenBegin = pos;
+                int32_t tokenBegin = pos;
 
                 switch (sql[pos])
                 {
@@ -79,13 +77,21 @@ namespace ignite
                     case '"':
                     {
                         // Quoted string.
-                        do {
+                        while (true)
+                        {
                             ++pos;
 
                             if (IsEod())
                                 throw OdbcError(SqlState::SHY000_GENERAL_ERROR, "Unclosed quoted identifier.");
 
-                        } while (sql[pos] != '"' || (HaveData(2) && sql[pos + 1] == '"'));
+                            if (sql[pos] == '"')
+                            {
+                                if (!HaveData(2) || sql[pos + 1] != '"')
+                                    break;
+
+                                ++pos;
+                            }
+                        }
 
                         tokenType = TokenType::QUOTED;
 
@@ -95,14 +101,21 @@ namespace ignite
                     case '\'':
                     {
                         // String literal.
-                        do
+                        while (true)
                         {
                             ++pos;
 
                             if (IsEod())
                                 throw OdbcError(SqlState::SHY000_GENERAL_ERROR, "Unclosed string literal.");
 
-                        } while (sql[pos] != '\'' || (HaveData(2) && sql[pos + 1] == '\''));
+                            if (sql[pos] == '\'')
+                            {
+                                if (!HaveData(2) || sql[pos + 1] != '\'')
+                                    break;
+
+                                ++pos;
+                            }
+                        }
 
                         tokenType = TokenType::STRING;
 
@@ -155,7 +168,7 @@ namespace ignite
                         }
 
                         // Word.
-                        while (!IsEod() && !isspace(sql[pos]) && !iscntrl(sql[pos]))
+                        while (!IsEod() && !IsDelimeter(sql[pos]))
                             ++pos;
 
                         --pos;
@@ -170,7 +183,7 @@ namespace ignite
 
                 if (tokenType != TokenType::EOD)
                 {
-                    tokenSize = pos - tokenBegin;
+                    currentToken = SqlToken(&sql[tokenBegin], pos - tokenBegin, tokenType);
 
                     break;
                 }
@@ -186,16 +199,19 @@ namespace ignite
 
         void SqlLexer::SetEod()
         {
-            pos = sql.size();
+            pos = static_cast<int32_t>(sql.size());
 
-            tokenType = TokenType::EOD;
-
-            tokenSize = 0;
+            currentToken = SqlToken(0, 0, TokenType::EOD);
         }
 
         bool SqlLexer::HaveData(int32_t num) const
         {
             return static_cast<size_t>(pos + num) < sql.size();
+        }
+
+        bool SqlLexer::IsDelimeter(int c)
+        {
+            return !isalnum(c) && c != '_';
         }
     }
 }

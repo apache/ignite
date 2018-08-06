@@ -350,5 +350,8 @@
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_parser.h">
       <Filter>Code\sql</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_token.h">
+      <Filter>Code\sql</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

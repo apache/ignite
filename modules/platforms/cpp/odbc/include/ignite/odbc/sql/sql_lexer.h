@@ -15,55 +15,18 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_SQL_LEXER
-#define _IGNITE_ODBC_SQL_LEXER
+#ifndef _IGNITE_ODBC_SQL_SQL_LEXER
+#define _IGNITE_ODBC_SQL_SQL_LEXER
 
 #include <stdint.h>
 #include <string>
+
+#include <ignite/odbc/sql/sql_token.h>
 
 namespace ignite
 {
     namespace odbc
     {
-        /**
-         * Token type.
-         */
-        struct TokenType
-        {
-            enum Type
-            {
-                /** Minus token. */
-                MINUS,
-
-                /** Quoted token. */
-                QUOTED,
-
-                /** String literal token. */
-                STRING,
-
-                /** Dot. */
-                DOT,
-
-                /** Comma. */
-                COMMA,
-
-                /** Parenthesis: left. */
-                PARENTHESIS_LEFT,
-
-                /** Parenthesis: right. */
-                PARENTHESIS_RIGHT,
-
-                /** Semicolon. */
-                SEMICOLON,
-
-                /** Simple word. */
-                WORD,
-
-                /** End of data. */
-                EOD
-            };
-        };
-
         /**
          * SQL lexer.
          */
@@ -96,8 +59,17 @@ namespace ignite
              */
             bool IsEod() const;
 
-        private:
+            /**
+             * Get current token.
+             *
+             * @return Current token.
+             */
+            const SqlToken& GetCurrentToken() const
+            {
+                return currentToken;
+            }
 
+        private:
             /**
              * Set end of data state.
              */
@@ -111,22 +83,24 @@ namespace ignite
              */
             bool HaveData(int32_t num) const;
 
+            /**
+             * Check if the char is delimeter.
+             *
+             * @param c Character
+             * @return True if the character is delimeter.
+             */
+            static bool IsDelimeter(int c);
+
             /** SQL string. */
             const std::string& sql;
 
-            /** Current token position. */
+            /** Current lexer position in string. */
             int32_t pos;
 
-            /** Current token begin. */
-            int32_t tokenBegin;
-
-            /** Current token size. */
-            int32_t tokenSize;
-
-            /** Current token type. */
-            TokenType::Type tokenType;
+            /** Current token. */
+            SqlToken currentToken;
         };
     }
 }
 
-#endif //_IGNITE_ODBC_SQL_LEXER
+#endif //_IGNITE_ODBC_SQL_SQL_LEXER
