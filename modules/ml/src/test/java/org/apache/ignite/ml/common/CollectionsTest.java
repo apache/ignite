@@ -58,7 +58,9 @@ public class CollectionsTest {
 
         test(new HammingDistance(), new HammingDistance(), false);
 
-        test(new FeatureMetadata("name1"), new FeatureMetadata("name2"));
+        FeatureMetadata data = new FeatureMetadata("name2");
+        data.setName("name1");
+        test(data, new FeatureMetadata("name2"));
 
         test(new DatasetRow<>(new DenseVector()), new DatasetRow<>(new DenseVector(1)));
 
@@ -101,8 +103,14 @@ public class CollectionsTest {
     }
 
     /** */
-    private <T> void test(T o1, T o2, boolean testEquals) {
-        if (testEquals)
+    private <T> void test(T o1, T o2, boolean testDiffer) {
+        assertNotEquals(o1, null);
+        assertNotEquals(o2, null);
+
+        assertEquals(o1, o1);
+        assertEquals(o2, o2);
+
+        if (testDiffer)
             assertNotEquals(o1, o2);
 
         Set<T> set = new HashSet<>();
