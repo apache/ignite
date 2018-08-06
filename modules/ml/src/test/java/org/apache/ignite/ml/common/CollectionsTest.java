@@ -54,15 +54,15 @@ public class CollectionsTest {
         test(new VectorizedViewMatrix(new DenseMatrix(2, 2), 1, 1, 1, 1),
             new VectorizedViewMatrix(new DenseMatrix(3, 2), 2, 1, 1, 1));
 
-        test(new ManhattanDistance(), new ManhattanDistance());
+        test(new ManhattanDistance(), new ManhattanDistance(), false);
 
-        test(new HammingDistance(), new HammingDistance());
+        test(new HammingDistance(), new HammingDistance(), false);
 
         test(new FeatureMetadata("name1"), new FeatureMetadata("name2"));
 
-        test(new DatasetRow<>(new DenseVector()), new DatasetRow<>(new DenseVector()));
+        test(new DatasetRow<>(new DenseVector()), new DatasetRow<>(new DenseVector(1)));
 
-        test(new LabeledVector<>(new DenseVector(), null), new LabeledVector<>(new DenseVector(), null));
+        test(new LabeledVector<>(new DenseVector(), null), new LabeledVector<>(new DenseVector(1), null));
 
         test(new Dataset<DatasetRow<Vector>>(new DatasetRow[] {}, new FeatureMetadata[] {}),
             new Dataset<DatasetRow<Vector>>(new DatasetRow[] {new DatasetRow()},
@@ -97,15 +97,26 @@ public class CollectionsTest {
 
     /** */
     private <T> void test(T o1, T o2) {
+        test(o1, o2, true);
+    }
+
+    /** */
+    private <T> void test(T o1, T o2, boolean testEquals) {
+        if (testEquals)
+            assertNotEquals(o1, o2);
+
         Set<T> set = new HashSet<>();
         set.add(o1);
         set.add(o1);
         assertEquals(1, set.size());
+
         set.add(o2);
         set.add(o2);
         assertEquals(2, set.size());
+
         set.remove(o1);
         assertEquals(1, set.size());
+
         set.remove(o2);
         assertEquals(0, set.size());
     }
