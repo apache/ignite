@@ -1774,6 +1774,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
     }
 
+    /** */
     private void updateLocalPartitionSizes() {
         if (F.isEmpty(sizeDeltas))
             return;
