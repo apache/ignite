@@ -148,7 +148,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private boolean longSockTimeouts;
 
     /** */
-    protected long clientFailureDetectionTimeout = 1000;
+    protected long clientFailureDetectionTimeout = 2000;
 
     /** */
     private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
