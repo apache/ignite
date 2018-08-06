@@ -72,11 +72,10 @@ public class DeferredPartitionUpdates implements Message {
 
                 writer.incrementState();
             case 1:
-                if (!writer.writeMap("sizeDeltas", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
+                if (!writer.writeMap("sizeDeltas", sizeDeltas, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
-
         }
 
         return true;
