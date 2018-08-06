@@ -22,19 +22,6 @@ include ../../primitives/tooltip/index
 include ../../primitives/switcher/index
 include ../../primitives/form-field/index
 
-//- Mixin for advanced options toggle.
-mixin advanced-options-toggle(click, cond, showMessage, hideMessage)
-    .advanced-options
-        i.fa(
-            ng-click=`${click}`
-            ng-class=`${cond} ? 'fa-chevron-circle-down' : 'fa-chevron-circle-right'`
-        )
-        a(ng-click=click) {{ #{cond} ? '#{hideMessage}' : '#{showMessage}' }}
-
-//- Mixin for advanced options toggle with default settings.
-mixin advanced-options-toggle-default
-    +advanced-options-toggle('toggleExpanded()', 'ui.expanded', 'Show advanced settings...', 'Hide advanced settings...')
-
 //- Mixin for main table on screen with list of items.
 mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
     .padding-bottom-dflt(ng-show=`${rows} && ${rows}.length > 0`)
