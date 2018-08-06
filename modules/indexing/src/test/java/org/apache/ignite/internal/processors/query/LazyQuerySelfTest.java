@@ -116,7 +116,6 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
 
         assertNoWorkers();
 
-
         cursor = execute(srv2, query(195).setPageSize(PAGE_SIZE_SMALL));
 
         rows.clear();
@@ -125,6 +124,40 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
             rows.add(row);
 
         System.out.println("+++ short res: " + rows.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDbgPool() throws Exception {
+        Ignite srv1 = startGrid(1);
+        Ignite srv2 = startGrid(2);
+
+        srv1.createCache(cacheConfiguration(2));
+
+        populateBaseQueryData(srv1);
+
+        // Test full iteration.
+        ArrayList rows = new ArrayList<>();
+
+        FieldsQueryCursor<List<?>> cursor0 = execute(srv2, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL));
+
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                FieldsQueryCursor<List<?>> cursor = execute(srv2, query(10).setPageSize(PAGE_SIZE_SMALL));
+
+                cursor.getAll();
+            }
+        }, 20, "query");
+
+
+        for (List<?> row : cursor0)
+            rows.add(row);
+
+        assertBaseQueryResults(rows);
+
+        assertNoWorkers();
     }
 
     /**
