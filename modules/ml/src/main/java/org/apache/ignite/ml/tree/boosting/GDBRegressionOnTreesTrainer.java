@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.boosting;
 
+import org.apache.ignite.ml.composition.boosting.GDBLearningStrategy;
 import org.apache.ignite.ml.composition.boosting.GDBRegressionTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.jetbrains.annotations.NotNull;
@@ -64,5 +65,10 @@ public class GDBRegressionOnTreesTrainer extends GDBRegressionTrainer<DecisionTr
     public GDBRegressionOnTreesTrainer withUseIndex(boolean useIndex) {
         this.useIndex = useIndex;
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GDBLearningStrategy<DecisionTreeRegressionTrainer> getLearningStrategy() {
+        return new GDBOnTreesLearningStrategy<>(useIndex);
     }
 }
