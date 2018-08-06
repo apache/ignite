@@ -21,17 +21,19 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/combineLatest';
 
 export default class {
-    static $inject = ['AgentManager', 'IgniteConfirm', 'IgniteVersion'];
+    static $inject = ['AgentManager', 'IgniteConfirm', 'IgniteVersion', 'IgniteMessages'];
 
     /**
      * @param agentMgr Agent manager.
      * @param Confirm Confirmation service.
      * @param Version Version check service.
+     * @param Messages Messages service.
      */
-    constructor(agentMgr, Confirm, Version) {
+    constructor(agentMgr, Confirm, Version, Messages) {
         this.agentMgr = agentMgr;
         this.Confirm = Confirm;
         this.Version = Version;
+        this.Messages = Messages;
 
         this.clusters = [];
         this.isDemo = agentMgr.isDemoMode();
@@ -74,10 +76,13 @@ export default class {
         const toggleClusterState = () => {
             this._inProgressSubject.next(true);
 
-            // IGNITE-8744 For some reason .finally() not working in Firefox, needed to be investigated later.
             return this.agentMgr.toggleClusterState()
                 .then(() => this._inProgressSubject.next(false))
-                .catch(() => this._inProgressSubject.next(false));
+                .catch((err) => {
+                    this._inProgressSubject.next(false);
+
+                    this.Messages.showError('Failed to toggle cluster state: ', err);
+                });
         };
 
         if (this.cluster.active) {
