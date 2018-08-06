@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -395,7 +394,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
         @Nullable IgniteInClosure<CacheConfiguration> cfgC,
         ReadMode readMode,
         WriteMode writeMode) throws Exception {
-        MvccProcessor.coordinatorAssignClosure(new CoordinatorAssignClosure());
+        MvccProcessorImpl.coordinatorAssignClosure(new CoordinatorAssignClosure());
 
         Ignite srv0 = startGrids(4);
 

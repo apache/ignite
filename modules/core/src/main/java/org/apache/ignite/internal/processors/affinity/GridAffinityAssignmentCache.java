@@ -203,7 +203,7 @@ public class GridAffinityAssignmentCache {
      * @param affAssignment Affinity assignment for topology version.
      */
     public void initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
-        MvccCoordinator mvccCrd = ctx.cache().context().coordinators().currentCoordinatorForCacheAffinity(topVer);
+        MvccCoordinator mvccCrd = ctx.cache().context().coordinators().currentCoordinator(topVer);
 
         initialize(topVer, affAssignment, mvccCrd);
     }

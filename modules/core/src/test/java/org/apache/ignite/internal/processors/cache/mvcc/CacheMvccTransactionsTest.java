@@ -2704,9 +2704,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         MvccCoordinator crd = null;
 
         for (Ignite node : G.allGrids()) {
-            MvccProcessor crdProc = ((IgniteKernal)node).context().cache().context().coordinators();
-
-            MvccCoordinator crd0 = crdProc.currentCoordinator();
+            MvccCoordinator crd0 = mvccProcessor(node).currentCoordinator();
 
             if (crd != null)
                 assertEquals(crd, crd0);
@@ -3232,7 +3230,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         GridCacheContext cctx =
             ((IgniteKernal)node).context().cache().context().cacheContext(CU.cacheId(cache.getName()));
 
-        MvccProcessor crd = cctx.kernalContext().coordinators();
+        MvccProcessorImpl crd = mvccProcessor(node);
 
         // Start query to prevent cleanup.
         IgniteInternalFuture<MvccSnapshot> fut = crd.requestSnapshotAsync();

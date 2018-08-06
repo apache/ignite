@@ -57,6 +57,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -216,7 +217,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        MvccProcessor.coordinatorAssignClosure(null);
+        MvccProcessorImpl.coordinatorAssignClosure(null);
 
         cleanPersistenceDir();
     }
@@ -232,7 +233,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
 
-        MvccProcessor.coordinatorAssignClosure(null);
+        MvccProcessorImpl.coordinatorAssignClosure(null);
 
         cleanPersistenceDir();
 
@@ -1235,7 +1236,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         final GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer,
         final GridInClosure3<Integer, List<TestCache>, AtomicBoolean> reader) throws Exception {
         if (restartMode == RestartMode.RESTART_CRD)
-            MvccProcessor.coordinatorAssignClosure(new CoordinatorAssignClosure());
+            MvccProcessorImpl.coordinatorAssignClosure(new CoordinatorAssignClosure());
 
         Ignite srv0 = startGridsMultiThreaded(srvs);
 
@@ -1453,9 +1454,12 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      */
     final void verifyCoordinatorInternalState() throws Exception {
         for (Ignite node : G.allGrids()) {
-            final MvccProcessor crd = ((IgniteKernal)node).context().cache().context().coordinators();
+            final MvccProcessorImpl crd = mvccProcessor(node);
 
-            crd.stopVacuum(); // to prevent new futures creation.
+            if (crd == null)
+                continue;
+
+            crd.stopVacuumWorkers(); // to prevent new futures creation.
 
             Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
             Map<?, Map> cntrFuts = GridTestUtils.getFieldValue(crd, "snapLsnrs");
@@ -1558,10 +1562,13 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         // Run vacuum manually.
         for (Ignite node : G.allGrids()) {
-            if (!node.configuration().isClientMode() && node.configuration().isMvccEnabled()) {
-                final MvccProcessor crd = ((IgniteEx)node).context().cache().context().coordinators();
+            if (!node.configuration().isClientMode()) {
+                MvccProcessorImpl crd = mvccProcessor(node);
 
-                Throwable vacuumError = crd.getVacuumError();
+                if (crd == null)
+                    continue;
+
+                Throwable vacuumError = crd.vacuumError();
 
                 assertNull(X.getFullStackTrace(vacuumError), vacuumError);
 
@@ -1576,11 +1583,31 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param node Ignite node.
+     * @return Mvcc processor.
+     */
+    protected MvccProcessorImpl mvccProcessor(Ignite node) {
+        GridKernalContext ctx = ((IgniteEx)node).context();
+
+        MvccProcessor crd = ctx.coordinators();
+
+        assertNotNull(crd);
+
+        if (crd instanceof NoOpMvccProcessor) {
+            assertFalse(MvccUtils.mvccEnabled(ctx));
+
+            return null;
+        }
+
+        return (MvccProcessorImpl)crd;
+    }
+
+    /**
      * @param node Node.
      * @throws Exception If failed.
      */
     protected final void checkActiveQueriesCleanup(Ignite node) throws Exception {
-        final MvccProcessor crd = ((IgniteKernal)node).context().cache().context().coordinators();
+        final MvccProcessorImpl crd = mvccProcessor(node);
 
         assertTrue("Active queries not cleared: " + node.name(), GridTestUtils.waitForCondition(
             new GridAbsPredicate() {

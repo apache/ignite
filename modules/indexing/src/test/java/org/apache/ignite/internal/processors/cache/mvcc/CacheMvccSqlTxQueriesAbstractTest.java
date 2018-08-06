@@ -1652,7 +1652,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
             tx.commit();
         }
 
-        ((IgniteEx)node).context().coordinators().runVacuum().get(TX_TIMEOUT);
+        mvccProcessor(node).runVacuum().get(TX_TIMEOUT);
 
         checkAllVersionsHints(node.cache(DEFAULT_CACHE_NAME));
     }

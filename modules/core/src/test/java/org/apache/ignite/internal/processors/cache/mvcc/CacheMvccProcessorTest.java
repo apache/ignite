@@ -58,7 +58,7 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
 
         grid.cluster().active(true);
 
-        MvccProcessor mvccProcessor = grid.context().coordinators();
+        MvccProcessorImpl mvccProcessor = mvccProcessor(grid);
 
         assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
 
@@ -75,7 +75,7 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
 
             grid.cluster().active(true);
 
-            mvccProcessor = grid.context().coordinators();
+            mvccProcessor = mvccProcessor(grid);
         }
 
         assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));

@@ -30,6 +30,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Message containing changes which should be applied only on MVCC transaction commit.
  */
 public class DeferredPartitionUpdates implements Message {
+    /** */
+    private static final long serialVersionUID = 1661031664775111613L;
+
     /** Map of update counters made by this tx. Mapping: partId -> updCntr. */
     @GridDirectMap(keyType = Integer.class, valueType = Long.class)
     private Map<Integer, Long> updCntrs = new HashMap<>();
