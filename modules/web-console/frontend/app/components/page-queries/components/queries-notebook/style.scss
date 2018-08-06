@@ -123,6 +123,10 @@ queries-notebook {
     }
 
     .form-field__sensitive {
+        input[type='checkbox'] {
+            height: 0;
+        }
+
         input:checked + span {
             color: #0067b9;
         }
