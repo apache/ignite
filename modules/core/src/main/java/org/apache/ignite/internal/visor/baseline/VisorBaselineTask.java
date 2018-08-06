@@ -34,7 +34,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task that will collect baseline topology information.
+ * Task that will collect information about baseline topology and can change its state.
  */
 @GridInternal
 public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, VisorBaselineTaskResult> {

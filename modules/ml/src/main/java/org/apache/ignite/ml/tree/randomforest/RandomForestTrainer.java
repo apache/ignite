@@ -26,8 +26,12 @@ import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggrega
 public abstract class RandomForestTrainer extends BaggingModelTrainer {
     /** Max decision tree deep. */
     protected final int maxDeep;
+
     /** Min impurity decrease. */
     protected final double minImpurityDecrease;
+
+    /** Use index structure instead of using sorting while decision tree learning. */
+    protected boolean useIndex = false;
 
     /**
      * Constructs new instance of BaggingModelTrainer.
