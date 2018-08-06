@@ -2256,11 +2256,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 rowStore.removeRow(row.link());
 
-                decrementSize(cctx.cacheId());
-
                 if (first)
                     first = false;
             }
+
+            // first == true means there was no row versions
+            if (!first)
+                decrementSize(cctx.cacheId());
         }
 
         /** {@inheritDoc} */
@@ -2289,8 +2291,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         clearPendingEntries(cctx, oldRow);
 
                         rowStore.removeRow(cleanupRow.link());
-
-                        decrementSize(cctx.cacheId());
 
                         res++;
                     }
