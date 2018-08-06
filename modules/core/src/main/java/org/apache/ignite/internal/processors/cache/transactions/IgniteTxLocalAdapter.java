@@ -1697,8 +1697,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 Integer p = e.getKey();
                 long delta = e.getValue().get();
 
-                assert delta > 0 : delta;
-
                 if (affinity.backupByPartition(node, p, topologyVersionSnapshot()))
                     resBackupUpdates.sizeDeltas().put(p, delta);
             }
