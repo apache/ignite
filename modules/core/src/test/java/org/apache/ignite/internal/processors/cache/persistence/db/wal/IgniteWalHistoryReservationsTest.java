@@ -65,8 +65,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration()
                     .setMaxSize(200L * 1024 * 1024)
                     .setPersistenceEnabled(true))
-                .setWalMode(WALMode.LOG_ONLY)
-                .setWalSegmentSize(512 * 1024);
+            .setWalMode(WALMode.LOG_ONLY)
+            .setWalSegmentSize(512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -122,8 +122,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         log.warning("Start loading");
 
-        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")){
-            for (int k = 0; k < entryCnt; k++){
+        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")) {
+            for (int k = 0; k < entryCnt; k++) {
                 st.addData(k, k);
 
                 printProgress(k);
@@ -156,10 +156,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         log.warning("Start loading");
 
-        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")){
+        try (IgniteDataStreamer<Object, Object> st = ig0.dataStreamer("cache1")) {
             st.allowOverwrite(true);
 
-            for (int k = 0; k < entryCnt; k++){
+            for (int k = 0; k < entryCnt; k++) {
                 st.addData(k, k);
 
                 printProgress(k);
@@ -191,16 +191,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                     for (int g = 0; g < initGridCnt; g++) {
                         IgniteEx ig = grid(g);
 
-                        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
-
-                        Object segmentAware = GridTestUtils.getFieldValue(wal, "segmentAware");
-
-                        synchronized (segmentAware) {
-                            Map reserved = GridTestUtils.getFieldValue(GridTestUtils.getFieldValue(segmentAware, "reservationStorage"), "reserved");
-
-                            if (reserved.isEmpty())
-                                return false;
-                        }
+                        if (isReserveListEmpty(ig))
+                            return false;
                     }
 
                     return true;
@@ -218,16 +210,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 for (int g = 0; g < initGridCnt; g++) {
                     IgniteEx ig = grid(g);
 
-                    FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
-
-                    Object segmentAware = GridTestUtils.getFieldValue(wal, "segmentAware");
-
-                    synchronized (segmentAware) {
-                        Map reserved = GridTestUtils.getFieldValue(GridTestUtils.getFieldValue(segmentAware, "reservationStorage"), "reserved");
-
-                        if (reserved.isEmpty())
-                            return false;
-                    }
+                    if (isReserveListEmpty(ig))
+                        return false;
                 }
 
                 return true;
@@ -238,9 +222,26 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return {@code true} if reserve list is empty.
+     */
+    private boolean isReserveListEmpty(IgniteEx ig) {
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
+
+        Object segmentAware = GridTestUtils.getFieldValue(wal, "segmentAware");
+
+        synchronized (segmentAware) {
+            Map reserved = GridTestUtils.getFieldValue(GridTestUtils.getFieldValue(segmentAware, "reservationStorage"), "reserved");
+
+            if (reserved.isEmpty())
+                return true;
+        }
+        return false;
+    }
+
+    /**
      *
      */
-    private void printProgress(int k){
+    private void printProgress(int k) {
         if (k % 1000 == 0)
             log.warning("Keys -> " + k);
     }
@@ -251,7 +252,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
         int entryCnt = 10_000;
 
-        IgniteEx ig0 = (IgniteEx) startGrids(2);
+        IgniteEx ig0 = (IgniteEx)startGrids(2);
 
         ig0.active(true);
 
@@ -300,7 +301,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     public void testNodeIsClearedIfHistoryIsUnavailable() throws Exception {
         int entryCnt = 10_000;
 
-        IgniteEx ig0 = (IgniteEx) startGrids(2);
+        IgniteEx ig0 = (IgniteEx)startGrids(2);
 
         ig0.active(true);
 
@@ -360,7 +361,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     public void testWalHistoryPartiallyRemoved() throws Exception {
         int entryCnt = 10_000;
 
-        IgniteEx ig0 = (IgniteEx) startGrids(2);
+        IgniteEx ig0 = (IgniteEx)startGrids(2);
 
         ig0.cluster().active(true);
 
@@ -384,7 +385,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), walArchPath + "/" +
-                nodeId0, false));
+            nodeId0, false));
 
         startGrid(0);
 
@@ -434,16 +435,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                     for (int g = 0; g < initGridCnt; g++) {
                         IgniteEx ig = grid(g);
 
-                        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
-
-                        Object segmentAware = GridTestUtils.getFieldValue(wal, "segmentAware");
-
-                        synchronized (segmentAware) {
-                            Map reserved = GridTestUtils.getFieldValue(GridTestUtils.getFieldValue(segmentAware, "reservationStorage"), "reserved");
-
-                            if (reserved.isEmpty())
-                                return false;
-                        }
+                        if (isReserveListEmpty(ig))
+                            return false;
                     }
 
                     return true;
@@ -463,16 +456,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 for (int g = 0; g < initGridCnt - 1; g++) {
                     IgniteEx ig = grid(g);
 
-                    FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
-
-                    Object segmentAware = GridTestUtils.getFieldValue(wal, "segmentAware");
-
-                    synchronized (segmentAware) {
-                        Map reserved = GridTestUtils.getFieldValue(GridTestUtils.getFieldValue(segmentAware, "reservationStorage"), "reserved");
-
-                        if (reserved.isEmpty())
-                            return false;
-                    }
+                    if (isReserveListEmpty(ig))
+                        return false;
                 }
 
                 return true;

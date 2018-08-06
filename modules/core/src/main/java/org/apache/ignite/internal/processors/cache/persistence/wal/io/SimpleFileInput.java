@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
  * File input, backed by byte buffer file input.
  * This class allows to read data by chunks from file and then read primitives
  */
-public final class SimpleFileInput implements FileInput {
+public class SimpleFileInput implements FileInput {
     /**
      * Buffer for reading blocks of data into.
      * <b>Note:</b> biggest block requested from this input can't be longer than buffer capacity
@@ -36,7 +36,7 @@ public final class SimpleFileInput implements FileInput {
     private ByteBuffer buf;
 
     /** I/O interface for read/write operations with file */
-    private FileIO io;
+    protected FileIO io;
 
     /** */
     private long pos;

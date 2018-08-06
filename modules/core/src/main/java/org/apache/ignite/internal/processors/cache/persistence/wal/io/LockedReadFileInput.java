@@ -31,9 +31,7 @@ import org.jetbrains.annotations.NotNull;
  * This implementation locks segment only for reading to buffer and also can switch reading segment from work directory
  * to archive directory if needed.
  */
-final class LockedReadFileInput implements FileInput {
-    /** Actual reader of file. */
-    private FileInput delegate;
+final class LockedReadFileInput extends SimpleFileInput {
     /** Segment for read. */
     private final long segmentId;
     /** Holder of actual information of latest manipulation on WAL segments. */
@@ -42,8 +40,6 @@ final class LockedReadFileInput implements FileInput {
     private final SegmentIoFactory fileIOFactory;
     /** Last read was from archive or not. */
     private boolean isLastReadFromArchive;
-    /** Buffer for reading blocks of data into. */
-    private ByteBufferExpander expBuf;
 
     /**
      * @param buf Buffer for reading blocks of data into.
@@ -60,27 +56,11 @@ final class LockedReadFileInput implements FileInput {
         SegmentAware segmentAware,
         SegmentIoFactory segmentIOFactory
     ) throws IOException {
-        this.delegate = new SimpleFileInput(initFileIo, buf);
-        expBuf = buf;
+        super(initFileIo, buf);
         this.segmentId = segmentId;
         this.segmentAware = segmentAware;
         this.fileIOFactory = segmentIOFactory;
         isLastReadFromArchive = segmentAware.lastArchivedAbsoluteIndex() >= segmentId;
-    }
-
-    /** {@inheritDoc} */
-    public FileIO io() {
-        return delegate.io();
-    }
-
-    /** {@inheritDoc} */
-    public void seek(long pos) throws IOException {
-        delegate.seek(pos);
-    }
-
-    /** {@inheritDoc} */
-    public ByteBuffer buffer() {
-        return delegate.buffer();
     }
 
     /** {@inheritDoc} */
@@ -97,108 +77,17 @@ final class LockedReadFileInput implements FileInput {
 
                 FileIO io = fileIOFactory.build(segmentId);
 
-                io.position(delegate.io().position());
+                io.position(io().position());
 
-                SimpleFileInput input = new SimpleFileInput(io, expBuf);
-
-                this.delegate.io().close();
-
-                this.delegate = input;
+                this.io = io;
             }
 
-            delegate.ensure(requested);
+            super.ensure(requested);
         }
         finally {
             if (!readArchive)
                 segmentAware.releaseWorkSegment(segmentId);
         }
-    }
-
-    /** {@inheritDoc} */
-    public long position() {
-        return delegate.position();
-    }
-
-    /** {@inheritDoc} */
-    public void readFully(@NotNull byte[] b) throws IOException {
-        delegate.readFully(b);
-    }
-
-    /** {@inheritDoc} */
-    public void readFully(@NotNull byte[] b, int off, int len) throws IOException {
-        delegate.readFully(b, off, len);
-    }
-
-    /** {@inheritDoc} */
-    public int skipBytes(int n) throws IOException {
-        return delegate.skipBytes(n);
-    }
-
-    /** {@inheritDoc} */
-    public boolean readBoolean() throws IOException {
-        return delegate.readBoolean();
-    }
-
-    /** {@inheritDoc} */
-    public byte readByte() throws IOException {
-        return delegate.readByte();
-    }
-
-    /** {@inheritDoc} */
-    public int readUnsignedByte() throws IOException {
-        return delegate.readUnsignedByte();
-    }
-
-    /** {@inheritDoc} */
-    public short readShort() throws IOException {
-        return delegate.readShort();
-    }
-
-    /** {@inheritDoc} */
-    public int readUnsignedShort() throws IOException {
-        return delegate.readUnsignedShort();
-    }
-
-    /** {@inheritDoc} */
-    public char readChar() throws IOException {
-        return delegate.readChar();
-    }
-
-    /** {@inheritDoc} */
-    public int readInt() throws IOException {
-        return delegate.readInt();
-    }
-
-    /** {@inheritDoc} */
-    public long readLong() throws IOException {
-        return delegate.readLong();
-    }
-
-    /** {@inheritDoc} */
-    public float readFloat() throws IOException {
-        return delegate.readFloat();
-    }
-
-    /** {@inheritDoc} */
-    public double readDouble() throws IOException {
-        return delegate.readDouble();
-    }
-
-    /** {@inheritDoc} */
-    public String readLine() throws IOException {
-        return delegate.readLine();
-    }
-
-    /** {@inheritDoc} */
-    public String readUTF() throws IOException {
-        return delegate.readUTF();
-    }
-
-
-    /** {@inheritDoc} */
-    @NotNull
-    public Crc32CheckingFileInput startRead(boolean skipCheck) {
-        return delegate.startRead(skipCheck);
     }
 
     /**

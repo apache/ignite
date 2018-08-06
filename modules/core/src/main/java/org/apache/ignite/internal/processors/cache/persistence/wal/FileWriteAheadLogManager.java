@@ -1885,7 +1885,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     segmentAware.lastCompressedIdx(currReservedSegment);
                 }
-
                 finally {
                     if (currReservedSegment != -1)
                         release(new FileWALPointer(currReservedSegment, 0, 0));
@@ -2242,6 +2241,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override public void close() throws IgniteCheckedException {
             try {
                 fileIO.close();
+
+                in.io().close();
             }
             catch (IOException e) {
                 throw new IgniteCheckedException(e);

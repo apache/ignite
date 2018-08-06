@@ -64,6 +64,8 @@ public class SegmentLockStorage extends SegmentObservable {
     synchronized void releaseWorkSegment(long absIdx) {
         Integer cur = locked.get(absIdx);
 
+        assert cur != null && cur >= 1 : "cur=" + cur + ", absIdx=" + absIdx;
+
         if (cur == 1)
             locked.remove(absIdx);
         else
