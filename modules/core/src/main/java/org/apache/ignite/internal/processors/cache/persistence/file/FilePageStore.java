@@ -346,6 +346,7 @@ public class FilePageStore implements PageStore {
         try {
             long off = pageOffset(pageId);
 
+            assert pageBuf.capacity() == pageSize;
             assert pageBuf.remaining() == pageSize;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
