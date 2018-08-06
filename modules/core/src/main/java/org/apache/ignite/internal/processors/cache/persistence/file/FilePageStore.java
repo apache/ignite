@@ -396,22 +396,7 @@ public class FilePageStore implements PageStore {
         try {
             assert buf.remaining() == headerSize();
 
-            int len = headerSize();
-
-            long off = 0;
-
-            do {
-                int n = readWithFailover(buf, off);
-
-                // If page was not written yet, nothing to read.
-                if (n < 0)
-                    return;
-
-                off += n;
-
-                len -= n;
-            }
-            while (len > 0);
+            readWithFailover(buf, 0);
         }
         catch (IOException e) {
             throw new PersistentStorageIOException("Read error", e);
