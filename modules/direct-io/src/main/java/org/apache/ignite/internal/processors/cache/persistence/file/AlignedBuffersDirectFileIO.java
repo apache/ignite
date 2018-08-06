@@ -30,6 +30,10 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -318,6 +322,38 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
         return fd;
     }
 
+    private static final ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(2);
+
+    private class TestTask implements Runnable {
+        final AtomicBoolean active = new AtomicBoolean();
+
+        long len, position, fileSize;
+
+        @Override public void run() {
+            if (active.compareAndSet(true, false)) {
+                U.warn(log, "Freezed task. len=" + len + ", position=" + position + ", size=" + fileSize);
+            }
+        }
+
+        public TestTask init(long len, long position) throws IOException {
+            this.len = len;
+
+            this.position = position;
+
+            this.fileSize = size();
+
+            this.active.set(true);
+
+            return this;
+        }
+    }
+
+    private final ThreadLocal<TestTask> testTask = new ThreadLocal<TestTask>() {
+        @Override protected TestTask initialValue() {
+            return new TestTask();
+        }
+    };
+
     /**
      * Read bytes from file using Native IO and aligned buffers.
      *
@@ -343,8 +379,19 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
 
         if (filePos == FILE_POS_USE_CURRENT)
             rd = IgniteNativeIoLib.read(fdCheckOpened(), ptr, nl(toRead)).intValue();
-        else
-            rd = IgniteNativeIoLib.pread(fdCheckOpened(), ptr, nl(toRead), nl(filePos)).intValue();
+        else {
+            final TestTask t = testTask.get().init(toRead, filePos);
+            ScheduledFuture<?> f = scheduler.schedule(t, 10, TimeUnit.SECONDS);
+
+            try {
+                rd = IgniteNativeIoLib.pread(fdCheckOpened(), ptr, nl(toRead), nl(filePos)).intValue();
+            }
+            finally {
+                t.active.set(false);
+
+                f.cancel(false);
+            }
+        }
 
         if (rd == 0)
             return -1; //Tried to read past EOF for file
