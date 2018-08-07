@@ -13,27 +13,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.api import (
-    cache_create, cache_destroy, cache_get, cache_put, cache_get_names
-)
 from pyignite.connection import Connection
 
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
 
-cache_create(conn, 'my cache')
+my_cache = conn.create_cache('my cache')
 
-result = cache_put(conn, 'my cache', 'my key', 42)
-print(result.message)  # “Success”
+my_cache.put('my key', 42)
 
-result = cache_get(conn, 'my cache', 'my key')
-print(result.value)  # “42”
+result = my_cache.get('my key')
+print(result)  # 42
 
-result = cache_get(conn, 'my cache', 'non-existent key')
-print(result.value)  # None
+result = my_cache.get('non-existent key')
+print(result)  # None
 
-result = cache_get_names(conn, 'my cache')
-print(result.value)  # ['my key']
+result = my_cache.get_all([
+    'my key',
+    'non-existent key',
+    'other-key',
+])
+print(result)  # {'my key': 42}
 
-cache_destroy(conn, 'my cache')
+my_cache.clear_key('my key')
+
+my_cache.destroy()
 conn.close()

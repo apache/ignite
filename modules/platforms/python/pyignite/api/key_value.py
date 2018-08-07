@@ -181,7 +181,8 @@ def cache_get_all(
 
 
 def cache_put_all(
-    conn: Connection, cache: Union[str, int], pairs: dict, binary=False, query_id=None,
+    conn: Connection, cache: Union[str, int], pairs: dict,
+    binary=False, query_id=None,
 ) -> APIResult:
     """
     Puts multiple key-value pairs to cache (overwriting existing associations

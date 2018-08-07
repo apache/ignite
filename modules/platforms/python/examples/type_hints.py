@@ -13,36 +13,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.api import (
-    cache_create, cache_destroy, cache_put, cache_remove_keys,
-)
 from pyignite.connection import Connection
+from pyignite.datatypes import CharObject, ShortObject
 
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
 
-cache_create(conn, 'my cache')
+my_cache = conn.create_cache('my cache')
 
-from pyignite.datatypes import CharObject, ShortObject
-
-
-cache_put(conn, 'my cache', 'my key', 42)
+my_cache.put('my key', 42)
 # value ‘42’ takes 9 bytes of memory as a LongObject
 
-cache_put(conn, 'my cache', 'my key', 42, value_hint=ShortObject)
+my_cache.put('my key', 42, value_hint=ShortObject)
 # value ‘42’ takes only 3 bytes as a ShortObject
 
-cache_put(conn, 'my cache', 'a', 1)
+my_cache.put('a', 1)
 # ‘a’ is a key of type String
 
-cache_put(conn, 'my cache', 'a', 2, key_hint=CharObject)
+my_cache.put('a', 2, key_hint=CharObject)
 # another key ‘a’ of type CharObject was created
 
+value = my_cache.get('a')
+print(value)
+# 1
+
+value = my_cache.get('a', key_hint=CharObject)
+print(value)
+# 2
+
 # now let us delete both keys at once
-cache_remove_keys(conn, 'my cache', [
+my_cache.remove_keys([
     'a',                # a default type key
     ('a', CharObject),  # a key of type CharObject
 ])
 
-cache_destroy(conn, 'my cache')
+my_cache.destroy()
 conn.close()

@@ -15,13 +15,8 @@
 
 from decimal import Decimal
 
-from pyignite.api import (
-    cache_get_or_create, sql_fields, sql_fields_cursor_get_page,
-)
 from pyignite.connection import Connection
 
-
-PAGE_SIZE = 5
 
 SCHEMA_NAME = 'PUBLIC'
 
@@ -202,61 +197,50 @@ LANGUAGE_DATA = [
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
 
-# create schema
-cache_get_or_create(conn, SCHEMA_NAME)
-
 # create tables
 for query in [
     COUNTRY_CREATE_TABLE_QUERY,
     CITY_CREATE_TABLE_QUERY,
     LANGUAGE_CREATE_TABLE_QUERY,
 ]:
-    sql_fields(conn, SCHEMA_NAME, query, PAGE_SIZE)
+    conn.sql(query, schema=SCHEMA_NAME)
 
 # create indices
 for query in [CITY_CREATE_INDEX, LANGUAGE_CREATE_INDEX]:
-    sql_fields(conn, SCHEMA_NAME, query, PAGE_SIZE)
+    conn.sql(query, schema=SCHEMA_NAME)
 
 # load data
 for row in COUNTRY_DATA:
-    sql_fields(
-        conn,
-        SCHEMA_NAME,
+    conn.sql(
         COUNTRY_INSERT_QUERY,
-        PAGE_SIZE,
         query_args=row,
+        schema=SCHEMA_NAME,
     )
 
 for row in CITY_DATA:
-    sql_fields(
-        conn,
-        SCHEMA_NAME,
+    conn.sql(
         CITY_INSERT_QUERY,
-        PAGE_SIZE,
         query_args=row,
+        schema=SCHEMA_NAME,
     )
 
 for row in LANGUAGE_DATA:
-    sql_fields(
-        conn,
-        SCHEMA_NAME,
+    conn.sql(
         LANGUAGE_INSERT_QUERY,
-        PAGE_SIZE,
         query_args=row,
+        schema=SCHEMA_NAME,
     )
 
 # 10 most populated cities (with pagination)
 MOST_POPULATED_QUERY = '''
 SELECT name, population FROM City ORDER BY population DESC LIMIT 10'''
 
-result = sql_fields(
-    conn,
-    SCHEMA_NAME,
+result = conn.sql(
     MOST_POPULATED_QUERY,
-    PAGE_SIZE,
+    schema=SCHEMA_NAME,
 )
 print('Most 10 populated cities:')
-for row in result.value['data']:
+for row in result:
     print(row)
 
 # Most 10 populated cities:
@@ -265,16 +249,6 @@ for row in result.value['data']:
 # ['New York', 8008278]
 # ['Peking', 7472000]
 # ['Delhi', 7206704]
-
-cursor = result.value['cursor']
-field_count = result.value['field_count']
-while result.value['more']:
-    print('... continue on next page...')
-    result = sql_fields_cursor_get_page(conn, cursor, field_count)
-    for row in result.value['data']:
-        print(row)
-
-# ... continue on next page...
 # ['Chongqing', 6351600]
 # ['Tianjin', 5286800]
 # ['Calcutta [Kolkata]', 4399819]
@@ -289,26 +263,16 @@ SELECT country.name as country_name, city.name as city_name, MAX(city.population
     GROUP BY country.name, city.name ORDER BY max_pop DESC LIMIT 10
 '''
 
-result = sql_fields(
-    conn,
-    SCHEMA_NAME,
+result = conn.sql(
     MOST_POPULATED_IN_3_COUNTRIES_QUERY,
-    PAGE_SIZE,
+    schema=SCHEMA_NAME,
     include_field_names=True,
 )
 print('Most 10 populated cities in USA, India and China:')
-print(result.value['fields'])
+print(next(result))
 print('----------------------------------------')
-for row in result.value['data']:
+for row in result:
     print(row)
-
-cursor = result.value['cursor']
-field_count = len(result.value['fields'])
-while result.value['more']:
-    print('... continue on next page...')
-    result = sql_fields_cursor_get_page(conn, cursor, field_count)
-    for row in result.value['data']:
-        print(row)
 
 # Most 10 populated cities in USA, India and China:
 # ['COUNTRY_NAME', 'CITY_NAME', 'MAX_POP']
@@ -318,7 +282,6 @@ while result.value['more']:
 # ['United States', 'New York', 8008278]
 # ['China', 'Peking', 7472000]
 # ['India', 'Delhi', 7206704]
-# ... continue on next page...
 # ['China', 'Chongqing', 6351600]
 # ['China', 'Tianjin', 5286800]
 # ['India', 'Calcutta [Kolkata]', 4399819]
@@ -328,19 +291,17 @@ while result.value['more']:
 # show city info
 CITY_INFO_QUERY = '''SELECT * FROM City WHERE id = ?'''
 
-result = sql_fields(
-    conn,
-    SCHEMA_NAME,
+result = conn.sql(
     CITY_INFO_QUERY,
-    PAGE_SIZE,
     query_args=[3802],
+    schema=SCHEMA_NAME,
     include_field_names=True,
 )
+field_names = next(result)
+field_data = list(*result)
+
 print('City info:')
-for field_name, field_value in zip(
-    result.value['fields'],
-    result.value['data'][0],
-):
+for field_name, field_value in zip(field_names*len(field_data), field_data):
     print('{}: {}'.format(field_name, field_value))
 
 # City info:
@@ -356,14 +317,7 @@ for table_name in [
     LANGUAGE_TABLE_NAME,
     COUNTRY_TABLE_NAME,
 ]:
-    result = sql_fields(
-        conn,
-        SCHEMA_NAME,
+    result = conn.sql(
         DROP_TABLE_QUERY.format(table_name),
-        PAGE_SIZE,
+        schema=SCHEMA_NAME,
     )
-    print('Deleting `{}`: {}'.format(table_name, result.message))
-
-# Deleting `City`: Success
-# Deleting `CountryLanguage`: Success
-# Deleting `Country`: Success

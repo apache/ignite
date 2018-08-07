@@ -18,7 +18,8 @@ from typing import Iterable, Union
 
 from pyignite.constants import *
 from pyignite.exceptions import (
-    BinaryTypeError, ParameterError, SocketError, SocketWriteError, SQLError,
+    BinaryTypeError, CacheError, ParameterError, SocketError, SocketWriteError,
+    SQLError,
 )
 from pyignite.utils import status_to_exception
 from .handshake import HandshakeRequest, read_response
@@ -145,7 +146,7 @@ class Connection:
         """
         self._connect(host, port)
 
-    def clone(self) -> object:
+    def clone(self) -> 'Connection':
         """
         Clones this connection in its current state.
 
@@ -157,7 +158,7 @@ class Connection:
             clone._connect(self.host, self.port)
         return clone
 
-    def make_buffered(self, buffer: bytes) -> object:
+    def make_buffered(self, buffer: bytes) -> 'BufferedConnection':
         """
         Creates a mock connection, but provide all the necessary parameters of
         the real one.
@@ -250,7 +251,7 @@ class Connection:
             self, type_name, affinity_key_field, is_enum, schema
         )
 
-    def create_cache(self, settings: Union[str, dict]) -> object:
+    def create_cache(self, settings: Union[str, dict]) -> 'Cache':
         """
         Creates Ignite cache by name. Raises `CacheError` if such a cache is
         already exists.
@@ -262,7 +263,7 @@ class Connection:
 
         return Cache(self, settings)
 
-    def get_or_create_cache(self, settings: Union[str, dict]) -> object:
+    def get_or_create_cache(self, settings: Union[str, dict]) -> 'Cache':
         """
         Creates Ignite cache, if not exist.
 
@@ -272,6 +273,17 @@ class Connection:
         from pyignite.api.cache import Cache
 
         return Cache(self, settings, with_get=True)
+
+    @status_to_exception(CacheError)
+    def get_cache_names(self) -> list:
+        """
+        Gets existing cache names.
+
+        :return: list of cache names.
+        """
+        from pyignite.api.cache_config import cache_get_names
+
+        return cache_get_names(self)
 
     def sql(
         self, query_str: str, page_size: int=1, query_args: Iterable=None,

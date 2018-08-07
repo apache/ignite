@@ -13,21 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.api import (
-    scan, cache_create, scan_cursor_get_page, resource_close, cache_put_all,
-)
 from pyignite.connection import Connection
 
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
 
-cache_create(conn, 'my cache')
+my_cache = conn.create_cache('my cache')
 
-page_size = 10
-
-cache_put_all(conn, 'my cache', {
-        'key_{}'.format(v): v for v in range(page_size * 2)
-    })
+my_cache.put_all({'key_{}'.format(v): v for v in range(20)})
 
 # {
 #     'key_0': 0,
@@ -38,38 +31,17 @@ cache_put_all(conn, 'my cache', {
 #     'key_19': 19
 # }
 
-result = scan(conn, 'my cache', page_size)
-print(dict(result.value))
+result = my_cache.scan()
+print(dict(result))
+
 # {
-#     'cursor': 1,
-#     'data': {
-#         'key_4': 4,
-#         'key_2': 2,
-#         'key_8': 8,
-#         ... 10 elements on page...
-#         'key_0': 0,
-#         'key_7': 7
-#     },
-#     'more': True
+#     'key_17': 17,
+#     'key_10': 10,
+#     'key_6': 6,
+#     ... 20 elements in total...
+#     'key_16': 16,
+#     'key_12': 12
 # }
 
-cursor = result.value['cursor']
-result = scan_cursor_get_page(conn, cursor)
-print(result.value)
-# {
-#     'data': {
-#         'key_15': 15,
-#         'key_17': 17,
-#         'key_11': 11,
-#         ... another 10 elements...
-#         'key_19': 19,
-#         'key_16': 16
-#     },
-#     'more': False
-# }
-
-result = scan_cursor_get_page(conn, cursor)
-print(result.message)
-# Failed to find resource with id: 1
-
-resource_close(conn, cursor)
+my_cache.destroy()
+conn.close()

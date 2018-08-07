@@ -209,8 +209,7 @@ class Cache:
     @status_to_exception(CacheError)
     def get_all(self, keys: list) -> list:
         """
-        Retrieves multiple key-value pairs from cache. For potentially large
-        results please use `Cache.scan` instead.
+        Retrieves multiple key-value pairs from cache.
 
         :param keys: list of keys or tuples of (key, key_hint),
         :return: a dict of key-value pairs.
