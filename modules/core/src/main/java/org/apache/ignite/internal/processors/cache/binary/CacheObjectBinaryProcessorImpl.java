@@ -40,8 +40,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
@@ -58,6 +60,7 @@ import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -164,7 +167,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
             BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
-                @Override public void addMeta(int typeId, BinaryType newMeta) throws BinaryObjectException {
+                @Override public void addMeta(int typeId, BinaryType newMeta, boolean failIfUnregistered) throws BinaryObjectException {
                     assert newMeta != null;
                     assert newMeta instanceof BinaryTypeImpl;
 
@@ -183,7 +186,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                     BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
-                    CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(binaryCtx));
+                    CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(binaryCtx), failIfUnregistered);
                 }
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
@@ -437,11 +440,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum,
             enumMap);
 
-        binaryCtx.updateMetadata(typeId, meta);
+        binaryCtx.updateMetadata(typeId, meta, false);
     }
 
     /** {@inheritDoc} */
-    @Override public void addMeta(final int typeId, final BinaryType newMeta) throws BinaryObjectException {
+    @Override public void addMeta(final int typeId, final BinaryType newMeta, boolean failIfUnregistered) throws BinaryObjectException {
         assert newMeta != null;
         assert newMeta instanceof BinaryTypeImpl;
 
@@ -457,6 +460,13 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             //metadata requested to be added is exactly the same as already presented in the cache
             if (mergedMeta == oldMeta)
                 return;
+
+            if (failIfUnregistered)
+                throw new UnregisteredBinaryTypeException(
+                    "Attempted to update binary metadata inside a critical synchronization block (will be automatically " +
+                        "retried). This exception must not be wrapped to any other exception class. If you encounter " +
+                        "this exception outside of EntryProcessor, please report to Apache Ignite dev-list.",
+                    typeId, mergedMeta);
 
             MetadataUpdateResult res = transport.requestMetadataUpdate(mergedMeta).get();
 
@@ -751,8 +761,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public CacheObjectContext contextForCache(CacheConfiguration cfg) throws IgniteCheckedException {
         assert cfg != null;
 
-        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(cfg.getName()) &&
-            !GridCacheUtils.isIgfsCache(ctx.config(), cfg.getName());
+        boolean binaryEnabled = marsh instanceof BinaryMarshaller && !GridCacheUtils.isSystemCache(cfg.getName());
 
         CacheObjectContext ctx0 = super.contextForCache(cfg);
 

@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -110,6 +111,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -1759,7 +1761,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
 
-                        ((CacheObjectBinaryProcessorImpl)cacheObjProc).binaryContext().descriptorForClass(ex.cls(), false, false);
+                        ((CacheObjectBinaryProcessorImpl)cacheObjProc)
+                            .binaryContext().descriptorForClass(ex.cls(), false, false);
+                    }
+                    catch (UnregisteredBinaryTypeException ex) {
+                        IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
+
+                        assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
+
+                        ((CacheObjectBinaryProcessorImpl)cacheObjProc)
+                            .binaryContext().updateMetadata(ex.typeId(), ex.binaryMetadata(), false);
                     }
                 }
             }
@@ -2069,6 +2080,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     boolean validation = false;
 
+                    IgniteThread.onEntryProcessorEntered();
+
                     try {
                         Object computed = entryProcessor.process(invokeEntry, req.invokeArguments());
 
@@ -2102,6 +2115,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
                     }
                     finally {
+                        IgniteThread.onEntryProcessorLeft();
+
                         if (curInvokeRes != null) {
                             invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), curInvokeRes.result(),
                                 curInvokeRes.error(), req.keepBinary());
