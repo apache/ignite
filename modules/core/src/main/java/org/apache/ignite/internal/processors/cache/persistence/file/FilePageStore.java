@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -244,7 +245,7 @@ public class FilePageStore implements PageStore {
             fileIO.close();
 
             if (cleanFile)
-                cfgFile.delete();
+                Files.delete(cfgFile.toPath());
         }
         catch (IOException e) {
             throw new PersistentStorageIOException(e);
@@ -255,31 +256,35 @@ public class FilePageStore implements PageStore {
     }
 
     /**
+     * Truncates and deletes partition file.
      *
+     * @param tag New partition tag.
+     * @throws PersistentStorageIOException If failed
      */
     public void truncate(int tag) throws PersistentStorageIOException {
+        init();
+
         lock.writeLock().lock();
 
         try {
-            if (!inited)
-                return;
-
             this.tag = tag;
 
             fileIO.clear();
 
-            long newAlloc = initFile();
+            fileIO.close();
 
-            long delta = newAlloc - allocated.getAndSet(newAlloc);
-
-            assert delta % pageSize == 0;
-
-            allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+            Files.delete(cfgFile.toPath());
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException(e);
+            throw new PersistentStorageIOException("Failed to delete partition file: " + cfgFile.getPath(), e);
         }
         finally {
+            allocated.set(0);
+
+            allocatedTracker.updateTotalAllocatedPages(-1L * this.pages());
+
+            inited = false;
+
             lock.writeLock().unlock();
         }
     }
@@ -320,7 +325,7 @@ public class FilePageStore implements PageStore {
             recover = false;
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Unable to finish recover", e);
+            throw new PersistentStorageIOException("Failed to finish recover", e);
         }
         finally {
             lock.writeLock().unlock();
@@ -412,9 +417,9 @@ public class FilePageStore implements PageStore {
     }
 
     /**
-     * @throws IgniteCheckedException If failed to initialize store file.
+     * @throws PersistentStorageIOException If failed to initialize store file.
      */
-    private void init() throws IgniteCheckedException {
+    private void init() throws PersistentStorageIOException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -422,7 +427,7 @@ public class FilePageStore implements PageStore {
                 if (!inited) {
                     FileIO fileIO = null;
 
-                    IgniteCheckedException err = null;
+                    PersistentStorageIOException err = null;
 
                     try {
                         this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
@@ -442,7 +447,8 @@ public class FilePageStore implements PageStore {
                         inited = true;
                     }
                     catch (IOException e) {
-                        err = new PersistentStorageIOException("Could not initialize file: " + cfgFile.getName(), e);
+                        err = new PersistentStorageIOException(
+                            "Failed to initialize partition file: " + cfgFile.getName(), e);
 
                         throw err;
                     }

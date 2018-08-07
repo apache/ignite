@@ -19,13 +19,16 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * ODBC Connection Context.
@@ -43,8 +46,11 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.3.2: added multiple statements support. */
     public static final ClientListenerProtocolVersion VER_2_3_2 = ClientListenerProtocolVersion.create(2, 3, 2);
 
+    /** Version 2.5.0: added authentication. */
+    public static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_2;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -67,6 +73,7 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
         SUPPORTED_VERS.add(VER_2_3_0);
+        SUPPORTED_VERS.add(VER_2_3_2);
         SUPPORTED_VERS.add(VER_2_1_5);
         SUPPORTED_VERS.add(VER_2_1_0);
     }
@@ -94,7 +101,8 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
+    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+        throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported ODBC protocol version.";
 
         boolean distributedJoins = reader.readBoolean();
@@ -111,8 +119,38 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
+        String user = null;
+        String passwd = null;
+
+        if (ver.compareTo(VER_2_5_0) >= 0) {
+            user = reader.readString();
+            passwd = reader.readString();
+        }
+
+        AuthorizationContext actx = null;
+
+        try {
+            if (ctx.authentication().enabled())
+            {
+                if (F.isEmpty(user))
+                    throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
+                actx = ctx.authentication().authenticate(user, passwd);
+
+                if (actx == null)
+                    throw new IgniteCheckedException("Unknown authentication error");
+            }
+            else {
+                if (!F.isEmpty(user))
+                    throw new IgniteCheckedException("Authentication is disabled for the node.");
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
+        }
+
         handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate);
+                enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate, actx);
 
         parser = new OdbcMessageParser(ctx, ver);
     }

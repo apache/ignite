@@ -19,6 +19,7 @@ namespace Apache.Ignite.Benchmarks
 {
     using System;
     using System.Diagnostics;
+    using System.IO;
     using System.Text;
     using Apache.Ignite.Benchmarks.Interop;
     using Apache.Ignite.Benchmarks.ThinClient;
@@ -35,13 +36,16 @@ namespace Apache.Ignite.Benchmarks
         // ReSharper disable once RedundantAssignment
         public static void Main(string[] args)
         {
-            args = new[] { 
-                typeof(ThinClientGetBenchmark).FullName,
-                "-ConfigPath", @"S:\W\incubator-ignite\modules\platforms\dotnet\Apache.Ignite.Benchmarks\Config\benchmark.xml",
+            args = new[] {
+                //typeof(GetAllBenchmark).FullName,
+                typeof(GetAllBinaryBenchmark).FullName,
+                //typeof(ThinClientGetAllBenchmark).FullName,
+                //typeof(ThinClientGetAllBinaryBenchmark).FullName,
+                "-ConfigPath", Directory.GetCurrentDirectory() + @"\..\..\Config\benchmark.xml",
                 "-Threads", "1",
                 "-Warmup", "0",
                 "-Duration", "60",
-                "-BatchSize", "1000"
+                "-BatchSize", "1"
             };
 
             var gcSrv = System.Runtime.GCSettings.IsServerGC;

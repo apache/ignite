@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 export default class {
     static $inject = ['$scope', 'AgentManager', 'IgniteConfirm'];
 
@@ -29,7 +31,7 @@ export default class {
         this.clusters$ = this.agentMgr.connectionSbj
             .do(({ cluster, clusters }) => {
                 this.cluster = cluster;
-                this.clusters = clusters;
+                this.clusters = _.orderBy(clusters, ['name'], ['asc']);
             })
             .subscribe(() => {});
     }

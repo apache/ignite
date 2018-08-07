@@ -77,13 +77,13 @@ export default class IgniteConfigurationGenerator {
         this.clusterAtomics(cluster.atomicConfiguration, available, cfg);
         this.clusterBinary(cluster.binaryConfiguration, cfg);
         this.clusterCacheKeyConfiguration(cluster.cacheKeyConfiguration, cfg);
-        this.clusterCheckpoint(cluster, cluster.caches, cfg);
+        this.clusterCheckpoint(cluster, available, cluster.caches, cfg);
 
         if (available('2.3.0'))
             this.clusterClientConnector(cluster, available, cfg);
 
         this.clusterCollision(cluster.collision, cfg);
-        this.clusterCommunication(cluster, cfg);
+        this.clusterCommunication(cluster, available, cfg);
         this.clusterConnector(cluster.connector, cfg);
 
         // Since ignite 2.3
@@ -236,6 +236,11 @@ export default class IgniteConfigurationGenerator {
 
                 ipFinder.stringProperty('bucketName');
 
+                if (available('2.4.0')) {
+                    ipFinder.stringProperty('bucketEndpoint')
+                        .stringProperty('SSEAlgorithm');
+                }
+
                 break;
             case 'Cloud':
                 ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinder',
@@ -355,7 +360,7 @@ export default class IgniteConfigurationGenerator {
                         ipFinder.beanProperty('retryPolicy', retryPolicyBean);
                 }
 
-                ipFinder.pathProperty('basePath', '/services')
+                ipFinder.pathProperty('basePath')
                     .stringProperty('serviceName')
                     .boolProperty('allowDuplicateRegistrations');
 
@@ -499,7 +504,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate checkpoint configurations.
-    static clusterCheckpoint(cluster, caches, cfg = this.igniteConfigurationBean()) {
+    static clusterCheckpoint(cluster, available, caches, cfg = this.igniteConfigurationBean()) {
         const cfgs = _.filter(_.map(cluster.checkpointSpi, (spi) => {
             switch (_.get(spi, 'kind')) {
                 case 'FS':
@@ -585,12 +590,18 @@ export default class IgniteConfigurationGenerator {
 
                     s3Bean.stringProperty('bucketNameSuffix');
 
+                    if (available('2.4.0')) {
+                        s3Bean.stringProperty('bucketEndpoint')
+                            .stringProperty('SSEAlgorithm');
+                    }
+
                     const clientBean = new Bean('com.amazonaws.ClientConfiguration', 'clientCfg', spi.S3.clientConfiguration,
                         clusterDflts.checkpointSpi.S3.clientConfiguration);
 
                     clientBean.enumProperty('protocol')
                         .intProperty('maxConnections')
-                        .stringProperty('userAgent');
+                        .stringProperty('userAgentPrefix')
+                        .stringProperty('userAgentSuffix');
 
                     const locAddr = new Bean('java.net.InetAddress', '', spi.S3.clientConfiguration)
                         .factoryMethod('getByName')
@@ -609,7 +620,8 @@ export default class IgniteConfigurationGenerator {
                         clientBean.property('proxyPassword', `checkpoint.s3.proxy.${userName}.password`);
 
                     clientBean.stringProperty('proxyDomain')
-                        .stringProperty('proxyWorkstation');
+                        .stringProperty('proxyWorkstation')
+                        .stringProperty('nonProxyHosts');
 
                     const retryPolicy = spi.S3.clientConfiguration.retryPolicy;
 
@@ -682,7 +694,8 @@ export default class IgniteConfigurationGenerator {
                                 break;
 
                             case 'Custom':
-                                retryBean = new Bean('com.amazonaws.retry.RetryPolicy', 'retryPolicy', policy);
+                                retryBean = new Bean('com.amazonaws.retry.RetryPolicy', 'retryPolicy', policy,
+                                    clusterDflts.checkpointSpi.S3.clientConfiguration.retryPolicy);
 
                                 retryBean.beanConstructorArgument('retryCondition', retryBean.valueOf('retryCondition') ? new EmptyBean(retryBean.valueOf('retryCondition')) : null)
                                     .beanConstructorArgument('backoffStrategy', retryBean.valueOf('backoffStrategy') ? new EmptyBean(retryBean.valueOf('backoffStrategy')) : null)
@@ -703,14 +716,17 @@ export default class IgniteConfigurationGenerator {
                         .intProperty('socketTimeout')
                         .intProperty('connectionTimeout')
                         .intProperty('requestTimeout')
-                        .intProperty('socketSendBufferSizeHints')
                         .stringProperty('signerOverride')
                         .intProperty('connectionTTL')
                         .intProperty('connectionMaxIdleMillis')
                         .emptyBeanProperty('dnsResolver')
                         .intProperty('responseMetadataCacheSize')
                         .emptyBeanProperty('secureRandom')
+                        .intProperty('clientExecutionTimeout')
                         .boolProperty('useReaper')
+                        .boolProperty('cacheResponseMetadata')
+                        .boolProperty('useExpectContinue')
+                        .boolProperty('useThrottleRetries')
                         .boolProperty('useGzip')
                         .boolProperty('preemptiveBasicProxyAuth')
                         .boolProperty('useTcpKeepAlive');
@@ -788,6 +804,20 @@ export default class IgniteConfigurationGenerator {
             .intProperty('threadPoolSize')
             .boolProperty('tcpNoDelay');
 
+        if (available('2.4.0')) {
+            bean.longProperty('idleTimeout')
+                .boolProperty('jdbcEnabled')
+                .boolProperty('odbcEnabled')
+                .boolProperty('thinClientEnabled');
+        }
+
+        if (available('2.5.0')) {
+            bean.boolProperty('sslEnabled')
+                .boolProperty('sslClientAuth')
+                .boolProperty('useIgniteSslContextFactory')
+                .emptyBeanProperty('sslContextFactory');
+        }
+
         cfg.beanProperty('clientConnectorConfiguration', bean);
 
         return cfg;
@@ -825,8 +855,8 @@ export default class IgniteConfigurationGenerator {
 
                 colSpi.intProperty('parallelJobsNumber')
                     .intProperty('waitingJobsNumber')
-                    .intProperty('priorityAttributeKey')
-                    .intProperty('jobPriorityAttributeKey')
+                    .stringProperty('priorityAttributeKey')
+                    .stringProperty('jobPriorityAttributeKey')
                     .intProperty('defaultPriority')
                     .intProperty('starvationIncrement')
                     .boolProperty('starvationPreventionEnabled');
@@ -848,7 +878,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate communication group.
-    static clusterCommunication(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterCommunication(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         const commSpi = new Bean('org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi', 'communicationSpi',
             cluster.communication, clusterDflts.communication);
 
@@ -879,8 +909,10 @@ export default class IgniteConfigurationGenerator {
 
         cfg.intProperty('networkTimeout')
             .intProperty('networkSendRetryDelay')
-            .intProperty('networkSendRetryCount')
-            .intProperty('discoveryStartupDelay');
+            .intProperty('networkSendRetryCount');
+
+        if (available(['1.0.0', '2.3.0']))
+            cfg.intProperty('discoveryStartupDelay');
 
         return cfg;
     }
@@ -1428,6 +1460,7 @@ export default class IgniteConfigurationGenerator {
         storageBean.stringProperty('storagePath')
             .intProperty('checkpointFrequency')
             .intProperty('checkpointThreads')
+            .enumProperty('checkpointWriteOrder')
             .enumProperty('walMode')
             .stringProperty('walPath')
             .stringProperty('walArchivePath')

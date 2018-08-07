@@ -896,7 +896,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         U.sleep(700);
 
         if (!eagerTtl())
-            assertNull(primaryCache(key, cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
+            assertNull(primaryCache(key(key), cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
 
         IgniteCache<Object, Object> cache1 = cache;
 
@@ -917,7 +917,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         U.sleep(200);
 
         if (!eagerTtl())
-            assertNull(primaryCache(key, cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
+            assertNull(primaryCache(key(key), cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
 
         evtsLatch.await(5000, MILLISECONDS);
 

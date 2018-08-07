@@ -19,14 +19,17 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsClientNearCachePutGetTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.IgniteMetaStorageBasicTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IndexStoragePageMemoryImplTest;
@@ -39,7 +42,6 @@ import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTes
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
-
 
 /**
  *
@@ -75,6 +77,8 @@ public class IgnitePdsTestSuite extends TestSuite {
     /**
      * Fills {@code suite} with PDS test subset, which operates with real page store and does actual disk operations.
      *
+     * NOTE: These tests are also executed using I/O plugins.
+     *
      * @param suite suite to add tests into.
      */
     public static void addRealPageStoreTests(TestSuite suite) {
@@ -96,12 +100,19 @@ public class IgnitePdsTestSuite extends TestSuite {
         // TODO uncomment when https://issues.apache.org/jira/browse/IGNITE-7510 is fixed
         // suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
         suite.addTestSuite(IgniteDbPutGetWithCacheStoreTest.class);
+        suite.addTestSuite(IgnitePdsWithTtlTest.class);
 
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistence.class);
 
         suite.addTestSuite(IgnitePdsCacheRestoreTest.class);
         suite.addTestSuite(IgnitePdsDataRegionMetricsTest.class);
 
+        suite.addTestSuite(IgnitePdsDestroyCacheTest.class);
+        suite.addTestSuite(IgnitePdsDestroyCacheWithoutCheckpointsTest.class);
+
         suite.addTestSuite(DefaultPageSizeBackwardsCompatibilityTest.class);
+
+        //MetaStorage
+        suite.addTestSuite(IgniteMetaStorageBasicTest.class);
     }
 }

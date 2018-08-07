@@ -149,7 +149,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         iCfg.setCacheConfiguration(cachePCfg, cachePCfg2, cacheRCfg, cacheRCfg2);
 
-        iCfg.setRebalanceThreadPoolSize(2);
+        iCfg.setRebalanceThreadPoolSize(3);
 
         return iCfg;
     }
@@ -507,6 +507,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     cacheRCfg.setName(CACHE_NAME_DHT_PARTITIONED + "_NEW");
                     cacheRCfg.setCacheMode(CacheMode.PARTITIONED);
                     cacheRCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+                    cacheRCfg.setRebalanceBatchesPrefetchCount(1);
 
                     grid(0).getOrCreateCache(cacheRCfg);
 

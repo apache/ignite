@@ -36,5 +36,5 @@ public interface ReadOnlyMetastorage {
      * @return Matched key-value pairs.
      * @throws IgniteCheckedException If failed.
      */
-    Map<String, Serializable> readForPredicate(IgnitePredicate<String> keyPred) throws IgniteCheckedException;
+    Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred) throws IgniteCheckedException;
 }

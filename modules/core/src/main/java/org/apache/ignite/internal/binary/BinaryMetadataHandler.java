@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Collection;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 
@@ -29,9 +30,10 @@ public interface BinaryMetadataHandler {
      *
      * @param typeId Type ID.
      * @param meta Metadata.
+     * @param failIfUnregistered Fail if unregistered.
      * @throws BinaryObjectException In case of error.
      */
-    public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException;
+    public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException;
 
     /**
      * Gets meta data for provided type ID.
@@ -60,4 +62,11 @@ public interface BinaryMetadataHandler {
      * @throws BinaryObjectException In case of error.
      */
     public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException;
+
+    /**
+     * Gets all metadata known to the node.
+     * @return Metadata collection
+     * @throws BinaryObjectException If failed.
+     */
+    public Collection<BinaryType> metadata() throws BinaryObjectException;
 }
