@@ -18,13 +18,17 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionDuringPartitionClearTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 
 /**
  *
  */
-public class IgnitePdsTestSuite3 extends TestSuite {
+public class IgnitePdsTestSuite4 extends TestSuite {
     /**
      * @return Suite.
      */
@@ -32,6 +36,10 @@ public class IgnitePdsTestSuite3 extends TestSuite {
         TestSuite suite = new TestSuite("Ignite persistent Store Test Suite 3");
 
         addRealPageStoreTestsNotForDirectIo(suite);
+
+        suite.addTestSuite(FileDownloaderTest.class);
+
+        suite.addTestSuite(IgnitePdsTaskCancelingTest.class);
 
         return suite;
     }
@@ -42,8 +50,14 @@ public class IgnitePdsTestSuite3 extends TestSuite {
      * @param suite suite to add tests into.
      */
     private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
+        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
+
+        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
+
         // Rebalancing test
-        suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
-        suite.addTestSuite(IgnitePdsContinuousRestartTestWithExpiryPolicy.class);
+        suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
+
+        // Integrity test.
+        suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
     }
 }
