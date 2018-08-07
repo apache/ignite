@@ -64,9 +64,9 @@ public class TensorFlowServerScriptFormatter {
             .append('\n');
         builder.append("");
 
-        builder.append("print('job:%s task:%d' % (")
+        builder.append("print('job:%s task:%d' % ('")
             .append(srv.getJobName())
-            .append(",")
+            .append("', ")
             .append(srv.getTaskIdx())
             .append("))")
             .append("\n");
