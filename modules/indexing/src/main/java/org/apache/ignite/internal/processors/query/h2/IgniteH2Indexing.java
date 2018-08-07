@@ -321,17 +321,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     // TODO https://issues.apache.org/jira/browse/IGNITE-9062
-    private final ThreadLocal<ObjectPool<H2ConnectionWrapper>> connectionPool = new ThreadLocal<ObjectPool<H2ConnectionWrapper>>() {
-        @Override protected ObjectPool<H2ConnectionWrapper> initialValue() {
-            return new ObjectPool<>(IgniteH2Indexing.this::newConnectionWrapper, 5);
-        }
-    };
+    private final ThreadLocalObjectPool<H2ConnectionWrapper> connectionPool = new ThreadLocalObjectPool<>(IgniteH2Indexing.this::newConnectionWrapper, 5);
 
     /** */
     // TODO https://issues.apache.org/jira/browse/IGNITE-9062
-    private final ThreadLocal<ObjectPool.Reusable<H2ConnectionWrapper>> connCache = new ThreadLocal<ObjectPool.Reusable<H2ConnectionWrapper>>() {
-        @Override public ObjectPool.Reusable<H2ConnectionWrapper> get() {
-            ObjectPool.Reusable<H2ConnectionWrapper> reusable = super.get();
+    private final ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>> connCache = new ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>>() {
+        @Override public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> get() {
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusable = super.get();
 
             boolean reconnect = true;
 
@@ -351,10 +347,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return reusable;
         }
 
-        @Override protected ObjectPool.Reusable<H2ConnectionWrapper> initialValue() {
-            ObjectPool<H2ConnectionWrapper> pool = connectionPool.get();
-
-            ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = pool.borrow();
+        @Override protected ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> initialValue() {
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connectionPool.borrow();
 
             conns.put(Thread.currentThread(), reusableConnection.object());
 
@@ -2936,10 +2930,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Removes from cache and returns associated with current thread connection.
      * @return Connection associated with current thread.
      */
-    public ObjectPool.Reusable<H2ConnectionWrapper> detach() {
+    public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detach() {
         Thread key = Thread.currentThread();
 
-        ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
+        ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
 
         H2ConnectionWrapper connection = conns.remove(key);
 
