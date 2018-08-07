@@ -96,26 +96,21 @@ class MapQueryResult {
     /** */
     private final Object[] params;
 
-    /** Lazy worker. */
-    private MapQueryLazyWorker lazyWorker;
-
     /**
      * @param rs Result set.
      * @param cctx Cache context.
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
-     * @param lazyWorker Lazy worker.
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker) {
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
-        this.lazyWorker = lazyWorker;
 
         if (rs != null) {
             this.rs = rs;
@@ -174,8 +169,6 @@ class MapQueryResult {
      * @return {@code true} If there are no more rows available.
      */
     synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
-        assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
-
         if (closed)
             return true;
 
@@ -259,37 +252,13 @@ class MapQueryResult {
      * Close the result.
      */
     public void close() {
-        if (lazyWorker != null && MapQueryLazyWorker.currentWorker() == null) {
-            lazyWorker.submit(new Runnable() {
-                @Override public void run() {
-                    close();
-                }
-            });
-
-            lazyWorker.awaitStop();
-
-            return;
-        }
-
         synchronized (this) {
-            assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
-
             if (closed)
                 return;
 
             closed = true;
 
             U.closeQuiet(rs);
-
-            if (lazyWorker != null)
-                lazyWorker.stop(false);
         }
-    }
-
-    /**
-     * @param lazyWorker Lazy worker.
-     */
-    public void lazyWorker(MapQueryLazyWorker lazyWorker) {
-        this.lazyWorker = lazyWorker;
     }
 }

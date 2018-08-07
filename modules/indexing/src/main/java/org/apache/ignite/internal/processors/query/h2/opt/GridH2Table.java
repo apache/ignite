@@ -31,6 +31,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -98,6 +99,9 @@ public class GridH2Table extends TableBase {
     private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap<>();
 
     /** */
+    private IgniteLogger log;
+
+    /** */
     private IndexColumn affKeyCol;
 
     /** */
@@ -135,6 +139,7 @@ public class GridH2Table extends TableBase {
 
         this.desc = desc;
         this.cctx = cctx;
+        log = cctx.logger(GridH2Table.class);
 
         if (desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
@@ -247,6 +252,7 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
         // In accordance with base method semantics, we'll return true if we were already exclusively locked.
+//        log.info("+++ lock" + Integer.toHexString(System.identityHashCode(ses)));
         Boolean res = sessions.get(ses);
 
         if (res != null)
@@ -264,7 +270,12 @@ public class GridH2Table extends TableBase {
         // Mutate state.
         sessions.put(ses, exclusive);
 
-        ses.addLock(this);
+        try {
+            ses.addLock(this);
+        }
+        catch (Exception e) {
+            System.out.println();
+        }
 
         return false;
     }
@@ -406,6 +417,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
+//        log.info("+++ unlock" + Integer.toHexString(System.identityHashCode(ses)));
         Boolean exclusive = sessions.remove(ses);
 
         if (exclusive == null)

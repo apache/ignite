@@ -23,7 +23,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ObjectPool;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -45,27 +47,25 @@ class MapQueryResults {
     /** */
     private final GridCacheContext<?, ?> cctx;
 
-    /** Lazy worker. */
-    private MapQueryLazyWorker lazyWorker;
-
     /** */
     private volatile boolean cancelled;
+
+    /** Detached connection wrp. Stored locally, used on the fetch next page. */
+    private ObjectPool.Reusable<H2ConnectionWrapper> detachedConnWrp;
 
     /**
      * Constructor.
      *
+     * @param h2 Ignite indexing implementation.
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
      * @param cctx Cache context.
-     * @param lazyWorker Lazy worker (if any).
      */
     @SuppressWarnings("unchecked")
-    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        @Nullable MapQueryLazyWorker lazyWorker) {
+    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx) {
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
-        this.lazyWorker = lazyWorker;
 
         results = new AtomicReferenceArray<>(qrys);
         cancels = new GridQueryCancel[qrys];
@@ -93,23 +93,6 @@ class MapQueryResults {
     }
 
     /**
-     * @return Lazy worker.
-     */
-    MapQueryLazyWorker lazyWorker() {
-        return lazyWorker;
-    }
-
-    /**
-     * @param lazyWorker Lazy worker.
-     */
-    void lazyWorker(MapQueryLazyWorker lazyWorker) {
-        this.lazyWorker = lazyWorker;
-
-        for (int i  = 0; i < results.length(); ++i)
-            results.get(i).lazyWorker(lazyWorker);
-    }
-
-    /**
      * Add result.
      *
      * @param qry Query result index.
@@ -119,10 +102,7 @@ class MapQueryResults {
      * @param params Query params.
      */
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker);
-
-        if (lazyWorker != null)
-            lazyWorker.result(res);
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params);
 
         if (!results.compareAndSet(qry, null, res))
             throw new IllegalStateException();
@@ -144,6 +124,7 @@ class MapQueryResults {
 
     /**
      * Cancels the query.
+     * @param forceQryCancel Force cancel.
      */
     void cancel(boolean forceQryCancel) {
         if (cancelled)
@@ -168,6 +149,9 @@ class MapQueryResults {
                     cancel.cancel();
             }
         }
+
+        if (detachedConnection() != null)
+            detachedConnection().recycle();
     }
 
     /**
@@ -182,5 +166,21 @@ class MapQueryResults {
      */
     long queryRequestId() {
         return qryReqId;
+    }
+
+    /**
+     * @param detachedConnWrp Detached connection wrapper. This connection isn't stored at the thread local and
+     * other queries will not use it.
+     */
+    public void detachedConnection(ObjectPool.Reusable<H2ConnectionWrapper> detachedConnWrp) {
+        this.detachedConnWrp = detachedConnWrp;
+    }
+
+    /**
+     * @return Detached connection wrapper. This connection isn't stored at the thread local and
+     * other queries will not use it.
+     */
+    public ObjectPool.Reusable<H2ConnectionWrapper> detachedConnection() {
+        return detachedConnWrp;
     }
 }

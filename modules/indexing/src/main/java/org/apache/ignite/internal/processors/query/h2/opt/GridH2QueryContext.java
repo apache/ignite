@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -83,9 +82,6 @@ public class GridH2QueryContext {
 
     /** */
     private GridH2CollocationModel qryCollocationMdl;
-
-    /** */
-    private MapQueryLazyWorker lazyWorker;
 
     /**
      * @param locNodeId Local node ID.
@@ -376,10 +372,7 @@ public class GridH2QueryContext {
 
         assert x.key.equals(key);
 
-        if (x.lazyWorker() != null)
-            x.lazyWorker().stop(nodeStop);
-        else
-            x.clearContext(nodeStop);
+        x.clearContext(nodeStop);
 
         return true;
     }
@@ -486,23 +479,6 @@ public class GridH2QueryContext {
      */
     public GridH2QueryContext pageSize(int pageSize) {
         this.pageSize = pageSize;
-
-        return this;
-    }
-
-    /**
-     * @return Lazy worker, if any, or {@code null} if none.
-     */
-    public MapQueryLazyWorker lazyWorker() {
-        return lazyWorker;
-    }
-
-    /**
-     * @param lazyWorker Lazy worker, if any, or {@code null} if none.
-     * @return {@code this}.
-     */
-    public GridH2QueryContext lazyWorker(MapQueryLazyWorker lazyWorker) {
-        this.lazyWorker = lazyWorker;
 
         return this;
     }
