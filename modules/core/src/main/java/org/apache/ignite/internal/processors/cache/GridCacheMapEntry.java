@@ -112,7 +112,9 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.INVOKE_NO_OP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.REMOVE_NO_VAL;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 
 /**
  * Adapter for cache entry.
@@ -1127,6 +1129,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             update(val, expireTime, ttl, newVer, true);
 
+            mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, val, newVer, topVer, mvccVer);
+
             recordNodeId(affNodeId, topVer);
         }
         finally {
@@ -1209,6 +1213,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             update(null, 0, 0, newVer, true);
 
+            mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, null, newVer, topVer, mvccVer);
+
             recordNodeId(affNodeId, topVer);
         }
         finally {
@@ -1281,6 +1287,24 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         onUpdateFinished(0L);
 
         return new GridCacheUpdateTxResult(valid, logPtr);
+    }
+
+    /**
+     * Enlist for DR if needed.
+     *
+     * @param drType DR type.
+     * @param val Value.
+     * @param ver Version.
+     * @param topVer Topology version.
+     * @param mvccVer MVCC snapshot.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    private void mvccDrReplicate(GridDrType drType, CacheObject val, GridCacheVersion ver,
+        AffinityTopologyVersion topVer,
+        MvccSnapshot mvccVer) throws IgniteCheckedException {
+
+        if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
+            cctx.dr().mvccReplicate(key, val, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType, topVer, mvccVer);
     }
 
     /** {@inheritDoc} */

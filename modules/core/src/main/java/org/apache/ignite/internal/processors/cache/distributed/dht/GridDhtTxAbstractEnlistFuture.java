@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -71,6 +72,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -321,6 +323,22 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
             tx.addActiveCache(cctx, false);
 
             this.it = it;
+
+            if(cctx.isDrEnabled()) {
+                assert tx.local();
+
+                tx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> future) {
+                        assert tx.state()== TransactionState.COMMITTED || tx.state()== TransactionState.ROLLED_BACK
+                            || future.error() != null;
+
+                        //TODO: GG-14053: verify if topology version is correct.
+                        cctx.dr().onTxFinished(tx.mvccSnapshot(),tx.state() == TransactionState.COMMITTED,
+                            tx.topologyVersionSnapshot());
+
+                    }
+                });
+            }
         }
         catch (Throwable e) {
             onDone(e);
