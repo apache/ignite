@@ -547,7 +547,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
             tx.commit();
         }
 
-        waitForRebalancing();
+        awaitPartitionMapExchange();
 
         doSleep(2000);
 
@@ -631,7 +631,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
             tx.commit();
         }
 
-        waitForRebalancing();
+        awaitPartitionMapExchange();
 
         for (Integer key : keys) {
             List<CacheDataRow> vers = null;

@@ -609,7 +609,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
 
         cache.putAll(vals);
 
-        waitForRebalancing();
+        awaitPartitionMapExchange();
 
         IgniteCache cache0 = checkNode.cache(DEFAULT_CACHE_NAME);
 
