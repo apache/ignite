@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Base class for JSR-310 Java 8 Date and Time API queries tests.
  */
-public abstract class CacheQueryJsr310Java8DateTimeApiBaseTest extends GridCommonAbstractTest {
+public abstract class CacheQueryJsr310Java8DateTimeApiAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
