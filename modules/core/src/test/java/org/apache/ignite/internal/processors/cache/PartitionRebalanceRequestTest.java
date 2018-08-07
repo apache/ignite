@@ -89,6 +89,8 @@ public class PartitionRebalanceRequestTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
 
         super.beforeTest();
@@ -97,6 +99,8 @@ public class PartitionRebalanceRequestTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+
+        stopAllGrids();
 
         cleanPersistenceDir();
     }
