@@ -95,13 +95,18 @@ const config = {
             },
             {
                 test: /\.(ttf|eot|svg|woff(2)?)(\?v=[\d.]+)?(\?[a-z0-9#-]+)?$/,
-                exclude: [contentBase],
+                exclude: [contentBase, /\.icon\.svg$/],
                 loader: 'file-loader?name=assets/fonts/[name].[ext]'
             },
             {
-                test: /^(?:(?!url\.svg$).)*\.svg$/,
-                include: [contentBase],
-                loader: 'svg-sprite-loader'
+                test: /\.icon\.svg$/,
+                use: {
+                    loader: 'svg-sprite-loader',
+                    options: {
+                        symbolRegExp: /\w+(?=\.icon\.\w+$)/,
+                        symbolId: '[0]'
+                    }
+                }
             },
             {
                 test: /.*\.url\.svg$/,
@@ -121,7 +126,7 @@ const config = {
             },
             {
                 test: require.resolve('nvd3'),
-                use: ['expose-loader?nv']
+                use: 'expose-loader?nv'
             }
         ]
     },
