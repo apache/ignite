@@ -294,7 +294,7 @@ public abstract class PagesList extends DataStructure {
 
                                 curIo = PagesListMetaIO.VERSIONS.latest();
 
-                                curIo.initNewPage(curAddr, curId, pageSize());
+                                curIo.initNewPage(curAddr, curId, pageSize(), realPageSize());
                             }
                             else {
                                 releaseAndClose(curId, curPage, curAddr);
@@ -396,7 +396,7 @@ public abstract class PagesList extends DataStructure {
     private void setupNextPage(PagesListNodeIO io, long prevId, long prev, long nextId, long next) {
         assert io.getNextId(prev) == 0L;
 
-        io.initNewPage(next, nextId, pageSize());
+        io.initNewPage(next, nextId, pageSize(), realPageSize());
         io.setPreviousId(next, prevId);
 
         io.setNextId(prev, nextId);
@@ -1192,7 +1192,7 @@ public abstract class PagesList extends DataStructure {
 
         long newPageId = PageIdUtils.pageId(partId, flag, PageIdUtils.pageIndex(reusedPageId));
 
-        initIo.initNewPage(reusedPageAddr, newPageId, pageSize());
+        initIo.initNewPage(reusedPageAddr, newPageId, pageSize(), realPageSize());
 
         boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
 

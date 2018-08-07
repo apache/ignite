@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -52,7 +53,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  *    static methods (like {@code {@link #getPageId(long)}}) intentionally:
  *    this base format can not be changed between versions.
  *
- * 2. IO must correctly override {@link #initNewPage(long, long, int)} method and call super.
+ * 2. IO must correctly override {@link #initNewPage(long, long, int, int)} method and call super.
  *    We have logic that relies on this behavior.
  *
  * 3. Page IO type ID constant must be declared in this class to have a list of all the
@@ -200,9 +201,6 @@ public abstract class PageIO {
     /** */
     public static final short T_DATA_REF_METASTORAGE_LEAF = 23;
 
-    /** */
-    public static final short T_ENCRYPTED_DATA = 24;
-
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
 
@@ -242,7 +240,7 @@ public abstract class PageIO {
     }
 
     /**
-     * @param pageAddr Page addres.
+     * @param pageAddr Page address.
      * @return Page type.
      */
     public static int getType(long pageAddr) {
@@ -438,8 +436,11 @@ public abstract class PageIO {
      * @param pageAddr Page address.
      * @param pageId Page ID.
      * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
+     *
+     * @see EncryptionSpi#encryptedSize(int)
      */
-    public void initNewPage(long pageAddr, long pageId, int pageSize) {
+    public void initNewPage(long pageAddr, long pageId, int pageSize, int realPageSize) {
         setType(pageAddr, getType());
         setVersion(pageAddr, getVersion());
         setPageId(pageAddr, pageId);
@@ -502,9 +503,6 @@ public abstract class PageIO {
 
             case T_DATA_METASTORAGE:
                 return (Q)SimpleDataPageIO.VERSIONS.forVersion(ver);
-
-            case T_ENCRYPTED_DATA:
-                return (Q)EncryptedDataPageIO.VERSIONS.forVersion(ver);
 
             default:
                 return (Q)getBPlusIO(type, ver);

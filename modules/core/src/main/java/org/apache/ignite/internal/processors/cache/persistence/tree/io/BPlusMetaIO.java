@@ -65,10 +65,10 @@ public class BPlusMetaIO extends PageIO {
     /**
      * @param pageAdrr Page address.
      * @param rootId Root page ID.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      */
-    public void initRoot(long pageAdrr, long rootId, int pageSize) {
-        setLevelsCount(pageAdrr, 1, pageSize);
+    public void initRoot(long pageAdrr, long rootId, int realPageSize) {
+        setLevelsCount(pageAdrr, 1, realPageSize);
         setFirstPageId(pageAdrr, 0, rootId);
     }
 
@@ -82,20 +82,20 @@ public class BPlusMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @return Max levels possible for this page size.
      */
-    private int getMaxLevels(long pageAddr, int pageSize) {
-        return (pageSize - refsOff) / 8;
+    private int getMaxLevels(long pageAddr, int realPageSize) {
+        return (realPageSize - refsOff) / 8;
     }
 
     /**
      * @param pageAddr Page address.
      * @param lvls Number of levels in this tree.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      */
-    private void setLevelsCount(long pageAddr, int lvls, int pageSize) {
-        assert lvls >= 0 && lvls <= getMaxLevels(pageAddr, pageSize) : lvls;
+    private void setLevelsCount(long pageAddr, int lvls, int realPageSize) {
+        assert lvls >= 0 && lvls <= getMaxLevels(pageAddr, realPageSize) : lvls;
 
         PageUtils.putByte(pageAddr, LVLS_OFF, (byte)lvls);
 
@@ -147,23 +147,23 @@ public class BPlusMetaIO extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param rootPageId New root page ID.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      */
-    public void addRoot(long pageAddr, long rootPageId, int pageSize) {
+    public void addRoot(long pageAddr, long rootPageId, int realPageSize) {
         int lvl = getLevelsCount(pageAddr);
 
-        setLevelsCount(pageAddr, lvl + 1, pageSize);
+        setLevelsCount(pageAddr, lvl + 1, realPageSize);
         setFirstPageId(pageAddr, lvl, rootPageId);
     }
 
     /**
      * @param pageAddr Page address.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      */
-    public void cutRoot(long pageAddr, int pageSize) {
+    public void cutRoot(long pageAddr, int realPageSize) {
         int lvl = getRootLevel(pageAddr);
 
-        setLevelsCount(pageAddr, lvl, pageSize); // Decrease tree height.
+        setLevelsCount(pageAddr, lvl, realPageSize); // Decrease tree height.
     }
 
     /**

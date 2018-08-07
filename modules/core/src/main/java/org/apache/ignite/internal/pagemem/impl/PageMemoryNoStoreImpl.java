@@ -343,6 +343,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return sysPageSize;
     }
 
+    /** {@inheritDoc} */
+    @Override public int realPageSize(int grpId) {
+        return pageSize();
+    }
+
     /**
      * @return Next index.
      */

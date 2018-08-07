@@ -73,8 +73,8 @@ public abstract class BPlusIO<L> extends PageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, int realPageSize) {
+        super.initNewPage(pageAddr, pageId, pageSize, realPageSize);
 
         setCount(pageAddr, 0);
         setForward(pageAddr, 0);
@@ -159,10 +159,10 @@ public abstract class BPlusIO<L> extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @return Max items count.
      */
-    public abstract int getMaxCount(long pageAddr, int pageSize);
+    public abstract int getMaxCount(long pageAddr, int realPageSize);
 
     /**
      * Store the needed info about the row in the page. Leaf and inner pages can store different info.
@@ -277,6 +277,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param mid Bisection index.
      * @param cnt Initial elements count in the page being split.
      * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @throws IgniteCheckedException If failed.
      */
     public void splitForwardPage(
@@ -285,9 +286,10 @@ public abstract class BPlusIO<L> extends PageIO {
         long fwdPageAddr,
         int mid,
         int cnt,
-        int pageSize
+        int pageSize,
+        int realPageSize
     ) throws IgniteCheckedException {
-        initNewPage(fwdPageAddr, fwdId, pageSize);
+        initNewPage(fwdPageAddr, fwdId, pageSize, realPageSize);
 
         cnt -= mid;
 
@@ -331,7 +333,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param leftPageAddr Left page address.
      * @param rightPageAddr Right page address.
      * @param emptyBranch We are merging an empty branch.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @return {@code false} If we were not able to merge.
      * @throws IgniteCheckedException If failed.
      */
@@ -342,7 +344,7 @@ public abstract class BPlusIO<L> extends PageIO {
         long leftPageAddr,
         long rightPageAddr,
         boolean emptyBranch,
-        int pageSize
+        int realPageSize
     ) throws IgniteCheckedException {
         int prntCnt = prntIo.getCount(prntPageAddr);
         int leftCnt = getCount(leftPageAddr);
@@ -354,7 +356,7 @@ public abstract class BPlusIO<L> extends PageIO {
         if (!isLeaf() && !emptyBranch)
             newCnt++;
 
-        if (newCnt > getMaxCount(leftPageAddr, pageSize)) {
+        if (newCnt > getMaxCount(leftPageAddr, realPageSize)) {
             assert !emptyBranch;
 
             return false;

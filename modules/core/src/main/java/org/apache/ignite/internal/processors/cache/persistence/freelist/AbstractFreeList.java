@@ -189,7 +189,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             T row,
             int rowSize
         ) throws IgniteCheckedException {
-            io.addRow(pageId, pageAddr, row, rowSize, pageSize());
+            io.addRow(pageId, pageAddr, row, rowSize, pageSize(), realPageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
                 // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
@@ -233,7 +233,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             // Read last link before the fragment write, because it will be updated there.
             long lastLink = row.link();
 
-            int payloadSize = io.addRowFragment(pageMem, pageId, pageAddr, row, written, rowSize, pageSize());
+            int payloadSize = io.addRowFragment(pageMem, pageId, pageAddr, row, written, rowSize, pageSize(),
+                realPageSize());
 
             assert payloadSize > 0 : payloadSize;
 
@@ -283,7 +284,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             assert oldFreeSpace >= 0 : oldFreeSpace;
 
-            long nextLink = io.removeRow(pageAddr, itemId, pageSize());
+            long nextLink = io.removeRow(pageAddr, itemId, pageSize(), realPageSize());
 
             if (needWalDeltaRecord(pageId, page, walPlc))
                 wal.log(new DataPageRemoveRecord(cacheId, pageId, itemId));

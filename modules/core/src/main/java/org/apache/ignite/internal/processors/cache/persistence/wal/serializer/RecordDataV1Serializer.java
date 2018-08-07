@@ -131,7 +131,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private TxRecordSerializer txRecordSerializer;
 
     /** Encryption SPI instance. */
-    private final EncryptionSpi encryptionSpi;
+    private final EncryptionSpi encSpi;
 
     /** */
     private static final byte ENCRYPTED = 1;
@@ -147,7 +147,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         this.txRecordSerializer = new TxRecordSerializer();
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
-        this.encryptionSpi = cctx.gridConfig().getEncryptionSpi();
+        this.encSpi = cctx.gridConfig().getEncryptionSpi();
     }
 
     /** {@inheritDoc} */
@@ -155,7 +155,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int clSz = plainSize(record);
 
         if (needEncryption(record))
-            return encryptionSpi.encryptedSize(clSz) + 4 /* groupId */ + 4 /* data size */ + REC_TYPE_SIZE;
+            return encSpi.encryptedSize(clSz) + 4 /* groupId */ + 4 /* data size */ + REC_TYPE_SIZE;
 
         return clSz;
     }
@@ -164,7 +164,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in)
         throws IOException, IgniteCheckedException {
         if (type == ENCRYPTED_RECORD) {
-            if (encryptionSpi == null) {
+            if (encSpi == null) {
                 T2<Integer, RecordType> knownData = skipEncryptedRec(in, true);
 
                 //This happen on offline WAL iteration(we don't have encryption keys available).
@@ -248,7 +248,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (key == null)
             return new T3<>(null, grpId, plainRecType);
 
-        byte[] clData = encryptionSpi.decrypt(encData, key);
+        byte[] clData = encSpi.decrypt(encData, key);
 
         return new T3<>(new ByteBufferBackedDataInputImpl().buffer(ByteBuffer.wrap(clData)), grpId, plainRecType);
     }
@@ -286,7 +286,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param dst Destination buffer.
      */
     private void writeEncryptedData(int grpId, @Nullable RecordType plainRecType, ByteBuffer clData, ByteBuffer dst) {
-        int dtSz = encryptionSpi.encryptedSize(clData.capacity());
+        int dtSz = encSpi.encryptedSize(clData.capacity());
 
         dst.putInt(grpId);
         dst.putInt(dtSz);
@@ -298,7 +298,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         assert key != null;
 
-        dst.put(encryptionSpi.encrypt(clData.array(), key, 0, clData.capacity()));
+        dst.put(encSpi.encrypt(clData.array(), key, 0, clData.capacity()));
     }
 
     /**
@@ -1716,7 +1716,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         boolean needDecryption = in.readByte() == ENCRYPTED;
 
         if (needDecryption) {
-            if (encryptionSpi == null) {
+            if (encSpi == null) {
                 skipEncryptedRec(in, false);
 
                 return new EncryptedDataEntry();
@@ -1904,7 +1904,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             int clSz = entrySize(entry);
 
             if (needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))
-                sz += encryptionSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */ + 4 /* data size */;
+                sz += encSpi.encryptedSize(clSz) + 1 /* encrypted flag */ + 4 /* groupId */ + 4 /* data size */;
             else {
                 sz += clSz;
 

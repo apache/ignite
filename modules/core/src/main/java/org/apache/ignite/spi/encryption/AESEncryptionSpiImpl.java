@@ -90,11 +90,6 @@ public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements Encryption
     private static final String DIGEST_ALGO = "SHA-512";
 
     /**
-     * Count of bytes added to each encrypted data block.
-     */
-    public static final int ENCRYPTION_OVERHEAD = 32;
-
-    /**
      * Path to master key store.
      */
     private String keyStorePath;
@@ -248,14 +243,6 @@ public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements Encryption
 
     /** {@inheritDoc} */
     @Override public int encryptedSize(int dataSize) {
-        return AESEncryptionSpiImpl.encryptedSize0(dataSize);
-    }
-
-    /**
-     * @param dataSize Size of data in bytes.
-     * @return Size of encrypted data in bytes.
-     */
-    public static int encryptedSize0(int dataSize) {
         return (dataSize/16 + 2)*16;
     }
 

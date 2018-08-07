@@ -354,7 +354,8 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                         // Initialize new page.
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
-                        io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());
+                        //MetaStorage never encrypted so realPageSize == pageSize.
+                        io.initNewPage(pageAddr, partMetaId, pageMem.pageSize(), pageMem.pageSize());
 
                         treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
                         reuseListRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);

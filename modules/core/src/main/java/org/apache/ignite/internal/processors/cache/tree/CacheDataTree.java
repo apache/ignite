@@ -28,8 +28,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.EncryptedDataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -166,10 +164,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             assert pageAddr != 0L : link;
 
             try {
-                IOVersions<DataPageIO> ioVersions =
-                    grp.encrypted() ? EncryptedDataPageIO.VERSIONS : DataPageIO.VERSIONS;
-
-                DataPageIO io = ioVersions.forPage(pageAddr);
+                DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
                 DataPagePayload data = io.readPayload(pageAddr,
                     itemId(link),

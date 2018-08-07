@@ -45,11 +45,11 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMaxCount(long pageAddr, int pageSize) {
+    @Override public int getMaxCount(long pageAddr, int realPageSize) {
         // The structure of the page is the following:
         // |ITEMS_OFF|w|A|x|B|y|C|z|
         // where capital letters are data items, lowercase letters are 8 byte page references.
-        return (pageSize - ITEMS_OFF - 8) / (getItemSize() + 8);
+        return (realPageSize - ITEMS_OFF - 8) / (getItemSize() + 8);
     }
 
     /**
@@ -154,6 +154,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param rowBytes Bytes.
      * @param rightChildId Right child ID.
      * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @param needRowBytes If we need row bytes back.
      * @return Row bytes.
      * @throws IgniteCheckedException If failed.
@@ -166,9 +167,10 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
         byte[] rowBytes,
         long rightChildId,
         int pageSize,
+        int realPageSize,
         boolean needRowBytes
     ) throws IgniteCheckedException {
-        initNewPage(newRootPageAddr, newRootId, pageSize);
+        initNewPage(newRootPageAddr, newRootId, pageSize, realPageSize);
 
         setCount(newRootPageAddr, 1);
         setLeft(newRootPageAddr, 0, leftChildId);

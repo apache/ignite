@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Initializes new page by calling {@link PageIO#initNewPage(long, long, int)}.
+ * Initializes new page by calling {@link PageIO#initNewPage(long, long, int, int)}.
  */
 public class InitNewPageRecord extends PageDeltaRecord {
     /** */
@@ -57,7 +57,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PageIO io = PageIO.getPageIO(ioType, ioVer);
 
-        io.initNewPage(pageAddr, newPageId, pageMem.pageSize());
+        io.initNewPage(pageAddr, newPageId, pageMem.pageSize(), pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */

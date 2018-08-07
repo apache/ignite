@@ -83,8 +83,8 @@ public class PagePartitionCountersIO extends PageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, int realPageSize) {
+        super.initNewPage(pageAddr, pageId, pageSize, realPageSize);
 
         setCount(pageAddr, 0);
         setNextCountersPageId(pageAddr, 0);
@@ -107,16 +107,16 @@ public class PagePartitionCountersIO extends PageIO {
     }
 
     /**
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @param pageAddr Page address.
      * @param cacheSizes Serialized cache size items (pairs of cache ID and its size).
      * @return Number of written pairs.
      */
-    public int writeCacheSizes(int pageSize, long pageAddr, byte[] cacheSizes, int itemsOff) {
+    public int writeCacheSizes(int realPageSize, long pageAddr, byte[] cacheSizes, int itemsOff) {
         assert cacheSizes != null;
         assert cacheSizes.length % ITEM_SIZE == 0 : cacheSizes.length;
 
-        int cap = getCapacity(pageSize);
+        int cap = getCapacity(realPageSize);
 
         int items = (cacheSizes.length / ITEM_SIZE) - itemsOff;
         int write = Math.min(cap, items);
@@ -200,11 +200,11 @@ public class PagePartitionCountersIO extends PageIO {
     }
 
     /**
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @return Maximum number of items which can be stored in buffer.
      */
-    private int getCapacity(int pageSize) {
-        return (pageSize - ITEMS_OFF) / ITEM_SIZE;
+    private int getCapacity(int realPageSize) {
+        return (realPageSize - ITEMS_OFF) / ITEM_SIZE;
     }
 
     /** {@inheritDoc} */

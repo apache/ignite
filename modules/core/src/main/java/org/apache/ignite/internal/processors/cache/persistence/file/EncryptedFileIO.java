@@ -33,32 +33,32 @@ public class EncryptedFileIO implements FileIO {
     /**
      * Underlying file.
      */
-    private FileIO plainFileIO;
+    private final FileIO plainFileIO;
 
     /**
      * Group id.
      */
-    private int groupId;
+    private final int groupId;
 
     /**
      * Size of plain data page in bytes.
      */
-    private int pageSize;
+    private final int pageSize;
 
     /**
      * Size of file header in bytes.
      */
-    private int headerSize;
+    private final int headerSize;
 
     /**
      * Shared database manager.
      */
-    private GridEncryptionManager encMgr;
+    private final GridEncryptionManager encMgr;
 
     /**
      * Shared database manager.
      */
-    private EncryptionSpi encSpi;
+    private final EncryptionSpi encSpi;
 
     /**
      * Encryption key.
@@ -68,7 +68,12 @@ public class EncryptedFileIO implements FileIO {
     /**
      * Extra bytes added by encryption.
      */
-    private int encryptionOverhead;
+    private final int encryptionOverhead;
+
+    /**
+     * Array of zeroes to fulfill tail of decrypted page.
+     */
+    private final byte[] zeroes;
 
     /**
      * @param plainFileIO Underlying file.
@@ -87,6 +92,7 @@ public class EncryptedFileIO implements FileIO {
         this.encSpi = encSpi;
 
         this.encryptionOverhead = encSpi.encryptedSize(pageSize) - pageSize;
+        this.zeroes =  new byte[encryptionOverhead];
     }
 
     /** {@inheritDoc} */
@@ -114,6 +120,7 @@ public class EncryptedFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destBuf, long position) throws IOException {
         assert destBuf.capacity() == pageSize;
+        assert position() != 0;
 
         ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
 
@@ -128,6 +135,7 @@ public class EncryptedFileIO implements FileIO {
         }
 
         destBuf.put(encSpi.decrypt(encrypted.array(), key()));
+        destBuf.put(zeroes); //We should ensure
 
         return res;
     }
@@ -169,14 +177,19 @@ public class EncryptedFileIO implements FileIO {
 
         srcBuf.get(srcArr, 0, pageSize);
 
-        //see EncryptedDataPageIO#shouldByReserved(int)
-        //see EncryptedDataPageIO#setEmptyPage(long, int)
-        assert srcArr[srcArr.length - encryptionOverhead - 1] == 0 &&
-            srcArr[srcArr.length - 1] == 0 : "Tail of srcArr should be empty";
+        assert tailIsEmpty(srcArr);
 
         byte[] encrypted = encSpi.encrypt(srcArr, key(), 0, srcArr.length - encryptionOverhead);
 
         return plainFileIO.write(ByteBuffer.wrap(encrypted), position);
+    }
+
+    /** */
+    private boolean tailIsEmpty(byte[] srcArr) {
+        for (int i = srcArr.length - encryptionOverhead; i<srcArr.length; i++)
+            assert srcArr[i] == 0 : "Tail of srcArr should be empty - " + i;
+
+        return true;
     }
 
     /** {@inheritDoc} */

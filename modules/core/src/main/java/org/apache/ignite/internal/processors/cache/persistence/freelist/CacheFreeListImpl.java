@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.EncryptedDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,10 +50,10 @@ public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
      */
     public CacheFreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
         ReuseList reuseList,
-        IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew, boolean encrypted) throws IgniteCheckedException {
+        IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
         super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
 
-        ioVersions = encrypted ? EncryptedDataPageIO.VERSIONS : DataPageIO.VERSIONS;;
+        ioVersions = DataPageIO.VERSIONS;
     }
 
     /** {@inheritDoc} */

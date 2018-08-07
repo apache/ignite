@@ -68,8 +68,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.EncryptedDataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
@@ -192,6 +190,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** Page size. */
     private final int sysPageSize;
+
+    /** Encrypted page size. */
+    private final int encPageSize;
 
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> ctx;
@@ -318,6 +319,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         assert walMgr != null;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
+
+        encPageSize = pageSize -
+            (ctx.kernalContext().config().getEncryptionSpi().encryptedSize(pageSize) - pageSize);
 
         rwLock = new OffheapReadWriteLock(128);
 
@@ -529,7 +533,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 // We are inside segment write lock, so no other thread can pin this tracking page yet.
                 // We can modify page buffer directly.
                 if (PageIO.getType(pageAddr) == 0) {
-                    trackingIO.initNewPage(pageAddr, pageId, pageSize());
+                    trackingIO.initNewPage(pageAddr, pageId, pageSize(), realPageSize(grpId));
 
                     if (!ctx.wal().disabled(fullId.groupId()))
                         if (!ctx.wal().isAlwaysWriteFullPages())
@@ -942,6 +946,16 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** {@inheritDoc} */
     @Override public int systemPageSize() {
         return sysPageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int realPageSize(int grpId) {
+        CacheGroupContext grpCtx = ctx.kernalContext().cache().cacheGroup(grpId);
+
+        if (grpCtx == null || !grpCtx.encrypted())
+            return pageSize();
+
+        return encPageSize;
     }
 
     /** {@inheritDoc} */
@@ -2080,12 +2094,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (cleaner == null)
                     return;
 
-                CacheGroupContext grpCtx = ctx.cache().cacheGroup(fullPageId.groupId());
-
-                IOVersions<DataPageIO> ioVersions = grpCtx != null && grpCtx.encrypted() ?
-                    EncryptedDataPageIO.VERSIONS : DataPageIO.VERSIONS;
-
-                DataPageIO io = ioVersions.forPage(pageAddr);
+                DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
                 io.forAllItems(pageAddr, new DataPageIO.CC<Void>() {
                     @Override public Void apply(long link) {
