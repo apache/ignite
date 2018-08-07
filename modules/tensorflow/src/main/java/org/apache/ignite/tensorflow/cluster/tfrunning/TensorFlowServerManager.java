@@ -59,8 +59,8 @@ public class TensorFlowServerManager extends ProcessManagerWrapper<PythonProcess
         return new PythonProcess(
             scriptFormatter.format(spec, true, Ignition.ignite()),
             getNode(spec),
-            "type:worker",
-            "part:" + spec.getTaskIdx()
+            "job:" + spec.getJobName(),
+            "task:" + spec.getTaskIdx()
         );
     }
 
