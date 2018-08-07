@@ -15,21 +15,12 @@
 
 from decimal import Decimal
 
-from pyignite.api import (
-    cache_get_or_create, sql_fields, cache_get_names,
-    cache_get_configuration, get_binary_type, scan,
-)
 from pyignite.connection import Connection
-from pyignite.utils import entity_id, unwrap_binary
+from pyignite.datatypes.prop_codes import *
 
-PAGE_SIZE = 5
-
-SCHEMA_NAME = 'PUBLIC'
 
 COUNTRY_TABLE_NAME = 'Country'
-
 CITY_TABLE_NAME = 'City'
-
 LANGUAGE_TABLE_NAME = 'CountryLanguage'
 
 COUNTRY_CREATE_TABLE_QUERY = '''CREATE TABLE Country (
@@ -89,7 +80,7 @@ LANGUAGE_INSERT_QUERY = '''INSERT INTO CountryLanguage(
     CountryCode, Language, IsOfficial, Percentage
 ) VALUES (?, ?, ?, ?)'''
 
-DROP_TABLE_QUERY = '''DROP TABLE {}'''
+DROP_TABLE_QUERY = '''DROP TABLE {} IF EXISTS'''
 
 COUNTRY_DATA = [
     [
@@ -200,12 +191,10 @@ LANGUAGE_DATA = [
     ['CHN', 'Zhuang', False, Decimal('1.4')],
 ]
 
+
 # establish connection
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
-
-# create schema
-cache_get_or_create(conn, SCHEMA_NAME)
 
 # create tables
 for query in [
@@ -213,44 +202,25 @@ for query in [
     CITY_CREATE_TABLE_QUERY,
     LANGUAGE_CREATE_TABLE_QUERY,
 ]:
-    sql_fields(conn, SCHEMA_NAME, query, PAGE_SIZE)
+    conn.sql(query)
 
 # create indices
 for query in [CITY_CREATE_INDEX, LANGUAGE_CREATE_INDEX]:
-    sql_fields(conn, SCHEMA_NAME, query, PAGE_SIZE)
+    conn.sql(query)
 
 # load data
 for row in COUNTRY_DATA:
-    sql_fields(
-        conn,
-        SCHEMA_NAME,
-        COUNTRY_INSERT_QUERY,
-        PAGE_SIZE,
-        query_args=row,
-    )
+    conn.sql(COUNTRY_INSERT_QUERY, query_args=row)
 
 for row in CITY_DATA:
-    sql_fields(
-        conn,
-        SCHEMA_NAME,
-        CITY_INSERT_QUERY,
-        PAGE_SIZE,
-        query_args=row,
-    )
+    conn.sql(CITY_INSERT_QUERY, query_args=row)
 
 for row in LANGUAGE_DATA:
-    sql_fields(
-        conn,
-        SCHEMA_NAME,
-        LANGUAGE_INSERT_QUERY,
-        PAGE_SIZE,
-        query_args=row,
-    )
+    conn.sql(LANGUAGE_INSERT_QUERY, query_args=row)
 
 # examine the storage
-result = cache_get_names(conn)
-print(result.value)
-
+result = conn.get_cache_names()
+print(result)
 # [
 #     'SQL_PUBLIC_CITY',
 #     'SQL_PUBLIC_COUNTRY',
@@ -258,56 +228,54 @@ print(result.value)
 #     'SQL_PUBLIC_COUNTRYLANGUAGE'
 # ]
 
-result = cache_get_configuration(conn, 'SQL_PUBLIC_CITY')
-print(dict(result.value))
+city_cache = conn.get_or_create_cache('SQL_PUBLIC_CITY')
+print(city_cache.settings[PROP_NAME])
+# 'SQL_PUBLIC_CITY'
 
+print(city_cache.settings[PROP_SQL_SCHEMA])
+# 'PUBLIC'
+
+print(city_cache.settings[PROP_CACHE_KEY_CONFIGURATION])
 # {
-#     'name': 'SQL_PUBLIC_CITY',
-#     'sql_schema': 'PUBLIC',
-#     'cache_key_configuration': [
-#         {
-#             'type_name': 'SQL_PUBLIC_CITY_9ac8e17a_2f99_45b7_958e_06da32882e9d_KEY',
-#             'affinity_key_field_name': 'COUNTRYCODE'
-#         }
-#     ],
-#     'query_entities': [
-#         {
-#             'key_type_name': 'SQL_PUBLIC_CITY_9ac8e17a_2f99_45b7_958e_06da32882e9d_KEY',
-#             'value_type_name': 'SQL_PUBLIC_CITY_9ac8e17a_2f99_45b7_958e_06da32882e9d',
-#             'table_name': 'CITY',
-#             'query_fields': [
-#                 ...
-#             ],
-#             'field_name_aliases': [
-#                 ...
-#             ],
-#             'query_indexes': []
-#         }
-#     ]
+#     'type_name': 'SQL_PUBLIC_CITY_9ac8e17a_2f99_45b7_958e_06da32882e9d_KEY',
+#     'affinity_key_field_name': 'COUNTRYCODE'
 # }
 
-key_binary_type_name = result.value['query_entities'][0]['key_type_name']
-key_binary_type_id = entity_id(key_binary_type_name)
+print(city_cache.settings[PROP_QUERY_ENTITIES])
+# {
+#     'key_type_name': (
+#         'SQL_PUBLIC_CITY_9ac8e17a_2f99_45b7_958e_06da32882e9d_KEY'
+#     ),
+#     'value_type_name': (
+#         'SQL_PUBLIC_CITY_9ac8e17a_2f99_45b7_958e_06da32882e9d'
+#     ),
+#     'table_name': 'CITY',
+#     'query_fields': [
+#         ...
+#     ],
+#     'field_name_aliases': [
+#         ...
+#     ],
+#     'query_indexes': []
+# }
 
-value_binary_type_name = result.value['query_entities'][0]['value_type_name']
-value_binary_type_id = entity_id(value_binary_type_name)
+query_entity = city_cache.settings[PROP_QUERY_ENTITIES][0]
+key_binary_type_name = query_entity['key_type_name']
+value_binary_type_name = query_entity['value_type_name']
 
-print(key_binary_type_id, value_binary_type_id)
+print(key_binary_type_name, value_binary_type_name)
+# SQL_PUBLIC_CITY_88f6c30c_b9dc_4a38_858a_5b4950d3fffd_KEY
+# SQL_PUBLIC_CITY_88f6c30c_b9dc_4a38_858a_5b4950d3fffd
 
-# -996482981 -1295865797
-
-result = get_binary_type(conn, key_binary_type_id)
-print(result.value['type_exists'])
-
+result = conn.get_binary_type(key_binary_type_name)
+print(result['type_exists'])
 # True
 
-result = get_binary_type(conn, value_binary_type_id)
-print(result.value['type_exists'])
-
+result = conn.get_binary_type(value_binary_type_name)
+print(result['type_exists'])
 # True
 
-print(result.value)
-
+print(result)
 # {
 #     'type_exists': True,
 #     'type_id': -1295865797,
@@ -331,25 +299,36 @@ print(result.value)
 #     ]
 # }
 
-result = scan(conn, 'SQL_PUBLIC_CITY', 1)
-print(result.value['data'])
-
-# {
-#     (b'… Some binary data…', 0): (b'… Some more binary data…', 0)
-# }
-
-wrapped_value = list(result.value['data'].values())[0]
-binary_obj = unwrap_binary(conn, wrapped_value)
-print(binary_obj)
-
-# {
-#     'version': 1,
-#     'type_id': -1295865797,
-#     'hash_code': 819840247,
-#     'schema_id': 275495165,
-#     'fields': {
-#         'NAME': 'Shanghai',
-#         'DISTRICT': 'Shanghai',
-#         'POPULATION': 9696300
+result = city_cache.scan()
+print(next(result))
+# (
+#     {
+#         'fields': {
+#             'ID': 1890,
+#             'COUNTRYCODE': 'CHN',
+#         },
+#         'schema_id': 415955900,
+#         'hash_code': -146319126,
+#         'version': 1,
+#         'type_id': -1360544090
+#     },
+#     {
+#         'fields': {
+#             'NAME': 'Shanghai',
+#             'DISTRICT': 'Shanghai',
+#             'POPULATION': 9696300,
+#         },
+#         'schema_id': 275495165,
+#         'hash_code': 819840247,
+#         'version': 1,
+#         'type_id': -1992793082
 #     }
-# }
+# )
+
+# clean up
+for table_name in [
+    CITY_TABLE_NAME,
+    LANGUAGE_TABLE_NAME,
+    COUNTRY_TABLE_NAME,
+]:
+    result = conn.sql(DROP_TABLE_QUERY.format(table_name))

@@ -501,6 +501,8 @@ class Cache:
 
         cursor = result.value['cursor']
         for k, v in result.value['data'].items():
+            k = self.process_binary(k)
+            v = self.process_binary(v)
             yield k, v
 
         while result.value['more']:
@@ -509,6 +511,8 @@ class Cache:
                 raise CacheError(result.message)
 
             for k, v in result.value['data'].items():
+                k = self.process_binary(k)
+                v = self.process_binary(v)
                 yield k, v
 
     def sql(

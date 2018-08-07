@@ -18,8 +18,6 @@ from decimal import Decimal
 from pyignite.connection import Connection
 
 
-SCHEMA_NAME = 'PUBLIC'
-
 COUNTRY_TABLE_NAME = 'Country'
 CITY_TABLE_NAME = 'City'
 LANGUAGE_TABLE_NAME = 'CountryLanguage'
@@ -81,7 +79,7 @@ LANGUAGE_INSERT_QUERY = '''INSERT INTO CountryLanguage(
     CountryCode, Language, IsOfficial, Percentage
 ) VALUES (?, ?, ?, ?)'''
 
-DROP_TABLE_QUERY = '''DROP TABLE {}'''
+DROP_TABLE_QUERY = '''DROP TABLE {} IF EXISTS'''
 
 COUNTRY_DATA = [
     [
@@ -203,42 +201,27 @@ for query in [
     CITY_CREATE_TABLE_QUERY,
     LANGUAGE_CREATE_TABLE_QUERY,
 ]:
-    conn.sql(query, schema=SCHEMA_NAME)
+    conn.sql(query)
 
 # create indices
 for query in [CITY_CREATE_INDEX, LANGUAGE_CREATE_INDEX]:
-    conn.sql(query, schema=SCHEMA_NAME)
+    conn.sql(query)
 
 # load data
 for row in COUNTRY_DATA:
-    conn.sql(
-        COUNTRY_INSERT_QUERY,
-        query_args=row,
-        schema=SCHEMA_NAME,
-    )
+    conn.sql(COUNTRY_INSERT_QUERY, query_args=row)
 
 for row in CITY_DATA:
-    conn.sql(
-        CITY_INSERT_QUERY,
-        query_args=row,
-        schema=SCHEMA_NAME,
-    )
+    conn.sql(CITY_INSERT_QUERY, query_args=row)
 
 for row in LANGUAGE_DATA:
-    conn.sql(
-        LANGUAGE_INSERT_QUERY,
-        query_args=row,
-        schema=SCHEMA_NAME,
-    )
+    conn.sql(LANGUAGE_INSERT_QUERY, query_args=row)
 
 # 10 most populated cities (with pagination)
 MOST_POPULATED_QUERY = '''
 SELECT name, population FROM City ORDER BY population DESC LIMIT 10'''
 
-result = conn.sql(
-    MOST_POPULATED_QUERY,
-    schema=SCHEMA_NAME,
-)
+result = conn.sql(MOST_POPULATED_QUERY)
 print('Most 10 populated cities:')
 for row in result:
     print(row)
@@ -265,7 +248,6 @@ SELECT country.name as country_name, city.name as city_name, MAX(city.population
 
 result = conn.sql(
     MOST_POPULATED_IN_3_COUNTRIES_QUERY,
-    schema=SCHEMA_NAME,
     include_field_names=True,
 )
 print('Most 10 populated cities in USA, India and China:')
@@ -294,7 +276,6 @@ CITY_INFO_QUERY = '''SELECT * FROM City WHERE id = ?'''
 result = conn.sql(
     CITY_INFO_QUERY,
     query_args=[3802],
-    schema=SCHEMA_NAME,
     include_field_names=True,
 )
 field_names = next(result)
@@ -317,7 +298,4 @@ for table_name in [
     LANGUAGE_TABLE_NAME,
     COUNTRY_TABLE_NAME,
 ]:
-    result = conn.sql(
-        DROP_TABLE_QUERY.format(table_name),
-        schema=SCHEMA_NAME,
-    )
+    result = conn.sql(DROP_TABLE_QUERY.format(table_name))
