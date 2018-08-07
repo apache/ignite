@@ -512,7 +512,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                 }
                 else
                     done = true;
-
             }
 
         }

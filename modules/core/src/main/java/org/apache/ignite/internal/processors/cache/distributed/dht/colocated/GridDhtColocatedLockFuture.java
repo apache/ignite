@@ -588,7 +588,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param distribute {@code True} if need to distribute lock removal in case of failure.
      * @return {@code True} if complete by this operation.
      */
-    private /*synchronized*/ boolean onComplete(boolean success, boolean distribute) {
+    private boolean onComplete(boolean success, boolean distribute) {
         if (log.isDebugEnabled()) {
             log.debug("Received onComplete(..) callback [success=" + success + ", distribute=" + distribute +
                 ", fut=" + this + ']');
