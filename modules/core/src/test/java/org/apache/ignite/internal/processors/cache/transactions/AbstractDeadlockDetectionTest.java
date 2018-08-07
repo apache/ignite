@@ -190,7 +190,7 @@ public abstract class AbstractDeadlockDetectionTest extends GridCommonAbstractTe
      * Wait for late affinity assignment after cache start.
      * So we can be sure that there will not happen unpredictable PME.
      *
-     * @param minorTopVer Minor topology version after cache start.
+     * @param minorTopVer Minor topology version before cache start.
      */
     void waitForLateAffinityAssignment(int minorTopVer) throws IgniteInterruptedCheckedException {
         assertTrue("Failed to wait for late affinity assignment",
