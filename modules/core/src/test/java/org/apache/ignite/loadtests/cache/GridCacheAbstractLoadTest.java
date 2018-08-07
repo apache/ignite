@@ -120,7 +120,7 @@ abstract class GridCacheAbstractLoadTest {
     protected GridCacheAbstractLoadTest() {
         Properties props = new Properties();
 
-        try(Reader reader = new FileReader(GridTestUtils.resolveIgnitePath(
+        try (Reader reader = new FileReader(GridTestUtils.resolveIgnitePath(
             "modules/tests/config/cache-load.properties"))) {
             props.load(reader);
         }

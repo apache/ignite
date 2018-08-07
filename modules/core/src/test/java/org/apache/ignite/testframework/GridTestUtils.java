@@ -1672,7 +1672,7 @@ public final class GridTestUtils {
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
 
-        try(InputStream in = new FileInputStream(U.resolveIgnitePath(GridTestProperties
+        try (InputStream in = new FileInputStream(U.resolveIgnitePath(GridTestProperties
             .getProperty("ssl.keystore.path")))) {
             keyStore.load(in, storePass);
         }

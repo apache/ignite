@@ -66,7 +66,7 @@ public class HttpIgniteUpdatesChecker {
             if (in == null)
                 return null;
 
-            try(BufferedReader reader = new BufferedReader(new InputStreamReader(in, charset))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, charset))) {
                 StringBuilder res = new StringBuilder();
 
                 for (String line; (line = reader.readLine()) != null; )

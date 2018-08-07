@@ -579,7 +579,7 @@ public class BinaryContext {
                         }
                     }
                     else if (cpElement.isFile()) {
-                        try(JarFile jar = new JarFile(cpElement)) {
+                        try (JarFile jar = new JarFile(cpElement)) {
                             Enumeration<JarEntry> entries = jar.entries();
 
                             while (entries.hasMoreElements()) {

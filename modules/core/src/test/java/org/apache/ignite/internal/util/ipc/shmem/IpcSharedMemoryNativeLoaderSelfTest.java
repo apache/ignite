@@ -66,11 +66,12 @@ public class IpcSharedMemoryNativeLoaderSelfTest extends TestCase {
     private void readStreams(Process proc) throws IOException {
         String s;
 
-        try(BufferedReader stdOut = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
+        try (BufferedReader stdOut = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
             while ((s = stdOut.readLine()) != null)
                 System.out.println("OUT>>>>>> " + s);
         }
-        try(BufferedReader errOut = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
+
+        try (BufferedReader errOut = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
             while ((s = errOut.readLine()) != null)
                 System.out.println("ERR>>>>>> " + s);
         }
