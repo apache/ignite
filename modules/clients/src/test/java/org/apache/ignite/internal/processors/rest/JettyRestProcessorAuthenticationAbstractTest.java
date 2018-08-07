@@ -32,7 +32,7 @@ import static org.apache.ignite.configuration.WALMode.NONE;
 /**
  * Test REST with enabled authentication.
  */
-public abstract class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessorUnsignedSelfTest {
+public abstract class JettyRestProcessorAuthenticationAbstractTest extends JettyRestProcessorUnsignedSelfTest {
     /** */
     protected static final String DFLT_USER = "ignite";
 

@@ -43,7 +43,10 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroups
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.NotMappedPartitionInTxTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheContainsKeyColocatedAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheContainsKeyNearAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
@@ -104,6 +107,10 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(ConcurrentCacheStartTest.class);
 
+
+        //suite.addTestSuite(GridCacheAtomicPreloadSelfTest.class);
+        //suite.addTestSuite(IgniteCacheContainsKeyColocatedAtomicSelfTest.class);
+        //suite.addTestSuite(IgniteCacheContainsKeyNearAtomicSelfTest.class);
         return suite;
     }
 }

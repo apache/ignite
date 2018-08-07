@@ -27,9 +27,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Check how much memory and time required to fill 1_000_000 entries with meta.
  * Do not include this test to suits.
  */
-public class GridMetadataAwareAdapterLoadSelfTest extends GridCommonAbstractTest {
+public class GridMetadataAwareAdapterLoadTest extends GridCommonAbstractTest {
     /** Creates test. */
-    public GridMetadataAwareAdapterLoadSelfTest() {
+    public GridMetadataAwareAdapterLoadTest() {
         super(/*start grid*/false);
     }
 
