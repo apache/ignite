@@ -151,9 +151,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     protected long clientFailureDetectionTimeout = 5000;
 
     /** */
-   // protected long metricsUpdateFrequency = 200;
-
-    /** */
     private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
 
     /** */
