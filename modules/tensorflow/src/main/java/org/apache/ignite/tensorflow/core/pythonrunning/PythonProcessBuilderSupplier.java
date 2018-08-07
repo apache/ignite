@@ -17,6 +17,8 @@
 
 package org.apache.ignite.tensorflow.core.pythonrunning;
 
+import java.lang.management.ManagementFactory;
+import java.util.Map;
 import org.apache.ignite.tensorflow.util.SerializableSupplier;
 
 /**
@@ -52,6 +54,22 @@ public class PythonProcessBuilderSupplier implements SerializableSupplier<Proces
         if (python == null)
             python = "python3";
 
-        return interactive ? new ProcessBuilder(python, "-i") : new ProcessBuilder(python);
+        ProcessBuilder procBldr = interactive ? new ProcessBuilder(python, "-i") : new ProcessBuilder(python);
+
+        Map<String, String> env = procBldr.environment();
+        env.put("PPID", String.valueOf(getProcessId()));
+
+        return procBldr;
+    }
+
+    /**
+     * Returns current process identifier.
+     *
+     * @return Process identifier.
+     */
+    private long getProcessId() {
+        String pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+
+        return Long.parseLong(pid);
     }
 }
