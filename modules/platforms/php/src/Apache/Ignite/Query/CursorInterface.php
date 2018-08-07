@@ -19,14 +19,27 @@
 namespace Apache\Ignite\Query;
 
 /**
- * 
+ * Interface representing a cursor to obtain results of SQL and Scan query operations.
+ *
+ * An instance of the class with this interface should be obtained via query() method
+ * of an object with CacheInterface.
+ * One instance of the class with CursorInterface returns results of one SQL or Scan query operation.
+ *
+ * CursorInterface extends the PHP Iterator interface.
+ * The PHP Iterator's methods may be used to obtain the results of the query (cache entries, i.e. key-value pairs)
+ * one by one.
+ * Also, the cursor can be placed into the "foreach" PHP loop to easily iterate over all the results.
+ *
+ * Additionally, CursorInterface includes getAll() method to get all the results at once
+ * and close() method to prematurely close the cursor.
+ *
  */
 interface CursorInterface extends \Iterator
 {
     /**
-     * Returns all elements (cache entries - key-value pairs) from the query results.
+     * Returns all elements (cache entries, i.e. key-value pairs) from the query results at once.
      *
-     * May be used instead of getValue() method if the number of returned entries
+     * May be used instead of the PHP Iterator's methods if the number of returned entries
      * is relatively small and will not cause memory utilization issues.
      *
      * @return array all cache entries (key-value pairs) returned by SQL or Scan query.
