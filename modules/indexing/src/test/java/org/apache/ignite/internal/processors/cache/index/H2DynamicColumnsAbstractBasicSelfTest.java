@@ -304,7 +304,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         doSleep(500);
 
         QueryField c1 = c("GUID", Object.class.getName());
-
         QueryField c2 = c("DATA", byte[].class.getName());
 
         checkTableState("GuidTest", "GUIDTEST", c1, c2);
