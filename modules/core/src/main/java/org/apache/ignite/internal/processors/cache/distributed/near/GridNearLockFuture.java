@@ -482,31 +482,42 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param res Result.
      */
     void onResult(UUID nodeId, GridNearLockResponse res) {
-        if (!isDone()) {
-            if (log.isDebugEnabled())
-                log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
+        boolean done = isDone();
 
-            MiniFuture mini = miniFuture(res.miniId());
+        if (!done) {
+            synchronized (this) {
+                if (!isDone()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
 
-            if (mini != null) {
-                assert mini.node().id().equals(nodeId);
+                    MiniFuture mini = miniFuture(res.miniId());
 
-                if (log.isDebugEnabled())
-                    log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
+                    if (mini != null) {
+                        assert mini.node().id().equals(nodeId);
 
-                mini.onResult(res);
+                        if (log.isDebugEnabled())
+                            log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
 
-                if (log.isDebugEnabled())
-                    log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
-                        ", res=" + res + ']');
+                        mini.onResult(res);
 
-                return;
+                        if (log.isDebugEnabled())
+                            log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
+                                ", res=" + res + ']');
+
+                        return;
+                    }
+
+                    U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
+                        ", fut=" + this + ']');
+                }
+                else
+                    done = true;
+
             }
 
-            U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
-                ", fut=" + this + ']');
         }
-        else if (log.isDebugEnabled())
+
+        if (done && log.isDebugEnabled())
             log.debug("Ignoring lock response from node (future is done) [nodeId=" + nodeId + ", res=" + res +
                 ", fut=" + this + ']');
     }
@@ -1496,15 +1507,20 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                 U.warn(log, "Failed to detect deadlock.", e);
                             }
 
-                            onComplete(false, true);
+                            synchronized (GridNearLockFuture.this) {
+                                onComplete(false, true);
+                            }
                         }
                     });
                 }
                 else
                     err = tx.timeoutException();
             }
-            else
-                onComplete(false, true);
+            else {
+                synchronized (GridNearLockFuture.this) {
+                    onComplete(false, true);
+                }
+            }
         }
 
         /** {@inheritDoc} */

@@ -445,30 +445,37 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param res Result.
      */
     void onResult(UUID nodeId, GridNearLockResponse res) {
-        if (!isDone()) {
-            MiniFuture mini = miniFuture(res.miniId());
+        boolean done = isDone();
 
-            if (mini != null) {
-                assert mini.node().id().equals(nodeId);
+        if (!done) {
+            synchronized (this) {
+                if (!isDone()) {
+                    MiniFuture mini = miniFuture(res.miniId());
 
-                mini.onResult(res);
+                    if (mini != null) {
+                        assert mini.node().id().equals(nodeId);
 
-                return;
+                        mini.onResult(res);
+
+                        return;
+                    }
+
+                    //  This warning can be triggered by deadlock detection code which clears pending futures.
+                    U.warn(msgLog, "Collocated lock fut, failed to find mini future [txId=" + lockVer +
+                        ", tx=" + (inTx() ? CU.txString(tx) : "N/A") +
+                        ", node=" + nodeId +
+                        ", res=" + res +
+                        ", fut=" + this + ']');
+                }
+                else
+                    done = true;
             }
-
-            //  This warning can be triggered by deadlock detection code which clears pending futures.
-            U.warn(msgLog, "Collocated lock fut, failed to find mini future [txId=" + lockVer +
-                ", tx=" + (inTx() ? CU.txString(tx) : "N/A") +
-                ", node=" + nodeId +
-                ", res=" + res +
-                ", fut=" + this + ']');
         }
-        else {
-            if (msgLog.isDebugEnabled()) {
-                msgLog.debug("Collocated lock fut, response for finished future [txId=" + lockVer +
-                    ", inTx=" + inTx() +
-                    ", node=" + nodeId + ']');
-            }
+
+        if (done && msgLog.isDebugEnabled()) {
+            msgLog.debug("Collocated lock fut, response for finished future [txId=" + lockVer +
+                ", inTx=" + inTx() +
+                ", node=" + nodeId + ']');
         }
     }
 
@@ -581,7 +588,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param distribute {@code True} if need to distribute lock removal in case of failure.
      * @return {@code True} if complete by this operation.
      */
-    private boolean onComplete(boolean success, boolean distribute) {
+    private /*synchronized*/ boolean onComplete(boolean success, boolean distribute) {
         if (log.isDebugEnabled()) {
             log.debug("Received onComplete(..) callback [success=" + success + ", distribute=" + distribute +
                 ", fut=" + this + ']');
@@ -1452,15 +1459,20 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                 U.warn(log, "Failed to detect deadlock.", e);
                             }
 
-                            onComplete(false, true);
+                            synchronized (GridDhtColocatedLockFuture.this) {
+                                onComplete(false, true);
+                            }
                         }
                     });
                 }
                 else
                     err = tx.timeoutException();
             }
-            else
-                onComplete(false, true);
+            else {
+                synchronized (GridDhtColocatedLockFuture.this) {
+                    onComplete(false, true);
+                }
+            }
         }
 
         /** {@inheritDoc} */
