@@ -86,6 +86,18 @@ class Cache:
         self, conn: Connection, settings: Union[str, dict]=None,
         with_get: bool=False
     ):
+        """
+        Initialize cache object. Normally you should not calling this directly.
+        `Connection.create_cache` or `Connection.get_or_create_cache` methods
+        will do it for you.
+
+        :param conn: Connection to Ignite server,
+        :param settings: cache settings. Can be a string (cache name) or a dict
+         of cache properties and their values. In this case PROP_NAME is
+         mandatory,
+        :param with_get: (optional) do not raise exception, if the cache
+         is already exists. Defaults to False.
+        """
         self._conn = conn
         self.validate_settings(settings)
         if type(settings) == str:
@@ -102,6 +114,11 @@ class Cache:
 
     @property
     def settings(self) -> Optional[dict]:
+        """
+        Lazy Cache settings.
+
+        :return: dict of cache properties and their values.
+        """
         if self._settings is None:
             config_result = cache_get_configuration(self._conn, self._cache_id)
             self._settings = config_result.value
@@ -110,6 +127,11 @@ class Cache:
 
     @property
     def name(self) -> str:
+        """
+        Lazy cache name.
+
+        :return: cache name string.
+        """
         if self._name is None:
             self._name = self.settings[prop_codes.PROP_NAME]
 
@@ -117,10 +139,20 @@ class Cache:
 
     @property
     def conn(self) -> Connection:
+        """
+        Connection.
+
+        :return: Connection object, through which the cache is accessed.
+        """
         return self._conn
 
     @property
     def cache_id(self) -> int:
+        """
+        Cache ID.
+
+        :return: integer value of the cache ID.
+        """
         return self._cache_id
 
     def process_binary(self, value: Any) -> Any:
@@ -137,23 +169,52 @@ class Cache:
 
     @status_to_exception(CacheError)
     def destroy(self):
+        """
+        Destroys cache with a given name.
+        """
         return cache_destroy(self._conn, self._cache_id)
 
     @status_to_exception(CacheError)
     def get(self, key, key_hint: object=None) -> Any:
+        """
+        Retrieves a value from cache by key.
+
+        :param key: key for the cache entry. Can be of any supported type,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :return: value retrieved.
+        """
         result = cache_get(self._conn, self._cache_id, key, key_hint=key_hint)
         result.value = self.process_binary(result.value)
         return result
 
     @status_to_exception(CacheError)
     def put(self, key, value, key_hint: object=None, value_hint: object=None):
+        """
+        Puts a value with a given key to cache (overwriting existing value
+        if any).
+
+        :param key: key for the cache entry. Can be of any supported type,
+        :param value: value for the key,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :param value_hint: (optional) Ignite data type, for which the given
+         value should be converted.
+        """
         return cache_put(
             self._conn, self._cache_id, key, value,
             key_hint=key_hint, value_hint=value_hint
         )
 
     @status_to_exception(CacheError)
-    def get_all(self, keys: list):
+    def get_all(self, keys: list) -> list:
+        """
+        Retrieves multiple key-value pairs from cache. For potentially large
+        results please use `Cache.scan` instead.
+
+        :param keys: list of keys or tuples of (key, key_hint),
+        :return: a dict of key-value pairs.
+        """
         result = cache_get_all(self._conn, self._cache_id, keys)
         if result.value:
             for key, value in result.value.items():
@@ -162,12 +223,30 @@ class Cache:
 
     @status_to_exception(CacheError)
     def put_all(self, pairs: dict):
+        """
+        Puts multiple key-value pairs to cache (overwriting existing
+        associations if any).
+
+        :param pairs: dictionary type parameters, contains key-value pairs
+         to save. Each key or value can be an item of representable
+         Python type or a tuple of (item, hint),
+        """
         return cache_put_all(self._conn, self._cache_id, pairs)
 
     @status_to_exception(CacheError)
     def replace(
         self, key, value, key_hint: object=None, value_hint: object=None
     ):
+        """
+        Puts a value with a given key to cache only if the key already exist.
+
+        :param key: key for the cache entry. Can be of any supported type,
+        :param value: value for the key,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :param value_hint: (optional) Ignite data type, for which the given
+         value should be converted.
+        """
         result = cache_replace(
             self._conn, self._cache_id, key, value,
             key_hint=key_hint, value_hint=value_hint
@@ -177,6 +256,12 @@ class Cache:
 
     @status_to_exception(CacheError)
     def clear(self, keys: Optional[list]=None):
+        """
+        Clears the cache without notifying listeners or cache writers.
+
+        :param keys: (optional) list of cache keys or (key, key type
+         hint) tuples to clear (default: clear all).
+        """
         if keys:
             return cache_clear_keys(self._conn, self._cache_id, keys)
         else:
@@ -184,22 +269,55 @@ class Cache:
 
     @status_to_exception(CacheError)
     def clear_key(self, key, key_hint: object=None):
+        """
+        Clears the cache key without notifying listeners or cache writers.
+
+        :param key: key for the cache entry,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        """
         return cache_clear_key(
             self._conn, self._cache_id, key, key_hint=key_hint
         )
 
     @status_to_exception(CacheError)
-    def contains_key(self, key, key_hint=None):
+    def contains_key(self, key, key_hint=None) -> bool:
+        """
+        Returns a value indicating whether given key is present in cache.
+
+        :param key: key for the cache entry. Can be of any supported type,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :return: boolean `True` when key is present, `False` otherwise.
+        """
         return cache_contains_key(
             self._conn, self._cache_id, key, key_hint=key_hint
         )
 
     @status_to_exception(CacheError)
-    def contains_keys(self, keys: Iterable):
+    def contains_keys(self, keys: Iterable) -> bool:
+        """
+        Returns a value indicating whether all given keys are present in cache.
+
+        :param keys: a list of keys or (key, type hint) tuples,
+        :return: boolean `True` when all keys are present, `False` otherwise.
+        """
         return cache_contains_keys(self._conn, self._cache_id, keys)
 
     @status_to_exception(CacheError)
-    def get_and_put(self, key, value, key_hint=None, value_hint=None):
+    def get_and_put(self, key, value, key_hint=None, value_hint=None) -> Any:
+        """
+        Puts a value with a given key to cache, and returns the previous value
+        for that key, or null value if there was not such key.
+
+        :param key: key for the cache entry. Can be of any supported type,
+        :param value: value for the key,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :param value_hint: (optional) Ignite data type, for which the given
+         value should be converted.
+        :return: old value or None.
+        """
         result = cache_get_and_put(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
@@ -210,6 +328,18 @@ class Cache:
     def get_and_put_if_absent(
         self, key, value, key_hint=None, value_hint=None
     ):
+        """
+        Puts a value with a given key to cache only if the key does not
+        already exist.
+
+        :param key: key for the cache entry. Can be of any supported type,
+        :param value: value for the key,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :param value_hint: (optional) Ignite data type, for which the given
+         value should be converted,
+        :return: old value or None.
+        """
         result = cache_get_and_put_if_absent(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
@@ -218,12 +348,31 @@ class Cache:
 
     @status_to_exception(CacheError)
     def put_if_absent(self, key, value, key_hint=None, value_hint=None):
+        """
+        Puts a value with a given key to cache only if the key does not
+        already exist.
+
+        :param key: key for the cache entry. Can be of any supported type,
+        :param value: value for the key,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :param value_hint: (optional) Ignite data type, for which the given
+         value should be converted.
+        """
         return cache_put_if_absent(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
 
     @status_to_exception(CacheError)
-    def get_and_remove(self, key, key_hint=None):
+    def get_and_remove(self, key, key_hint=None) -> Any:
+        """
+        Removes the cache entry with specified key, returning the value.
+
+        :param key: key for the cache entry. Can be of any supported type,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :return: old value or None.
+        """
         result = cache_get_and_remove(
             self._conn, self._cache_id, key, key_hint
         )
@@ -231,7 +380,22 @@ class Cache:
         return result
 
     @status_to_exception(CacheError)
-    def get_and_replace(self, key, value, key_hint=None, value_hint=None):
+    def get_and_replace(
+        self, key, value, key_hint=None, value_hint=None
+    ) -> Any:
+        """
+        Puts a value with a given key to cache, returning previous value
+        for that key, if and only if there is a value currently mapped
+        for that key.
+
+        :param key: key for the cache entry. Can be of any supported type,
+        :param value: value for the key,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :param value_hint: (optional) Ignite data type, for which the given
+         value should be converted.
+        :return: old value or None.
+        """
         result = cache_get_and_replace(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
@@ -240,18 +404,42 @@ class Cache:
 
     @status_to_exception(CacheError)
     def remove_key(self, key, key_hint=None):
+        """
+        Clears the cache key without notifying listeners or cache writers.
+
+        :param key:  key for the cache entry,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        """
         return cache_remove_key(self._conn, self._cache_id, key, key_hint)
 
     @status_to_exception(CacheError)
-    def remove_keys(self, keys):
-        return cache_remove_keys(self._conn, self._cache_id, keys)
+    def remove(self, keys: Optional[list]=None):
+        """
+        Removes some or all cache entries, notifying listeners and cache
+        writers.
 
-    @status_to_exception(CacheError)
-    def remove_all(self):
-        return cache_remove_all(self._conn, self._cache_id)
+        :param keys: (optional) list of keys or tuples of (key, key_hint) to
+         remove. Defaults to all.
+        """
+        if keys:
+            return cache_remove_keys(self._conn, self._cache_id, keys)
+        else:
+            return cache_remove_all(self._conn, self._cache_id)
 
     @status_to_exception(CacheError)
     def remove_if_equals(self, key, sample, key_hint=None, sample_hint=None):
+        """
+        Removes an entry with a given key if provided value is equal to
+        actual value, notifying listeners and cache writers.
+
+        :param key:  key for the cache entry,
+        :param sample: a sample to compare the stored value with,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :param sample_hint: (optional) Ignite data type, for whic
+         the given sample should be converted.
+        """
         return cache_remove_if_equals(
             self._conn, self._cache_id, key, sample, key_hint, sample_hint
         )
@@ -260,14 +448,39 @@ class Cache:
     def replace_if_equals(
         self, key, sample, value,
         key_hint=None, sample_hint=None, value_hint=None
-    ):
-        return cache_replace_if_equals(
+    ) -> Any:
+        """
+        Puts a value with a given key to cache only if the key already exists
+        and value equals provided sample.
+
+        :param key:  key for the cache entry,
+        :param sample: a sample to compare the stored value with,
+        :param value: new value for the given key,
+        :param key_hint: (optional) Ignite data type, for which the given key
+         should be converted,
+        :param sample_hint: (optional) Ignite data type, for whic
+         the given sample should be converted
+        :param value_hint: (optional) Ignite data type, for which the given
+         value should be converted,
+        :return: boolean `True` when key is present, `False` otherwise.
+        """
+        result = cache_replace_if_equals(
             self._conn, self._cache_id, key, sample, value,
             key_hint, sample_hint, value_hint
         )
+        result.value = self.process_binary(result.value)
+        return result
 
     @status_to_exception(CacheError)
     def get_size(self, peek_modes=0):
+        """
+        Gets the number of entries in cache.
+
+        :param peek_modes: (optional) limit count to near cache partition
+         (PeekModes.NEAR), primary cache (PeekModes.PRIMARY), or backup cache
+         (PeekModes.BACKUP). Defaults to all cache partitions (PeekModes.ALL),
+        :return: integer number of cache entries.
+        """
         return cache_get_size(self._conn, self._cache_id, peek_modes)
 
     def scan(self, page_size: int=1, partitions: int=-1, local: bool=False):

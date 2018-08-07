@@ -160,3 +160,13 @@ def test_cache_scan(conn, page_size):
     assert len(received_data) == len(test_data)
 
     cache.destroy()
+
+
+def test_get_and_put_if_absent(conn):
+    cache = conn.create_cache('my_oop_cache')
+
+    value = cache.get_and_put_if_absent('my_key', 42)
+    assert value is None
+    cache.put('my_key', 43)
+    value = cache.get_and_put_if_absent('my_key', 42)
+    assert value is 43
