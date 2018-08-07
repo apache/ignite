@@ -28,7 +28,7 @@ from pyignite.utils import is_hinted, is_iterable
 from .type_codes import *
 
 
-__all__ = ['Struct', 'StructArray', 'AnyDataObject', 'AnyDataArray']
+__all__ = ['AnyDataArray', 'AnyDataObject', 'Struct', 'StructArray', 'tc_map']
 
 
 @attr.s

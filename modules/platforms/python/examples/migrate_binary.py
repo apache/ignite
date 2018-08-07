@@ -17,16 +17,11 @@ from collections import OrderedDict
 from datetime import date
 from decimal import Decimal
 
-from pyignite.api import (
-    get_binary_type, put_binary_type, cache_get_or_create, cache_put,
-    scan, scan_cursor_get_page, cache_get,
-)
 from pyignite.connection import Connection
 from pyignite.datatypes import (
     BinaryObject, BoolObject, DateObject, DecimalObject, LongObject, String,
 )
 from pyignite.datatypes.internal import tc_map
-from pyignite.utils import unwrap_binary
 
 
 # prepare old data
@@ -106,21 +101,18 @@ old_data = [
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
 
-cache_get_or_create(conn, 'accounting')
+accounting = conn.create_cache('accounting')
 
-result = put_binary_type(
-    conn,
+result = conn.put_binary_type(
     'ExpenseVoucher',
     schema=old_schema,
 )
 
-type_id = result.value['type_id']
-old_schema_id = result.value['schema_id']
+type_id = result['type_id']
+old_schema_id = result['schema_id']
 
 for key, value in old_data:
-    cache_put(
-        conn,
-        'accounting',
+    accounting.put(
         key,
         {
             'version': 1,
@@ -131,8 +123,8 @@ for key, value in old_data:
         value_hint=BinaryObject,
     )
 
-result = get_binary_type(conn, 'ExpenseVoucher')
-print(result.value)
+result = conn.get_binary_type('ExpenseVoucher')
+print(result)
 
 # {
 #     'type_id': -1171639466,
@@ -162,7 +154,7 @@ print(result.value)
 
 schema = OrderedDict([
     (field['field_name'], tc_map(bytes([field['type_id']])))
-    for field in result.value['binary_fields']
+    for field in result['binary_fields']
 ])
 
 schema['expense_date'] = schema['date']
@@ -171,15 +163,14 @@ schema['report_date'] = DateObject
 del schema['reported']
 schema['sum'] = DecimalObject
 
-result = put_binary_type(
-    conn,
+result = conn.put_binary_type(
     'ExpenseVoucher',
     schema=schema,
 )
-new_schema_id = result.value['schema_id']
+new_schema_id = result['schema_id']
 
-result = get_binary_type(conn, type_id)
-print(result.value)
+result = conn.get_binary_type(type_id)
+print(result)
 
 # {
 #     'type_id': -1171639466,
@@ -217,13 +208,11 @@ print(result.value)
 # }
 
 
-def migrate(data):
+def migrate(cache, data):
     """ Migrate given data pages. """
-    for key, value in data.items():
+    for key, value in data:
         # read data
-        fields = unwrap_binary(conn, value)['fields']
-        print(dict(fields))
-
+        print(value)
         # {
         #     'cashier_id': 8,
         #     'date': datetime.datetime(2017, 9, 21, 0, 0),
@@ -234,29 +223,19 @@ def migrate(data):
         # }
 
         # process data
+        fields = value['fields']
         fields['expense_date'] = fields['date']
         del fields['date']
         fields['report_date'] = date.today() if fields['reported'] else None
         del fields['reported']
+        value['schema_id'] = new_schema_id
 
         # replace data
-        cache_put(
-            conn,
-            'accounting',
-            key,
-            {
-                'version': 1,
-                'type_id': type_id,
-                'schema_id': new_schema_id,
-                'fields': fields,
-            },
-            value_hint=BinaryObject,
-        )
+        cache.put(key, value, value_hint=BinaryObject)
 
         # verify data
-        verify = cache_get(conn, 'accounting', key)
-        print(dict(unwrap_binary(conn, verify.value)['fields']))
-
+        verify = cache.get(key)
+        print(verify['fields'])
         # {
         #     'cashier_id': 8,
         #     'sum': Decimal('666.67'),
@@ -268,10 +247,9 @@ def migrate(data):
 
 
 # migrate data
-result = scan(conn, 'accounting', 2)
-migrate(result.value['data'])
+result = accounting.scan()
+migrate(accounting, result)
 
-cursor = result.value['cursor']
-while result.value['more']:
-    result = scan_cursor_get_page(conn, cursor)
-    migrate(result.value['data'])
+# cleanup
+accounting.destroy()
+conn.close()
