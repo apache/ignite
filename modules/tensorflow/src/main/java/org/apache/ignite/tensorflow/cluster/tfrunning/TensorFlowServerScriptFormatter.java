@@ -62,6 +62,14 @@ public class TensorFlowServerScriptFormatter {
             .append(srv.getClusterSpec().format(ignite))
             .append(')')
             .append('\n');
+        builder.append("");
+
+        builder.append("print('job:%s task:%d' % (")
+            .append(srv.getJobName())
+            .append(",")
+            .append(srv.getTaskIdx())
+            .append("))")
+            .append("\n");
 
         builder.append("server = tf.train.Server(cluster");
 
