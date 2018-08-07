@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  *
  */
-public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest {
+public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbstractTest {
     /** Cache modes. */
     private static final CacheMode[] CACHE_MODES = {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 

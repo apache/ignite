@@ -46,7 +46,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
  * Class for multithreaded {@link TcpCommunicationSpi} test.
  */
 @SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
-public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommunicationSpi> {
+public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpCommunicationSpi> {
     /** Connection idle timeout */
     public static final int IDLE_CONN_TIMEOUT = 2000;
 
@@ -79,7 +79,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
     private static final String remoteAddr = "172.1.1.36";
 
     /** */
-    public GridTcpCommunicationSpiLanTest() {
+    public GridTcpCommunicationSpiLanLoadTest() {
         super(false);
     }
 
