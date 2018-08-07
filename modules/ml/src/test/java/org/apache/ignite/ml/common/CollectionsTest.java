@@ -24,6 +24,7 @@ import org.apache.ignite.ml.clustering.kmeans.KMeansModelFormat;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNModelFormat;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.HammingDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
@@ -54,9 +55,11 @@ public class CollectionsTest {
         test(new VectorizedViewMatrix(new DenseMatrix(2, 2), 1, 1, 1, 1),
             new VectorizedViewMatrix(new DenseMatrix(3, 2), 2, 1, 1, 1));
 
-        test(new ManhattanDistance(), new ManhattanDistance(), false);
+        specialTest(new ManhattanDistance(), new ManhattanDistance());
 
-        test(new HammingDistance(), new HammingDistance(), false);
+        specialTest(new HammingDistance(), new HammingDistance());
+
+        specialTest(new EuclideanDistance(), new EuclideanDistance());
 
         FeatureMetadata data = new FeatureMetadata("name2");
         data.setName("name1");
@@ -97,21 +100,22 @@ public class CollectionsTest {
         test(new SVMLinearBinaryClassificationModel(null, 1.0), new SVMLinearBinaryClassificationModel(null, 0.5));
     }
 
-    /** */
-    private <T> void test(T o1, T o2) {
-        test(o1, o2, true);
+    /** Test classes that have all instances equal (eg, metrics). */
+    private <T> void specialTest(T o1, T o2) {
+        assertEquals(o1, o2);
+
+        test(o1, new Object());
     }
 
     /** */
-    private <T> void test(T o1, T o2, boolean testDiffer) {
+    private <T> void test(T o1, T o2) {
         assertNotEquals(o1, null);
         assertNotEquals(o2, null);
 
         assertEquals(o1, o1);
         assertEquals(o2, o2);
 
-        if (testDiffer)
-            assertNotEquals(o1, o2);
+        assertNotEquals(o1, o2);
 
         Set<T> set = new HashSet<>();
         set.add(o1);

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import org.apache.ignite.ml.math.Destroyable;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.HammingDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.MathTestConstants;
@@ -51,9 +52,11 @@ public class ExternalizeTest {
 
         externalizeTest(new VectorizedViewMatrix(new DenseMatrix(2, 2), 1, 1, 1, 1));
 
-        externalizeTest(new ManhattanDistance(), false);
+        externalizeTest(new ManhattanDistance());
 
-        externalizeTest(new HammingDistance(), false);
+        externalizeTest(new HammingDistance());
+
+        externalizeTest(new EuclideanDistance());
 
         externalizeTest(new FeatureMetadata());
 
@@ -67,13 +70,8 @@ public class ExternalizeTest {
     }
 
     /** */
-    private <T> void externalizeTest(T initObj) {
-        externalizeTest(initObj, true);
-    }
-
-    /** */
     @SuppressWarnings("unchecked")
-    private <T> void externalizeTest(T initObj, boolean verifyHashCode) {
+    private <T> void externalizeTest(T initObj) {
         T objRestored = null;
 
         try {
@@ -89,8 +87,7 @@ public class ExternalizeTest {
 
             assertEquals(MathTestConstants.VAL_NOT_EQUALS, initObj, objRestored);
 
-            if (verifyHashCode)
-                assertEquals(MathTestConstants.VAL_NOT_EQUALS, 0, Integer.compare(initObj.hashCode(), objRestored.hashCode()));
+           assertEquals(MathTestConstants.VAL_NOT_EQUALS, 0, Integer.compare(initObj.hashCode(), objRestored.hashCode()));
         }
         catch (ClassNotFoundException | IOException e) {
             fail(e + " [" + e.getMessage() + "]");
