@@ -151,6 +151,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     protected long clientFailureDetectionTimeout = 5000;
 
     /** */
+   // protected long metricsUpdateFrequency = 200;
+
+    /** */
     private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
 
     /** */
@@ -227,6 +230,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         if (nodeId != null)
             cfg.setNodeId(nodeId);
 
+       // cfg.setMetricsUpdateFrequency(metricsUpdateFrequency);
         return cfg;
     }
 
@@ -263,7 +267,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         clientIpFinder = null;
         joinTimeout = TcpDiscoverySpi.DFLT_JOIN_TIMEOUT;
         netTimeout = TcpDiscoverySpi.DFLT_NETWORK_TIMEOUT;
-        clientFailureDetectionTimeout = 1000;
+        clientFailureDetectionTimeout = 5000;
         longSockTimeouts = false;
 
         assert G.allGrids().isEmpty();
