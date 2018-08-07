@@ -327,12 +327,20 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         assertEquals(Arrays.asList(Arrays.asList(1, 1, guid1), Arrays.asList(2, 2, guid2)), res);
 
+        // Additional check for BINARY field content.
+        res = run(cache, "select data from \"GuidTest\".GuidTest order by id");
+
+        assertEquals(Arrays.hashCode(data1), Arrays.hashCode((byte[])res.get(0).get(0)));
+        assertEquals(Arrays.hashCode(data2), Arrays.hashCode((byte[])res.get(1).get(0)));
+
         if (!Boolean.valueOf(GridTestProperties.getProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER))) {
             GuidTest val1 = (GuidTest)cache.get(1);
             GuidTest val2 = (GuidTest)cache.get(2);
 
             assertEquals(guid1, val1.guid());
             assertEquals(guid2, val2.guid());
+            assertEquals(Arrays.hashCode(data1), Arrays.hashCode(val1.data()));
+            assertEquals(Arrays.hashCode(data2), Arrays.hashCode(val2.data()));
         }
         else {
             BinaryObject val1 = (BinaryObject)cache.withKeepBinary().get(1);
@@ -340,6 +348,8 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
             assertEquals(guid1, val1.field("guid"));
             assertEquals(guid2, val2.field("guid"));
+            assertEquals(Arrays.hashCode(data1), Arrays.hashCode((byte[])val1.field("data")));
+            assertEquals(Arrays.hashCode(data2), Arrays.hashCode((byte[])val2.field("data")));
         }
 
         cache.destroy();
