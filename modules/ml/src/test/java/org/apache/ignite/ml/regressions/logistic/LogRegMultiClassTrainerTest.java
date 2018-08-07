@@ -22,7 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.SmoothParametrized;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
@@ -88,11 +89,11 @@ public class LogRegMultiClassTrainerTest {
         LogRegressionMultiClassModel mdl = trainer.fit(
             data,
             10,
-            (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), PRECISION);
+        TestUtils.assertEquals(-1, mdl.apply(new DenseVector(new double[]{100, 10})), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(new DenseVector(new double[]{10, 100})), PRECISION);
     }
 }

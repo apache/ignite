@@ -39,6 +39,7 @@
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/binary/binary_object.h"
 
+#include "teamcity/teamcity_messages.h"
 #include "test_type.h"
 #include "complex_type.h"
 #include "test_utils.h"
@@ -803,6 +804,9 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
 
 BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 {
+    if (JetBrains::underTeamcity())
+        return;
+
     // Starting additional node.
     Ignite node1 = StartAdditionalNode("Node1");
     Ignite node2 = StartAdditionalNode("Node2");
@@ -2022,6 +2026,41 @@ BOOST_AUTO_TEST_CASE(TestQueryAndConnectionTimeoutBoth)
 
     InsertTestStrings(10, false);
     InsertTestBatch(11, 20, 9);
+}
+
+BOOST_AUTO_TEST_CASE(TestSeveralInsertsWithoutClosing)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+    
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i32Field) VALUES(?, ?)";
+
+    SQLRETURN ret = SQLPrepare(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int64_t key = 0;
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int32_t data = 0;
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &data, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    for (int32_t i = 0; i < 10; ++i)
+    {
+        key = i;
+        data = i * 10;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

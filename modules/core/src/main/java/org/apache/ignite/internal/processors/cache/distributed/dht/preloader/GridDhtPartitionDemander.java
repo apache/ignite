@@ -235,12 +235,12 @@ public class GridDhtPartitionDemander {
 
     /**
      * @param fut Future.
-     * @return {@code True} if topology changed.
+     * @return {@code True} if rebalance topology version changed by exchange thread or force
+     * reassing exchange occurs, see {@link RebalanceReassignExchangeTask} for details.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
-        return
-            !grp.affinity().lastVersion().equals(fut.topologyVersion()) || // Topology already changed.
-                fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
+        return !ctx.exchange().rebalanceTopologyVersion().equals(fut.topVer) ||
+            fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
     /**
@@ -253,14 +253,21 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * Initiates new rebalance process from given {@code assignments}.
-     * If previous rebalance is not finished method cancels it.
-     * In case of delayed rebalance method schedules new with configured delay.
+     * @return Collection of supplier nodes. Value {@code empty} means rebalance already finished.
+     */
+    Collection<UUID> remainingNodes() {
+        return rebalanceFut.remainingNodes();
+    }
+
+    /**
+     * This method initiates new rebalance process from given {@code assignments} by creating new rebalance
+     * future based on them. Cancels previous rebalance future and sends rebalance started event.
+     * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
      *
-     * @param assignments Assignments.
-     * @param force {@code True} if dummy reassign.
-     * @param rebalanceId Rebalance id.
-     * @param next Runnable responsible for cache rebalancing start.
+     * @param assignments Assignments to process.
+     * @param force {@code True} if preload request by {@link ForceRebalanceExchangeTask}.
+     * @param rebalanceId Rebalance id generated from exchange thread.
+     * @param next Runnable responsible for cache rebalancing chain.
      * @param forcedRebFut External future for forced rebalance.
      * @return Rebalancing runnable.
      */
@@ -307,9 +314,22 @@ public class GridDhtPartitionDemander {
 
                     metrics.clearRebalanceCounters();
 
-                    metrics.startRebalance(0);
+                    for (GridDhtPartitionDemandMessage msg : assignments.values()) {
+                        for (Integer partId : msg.partitions().fullSet()) {
+                            metrics.onRebalancingKeysCountEstimateReceived(grp.topology().globalPartSizes().get(partId));
+                        }
 
-                    rebalanceFut.listen(f -> metrics.clearRebalanceCounters());
+                        CachePartitionPartialCountersMap histMap = msg.partitions().historicalMap();
+
+                        for (int i = 0; i < histMap.size(); i++) {
+                            long from = histMap.initialUpdateCounterAt(i);
+                            long to = histMap.updateCounterAt(i);
+
+                            metrics.onRebalancingKeysCountEstimateReceived(to - from);
+                        }
+                    }
+
+                    metrics.startRebalance(0);
                 }
             }
 
@@ -427,17 +447,7 @@ public class GridDhtPartitionDemander {
             if (fut.isDone())
                 return;
 
-            // Must add all remaining node before send first request, for avoid race between add remaining node and
-            // processing response, see checkIsDone(boolean).
-            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assignments.entrySet()) {
-                UUID nodeId = e.getKey().id();
-
-                IgniteDhtDemandedPartitionsMap parts = e.getValue().partitions();
-
-                assert parts != null : "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + nodeId + "]";
-
-                fut.remaining.put(nodeId, new T2<>(U.currentTimeMillis(), parts));
-            }
+            fut.remaining.forEach((key, value) -> value.set1(U.currentTimeMillis()));
         }
 
         final CacheConfiguration cfg = grp.config();
@@ -714,80 +724,86 @@ public class GridDhtPartitionDemander {
         try {
             AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-            GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
+            // Preload.
+            for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
+                int p = e.getKey();
 
-            ctx.database().checkpointReadLock();
+                if (aff.get(p).contains(ctx.localNode())) {
+                    GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
-            try {
-                // Preload.
-                for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
-                    int p = e.getKey();
+                    assert part != null;
 
-                    if (aff.get(p).contains(ctx.localNode())) {
-                        GridDhtLocalPartition part = top.localPartition(p, topVer, true);
+                    boolean last = supply.last().containsKey(p);
 
-                        assert part != null;
+                    if (part.state() == MOVING) {
+                        boolean reserved = part.reserve();
 
-                        boolean last = supply.last().containsKey(p);
+                        assert reserved : "Failed to reserve partition [igniteInstanceName=" +
+                            ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
 
-                        if (part.state() == MOVING) {
-                            boolean reserved = part.reserve();
+                        part.lock();
 
-                            assert reserved : "Failed to reserve partition [igniteInstanceName=" +
-                                ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
+                        try {
+                            Iterator<GridCacheEntryInfo> infos = e.getValue().infos().iterator();
 
-                            part.lock();
+                            // Loop through all received entries and try to preload them.
+                            while (infos.hasNext()) {
+                                ctx.database().checkpointReadLock();
 
-                            try {
-                                // Loop through all received entries and try to preload them.
-                                for (GridCacheEntryInfo entry : e.getValue().infos()) {
-                                    if (!preloadEntry(node, p, entry, topVer)) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Got entries for invalid partition during " +
-                                                "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
+                                try {
+                                    for (int i = 0; i < 100; i++) {
+                                        if (!infos.hasNext())
+                                            break;
 
-                                        break;
+                                        GridCacheEntryInfo entry = infos.next();
+
+                                        if (!preloadEntry(node, p, entry, topVer)) {
+                                            if (log.isDebugEnabled())
+                                                log.debug("Got entries for invalid partition during " +
+                                                        "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
+
+                                            break;
+                                        }
+
+                                        for (GridCacheContext cctx : grp.caches()) {
+                                            if (cctx.statisticsEnabled())
+                                                cctx.cache().metrics0().onRebalanceKeyReceived();
+                                        }
                                     }
-
-                                    if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != entry.cacheId()))
-                                        cctx = ctx.cacheContext(entry.cacheId());
-
-                                    if (cctx != null && cctx.statisticsEnabled())
-                                        cctx.cache().metrics0().onRebalanceKeyReceived();
                                 }
-
-                                // If message was last for this partition,
-                                // then we take ownership.
-                                if (last) {
-                                    fut.partitionDone(nodeId, p, true);
-
-                                    if (log.isDebugEnabled())
-                                        log.debug("Finished rebalancing partition: " + part);
+                                finally {
+                                    ctx.database().checkpointReadUnlock();
                                 }
                             }
-                            finally {
-                                part.unlock();
-                                part.release();
+
+                            // If message was last for this partition,
+                            // then we take ownership.
+                            if (last) {
+                                fut.partitionDone(nodeId, p, true);
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Finished rebalancing partition: " + part);
                             }
                         }
-                        else {
-                            if (last)
-                                fut.partitionDone(nodeId, p, false);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
+                        finally {
+                            part.unlock();
+                            part.release();
                         }
                     }
                     else {
-                        fut.partitionDone(nodeId, p, false);
+                        if (last)
+                            fut.partitionDone(nodeId, p, false);
 
                         if (log.isDebugEnabled())
-                            log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
+                            log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
                     }
                 }
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
+                else {
+                    fut.partitionDone(nodeId, p, false);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
+                }
             }
 
             // Only request partitions based on latest topology version.
@@ -959,6 +975,13 @@ public class GridDhtPartitionDemander {
 
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
+
+            assignments.forEach((k, v) -> {
+                assert v.partitions() != null :
+                    "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
+
+                remaining.put(k.id(), new T2<>(U.currentTimeMillis(), v.partitions()));
+            });
 
             this.grp = grp;
             this.log = log;
@@ -1196,6 +1219,13 @@ public class GridDhtPartitionDemander {
 
                 onDone(!cancelled);
             }
+        }
+
+        /**
+         * @return Collection of supplier nodes. Value {@code empty} means rebalance already finished.
+         */
+        private synchronized Collection<UUID> remainingNodes() {
+            return remaining.keySet();
         }
 
         /**

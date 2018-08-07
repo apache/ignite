@@ -30,6 +30,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
@@ -41,7 +42,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  * All common parameters are shared with bunch of binary classification trainers.
  */
 public class LogRegressionMultiClassTrainer<P extends Serializable>
-    implements SingleLabelDatasetTrainer<LogRegressionMultiClassModel> {
+    extends SingleLabelDatasetTrainer<LogRegressionMultiClassModel> {
     /** Update strategy. */
     private UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
@@ -66,7 +67,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
      * @return Model.
      */
     @Override public <K, V> LogRegressionMultiClassModel fit(DatasetBuilder<K, V> datasetBuilder,
-                                                                IgniteBiFunction<K, V, double[]> featureExtractor,
+                                                                IgniteBiFunction<K, V, Vector> featureExtractor,
                                                                 IgniteBiFunction<K, V, Double> lbExtractor) {
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
 

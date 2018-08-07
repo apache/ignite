@@ -204,7 +204,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
 
             final IgniteEx ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
             for (int i = 0; i < CNT; i++)
                 cache.put(i, i);

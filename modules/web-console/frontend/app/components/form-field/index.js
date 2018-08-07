@@ -16,8 +16,11 @@
  */
 
 import angular from 'angular';
+import './style.scss';
 import {directive as showValidationError} from './showValidationError.directive';
+import {directive as copyInputValue} from './copyInputValueButton.directive';
 
 export default angular
     .module('ignite-console.form-field', [])
-    .directive('ngModel', showValidationError);
+    .directive('ngModel', showValidationError)
+    .directive('copyInputValueButton', copyInputValue);
