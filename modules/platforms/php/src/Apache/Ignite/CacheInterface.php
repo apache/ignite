@@ -362,11 +362,12 @@ interface CacheInterface
     /* Methods to operate with the cache using SQL and Scan Queries */
 
     /**
-     * Starts an SQL or Scan query operation.
+     * Starts an SQL, SQL Fields or Scan query operation.
      * 
      * @param Query $query query to be executed.
      * 
-     * @return CursorInterface cursor to obtain the results of the query operation:
+     * @return CursorInterface new instance of the class with interface representing a cursor
+     * to obtain the results of the query operation:
      *   - SqlFieldsCursorInterface in case of SqlFieldsQuery query
      *   - CursorInterface in case of other types of query
      */
