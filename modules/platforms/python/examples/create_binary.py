@@ -13,23 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import OrderedDict
-
-from pyignite.datatypes import BinaryObject, DoubleObject, IntObject, String
-
-from pyignite.api import (
-    cache_get_or_create, cache_create_with_config,
-    cache_put, put_binary_type, sql_fields,
-)
 from pyignite.connection import Connection
+from pyignite.datatypes import BinaryObject, DoubleObject, IntObject, String
 from pyignite.datatypes.prop_codes import *
 
 conn = Connection()
 conn.connect('127.0.0.1', 10800)
 
-cache_get_or_create(conn, 'PUBLIC')
-
-cache_create_with_config(conn, {
+student_cache = conn.create_cache({
         PROP_NAME: 'SQL_PUBLIC_STUDENT',
         PROP_SQL_SCHEMA: 'PUBLIC',
         PROP_QUERY_ENTITIES: [
@@ -82,8 +73,7 @@ cache_create_with_config(conn, {
         ],
     })
 
-result = put_binary_type(
-    conn,
+student_type = conn.put_binary_type(
     'SQL_PUBLIC_STUDENT_TYPE',
     schema={
         'NAME': String,
@@ -93,18 +83,12 @@ result = put_binary_type(
     }
 )
 
-type_id = result.value['type_id']
-schema_id = result.value['schema_id']
-
-cache_put(
-    conn,
-    'SQL_PUBLIC_STUDENT',
-    key=1,
-    key_hint=IntObject,
+student_cache.put(
+    1,
     value={
         'version': 1,
-        'type_id': type_id,
-        'schema_id': schema_id,
+        'type_id': student_type['type_id'],
+        'schema_id': student_type['schema_id'],
         'fields': {
             'LOGIN': 'jdoe',
             'NAME': 'John Doe',
@@ -112,23 +96,19 @@ cache_put(
             'GPA': 4.25,
         },
     },
+    key_hint=IntObject,
     value_hint=BinaryObject,
 )
 
-result = sql_fields(
-    conn,
-    'PUBLIC',
-    'SELECT * FROM Student',
-    1,
-    include_field_names=True,
+result = conn.sql(
+    r'SELECT * FROM Student',
+    include_field_names=True
 )
-print(result.value)
+print(next(result))
+# ['SID', 'NAME', 'LOGIN', 'AGE', 'GPA']
 
-# {
-#     'more': False,
-#     'data': [
-#         [1, 'John Doe', 'jdoe', 17, 4.25]
-#     ],
-#     'fields': ['SID', 'NAME', 'LOGIN', 'AGE', 'GPA'],
-#     'cursor': 1
-# }
+print(*result)
+# [1, 'John Doe', 'jdoe', 17, 4.25]
+
+student_cache.destroy()
+conn.close()
