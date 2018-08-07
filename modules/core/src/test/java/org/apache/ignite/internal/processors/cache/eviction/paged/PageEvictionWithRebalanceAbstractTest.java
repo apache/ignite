@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 /**
  *
  */
-public abstract class PageEvictionWithRebalanceTest extends PageEvictionAbstractTest {
+public abstract class PageEvictionWithRebalanceAbstractTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */

@@ -35,7 +35,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 /**
  * Base class for testing work of combinations of DML and DDL operations.
  */
-public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractSelfTest {
+public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexAbstractSelfTest {
     /** Cache mode to test with. */
     private final CacheMode cacheMode;
 
@@ -67,7 +67,7 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
      * @param backups Number of backups.
      * @param nodeIdx Node index.
      */
-    H2DynamicIndexingComplexTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode, int backups, int nodeIdx) {
+    H2DynamicIndexingComplexAbstractTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode, int backups, int nodeIdx) {
         this.cacheMode = cacheMode;
         this.atomicityMode = atomicityMode;
         this.backups = backups;
