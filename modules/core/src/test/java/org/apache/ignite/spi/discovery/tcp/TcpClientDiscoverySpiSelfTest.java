@@ -542,6 +542,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         ((TestTcpDiscoverySpi)client.configuration().getDiscoverySpi()).resumeAll();
 
+        Thread.sleep(2000);
+
         assert ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
         assert ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
     }
