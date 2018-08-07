@@ -19,6 +19,7 @@ import {uniqueName} from 'app/utils/uniqueName';
 import {of} from 'rxjs/observable/of';
 import {empty} from 'rxjs/observable/empty';
 import {combineLatest} from 'rxjs/observable/combineLatest';
+import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/observable/combineLatest';
 import {Observable} from 'rxjs/Observable';

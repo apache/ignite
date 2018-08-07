@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl;
+package org.apache.ignite.internal.processors.hadoop.impl.examples;
 
 import com.google.common.collect.MinMaxPriorityQueue;
 import java.io.IOException;
@@ -48,7 +48,7 @@ import static java.util.Collections.reverseOrder;
  * NOTE: in order to run this example on Windows please ensure that cygwin is installed and available in the system
  * path.
  */
-public class HadoopPopularWordsTest {
+public class HadoopPopularWords {
     /** Ignite home. */
     private static final String IGNITE_HOME = U.getIgniteHome();
 
@@ -187,7 +187,7 @@ public class HadoopPopularWordsTest {
         cfg.addResource(U.resolveIgniteUrl(DFS_CFG));
 
         jobCfg.setJobName("HadoopPopularWordExample");
-        jobCfg.setJarByClass(HadoopPopularWordsTest.class);
+        jobCfg.setJarByClass(HadoopPopularWords.class);
         jobCfg.setInputFormatClass(TextInputFormat.class);
         jobCfg.setOutputKeyClass(Text.class);
         jobCfg.setOutputValueClass(IntWritable.class);
@@ -287,7 +287,7 @@ public class HadoopPopularWordsTest {
      */
     public static void main(String[] args) {
         try {
-            new HadoopPopularWordsTest().runWordCountConfigBasedHadoopJob();
+            new HadoopPopularWords().runWordCountConfigBasedHadoopJob();
         }
         catch (Exception e) {
             X.println(">>> Failed to run word count example: " + e.getMessage());

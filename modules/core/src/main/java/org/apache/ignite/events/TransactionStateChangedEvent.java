@@ -14,30 +14,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.util.tostring;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
+package org.apache.ignite.events;
+
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.transactions.Transaction;
 
 /**
+ * Event indicates transaction state change.
  *
+ * @see EventType#EVTS_TX
  */
-public class IncludeSensitiveTransactionalTest extends IncludeSensitiveAbstractTest {
-    /** Active transaction. */
+public class TransactionStateChangedEvent extends EventAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Tx. */
     private Transaction tx;
 
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
+    /**
+     * @param node Node.
+     * @param msg Message.
+     * @param type Type.
+     * @param tx Tx.
+     */
+    public TransactionStateChangedEvent(ClusterNode node, String msg, int type, Transaction tx) {
+        super(node, msg, type);
+
+        assert tx != null;
+
+        this.tx = tx;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void startTx() {
-        tx = grid(0).transactions().txStart();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void commitTx() {
-        tx.commit();
+    /**
+     * Provides transaction proxy allows all 'get' operations such as {@link Transaction#label()}
+     * and also {@link Transaction#setRollbackOnly()} method.
+     */
+    public Transaction tx() {
+        return tx;
     }
 }
