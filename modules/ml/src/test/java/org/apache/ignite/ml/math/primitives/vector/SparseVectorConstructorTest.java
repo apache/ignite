@@ -17,11 +17,13 @@
 
 package org.apache.ignite.ml.math.primitives.vector;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /** */
 public class SparseVectorConstructorTest {
@@ -51,5 +53,22 @@ public class SparseVectorConstructorTest {
         assertEquals("1 size, sequential access.", 1,
             new SparseVector(1, StorageConstants.SEQUENTIAL_ACCESS_MODE).size());
 
+    }
+
+    /** */
+    @Test
+    public void noParamsCtorTest() {
+        assertNotNull(new SparseVector().nonZeroSpliterator());
+    }
+
+    /** */
+    @Test
+    public void mapCtorTest() {
+        Map<Integer, Double> map = new HashMap<Integer, Double>() {{
+            put(1, 1.);
+        }};
+
+        assertTrue("Copy true", new SparseVector(map, true).isRandomAccess());
+        assertTrue("Copy false", new SparseVector(map, false).isRandomAccess());
     }
 }

@@ -15,21 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn;
+package org.apache.ignite.ml.composition;
 
+import org.apache.ignite.ml.composition.boosting.GDBTrainerTest;
+import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregatorTest;
+import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregatorTest;
+import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregatorTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for multilayer perceptrons.
+ * Test suite for all tests located in org.apache.ignite.ml.composition package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    MLPTest.class,
-    MLPTrainerTest.class,
-    MLPTrainerIntegrationTest.class,
-    LossFunctionsTest.class
+    GDBTrainerTest.class,
+    MeanValuePredictionsAggregatorTest.class,
+    OnMajorityPredictionsAggregatorTest.class,
+    WeightedPredictionsAggregatorTest.class
 })
-public class MLPTestSuite {
-    // No-op.
+public class CompositionTestSuite {
 }
