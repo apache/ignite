@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.io.Serializable;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * A pojo-object representing current cluster global state. The state includes cluster active flag and cluster
