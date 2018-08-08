@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions;
+package org.apache.ignite.ml.environment;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * This exception is used to indicate error condition of matrix elements failing the positivity check.
+ * Test suite for all tests located in org.apache.ignite.ml.trees package.
  */
-public class NonPositiveDefiniteMatrixException extends MathIllegalArgumentException {
-    /**
-     * Construct an exception.
-     *
-     * @param wrong Value that fails the positivity check.
-     * @param idx Row (and column) index.
-     * @param threshold Absolute positivity threshold.
-     */
-    public NonPositiveDefiniteMatrixException(double wrong, int idx, double threshold) {
-        super("Matrix must be positive, wrong element located on diagonal with index %d and has value %f with this threshold %f",
-            idx, wrong, threshold);
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    LearningEnvironmentBuilderTest.class,
+    LearningEnvironmentTest.class
+})
+public class EnvironmentTestSuite {
 }

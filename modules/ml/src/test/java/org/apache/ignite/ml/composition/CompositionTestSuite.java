@@ -15,32 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.optimization;
+package org.apache.ignite.ml.composition;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.composition.boosting.GDBTrainerTest;
+import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregatorTest;
+import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregatorTest;
+import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregatorTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Simple updater with fixed learning rate which doesn't guarantee convergence.
+ * Test suite for all tests located in org.apache.ignite.ml.composition package.
  */
-public class SimpleUpdater implements Updater {
-    /** */
-    private static final long serialVersionUID = 6417716224818162225L;
-
-    /** */
-    private final double learningRate;
-
-    /** */
-    public SimpleUpdater(double learningRate) {
-        assert learningRate > 0;
-
-        this.learningRate = learningRate;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient,
-        int iteration) {
-        return weights.minus(gradient.times(learningRate));
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GDBTrainerTest.class,
+    MeanValuePredictionsAggregatorTest.class,
+    OnMajorityPredictionsAggregatorTest.class,
+    WeightedPredictionsAggregatorTest.class
+})
+public class CompositionTestSuite {
 }
