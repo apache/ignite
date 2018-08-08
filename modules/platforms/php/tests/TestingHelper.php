@@ -69,6 +69,17 @@ class TestingHelper
         }
     }
     
+    public static function executeExample(string $name, $testCase): void
+    {
+        $output = null;
+        $return_var = 0;
+        exec('php ' . __DIR__ . '/../examples/' . $name, $output, $return_var);
+        $testCase->assertEquals($return_var, 0);
+        foreach ($output as $out) {
+            $testCase->assertNotContains('ERROR:', $out);
+        }
+    }
+    
     public static function compare($value1, $value2): bool
     {
         TestingHelper::logDebug(sprintf('compare: %s and %s', TestingHelper::printValue($value1), TestingHelper::printValue($value2)));
