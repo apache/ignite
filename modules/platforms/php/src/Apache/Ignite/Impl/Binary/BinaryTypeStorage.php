@@ -97,10 +97,12 @@ class BinaryTypeStorage
         $binaryType->setId($typeId);
         $this->socket->send(
             ClientOperation::GET_BINARY_TYPE,
-            function (MessageBuffer $payload) use ($typeId) {
+            function (MessageBuffer $payload) use ($typeId)
+            {
                 $payload->writeInteger($typeId);
             },
-            function (MessageBuffer $payload) use (&$binaryType) {
+            function (MessageBuffer $payload) use (&$binaryType)
+            {
                 $exist = $payload->readBoolean();
                 if ($exist) {
                     $binaryType->read($payload);
@@ -115,7 +117,8 @@ class BinaryTypeStorage
     {
         $this->socket->send(
             ClientOperation::PUT_BINARY_TYPE,
-            function (MessageBuffer $payload) use ($binaryType) {
+            function (MessageBuffer $payload) use ($binaryType)
+            {
                 $binaryType->write($payload);
             });
     }

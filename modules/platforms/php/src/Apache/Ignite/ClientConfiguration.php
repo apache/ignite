@@ -24,7 +24,6 @@ namespace Apache\Ignite;
  * The configuration includes:
  *   - (mandatory) Ignite node endpoint(s)
  *   - (optional) user credentials for authentication
- *   - (optional) TLS enabling
  *   - (optional) connection options
  */
 class ClientConfiguration
@@ -32,6 +31,7 @@ class ClientConfiguration
     private $endpoints;
     private $userName;
     private $password;
+    private $options;
     
     /**
      * Creates an instance of Ignite client configuration
@@ -51,6 +51,7 @@ class ClientConfiguration
         $this->endpoints = $endpoints;
         $this->userName = null;
         $this->password = null;
+        $this->options = null;
     }
     
     /**
@@ -112,5 +113,32 @@ class ClientConfiguration
     public function getPassword(): ?string
     {
         return $this->password;
+    }
+    
+    /**
+     * Sets connection options.
+     *
+     * By default the client establishes a non-secure connection with default connection options defined by PHP.
+     *
+     * @param array connectionOptions connection options in a format defined here: http://php.net/manual/en/context.php
+     *   - For non-secure connection options defined here: http://php.net/manual/en/context.socket.php
+     *   - For secure connection options defined here: http://php.net/manual/en/context.ssl.php
+     *
+     * @return ClientConfiguration the same instance of the ClientConfiguration.
+     */
+    public function setConnectionOptions(array $connectionOptions): ClientConfiguration
+    {
+        $this->options = $connectionOptions;
+        return $this;
+    }
+    
+    /**
+     * 
+     * 
+     * @return array|null 
+     */
+    public function getConnectionOptions(): ?array
+    {
+        return $this->options;
     }
 }

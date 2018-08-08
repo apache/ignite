@@ -88,7 +88,8 @@ class Client
             $cacheConfig ?
                 ClientOperation::CACHE_CREATE_WITH_CONFIGURATION :
                 ClientOperation::CACHE_CREATE_WITH_NAME,
-            function (MessageBuffer $payload) use ($name, $cacheConfig) {
+            function (MessageBuffer $payload) use ($name, $cacheConfig)
+            {
                 $this->writeCacheNameOrConfig($payload, $name, $cacheConfig);
             });
         return new Cache($name, $this->socket);
@@ -115,7 +116,8 @@ class Client
             $cacheConfig ?
                 ClientOperation::CACHE_GET_OR_CREATE_WITH_CONFIGURATION :
                 ClientOperation::CACHE_GET_OR_CREATE_WITH_NAME,
-            function (MessageBuffer $payload) use ($name, $cacheConfig) {
+            function (MessageBuffer $payload) use ($name, $cacheConfig)
+            {
                 $this->writeCacheNameOrConfig($payload, $name, $cacheConfig);
             });
         return new Cache($name, $this->socket);

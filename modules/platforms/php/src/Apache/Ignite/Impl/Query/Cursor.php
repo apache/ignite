@@ -100,7 +100,8 @@ class Cursor implements CursorInterface
         if ($this->id && $this->hasNext) {
             $this->socket->send(
                 ClientOperation::RESOURCE_CLOSE,
-                function (MessageBuffer $payload) {
+                function (MessageBuffer $payload)
+                {
                     $this->write($payload);
                 });
         }
@@ -113,10 +114,12 @@ class Cursor implements CursorInterface
         $this->buffer = null;
         $this->socket->send(
             $this->operation,
-            function (MessageBuffer $payload) {
+            function (MessageBuffer $payload)
+            {
                 $this->write($payload);
             },
-            function (MessageBuffer $payload) {
+            function (MessageBuffer $payload)
+            {
                 $this->buffer = $payload;
             });
     }

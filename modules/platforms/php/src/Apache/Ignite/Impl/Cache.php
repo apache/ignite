@@ -77,11 +77,13 @@ class Cache implements CacheInterface
         $result = [];
         $this->socket->send(
             ClientOperation::CACHE_GET_ALL,
-            function (MessageBuffer $payload) use ($keys) {
+            function (MessageBuffer $payload) use ($keys)
+            {
                 $this->writeCacheInfo($payload);
                 $this->writeKeys($payload, $keys);
             },
-            function (MessageBuffer $payload) use (&$result) {
+            function (MessageBuffer $payload) use (&$result)
+            {
                 $resultCount = $payload->readInteger();
                 for ($i = 0; $i < $resultCount; $i++) {
                     array_push($result, new CacheEntry(
@@ -103,7 +105,8 @@ class Cache implements CacheInterface
         ArgumentChecker::hasType($entries, 'entries', true, CacheEntry::class);
         $this->socket->send(
             ClientOperation::CACHE_PUT_ALL,
-            function (MessageBuffer $payload) use ($entries) {
+            function (MessageBuffer $payload) use ($entries)
+            {
                 $this->writeCacheInfo($payload);
                 $payload->writeInteger(count($entries));
                 foreach ($entries as $entry) {
@@ -160,12 +163,14 @@ class Cache implements CacheInterface
         $result = false;
         $this->socket->send(
             ClientOperation::CACHE_REPLACE_IF_EQUALS,
-            function (MessageBuffer $payload) use ($key, $value, $newValue) {
+            function (MessageBuffer $payload) use ($key, $value, $newValue)
+            {
                 $this->writeCacheInfo($payload);
                 $this->writeKeyValue($payload, $key, $value);
                 BinaryWriter::writeObject($payload, $newValue, $this->valueType);
             },
-            function (MessageBuffer $payload) use (&$result) {
+            function (MessageBuffer $payload) use (&$result)
+            {
                 $result = $payload->readBoolean();
             });
         return $result;
@@ -175,7 +180,8 @@ class Cache implements CacheInterface
     {
         $this->socket->send(
             ClientOperation::CACHE_CLEAR,
-            function (MessageBuffer $payload) {
+            function (MessageBuffer $payload)
+            {
                 $this->writeCacheInfo($payload);
             });
     }
@@ -209,7 +215,8 @@ class Cache implements CacheInterface
     {
         $this->socket->send(
             ClientOperation::CACHE_REMOVE_ALL,
-            function (MessageBuffer $payload) {
+            function (MessageBuffer $payload)
+            {
                 $this->writeCacheInfo($payload);
             });
     }
@@ -225,14 +232,16 @@ class Cache implements CacheInterface
         $result = 0;
         $this->socket->send(
             ClientOperation::CACHE_GET_SIZE,
-            function (MessageBuffer $payload) use ($peekModes) {
+            function (MessageBuffer $payload) use ($peekModes)
+            {
                 $this->writeCacheInfo($payload);
                 $payload->writeInteger(count($peekModes));
                 foreach ($peekModes as $mode) {
                     $payload->writeByte($mode);
                 }
             },
-            function (MessageBuffer $payload) use (&$result) {
+            function (MessageBuffer $payload) use (&$result)
+            {
                 $result = $payload->readLong();
             });
         return $result;
@@ -243,11 +252,13 @@ class Cache implements CacheInterface
         $value = null;
         $this->socket->send(
             $query->getOperation(),
-            function (MessageBuffer $payload) use ($query) {
+            function (MessageBuffer $payload) use ($query)
+            {
                 $this->writeCacheInfo($payload);
                 $query->write($payload);
             },
-            function (MessageBuffer $payload) use ($query, &$value) {
+            function (MessageBuffer $payload) use ($query, &$value)
+            {
                 $value = $query->getCursor($this->socket, $payload, $this->keyType, $this->valueType);
             });
         return $value;
@@ -265,7 +276,8 @@ class Cache implements CacheInterface
         ArgumentChecker::notNull($value, 'value');
         $this->socket->send(
             $operation,
-            function (MessageBuffer $payload) use ($key, $value) {
+            function (MessageBuffer $payload) use ($key, $value)
+            {
                 $this->writeCacheInfo($payload);
                 $this->writeKeyValue($payload, $key, $value);
             },
@@ -277,7 +289,8 @@ class Cache implements CacheInterface
         $result = null;
         $this->writeKeyValueOp(
             $operation, $key, $value,
-            function (MessageBuffer $payload) use (&$result) {
+            function (MessageBuffer $payload) use (&$result)
+            {
                 $result = BinaryReader::readObject($payload, $this->valueType);
             });
         return $result;
@@ -288,7 +301,8 @@ class Cache implements CacheInterface
         $result = false;
         $this->writeKeyValueOp(
             $operation, $key, $value,
-            function (MessageBuffer $payload) use (&$result) {
+            function (MessageBuffer $payload) use (&$result)
+            {
                 $result = $payload->readBoolean();
             });
         return $result;
@@ -299,7 +313,8 @@ class Cache implements CacheInterface
         $value = null;
         $this->writeKeyOp(
             $operation, $key,
-            function (MessageBuffer $payload) use (&$value) {
+            function (MessageBuffer $payload) use (&$value)
+            {
                 $value = BinaryReader::readObject($payload, $this->valueType);
             });
         return $value;
@@ -310,7 +325,8 @@ class Cache implements CacheInterface
         ArgumentChecker::notNull($key, 'key');
         $this->socket->send(
             $operation,
-            function (MessageBuffer $payload) use ($key) {
+            function (MessageBuffer $payload) use ($key)
+            {
                 $this->writeCacheInfo($payload);
                 BinaryWriter::writeObject($payload, $key, $this->keyType);
             },
@@ -323,7 +339,8 @@ class Cache implements CacheInterface
         $this->writeKeyOp(
             $operation,
             $key,
-            function (MessageBuffer $payload) use (&$result) {
+            function (MessageBuffer $payload) use (&$result)
+            {
                 $result = $payload->readBoolean();
             });
         return $result;
@@ -344,7 +361,8 @@ class Cache implements CacheInterface
         $this->writeKeysOp(
             $operation,
             $keys,
-            function (MessageBuffer $payload) use (&$result) {
+            function (MessageBuffer $payload) use (&$result)
+            {
                 $result = $payload->readBoolean();
             });
         return $result;
@@ -355,7 +373,8 @@ class Cache implements CacheInterface
         ArgumentChecker::notEmpty($keys, 'keys');
         $this->socket->send(
             $operation,
-            function (MessageBuffer $payload) use ($keys) {
+            function (MessageBuffer $payload) use ($keys)
+            {
                 $this->writeCacheInfo($payload);
                 $this->writeKeys($payload, $keys);
             },

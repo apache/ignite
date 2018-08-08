@@ -366,7 +366,7 @@ class BinaryUtils
     
     public static function internalError(string $message = null): void
     {
-        throw new ClientException($message || 'Internal library error');
+        throw new ClientException($message ? $message : 'Internal library error');
     }
     
     public static function unsupportedType($type): void

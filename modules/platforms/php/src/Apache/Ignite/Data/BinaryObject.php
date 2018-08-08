@@ -283,7 +283,8 @@ class BinaryObject
     public function getFieldNames(): array
     {
         return array_map(
-            function ($fieldId) {
+            function (int $fieldId): string
+            {
                 $field = $this->typeBuilder->getField($fieldId);
                 if ($field) {
                     return $field->getName();
@@ -383,9 +384,11 @@ class BinaryObject
             }
             array_push($fieldOffsets, [$fieldId, $this->buffer->readNumber($this->offsetType)]);
         }
-        usort($fieldOffsets, function ($val1, $val2) {
-            return $val1[1] - $val2[1];
-        });
+        usort($fieldOffsets,
+            function (array $val1, array $val2): int
+            {
+                return $val1[1] - $val2[1];
+            });
         for ($i = 0; $i < count($fieldOffsets); $i++) {
             $fieldId = $fieldOffsets[$i][0];
             $offset = $fieldOffsets[$i][1];

@@ -30,6 +30,6 @@ class ConnectionException extends ClientException
      */
     public function __construct(string $message = null)
     {
-        parent::__construct($message || 'Operation is not completed due to the connection problem');
+        parent::__construct($message ? $message : 'Operation is not completed due to the connection problem');
     }
 }

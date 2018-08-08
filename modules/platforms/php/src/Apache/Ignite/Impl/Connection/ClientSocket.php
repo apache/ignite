@@ -23,6 +23,7 @@ use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Impl\Utils\Logger;
 use Apache\Ignite\Impl\Binary\BinaryUtils;
 use Apache\Ignite\Impl\Binary\BinaryReader;
+use Apache\Ignite\Impl\Binary\BinaryWriter;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
 use Apache\Ignite\Impl\Binary\Request;
 use Apache\Ignite\Exception\ConnectionException;
@@ -64,12 +65,18 @@ class ClientSocket
     
     public function connect(): void
     {
-        // TODO: connection options
+        $options = $this->config->getConnectionOptions();
+        $isSsl = $options && array_key_exists('ssl', $options); 
+        $context = stream_context_create($options);
         $errno = 0;
         $errstr = null;
-        if (!$this->socket = stream_socket_client(
-                'tcp://' . $this->endpoint, $errno, $errstr, 0, 
-                STREAM_CLIENT_CONNECT | STREAM_CLIENT_PERSISTENT)) {
+        if (!($this->socket = stream_socket_client(
+                ($isSsl ? 'ssl://' : 'tcp://') . $this->endpoint,
+                $errno,
+                $errstr,
+                ini_get("default_socket_timeout"), 
+                STREAM_CLIENT_CONNECT | STREAM_CLIENT_PERSISTENT,
+                $context))) {
             throw new ConnectionException($errstr);
         }
         // send handshake
@@ -78,7 +85,9 @@ class ClientSocket
 
     public function disconnect(): void
     {
-        fclose($this->socket);
+        if ($this->socket !== false) {
+            fclose($this->socket);
+        }
     }
     
     private function getHandshakeRequest($version): Request
@@ -96,8 +105,8 @@ class ClientSocket
         // Client code
         $buffer->writeByte(2);
         if ($this->config->getUserName()) {
-            BinaryWriter.writeString($buffer, $this->config->getUserName());
-            BinaryWriter.writeString($buffer, $this->config->getPassword());
+            BinaryWriter::writeString($buffer, $this->config->getUserName());
+            BinaryWriter::writeString($buffer, $this->config->getPassword());
         }
     }
     
