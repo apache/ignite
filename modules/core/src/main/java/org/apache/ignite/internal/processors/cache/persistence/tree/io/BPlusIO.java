@@ -159,10 +159,10 @@ public abstract class BPlusIO<L> extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @param realPageSize Page size without encryption overhead.
+     * @param pageSize Page size without encryption overhead.
      * @return Max items count.
      */
-    public abstract int getMaxCount(long pageAddr, int realPageSize);
+    public abstract int getMaxCount(long pageAddr, int pageSize);
 
     /**
      * Store the needed info about the row in the page. Leaf and inner pages can store different info.
@@ -331,7 +331,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param leftPageAddr Left page address.
      * @param rightPageAddr Right page address.
      * @param emptyBranch We are merging an empty branch.
-     * @param realPageSize Page size without encryption overhead.
+     * @param pageSize Page size without encryption overhead.
      * @return {@code false} If we were not able to merge.
      * @throws IgniteCheckedException If failed.
      */
@@ -342,7 +342,7 @@ public abstract class BPlusIO<L> extends PageIO {
         long leftPageAddr,
         long rightPageAddr,
         boolean emptyBranch,
-        int realPageSize
+        int pageSize
     ) throws IgniteCheckedException {
         int prntCnt = prntIo.getCount(prntPageAddr);
         int leftCnt = getCount(leftPageAddr);
@@ -354,7 +354,7 @@ public abstract class BPlusIO<L> extends PageIO {
         if (!isLeaf() && !emptyBranch)
             newCnt++;
 
-        if (newCnt > getMaxCount(leftPageAddr, realPageSize)) {
+        if (newCnt > getMaxCount(leftPageAddr, pageSize)) {
             assert !emptyBranch;
 
             return false;

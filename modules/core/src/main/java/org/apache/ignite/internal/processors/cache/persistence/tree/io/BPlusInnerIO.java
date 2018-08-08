@@ -45,11 +45,11 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMaxCount(long pageAddr, int realPageSize) {
+    @Override public int getMaxCount(long pageAddr, int pageSize) {
         // The structure of the page is the following:
         // |ITEMS_OFF|w|A|x|B|y|C|z|
         // where capital letters are data items, lowercase letters are 8 byte page references.
-        return (realPageSize - ITEMS_OFF - 8) / (getItemSize() + 8);
+        return (pageSize - ITEMS_OFF - 8) / (getItemSize() + 8);
     }
 
     /**
