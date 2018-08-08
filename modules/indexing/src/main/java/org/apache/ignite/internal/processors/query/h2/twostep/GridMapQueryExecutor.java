@@ -645,7 +645,7 @@ public class GridMapQueryExecutor {
 
             Connection conn = h2.connectionForSchema(schemaName);
 
-            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
+            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
 
             GridH2QueryContext.set(qctx);
 
