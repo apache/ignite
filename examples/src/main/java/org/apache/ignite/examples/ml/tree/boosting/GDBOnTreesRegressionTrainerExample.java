@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * In this example dataset is creating automatically by parabolic function f(x) = x^2.
  */
-public class GRBOnTreesRegressionTrainerExample {
+public class GDBOnTreesRegressionTrainerExample {
     /**
      * Run example.
      *
@@ -49,7 +49,7 @@ public class GRBOnTreesRegressionTrainerExample {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                GRBOnTreesRegressionTrainerExample.class.getSimpleName(), () -> {
+                GDBOnTreesRegressionTrainerExample.class.getSimpleName(), () -> {
 
                 // Create cache with training data.
                 CacheConfiguration<Integer, double[]> trainingSetCfg = createCacheConfiguration();
