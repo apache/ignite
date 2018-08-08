@@ -19,14 +19,30 @@
 namespace Apache\Ignite\Query;
 
 /**
- * 
+ * Interface representing a cursor to obtain results of SQL Fields query operation.
+ *
+ * An instance of the class with this interface should be obtained via query() method
+ * of an object with CacheInterface.
+ * One instance of the class with SqlFieldsCursorInterface returns results of one SQL Fields query operation.
+ *
+ * SqlFieldsCursorInterface extends CursorInterface which extends the PHP Iterator interface.
+ * The PHP Iterator's methods may be used to obtain the results of the query (arrays with values of the fields)
+ * one by one.
+ * Also, the cursor can be placed into the "foreach" PHP loop to easily iterate over all the results.
+ *
+ * Additionally, SqlFieldsCursorInterface includes
+ * getAll() method to get all the results at once,
+ * getFieldNames() method to return names of the fields,
+ * setFieldTypes() method to specify Ignite types of the fields,
+ * and close() method (defined in CursorInterface) to prematurely close the cursor.
+ *
  */
 interface SqlFieldsCursorInterface extends CursorInterface
 {
     /**
-     * Returns all elements (arrays with values of the fields) from the query results.
+     * Returns all elements (arrays with values of the fields) from the query results at once.
      *
-     * May be used instead of getValue() method if the number of returned elements
+     * May be used instead of the PHP Iterator's methods if the number of returned elements
      * is relatively small and will not cause memory utilization issues.
      *
      * @return array all results returned by SQL Fields query.
@@ -45,20 +61,20 @@ interface SqlFieldsCursorInterface extends CursorInterface
     public function getFieldNames(): array;
 
     /**
-     * Specifies types of the fields returned by the SQL Fields query.
+     * Specifies Ignite types of the fields returned by the SQL Fields query.
      *
-     * By default, a type of every field is not specified that means during operations the Ignite client
-     * will try to make automatic mapping between JavaScript types and Ignite object types -
-     * according to the mapping table defined in the description of the {@link ObjectType} class.
+     * By default, an Ignite type of every field is not specified that means during operations Ignite client
+     * tries to make automatic mapping between PHP types and Ignite object types -
+     * according to the mapping table defined in the description of the ObjectType class.
      *
-     * @param int|ObjectType|null ...$fieldTypes types of the returned fields.
+     * @param int|ObjectType|null ...$fieldTypes Ignite types of the returned fields.
      *   The order of types must correspond the order of field values returned in the results of the query.
      *   A type of every field can be:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
      *
-     * @return SqlFieldsCursorInterface - the same instance of the SqlFieldsCursorInterface.
+     * @return SqlFieldsCursorInterface the same instance of the class with SqlFieldsCursorInterface.
      */
     public function setFieldTypes(...$fieldTypes): SqlFieldsCursorInterface;
 }

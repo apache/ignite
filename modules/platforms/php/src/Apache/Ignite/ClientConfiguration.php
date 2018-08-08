@@ -54,7 +54,7 @@ class ClientConfiguration
     }
     
     /**
-     * 
+     * Returns Ignite node endpoints specified in the constructor.
      * 
      * @return string[] endpoints
      */
@@ -63,16 +63,6 @@ class ClientConfiguration
         return $this->endpoints;
     }
 
-    /**
-     * 
-     * 
-     * @return string|null 
-     */
-    public function getUserName(): ?string
-    {
-        return $this->userName;
-    }
-    
     /**
      * Sets username which will be used for authentication during the client's connection.
      *
@@ -89,13 +79,13 @@ class ClientConfiguration
     }
     
     /**
+     * Returns the username specified in the setUserName() method.
      * 
-     * 
-     * @return string|null 
+     * @return string|null username or null (if authentication is disabled).
      */
-    public function getPassword(): ?string
+    public function getUserName(): ?string
     {
-        return $this->password;
+        return $this->userName;
     }
     
     /**
@@ -112,5 +102,15 @@ class ClientConfiguration
     {
         $this->password = $password;
         return $this;
+    }
+    
+    /**
+     * Returns the password specified in the setPassword() method.
+     * 
+     * @return string|null password or null (if password is empty).
+     */
+    public function getPassword(): ?string
+    {
+        return $this->password;
     }
 }
