@@ -1546,7 +1546,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      * @return Previous projection set on this thread.
      */
     private CacheOperationGate onEnter() {
-        GridCacheGateway<K, V> gate = checkProxyIsValid(gate(), true);
+        GridCacheGateway<K, V> gate = checkProxyIsValid(gate(), context().localNode().isClient());
 
         return new CacheOperationGate(gate,
             lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx));

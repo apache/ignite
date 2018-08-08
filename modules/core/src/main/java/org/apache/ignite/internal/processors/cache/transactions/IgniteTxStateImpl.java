@@ -260,6 +260,12 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
             GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
+            if (cacheCtx == null) {
+                fut.onDone(new CacheStoppedException(String.valueOf(cacheId)));
+
+                return null;
+            }
+
             if (!cacheCtx.isLocal()) {
                 nonLocCtx = cacheCtx;
 
@@ -291,7 +297,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
                 GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
-                if (!cacheCtx.isLocal()) {
+                if (cacheCtx != null && !cacheCtx.isLocal()) {
                     nonLocCtx = cacheCtx;
 
                     break;

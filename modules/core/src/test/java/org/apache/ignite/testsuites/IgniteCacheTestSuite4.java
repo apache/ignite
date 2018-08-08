@@ -110,11 +110,15 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWrit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtTxPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheLockFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheMultiTxLockSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedAtomicPutOnDestroyTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedTxPutOnDestroyTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCrossCacheTxSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheNearOnlyTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheNearReadCommittedTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridReplicatedTxPreloadTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedAtomicPutOnDestroyTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedTxPutOnDestroyTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoadAllTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoaderWriterTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLocalLoadAllTest;
@@ -145,6 +149,8 @@ import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxNoWr
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionWriteBehindCoalescingTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionWriteBehindTest;
+import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicPutOnDestroyTest;
+import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalTxPutOnDestroyTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalAtomicSwapDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedAtomicSelfTest;
@@ -306,6 +312,14 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(IgniteStartCacheInTransactionSelfTest.class);
         suite.addTestSuite(IgniteStartCacheInTransactionAtomicSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheLocalAtomicPutOnDestroyTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedAtomicPutOnDestroyTest.class);
+        suite.addTestSuite(IgniteCachePartitionedAtomicPutOnDestroyTest.class);
+
+        suite.addTestSuite(IgniteCacheLocalTxPutOnDestroyTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedTxPutOnDestroyTest.class);
+        suite.addTestSuite(IgniteCachePartitionedTxPutOnDestroyTest.class);
 
         suite.addTestSuite(CacheReadThroughRestartSelfTest.class);
         suite.addTestSuite(CacheReadThroughReplicatedRestartSelfTest.class);
