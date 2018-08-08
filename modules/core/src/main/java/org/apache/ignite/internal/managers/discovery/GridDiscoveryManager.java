@@ -1593,7 +1593,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ClusterNode currCrd = discoCache.oldestServerNode();
 
         if ((evtType == EventType.EVT_NODE_FAILED || evtType == EventType.EVT_NODE_LEFT) &&
-                currCrd != null && currCrd.order() > evtNode.order())
+                !evtNode.isClient() && currCrd != null && currCrd.order() > evtNode.order())
             clo.apply("Coordinator changed [prev=" + evtNode + ", cur=" + currCrd + "]");
 
         DiscoveryDataClusterState state = discoCache.state();
