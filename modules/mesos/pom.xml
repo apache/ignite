@@ -37,7 +37,7 @@
     <properties>
         <mesos.version>0.22.0</mesos.version>
         <ignite.latest.url>http://ignite.run/download_ignite.php</ignite.latest.url>
-        <ignite.direct.url>https://archive.apache.org/dist/ignite/%s/apache-ignite-fabric-%s-bin.zip</ignite.direct.url>
+        <ignite.direct.url>https://archive.apache.org/dist/ignite/%s/apache-ignite-%s-bin.zip</ignite.direct.url>
     </properties>
 
     <dependencies>

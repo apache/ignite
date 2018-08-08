@@ -17,7 +17,7 @@ Summary:          Apache Ignite In-Memory Computing, Database and Caching Platfo
 Group:            Development/System
 License:          ASL 2.0
 URL:              https://ignite.apache.org/
-Source:           %{name}-fabric-%{version}-bin.zip
+Source:           %{name}-%{version}-bin.zip
 Requires:         java-1.8.0, chkconfig
 Requires(pre):    shadow-utils
 Provides:         %{name}
@@ -36,7 +36,7 @@ in-memory speeds at petabyte scale
 # Prepare step: unpack sources
 #
 
-%setup -q -n %{name}-fabric-%{version}-bin
+%setup -q -n %{name}-%{version}-bin
 
 
 #%pre

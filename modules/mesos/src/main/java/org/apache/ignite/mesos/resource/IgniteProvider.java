@@ -38,7 +38,7 @@ public class IgniteProvider {
     private static final String DOWNLOAD_LINK = "http://ignite.run/download_ignite.php";
 
     /** */
-    private static final String DOWNLOAD_URL_PATTERN = "https://archive.apache.org/dist/ignite/%s/apache-ignite-fabric-%s-bin.zip";
+    private static final String DOWNLOAD_URL_PATTERN = "https://archive.apache.org/dist/ignite/%s/apache-ignite-%s-bin.zip";
 
     /** */
     private String downloadFolder;
