@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn;
+package org.apache.ignite.ml.common;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for multilayer perceptrons.
+ * Test suite for all tests located in org.apache.ignite.ml.trees package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    MLPTest.class,
-    MLPTrainerTest.class,
-    MLPTrainerIntegrationTest.class,
-    LossFunctionsTest.class
+    CollectionsTest.class,
+    ExternalizeTest.class
 })
-public class MLPTestSuite {
-    // No-op.
+public class CommonTestSuite {
 }
