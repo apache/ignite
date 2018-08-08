@@ -174,7 +174,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 try {
                     log.info("checking wal manager " + walMgrClass + " with serializer version " + serVer);
 
-                    checkInvariantSwitchSegment(FileWriteAheadLogManager.class, serVer);
+                    checkInvariantSwitchSegment(walMgrClass, serVer);
                 }
                 finally {
                     U.delete(Paths.get(U.defaultWorkDirectory()));
@@ -183,6 +183,11 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Test for check switch segment from work dir to archive dir during iteration.
+     *
+     * @throws Exception If some thing failed.
+     */
     public void testSwitchReadingSegmentFromWorkToArchive() throws Exception {
         for (int serVer : checkSerializerVers) {
                 try {

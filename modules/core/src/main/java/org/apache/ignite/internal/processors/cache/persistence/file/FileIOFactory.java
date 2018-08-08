@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.OpenOption;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 
 /**
  * {@link FileIO} factory definition.

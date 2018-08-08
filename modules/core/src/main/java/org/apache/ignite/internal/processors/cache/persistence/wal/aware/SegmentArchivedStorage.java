@@ -20,7 +20,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
  * Manages last archived index, allows to emulate archivation in no-archiver mode. Monitor which is notified each time
- * WAL segment is archived. Class for inner usage.
+ * WAL segment is archived.
+ *
+ * Class for inner usage.
  */
 class SegmentArchivedStorage extends SegmentObservable {
     /** Segment lock storage: Protects WAL work segments from moving. */
@@ -123,7 +125,7 @@ class SegmentArchivedStorage extends SegmentObservable {
      */
     private void checkInterrupted() throws IgniteInterruptedCheckedException {
         if (interrupted)
-            throw new IgniteInterruptedCheckedException("");
+            throw new IgniteInterruptedCheckedException("Interrupt waiting of change archived idx");
     }
 
     /**

@@ -110,7 +110,7 @@ class SegmentCurrentStateStorage {
         }
 
         if (forceInterrupted)
-            throw new IgniteInterruptedCheckedException("");
+            throw new IgniteInterruptedCheckedException("Interrupt waiting of change archived idx");
 
         return curAbsWalIdx;
     }
@@ -157,6 +157,6 @@ class SegmentCurrentStateStorage {
      */
     private void checkInterrupted() throws IgniteInterruptedCheckedException {
         if (interrupted)
-            throw new IgniteInterruptedCheckedException("");
+            throw new IgniteInterruptedCheckedException("Interrupt waiting of change current idx");
     }
 }

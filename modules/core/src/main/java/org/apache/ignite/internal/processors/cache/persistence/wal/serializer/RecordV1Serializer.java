@@ -257,7 +257,6 @@ public class RecordV1Serializer implements RecordSerializer {
         throws IgniteCheckedException, IOException {
         try (ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
             ByteBufferBackedDataInput in = fileInputFactory.createFileInput(expectedIdx, io, buf);
-//            ByteBufferBackedDataInput in = new SimpleFileInput(io, buf);
 
             in.ensure(HEADER_RECORD_SIZE);
 

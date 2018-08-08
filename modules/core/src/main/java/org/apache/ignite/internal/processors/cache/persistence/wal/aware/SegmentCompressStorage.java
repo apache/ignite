@@ -116,7 +116,7 @@ public class SegmentCompressStorage {
      */
     private void checkInterrupted() throws IgniteInterruptedCheckedException {
         if (interrupted)
-            throw new IgniteInterruptedCheckedException("");
+            throw new IgniteInterruptedCheckedException("Interrupt waiting of change compressed idx");
     }
 
     /**

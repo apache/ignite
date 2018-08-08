@@ -79,6 +79,8 @@ final class LockedReadFileInput extends SimpleFileInput {
 
                 io.position(io().position());
 
+                io().close();
+
                 this.io = io;
             }
 

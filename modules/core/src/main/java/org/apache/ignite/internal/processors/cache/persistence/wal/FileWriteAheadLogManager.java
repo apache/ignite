@@ -348,6 +348,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     @Nullable private volatile IgniteInClosure<FileIO> createWalFileListener;
 
+    /**
+     * Manage of segment location.
+     */
     private SegmentRouter segmentRouter;
 
     /**
@@ -1534,7 +1537,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * </li> <li>some WAL index was removed from map</li>
      * </ul>
      */
-    public class FileArchiver extends GridWorker {
+    private class FileArchiver extends GridWorker {
         /** Exception which occurred during initial creation of files or during archiving WAL segment */
         private StorageException cleanErr;
 
@@ -1977,7 +1980,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * Responsible for decompressing previously compressed segments of WAL archive if they are needed for replay.
      */
-    public class FileDecompressor extends GridWorker {
+    private class FileDecompressor extends GridWorker {
         /** Decompression futures. */
         private Map<Long, GridFutureAdapter<Void>> decompressionFutures = new HashMap<>();
 
@@ -2073,7 +2076,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          *
          * @return Future which is completed once file is decompressed.
          */
-        public synchronized IgniteInternalFuture<Void> decompressFile(long idx) {
+        synchronized IgniteInternalFuture<Void> decompressFile(long idx) {
             if (decompressionFutures.containsKey(idx))
                 return decompressionFutures.get(idx);
 
