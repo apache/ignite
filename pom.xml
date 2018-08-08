@@ -398,12 +398,12 @@
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin" filemode="755">
-                                                <include name="**/*.sh" />
-                                                <include name="**/configure" />
-                                                <include name="**/install-sh" />
-                                                <include name="**/compile" />
-                                                <include name="**/missing" />
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin">
+                                                <exclude name="**/*.sh" />
+                                                <exclude name="**/configure" />
+                                                <exclude name="**/install-sh" />
+                                                <exclude name="**/compile" />
+                                                <exclude name="**/missing" />
                                             </zipfileset>
                                         </zip>
                                     </target>
