@@ -22,6 +22,7 @@
 #include "ignite/odbc/sql/sql_parser.h"
 
 const static std::string WORD_SET("set");
+
 const static std::string WORD_STREAMING("streaming");
 
 namespace ignite

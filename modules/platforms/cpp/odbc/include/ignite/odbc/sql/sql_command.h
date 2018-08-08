@@ -18,9 +18,6 @@
 #ifndef _IGNITE_ODBC_SQL_SQL_COMMAND
 #define _IGNITE_ODBC_SQL_SQL_COMMAND
 
-#include <stdint.h>
-#include <string>
-
 namespace ignite
 {
     namespace odbc

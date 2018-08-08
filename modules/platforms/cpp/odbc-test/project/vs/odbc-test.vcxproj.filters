@@ -181,6 +181,9 @@
     <ClCompile Include="..\..\..\odbc\src\sql\sql_parser.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\sql\sql_set_streaming_command.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
