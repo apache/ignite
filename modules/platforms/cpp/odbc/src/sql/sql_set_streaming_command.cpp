@@ -39,7 +39,8 @@ namespace ignite
 {
     namespace odbc
     {
-        SqlSetStreamingCommand::SqlSetStreamingCommand():
+        SqlSetStreamingCommand::SqlSetStreamingCommand() :
+            SqlCommand(SqlCommandType::SET_STREAMING),
             enabled(false),
             allowOverwrite(false),
             batchSize(DEFAULT_STREAM_BATCH_SIZE),
@@ -66,6 +67,8 @@ namespace ignite
 
                 if (token.ToLower() == WORD_BATCH_SIZE)
                 {
+                    CheckEnabled(token);
+
                     batchSize = ExpectPositiveInteger(lexer, "batch size");
 
                     continue;
@@ -73,6 +76,8 @@ namespace ignite
 
                 if (token.ToLower() == WORD_PER_NODE_BUFFER_SIZE)
                 {
+                    CheckEnabled(token);
+
                     bufferSizePerNode = ExpectPositiveInteger(lexer, "per node buffer size");
 
                     continue;
@@ -80,6 +85,8 @@ namespace ignite
 
                 if (token.ToLower() == WORD_PER_NODE_PARALLEL_OPERATIONS)
                 {
+                    CheckEnabled(token);
+
                     parallelOpsPerNode = ExpectPositiveInteger(lexer, "per node parallel operations number");
 
                     continue;
@@ -87,6 +94,8 @@ namespace ignite
 
                 if (token.ToLower() == WORD_ALLOW_OVERWRITE)
                 {
+                    CheckEnabled(token);
+
                     allowOverwrite = ExpectBool(lexer);
 
                     continue;
@@ -94,6 +103,8 @@ namespace ignite
 
                 if (token.ToLower() == WORD_FLUSH_FREQUENCY)
                 {
+                    CheckEnabled(token);
+
                     flushFrequency = ExpectPositiveInteger(lexer, "flush frequency");
 
                     continue;
@@ -101,6 +112,8 @@ namespace ignite
 
                 if (token.ToLower() == WORD_ORDERED)
                 {
+                    CheckEnabled(token);
+
                     ordered = true;
 
                     continue;
@@ -110,13 +123,28 @@ namespace ignite
             }
         }
 
+        void SqlSetStreamingCommand::CheckEnabled(const SqlToken& token) const
+        {
+            if (!enabled)
+                ThrowUnexpectedTokenError(token, "no parameters with STREAMING OFF command ");
+        }
+
+        void SqlSetStreamingCommand::ThrowUnexpectedTokenError(const SqlToken& token, const std::string& expected)
+        {
+            throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
+                "Unexpected token '" + token.ToString() + "', " + expected + " expected.");
+        }
+
+        void SqlSetStreamingCommand::ThrowUnexpectedEndOfStatement(const std::string& expected)
+        {
+            throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
+                "Unexpected end of statement: " + expected + " expected.");
+        }
+
         int32_t SqlSetStreamingCommand::ExpectInt(SqlLexer& lexer)
         {
             if (!lexer.Shift())
-            {
-                throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
-                    "Unexpected end of statement: integer number expected.");
-            }
+                ThrowUnexpectedEndOfStatement("integer number");
 
             const SqlToken& token = lexer.GetCurrentToken();
 
@@ -127,10 +155,7 @@ namespace ignite
                 sign = -1;
 
                 if (!lexer.Shift())
-                {
-                    throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
-                        "Unexpected end of statement: integer number expected.");
-                }
+                    ThrowUnexpectedEndOfStatement("integer number");
             }
 
             std::string str = token.ToString();
@@ -144,8 +169,7 @@ namespace ignite
                     return static_cast<int32_t>(val);
             }
 
-            throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
-                "Unexpected token: '" + str + "'. Integer number expected.");
+            ThrowUnexpectedTokenError(token, "integer number");
         }
 
         int32_t SqlSetStreamingCommand::ExpectPositiveInteger(SqlLexer& lexer, const std::string& description)
@@ -164,10 +188,7 @@ namespace ignite
         bool SqlSetStreamingCommand::ExpectBool(SqlLexer& lexer)
         {
             if (!lexer.Shift())
-            {
-                throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
-                    "Unexpected end of statement: ON or OFF expected.");
-            }
+                ThrowUnexpectedEndOfStatement("ON or OFF");
 
             return lexer.GetCurrentToken().ParseBoolean();
         }

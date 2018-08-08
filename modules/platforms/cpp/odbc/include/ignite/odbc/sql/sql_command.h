@@ -25,15 +25,29 @@ namespace ignite
         class SqlLexer;
 
         /**
+         * SQL command type
+         */
+        struct SqlCommandType
+        {
+            enum Type
+            {
+                SET_STREAMING
+            };
+        };
+
+        /**
          * SQL command.
          */
         class SqlCommand
         {
         public:
             /**
-             * Default constructor.
+             * Constructor.
+             *
+             * @param typ Type.
              */
-            SqlCommand()
+            SqlCommand(SqlCommandType::Type typ) :
+                typ(typ)
             {
                 // No-op.
             }
@@ -47,11 +61,25 @@ namespace ignite
             }
 
             /**
+             * Get type.
+             *
+             * @return Type.
+             */
+            SqlCommandType::Type GetType() const
+            {
+                return typ;
+            }
+
+            /**
              * Parse from lexer.
              *
              * @param lexer Lexer.
              */
             virtual void Parse(SqlLexer& lexer) = 0;
+
+        protected:
+            /** Type. */
+            SqlCommandType::Type typ;
         };
     }
 }

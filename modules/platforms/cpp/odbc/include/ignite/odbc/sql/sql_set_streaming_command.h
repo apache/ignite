@@ -27,6 +27,8 @@ namespace ignite
 {
     namespace odbc
     {
+        class SqlToken;
+
         /**
          * SQL set streaming command.
          */
@@ -54,6 +56,26 @@ namespace ignite
             virtual void Parse(SqlLexer& lexer);
 
         private:
+            /**
+             * Check that the streaming mode is enabled.
+             */
+            void CheckEnabled(const SqlToken& token) const;
+
+            /**
+             * Throw exception, showing that token is unexpected.
+             *
+             * @param token Token.
+             * @param expected Expected details.
+             */
+            static void ThrowUnexpectedTokenError(const SqlToken& token, const std::string& expected);
+
+            /**
+             * Throw exception, showing that token is unexpected.
+             *
+             * @param expected Expected details.
+             */
+            static void ThrowUnexpectedEndOfStatement(const std::string& expected);
+
             /**
              * Get int or throw parsring exception.
              *

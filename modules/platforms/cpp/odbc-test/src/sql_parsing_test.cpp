@@ -88,7 +88,7 @@ void CheckNextToken(odbc::SqlLexer& lexer, odbc::TokenType::Type tokenType, cons
 
 BOOST_FIXTURE_TEST_SUITE(SqlParsingTestSuite, SqlParsingTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(AllKindOfTokens)
+BOOST_AUTO_TEST_CASE(LexerTokens)
 {
     std::string sql(
         "word "
@@ -143,6 +143,12 @@ BOOST_AUTO_TEST_CASE(AllKindOfTokens)
     bool hasNext = lexer.Shift();
 
     BOOST_CHECK(!hasNext);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreaming)
+{
+    std::string sql("set streaming on");
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
