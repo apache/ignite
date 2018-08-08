@@ -110,5 +110,12 @@ print(next(result))
 print(*result)
 # [1, 'John Doe', 'jdoe', 17, 4.25]
 
+# DROP_QUERY = 'DROP TABLE Student'
+# conn.sql(DROP_QUERY)
+#
+# pyignite.exceptions.SQLError: class org.apache.ignite.IgniteCheckedException:
+# Only cache created with CREATE TABLE may be removed with DROP TABLE
+# [cacheName=SQL_PUBLIC_STUDENT]
+
 student_cache.destroy()
 conn.close()

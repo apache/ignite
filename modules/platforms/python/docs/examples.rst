@@ -12,79 +12,80 @@ Open connection
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 16-22
+  :lines: 16-19
 
 Create cache
 ============
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 24
+  :lines: 21
 
 Put value in cache
 ==================
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 26-27
+  :lines: 23
 
 Get value from cache
 ====================
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 29-33
+  :lines: 25-29
 
-List keys in cache
-==================
+Get multiple values from cache
+==============================
 
 .. literalinclude:: ../examples/get_and_put.py
   :language: python
-  :lines: 35-36
+  :lines: 31-36
 
 Type hints usage
 ================
 
 .. literalinclude:: ../examples/type_hints.py
   :language: python
-  :lines: 29-48
+  :lines: 24-48
 
-Scan queries
-============
+Scan
+====
 
-Scan queries allows you to browse cache contents with pagination.
+Cache's :py:func:`~pyignite.api.cache.Cache.scan` method queries allows you
+to get the whole contents of the cache, element by element.
 
-.. literalinclude:: ../examples/scans.py
-  :language: python
-  :lines: 24-54
-
-Subsequent scans could be made using cursor ID.
+Let us put some data in cache.
 
 .. literalinclude:: ../examples/scans.py
   :language: python
-  :lines: 56-69
+  :lines: 23-33
 
-When cursor have no more data, it gets automatically destroyed.
-
-.. literalinclude:: ../examples/scans.py
-  :language: python
-  :lines: 71-73
-
-If your cursor still holds some data, but you have no use of it anymore,
-you may destroy it manually.
+:py:func:`~pyignite.api.cache.Cache.scan` returns a generator, that yields
+two-tuples of key and value. You can iterate through the generated pairs
+in a safe manner:
 
 .. literalinclude:: ../examples/scans.py
   :language: python
-  :lines: 75
+  :lines: 34-41
+
+Or, alternatively, you can convert the generator to dictionary in one go:
+
+.. literalinclude:: ../examples/scans.py
+  :language: python
+  :lines: 44-52
+
+But be cautious: if the cache contains a large set of data, the dictionary
+may eat too much memory!
 
 Do cleanup
 ==========
 
 Destroy created cache and close connection.
 
-.. literalinclude:: ../examples/get_and_put.py
+.. literalinclude:: ../examples/scans.py
   :language: python
-  :lines: 38-39
+  :lines: 54-55
 
 .. _sql_examples:
 
@@ -97,32 +98,32 @@ Documentation: `Getting Started`_.
 Setup
 =====
 
-First let us establish a connection and create a database schema.
+First let us establish a connection.
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 26, 200-206
+  :lines: 195-196
 
 Then create tables. Begin with `Country` table, than proceed with related
 tables `City` and `CountryLanguage`.
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 32-48, 58-65, 74-80, 209-214
+  :lines: 25-42, 51-59, 67-74, 199-204
 
 Create indexes.
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 67-68, 82-83, 217-218
+  :lines: 60-62, 75-77, 207-208
 
 Fill tables with data.
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 50-56, 70-72, 85-87, 221-246
+  :lines: 43-50, 63-66, 78-81, 211-218
 
-Data samples is taken from `Ignite GitHub repository`_.
+Data samples are taken from `Ignite GitHub repository`_.
 
 That concludes the preparation of data. Now let us answer some questions.
 
@@ -131,36 +132,35 @@ What are the 10 largest cities in our data sample (population-wise)?
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 24, 249-267
+  :lines: 24, 221-238
 
-We were happy with :py:func:`~pyignite.api.sql.sql_fields` so far. But this
-time we configured `PAGE_SIZE` to be 5, but requested 10 rows in the query.
-To get the rest of the rows we should use
-:py:func:`~pyignite.api.sql.sql_fields_cursor_get_page` repeatedly.
-
-.. literalinclude:: ../examples/sql.py
-  :language: python
-  :lines: 269-282
+The :py:func:`~pyignite.connection.Connection.sql` method returns a generator,
+that yields the resulting rows.
 
 What are the 10 most populated cities throughout the 3 chosen countries?
 ========================================================================
 
+If you set the `include_field_names` argument to `True`, the
+:py:func:`~pyignite.connection.Connection.sql` method will generate a list of
+column names as a first yield. You can access field names with Python built-in
+`next` function.
+
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 285-326
+  :lines: 241-269
 
 Display all the information about a given city
 ==============================================
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 329-351
+  :lines: 272-290
 
 Finally, delete the tables used in this example with the following queries:
 
 .. literalinclude:: ../examples/sql.py
   :language: python
-  :lines: 89, 354-369
+  :lines: 82-83, 293-298
 
 Complex objects
 ---------------
@@ -178,24 +178,27 @@ user-defined complex data types. It have the following features:
 The schemas are stored in Ignite metadata storage. That is why Complex object
 must be registered with the Ignite cluster before use.
 
-The most obvious example of Complex object usage is SQL tables.
+The most obvious example of Complex object usage is SQL tables. Normally SQL
+data is accessed via queries (see `SQL`_), so we will consider the following
+example solely for the demonstration of how Binary objects (not Ignite SQL)
+work.
 
 In the :ref:`previous examples <sql_examples>` we have created some SQL tables.
 Let us do it again and examine the Ignite storage afterwards.
 
 .. literalinclude:: ../examples/binary_types.py
   :language: python
-  :lines: 251-259
+  :lines: 222-229
 
 We can see that Ignite created a cache for each of our table. The caches are
 conveniently named using ‘`SQL_<schema name>_<table name>`’ pattern.
 
 Now let us examine a configuration of a cache that contains SQL data
-using a :py:func:`~pyignite.api.cache_config.cache_get_configuration` function.
+using a :py:func:`~pyignite.api.cache.Cache.configuration` property.
 
 .. literalinclude:: ../examples/binary_types.py
   :language: python
-  :lines: 261-287
+  :lines: 231-260
 
 The values of `value_type_name` and `key_type_name` are names of the binary
 types, in which the `Cities` table rows' values and keys are stored. Let us
@@ -203,13 +206,14 @@ check the types' registration and properties.
 
 .. literalinclude:: ../examples/binary_types.py
   :language: python
-  :lines: 289-307
+  :lines: 262-276
 
-Let us take a closer look to the value type.
+Binary types are really exists, so we are on the right track. Let us take
+a closer look to the value type.
 
 .. literalinclude:: ../examples/binary_types.py
   :language: python
-  :lines: 309-332
+  :lines: 278-300
 
 We have 3 fields in the row value: `Name`, `District`, and `Population`.
 The complex primary key field, `ID` + `CountryCode`, is in the row key.
@@ -219,16 +223,7 @@ functions.
 
 .. literalinclude:: ../examples/binary_types.py
   :language: python
-  :lines: 334-339
-
-Not exactly what we expected. That's because the Binary objects are always
-come wrapped in a content-agnostic
-:class:`~pyignite.datatypes.complex.WrappedDataObject`. We need to take
-an additional step to explicitly decode it.
-
-.. literalinclude:: ../examples/binary_types.py
-  :language: python
-  :lines: 341-355
+  :lines: 302-326
 
 Create
 ======
@@ -251,35 +246,41 @@ a rough equivalent of the following SQL DDL statement:
 
 These are the necessary steps to perform the task.
 
-1. Create scheme cache.
+1. Create table cache.
 
 .. literalinclude:: ../examples/create_binary.py
   :language: python
-  :lines: 30
+  :lines: 20-74
 
-2. Create table cache.
-
-.. literalinclude:: ../examples/create_binary.py
-  :language: python
-  :lines: 32-83
-
-3. Register binary type.
+2. Register binary type.
 
 .. literalinclude:: ../examples/create_binary.py
   :language: python
-  :lines: 85-97
+  :lines: 76-84
 
-4. Insert row.
-
-.. literalinclude:: ../examples/create_binary.py
-  :language: python
-  :lines: 99-116
-
-Now read the row using an SQL function.
+3. Insert row.
 
 .. literalinclude:: ../examples/create_binary.py
   :language: python
-  :lines: 118-134
+  :lines: 86-101
+
+Now let us make sure that our cache really can be used with SQL functions.
+
+.. literalinclude:: ../examples/create_binary.py
+  :language: python
+  :lines: 103-111
+
+Note, however, that the cache we create can not be dropped with DDL command.
+
+.. literalinclude:: ../examples/create_binary.py
+  :language: python
+  :lines: 113-118
+
+It should be deleted as any other key-value cache.
+
+.. literalinclude:: ../examples/create_binary.py
+  :language: python
+  :lines: 120
 
 Migrate
 =======
@@ -293,46 +294,44 @@ voucher's format and data:
 - set `report_date` to the current date if `reported` is True, None if False,
 - delete `reported`.
 
-First obtain the binary type ID. It can be calculated as a hashcode of
-the binary type name in lower case.
+First obtain the binary type ID and the initial schema.
 
 .. literalinclude:: ../examples/migrate_binary.py
   :language: python
-  :lines: 134
-
-Then obtain the initial schema.
-
-.. literalinclude:: ../examples/migrate_binary.py
-  :language: python
-  :lines: 136-163
+  :lines: 126-152
 
 The binary type `ExpenseVoucher` has 6 fields and one schema. All the fields
-are present in that one schema. Note also, that each field has an ID (which is
-also calculated as a hascode of its name in lower case) and a type ID. Field
-type ID can be either ordinal value of one of the
+are present in that one schema. Note also, that each field has an ID and
+a type ID. Field type ID can be either ordinal value of one of the
 :mod:`~pyignite.datatypes.type_codes` or an ID of the registered binary type.
 
 Let us modify the schema dictionary and update the type.
 
 .. literalinclude:: ../examples/migrate_binary.py
   :language: python
-  :lines: 165-219
+  :lines: 154-169
+
+Revisit the `ExpenseVoucher` type.
+
+.. literalinclude:: ../examples/migrate_binary.py
+  :language: python
+  :lines: 171-206
 
 Now our binary type have two schemes. The old scheme (ID=-231598180) remained
 unchanged, while the new scheme (ID=547629991) has only those fields specified
-in the most recent :py:func:`~pyignite.api.binary.put_binary_type` call.
-None of the binary fields were actually removed, but two newly described
+in the most recent :py:func:`~pyignite.connection.Connection.put_binary_type`
+call. None of the binary fields were actually removed, but two newly described
 fields, `expense_date` and `report_date`, were added.
 
 Now migrate the data from the old schema to the new one.
 
 .. literalinclude:: ../examples/migrate_binary.py
   :language: python
-  :lines: 220-277
+  :lines: 209-249
 
 As you can see, old or new fields are available in the resulting binary object,
 depending on which schema was used when writing them using
-:py:func:`~pyignite.api.key_value.cache_put`.
+:py:func:`~pyignite.api.cache.Cache.put` or similar methods.
 
 This versioning mechanism is quite simple and robust, but it have its
 limitations. The main thing is: you can not change the type of the existing

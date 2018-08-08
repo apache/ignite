@@ -225,7 +225,6 @@ result = conn.sql(MOST_POPULATED_QUERY)
 print('Most 10 populated cities:')
 for row in result:
     print(row)
-
 # Most 10 populated cities:
 # ['Mumbai (Bombay)', 10500000]
 # ['Shanghai', 9696300]
@@ -255,7 +254,6 @@ print(next(result))
 print('----------------------------------------')
 for row in result:
     print(row)
-
 # Most 10 populated cities in USA, India and China:
 # ['COUNTRY_NAME', 'CITY_NAME', 'MAX_POP']
 # ----------------------------------------
@@ -284,7 +282,6 @@ field_data = list(*result)
 print('City info:')
 for field_name, field_value in zip(field_names*len(field_data), field_data):
     print('{}: {}'.format(field_name, field_value))
-
 # City info:
 # ID: 3802
 # NAME: Detroit

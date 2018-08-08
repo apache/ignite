@@ -125,7 +125,6 @@ for key, value in old_data:
 
 result = conn.get_binary_type('ExpenseVoucher')
 print(result)
-
 # {
 #     'type_id': -1171639466,
 #     'type_name': 'ExpenseVoucher',
@@ -171,7 +170,6 @@ new_schema_id = result['schema_id']
 
 result = conn.get_binary_type(type_id)
 print(result)
-
 # {
 #     'type_id': -1171639466,
 #     'type_name': 'ExpenseVoucher',

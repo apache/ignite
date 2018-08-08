@@ -21,7 +21,6 @@ conn.connect('127.0.0.1', 10800)
 my_cache = conn.create_cache('my cache')
 
 my_cache.put_all({'key_{}'.format(v): v for v in range(20)})
-
 # {
 #     'key_0': 0,
 #     'key_1': 1,
@@ -32,8 +31,17 @@ my_cache.put_all({'key_{}'.format(v): v for v in range(20)})
 # }
 
 result = my_cache.scan()
-print(dict(result))
+for k, v in result:
+    print(k, v)
+# 'key_17' 17
+# 'key_10' 10
+# 'key_6' 6,
+# ... 20 elements in total...
+# 'key_16' 16
+# 'key_12' 12
 
+result = my_cache.scan()
+print(dict(result))
 # {
 #     'key_17': 17,
 #     'key_10': 10,
