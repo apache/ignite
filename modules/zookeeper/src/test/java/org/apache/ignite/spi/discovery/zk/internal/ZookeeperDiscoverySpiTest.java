@@ -533,6 +533,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkInternalStructuresCleanup() throws Exception {
+        long endTime = U.currentTimeMillis() + 30_000 + sesTimeout;
+
         for (Ignite node : IgnitionEx.allGridsx()) {
             final AtomicReference<?> res = GridTestUtils.getFieldValue(spi(node), "impl", "commErrProcFut");
 
@@ -540,7 +542,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return res.get() == null;
                 }
-            }, 30_000);
+            }, endTime - U.currentTimeMillis());
 
             assertNull(res.get());
         }
@@ -2133,8 +2135,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         if (closeClientSock)
             testSockNio = true;
 
-        long stopTime = System.currentTimeMillis() + 60_000;
-
         AtomicBoolean stop = new AtomicBoolean();
 
         IgniteInternalFuture<?> fut1 = null;
@@ -2142,12 +2142,15 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut2 = null;
 
         try {
-            fut1 = restartZk ? startRestartZkServers(stopTime, stop) : null;
-            fut2 = closeClientSock ? startCloseZkClientSocket(stopTime, stop) : null;
 
             int INIT_NODES = 10;
 
             startGridsMultiThreaded(INIT_NODES);
+
+            long stopTime = System.currentTimeMillis() + 60_000;
+
+            fut1 = restartZk ? startRestartZkServers(stopTime, stop) : null;
+            fut2 = closeClientSock ? startCloseZkClientSocket(stopTime, stop) : null;
 
             final int MAX_NODES = 20;
 
