@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Initializes new page by calling {@link PageIO#initNewPage(long, long, int, int)}.
+ * Initializes new page by calling {@link PageIO#initNewPage(long, long, int)}.
  */
 public class InitNewPageRecord extends PageDeltaRecord {
     /** */

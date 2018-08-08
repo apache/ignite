@@ -34,11 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
     /**
-     * IO versions.
-     */
-    private final IOVersions<? extends AbstractDataPageIO<CacheDataRow>> ioVersions;
-
-    /**
      * @param cacheId Cache id.
      * @param name Name.
      * @param regionMetrics Region metrics.
@@ -52,13 +47,11 @@ public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
         super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
-
-        ioVersions = DataPageIO.VERSIONS;
     }
 
     /** {@inheritDoc} */
     @Override public IOVersions<? extends AbstractDataPageIO<CacheDataRow>> ioVersions() {
-        return ioVersions;
+        return DataPageIO.VERSIONS;
     }
 
     /** {@inheritDoc} */
