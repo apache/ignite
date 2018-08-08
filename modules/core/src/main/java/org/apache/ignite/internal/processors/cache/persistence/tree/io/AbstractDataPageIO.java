@@ -104,7 +104,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         setDirectCount(pageAddr, 0);
         setIndirectCount(pageAddr, 0);
 
-        setFirstEntryOffset(pageAddr, realPageSize, pageSize);
+        setFirstEntryOffset(pageAddr, realPageSize, realPageSize);
         setRealFreeSpace(pageAddr, realPageSize - ITEMS_OFF, pageSize, realPageSize);
     }
 
@@ -166,10 +166,10 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param dataOff Entry data offset.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      */
-    void setFirstEntryOffset(long pageAddr, int dataOff, int pageSize) {
-        assert dataOff >= ITEMS_OFF + ITEM_SIZE && dataOff <= pageSize : dataOff;
+    void setFirstEntryOffset(long pageAddr, int dataOff, int realPageSize) {
+        assert dataOff >= ITEMS_OFF + ITEM_SIZE && dataOff <= realPageSize : dataOff;
 
         PageUtils.putShort(pageAddr, FIRST_ENTRY_OFF, (short)dataOff);
     }
@@ -751,13 +751,13 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param idx Index.
      * @param cnt Count.
      * @param step Step.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      */
-    private void moveItems(long pageAddr, int idx, int cnt, int step, int pageSize) {
+    private void moveItems(long pageAddr, int idx, int cnt, int step, int realPageSize) {
         assert cnt >= 0 : cnt;
 
         if (cnt != 0)
-            moveBytes(pageAddr, itemOffset(idx), cnt * ITEM_SIZE, step * ITEM_SIZE, pageSize);
+            moveBytes(pageAddr, itemOffset(idx), cnt * ITEM_SIZE, step * ITEM_SIZE, realPageSize);
     }
 
     /**
@@ -796,7 +796,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         int directCnt = getDirectCount(pageAddr);
         int indirectCnt = getIndirectCount(pageAddr);
 
-        int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, pageSize);
+        int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, realPageSize);
 
         writeRowData(pageAddr, dataOff, rowSize, row, true);
 
@@ -827,7 +827,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         int directCnt = getDirectCount(pageAddr);
         int indirectCnt = getIndirectCount(pageAddr);
 
-        int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, pageSize);
+        int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, realPageSize);
 
         writeRowData(pageAddr, dataOff, payload);
 
@@ -840,7 +840,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param directCnt Direct items count.
      * @param indirectCnt Indirect items count.
      * @param dataOff First entry offset.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @return First entry offset after compaction.
      */
     private int compactIfNeed(
@@ -849,10 +849,10 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         final int directCnt,
         final int indirectCnt,
         int dataOff,
-        int pageSize
+        int realPageSize
     ) {
         if (!isEnoughSpace(entryFullSize, dataOff, directCnt, indirectCnt)) {
-            dataOff = compactDataEntries(pageAddr, directCnt, pageSize);
+            dataOff = compactDataEntries(pageAddr, directCnt, realPageSize);
 
             assert isEnoughSpace(entryFullSize, dataOff, directCnt, indirectCnt);
         }
@@ -879,9 +879,9 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         final int dataOff,
         final int pageSize,
         final int realPageSize) {
-        setFirstEntryOffset(pageAddr, dataOff, pageSize);
+        setFirstEntryOffset(pageAddr, dataOff, realPageSize);
 
-        int itemId = insertItem(pageAddr, dataOff, directCnt, indirectCnt, pageSize);
+        int itemId = insertItem(pageAddr, dataOff, directCnt, indirectCnt, realPageSize);
 
         assert checkIndex(itemId) : itemId;
         assert getIndirectCount(pageAddr) <= getDirectCount(pageAddr);
@@ -900,14 +900,15 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param fullEntrySize Full entry size.
      * @param directCnt Direct items count.
      * @param indirectCnt Indirect items count.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @return Offset in the buffer where the entry must be written.
      */
-    private int getDataOffsetForWrite(long pageAddr, int fullEntrySize, int directCnt, int indirectCnt, int pageSize) {
+    private int getDataOffsetForWrite(long pageAddr, int fullEntrySize, int directCnt, int indirectCnt,
+        int realPageSize) {
         int dataOff = getFirstEntryOffset(pageAddr);
 
         // Compact if we do not have enough space for entry.
-        dataOff = compactIfNeed(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
+        dataOff = compactIfNeed(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, realPageSize);
 
         // We will write data right before the first entry.
         dataOff -= fullEntrySize - ITEM_SIZE;
@@ -1002,7 +1003,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
             Math.min(rowSize - written, getFreeSpace(pageAddr));
 
         int fullEntrySize = getPageEntrySize(payloadSize, SHOW_PAYLOAD_LEN | SHOW_LINK | SHOW_ITEM);
-        int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, pageSize);
+        int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, realPageSize);
 
         if (payload == null) {
             ByteBuffer buf = pageMem.pageBuffer(pageAddr);
@@ -1064,10 +1065,10 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param dataOff Data offset.
      * @param directCnt Direct items count.
      * @param indirectCnt Indirect items count.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @return Item ID (insertion index).
      */
-    private int insertItem(long pageAddr, int dataOff, int directCnt, int indirectCnt, int pageSize) {
+    private int insertItem(long pageAddr, int dataOff, int directCnt, int indirectCnt, int realPageSize) {
         if (indirectCnt > 0) {
             // If the first indirect item is on correct place to become the last direct item, do the transition
             // and insert the new item into the free slot which was referenced by this first indirect item.
@@ -1087,7 +1088,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         }
 
         // Move all the indirect items forward to make a free slot and insert new item at the end of direct items.
-        moveItems(pageAddr, directCnt, indirectCnt, +1, pageSize);
+        moveItems(pageAddr, directCnt, indirectCnt, +1, realPageSize);
 
         setItem(pageAddr, directCnt, directItemFromOffset(dataOff));
 
@@ -1100,10 +1101,10 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
     /**
      * @param pageAddr Page address.
      * @param directCnt Direct items count.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      * @return New first entry offset.
      */
-    private int compactDataEntries(long pageAddr, int directCnt, int pageSize) {
+    private int compactDataEntries(long pageAddr, int directCnt, int realPageSize) {
         assert checkCount(directCnt) : directCnt;
 
         int[] offs = new int[directCnt];
@@ -1117,7 +1118,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         Arrays.sort(offs);
 
         // Move right all of the entries if possible to make the page as compact as possible to its tail.
-        int prevOff = pageSize;
+        int prevOff = realPageSize;
 
         final int start = directCnt - 1;
 
@@ -1160,7 +1161,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
                     }
                 }
 
-                moveBytes(pageAddr, off, entrySize, delta, pageSize);
+                moveBytes(pageAddr, off, entrySize, delta, realPageSize);
 
                 off += delta;
             }
@@ -1204,13 +1205,13 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param off Offset.
      * @param cnt Count.
      * @param step Step.
-     * @param pageSize Page size.
+     * @param realPageSize Page size without encryption overhead.
      */
-    private void moveBytes(long addr, int off, int cnt, int step, int pageSize) {
+    private void moveBytes(long addr, int off, int cnt, int step, int realPageSize) {
         assert step != 0 : step;
         assert off + step >= 0;
-        assert off + step + cnt <= pageSize : "[off=" + off + ", step=" + step + ", cnt=" + cnt +
-            ", cap=" + pageSize + ']';
+        assert off + step + cnt <= realPageSize : "[off=" + off + ", step=" + step + ", cnt=" + cnt +
+            ", cap=" + realPageSize + ']';
 
         PageHandler.copyMemory(addr, off, addr, off + step, cnt);
     }

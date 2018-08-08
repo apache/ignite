@@ -950,9 +950,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
-        CacheGroupContext grpCtx = ctx.kernalContext().cache().cacheGroup(grpId);
-
-        if (grpCtx == null || !grpCtx.encrypted())
+        if (ctx.kernalContext().encryption().groupKey(grpId) == null)
             return pageSize();
 
         return encPageSize;

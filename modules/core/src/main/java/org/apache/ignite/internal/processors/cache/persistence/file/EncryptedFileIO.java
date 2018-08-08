@@ -23,6 +23,7 @@ import java.nio.MappedByteBuffer;
 import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
  * Implementation of {@code FileIO} that supports encryption(decryption) of pages written(readed) to(from) file.
@@ -134,15 +135,31 @@ public class EncryptedFileIO implements FileIO {
                 "but read only " + res + " bytes");
         }
 
-        destBuf.put(encSpi.decrypt(encrypted.array(), key()));
-        destBuf.put(zeroes); //We should ensure
+        decrypt(encrypted, destBuf);
 
         return res;
     }
 
     /** {@inheritDoc} */
     @Override public int readFully(ByteBuffer destBuf, long position) throws IOException {
-        return read(destBuf, position);
+        assert destBuf.capacity() == pageSize;
+        assert position() != 0;
+
+        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
+
+        int res = plainFileIO.readFully(encrypted, position);
+
+        if (res < 0)
+            return res;
+
+        if (res != pageSize) {
+            throw new IllegalStateException("Expecting to read whole page[" + pageSize + " bytes], " +
+                "but read only " + res + " bytes");
+        }
+
+        decrypt(encrypted, destBuf);
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -170,6 +187,24 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+        byte[] encrypted = encrypt(srcBuf);
+
+        return plainFileIO.write(ByteBuffer.wrap(encrypted), position);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
+        byte[] encrypted = encrypt(srcBuf);
+
+        return plainFileIO.writeFully(ByteBuffer.wrap(encrypted), position);
+    }
+
+    /**
+     * @param srcBuf Source buffer
+     * @return Encrypted bytes.
+     * @throws IOException If failed.
+     */
+    private byte[] encrypt(ByteBuffer srcBuf) throws IOException {
         assert position() != 0;
         assert srcBuf.capacity() == pageSize;
 
@@ -177,24 +212,26 @@ public class EncryptedFileIO implements FileIO {
 
         srcBuf.get(srcArr, 0, pageSize);
 
-        assert tailIsEmpty(srcArr);
+        assert tailIsEmpty(srcArr, PageIO.getType(srcBuf));
 
-        byte[] encrypted = encSpi.encrypt(srcArr, key(), 0, srcArr.length - encryptionOverhead);
+        return encSpi.encrypt(srcArr, key(), 0, srcArr.length - encryptionOverhead);
+    }
 
-        return plainFileIO.write(ByteBuffer.wrap(encrypted), position);
+    /**
+     * @param encrypted Encrypted buffer.
+     * @param destBuf Destination buffer.
+     */
+    private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) {
+        destBuf.put(encSpi.decrypt(encrypted.array(), key()));
+        destBuf.put(zeroes); //Forcibly purge page buffer tail.
     }
 
     /** */
-    private boolean tailIsEmpty(byte[] srcArr) {
-        for (int i = srcArr.length - encryptionOverhead; i<srcArr.length; i++)
-            assert srcArr[i] == 0 : "Tail of srcArr should be empty - " + i;
+    private boolean tailIsEmpty(byte[] srcArr, int pageType) {
+        for (int i = srcArr.length - encryptionOverhead; i < srcArr.length; i++)
+            assert srcArr[i] == 0 : "Tail of srcArr should be empty [i=" + i + ", pageType=" + pageType + "]";
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
-        return write(srcBuf, position);
     }
 
     /**
