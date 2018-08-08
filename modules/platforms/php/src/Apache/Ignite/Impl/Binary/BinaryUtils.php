@@ -29,6 +29,7 @@ use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
+use Apache\Ignite\Data\EnumItem;
 use Apache\Ignite\Data\BinaryObject;
 use Apache\Ignite\Impl\Utils\ArgumentChecker;
 
@@ -43,12 +44,157 @@ class BinaryUtils
     
     public static function checkCompatibility($value, $type): void
     {
-        // TODO
+        if (!$type) {
+            return;
+        }
+        $typeCode = BinaryUtils::getTypeCode($type);
+        if ($value === null) {
+            if (!TypeInfo::getTypeInfo($typeCode)->isNullable()) {
+                BinaryUtils::typeCastError(ObjectTypeNULL, typeCode);
+            }
+            return;
+        } elseif (BinaryUtils::isStandardType($typeCode)) {
+            BinaryUtils::checkStandardTypeCompatibility($value, $typeCode, $type);
+            return;
+        }
+        $valueTypeCode = BinaryUtils::getTypeCode(BinaryUtils::calcObjectType($value));
+        if ($typeCode !== $valueTypeCode) {
+            BinaryUtils::typeCastError(valueTypeCode, typeCode);
+        }
     }
-    
+
+    public static function isStandardType($typeCode): bool
+    {
+        return $typeCode !== ObjectType::BINARY_OBJECT &&
+            $typeCode !== ObjectType::COMPLEX_OBJECT;
+    }
+
+    public static function checkStandardTypeCompatibility($value, $typeCode, $type = null) {
+        $valueType = gettype($value);
+        switch ($typeCode) {
+            case ObjectType::BYTE:
+            case ObjectType::SHORT:
+            case ObjectType::INTEGER:
+                if (!is_integer($value)) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                return;
+            case ObjectType::LONG:
+            case ObjectType::FLOAT:
+            case ObjectType::DOUBLE:
+                if (!is_integer($value) && !is_float($value)) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                return;
+            case ObjectType::CHAR:
+                if (!is_string($value) || strlen($value) < 1 || strlen($value) > 2) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                return;
+            case ObjectType::BOOLEAN:
+                if (!is_bool($value)) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                return;
+            case ObjectType::STRING:
+                if (!is_string($value)) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                return;
+            case ObjectType::UUID:
+                if (!is_array($value) ||
+                    count($value) !== BinaryUtils::getSize(ObjectType::UUID)) {
+                    BinaryUtils::valueCastError(value, typeCode);
+                }
+                foreach ($value as $element) {
+                    BinaryUtils::checkStandardTypeCompatibility($element, ObjectType::BYTE);
+                }
+                return;
+            case ObjectType::DATE:
+                if (!($value instanceof Date)) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                return;
+            case ObjectType::ENUM:
+                if (!(value instanceof EnumItem)) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                return;
+            case ObjectType::DECIMAL:
+                if (!($value instanceof BigDecimal)) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                return;
+            case ObjectType::TIMESTAMP:
+                if (!($value instanceof Timestamp)) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                return;
+            case ObjectType::TIME:
+                if (!($value instanceof Time)) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                return;
+            case ObjectType::BYTE_ARRAY:
+            case ObjectType::SHORT_ARRAY:
+            case ObjectType::INTEGER_ARRAY:
+            case ObjectType::LONG_ARRAY:
+            case ObjectType::FLOAT_ARRAY:
+            case ObjectType::DOUBLE_ARRAY:
+            case ObjectType::CHAR_ARRAY:
+            case ObjectType::BOOLEAN_ARRAY:
+            case ObjectType::STRING_ARRAY:
+            case ObjectType::UUID_ARRAY:
+            case ObjectType::DATE_ARRAY:
+            case ObjectType::OBJECT_ARRAY:
+            case ObjectType::ENUM_ARRAY:
+            case ObjectType::DECIMAL_ARRAY:
+            case ObjectType::TIMESTAMP_ARRAY:
+            case ObjectType::TIME_ARRAY:
+                if (!is_array($value)) {
+                    BinaryUtils::typeCastError($valueType, $typeCode);
+                }
+                return;
+            case ObjectType::MAP:
+                if (!($value instanceof Map) && !is_array($value)) {
+                    BinaryUtils::typeCastError($valueType, $typeCode);
+                }
+                return;
+            case ObjectType::COLLECTION:
+                $isSet = $type && CollectionObjectType::isSet($type->getSubType());
+                if (!($isSet && $value instanceof Set || is_array($value))) {
+                    BinaryUtils::typeCastError($valueType, $isSet ? 'set' : $typeCode);
+                }
+                return;
+            case ObjectType::NULL:
+                if ($value !== null) {
+                    BinaryUtils::typeCastError('not null', $typeCode);
+                }
+                return;
+            default:
+                $valueTypeCode = BinaryUtils::getTypeCode(BinaryUtils::calcObjectType($value));
+                if ($valueTypeCode === ObjectType::BINARY_OBJECT) {
+                    BinaryUtils::typeCastError($valueTypeCode, $typeCode);
+                }
+                return;
+        }
+    }
+
     public static function checkTypesComatibility($expectedType, int $actualTypeCode): void
     {
-        // TODO
+        if ($expectedType === null) {
+            return;
+        }
+        $expectedTypeCode = BinaryUtils::getTypeCode($expectedType);
+        if ($actualTypeCode === ObjectType::NULL) {
+            return;
+        } elseif ($expectedTypeCode === ObjectType::BINARY_OBJECT ||
+            $actualTypeCode === ObjectType::BINARY_OBJECT &&
+            $expectedTypeCode === ObjectType::COMPLEX_OBJECT) {
+            return;
+        } elseif ($actualTypeCode !== $expectedTypeCode) {
+            BinaryUtils::typeCastError($actualTypeCode, $expectedTypeCode);
+        }
     }
 
     public static function calcObjectType($object)
@@ -235,5 +381,17 @@ class BinaryUtils
             $msg = $msg . ': ' . $message;
         }
         throw new ClientException($msg);
+    }
+    
+    public static function typeCastError($fromType, $toType): void
+    {
+        throw new ClientException(sprintf('Type "%s" can not be cast to %s',
+            BinaryUtils::getTypeName($fromType), BinaryUtils::getTypeName($toType)));
+    }
+    
+    public static function valueCastError($value, $toType): void
+    {
+        throw new ClientException(sprintf('Value "%s" can not be cast to %s',
+            print_r($value, true), BinaryUtils::getTypeName($toType)));
     }
 }

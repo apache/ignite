@@ -78,11 +78,11 @@ class MessageBuffer
         $this->length += strlen($buffer);
     }
     
-    public function writeByte(int $value): void
+    public function writeByte(int $value, $signed = true): void
     {
-        $this->writeNumber($value, ObjectType::BYTE);
+        $this->writeNumber($value, ObjectType::BYTE, $signed);
     }
-
+    
     public function writeShort(int $value): void
     {
         $this->writeNumber($value, ObjectType::SHORT);
@@ -110,36 +110,15 @@ class MessageBuffer
         $this->writeNumber($value, ObjectType::DOUBLE);
     }
 
-    public function writeNumber($value, int $type): void
+    public function writeNumber($value, int $type, bool $signed = true): void
     {
-        $strValue = null;
-        switch ($type) {
-            case ObjectType::BYTE:
-                $strValue = pack('c', $value);
-                break;
-            case ObjectType::SHORT:
-                $strValue = pack('s', $value);
-                break;
-            case ObjectType::INTEGER:
-                $strValue = pack('l', $value);
-                break;
-            case ObjectType::LONG:
-                $strValue = pack('q', $value);
-                break;
-            case ObjectType::FLOAT:
-                $strValue = pack('g', $value);
-                break;
-            case ObjectType::DOUBLE:
-                $strValue = pack('e', $value);
-                break;
-            default:
-                BinaryUtils::internalError();
-        }
+        $format = $this->getNumberFormat($type, $signed);
         // TODO: check pack errors
+        $strValue = pack($format, $value);
         $this->convertEndianness($strValue, $type);
         $this->writeStr($strValue);
     }
-
+    
     public function writeBoolean(bool $value): void
     {
         $this->writeByte($value ? MessageBuffer::BYTE_ONE : MessageBuffer::BYTE_ZERO);
@@ -164,9 +143,9 @@ class MessageBuffer
         $this->writeStr($buffer->buffer, $startPos, $length);
     }
     
-    public function readByte(): int
+    public function readByte(bool $signed = true): int
     {
-        return $this->readNumber(ObjectType::BYTE);
+        return $this->readNumber(ObjectType::BYTE, $signed);
     }
 
     public function readShort(): int
@@ -194,35 +173,13 @@ class MessageBuffer
         return $this->readNumber(ObjectType::DOUBLE);
     }
     
-    public function readNumber(int $type)
+    public function readNumber(int $type, bool $signed = true)
     {
         $size = BinaryUtils::getSize($type);
         $this->ensureSize($size);
         $strValue = substr($this->buffer, $this->position, $size);
         $this->convertEndianness($strValue, $type);
-        $value = 0;
-        switch ($type) {
-            case ObjectType::BYTE:
-                $value = unpack('c', $strValue);
-                break;
-            case ObjectType::SHORT:
-                $value = unpack('s', $strValue);
-                break;
-            case ObjectType::INTEGER:
-                $value = unpack('l', $strValue);
-                break;
-            case ObjectType::LONG:
-                $value = unpack('q', $strValue);
-                break;
-            case ObjectType::FLOAT:
-                $value = unpack('g', $strValue);
-                break;
-            case ObjectType::DOUBLE:
-                $value = unpack('e', $strValue);
-                break;
-            default:
-                BinaryUtils::internalError();
-        }
+        $value = unpack($this->getNumberFormat($type, $signed), $strValue);
         $this->position += $size;
         return $value[1];
     }
@@ -245,6 +202,26 @@ class MessageBuffer
         return $result;
     }
     
+    private function getNumberFormat(int $type, bool $signed): string
+    {
+        switch ($type) {
+            case ObjectType::BYTE:
+                return $signed ? 'c' : 'C';
+            case ObjectType::SHORT:
+                return $signed ? 's' : 'S';
+            case ObjectType::INTEGER:
+                return $signed ? 'l' : 'L';
+            case ObjectType::LONG:
+                return $signed ? 'q' : 'Q';
+            case ObjectType::FLOAT:
+                return 'g';
+            case ObjectType::DOUBLE:
+                return 'e';
+            default:
+                BinaryUtils::internalError();
+        }
+    }
+
     private function convertEndianness(string &$value, int $type): void
     {
         if (!MessageBuffer::$isLittleEndian &&

@@ -181,6 +181,14 @@ class TestingHelper
                 'isArrayKey' => true,
                 'typeOptional' => true
             ],
+            ObjectType::UUID => [
+                'values' => [
+                    [ 18, 70, 2, 119, 154, 254, 198, 254, 195, 146, 33, 60, 116, 230, 0, 146 ],
+                    [ 141, 77, 31, 194, 127, 36, 184, 255, 192, 4, 118, 57, 253, 209, 111, 147 ]
+                ],
+                'isMapKey' => false,
+                'isArrayKey' => false
+            ],
             ObjectType::DATE => [
                 'values' => [
                     Date::fromDateTime(new DateTime('now')),
@@ -228,6 +236,7 @@ class TestingHelper
             ObjectType::CHAR_ARRAY => [ 'elemType' => ObjectType::CHAR ],
             ObjectType::BOOLEAN_ARRAY => [ 'elemType' => ObjectType::BOOLEAN, 'typeOptional' => true ],
             ObjectType::STRING_ARRAY => [ 'elemType' => ObjectType::STRING, 'typeOptional' => true ],
+            ObjectType::UUID_ARRAY => [ 'elemType' => ObjectType::UUID ],
             ObjectType::DATE_ARRAY => [ 'elemType' => ObjectType::DATE, 'typeOptional' => true ],
             ObjectType::DECIMAL_ARRAY => [ 'elemType' => ObjectType::DECIMAL, 'typeOptional' => true ],
             ObjectType::TIMESTAMP_ARRAY => [ 'elemType' => ObjectType::TIMESTAMP, 'typeOptional' => true ],

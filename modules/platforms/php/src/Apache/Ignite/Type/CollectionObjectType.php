@@ -105,4 +105,11 @@ class CollectionObjectType extends ObjectType
         $this->subType = $subType;
         $this->elementType = $elementType;
     }
+
+    public static function isSet($subType): void
+    {
+        return $subType === CollectionObjectType::USER_SET ||
+            $subType === CollectionObjectType::HASH_SET ||
+            $subType === CollectionObjectType::LINKED_HASH_SET;
+    }
 }

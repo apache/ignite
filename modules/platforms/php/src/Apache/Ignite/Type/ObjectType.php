@@ -125,7 +125,7 @@ namespace Apache\Ignite\Type;
  * | BOOLEAN                      | boolean                               |
  * | STRING                       | string                                |
  * | CHAR                         | string (one character)                |
- * | UUID                         | ???                                   |
+ * | UUID                         | array of integers (16 items)          |
  * | DATE                         | Date                                  |
  * | TIME                         | Time                                  |
  * | TIMESTAMP                    | Timestamp                             |
@@ -141,12 +141,12 @@ namespace Apache\Ignite\Type;
  * | BOOLEAN_ARRAY                | array of boolean                      |
  * | STRING_ARRAY                 | array of string                       |
  * | CHAR_ARRAY                   | array of string (one character)       |
- * | UUID_ARRAY                   | ???                                   |
+ * | UUID_ARRAY                   | array of array of integers (16 items) |
  * | DATE_ARRAY                   | array of Date                         |
  * | TIME_ARRAY                   | array of Time                         |
  * | TIMESTAMP_ARRAY              | array of Timestamp                    |
  * | ENUM_ARRAY                   | array of EnumItem                     |
- * | OBJECT_ARRAY                 | ???                                   |
+ * | OBJECT_ARRAY                 | array                                 |
  * | COLLECTION (USER_COL)        | array                                 |
  * | COLLECTION (ARR_LIST)        | array                                 |
  * | COLLECTION (LINKED_LIST)     | array                                 |

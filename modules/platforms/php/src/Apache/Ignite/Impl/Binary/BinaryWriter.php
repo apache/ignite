@@ -28,6 +28,7 @@ use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
 use Apache\Ignite\Data\EnumItem;
 use Apache\Ignite\Data\BinaryObject;
+use Apache\Ignite\Impl\Utils\ArgumentChecker;
 
 class BinaryWriter
 {
@@ -67,6 +68,9 @@ class BinaryWriter
                 break;
             case ObjectType::STRING:
                 $buffer->writeString($object);
+                break;
+            case ObjectType::UUID:
+                BinaryWriter::writeUUID($buffer, $object);
                 break;
             case ObjectType::DATE:
                 BinaryWriter::writeDate($buffer, $object);
@@ -131,9 +135,35 @@ class BinaryWriter
         $buffer->writeInteger($timestamp->getNanos());
     }
 
+    private static function writeUUID(MessageBuffer $buffer, array $value): void
+    {
+        for ($i = 0; $i < count($value); $i++) {
+            $buffer->writeByte($value[$i], false);
+        }
+    }
+    
     private static function writeEnum(MessageBuffer $buffer, EnumItem $enumValue): void
     {
-        $enumValue->write($buffer);
+        $buffer->writeInteger($enumValue->getTypeId());
+        if ($enumValue->getOrdinal() !== null) {
+            $buffer->writeInteger($enumValue->getOrdinal());
+            return;
+        } elseif ($enumValue->getName() !== null || $enumValue->getValue() !== null) {
+            $type = BinaryTypeStorage::getEntity()->getType($enumValue->getTypeId());
+            if ($type && $type->isEnum()) {
+                $enumValues = $type->getEnumValues();
+                if ($enumValues) {
+                    for ($i = 0; $i < count($enumValues); $i++) {
+                        if ($enumValue->getName() === $enumValues[$i][0] ||
+                            $enumValue->getValue() === $enumValues[$i][1]) {
+                            $buffer->writeInteger($i);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        ArgumentChecker::illegalArgument('Proper ordinal, name or value must be specified for EnumItem');
     }
 
     private static function writeDecimal(MessageBuffer $buffer, BigDecimal $decimal): void

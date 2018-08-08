@@ -55,6 +55,8 @@ class BinaryReader
                 return $buffer->readBoolean();
             case ObjectType::STRING:
                 return $buffer->readString();
+            case ObjectType::UUID:
+                return BinaryReader::readUUID($buffer);
             case ObjectType::DATE:
                 return BinaryReader::readDate($buffer);
             case ObjectType::ENUM:
@@ -108,10 +110,27 @@ class BinaryReader
         return new Timestamp($buffer->readLong(), $buffer->readInteger());
     }
     
+    private static function readUUID(MessageBuffer $buffer): array
+    {
+        $result = [];
+        for ($i = 0; $i < BinaryUtils::getSize(ObjectType::UUID); $i++) {
+            array_push($result, $buffer->readByte(false));
+        }
+        return $result;
+    }
+    
     private static function readEnum(MessageBuffer $buffer): EnumItem
     {
-        $enumItem = new EnumItem(0);
-        $numItem->read($buffer);
+        $enumItem = new EnumItem($buffer->readInteger());
+        $ordinal = $buffer->readInteger();
+        $enumItem->setOrdinal($ordinal);
+        $type = BinaryTypeStorage::getEntity()->getType($enumItem->getTypeId());
+        if (!$type->isEnum() || !$type->getEnumValues() || count($type->getEnumValues()) <= $ordinal) {
+            BinaryUtils::serializationError(false, 'EnumItem can not be deserialized: type mismatch');
+        }
+        $enumValues = $type->getEnumValues();
+        $enumItem->setName($enumValues[$ordinal][0]);
+        $enumItem->setValue($enumValues[$ordinal][1]);
         return $enumItem;
     }
 

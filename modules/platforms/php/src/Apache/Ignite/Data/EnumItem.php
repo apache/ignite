@@ -19,10 +19,6 @@
 namespace Apache\Ignite\Data;
 
 use Apache\Ignite\Impl\Utils\ArgumentChecker;
-use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryType;
-use Apache\Ignite\Impl\Binary\BinaryTypeStorage;
-use Apache\Ignite\Impl\Binary\BinaryUtils;
 
 /**
  * Class representing an item of Ignite enum type.
@@ -156,47 +152,5 @@ class EnumItem
     {
         $this->value = $value;
         return $this;
-    }
-
-    public function write(MessageBuffer $buffer): void
-    {
-        $buffer->writeInteger($this->typeId);
-        if ($this->ordinal !== null) {
-            $buffer->writeInteger($this->ordinal);
-            return;
-        } elseif ($this->name !== null || $this->value !== null) {
-            $type = $this->getType();
-            if ($type && $type->isEnum()) {
-                $enumValues = $type->getEnumValues();
-                if ($enumValues) {
-                    for ($i = 0; $i < count($enumValues); $i++) {
-                        if ($this->name === $enumValues[$i][0] ||
-                            $this->value === $enumValues[$i][1]) {
-                            $buffer->writeInteger($i);
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-        ArgumentChecker::illegalArgument('Proper ordinal, name or value must be specified for EnumItem');
-    }
-
-    public function read(MessageBuffer $buffer): void
-    {
-        $this->typeId = $buffer->readInteger();
-        $this->ordinal = $buffer->readInteger();
-        $type = $this->getType();
-        if (!$type->isEnum() || !$type->getEnumValues() || count($type->getEnumValues()) <= $this->ordinal) {
-            BinaryUtils::serializationError(false, 'EnumItem can not be deserialized: type mismatch');
-        }
-        $enumValues = $type->getEnumValues();
-        $this->name = $enumValues[$this->ordinal][0];
-        $this->value = $enumValues[$this->ordinal][1];
-    }
-
-    private function getType(): ?BinaryType
-    {
-        return BinaryTypeStorage::getEntity()->getType($this->typeId);
     }
 }
