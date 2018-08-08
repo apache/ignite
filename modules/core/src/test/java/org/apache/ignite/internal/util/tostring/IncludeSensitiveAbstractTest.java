@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 /**
  * Tests for property {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE}.
  */
-public abstract class IncludeSensitiveTest extends GridCacheAbstractSelfTest {
+public abstract class IncludeSensitiveAbstractTest extends GridCacheAbstractSelfTest {
     /** Number of test entries */
     private static final int ENTRY_CNT = 10;
 

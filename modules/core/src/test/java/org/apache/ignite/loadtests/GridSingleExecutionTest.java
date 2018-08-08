@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.loadtest;
+package org.apache.ignite.loadtests;
 
 import java.io.File;
 import java.io.IOException;

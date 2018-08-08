@@ -22,6 +22,7 @@ import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
+import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
@@ -35,18 +36,28 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafePartitionedMapSe
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeStripedLruSefTest;
 import org.apache.ignite.internal.util.tostring.CircularStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
+import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
+import org.apache.ignite.internal.util.tostring.IncludeSensitiveTransactionalTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
+import org.apache.ignite.thread.GridThreadTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
+import org.apache.ignite.util.GridConcurrentLinkedDequeMultiThreadedTest;
+import org.apache.ignite.util.GridIndexFillTest;
 import org.apache.ignite.util.GridIntListSelfTest;
+import org.apache.ignite.util.GridLogThrottleTest;
 import org.apache.ignite.util.GridLongListSelfTest;
 import org.apache.ignite.util.GridMessageCollectionTest;
 import org.apache.ignite.util.GridPartitionMapSelfTest;
 import org.apache.ignite.util.GridQueueSelfTest;
+import org.apache.ignite.util.GridRandomSelfTest;
+import org.apache.ignite.util.GridSnapshotLockSelfTest;
 import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
+import org.apache.ignite.util.GridTopologyHeapSizeSelfTest;
+import org.apache.ignite.util.GridTransientTest;
 import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
@@ -87,12 +98,25 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridMBeanDisableSelfTest.class);
         suite.addTestSuite(GridMBeanExoticNamesSelfTest.class);
         suite.addTestSuite(GridLongListSelfTest.class);
+        //suite.addTestSuite(GridThreadTest.class);
         suite.addTestSuite(GridIntListSelfTest.class);
         suite.addTestSuite(GridArraysSelfTest.class);
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
         suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
         suite.addTestSuite(GridMessageCollectionTest.class);
         suite.addTestSuite(WorkersControlMXBeanTest.class);
+        //suite.addTestSuite(GridConcurrentLinkedDequeMultiThreadedTest.class);
+        //suite.addTestSuite(GridIndexFillTest.class);
+        //suite.addTestSuite(GridLogThrottleTest.class);
+        //suite.addTestSuite(GridRandomSelfTest.class);
+        //suite.addTestSuite(GridSnapshotLockSelfTest.class);
+        //suite.addTestSuite(GridTopologyHeapSizeSelfTest.class);
+        //suite.addTestSuite(GridTransientTest.class);
+        //suite.addTestSuite(IgniteDevOnlyLogTest.class);
+
+        // Sensitive toString.
+        //suite.addTestSuite(IncludeSensitiveAtomicTest.class);
+        //suite.addTestSuite(IncludeSensitiveTransactionalTest.class);
 
         // Metrics.
         suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);
