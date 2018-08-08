@@ -14,23 +14,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.ignite.internal.processors.cache.persistence.txdr;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 /**
- *
+ * todo javadoc
  */
-public class IgniteCacheTransactionalDrManager extends GridCacheSharedManagerAdapter
-    implements IgniteChangeGlobalStateSupport {
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+public enum ExchangeType {
+    /** */
+    CLIENT,
 
-    }
+    /** */
+    ALL,
 
-    @Override public void onDeActivate(GridKernalContext kctx) {
-
-    }
+    /** */
+    NONE
 }

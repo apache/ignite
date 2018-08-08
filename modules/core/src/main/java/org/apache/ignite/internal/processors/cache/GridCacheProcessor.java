@@ -100,7 +100,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.txdr.IgniteCacheTransactionalDrManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
@@ -2465,12 +2464,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (snpMgr == null)
             snpMgr = new IgniteCacheSnapshotManager();
 
-        IgniteCacheTransactionalDrManager txDrMgr = ctx.plugins().createComponent(
-            IgniteCacheTransactionalDrManager.class);
-
-        if (txDrMgr == null)
-            txDrMgr = new IgniteCacheTransactionalDrManager();
-
         GridCacheIoManager ioMgr = new GridCacheIoManager();
         CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();
         GridCacheSharedTtlCleanupManager ttl = new GridCacheSharedTtlCleanupManager();
@@ -2487,7 +2480,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             walStateMgr,
             dbMgr,
             snpMgr,
-            txDrMgr,
             depMgr,
             exchMgr,
             topMgr,

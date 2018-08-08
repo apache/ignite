@@ -189,6 +189,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** */
     private AtomicBoolean added = new AtomicBoolean(false);
 
+    /** Exchange type. */
+    private volatile ExchangeType exchangeType;
+
     /**
      * Discovery event receive latch. There is a race between discovery event processing and single message
      * processing, so it is possible to create an exchange future before the actual discovery event is received.
@@ -436,6 +439,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert exchangeDone() : "Should not be called before exchange is finished";
 
         return isDone() ? result() : exchCtx.events().topologyVersion();
+    }
+
+    /**
+     * @return Exchange type or <code>null</code> if not determined yet.
+     */
+    public ExchangeType exchangeType() {
+        return exchangeType;
     }
 
     /**
@@ -742,6 +752,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            exchangeType = exchange;
+
+            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+                comp.onInitBeforeTopologyLock(this);
+
             updateTopologies(crdNode);
 
             switch (exchange) {
@@ -774,6 +789,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (cctx.localNode().isClient())
                 tryToPerformLocalSnapshotOperation();
+
+            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+                comp.onInitAfterTopologyLock(this);
 
             if (exchLog.isInfoEnabled())
                 exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
@@ -1794,6 +1812,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!cctx.localNode().isClient())
             tryToPerformLocalSnapshotOperation();
 
+        for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+            comp.onDoneBeforeTopologyUnlock(this);
+
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
         cctx.exchange().onExchangeDone(res, initialVersion(), err);
@@ -1853,6 +1874,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
             }
+
+            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+                comp.onDoneAfterTopologyUnlock(this);
 
             exchActions = null;
 
@@ -4224,20 +4248,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             this.resTopVer = resTopVer;
             this.msg = msg;
         }
-    }
-
-    /**
-     *
-     */
-    enum ExchangeType {
-        /** */
-        CLIENT,
-
-        /** */
-        ALL,
-
-        /** */
-        NONE
     }
 
     /**

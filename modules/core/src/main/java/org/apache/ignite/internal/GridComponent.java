@@ -64,7 +64,10 @@ public interface GridComponent {
         QUERY_PROC,
 
         /** Authentication processor. */
-        AUTH_PROC
+        AUTH_PROC,
+
+        /** Transactional data replication processor. */
+        TX_DR_PROC
     }
 
     /**
