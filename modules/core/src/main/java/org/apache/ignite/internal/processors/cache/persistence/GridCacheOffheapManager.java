@@ -446,8 +446,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 final long curAddr = pageMem.writeLock(grpId, curId, curPage);
 
-                int pageSize = pageMem.pageSize();
-
                 assert curAddr != 0;
 
                 try {
@@ -456,7 +454,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     if (init) {
                         partCntrIo = PagePartitionCountersIO.VERSIONS.latest();
 
-                        partCntrIo.initNewPage(curAddr, curId, pageSize, pageMem.realPageSize(grpId));
+                        partCntrIo.initNewPage(curAddr, curId, pageMem.realPageSize(grpId));
                     }
                     else
                         partCntrIo = PageIO.getPageIO(curAddr);
@@ -691,7 +689,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (PageIO.getType(pageAddr) != PageIO.T_META) {
                     PageMetaIO pageIO = PageMetaIO.VERSIONS.latest();
 
-                    pageIO.initNewPage(pageAddr, metaId, pageMem.pageSize(), pageMem.realPageSize(grpId));
+                    pageIO.initNewPage(pageAddr, metaId, pageMem.realPageSize(grpId));
 
                     metastoreRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
                     reuseListRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
@@ -1360,7 +1358,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
-                        io.initNewPage(pageAddr, partMetaId, pageMem.pageSize(), pageMem.realPageSize(grpId));
+                        io.initNewPage(pageAddr, partMetaId, pageMem.realPageSize(grpId));
 
                         treeRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_DATA);
                         reuseListRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_DATA);

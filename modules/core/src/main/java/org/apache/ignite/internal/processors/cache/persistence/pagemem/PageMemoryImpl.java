@@ -491,7 +491,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         seg.writeLock().lock();
 
-        boolean isTrackingPage = changeTracker != null && trackingIO.trackingPageFor(pageId, pageSize()) == pageId;
+        boolean isTrackingPage =
+            changeTracker != null && trackingIO.trackingPageFor(pageId, realPageSize(grpId)) == pageId;
 
         try {
             long relPtr = seg.loadedPages.get(
@@ -533,7 +534,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 // We are inside segment write lock, so no other thread can pin this tracking page yet.
                 // We can modify page buffer directly.
                 if (PageIO.getType(pageAddr) == 0) {
-                    trackingIO.initNewPage(pageAddr, pageId, pageSize(), realPageSize(grpId));
+                    trackingIO.initNewPage(pageAddr, pageId, realPageSize(grpId));
 
                     if (!ctx.wal().disabled(fullId.groupId()))
                         if (!ctx.wal().isAlwaysWriteFullPages())

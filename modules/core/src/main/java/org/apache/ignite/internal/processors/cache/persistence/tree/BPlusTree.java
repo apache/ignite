@@ -485,7 +485,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // We may need to replace inner key or want to merge this leaf with sibling after the remove -> keep lock.
             if (needReplaceInner ||
                 // We need to make sure that we have back or forward to be able to merge.
-                ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - 1, io.getMaxCount(leafAddr, realPageSize())))) {
+                ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - 1, io.getMaxCount(leafAddr, pageSize())))) {
                 // If we have backId then we've already locked back page, nothing to do here.
                 if (r.fwdId != 0 && r.backId == 0) {
                     Result res = r.lockForward(0);
@@ -634,7 +634,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert lvl == io.getRootLevel(metaAddr); // Can drop only root.
 
-            io.cutRoot(metaAddr, realPageSize());
+            io.cutRoot(metaAddr, pageSize());
 
             if (needWalDeltaRecord(metaId, metaPage, walPlc))
                 wal.log(new MetaPageCutRootRecord(cacheId, metaId));
@@ -666,7 +666,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert lvl == io.getLevelsCount(pageAddr);
 
-            io.addRoot(pageAddr, rootPageId, realPageSize());
+            io.addRoot(pageAddr, rootPageId, pageSize());
 
             if (needWalDeltaRecord(metaId, metaPage, walPlc))
                 wal.log(new MetaPageAddRootRecord(cacheId, metaId, rootPageId));
@@ -695,7 +695,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Safe cast because we should never recycle meta page until the tree is destroyed.
             BPlusMetaIO io = (BPlusMetaIO)iox;
 
-            io.initRoot(pageAddr, rootId, realPageSize());
+            io.initRoot(pageAddr, rootId, pageSize());
             io.setInlineSize(pageAddr, inlineSize);
 
             if (needWalDeltaRecord(metaId, metaPage, walPlc))
@@ -2274,7 +2274,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         // Update forward page.
-        io.splitForwardPage(pageAddr, fwdId, fwdBuf, mid, cnt, pageSize(), realPageSize());
+        io.splitForwardPage(pageAddr, fwdId, fwdBuf, mid, cnt, pageSize());
 
         // Update existing page.
         io.splitExistingPage(pageAddr, mid, fwdId);
@@ -2753,7 +2753,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         private L insert(long pageId, long page, long pageAddr, BPlusIO<L> io, int idx, int lvl)
             throws IgniteCheckedException {
-            int maxCnt = io.getMaxCount(pageAddr, realPageSize());
+            int maxCnt = io.getMaxCount(pageAddr, pageSize());
             int cnt = io.getCount(pageAddr);
 
             if (cnt == maxCnt) // Need to split page.
@@ -2867,7 +2867,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                                     null,
                                     fwdId,
                                     pageSize(),
-                                    realPageSize(),
                                     needWal);
 
                                 if (needWal)
@@ -3580,7 +3579,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         // Exit: we are done.
                     }
                     else if (tail.sibling != null &&
-                        tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf, realPageSize())) {
+                        tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf, pageSize())) {
                         // Release everything lower than tail, we've already merged this path.
                         doReleaseTail(tail.down);
                         tail.down = null;
@@ -3905,7 +3904,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             boolean emptyBranch = needMergeEmptyBranch == TRUE || needMergeEmptyBranch == READY;
 
-            if (!left.io.merge(prnt.io, prnt.buf, prntIdx, left.buf, right.buf, emptyBranch, realPageSize()))
+            if (!left.io.merge(prnt.io, prnt.buf, prntIdx, left.buf, right.buf, emptyBranch, pageSize()))
                 return false;
 
             // Invalidate indexes after successful merge.

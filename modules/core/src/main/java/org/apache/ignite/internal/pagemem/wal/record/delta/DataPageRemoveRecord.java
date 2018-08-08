@@ -53,7 +53,7 @@ public class DataPageRemoveRecord extends PageDeltaRecord {
         throws IgniteCheckedException {
         AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
 
-        io.removeRow(pageAddr, itemId, pageMem.pageSize(), pageMem.realPageSize(groupId()));
+        io.removeRow(pageAddr, itemId, pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */

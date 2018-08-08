@@ -154,7 +154,6 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param rowBytes Bytes.
      * @param rightChildId Right child ID.
      * @param pageSize Page size.
-     * @param realPageSize Page size without encryption overhead.
      * @param needRowBytes If we need row bytes back.
      * @return Row bytes.
      * @throws IgniteCheckedException If failed.
@@ -167,10 +166,9 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
         byte[] rowBytes,
         long rightChildId,
         int pageSize,
-        int realPageSize,
         boolean needRowBytes
     ) throws IgniteCheckedException {
-        initNewPage(newRootPageAddr, newRootId, pageSize, realPageSize);
+        initNewPage(newRootPageAddr, newRootId, pageSize);
 
         setCount(newRootPageAddr, 1);
         setLeft(newRootPageAddr, 0, leftChildId);

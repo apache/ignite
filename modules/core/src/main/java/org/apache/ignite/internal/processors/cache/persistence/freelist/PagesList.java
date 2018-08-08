@@ -276,7 +276,9 @@ public abstract class PagesList extends DataStructure {
                     int tailIdx = 0;
 
                     while (tailIdx < tails.length) {
-                        int written = curPage != 0L ? curIo.addTails(pageMem.pageSize(), curAddr, bucket, tails, tailIdx) : 0;
+                        int written = curPage != 0L ?
+                            curIo.addTails(pageMem.realPageSize(grpId), curAddr, bucket, tails, tailIdx) :
+                            0;
 
                         if (written == 0) {
                             if (nextPageId == 0L) {
@@ -294,7 +296,7 @@ public abstract class PagesList extends DataStructure {
 
                                 curIo = PagesListMetaIO.VERSIONS.latest();
 
-                                curIo.initNewPage(curAddr, curId, pageSize(), realPageSize());
+                                curIo.initNewPage(curAddr, curId, pageSize());
                             }
                             else {
                                 releaseAndClose(curId, curPage, curAddr);
@@ -396,7 +398,7 @@ public abstract class PagesList extends DataStructure {
     private void setupNextPage(PagesListNodeIO io, long prevId, long prev, long nextId, long next) {
         assert io.getNextId(prev) == 0L;
 
-        io.initNewPage(next, nextId, pageSize(), realPageSize());
+        io.initNewPage(next, nextId, pageSize());
         io.setPreviousId(next, prevId);
 
         io.setNextId(prev, nextId);
@@ -1192,7 +1194,7 @@ public abstract class PagesList extends DataStructure {
 
         long newPageId = PageIdUtils.pageId(partId, flag, PageIdUtils.pageIndex(reusedPageId));
 
-        initIo.initNewPage(reusedPageAddr, newPageId, pageSize(), realPageSize());
+        initIo.initNewPage(reusedPageAddr, newPageId, pageSize());
 
         boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
 

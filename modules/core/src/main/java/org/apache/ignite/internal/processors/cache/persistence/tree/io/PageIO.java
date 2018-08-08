@@ -53,7 +53,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  *    static methods (like {@code {@link #getPageId(long)}}) intentionally:
  *    this base format can not be changed between versions.
  *
- * 2. IO must correctly override {@link #initNewPage(long, long, int, int)} method and call super.
+ * 2. IO must correctly override {@link #initNewPage(long, long, int)} method and call super.
  *    We have logic that relies on this behavior.
  *
  * 3. Page IO type ID constant must be declared in this class to have a list of all the
@@ -436,11 +436,10 @@ public abstract class PageIO {
      * @param pageAddr Page address.
      * @param pageId Page ID.
      * @param pageSize Page size.
-     * @param realPageSize Page size without encryption overhead.
      *
      * @see EncryptionSpi#encryptedSize(int)
      */
-    public void initNewPage(long pageAddr, long pageId, int pageSize, int realPageSize) {
+    public void initNewPage(long pageAddr, long pageId, int pageSize) {
         setType(pageAddr, getType());
         setVersion(pageAddr, getVersion());
         setPageId(pageAddr, pageId);

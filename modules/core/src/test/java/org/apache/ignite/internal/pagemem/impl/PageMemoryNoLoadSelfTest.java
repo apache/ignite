@@ -230,7 +230,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
                     assertNotNull(pageAddr);
 
                     try {
-                        PAGE_IO.initNewPage(pageAddr, id.pageId(), mem.pageSize(), mem.realPageSize(id.groupId()));
+                        PAGE_IO.initNewPage(pageAddr, id.pageId(), mem.realPageSize(id.groupId()));
 
                         long updId = PageIdUtils.rotatePageId(id.pageId());
 
@@ -340,7 +340,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         long pageAddr = mem.writeLock(-1, fullId.pageId(), page);
 
         try {
-            PAGE_IO.initNewPage(pageAddr, fullId.pageId(), mem.pageSize(), mem.realPageSize(fullId.groupId()));
+            PAGE_IO.initNewPage(pageAddr, fullId.pageId(), mem.realPageSize(fullId.groupId()));
 
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++)
                 PageUtils.putByte(pageAddr, i, (byte)val);

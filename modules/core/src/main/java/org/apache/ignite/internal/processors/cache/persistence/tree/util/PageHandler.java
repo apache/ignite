@@ -423,7 +423,7 @@ public abstract class PageHandler<X, R> {
 
         assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
 
-        init.initNewPage(pageAddr, pageId, pageMem.pageSize(), pageMem.realPageSize(grpId));
+        init.initNewPage(pageAddr, pageId, pageMem.realPageSize(grpId));
 
         // Here we should never write full page, because it is known to be new.
         if (isWalDeltaRecordNeeded(pageMem, grpId, pageId, page, wal, FALSE))

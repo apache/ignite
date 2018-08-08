@@ -73,8 +73,8 @@ public abstract class BPlusIO<L> extends PageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, int realPageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize, realPageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
+        super.initNewPage(pageAddr, pageId, pageSize);
 
         setCount(pageAddr, 0);
         setForward(pageAddr, 0);
@@ -277,7 +277,6 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param mid Bisection index.
      * @param cnt Initial elements count in the page being split.
      * @param pageSize Page size.
-     * @param realPageSize Page size without encryption overhead.
      * @throws IgniteCheckedException If failed.
      */
     public void splitForwardPage(
@@ -286,10 +285,9 @@ public abstract class BPlusIO<L> extends PageIO {
         long fwdPageAddr,
         int mid,
         int cnt,
-        int pageSize,
-        int realPageSize
+        int pageSize
     ) throws IgniteCheckedException {
-        initNewPage(fwdPageAddr, fwdId, pageSize, realPageSize);
+        initNewPage(fwdPageAddr, fwdId, pageSize);
 
         cnt -= mid;
 

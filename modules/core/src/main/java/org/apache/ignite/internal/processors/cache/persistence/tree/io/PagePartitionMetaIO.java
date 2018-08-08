@@ -52,8 +52,8 @@ public class PagePartitionMetaIO extends PageMetaIO {
     );
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, int realPageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize, realPageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
+        super.initNewPage(pageAddr, pageId, pageSize);
 
         setSize(pageAddr, 0);
         setUpdateCounter(pageAddr, 0);

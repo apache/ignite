@@ -75,8 +75,8 @@ public class PageMetaIO extends PageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, int realPageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize, realPageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
+        super.initNewPage(pageAddr, pageId, pageSize);
 
         setTreeRoot(pageAddr, 0);
         setReuseListRoot(pageAddr, 0);
