@@ -481,34 +481,21 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param nodeId Sender.
      * @param res Result.
      */
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     void onResult(UUID nodeId, GridNearLockResponse res) {
         boolean done = isDone();
 
         if (!done) {
-            synchronized (this) {
+            if(timeoutObj == null){
+                onResult0(nodeId, res);
+
+                return;
+            }
+
+            synchronized (timeoutObj) {
                 if (!isDone()) {
-                    if (log.isDebugEnabled())
-                        log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
-
-                    MiniFuture mini = miniFuture(res.miniId());
-
-                    if (mini != null) {
-                        assert mini.node().id().equals(nodeId);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
-
-                        mini.onResult(res);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
-                                ", res=" + res + ']');
-
+                    if (onResult0(nodeId, res))
                         return;
-                    }
-
-                    U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
-                        ", fut=" + this + ']');
                 }
                 else
                     done = true;
@@ -519,6 +506,36 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (done && log.isDebugEnabled())
             log.debug("Ignoring lock response from node (future is done) [nodeId=" + nodeId + ", res=" + res +
                 ", fut=" + this + ']');
+    }
+
+    /**
+     * @param nodeId Sender.
+     * @param res Result.
+     */
+    private boolean onResult0(UUID nodeId, GridNearLockResponse res) {
+        if (log.isDebugEnabled())
+            log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
+
+        MiniFuture mini = miniFuture(res.miniId());
+
+        if (mini != null) {
+            assert mini.node().id().equals(nodeId);
+
+            if (log.isDebugEnabled())
+                log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
+
+            mini.onResult(res);
+
+            if (log.isDebugEnabled())
+                log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
+                    ", res=" + res + ']');
+
+            return true;
+        }
+
+        U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
+            ", fut=" + this + ']');
+        return false;
     }
 
     /**
@@ -1506,7 +1523,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                 U.warn(log, "Failed to detect deadlock.", e);
                             }
 
-                            synchronized (GridNearLockFuture.this) {
+                            synchronized (LockTimeoutObject.this) {
                                 onComplete(false, true);
                             }
                         }
@@ -1516,7 +1533,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                     err = tx.timeoutException();
             }
             else {
-                synchronized (GridNearLockFuture.this) {
+                synchronized (LockTimeoutObject.this) {
                     onComplete(false, true);
                 }
             }
