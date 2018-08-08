@@ -642,10 +642,8 @@ public class GridMapQueryExecutor {
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
                 .reservations(reserved);
-//                .lazyWorker(worker);
 
             Connection conn = h2.connectionForSchema(schemaName);
-            log.info("+++ CONN=" + Integer.toHexString(System.identityHashCode(conn)));
 
             H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 
@@ -986,8 +984,6 @@ public class GridMapQueryExecutor {
 
                 // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
                 if (qr.detachedConnection() != null) {
-                    log.info("+++ releaseReservations, recycle connection=" +
-                        Integer.toHexString(System.identityHashCode(qr.detachedConnection().object().connection())));
                     qr.detachedConnection().recycle();
 
                     releaseReservations();

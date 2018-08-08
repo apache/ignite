@@ -277,6 +277,12 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
 
+    /** */
+    @Parameter(names = {"--lazy"},
+        arity = 1,
+        description = "Lazy mode for SQL query execution.")
+    private boolean lazy = false;
+
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
@@ -686,6 +692,13 @@ public class IgniteBenchmarkArguments {
      */
     public int clientNodesAfterId() {
         return clientNodesAfterId;
+    }
+
+    /**
+     * @return Lazy query execution mode.
+     */
+    public boolean isLazy() {
+        return lazy;
     }
 
     /** {@inheritDoc} */

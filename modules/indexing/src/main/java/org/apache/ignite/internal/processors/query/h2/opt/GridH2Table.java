@@ -252,7 +252,6 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
         // In accordance with base method semantics, we'll return true if we were already exclusively locked.
-//        log.info("+++ lock" + Integer.toHexString(System.identityHashCode(ses)));
         Boolean res = sessions.get(ses);
 
         if (res != null)
@@ -417,7 +416,6 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
-//        log.info("+++ unlock" + Integer.toHexString(System.identityHashCode(ses)));
         Boolean exclusive = sessions.remove(ses);
 
         if (exclusive == null)
