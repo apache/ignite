@@ -199,6 +199,7 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
+import org.apache.ignite.mxbean.IgniteStripedThreadPoolExecutorMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
@@ -4231,7 +4232,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerExecutorMBean("GridManagementExecutor", mgmtExecSvc);
             registerExecutorMBean("GridIgfsExecutor", igfsExecSvc);
             registerExecutorMBean("GridAffinityExecutor", affExecSvc);
-            registerExecutorMBean("GridCallbackExecutor", callbackExecSvc);
             registerExecutorMBean("GridQueryExecutor", qryExecSvc);
             registerExecutorMBean("GridSchemaExecutor", schemaExecSvc);
 
@@ -4255,8 +4255,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                    "GridDataStreamExecutor",
                    new StripedExecutorMXBeanAdapter(dataStreamExecSvc),
                    StripedExecutorMXBean.class);
-           }
-
+            }
+            
+            if (callbackExecSvc != null) {
+               // striped executor uses a custom adapter
+               registerMBean("Thread Pools",
+                   "GridCallbackExecutor",
+                   new IgniteStripedThreadPoolExecutorMXBeanAdapter(callbackExecSvc),
+                   IgniteStripedThreadPoolExecutorMXBean.class);
+            }
 
             if (customExecSvcs != null) {
                 for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet())

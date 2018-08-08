@@ -29,6 +29,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
@@ -175,4 +177,23 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     @Override public String toString() {
         return S.toString(IgniteStripedThreadPoolExecutor.class, this);
     }
+    
+    
+    /**
+     * @return Stripes count.
+     */
+    public int stripes() {
+        return execs.length;
+    }
+    
+    /**
+     * @return The executor service for stripe idx or null if out of range
+     */
+    public ExecutorService stripe(int idx) {
+        if ( idx >= execs.length ) {
+           return null;
+        }
+        return execs[idx];
+    }
+
 }
