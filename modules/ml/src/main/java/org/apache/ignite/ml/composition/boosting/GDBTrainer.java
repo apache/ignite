@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -53,16 +52,18 @@ import org.jetbrains.annotations.NotNull;
  *
  * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
-abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
+public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
     /** Gradient step. */
     private final double gradientStep;
+
     /** Count of iterations. */
     private final int cntOfIterations;
+
     /**
      * Gradient of loss function. First argument is sample size, second argument is valid answer, third argument is
      * current model prediction.
      */
-    private final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
+    protected final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
 
     /**
      * Constructs GDBTrainer instance.
@@ -91,28 +92,23 @@ abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> 
         Double mean = initAndSampleSize.get1();
         Long sampleSize = initAndSampleSize.get2();
 
-        List<Model<Vector, Double>> models = new ArrayList<>();
         double[] compositionWeights = new double[cntOfIterations];
         Arrays.fill(compositionWeights, gradientStep);
         WeightedPredictionsAggregator resAggregator = new WeightedPredictionsAggregator(compositionWeights, mean);
 
         long learningStartTs = System.currentTimeMillis();
-        for (int i = 0; i < cntOfIterations; i++) {
-            double[] weights = Arrays.copyOf(compositionWeights, i);
-            WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, mean);
-            Model<Vector, Double> currComposition = new ModelsComposition(models, aggregator);
 
-            IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
-                Double realAnswer = externalLabelToInternal(lbExtractor.apply(k, v));
-                Double mdlAnswer = currComposition.apply(featureExtractor.apply(k, v));
-                return -lossGradient.apply(sampleSize, realAnswer, mdlAnswer);
-            };
+        List<Model<Vector, Double>> models = getLearningStrategy()
+            .withBaseModelTrainerBuilder(this::buildBaseModelTrainer)
+            .withExternalLabelToInternal(this::externalLabelToInternal)
+            .withCntOfIterations(cntOfIterations)
+            .withCompositionWeights(compositionWeights)
+            .withEnvironment(environment)
+            .withLossGradient(lossGradient)
+            .withSampleSize(sampleSize)
+            .withMeanLabelValue(mean)
+            .learnModels(datasetBuilder, featureExtractor, lbExtractor);
 
-            long startTs = System.currentTimeMillis();
-            models.add(buildBaseModelTrainer().fit(datasetBuilder, featureExtractor, lbExtractorWrap));
-            double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
-            environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "One model training time was %.2fs", learningTime);
-        }
         double learningTime = (double)(System.currentTimeMillis() - learningStartTs) / 1000.0;
         environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
 
@@ -136,7 +132,8 @@ abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> 
     /**
      * Returns regressor model trainer for one step of GDB.
      */
-    @NotNull protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
+    @NotNull
+    protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
 
     /**
      * Maps external representation of label to internal.
@@ -190,5 +187,14 @@ abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> 
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Returns learning strategy.
+     *
+     * @return learning strategy.
+     */
+    protected GDBLearningStrategy getLearningStrategy() {
+        return new GDBLearningStrategy();
     }
 }
