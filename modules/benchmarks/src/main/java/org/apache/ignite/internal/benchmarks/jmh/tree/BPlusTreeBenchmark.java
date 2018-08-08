@@ -263,11 +263,11 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public int getMaxCount(long buf, int realPageSize) {
+        @Override public int getMaxCount(long buf, int pageSize) {
             if (MAX_PER_PAGE != 0)
                 return MAX_PER_PAGE;
 
-            return super.getMaxCount(buf, realPageSize);
+            return super.getMaxCount(buf, pageSize);
         }
 
         /** {@inheritDoc} */
@@ -300,11 +300,11 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public int getMaxCount(long pageAddr, int realPageSize) {
+        @Override public int getMaxCount(long pageAddr, int pageSize) {
             if (MAX_PER_PAGE != 0)
                 return MAX_PER_PAGE;
 
-            return super.getMaxCount(pageAddr, realPageSize);
+            return super.getMaxCount(pageAddr, pageSize);
         }
 
         /** {@inheritDoc} */
