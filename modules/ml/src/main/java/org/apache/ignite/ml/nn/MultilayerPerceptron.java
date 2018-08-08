@@ -349,7 +349,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      */
     public MLPArchitecture architecture() {
         if (below != null)
-            return below.architecture().add(architecture());
+            return below.architecture().add(architecture);
         return architecture;
     }
 

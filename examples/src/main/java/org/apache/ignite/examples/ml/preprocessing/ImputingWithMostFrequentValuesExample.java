@@ -35,7 +35,7 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputingStrategy;
 /**
  * Example that shows how to use Imputing preprocessor to impute the missing values in the given data.
  */
-public class ImputingExampleWithMostFrequentValues {
+public class ImputingWithMostFrequentValuesExample {
     /** Run example. */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {

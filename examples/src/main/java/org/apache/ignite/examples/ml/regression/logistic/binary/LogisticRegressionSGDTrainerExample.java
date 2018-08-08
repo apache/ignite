@@ -41,7 +41,7 @@ import org.apache.ignite.thread.IgniteThread;
  *
  * @see LogisticRegressionSGDTrainer
  */
-public class LogisticRegressionSGDTrainerSample {
+public class LogisticRegressionSGDTrainerExample {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         System.out.println();
@@ -50,7 +50,7 @@ public class LogisticRegressionSGDTrainerSample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                LogisticRegressionSGDTrainerSample.class.getSimpleName(), () -> {
+                LogisticRegressionSGDTrainerExample.class.getSimpleName(), () -> {
 
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 

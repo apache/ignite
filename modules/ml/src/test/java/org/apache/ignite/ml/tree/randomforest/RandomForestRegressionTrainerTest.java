@@ -33,6 +33,9 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link RandomForestRegressionTrainer}.
+ */
 @RunWith(Parameterized.class)
 public class RandomForestRegressionTrainerTest {
     /**
@@ -69,7 +72,8 @@ public class RandomForestRegressionTrainerTest {
             sample.put(x1 * x2 + x3 * x4, new double[] {x1, x2, x3, x4});
         }
 
-        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4, 3, 5, 0.3, 4, 0.1);
+        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4, 3, 5, 0.3, 4, 0.1)
+            .withUseIndex(false);
 
         ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(v), (k, v) -> k);
 

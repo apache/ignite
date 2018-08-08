@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math;
 
 import java.util.Arrays;
 import java.util.function.BiPredicate;
+import org.apache.ignite.ml.math.exceptions.NonSquareMatrixException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
@@ -280,6 +281,15 @@ public class BlasTest {
         Blas.gemv(alpha, a, x, beta, y);
 
         Assert.assertEquals(exp, y);
+    }
+
+    /** Tests 'syr' operation for non-square dense matrix A. */
+    @Test(expected = NonSquareMatrixException.class)
+    public void testSyrNonSquareMatrix() {
+        double alpha = 3.0;
+        DenseMatrix a = new DenseMatrix(new double[][] {{10.0, 11.0, 12.0}, {0.0, 1.0, 2.0}}, 2);
+        Vector x = new DenseVector(new double[] {1.0, 2.0});
+        new Blas().syr(alpha, x, a);
     }
 
     /**
