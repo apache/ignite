@@ -2045,7 +2045,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param ver Cache version.
      * @param keys Keys to remove.
      */
-    private void clearTx(GridCacheVersion ver, Map<Integer, List<KeyCacheObject>> keys) {
+    public void clearTx(GridCacheVersion ver, Map<Integer, List<KeyCacheObject>> keys) {
         GridCacheVersion dhtVer = mappedVersion(ver);
 
         GridDhtTxLocal tx = tx(dhtVer);

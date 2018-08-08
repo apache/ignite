@@ -628,7 +628,25 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override public void unlockAllForSavepoint(GridCacheVersion ver, List<KeyCacheObject> keys) {
+        for (KeyCacheObject key : keys) {
+            GridDistributedCacheEntry entry = peekExx(key);
+
+            if (entry != null) {
+                try {
+                    entry.removeLock(ver, false);
+
+                    break;
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Trying to remove lock for removed entry [entry=" + entry + ']');
+                }
+            }
+        }
+
         dht.removeLocks(ctx.nodeId(), ver, keys, true, true);
+
+        ctx.tm().clearTx(ver, Collections.singletonMap(ctx.cacheId(), keys));
     }
 
     /**
