@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import wraps
 from typing import Any, Type, Union
 
 
@@ -124,6 +125,7 @@ def status_to_exception(exc: Type[Exception]):
     :return: decorator.
     """
     def ste_decorator(fn):
+        @wraps(fn)
         def ste_wrapper(*args, **kwargs):
             result = fn(*args, **kwargs)
             if result.status != 0:
