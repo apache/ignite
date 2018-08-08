@@ -29,7 +29,7 @@ const static std::string WORD_PER_NODE_BUFFER_SIZE("per_node_buffer_size");
 
 const static std::string WORD_PER_NODE_PARALLEL_OPERATIONS("per_node_parallel_operations");
 
-const static std::string WORD_ALLOW_OVERWRITE("allow_owerwrite");
+const static std::string WORD_ALLOW_OVERWRITE("allow_overwrite");
 
 const static std::string WORD_FLUSH_FREQUENCY("flush_frequency");
 

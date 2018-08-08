@@ -55,6 +55,76 @@ namespace ignite
              */
             virtual void Parse(SqlLexer& lexer);
 
+            /**
+             * Check if the streaming enabled.
+             *
+             * @return @c true if enabled.
+             */
+            bool IsEnabled() const
+            {
+                return enabled;
+            }
+
+            /**
+             * Check if the overwrite is allowed.
+             *
+             * @return @c true if allowed.
+             */
+            bool IsAllowOverwrite() const
+            {
+                return allowOverwrite;
+            }
+
+            /**
+             * Get batch size.
+             *
+             * @return Batch size.
+             */
+            int32_t GetBatchSize() const
+            {
+                return batchSize;
+            }
+
+            /**
+             * Get parallel operations per node.
+             *
+             * @return Parallel operations per node.
+             */
+            int32_t GetParallelOperationsPerNode() const
+            {
+                return parallelOpsPerNode;
+            }
+
+            /**
+             * Get buffer size per node.
+             *
+             * @return Buffer size per node.
+             */
+            int32_t GetBufferSizePerNode() const
+            {
+                return bufferSizePerNode;
+            }
+
+            /**
+             * Get flush frequency.
+             *
+             * @return Flush frequency.
+             */
+            int64_t GetFlushFrequency() const
+            {
+                return flushFrequency;
+            }
+
+            /**
+             * Check if the streaming is ordered.
+             *
+             * @return @c true if ordered.
+             */
+            bool IsOrdered() const
+            {
+                return ordered;
+            }
+
         private:
             /**
              * Check that the streaming mode is enabled.

@@ -32,9 +32,10 @@
 
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
-#include "ignite/impl/binary/binary_utils.h"
 
 #include "ignite/odbc/sql/sql_lexer.h"
+#include "ignite/odbc/sql/sql_parser.h"
+#include "ignite/odbc/sql/sql_set_streaming_command.h"
 
 #include "odbc_test_suite.h"
 #include "test_utils.h"
@@ -84,6 +85,33 @@ void CheckNextToken(odbc::SqlLexer& lexer, odbc::TokenType::Type tokenType, cons
     BOOST_CHECK_GT(token.GetSize(), 0);
     BOOST_CHECK_EQUAL(token.GetType(), tokenType);
     BOOST_CHECK_EQUAL(token.ToString(), expected);
+}
+
+void CheckSetStreamingCommand(
+    const std::string& sql,
+    bool enabled,
+    bool allowOverwrite,
+    int32_t batchSize,
+    int32_t bufferSizePerNode,
+    int32_t parallelOperationsPerNode,
+    int64_t flushFrequency,
+    bool ordered)
+{
+    odbc::SqlParser parser(sql);
+
+    std::auto_ptr<odbc::SqlCommand> cmd = parser.GetNextCommand();
+
+    BOOST_REQUIRE_EQUAL(cmd->GetType(), odbc::SqlCommandType::SET_STREAMING);
+
+    odbc::SqlSetStreamingCommand& cmd0 = static_cast<odbc::SqlSetStreamingCommand&>(*cmd);
+
+    BOOST_CHECK_EQUAL(cmd0.IsEnabled(), enabled);
+    BOOST_CHECK_EQUAL(cmd0.IsAllowOverwrite(), allowOverwrite);
+    BOOST_CHECK_EQUAL(cmd0.GetBatchSize(), batchSize);
+    BOOST_CHECK_EQUAL(cmd0.GetBufferSizePerNode(), bufferSizePerNode);
+    BOOST_CHECK_EQUAL(cmd0.GetParallelOperationsPerNode(), parallelOperationsPerNode);
+    BOOST_CHECK_EQUAL(cmd0.GetFlushFrequency(), flushFrequency);
+    BOOST_CHECK_EQUAL(cmd0.IsOrdered(), ordered);
 }
 
 BOOST_FIXTURE_TEST_SUITE(SqlParsingTestSuite, SqlParsingTestSuiteFixture)
@@ -145,10 +173,97 @@ BOOST_AUTO_TEST_CASE(LexerTokens)
     BOOST_CHECK(!hasNext);
 }
 
-BOOST_AUTO_TEST_CASE(ParserSetStreaming)
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOff)
 {
-    std::string sql("set streaming on");
+    CheckSetStreamingCommand("set streaming off", false, false, 2048, 0, 0, 0, false);
+    CheckSetStreamingCommand("set streaming 0",   false, false, 2048, 0, 0, 0, false);
+}
 
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOffMixedCase)
+{
+    CheckSetStreamingCommand("SET Streaming OfF", false, false, 2048, 0, 0, 0, false);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOn)
+{
+    CheckSetStreamingCommand("set streaming on", true, false, 2048, 0, 0, 0, false);
+    CheckSetStreamingCommand("set streaming 1",  true, false, 2048, 0, 0, 0, false);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOnAllowOverwriteOn)
+{
+    CheckSetStreamingCommand("set streaming on allow_overwrite on", true, true, 2048, 0, 0, 0, false);
+    CheckSetStreamingCommand("set streaming on allow_overwrite 1", true, true, 2048, 0, 0, 0, false);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOnAllowOverwriteOff)
+{
+    CheckSetStreamingCommand("set streaming on allow_overwrite off", true, false, 2048, 0, 0, 0, false);
+    CheckSetStreamingCommand("set streaming on allow_overwrite 0", true, false, 2048, 0, 0, 0, false);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOnPageSize512)
+{
+    CheckSetStreamingCommand("set streaming on batch_size 512", true, false, 512, 0, 0, 0, false);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOnPerNodeBufferSize500)
+{
+    CheckSetStreamingCommand("set streaming on per_node_buffer_size 500", true, false, 2048, 500, 0, 0, false);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOnPerNodeParallelOperations4)
+{
+    CheckSetStreamingCommand("set streaming on per_node_parallel_operations 4", true, false, 2048, 0, 4, 0, false);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOnFlushFrequency100)
+{
+    CheckSetStreamingCommand("set streaming on flush_frequency 100", true, false, 2048, 0, 0, 100, false);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOnOrdered)
+{
+    CheckSetStreamingCommand("set streaming on ordered", true, false, 2048, 0, 0, 0, true);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOnAll)
+{
+    CheckSetStreamingCommand(
+        "set streaming 1 "
+        "allow_overwrite on "
+        "batch_size 512 "
+        "per_node_buffer_size 500 "
+        "per_node_parallel_operations 4 "
+        "flush_frequency 100 "
+        "ordered",
+        true, true, 512, 500, 4, 100, true);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOnAllDisorder)
+{
+    CheckSetStreamingCommand(
+        "set streaming 1 "
+        "batch_size 512 "
+        "allow_overwrite on "
+        "ordered "
+        "per_node_buffer_size 500 "
+        "flush_frequency 100 "
+        "per_node_parallel_operations 4 ",
+        true, true, 512, 500, 4, 100, true);
+}
+
+BOOST_AUTO_TEST_CASE(ParserSetStreamingOnAllBackward)
+{
+    CheckSetStreamingCommand(
+        "set streaming 1 "
+        "ordered "
+        "flush_frequency 100 "
+        "per_node_parallel_operations 4 "
+        "per_node_buffer_size 500 "
+        "batch_size 512 "
+        "allow_overwrite on ",
+        true, true, 512, 500, 4, 100, true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
