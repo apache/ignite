@@ -197,6 +197,7 @@
     <ClCompile Include="..\..\src\row.cpp" />
     <ClCompile Include="..\..\src\sql\sql_lexer.cpp" />
     <ClCompile Include="..\..\src\sql\sql_parser.cpp" />
+    <ClCompile Include="..\..\src\sql\sql_set_streaming_command.cpp" />
     <ClCompile Include="..\..\src\ssl\secure_socket_client.cpp" />
     <ClCompile Include="..\..\src\ssl\ssl_gateway.cpp" />
     <ClCompile Include="..\..\src\ssl\ssl_mode.cpp" />

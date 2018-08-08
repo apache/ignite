@@ -1,0 +1,175 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <ignite/common/utils.h>
+
+#include <ignite/odbc/sql/sql_set_streaming_command.h>
+#include <ignite/odbc/sql/sql_lexer.h>
+#include <ignite/odbc/sql/sql_token.h>
+#include <ignite/odbc/odbc_error.h>
+#include <locale>
+
+const static std::string WORD_BATCH_SIZE("batch_size");
+
+const static std::string WORD_PER_NODE_BUFFER_SIZE("per_node_buffer_size");
+
+const static std::string WORD_PER_NODE_PARALLEL_OPERATIONS("per_node_parallel_operations");
+
+const static std::string WORD_ALLOW_OVERWRITE("allow_owerwrite");
+
+const static std::string WORD_FLUSH_FREQUENCY("flush_frequency");
+
+const static std::string WORD_ORDERED("ordered");
+
+namespace ignite
+{
+    namespace odbc
+    {
+        SqlSetStreamingCommand::SqlSetStreamingCommand():
+            enabled(false),
+            allowOverwrite(false),
+            batchSize(DEFAULT_STREAM_BATCH_SIZE),
+            parallelOpsPerNode(0),
+            bufferSizePerNode(0),
+            flushFrequency(0),
+            ordered(false)
+        {
+            // No-op.
+        }
+
+        SqlSetStreamingCommand::~SqlSetStreamingCommand()
+        {
+            // No-op.
+        }
+
+        void SqlSetStreamingCommand::Parse(SqlLexer& lexer)
+        {
+            enabled = ExpectBool(lexer);
+
+            while (lexer.Shift())
+            {
+                const SqlToken& token = lexer.GetCurrentToken();
+
+                if (token.ToLower() == WORD_BATCH_SIZE)
+                {
+                    batchSize = ExpectPositiveInteger(lexer, "batch size");
+
+                    continue;
+                }
+
+                if (token.ToLower() == WORD_PER_NODE_BUFFER_SIZE)
+                {
+                    bufferSizePerNode = ExpectPositiveInteger(lexer, "per node buffer size");
+
+                    continue;
+                }
+
+                if (token.ToLower() == WORD_PER_NODE_PARALLEL_OPERATIONS)
+                {
+                    parallelOpsPerNode = ExpectPositiveInteger(lexer, "per node parallel operations number");
+
+                    continue;
+                }
+
+                if (token.ToLower() == WORD_ALLOW_OVERWRITE)
+                {
+                    allowOverwrite = ExpectBool(lexer);
+
+                    continue;
+                }
+
+                if (token.ToLower() == WORD_FLUSH_FREQUENCY)
+                {
+                    flushFrequency = ExpectPositiveInteger(lexer, "flush frequency");
+
+                    continue;
+                }
+
+                if (token.ToLower() == WORD_ORDERED)
+                {
+                    ordered = true;
+
+                    continue;
+                }
+
+                break;
+            }
+        }
+
+        int32_t SqlSetStreamingCommand::ExpectInt(SqlLexer& lexer)
+        {
+            if (!lexer.Shift())
+            {
+                throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
+                    "Unexpected end of statement: integer number expected.");
+            }
+
+            const SqlToken& token = lexer.GetCurrentToken();
+
+            int sign = 1;
+
+            if (token.GetType() == TokenType::MINUS)
+            {
+                sign = -1;
+
+                if (!lexer.Shift())
+                {
+                    throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
+                        "Unexpected end of statement: integer number expected.");
+                }
+            }
+
+            std::string str = token.ToString();
+
+            if (token.GetType() == TokenType::WORD &&
+                common::AllOf(str.begin(), str.end(), isdigit))
+            {
+                int64_t val = sign * common::LexicalCast<int64_t>(str);
+
+                if (val >= INT32_MIN && val <= INT32_MAX)
+                    return static_cast<int32_t>(val);
+            }
+
+            throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
+                "Unexpected token: '" + str + "'. Integer number expected.");
+        }
+
+        int32_t SqlSetStreamingCommand::ExpectPositiveInteger(SqlLexer& lexer, const std::string& description)
+        {
+            int32_t val = ExpectInt(lexer);
+
+            if (val <= 0)
+            {
+                throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
+                    "Invalid " + description + " - positive integer number is expected.");
+            }
+
+            return val;
+        }
+
+        bool SqlSetStreamingCommand::ExpectBool(SqlLexer& lexer)
+        {
+            if (!lexer.Shift())
+            {
+                throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
+                    "Unexpected end of statement: ON or OFF expected.");
+            }
+
+            return lexer.GetCurrentToken().ParseBoolean();
+        }
+    }
+}

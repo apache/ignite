@@ -178,6 +178,9 @@
     <ClCompile Include="..\..\src\sql\sql_parser.cpp">
       <Filter>Code\sql</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\sql\sql_set_streaming_command.cpp">
+      <Filter>Code\sql</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">

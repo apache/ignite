@@ -19,7 +19,10 @@
 #define _IGNITE_ODBC_SQL_SQL_TOKEN
 
 #include <stdint.h>
-#include "ignite/common/utils.h"
+
+#include <ignite/common/utils.h>
+
+#include <ignite/odbc/odbc_error.h>
 
 namespace ignite
 {
@@ -140,6 +143,24 @@ namespace ignite
                 common::IntoLower(str);
 
                 return str;
+            }
+
+            /**
+             * Parse token to boolean value.
+             *
+             * @return Boolean value.
+             */
+            bool ParseBoolean() const
+            {
+                std::string lower = ToLower();
+
+                if (lower == "1" || lower == "on")
+                    return true;
+
+                if (lower == "0" || lower == "off")
+                    return false;
+
+                throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION, "Unexpected token: " + ToString());
             }
 
         private:
