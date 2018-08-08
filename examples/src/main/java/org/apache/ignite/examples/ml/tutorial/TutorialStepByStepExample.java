@@ -27,6 +27,7 @@ public class TutorialStepByStepExample {
         Step_1_Read_and_Learn.main(args);
         Step_2_Imputing.main(args);
         Step_3_Categorial.main(args);
+        Step_3_Categorial_with_One_Hot_Encoder.main(args);
         Step_4_Add_age_fare.main(args);
         Step_5_Scaling.main(args);
         Step_6_KNN.main(args);
