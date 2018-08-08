@@ -982,7 +982,7 @@
             <properties>
                 <maven.compiler.source>9</maven.compiler.source>
                 <maven.compiler.target>9</maven.compiler.target>
-                <scala.library.version>2.12.4</scala.library.version>
+                <scala.library.version>2.12.6</scala.library.version>
             </properties>
             <dependencies/>
             <build>
