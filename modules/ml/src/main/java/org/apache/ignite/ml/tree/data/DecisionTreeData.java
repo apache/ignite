@@ -31,6 +31,9 @@ public class DecisionTreeData implements AutoCloseable {
     /** Vector with labels. */
     private final double[] labels;
 
+    /** Copy of vector with original labels. Auxiliary for Gradient Boosting on Trees.*/
+    private double[] copyOfOriginalLabels;
+
     /** Indexes cache. */
     private final List<TreeDataIndex> indexesCache;
 
@@ -135,6 +138,14 @@ public class DecisionTreeData implements AutoCloseable {
     /** */
     public double[] getLabels() {
         return labels;
+    }
+
+    public double[] getCopyOfOriginalLabels() {
+        return copyOfOriginalLabels;
+    }
+
+    public void setCopyOfOriginalLabels(double[] copyOfOriginalLabels) {
+        this.copyOfOriginalLabels = copyOfOriginalLabels;
     }
 
     /** {@inheritDoc} */

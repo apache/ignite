@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
  * This class tests that redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are not executed.
  */
-public abstract class CacheStoreSessionListenerReadWriteThroughDisabledTest extends GridCacheAbstractSelfTest {
+public abstract class CacheStoreSessionListenerReadWriteThroughDisabledAbstractTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     protected int gridCount() {
         return 2;

@@ -83,7 +83,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
+public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -699,7 +699,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 //            Entry<AffinityKey<String>, Object> entry = cache.entry(affinityKey);
 //
 //            entry.setx(o);
-            assert false;
         }
 
         /**
