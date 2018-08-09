@@ -43,8 +43,8 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
@@ -269,26 +269,11 @@ public class GridCacheSharedContext<K, V> {
     public void activate() throws IgniteCheckedException {
         long time = System.currentTimeMillis();
 
-        if (!kernalCtx.clientNode())
-            dbMgr.lock();
+        for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
+            mgr.onActivate(kernalCtx);
 
-        boolean success = false;
-
-        try {
-            for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
-                mgr.onActivate(kernalCtx);
-
-            success = true;
-        }
-        finally {
-            if (!success) {
-                if (!kernalCtx.clientNode())
-                    dbMgr.unLock();
-            }
-
-            if (msgLog.isInfoEnabled())
+        if (msgLog.isInfoEnabled())
                 msgLog.info("Components activation performed in " + (System.currentTimeMillis() - time) + " ms.");
-        }
     }
 
     /**
