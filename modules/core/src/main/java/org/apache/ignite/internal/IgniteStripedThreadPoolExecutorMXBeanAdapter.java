@@ -282,6 +282,5 @@ public class IgniteStripedThreadPoolExecutorMXBeanAdapter implements IgniteStrip
 
       return result;
    }
-   
 }
 

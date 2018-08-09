@@ -29,8 +29,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
@@ -55,7 +53,9 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
         ThreadFactory factory = new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, eHnd);
 
         for (int i = 0; i < concurrentLvl; i++)
-            execs[i] = Executors.newSingleThreadExecutor(factory);
+           // Don't use a single thread pool because it adds a level of obfuscation
+           // which is unnecessary and breaks the MXBean adapter.
+           execs[i] = Executors.newFixedThreadPool(1, factory);
     }
 
     /**
@@ -177,8 +177,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     @Override public String toString() {
         return S.toString(IgniteStripedThreadPoolExecutor.class, this);
     }
-    
-    
+     
     /**
      * @return Stripes count.
      */
@@ -195,5 +194,4 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
         }
         return execs[idx];
     }
-
 }
