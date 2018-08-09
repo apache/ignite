@@ -22,6 +22,12 @@ import org.apache.ignite.failure.AccountTransferTransactionTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheCreateTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheDestroyTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheGroupCreateTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
+import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
+import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
@@ -61,6 +67,13 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCommandHandlerTest.class);
         suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
+
+        suite.addTestSuite(EncryptedCacheDestroyTest.class);
+        suite.addTestSuite(EncryptedCacheCreateTest.class);
+        suite.addTestSuite(EncryptedCacheGroupCreateTest.class);
+        suite.addTestSuite(EncryptedCacheRestartTest.class);
+        suite.addTestSuite(EncryptedCachePreconfiguredRestartTest.class);
+        suite.addTestSuite(EncryptedCacheNodeJoinTest.class);
 
         return suite;
     }
