@@ -24,6 +24,10 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 /**
  * Tests for {@link LogisticRegressionModel}.
  */
@@ -35,8 +39,35 @@ public class LogisticRegressionModelTest {
     @Test
     public void testPredict() {
         Vector weights = new DenseVector(new double[]{2.0, 3.0});
-        LogisticRegressionModel mdl = new LogisticRegressionModel(weights, 1.0).withRawLabels(true);
 
+        assertFalse(new LogisticRegressionModel(weights, 1.0).isKeepingRawLabels());
+
+        assertEquals(0.1, new LogisticRegressionModel(weights, 1.0).withThreshold(0.1).threshold(), 0);
+
+        assertTrue(new LogisticRegressionModel(weights, 1.0).toString().length() > 0);
+        assertTrue(new LogisticRegressionModel(weights, 1.0).toString(true).length() > 0);
+        assertTrue(new LogisticRegressionModel(weights, 1.0).toString(false).length() > 0);
+
+        verifyPredict(new LogisticRegressionModel(weights, 1.0).withRawLabels(true));
+        verifyPredict(new LogisticRegressionModel(null, 1.0).withRawLabels(true).withWeights(weights));
+        verifyPredict(new LogisticRegressionModel(weights, 1.0).withRawLabels(true).withThreshold(0.5));
+        verifyPredict(new LogisticRegressionModel(weights, 0.0).withRawLabels(true).withIntercept(1.0));
+    }
+
+    /** */
+    @Test(expected = CardinalityException.class)
+    public void testPredictOnAnObservationWithWrongCardinality() {
+        Vector weights = new DenseVector(new double[]{2.0, 3.0});
+
+        LogisticRegressionModel mdl = new LogisticRegressionModel(weights, 1.0);
+
+        Vector observation = new DenseVector(new double[]{1.0});
+
+        mdl.apply(observation);
+    }
+
+    /** */
+    private void verifyPredict(LogisticRegressionModel mdl) {
         Vector observation = new DenseVector(new double[]{1.0, 1.0});
         TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 + 3.0 * 1.0), mdl.apply(observation), PRECISION);
 
@@ -51,18 +82,6 @@ public class LogisticRegressionModelTest {
 
         observation = new DenseVector(new double[]{1.0, -2.0});
         TestUtils.assertEquals(sigmoid(1.0 + 2.0 * 1.0 - 3.0 * 2.0), mdl.apply(observation), PRECISION);
-    }
-
-    /** */
-    @Test(expected = CardinalityException.class)
-    public void testPredictOnAnObservationWithWrongCardinality() {
-        Vector weights = new DenseVector(new double[]{2.0, 3.0});
-
-        LogisticRegressionModel mdl = new LogisticRegressionModel(weights, 1.0);
-
-        Vector observation = new DenseVector(new double[]{1.0});
-
-        mdl.apply(observation);
     }
 
     /**
