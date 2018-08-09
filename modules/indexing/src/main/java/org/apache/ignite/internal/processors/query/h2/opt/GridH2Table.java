@@ -269,12 +269,9 @@ public class GridH2Table extends TableBase {
         // Mutate state.
         sessions.put(ses, exclusive);
 
-        try {
-            ses.addLock(this);
-        }
-        catch (Exception e) {
-            System.out.println();
-        }
+        log.info("+++ lock " + getName() + ", ses=" + Integer.toHexString(System.identityHashCode(ses)));
+
+        ses.addLock(this);
 
         return false;
     }
@@ -416,6 +413,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
+        log.info("+++ unlock " + getName());
         Boolean exclusive = sessions.remove(ses);
 
         if (exclusive == null)

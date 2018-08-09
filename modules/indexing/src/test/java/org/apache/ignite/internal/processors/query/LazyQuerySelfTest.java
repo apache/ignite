@@ -99,60 +99,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
 
         populateBaseQueryData(srv2);
 
-        // Test full iteration.
-        ArrayList rows = new ArrayList<>();
-
-        FieldsQueryCursor<List<?>> cursor = execute(srv2, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL));
-
-        for (List<?> row : cursor)
-            rows.add(row);
-
-        assertBaseQueryResults(rows);
-
-        System.out.println("+++ SHORT: " + rows.size());
-
-        cursor = execute(srv2, query(195).setPageSize(PAGE_SIZE_SMALL));
-
-        rows.clear();
-
-        for (List<?> row : cursor)
-            rows.add(row);
-
-        System.out.println("+++ short res: " + rows.size());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDbgPool() throws Exception {
-        Ignite srv1 = startGrid(1);
-        Ignite srv2 = startGrid(2);
-
-        srv1.createCache(cacheConfiguration(2));
-
-        populateBaseQueryData(srv1);
-
-        // Test full iteration.
-        ArrayList rows = new ArrayList<>();
-
-        FieldsQueryCursor<List<?>> cursor0 = execute(srv2, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL));
-
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                for (int i = 0; i < 10; ++i) {
-                    FieldsQueryCursor<List<?>> cursor = execute(srv2, query(10).setPageSize(PAGE_SIZE_SMALL));
-
-                    cursor.getAll();
-                }
-            }
-        }, 20, "query");
-
-
-        log.info("+++ read cur0");
-        for (List<?> row : cursor0)
-            rows.add(row);
-
-        assertBaseQueryResults(rows);
+        checkHoldLazyQuery(srv2);
     }
 
     /**
@@ -285,6 +232,34 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
                     iterIter.remove();
             }
         }
+
+        checkHoldLazyQuery(node);
+    }
+
+    /**
+     * @param node Ignite node.
+     * @throws Exception If failed.
+     */
+    public void checkHoldLazyQuery(Ignite node) throws Exception {
+        ArrayList rows = new ArrayList<>();
+
+        FieldsQueryCursor<List<?>> cursor0 = execute(node, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL));
+
+        // Do many concurrent queries to Test full iteration.
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < 10; ++i) {
+                    FieldsQueryCursor<List<?>> cursor = execute(node, query(10).setPageSize(PAGE_SIZE_SMALL));
+
+                    cursor.getAll();
+                }
+            }
+        }, 1, "usr-qry");
+
+        for (List<?> row : cursor0)
+            rows.add(row);
+
+        assertBaseQueryResults(rows);
     }
 
     /**

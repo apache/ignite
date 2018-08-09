@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ObjectPool;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -51,7 +51,7 @@ class MapQueryResults {
     private volatile boolean cancelled;
 
     /** Detached connection wrp. Stored locally, used on the fetch next page. */
-    private ObjectPool.Reusable<H2ConnectionWrapper> detachedConnWrp;
+    private ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConnWrp;
 
     /**
      * Constructor.
@@ -150,8 +150,12 @@ class MapQueryResults {
             }
         }
 
-        if (detachedConnection() != null)
+        if (detachedConnection() != null) {
+            System.out.println("+++ release on cancel CONN=" + Integer.toHexString(
+                System.identityHashCode(detachedConnection().object().connection())));
+
             detachedConnection().recycle();
+        }
     }
 
     /**
@@ -172,7 +176,7 @@ class MapQueryResults {
      * @param detachedConnWrp Detached connection wrapper. This connection isn't stored at the thread local and
      * other queries will not use it.
      */
-    public void detachedConnection(ObjectPool.Reusable<H2ConnectionWrapper> detachedConnWrp) {
+    public void detachedConnection(ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConnWrp) {
         this.detachedConnWrp = detachedConnWrp;
     }
 
@@ -180,7 +184,7 @@ class MapQueryResults {
      * @return Detached connection wrapper. This connection isn't stored at the thread local and
      * other queries will not use it.
      */
-    public ObjectPool.Reusable<H2ConnectionWrapper> detachedConnection() {
+    public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConnection() {
         return detachedConnWrp;
     }
 }

@@ -63,7 +63,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ObjectPool;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -83,6 +83,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
+import org.h2.engine.Session;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -645,11 +646,20 @@ public class GridMapQueryExecutor {
 
             Connection conn = h2.connectionForSchema(schemaName);
 
+            Session s = H2Utils.session(conn);
+
             H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
 
             GridH2QueryContext.set(qctx);
 
-            ObjectPool.Reusable<H2ConnectionWrapper> reusableConnWrp = h2.detach();
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnWrp = h2.detach();
+
+            qr.detachedConnection(reusableConnWrp);
+
+            assert conn == reusableConnWrp.object().connection();
+
+            log.info("+++ CONN=" + Integer.toHexString(System.identityHashCode(conn)) +
+                " ses=" + Integer.toHexString(System.identityHashCode(s)));
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
@@ -712,13 +722,16 @@ public class GridMapQueryExecutor {
                 }
 
                 // All request results are in the memory in result set already, so it's ok to release partitions.
-                if (!lazy || qr.isAllClosed())
+                if (!lazy || qr.isAllClosed()) {
                     releaseReservations();
-                else {
-                    qr.detachedConnection(reusableConnWrp);
 
-                    GridH2QueryContext.clearThreadLocal();
+                    log.info("+++ release on first CONN=" + Integer.toHexString(
+                        System.identityHashCode(qr.detachedConnection().object().connection())));
+
+                    reusableConnWrp.recycle();
                 }
+                else
+                    GridH2QueryContext.clearThreadLocal();
             }
             catch (Throwable e){
                 releaseReservations();
@@ -982,11 +995,20 @@ public class GridMapQueryExecutor {
             if (qr.isAllClosed()) {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
-                // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
+                // Release reservations if the last page fetched in lazy mode
                 if (qr.detachedConnection() != null) {
-                    qr.detachedConnection().recycle();
-
                     releaseReservations();
+
+                    log.info("+++ release CONN=" + Integer.toHexString(
+                        System.identityHashCode(qr.detachedConnection().object().connection())));
+
+                    Session s = H2Utils.session(qr.detachedConnection().object().connection());
+
+                    if (s.getLocks().length != 0) {
+                        assert false;
+                    }
+
+                    qr.detachedConnection().recycle();
                 }
 
             }
