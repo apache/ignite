@@ -6,7 +6,7 @@ This folder contains code examples for various Apache Ignite functionality.
 Examples are shipped as a separate Maven project, so to start running you simply need
 to import provided `pom.xml` file into your favourite IDE.
 
-The examples folder contains he following subfolders:
+The examples folder contains the following subfolders:
 
 - `config` - contains Ignite configuration files needed for examples.
 - `memcached` - contains PHP script demonstrating how Ignite Cache can be accessed using Memcached client.
