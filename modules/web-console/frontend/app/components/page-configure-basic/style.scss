@@ -59,27 +59,6 @@ page-configure-basic {
         line-height: 19px;
     }
 
-    .pcb-memory-size {
-        .input-tip {
-            display: flex;
-            flex-direction: row;
-
-            .form-control {
-                border-top-right-radius: 0;
-                border-bottom-right-radius: 0;
-            }
-
-            .btn-ignite {
-                border-top-left-radius: 0;
-                border-bottom-left-radius: 0;
-                padding-top: 0;
-                padding-bottom: 0;
-                flex: 0 0 auto;
-                width: 60px !important;
-            }
-        }
-    }
-
     .pcb-form-main-buttons {
         display: flex;
         flex-direction: row;

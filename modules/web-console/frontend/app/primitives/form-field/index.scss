@@ -543,6 +543,17 @@
         align-items: baseline;
     }
 
+    .form-field__label {
+        white-space: nowrap;
+    }
+
+    form-field-size,
+    .form-field__text {
+        .form-field__control {
+            margin-left: 10px;
+        }
+    }
+
     .form-field__dropdown,
     .form-field__datepicker,
     .form-field__timepicker {

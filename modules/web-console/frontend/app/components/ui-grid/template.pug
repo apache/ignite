@@ -14,14 +14,21 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin tooltip(title, options, tipClass = 'tipField')
-    if title
-        svg(
-            ignite-icon='info'
-            bs-tooltip=''
+div(ng-if='$ctrl.onSelectionChange')
+    .grid.ui-grid--ignite(
+        ui-grid='$ctrl.grid'
+        ui-grid-resize-columns
+        ui-grid-filters
+        ui-grid-selection
+        ui-grid-exporter
+        ui-grid-pinning
+    )
 
-            data-title=title
-            data-container=options && options.container || false
-            data-placement=options && options.placement || false
-            class=`${tipClass}`
-        )
+div(ng-if='!$ctrl.onSelectionChange')
+    .grid.ui-grid--ignite(
+        ui-grid='$ctrl.grid'
+        ui-grid-resize-columns
+        ui-grid-filters
+        ui-grid-exporter
+        ui-grid-pinning
+    )

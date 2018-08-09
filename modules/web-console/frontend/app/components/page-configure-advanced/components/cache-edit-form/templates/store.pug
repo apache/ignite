@@ -19,29 +19,6 @@ include /app/helpers/jade/mixins
 -var form = 'store'
 -var model = '$ctrl.clonedCache'
 
-mixin hibernateField(name, model, items, valid, save, newItem)
-    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
-    -var onEnter = `${valid} && (${save}); ${valid} && ${resetOnEnter};`
-
-    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
-
-    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
-    -var onBlur = `${valid} && (${save}); ${resetOnBlur};`
-
-    div(ignite-on-focus-out=onBlur)
-        if block
-            block
-
-        .input-tip
-            +ignite-form-field-input(name, model, false, 'true', 'key=value')(
-                data-ignite-property-unique=items
-                data-ignite-property-value-specified
-                data-ignite-form-field-input-autofocus='true'
-
-                ignite-on-enter=onEnter
-                ignite-on-escape=onEscape
-            )
-
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Store
     panel-description 

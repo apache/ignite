@@ -1,0 +1,5 @@
+.flex-full-height > [ui-view] {
+	display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+}

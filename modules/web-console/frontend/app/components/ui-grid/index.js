@@ -15,21 +15,9 @@
  * limitations under the License.
  */
 
-ignite-list-of-registered-users {
-    display: block;
+import angular from 'angular';
+import component from './component';
 
-    .user-cell {
-        display: flex;
-        overflow-wrap: normal;
-        white-space: normal;
-
-        label {
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-    }
-
-    .form-field--inline:first-child {
-        margin-right: 20px;
-    }
-}
+export default angular
+    .module('ignite-console.ui-grid', [])
+    .component('igniteGridTable', component);

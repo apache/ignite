@@ -15,21 +15,24 @@
  * limitations under the License.
  */
 
-ignite-list-of-registered-users {
-    display: block;
+import './style.scss';
+import template from './template.pug';
+import controller from './controller';
 
-    .user-cell {
-        display: flex;
-        overflow-wrap: normal;
-        white-space: normal;
+export default {
+    template,
+    controller,
+    bindings: {
+        gridApi: '=?',
 
-        label {
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        // Input Events.
+        items: '<',
+        columnDefs: '<',
+        categories: '<',
+        oneWaySelection: '<?',
+        rowIdentityKey: '@?',
+
+        // Output events.
+        onSelectionChange: '&?'
     }
-
-    .form-field--inline:first-child {
-        margin-right: 20px;
-    }
-}
+};
