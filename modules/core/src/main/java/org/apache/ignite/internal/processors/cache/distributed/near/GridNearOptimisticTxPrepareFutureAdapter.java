@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -26,9 +27,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -140,23 +141,14 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
                 c.run();
         }
         else {
-            topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                        @Override public void run() {
-                            try {
-                                fut.get();
-
-                                prepareOnTopology(remap, c);
-                            }
-                            catch (IgniteCheckedException e) {
-                                onDone(e);
-                            }
-                            finally {
-                                cctx.txContextReset();
-                            }
-                        }
-                    });
+            applyWhenReady(topFut, new GridAbsClosureX() {
+                @Override public void applyx() throws IgniteCheckedException {
+                    try {
+                        prepareOnTopology(remap, c);
+                    }
+                    finally {
+                        cctx.txContextReset();
+                    }
                 }
             });
         }
@@ -167,6 +159,57 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * @param topLocked {@code True} if thread already acquired lock preventing topology change.
      */
     protected abstract void prepare0(boolean remap, boolean topLocked);
+
+    /**
+     * @param fut Future.
+     * @param clo Closure.
+     */
+    void applyWhenReady(final IgniteInternalFuture<?> fut, GridAbsClosureX clo) {
+        if (fut == null || fut.isDone()) {
+            try {
+                clo.applyx();
+            }
+            catch (IgniteCheckedException e) {
+                ERR_UPD.compareAndSet(this, null, e);
+
+                onDone(e);
+            }
+        }
+        else {
+            long remaining = tx.remainingTime();
+
+            if (remaining == -1) {
+                IgniteCheckedException e = tx.timeoutException();
+
+                ERR_UPD.compareAndSet(this, null, e);
+
+                onDone(e);
+            }
+            else {
+                cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                    @Override public void run() {
+                        try {
+                            fut.get(remaining);
+
+                            clo.applyx();
+                        }
+                        catch (IgniteFutureTimeoutCheckedException e) {
+                            IgniteCheckedException e0 = tx.timeoutException();
+
+                            ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e0);
+
+                            onDone(e0);
+                        }
+                        catch (IgniteCheckedException e) {
+                            ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
+
+                            onDone(e);
+                        }
+                    }
+                });
+            }
+        }
+    }
 
     /**
      * Keys lock future.

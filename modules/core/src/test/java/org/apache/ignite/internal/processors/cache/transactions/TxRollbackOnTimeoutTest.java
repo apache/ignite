@@ -42,6 +42,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.util.typedef.F;
@@ -59,7 +60,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static java.lang.Thread.sleep;
@@ -580,7 +580,10 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         testEnlistMany(true);
     }
 
-    public void testRollbackOnTimeoutWithLongExchange() throws Exception {
+    /**
+     *
+     */
+    public void testRollbackOnTimeoutTxRemap() throws Exception {
         Ignite client = startClient();
 
         Ignite crd = grid(0);
@@ -588,6 +591,13 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         assertTrue(crd.cluster().localNode().order() == 1);
 
         List<Integer> keys = movingKeysAfterJoin(grid(1), CACHE_NAME, 1);
+
+        // Delay exchange finish on client node.
+        TestRecordingCommunicationSpi.spi(crd).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return node.equals(client.cluster().localNode()) && msg instanceof GridDhtPartitionsFullMessage;
+            }
+        });
 
         // Delay prepare until exchange is finished.
         TestRecordingCommunicationSpi.spi(client).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
@@ -600,7 +610,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture fut0 = runAsync(new Runnable() {
             @Override public void run() {
-                try (Transaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE, 0, 1)) {
+                try (Transaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE, 5000, 1)) {
                     client.cache(CACHE_NAME).put(keys.get(0), 0);
 
                     tx.commit();
@@ -608,7 +618,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     fail();
                 }
                 catch (Exception e) {
-                    // Expected.
+                    assertTrue(X.hasCause(e, TransactionTimeoutException.class));
                 }
             }
         });
@@ -618,7 +628,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                 try {
                     startGrid(GRID_CNT);
 
-                    awaitPartitionMapExchange();
+                    TestRecordingCommunicationSpi.spi(crd).waitForBlocked();
 
                     TestRecordingCommunicationSpi.spi(client).waitForBlocked();
 
@@ -630,14 +640,15 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             }
         });
 
-        while(true) {
-            checkFutures();
+        fut.get();
 
-            doSleep(5000);
-        }
+        fut0.get();
 
-//        fut0.get();
-//        fut.get();
+        TestRecordingCommunicationSpi.spi(crd).stopBlock();
+
+        awaitPartitionMapExchange();
+
+        checkFutures();
     }
 
     /**
@@ -655,7 +666,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                 log.info("Waiting for future: " + s);
             }
 
-            //assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
+            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
         }
     }
 
