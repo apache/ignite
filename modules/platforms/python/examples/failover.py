@@ -13,52 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.api import (
-    cache_get, cache_put, cache_get_or_create_with_config,
-)
 from pyignite.connection import Connection
-from pyignite.datatypes.cache_config import CacheMode
-from pyignite.datatypes.prop_codes import *
+from pyignite.exceptions import SocketError
 
 
-MAX_ERRORS = 20
 nodes = [
     ('127.0.0.1', 10800),
     ('127.0.0.1', 10801),
     ('127.0.0.1', 10802),
 ]
-node_idx = err_count = 0
-conn = Connection(timeout=3.0)
-conn.connect(*nodes[node_idx])
+
+conn = Connection(timeout=4.0)
+conn.connect(nodes)
+print('Connected to {}'.format(conn))
 
 while True:
     try:
-        # reconnect
-        conn.connect(*nodes[node_idx])
-        print('Connected to node {}'.format(node_idx))
-        while True:
-            # proceed with initializing or modifying data
-            cache_get_or_create_with_config(conn, {
-                PROP_NAME: 'failover_test',
-                PROP_CACHE_MODE: CacheMode.REPLICATED,
-            })
-            result = cache_get(conn, 'failover_test', 'test_value')
-            cache_put(
-                conn,
-                'failover_test',
-                'test_value',
-                result.value + 1 if result.value else 1
-            )
-    except Exception as e:
-        # count errors
-        err_count += 1
-        if err_count > MAX_ERRORS:
-            print('Too many disconnects! Exiting.')
-            break
-        # switch to another node
-        node_idx = node_idx + 1
-        if node_idx >= len(nodes):
-            node_idx = 0
-        print(
-            '“{}” just happened; switching to node {}.'.format(e, node_idx)
-        )
+        my_cache = conn.get_or_create_cache('my_cache')
+        test_value = my_cache.get('test_key')
+        my_cache.put('test_key', test_value + 1 if test_value else 1)
+    except (OSError, SocketError) as e:
+        print('Error: {}'.format(e))
+        conn.reconnect()
+        print('Reconnected to {}'.format(conn))

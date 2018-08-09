@@ -34,6 +34,10 @@ class CacheError(Exception):
     pass
 
 
+class ReconnectError(Exception):
+    pass
+
+
 class BinaryTypeError(CacheError):
     pass
 

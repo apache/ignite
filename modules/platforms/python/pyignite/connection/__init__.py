@@ -18,10 +18,10 @@ from typing import Iterable, Union
 
 from pyignite.constants import *
 from pyignite.exceptions import (
-    BinaryTypeError, CacheError, ParameterError, SocketError, SocketWriteError,
-    SQLError,
+    BinaryTypeError, CacheError, ParameterError, ReconnectError,
+    SocketError, SocketWriteError, SQLError,
 )
-from pyignite.utils import status_to_exception
+from pyignite.utils import is_iterable, status_to_exception
 from .handshake import HandshakeRequest, read_response
 from .ssl import wrap
 
@@ -107,6 +107,12 @@ class Connection:
     read_response = read_response
     _wrap = wrap
 
+    def __repr__(self) -> str:
+        if self.host and self.port:
+            return '{}:{}'.format(self.host, self.port)
+        else:
+            return '<not connected>'
+
     def _connect(self, host: str, port: int):
         """
         Actually connect socket.
@@ -136,15 +142,45 @@ class Connection:
             )
         self.host, self.port = host, port
 
-    def connect(self, host: str, port: int):
+    def connect(self, *args):
         """
-        Connect to the server.
+        Connect to the server. Connection parameters may be either one node
+        (host and port), or list (or other iterable) of nodes.
 
         :param host: Ignite server host,
-        :param port: Ignite server port.
-
+        :param port: Ignite server port,
+        :param nodes: iterable of (host, port) tuples.
         """
+        self.nodes = iter([])
+        if len(args) == 0:
+            host, port = IGNITE_DEFAULT_HOST, IGNITE_DEFAULT_PORT
+        elif len(args) == 1 and is_iterable(args[0]):
+            self.nodes = iter(args[0])
+            host, port = next(self.nodes)
+        elif (
+            len(args) == 2
+            and isinstance(args[0], str)
+            and isinstance(args[1], int)
+        ):
+            host, port = args
+        else:
+            raise ConnectionError('Connection parameters are not valid.')
+
         self._connect(host, port)
+
+    def reconnect(self):
+        """
+        Restore the connection using the next node in `nodes` iterable.
+        """
+        for host, port in self.nodes:
+            try:
+                self._connect(host, port)
+                return
+            except OSError:
+                pass
+        self.host = self.port = self.nodes = None
+        # exception chaining gives a misleading traceback here
+        raise ReconnectError('Can not reconnect: out of nodes') from None
 
     def clone(self) -> 'Connection':
         """
