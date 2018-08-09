@@ -289,10 +289,10 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                     return super.write(srcBuf, position);
                 }
 
-                @Override public void write(byte[] buf, int off, int len) throws IOException {
+                @Override public int write(byte[] buf, int off, int len) throws IOException {
                     parkForAWhile();
 
-                    super.write(buf, off, len);
+                    return super.write(buf, off, len);
                 }
 
                 @Override public int read(ByteBuffer destBuf) throws IOException {

@@ -30,7 +30,7 @@ import java.util.zip.ZipInputStream;
  * Doesn't allow random access and setting {@link FileIO#position()} backwards.
  * Allows sequential reads including setting {@link FileIO#position()} forward.
  */
-public class UnzipFileIO implements FileIO {
+public class UnzipFileIO extends AbstractFileIO {
     /** Zip input stream. */
     private final ZipInputStream zis;
 
@@ -110,12 +110,17 @@ public class UnzipFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buf, int off, int len) throws IOException {
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
+        force(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force(boolean withMetadata) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -130,7 +135,7 @@ public class UnzipFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
         throw new UnsupportedOperationException();
     }
 
