@@ -656,21 +656,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        if (dataRegionMap != null) {
-            for (DataRegion memPlc : dataRegionMap.values()) {
-                memPlc.pageMemory().stop();
-
-                memPlc.evictionTracker().stop();
-
-                unregisterMBean(memPlc.memoryMetrics().getName());
-            }
-
-            dataRegionMap.clear();
-
-            dataRegionMap = null;
-
-            dataRegionsInitialized = false;
-        }
+        onDeActivate(cctx.kernalContext());
     }
 
     /**
@@ -702,20 +688,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** {@inheritDoc} */
     @Override public boolean checkpointLockIsHeldByThread() {
         return true;
-    }
-
-    /**
-     *
-     */
-    public void lock() throws IgniteCheckedException {
-
-    }
-
-    /**
-     *
-     */
-    public void unLock() {
-
     }
 
     /**
@@ -1066,7 +1038,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        stop0(false);
+        if (dataRegionMap != null) {
+            for (DataRegion memPlc : dataRegionMap.values()) {
+                memPlc.pageMemory().stop();
+
+                memPlc.evictionTracker().stop();
+
+                unregisterMBean(memPlc.memoryMetrics().getName());
+            }
+
+            dataRegionMap.clear();
+
+            dataRegionMap = null;
+
+            dataRegionsInitialized = false;
+        }
     }
 
     /**
