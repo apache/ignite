@@ -2048,8 +2048,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void clearTx(GridCacheVersion ver, Map<Integer, List<KeyCacheObject>> keys) {
         GridCacheVersion dhtVer = mappedVersion(ver);
 
-        log.info("qwe123 clearTx [ver="+ver+", keys="+keys+']');
-
         // Already removed.
         if (dhtVer == null)
             return;

@@ -101,11 +101,6 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
         return 60_000;
     }
 
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
-    }
-
     /**
      * @throws Exception If failed.
      */
