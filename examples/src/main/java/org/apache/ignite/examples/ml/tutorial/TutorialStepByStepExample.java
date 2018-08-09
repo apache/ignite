@@ -14,14 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math.exceptions;
+
+package org.apache.ignite.examples.ml.tutorial;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * All conditions checks that fail due to a {@code null} argument must throw
- * this exception.
- * This class is meant to signal a precondition violation ("null is an illegal
- * argument").
+ * Run all the tutorial examples step by step with primary purpose to provide
+ * automatic execution from IgniteExamplesMLTestSuite.
  */
-public class NullArgumentException extends NullPointerException {
+public class TutorialStepByStepExample {
+    /** Run example. */
+    public static void main(String[] args) throws InterruptedException {
+        Step_1_Read_and_Learn.main(args);
+        Step_2_Imputing.main(args);
+        Step_3_Categorial.main(args);
+        Step_3_Categorial_with_One_Hot_Encoder.main(args);
+        Step_4_Add_age_fare.main(args);
+        Step_5_Scaling.main(args);
+        Step_6_KNN.main(args);
+        Step_7_Split_train_test.main(args);
+        Step_8_CV.main(args);
+        Step_8_CV_with_Param_Grid.main(args);
+        Step_9_Go_to_LogReg.main(args);
+    }
 }

@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.optimization;
+package org.apache.ignite.ml.common;
 
-import java.io.Serializable;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Weights updater applied on every gradient descent step to decide how weights should be changed.
+ * Test suite for all tests located in org.apache.ignite.ml.trees package.
  */
-@FunctionalInterface
-public interface Updater extends Serializable {
-    /** */
-    public Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient, int iteration);
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    CollectionsTest.class,
+    ExternalizeTest.class
+})
+public class CommonTestSuite {
 }

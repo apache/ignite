@@ -37,6 +37,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.tensorflow.cluster.TensorFlowJobArchive;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
+import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcessBuilderSupplier;
 import org.apache.ignite.tensorflow.core.util.AsyncNativeProcessRunner;
 import org.apache.ignite.tensorflow.core.util.NativeProcessRunner;
 
@@ -117,7 +118,7 @@ public class TensorFlowUserScriptRunner extends AsyncNativeProcessRunner {
         if (workingDir == null)
             throw new IllegalStateException("Working directory is not created");
 
-        ProcessBuilder procBuilder = new ProcessBuilder();
+        ProcessBuilder procBuilder = new PythonProcessBuilderSupplier(false).get();
 
         procBuilder.directory(workingDir);
         procBuilder.command(jobArchive.getCommands());
