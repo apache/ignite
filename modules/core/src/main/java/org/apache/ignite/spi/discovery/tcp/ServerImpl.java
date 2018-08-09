@@ -6672,8 +6672,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param sock Socket.
          * @param clientNodeId Node ID.
          */
-        private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
-            super("tcp-disco-client-message-worker", log, Math.max(spi.metricsUpdateFreq, 10), null);
+        private ClientMessageWorker(Socket sock, UUID clientNodeId) {
+            super("tcp-disco-client-message-worker", Math.max(spi.metricsUpdateFreq, 10));
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
