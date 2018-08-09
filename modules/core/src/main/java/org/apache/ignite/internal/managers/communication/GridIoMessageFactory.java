@@ -931,6 +931,7 @@ public class GridIoMessageFactory implements MessageFactory {
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             // [2048..2053] - Snapshots
+            // [4096..4096] - TxDR
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {
