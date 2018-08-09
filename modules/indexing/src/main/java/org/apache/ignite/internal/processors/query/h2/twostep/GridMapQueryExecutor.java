@@ -652,14 +652,7 @@ public class GridMapQueryExecutor {
 
             GridH2QueryContext.set(qctx);
 
-            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnWrp = h2.detach();
-
-            qr.detachedConnection(reusableConnWrp);
-
-            assert conn == reusableConnWrp.object().connection();
-
-            log.info("+++ CONN=" + Integer.toHexString(System.identityHashCode(conn)) +
-                " ses=" + Integer.toHexString(System.identityHashCode(s)));
+            qr.queryContext(qctx);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
@@ -716,22 +709,32 @@ public class GridMapQueryExecutor {
                     }
 
                     // Send the first page.
-                    sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
+                    //sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
 
                     qryIdx++;
                 }
 
+                final int qryIdxMax = qryIdx;
+
+                ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConn = h2.detach();
+
+                qr.detachedConnection(reusableConn);
+
+                assert conn == reusableConn.object().connection();
+
+                // Send the first page.
+                for (int i = 0 ; i < qryIdxMax; ++i)
+                    sendNextPage(nodeRess, node, qr, i, segmentId, pageSize);
+
+                log.info("+++ first page sent. conn=" + Integer.toHexString(System.identityHashCode(reusableConn.object().connection())));
+
                 // All request results are in the memory in result set already, so it's ok to release partitions.
-                if (!lazy || qr.isAllClosed()) {
+                if (!lazy)
                     releaseReservations();
 
-                    log.info("+++ release on first CONN=" + Integer.toHexString(
-                        System.identityHashCode(qr.detachedConnection().object().connection())));
-
-                    reusableConnWrp.recycle();
-                }
-                else
+                if (GridH2QueryContext.get() != null)
                     GridH2QueryContext.clearThreadLocal();
+
             }
             catch (Throwable e){
                 releaseReservations();
@@ -976,63 +979,74 @@ public class GridMapQueryExecutor {
      */
     private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
         int pageSize) {
-        MapQueryResult res = qr.result(qry);
+        synchronized (qr) {
+            MapQueryResult res = qr.result(qry);
 
-        assert res != null;
+            assert res != null;
 
-        if (res.closed())
-            return;
+            if (res.closed())
+                return;
 
-        int page = res.page();
+            int page = res.page();
 
-        List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
+            List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
-        boolean last = res.fetchNextPage(rows, pageSize);
+            if (GridH2QueryContext.get() == null)
+                GridH2QueryContext.set(qr.queryContext());
 
-        if (last) {
-            res.close();
+            boolean last = res.fetchNextPage(rows, pageSize);
 
-            if (qr.isAllClosed()) {
-                nodeRess.remove(qr.queryRequestId(), segmentId, qr);
+            if (last) {
+                res.close();
 
-                // Release reservations if the last page fetched in lazy mode
-                if (qr.detachedConnection() != null) {
-                    releaseReservations();
+                if (qr.isAllClosed()) {
+                    nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
-                    log.info("+++ release CONN=" + Integer.toHexString(
-                        System.identityHashCode(qr.detachedConnection().object().connection())));
+                    // Release reservations if the last page fetched in lazy mode
+                    if (qr.detachedConnection() != null) {
+                        log.info("+++ release CONN=" + Integer.toHexString(
+                            System.identityHashCode(qr.detachedConnection().object().connection())));
 
-                    Session s = H2Utils.session(qr.detachedConnection().object().connection());
+                        releaseReservations();
 
-                    if (s.getLocks().length != 0) {
-                        assert false;
+                        Session s = H2Utils.session(qr.detachedConnection().object().connection());
+
+                        s.unlockReadLocks();
+                        if (s.getLocks().length != 0) {
+                            log.info("+++ res " + res.res + ", closed=" + res.res.isClosed());
+                            assert false;
+                        }
+
+                        qr.detachedConnection().recycle();
+//                    qr.detachedConnection().object().close();
                     }
 
-                    qr.detachedConnection().recycle();
                 }
-
             }
-        }
 
-        try {
-            boolean loc = node.isLocal();
+            if (GridH2QueryContext.get() != null)
+                GridH2QueryContext.clearThreadLocal();
 
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
-                page == 0 ? res.rowCount() : -1,
-                res.columnCount(),
-                loc ? null : toMessages(rows, new ArrayList<Message>(res.columnCount())),
-                loc ? rows : null,
-                last);
+            try {
+                boolean loc = node.isLocal();
 
-            if (loc)
-                h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
-            else
-                ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send message.", e);
+                GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
+                    page == 0 ? res.rowCount() : -1,
+                    res.columnCount(),
+                    loc ? null : toMessages(rows, new ArrayList<Message>(res.columnCount())),
+                    loc ? rows : null,
+                    last);
 
-            throw new IgniteException(e);
+                if (loc)
+                    h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+                else
+                    ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to send message.", e);
+
+                throw new IgniteException(e);
+            }
         }
     }
 

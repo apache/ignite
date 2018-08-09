@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,6 +53,9 @@ class MapQueryResults {
 
     /** Detached connection wrp. Stored locally, used on the fetch next page. */
     private ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConnWrp;
+
+    /** Qctx. */
+    private GridH2QueryContext qctx;
 
     /**
      * Constructor.
@@ -186,5 +190,19 @@ class MapQueryResults {
      */
     public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detachedConnection() {
         return detachedConnWrp;
+    }
+
+    /**
+     * @param qctx Query context.
+     */
+    public void queryContext(GridH2QueryContext qctx) {
+        this.qctx = qctx;
+    }
+
+    /**
+     * @return Query context.
+     */
+    public GridH2QueryContext queryContext() {
+        return qctx;
     }
 }
