@@ -36,3 +36,5 @@ while True:
         print('Error: {}'.format(e))
         conn.reconnect()
         print('Reconnected to {}'.format(conn))
+
+# pyignite.exceptions.ReconnectError: Can not reconnect: out of nodes
