@@ -1611,8 +1611,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param keys Keys.
      * @param unmap Flag for un-mapping version.
      */
-    public void removeLocks(UUID nodeId, GridCacheVersion ver, Iterable<KeyCacheObject> keys, boolean unmap,
-        boolean forSavepoint) {
+    public void removeLocks(
+        UUID nodeId,
+        GridCacheVersion ver,
+        Iterable<KeyCacheObject> keys,
+        boolean unmap,
+        boolean forSavepoint
+    ) {
         assert nodeId != null;
         assert ver != null;
 
@@ -1683,7 +1688,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     // Note that we don't reorder completed versions here,
                     // as there is no point to reorder relative to the version
                     // we are about to remove.
-                    if (entry.removeLock(dhtVer)) {
+                    if (entry.removeLock(dhtVer, !forSavepoint)) {
                         // Map to backups and near readers.
                         map(nodeId, topVer, entry, readers, dhtMap, nearMap);
 

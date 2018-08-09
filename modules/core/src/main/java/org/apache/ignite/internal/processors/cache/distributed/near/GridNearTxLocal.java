@@ -4416,7 +4416,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             LinkedHashMap<Integer, List<KeyCacheObject>> caches = new LinkedHashMap<>();
 
-            entry.getValue().forEach((cache, keys) -> caches.put(cache.context().cacheId(), keys));
+            entry.getValue().forEach((cache, keys) -> {
+                caches.put(cache.context().cacheId(), keys);
+
+                if (cache.isNear())
+                    ((GridNearTransactionalCache)cache).unlockAllForSavepointOnLocalNode(xidVer, keys);
+            });
 
             int miniId = fut.newMiniFutureId(node, caches);
 

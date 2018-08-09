@@ -635,6 +635,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 try {
                     entry.removeLock(ver, false);
 
+                    map.removeEntry(entry);
+
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignored) {
@@ -647,6 +649,26 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         dht.removeLocks(ctx.nodeId(), ver, keys, true, true);
 
         ctx.tm().clearTx(ver, Collections.singletonMap(ctx.cacheId(), keys));
+    }
+
+    public void unlockAllForSavepointOnLocalNode(GridCacheVersion ver, List<KeyCacheObject> keys) {
+        for (KeyCacheObject key : keys) {
+            GridDistributedCacheEntry entry = peekExx(key);
+
+            if (entry != null) {
+                try {
+                    entry.removeLock(ver, false);
+
+                    map.removeEntry(entry);
+
+                    break;
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Trying to remove lock for removed entry [entry=" + entry + ']');
+                }
+            }
+        }
     }
 
     /**
