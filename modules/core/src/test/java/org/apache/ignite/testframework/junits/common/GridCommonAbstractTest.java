@@ -43,7 +43,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
@@ -62,7 +61,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -104,9 +102,6 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -686,34 +681,32 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
                                     (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
-                                    if (i % 50 == 0)
-                                        LT.warn(log(), "Waiting for topology map update [" +
-                                            "igniteInstanceName=" + g.name() +
-                                            ", cache=" + cfg.getName() +
-                                            ", cacheId=" + dht.context().cacheId() +
-                                            ", topVer=" + top.readyTopologyVersion() +
-                                            ", p=" + p +
-                                            ", affNodesCnt=" + affNodesCnt +
-                                            ", ownersCnt=" + ownerNodesCnt +
-                                            ", affNodes=" + F.nodeIds(affNodes) +
-                                            ", owners=" + F.nodeIds(owners) +
-                                            ", topFut=" + topFut +
-                                            ", locNode=" + g.cluster().localNode() + ']');
-                                }
-                                else
-                                    match = true;
-                            }
-                            else {
-                                if (i % 50 == 0)
                                     LT.warn(log(), "Waiting for topology map update [" +
                                         "igniteInstanceName=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
                                         ", topVer=" + top.readyTopologyVersion() +
-                                        ", started=" + dht.context().started() +
                                         ", p=" + p +
-                                        ", readVer=" + readyVer +
+                                        ", affNodesCnt=" + affNodesCnt +
+                                        ", ownersCnt=" + ownerNodesCnt +
+                                        ", affNodes=" + F.nodeIds(affNodes) +
+                                        ", owners=" + F.nodeIds(owners) +
+                                        ", topFut=" + topFut +
                                         ", locNode=" + g.cluster().localNode() + ']');
+                                }
+                                else
+                                    match = true;
+                            }
+                            else {
+                                LT.warn(log(), "Waiting for topology map update [" +
+                                    "igniteInstanceName=" + g.name() +
+                                    ", cache=" + cfg.getName() +
+                                    ", cacheId=" + dht.context().cacheId() +
+                                    ", topVer=" + top.readyTopologyVersion() +
+                                    ", started=" + dht.context().started() +
+                                    ", p=" + p +
+                                    ", readVer=" + readyVer +
+                                    ", locNode=" + g.cluster().localNode() + ']');
                             }
 
                             if (!match) {
@@ -875,7 +868,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     .append(" res=").append(f.isDone() ? f.get() : "N/A")
                     .append(" topVer=")
                     .append((U.hasField(f, "topVer") ?
-                        String.valueOf(U.<Object>field(f, "topVer")) : "[unknown] may be it is finished future"))
+                        String.valueOf(U.field(f, "topVer")) : "[unknown] may be it is finished future"))
                     .append("\n");
 
                 Map<UUID, T2<Long, Collection<Integer>>> remaining = U.field(f, "remaining");
@@ -960,61 +953,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Use method for manual rebalaincing cache on all nodes. Note that using
-     * <pre name="code" class="java">
-     *   for (int i = 0; i < G.allGrids(); i++)
-     *     grid(i).cache(CACHE_NAME).rebalance().get();
-     * </pre>
-     * for rebalancing cache will lead to flaky test cases.
-     *
-     * @param ignite Ignite server instance for getting {@code compute} facade over all cluster nodes.
-     * @param cacheName Cache name for manual rebalancing on cluster. Usually used when used when
-     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter set to {@code -1} value.
-     * @throws IgniteCheckedException If fails.
-     */
-    protected void manualCacheRebalancing(Ignite ignite,
-        final String cacheName) throws IgniteCheckedException {
-        if (ignite.configuration().isClientMode())
-            return;
-
-        IgniteFuture<Void> fut =
-            ignite.compute().withTimeout(5_000).broadcastAsync(new IgniteRunnable() {
-                /** */
-                @LoggerResource
-                IgniteLogger log;
-
-                /** */
-                @IgniteInstanceResource
-                private Ignite ignite;
-
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    IgniteCache<?, ?> cache = ignite.cache(cacheName);
-
-                    assertNotNull(cache);
-
-                    while (!(Boolean)cache.rebalance().get()) {
-                        try {
-                            U.sleep(100);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                    }
-
-                    if (log.isInfoEnabled())
-                        log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
-                }
-            });
-
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return fut.isDone();
-            }
-        }, 5_000));
-    }
-
-    /**
      * @param id Node id.
      * @param major Major ver.
      * @param minor Minor ver.
@@ -1062,13 +1000,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             for (GridCacheAdapter c : ignite.context().cache().internalCaches()) {
                 GridDhtPartitionDemander.RebalanceFuture fut =
-                        (GridDhtPartitionDemander.RebalanceFuture)c.preloader().rebalanceFuture();
+                    (GridDhtPartitionDemander.RebalanceFuture)c.preloader().rebalanceFuture();
 
                 if (fut.topologyVersion() == null || fut.topologyVersion().compareTo(top) < 0) {
                     finished = false;
 
                     log.info("Unexpected future version, will retry [futVer=" + fut.topologyVersion() +
-                            ", expVer=" + top + ']');
+                        ", expVer=" + top + ']');
 
                     U.sleep(100);
 
@@ -1729,8 +1667,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      */
     protected void cleanPersistenceDir() throws Exception {
-//        assertTrue("Grids are not stopped. Alive nodes: " + G.allGrids().size(), F.isEmpty(G.allGrids()));
-
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
