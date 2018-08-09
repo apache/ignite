@@ -67,7 +67,7 @@ namespace ignite
                     default:
                     {
                         throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
-                            "Unexpected token: " + token.ToString());   
+                            "Unexpected token: '" + token.ToString() + "'");
                     }
                 }
             }
@@ -90,7 +90,7 @@ namespace ignite
             }
 
             throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
-                "Unexpected token: " + token.ToString());   
+                "Unexpected token: '" + token.ToString() + "'");
         }
     }
 }

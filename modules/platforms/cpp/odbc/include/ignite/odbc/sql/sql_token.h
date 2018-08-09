@@ -160,7 +160,8 @@ namespace ignite
                 if (lower == "0" || lower == "off")
                     return false;
 
-                throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION, "Unexpected token: " + ToString());
+                throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
+                    "Unexpected token: '" + ToString() + "', ON, OFF, 1 or 0 expected.");
             }
 
         private:

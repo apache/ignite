@@ -61,10 +61,10 @@ namespace ignite
         {
             enabled = ExpectBool(lexer);
 
-            while (lexer.Shift())
-            {
-                const SqlToken& token = lexer.GetCurrentToken();
+            const SqlToken& token = lexer.GetCurrentToken();
 
+            while (lexer.Shift() && token.GetType() != TokenType::SEMICOLON)
+            {
                 if (token.ToLower() == WORD_BATCH_SIZE)
                 {
                     CheckEnabled(token);
@@ -119,20 +119,20 @@ namespace ignite
                     continue;
                 }
 
-                break;
+                ThrowUnexpectedTokenError(token, "additional parameter of SET STREAMING command or semicolon");
             }
         }
 
         void SqlSetStreamingCommand::CheckEnabled(const SqlToken& token) const
         {
             if (!enabled)
-                ThrowUnexpectedTokenError(token, "no parameters with STREAMING OFF command ");
+                ThrowUnexpectedTokenError(token, "no parameters with STREAMING OFF command");
         }
 
         void SqlSetStreamingCommand::ThrowUnexpectedTokenError(const SqlToken& token, const std::string& expected)
         {
             throw OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
-                "Unexpected token '" + token.ToString() + "', " + expected + " expected.");
+                "Unexpected token: '" + token.ToString() + "', " + expected + " expected.");
         }
 
         void SqlSetStreamingCommand::ThrowUnexpectedEndOfStatement(const std::string& expected)
@@ -187,10 +187,12 @@ namespace ignite
 
         bool SqlSetStreamingCommand::ExpectBool(SqlLexer& lexer)
         {
-            if (!lexer.Shift())
-                ThrowUnexpectedEndOfStatement("ON or OFF");
+            const SqlToken& token = lexer.GetCurrentToken();
 
-            return lexer.GetCurrentToken().ParseBoolean();
+            if (!lexer.Shift())
+                ThrowUnexpectedTokenError(token, "ON or OFF");
+
+            return token.ParseBoolean();
         }
     }
 }
