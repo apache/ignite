@@ -321,7 +321,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
         encPageSize = pageSize -
-            (ctx.kernalContext().config().getEncryptionSpi().encryptedSize(pageSize) - pageSize);
+            (ctx.kernalContext().config().getEncryptionSpi().encryptedSizeNoPadding(pageSize) - pageSize);
 
         rwLock = new OffheapReadWriteLock(128);
 

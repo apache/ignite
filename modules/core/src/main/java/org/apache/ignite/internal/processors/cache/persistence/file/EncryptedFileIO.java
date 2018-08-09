@@ -92,7 +92,7 @@ public class EncryptedFileIO implements FileIO {
         this.encMgr = encMgr;
         this.encSpi = encSpi;
 
-        this.encryptionOverhead = encSpi.encryptedSize(pageSize) - pageSize;
+        this.encryptionOverhead = encSpi.encryptedSizeNoPadding(pageSize) - pageSize;
         this.zeroes =  new byte[encryptionOverhead];
     }
 
@@ -214,7 +214,7 @@ public class EncryptedFileIO implements FileIO {
 
         assert tailIsEmpty(srcArr, PageIO.getType(srcBuf));
 
-        return encSpi.encrypt(srcArr, key(), 0, srcArr.length - encryptionOverhead);
+        return encSpi.encryptNoPadding(srcArr, key(), 0, srcArr.length - encryptionOverhead);
     }
 
     /**
@@ -222,7 +222,7 @@ public class EncryptedFileIO implements FileIO {
      * @param destBuf Destination buffer.
      */
     private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) {
-        destBuf.put(encSpi.decrypt(encrypted.array(), key()));
+        destBuf.put(encSpi.decryptNoPadding(encrypted.array(), key()));
         destBuf.put(zeroes); //Forcibly purge page buffer tail.
     }
 

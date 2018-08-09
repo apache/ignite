@@ -82,7 +82,12 @@ public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements Encryption
     /**
      * Full name of cipher algorithm.
      */
-    private static final String CIPHER_ALGO_FULL_NAME = "AES/CBC/PKCS5Padding";
+    private static final String AES_WITH_PADDING = "AES/CBC/PKCS5Padding";
+
+    /**
+     * Full name of cipher algorithm without padding.
+     */
+    private static final String AES_WITHOUT_PADDING = "AES/CBC/NoPadding";
 
     /**
      * Algorithm used for digest calculation.
@@ -169,6 +174,33 @@ public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements Encryption
 
     /** {@inheritDoc} */
     @Override public byte[] encrypt(byte[] data, EncryptionKey key, int start, int length) {
+        return doEncryption(data, AES_WITH_PADDING, key, start, length);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] encryptNoPadding(byte[] data, EncryptionKey key, int start, int length) {
+        return doEncryption(data, AES_WITHOUT_PADDING, key, start, length);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] decrypt(byte[] data, EncryptionKey key) {
+        return doDecryption(data, AES_WITH_PADDING, key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] decryptNoPadding(byte[] data, EncryptionKey key) {
+        return doDecryption(data, AES_WITHOUT_PADDING, key);
+    }
+
+    /**
+     * @param data Plain data.
+     * @param algo Encryption algorithm.
+     * @param key Encryption key.
+     * @param start Offset in {@code data} array.
+     * @param length Length in {@code data} array.
+     * @return Encrypted data.
+     */
+    private byte[] doEncryption(byte[] data, String algo, EncryptionKey key, int start, int length) {
         assert key instanceof AESEncryptionKeyImpl;
         assert start >= 0 && length + start <= data.length;
 
@@ -177,11 +209,11 @@ public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements Encryption
         try {
             SecretKeySpec keySpec = new SecretKeySpec(((AESEncryptionKeyImpl)key).key().getEncoded(), CIPHER_ALGO);
 
-            Cipher cipher = Cipher.getInstance(CIPHER_ALGO_FULL_NAME);
+            Cipher cipher = Cipher.getInstance(algo);
 
             byte[] iv = initVector(cipher);
 
-            byte[] res = new byte[encryptedSize(length)];
+            byte[] res = new byte[encryptedSize(length, algo)];
 
             System.arraycopy(iv, 0, res, 0, iv.length);
 
@@ -197,8 +229,13 @@ public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements Encryption
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public byte[] decrypt(byte[] data, EncryptionKey key) {
+    /**
+     * @param data Encrypted data.
+     * @param algo Encryption algorithm.
+     * @param key Encryption key.
+     * @return Decrypted data.
+     */
+    private byte[] doDecryption(byte[] data, String algo, EncryptionKey key) {
         assert key instanceof AESEncryptionKeyImpl;
 
         ensureStarted();
@@ -206,7 +243,7 @@ public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements Encryption
         try {
             SecretKeySpec keySpec = new SecretKeySpec(((AESEncryptionKeyImpl)key).key().getEncoded(), CIPHER_ALGO);
 
-            Cipher cipher = Cipher.getInstance(CIPHER_ALGO_FULL_NAME);
+            Cipher cipher = Cipher.getInstance(algo);
 
             cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(data, 0, cipher.getBlockSize()));
 
@@ -243,7 +280,37 @@ public class AESEncryptionSpiImpl extends IgniteSpiAdapter implements Encryption
 
     /** {@inheritDoc} */
     @Override public int encryptedSize(int dataSize) {
-        return (dataSize/16 + 2)*16;
+        return encryptedSize(dataSize, AES_WITH_PADDING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int encryptedSizeNoPadding(int dataSize) {
+        return encryptedSize(dataSize, AES_WITHOUT_PADDING);
+    }
+
+    /**
+     *
+     * @param dataSize
+     * @param algo
+     * @return
+     */
+    private int encryptedSize(int dataSize, String algo) {
+        int cntBlocks;
+
+        switch (algo) {
+            case AES_WITH_PADDING:
+                cntBlocks = 2;
+                break;
+
+            case AES_WITHOUT_PADDING:
+                cntBlocks = 1;
+                break;
+
+            default:
+                throw new IllegalStateException("Unknown algorithm: " + algo);
+        }
+
+        return (dataSize/16 + cntBlocks)*16;
     }
 
     /**

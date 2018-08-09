@@ -51,7 +51,17 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
+    @Override public byte[] encryptNoPadding(byte[] data, EncryptionKey key, int start, int length) {
+        throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] decrypt(byte[] data, EncryptionKey key) {
+        throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] decryptNoPadding(byte[] data, EncryptionKey key) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
@@ -65,7 +75,13 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
+    /** {@inheritDoc} */
     @Override public int encryptedSize(int dataSize) {
+        throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int encryptedSizeNoPadding(int dataSize) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
