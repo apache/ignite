@@ -21,7 +21,9 @@ import java.io.Serializable;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 /**
  *
@@ -41,6 +43,11 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
         ccfg.setCopyOnRead(false);
 
         return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean onheapCacheEnabled() {
+        return true;
     }
 
     /**
@@ -64,6 +71,7 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
             assertSame(val0, cache.localPeek(key));
         }
 
+        /* Does not seem to work anymore since main storage mechanism is always off-heap.
         TestKey key = new TestKey(0);
 
         TestValue val0 = cache.get(key);
@@ -74,7 +82,7 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
             }
         });
 
-        assertSame(val0, invokeVal);
+        assertSame(val0, invokeVal);*/
     }
 
     /**
