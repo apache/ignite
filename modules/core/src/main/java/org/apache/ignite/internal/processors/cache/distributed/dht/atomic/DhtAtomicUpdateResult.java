@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -97,8 +99,12 @@ class DhtAtomicUpdateResult {
     /**
      * @return Deleted entries.
      */
-    Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted() {
+    public Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted() {
         return deleted;
+    }
+
+    void deleted(Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted) {
+        this.deleted = deleted;
     }
 
     /**
@@ -127,5 +133,15 @@ class DhtAtomicUpdateResult {
      */
     void dhtFuture(@Nullable GridDhtAtomicAbstractUpdateFuture dhtFut) {
         this.dhtFut = dhtFut;
+    }
+
+    HashSet<KeyCacheObject> processedKyes = new HashSet<>();
+
+    public void addProccessedKey(KeyCacheObject k) {
+        processedKyes.add(k);
+    }
+
+    public boolean isProccessedKey(KeyCacheObject k) {
+        return processedKyes.contains(k);
     }
 }
