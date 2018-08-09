@@ -33,6 +33,9 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link RandomForestClassifierTrainer}.
+ */
 @RunWith(Parameterized.class)
 public class RandomForestClassifierTrainerTest {
     /**
@@ -46,6 +49,9 @@ public class RandomForestClassifierTrainerTest {
     @Parameterized.Parameter
     public int parts;
 
+    /**
+     * Data iterator.
+     */
     @Parameterized.Parameters(name = "Data divided on {0} partitions")
     public static Iterable<Integer[]> data() {
         List<Integer[]> res = new ArrayList<>();
@@ -69,13 +75,24 @@ public class RandomForestClassifierTrainerTest {
             sample.put(new double[] {x1, x2, x3, x4}, (double)(i % 2));
         }
 
-        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4, 3, 5, 0.3, 4, 0.1);
+        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4, 3, 5, 0.3, 4, 0.1)
+            .withUseIndex(false);
 
         ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
 
         mdl.getModels().forEach(m -> {
             assertTrue(m instanceof ModelOnFeaturesSubspace);
-            assertTrue(((ModelOnFeaturesSubspace) m).getMdl() instanceof DecisionTreeConditionalNode);
+
+            ModelOnFeaturesSubspace mdlOnFeaturesSubspace = (ModelOnFeaturesSubspace) m;
+
+            assertTrue(mdlOnFeaturesSubspace.getMdl() instanceof DecisionTreeConditionalNode);
+
+            assertTrue(mdlOnFeaturesSubspace.getFeaturesMapping().size() > 0);
+
+            String expClsName = "ModelOnFeatureSubspace";
+            assertTrue(mdlOnFeaturesSubspace.toString().contains(expClsName));
+            assertTrue(mdlOnFeaturesSubspace.toString(true).contains(expClsName));
+            assertTrue(mdlOnFeaturesSubspace.toString(false).contains(expClsName));
         });
 
         assertTrue(mdl.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
