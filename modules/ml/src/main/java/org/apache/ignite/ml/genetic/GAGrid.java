@@ -20,16 +20,13 @@ package org.apache.ignite.ml.genetic;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 import javax.cache.Cache.Entry;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-
 import org.apache.ignite.ml.genetic.cache.GeneCacheConfig;
 import org.apache.ignite.ml.genetic.cache.PopulationCacheConfig;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
