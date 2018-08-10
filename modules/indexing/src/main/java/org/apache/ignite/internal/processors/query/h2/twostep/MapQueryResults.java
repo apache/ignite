@@ -57,6 +57,9 @@ class MapQueryResults {
     /** Qctx. */
     private GridH2QueryContext qctx;
 
+    /** Destination thread at the QUERY pool. */
+    private Thread thread;
+
     /**
      * Constructor.
      *
@@ -204,5 +207,19 @@ class MapQueryResults {
      */
     public GridH2QueryContext queryContext() {
         return qctx;
+    }
+
+    /**
+     * @return Destination thread.
+     */
+    public Thread thread() {
+        return thread;
+    }
+
+    /**
+     * @param thread Destination thread.
+     */
+    public void thread(Thread thread) {
+        this.thread = thread;
     }
 }

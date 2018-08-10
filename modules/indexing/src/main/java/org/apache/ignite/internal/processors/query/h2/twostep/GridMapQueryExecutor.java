@@ -507,26 +507,6 @@ public class GridMapQueryExecutor {
             assert !F.isEmpty(cacheIds);
 
             final int segment = i;
-
-//            if (lazy) {
-//                onQueryRequest0(node,
-//                    req.requestId(),
-//                    segment,
-//                    req.schemaName(),
-//                    req.queries(),
-//                    cacheIds,
-//                    req.topologyVersion(),
-//                    partsMap,
-//                    parts,
-//                    req.pageSize(),
-//                    joinMode,
-//                    enforceJoinOrder,
-//                    false, // Replicated is always false here (see condition above).
-//                    req.timeout(),
-//                    params,
-//                    true); // Lazy = true.
-//            }
-//            else {
                 ctx.closure().callLocal(
                     new Callable<Void>() {
                         @Override
@@ -552,25 +532,32 @@ public class GridMapQueryExecutor {
                         }
                     }
                     , QUERY_POOL);
-//            }
         }
 
-        onQueryRequest0(node,
-            req.requestId(),
-            0,
-            req.schemaName(),
-            req.queries(),
-            cacheIds,
-            req.topologyVersion(),
-            partsMap,
-            parts,
-            req.pageSize(),
-            joinMode,
-            enforceJoinOrder,
-            replicated,
-            req.timeout(),
-            params,
-            lazy);
+        ctx.closure().callLocal(
+            new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    onQueryRequest0(node,
+                        req.requestId(),
+                        0,
+                        req.schemaName(),
+                        req.queries(),
+                        cacheIds,
+                        req.topologyVersion(),
+                        partsMap,
+                        parts,
+                        req.pageSize(),
+                        joinMode,
+                        enforceJoinOrder,
+                        replicated,
+                        req.timeout(),
+                        params,
+                        lazy);
+                    return null;
+                }
+            }
+            , QUERY_POOL);
     }
 
     /**
@@ -978,6 +965,19 @@ public class GridMapQueryExecutor {
      * @param pageSize Page size.
      */
     private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
+        int pageSize) {
+        sendNextPage0(nodeRess, node, qr, qry, segmentId, pageSize);
+    }
+
+    /**
+     * @param nodeRess Results.
+     * @param node Node.
+     * @param qr Query results.
+     * @param qry Query.
+     * @param segmentId Index segment ID.
+     * @param pageSize Page size.
+     */
+    private void sendNextPage0(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
         int pageSize) {
         synchronized (qr) {
             MapQueryResult res = qr.result(qry);

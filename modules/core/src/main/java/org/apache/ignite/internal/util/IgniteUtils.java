@@ -4030,7 +4030,7 @@ public abstract class IgniteUtils {
                 rsrc.close();
             }
             catch (Exception ignored) {
-                // No-op.
+                ignored.printStackTrace(System.err);
             }
     }
 

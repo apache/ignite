@@ -258,6 +258,8 @@ class MapQueryResult {
 
             closed = true;
 
+            U.closeQuiet(rs);
+
             System.out.println("+++ [" + Thread.currentThread().getName()+ "] Close " + res  + ", closed=" + res.isClosed());
         }
     }
