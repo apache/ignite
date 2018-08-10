@@ -1528,6 +1528,8 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
 
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(getTestTimeout());
+
         if (isMultiJvm())
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
