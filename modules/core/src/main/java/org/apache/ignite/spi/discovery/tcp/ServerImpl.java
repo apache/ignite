@@ -6787,6 +6787,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Current client metrics. */
         private volatile ClusterMetrics metrics;
 
+        /** Last metrics update message receive time. */
+        private volatile long lastMetricsUpdateMsgTime;
+
         /** */
         private final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
 
@@ -6799,10 +6802,12 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
-            super("tcp-disco-client-message-worker", log, 2000, null);
+            super("tcp-disco-client-message-worker", log, Math.max(spi.metricsUpdateFreq, 10), null);
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
+
+            lastMetricsUpdateMsgTime = U.currentTimeMillis();
         }
 
         /**
@@ -6823,6 +6828,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param metrics New current client metrics.
          */
         void metrics(ClusterMetrics metrics) {
+            lastMetricsUpdateMsgTime = U.currentTimeMillis();
+
             this.metrics = metrics;
         }
 
@@ -7002,6 +7009,37 @@ class ServerImpl extends TcpDiscoveryImpl {
             pingResult(false);
 
             U.closeQuiet(sock);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void noMessageLoop() {
+            if (U.currentTimeMillis() - lastMetricsUpdateMsgTime > spi.clientFailureDetectionTimeout()) {
+                TcpDiscoveryNode clientNode = ring.node(clientNodeId);
+
+                if (clientNode != null) {
+                    boolean failedNode;
+
+                    synchronized (mux) {
+                        failedNode = failedNodes.containsKey(clientNode);
+                    }
+
+                    if (!failedNode) {
+                        String msg = "Client node considered as unreachable " +
+                            "and will be dropped from cluster, " +
+                            "because no metrics update messages received in interval: " +
+                            "TcpDiscoverySpi.clientFailureDetectionTimeout() ms. " +
+                            "It may be caused by network problems or long GC pause on client node, try to increase this " +
+                            "parameter. " +
+                            "[nodeId=" + clientNodeId +
+                            ", clientFailureDetectionTimeout=" + spi.clientFailureDetectionTimeout() +
+                            ']';
+
+                        failNode(clientNodeId, msg);
+
+                        U.warn(log, msg);
+                    }
+                }
+            }
         }
     }
 
