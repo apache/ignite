@@ -18,17 +18,17 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosureX;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -189,45 +189,39 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             }
         }
         else {
-            if (remaining == 0) {
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> fut) {
-                        try {
-                            fut.get();
+            RemapTimeoutObject timeoutObj = null;
 
-                            clo.applyx();
-                        }
-                        catch (IgniteCheckedException e) {
-                            ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
+            AtomicBoolean state = new AtomicBoolean();
 
-                            onDone(e);
-                        }
-                    }
-                });
+            if (remaining > 0) {
+                timeoutObj = new RemapTimeoutObject(remaining, fut, state);
+
+                cctx.time().addTimeoutObject(timeoutObj);
             }
-            else {
-                cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                    @Override public void run() {
-                        try {
-                            fut.get(remaining);
 
-                            clo.applyx();
-                        }
-                        catch (IgniteFutureTimeoutCheckedException e) {
-                            IgniteCheckedException e0 = tx.timeoutException();
+            final RemapTimeoutObject finalTimeoutObj = timeoutObj;
 
-                            ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e0);
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    if (!state.compareAndSet(false, true))
+                        return;
 
-                            onDone(e0);
-                        }
-                        catch (IgniteCheckedException e) {
-                            ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
+                    try {
+                        fut.get();
 
-                            onDone(e);
-                        }
+                        clo.applyx();
                     }
-                });
-            }
+                    catch (IgniteCheckedException e) {
+                        ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
+
+                        onDone(e);
+                    }
+                    finally {
+                        if (finalTimeoutObj != null)
+                            cctx.time().removeTimeoutObject(finalTimeoutObj);
+                    }
+                }
+            });
         }
     }
 
@@ -292,6 +286,46 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(KeyLockFuture.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    private class RemapTimeoutObject extends GridTimeoutObjectAdapter {
+        /** */
+        private final IgniteInternalFuture<?> fut;
+
+        /** */
+        private final AtomicBoolean state;
+
+        /**
+         * @param timeout Timeout.
+         * @param fut Future.
+         * @param state State.
+         */
+        RemapTimeoutObject(long timeout, IgniteInternalFuture<?> fut, AtomicBoolean state) {
+            super(timeout);
+
+            this.fut = fut;
+
+            this.state = state;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            if (!fut.isDone() && state.compareAndSet(false, true)) {
+                IgniteCheckedException e = tx.timeoutException();
+
+                ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
+
+                onDone(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RemapTimeoutObject.class, this);
         }
     }
 }
