@@ -118,11 +118,6 @@ public final class UpdatePlanBuilder {
                 o = GridSqlAlias.unwrap((GridSqlAst)o);
 
             if (o instanceof GridSqlTable) {
-                if (QueryUtils.SCHEMA_SYS.equals(((GridSqlTable)o).schema())) {
-                    throw new IgniteSQLException("Operation not supported for table '" +
-                        ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                }
-
                 if (cctx == null)
                     mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
                 else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)

@@ -97,43 +97,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * @throws Exception if failed.
-     */
-    public void testBeginWithMvccDisabledThrows() throws Exception {
-        checkMvccDisabledBehavior("BEGIN");
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testCommitWithMvccDisabledThrows() throws Exception {
-        checkMvccDisabledBehavior("COMMIT");
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testRollbackWithMvccDisabledThrows() throws Exception {
-        checkMvccDisabledBehavior("rollback");
-    }
-
-    /**
-     * @param sql Operation to test.
-     * @throws Exception if failed.
-     */
-    private void checkMvccDisabledBehavior(String sql) throws Exception {
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgniteEx node = startGrid(commonConfiguration(1));
-
-                execute(node, sql);
-
-                return null;
-            }
-        }, IgniteCheckedException.class, "Failed to start manager: GridManagerAdapter");
-    }
-
-    /**
      * Test that COMMIT without a transaction yields nothing.
      */
     public void testCommitNoTransaction() {

@@ -923,9 +923,6 @@ public class GridCacheSharedContext<K, V> {
 
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
 
-            if (cacheCtx.mvccEnabled() != activeCacheCtx.mvccEnabled())
-                return "caches with different mvcc settings can't be enlisted in one transaction";
-
             if (cacheCtx.systemTx()) {
                 if (activeCacheCtx.cacheId() != cacheCtx.cacheId())
                     return "system transaction can include only one cache";
