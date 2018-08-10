@@ -121,7 +121,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         if (evictionTask == null)
             return;
 
-        int bucket = evictionQueue.offer(evictionTask);
+        int bucket;
+
+        synchronized (mux) {
+            bucket = evictionQueue.offer(evictionTask);
+        }
 
         scheduleNextPartitionEviction(bucket);
     }
