@@ -113,10 +113,6 @@ list-editable {
                 min-height: 36px;
                 align-items: center;
             }
-
-            &-edit .form-field:not(.form-field__checkbox) {
-                margin-left: -11px;
-            }
         }
 
         &--editable {

@@ -45,6 +45,10 @@
             display: none;
         }
 
+        .form-field:not(.form-field__checkbox) {
+            margin-left: -11px;
+        }
+
         .le-row-item-view:nth-last-child(2) {
             display: none;
         }
