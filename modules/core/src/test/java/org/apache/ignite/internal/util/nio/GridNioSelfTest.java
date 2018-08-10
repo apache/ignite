@@ -53,7 +53,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.Whitebox;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -88,9 +87,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /** Test port. */
     private static int port;
 
-    /** SO_LINGER value*/
-    private int soLinger;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         getTestResources().startThreads(true);
@@ -103,12 +99,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         getTestResources().stopThreads();
-    }
-
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        soLinger = GridNioServer.DFLT_SO_LINGER;
     }
 
     /**
@@ -229,21 +219,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCorrectSocketClose() throws Exception {
-        correctSocketClose(0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCorrectSocketCloseCustomSoLinger() throws Exception {
-        soLinger = 5;
-
-        correctSocketClose(5);
-    }
-
-    /** */
-    private void correctSocketClose(int expectedSoLinger) throws Exception {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
         GridNioServerListener lsnr = new GridNioServerListenerAdapter() {
@@ -263,8 +238,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         };
 
         GridNioServer<?> srvr = startServer(new GridPlainParser(), lsnr);
-
-        assertEquals(expectedSoLinger, Whitebox.getInternalState(srvr, "soLinger"));
 
         try {
             Socket s = createSocket();
@@ -654,7 +627,6 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             .selectorCount(Runtime.getRuntime().availableProcessors())
             .igniteInstanceName("nio-test-grid")
             .tcpNoDelay(true)
-            .soLinger(soLinger)
             .directBuffer(true)
             .byteOrder(ByteOrder.nativeOrder())
             .socketSendBufferSize(0)
