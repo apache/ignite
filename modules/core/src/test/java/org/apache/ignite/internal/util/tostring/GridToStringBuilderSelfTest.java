@@ -28,13 +28,20 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReadWriteLock;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
@@ -474,6 +481,17 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         assertEquals(expected.substring(expected.length() - tailLen), actual.substring(actual.length() - tailLen));
         assertTrue(actual.contains("... and"));
         assertTrue(actual.contains("skipped ..."));
+    }
+
+    /**
+     *
+     */
+    public void testObjectPlusStringToString() {
+        IgniteTxKey k = new IgniteTxKey(new KeyCacheObjectImpl(1, null, 1), 123);
+
+        info(k.toString());
+
+        assertTrue("Wrong string: " + k, k.toString().startsWith("IgniteTxKey ["));
     }
 
     /**
