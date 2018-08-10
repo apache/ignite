@@ -104,6 +104,9 @@ public class GridNioServer<T> {
     /** Default send queue limit. */
     public static final int DFLT_SEND_QUEUE_LIMIT = 0;
 
+    /** Default SO_LINGER option for sockets. */
+    public static final int DFLT_SO_LINGER = 0;
+
     /** Time, which server will wait before retry operation. */
     private static final long ERR_WAIT_TIME = 2000;
 
@@ -183,6 +186,9 @@ public class GridNioServer<T> {
     /** Tcp no delay flag. */
     private final boolean tcpNoDelay;
 
+    /** SO_LINGER option to set for accepted sockets, set negative to disable. */
+    private int soLinger = DFLT_SO_LINGER;
+
     /** Socket send buffer. */
     private final int sockSndBuf;
 
@@ -259,6 +265,7 @@ public class GridNioServer<T> {
      *      falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
      *      Can be set to {@code Long.MAX_VALUE} so selector threads will never block.
      * @param tcpNoDelay If TCP_NODELAY option should be set to accepted sockets.
+     * @param soLinger SO_LINGER option for accepted sockets.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param lsnr Listener.
@@ -285,6 +292,7 @@ public class GridNioServer<T> {
         @Nullable String srvName,
         long selectorSpins,
         boolean tcpNoDelay,
+        int soLinger,
         boolean directBuf,
         ByteOrder order,
         GridNioServerListener<T> lsnr,
@@ -318,6 +326,7 @@ public class GridNioServer<T> {
         this.directBuf = directBuf;
         this.order = order;
         this.tcpNoDelay = tcpNoDelay;
+        this.soLinger =  soLinger;
         this.sockRcvBuf = sockRcvBuf;
         this.sockSndBuf = sockSndBuf;
         this.sndQueueLimit = sndQueueLimit;
@@ -3022,6 +3031,7 @@ public class GridNioServer<T> {
                     sockCh.configureBlocking(false);
                     sockCh.socket().setTcpNoDelay(tcpNoDelay);
                     sockCh.socket().setKeepAlive(true);
+                    sockCh.socket().setSoLinger(soLinger >= 0, soLinger);
 
                     if (sockSndBuf > 0)
                         sockCh.socket().setSendBufferSize(sockSndBuf);
@@ -3624,6 +3634,9 @@ public class GridNioServer<T> {
         /** TCP_NO_DELAY flag. */
         private boolean tcpNoDelay;
 
+        /** SO_LINGER value for set fo . */
+        private int soLinger;
+
         /** Direct buffer flag. */
         private boolean directBuf;
 
@@ -3697,6 +3710,7 @@ public class GridNioServer<T> {
                 srvName,
                 selectorSpins,
                 tcpNoDelay,
+                soLinger,
                 directBuf,
                 byteOrder,
                 lsnr,
@@ -3812,6 +3826,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> tcpNoDelay(boolean tcpNoDelay) {
             this.tcpNoDelay = tcpNoDelay;
+
+            return this;
+        }
+
+        /**
+         * @param soLinger Set SO_LINGER option to accepted sockets.
+         * @return This for chaining.
+         */
+        public Builder<T> soLinger(int soLinger) {
+            this.soLinger = soLinger;
 
             return this;
         }
