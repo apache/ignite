@@ -24,6 +24,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 
 /**
  *
@@ -34,14 +35,16 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
      * @param wal Write ahead log manager
      * @param metaPageId Tree metapage id.
      * @param reuseList Reuse list
+     * @param failureProcessor Failure processor.
      * @param initNew {@code True} if new tree should be created.
      * @throws IgniteCheckedException If fails.
      */
     public TxLogTree(PageMemory pageMem,
         IgniteWriteAheadLogManager wal, long metaPageId,
-        ReuseList reuseList, boolean initNew) throws IgniteCheckedException {
+        ReuseList reuseList, FailureProcessor failureProcessor,
+        boolean initNew) throws IgniteCheckedException {
         super(TxLog.TX_LOG_CACHE_NAME, TxLog.TX_LOG_CACHE_ID, pageMem, wal, new AtomicLong(), metaPageId,
-            reuseList, TxLogInnerIO.VERSIONS, TxLogLeafIO.VERSIONS);
+            reuseList, TxLogInnerIO.VERSIONS, TxLogLeafIO.VERSIONS, failureProcessor);
 
         initTree(initNew);
     }
