@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.Ign
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsUnusedWalSegmentsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.filename.IgniteUidAsConsistentIdMigrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNodeStoppedDuringDisableWALTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWALTailIsReachedDuringIterationOverArchiveTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushBackgroundSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushBackgroundWithMmapBufferSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncSelfTest;
@@ -192,5 +193,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         //suite.addTestSuite(IgniteWalRecoverySeveralRestartsTest.class);
 
         suite.addTestSuite(IgniteRebalanceScheduleResendPartitionsTest.class);
+
+        suite.addTestSuite(IgniteWALTailIsReachedDuringIterationOverArchiveTest.class);
     }
 }
