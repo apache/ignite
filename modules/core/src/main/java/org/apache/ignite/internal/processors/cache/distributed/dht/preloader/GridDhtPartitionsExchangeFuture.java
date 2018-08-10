@@ -1629,28 +1629,33 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ", exchId=" + exchId + ", msg=" + fullMsg + ']');
         }
 
-        // Prepare full message for newly joined nodes with affinity request.
-        final GridDhtPartitionsFullMessage fullMsgForJoinedNodes = nodes.stream()
+        // Find any single message with affinity request. This request exists only for newly joined nodes.
+        Optional<GridDhtPartitionsSingleMessage> singleMsgWithAffinityReq = nodes.stream()
             .flatMap(node -> Optional.ofNullable(msgs.get(node.id()))
                 .filter(singleMsg -> singleMsg.cacheGroupsAffinityRequest() != null)
                 .map(Stream::of)
                 .orElse(Stream.empty()))
-            .findAny()
+            .findAny();
+
+        // Prepare full message for newly joined nodes with affinity request.
+        final GridDhtPartitionsFullMessage fullMsgWithAffinity = singleMsgWithAffinityReq
             .filter(singleMessage -> affinityForJoinedNodes != null)
             .map(singleMessage -> fullMsg.copy().joinedNodeAffinity(affinityForJoinedNodes))
             .orElse(null);
 
+        // Prepare and send full messages for given nodes.
         nodes.stream()
             .map(node -> {
                 // No joined nodes, just send a regular full message.
-                if (fullMsgForJoinedNodes == null)
+                if (fullMsgWithAffinity == null)
                     return new T2<>(node, fullMsg);
 
                 return new T2<>(
                     node,
+                    // If single message contains affinity request, use special full message for such single messages.
                     Optional.ofNullable(msgs.get(node.id()))
                         .filter(singleMsg -> singleMsg.cacheGroupsAffinityRequest() != null)
-                        .map(singleMsg -> fullMsgForJoinedNodes)
+                        .map(singleMsg -> fullMsgWithAffinity)
                         .orElse(fullMsg)
                 );
             })
@@ -1658,10 +1663,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ClusterNode node = nodeAndMsg.get1();
                 GridDhtPartitionsFullMessage fullMsgToSend = nodeAndMsg.get2();
 
-                // Get merged exchange id if possible.
+                // If exchange has merged, use merged version of exchange id.
                 GridDhtPartitionExchangeId sndExchId = mergedJoinExchMsgs != null
                     ? Optional.ofNullable(mergedJoinExchMsgs.get(node.id()))
-                        .map(mergedMsg -> mergedMsg.exchangeId())
+                        .map(GridDhtPartitionsAbstractMessage::exchangeId)
                         .orElse(exchangeId())
                     : exchangeId();
 
