@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
@@ -28,7 +29,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.GridDebug;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -37,6 +38,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class CacheQueryMemoryLeakTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** Heap dump file. */
+    private static final File DUMP_FILE = new File("test.hprof");
+
+    /** Maximum accepted change in heap memory size. */
+    private static final int LEAK_THRESHOLD = 10 * 1024 * 1024;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -60,7 +67,7 @@ public class CacheQueryMemoryLeakTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testResultIsMultipleOfPage() throws Exception {
-        IgniteKernal srv = (IgniteKernal)startGrid("server");
+        startGrid("server");
         Ignite client = startGrid("client");
 
         IgniteCache<Integer, Person> cache = startPeopleCache(client);
@@ -73,18 +80,32 @@ public class CacheQueryMemoryLeakTest extends GridCommonAbstractTest {
             cache.put(i, p);
         }
 
-        for (int i = 0; i < 10_000; i++) {
-            if (i % 1000 == 0)
-                System.out.println("Select iteration #" + i);
+        long size0 = heapSize();
 
+        for (int i = 0; i < 100; i++) {
             Query<List<?>> qry = new SqlFieldsQuery("select * from people");
             qry.setPageSize(pageSize);
             QueryCursor<List<?>> cursor = cache.query(qry);
             cursor.getAll();
             cursor.close();
-
-            assertTrue("Long JVM pause detected", srv.getLongJVMPausesTotalDuration() < 5000);
         }
+
+        long size = heapSize();
+
+        assertTrue("Possible leak detected. Size: " + (size - size0) / 1024 / 1024 + " MB",
+            size - size0 < LEAK_THRESHOLD);
+
+        // Remove dump if successful.
+        DUMP_FILE.delete();
+    }
+
+    /**
+     * @return Current Java heap size.
+     */
+    private long heapSize() {
+        GridDebug.dumpHeap(DUMP_FILE.getPath(), true);
+
+        return DUMP_FILE.length();
     }
 
     /**
