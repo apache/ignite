@@ -188,7 +188,11 @@ export default class Clusters {
                 tcpNoDelay: true
             },
             clientConnectorConfiguration: {
-                tcpNoDelay: true
+                tcpNoDelay: true,
+                jdbcEnabled: true,
+                odbcEnabled: true,
+                thinClientEnabled: true,
+                useIgniteSslContextFactory: true
             },
             space: void 0,
             discovery: {

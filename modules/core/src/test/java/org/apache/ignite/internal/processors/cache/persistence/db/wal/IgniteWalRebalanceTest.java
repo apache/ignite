@@ -102,7 +102,11 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                     .setWalHistorySize(Integer.MAX_VALUE)
                     .setWalMode(WALMode.LOG_ONLY)
                     .setCheckpointFrequency(15 * 60 * 1000)
-                    .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setPersistenceEnabled(true)
+                            .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                    );
 
         cfg.setDataStorageConfiguration(dbCfg);
 

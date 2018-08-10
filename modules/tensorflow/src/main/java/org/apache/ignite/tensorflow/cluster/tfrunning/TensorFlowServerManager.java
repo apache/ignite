@@ -58,7 +58,9 @@ public class TensorFlowServerManager extends ProcessManagerWrapper<PythonProcess
     @Override protected PythonProcess transformSpecification(TensorFlowServer spec) {
         return new PythonProcess(
             scriptFormatter.format(spec, true, Ignition.ignite()),
-            getNode(spec)
+            getNode(spec),
+            "job:" + spec.getJobName(),
+            "task:" + spec.getTaskIdx()
         );
     }
 
