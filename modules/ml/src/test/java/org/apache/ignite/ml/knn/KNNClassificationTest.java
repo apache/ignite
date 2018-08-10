@@ -34,8 +34,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 
-/** Tests behaviour of KNNClassificationTest. */
+/** Tests behaviour of KNNClassification. */
 @RunWith(Parameterized.class)
 public class KNNClassificationTest {
     /** Number of parts to be tested. */
@@ -58,7 +59,7 @@ public class KNNClassificationTest {
 
     /** */
     @Test
-    public void testBinaryClassificationTest() {
+    public void testBinaryClassification() {
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {1.0, 1.0, 1.0});
         data.put(1, new double[] {1.0, 2.0, 1.0});
@@ -78,6 +79,10 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
 
+        assertTrue(knnMdl.toString().length() > 0);
+        assertTrue(knnMdl.toString(true).length() > 0);
+        assertTrue(knnMdl.toString(false).length() > 0);
+
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
         assertEquals(knnMdl.apply(firstVector), 1.0);
         Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
@@ -86,7 +91,7 @@ public class KNNClassificationTest {
 
     /** */
     @Test
-    public void testBinaryClassificationWithSmallestKTest() {
+    public void testBinaryClassificationWithSmallestK() {
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {1.0, 1.0, 1.0});
         data.put(1, new double[] {1.0, 2.0, 1.0});
