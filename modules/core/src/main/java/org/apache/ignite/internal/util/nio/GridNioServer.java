@@ -105,7 +105,7 @@ public class GridNioServer<T> {
     public static final int DFLT_SEND_QUEUE_LIMIT = 0;
 
     /** Default SO_LINGER option for sockets. */
-    public static final int DFLT_SO_LINGER = 5;
+    private static final int DFLT_SO_LINGER = 5;
 
     /** Time, which server will wait before retry operation. */
     private static final long ERR_WAIT_TIME = 2000;
@@ -3635,7 +3635,7 @@ public class GridNioServer<T> {
         private boolean tcpNoDelay;
 
         /** SO_LINGER value for set fo . */
-        private int soLinger;
+        private int soLinger = DFLT_SO_LINGER;
 
         /** Direct buffer flag. */
         private boolean directBuf;
