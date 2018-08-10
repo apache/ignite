@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -227,6 +228,10 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         int sysPoolSize = cctx.kernalContext().config().getSystemThreadPoolSize();
 
         threads = permits = sysPoolSize / 4;
+
+        // Avoid 0 permits if sys pool size less that 4.
+        if (threads == 0)
+            threads = permits = 1;
 
         evictionQueue = new BucketQueue(threads);
     }
@@ -478,7 +483,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @return Bucket index.
          */
         int offer(PartitionEvictionTask task) {
-            int bucket = calculateBucket(task);
+            int bucket = calculateBucket();
 
             buckets[bucket].offer(task);
 
@@ -509,10 +514,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         }
 
         /***
-         * @param task Partition evict task.
          * @return Bucket index.
          */
-        private int calculateBucket(PartitionEvictionTask task) {
+        private int calculateBucket() {
             int min = 0;
 
             for (int bucket = min; bucket < bucketSizes.length; bucket++) {
@@ -527,7 +531,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * 0 - PRIORITY QUEUE (compare by partition size).
          * default (any other values) - FIFO.
          */
-        private static final byte QUEUE_TYPE = 0;
+        private static final byte QUEUE_TYPE = 1;
 
         /**
          *
@@ -537,8 +541,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             switch (QUEUE_TYPE) {
                 case 1:
                     return new PriorityBlockingQueue<>(
-                        1000,
-                        (p1, p2) -> p1.part.fullSize() > p2.part.fullSize() ? -1 : 1);
+                        1000, Comparator.comparingLong(p -> p.part.fullSize()));
                 default:
                     return new LinkedBlockingQueue<>();
             }
