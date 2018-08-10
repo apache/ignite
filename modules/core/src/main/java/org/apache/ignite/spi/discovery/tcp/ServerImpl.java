@@ -3681,9 +3681,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (subj == null) {
                             // Node has not pass authentication.
                             LT.warn(log, "Authentication failed [nodeId=" + node.id() +
-                                    ", addrs=" + U.addressesAsString(node) + ']',
-                                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
-                                    U.addressesAsString(node) + ']');
+                                ", addrs=" + U.addressesAsString(node) + ']');
 
                             // Always output in debug.
                             if (log.isDebugEnabled())
@@ -3712,10 +3710,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (!(subj instanceof Serializable)) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
-                                        ", addrs=" + U.addressesAsString(node) + ']',
-                                    "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
-                                        ", addrs=" +
-                                        U.addressesAsString(node) + ']');
+                                    ", addrs=" + U.addressesAsString(node) + ']');
 
                                 authFailedMsg = "Authentication subject is not serializable";
                             }
@@ -4311,9 +4306,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication failed [nodeId=" + node.id() +
-                                        ", addrs=" + U.addressesAsString(node) + ']',
-                                    "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
-                                        U.addressesAsString(node) + ']');
+                                    ", addrs=" + U.addressesAsString(node) + ']');
 
                                 // Always output in debug.
                                 if (log.isDebugEnabled())
@@ -4417,9 +4410,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         LT.warn(log,
                                             "Failed to authenticate local node " +
                                                 "(local authentication result is different from rest of topology) " +
-                                                "[nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']',
-                                            "Authentication failed [nodeId=" + U.id8(node.id()) +
-                                                ", addrs=" + U.addressesAsString(node) + ']');
+                                                "[nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']');
 
                                         joinRes.set(authFail);
 
