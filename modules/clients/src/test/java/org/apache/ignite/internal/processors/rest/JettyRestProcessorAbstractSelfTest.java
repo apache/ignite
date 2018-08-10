@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
-import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -2299,10 +2298,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         putTypedValue("timestamp", "2018-03-18%2001:01:01", "error", STATUS_FAILED);
         putTypedValue("timestamp", "error", "error", STATUS_FAILED);
 
-        IgniteCache<Timestamp, Timestamp> cTimestamp = typedCache();
+        IgniteCache<Timestamp, Timestamp> cTs = typedCache();
 
-        assertEquals(Timestamp.valueOf("2017-01-01 02:02:02"), cTimestamp.get(Timestamp.valueOf("2018-02-18 01:01:01")));
-        assertEquals(Timestamp.valueOf("2018-05-05 05:05:05"), cTimestamp.get(Timestamp.valueOf("2018-01-01 01:01:01")));
+        assertEquals(Timestamp.valueOf("2017-01-01 02:02:02"), cTs.get(Timestamp.valueOf("2018-02-18 01:01:01")));
+        assertEquals(Timestamp.valueOf("2018-05-05 05:05:05"), cTs.get(Timestamp.valueOf("2018-01-01 01:01:01")));
 
         // Test UUID type.
         UUID k1 = UUID.fromString("121f5ae8-148d-11e8-b642-0ed5f89f718b");
@@ -2798,7 +2797,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
          * @return This helper for chaining method calls.
          */
         public VisorGatewayArgument forNode(ClusterNode node) {
-            put("p1", node.id().toString());
+            put("p1", node != null ? node.id().toString() :  null);
 
             return this;
         }

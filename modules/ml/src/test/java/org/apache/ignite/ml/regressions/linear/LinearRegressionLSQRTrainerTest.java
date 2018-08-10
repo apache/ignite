@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -73,7 +74,7 @@ public class LinearRegressionLSQRTrainerTest {
         LinearRegressionModel mdl = trainer.fit(
             data,
             parts,
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[4]
         );
 
@@ -112,7 +113,7 @@ public class LinearRegressionLSQRTrainerTest {
         LinearRegressionModel mdl = trainer.fit(
             data,
             parts,
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[coef.length]
         );
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.preprocessing.binarization;
 
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -36,7 +37,7 @@ public class BinarizationPreprocessorTest {
 
         BinarizationPreprocessor<Integer, double[]> preprocessor = new BinarizationPreprocessor<>(
             7,
-            (k, v) -> v
+            (k, v) -> VectorUtils.of(v)
         );
 
         double[][] postProcessedData = new double[][]{
@@ -46,6 +47,6 @@ public class BinarizationPreprocessorTest {
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]), 1e-8);
+           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).asArray(), 1e-8);
     }
 }

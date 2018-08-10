@@ -17,7 +17,7 @@
 
 import { Selector } from 'testcafe';
 import { AngularJSSelector } from 'testcafe-angular-selectors';
-import { dropTestDB, insertTestUser, resolveUrl } from '../envtools';
+import { dropTestDB, insertTestUser, resolveUrl } from '../environment/envtools';
 import { createRegularUser } from '../roles';
 
 const regularUser = createRegularUser();

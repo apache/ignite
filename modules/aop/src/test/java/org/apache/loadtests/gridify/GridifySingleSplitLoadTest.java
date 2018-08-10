@@ -20,7 +20,7 @@ package org.apache.loadtests.gridify;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.loadtest.GridLoadTestStatistics;
+import org.apache.ignite.loadtests.GridLoadTestStatistics;
 import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;

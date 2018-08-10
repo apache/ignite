@@ -239,6 +239,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -258,6 +259,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
@@ -297,9 +299,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Separator for formatted coordinator properties. */
     public static final String COORDINATOR_PROPERTIES_SEPARATOR = ",";
 
-    static {
-        LongJVMPauseDetector.start();
-    }
+    /** Long jvm pause detector. */
+    private LongJVMPauseDetector longJVMPauseDetector;
 
     /** */
     @GridToStringExclude
@@ -472,17 +473,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public long getLongJVMPausesCount() {
-        return LongJVMPauseDetector.longPausesCount();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesCount() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public long getLongJVMPausesTotalDuration() {
-        return LongJVMPauseDetector.longPausesTotalDuration();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesTotalDuration() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public Map<Long, Long> getLongJVMPauseLastEvents() {
-        return LongJVMPauseDetector.longPauseEvents();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPauseEvents() : Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -831,6 +832,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         log = (GridLoggerProxy)cfg.getGridLogger().getLogger(
             getClass().getName() + (igniteInstanceName != null ? '%' + igniteInstanceName : ""));
+
+        longJVMPauseDetector = new LongJVMPauseDetector(log);
+
+        longJVMPauseDetector.start();
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
@@ -1520,6 +1525,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
     private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
+        ctx.addNodeAttribute(ATTR_REBALANCE_POOL_SIZE, configuration().getRebalanceThreadPoolSize());
         ctx.addNodeAttribute(ATTR_DATA_STREAMER_POOL_SIZE, configuration().getDataStreamerThreadPoolSize());
 
         final String[] incProps = cfg.getIncludeProperties();
@@ -1582,8 +1588,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Warn about loopback.
         if (ips.isEmpty() && macs.isEmpty())
             U.warn(log, "Ignite is starting on loopback address... Only nodes on the same physical " +
-                    "computer can participate in topology.",
-                "Ignite is starting on loopback address...");
+                "computer can participate in topology.");
 
         // Stick in network context into attributes.
         add(ATTR_IPS, (ips.isEmpty() ? "" : ips));
@@ -1668,6 +1673,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getConnectorConfiguration() != null)
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
+
+        // Whether rollback of dynamic cache start is supported or not.
+        // This property is added because of backward compatibility.
+        add(ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED, Boolean.TRUE);
 
         // Save data storage configuration.
         addDataStorageConfigurationAttributes();
@@ -2142,6 +2151,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (longOpDumpTask != null)
                 longOpDumpTask.close();
 
+            if (longJVMPauseDetector != null)
+                longJVMPauseDetector.stop();
+
             boolean interrupted = false;
 
             while (true) {
@@ -2502,9 +2514,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.warn(
                 log,
                 "Peer class loading is enabled (disable it in production for performance and " +
-                    "deployment consistency reasons)",
-                "Peer class loading is enabled (disable it for better performance)"
-            );
+                    "deployment consistency reasons)");
     }
 
     /**
@@ -4091,7 +4101,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     // No-op.
                 }
             }
+        }
 
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ReconnectState.class, this);
         }
     }
 

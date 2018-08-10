@@ -23,12 +23,14 @@ import java.util.Map;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link KMeansTrainer}.
@@ -42,7 +44,6 @@ public class KMeansTrainerTest {
      */
     @Test
     public void findOneClusters() {
-
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {1.0, 1.0, 1.0});
         data.put(1, new double[] {1.0, 2.0, 1.0});
@@ -53,19 +54,23 @@ public class KMeansTrainerTest {
 
         KMeansTrainer trainer = new KMeansTrainer()
             .withDistance(new EuclideanDistance())
-            .withK(1)
+            .withK(10)
             .withMaxIterations(1)
-            .withEpsilon(PRECISION);
+            .withEpsilon(PRECISION)
+            .withSeed(2);
+        assertEquals(10, trainer.getK());
+        assertEquals(2, trainer.getSeed());
+        assertTrue(trainer.getDistance() instanceof EuclideanDistance);
 
-        KMeansModel knnMdl = trainer.fit(
+        KMeansModel knnMdl = trainer.withK(1).fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
 
-        Vector firstVector = new DenseLocalOnHeapVector(new double[] {2.0, 2.0});
+        Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
         assertEquals(knnMdl.apply(firstVector), 0.0, PRECISION);
-        Vector secondVector = new DenseLocalOnHeapVector(new double[] {-2.0, -2.0});
+        Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
         assertEquals(knnMdl.apply(secondVector), 0.0, PRECISION);
         assertEquals(trainer.getMaxIterations(), 1);
         assertEquals(trainer.getEpsilon(), PRECISION, PRECISION);

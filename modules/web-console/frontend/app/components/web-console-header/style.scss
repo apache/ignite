@@ -64,8 +64,9 @@ web-console-header {
         flex-direction: row;
         flex-wrap: wrap;
         align-items: center;
-        padding: 18.5px 0;
+        padding: 18px 30px;
         position: relative;
+        height: 81px;
     }
 
     .wch-logo {
@@ -118,6 +119,17 @@ web-console-header {
 
         &:not(:last-child) {
             margin-right: $nav-item-margin;
+        }
+
+        .dropdown-menu {
+            a {
+                &:hover, &:focus {
+                    color: inherit;
+                }
+            }
+            li.active a {
+                color: inherit;
+            }
         }
 
         .user-name-wrapper {
@@ -179,6 +191,10 @@ web-console-header {
                 text-decoration: none;
             }
         }
+    }
+
+    .wch-additional-nav-items {
+        display: flex;
     }
 }
 
