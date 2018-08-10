@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
@@ -86,6 +87,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @param initNew Initialize new index.
      * @param rowCache Row cache.
      * @param mvccEnabled Mvcc flag.
+     * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
@@ -102,8 +104,10 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize,
         boolean mvccEnabled,
-        @Nullable H2RowCache rowCache) throws IgniteCheckedException {
-        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        @Nullable H2RowCache rowCache,
+        @Nullable FailureProcessor failureProcessor
+    ) throws IgniteCheckedException {
+        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
 
         if (!initNew) {
             // Page is ready - read inline size from it.

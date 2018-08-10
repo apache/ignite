@@ -78,7 +78,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             metaPageId,
             reuseList,
             innerIO(grp),
-            leafIO(grp));
+            leafIO(grp),
+            grp.shared().kernalContext().failure());
 
         assert rowStore != null;
 

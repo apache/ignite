@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  */
 public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
     /** */
-    public final static Object WITHOUT_KEY = new Object();
+    public static final Object WITHOUT_KEY = new Object();
 
     /** */
     private final CacheGroupContext grp;
@@ -60,7 +60,8 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             metaPageId,
             reuseList,
             grp.sharedGroup() ? CacheIdAwarePendingEntryInnerIO.VERSIONS : PendingEntryInnerIO.VERSIONS,
-            grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS);
+            grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS,
+            grp.shared().kernalContext().failure());
 
         this.grp = grp;
 
@@ -70,8 +71,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
     }
 
     /** {@inheritDoc} */
-    @Override protected int compare(BPlusIO<PendingRow> iox, long pageAddr, int idx, PendingRow row)
-        throws IgniteCheckedException {
+    @Override protected int compare(BPlusIO<PendingRow> iox, long pageAddr, int idx, PendingRow row) {
         PendingRowIO io = (PendingRowIO)iox;
 
         int cmp;

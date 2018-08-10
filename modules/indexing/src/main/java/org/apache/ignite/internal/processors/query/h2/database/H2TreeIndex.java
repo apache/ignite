@@ -138,7 +138,8 @@ public class H2TreeIndex extends GridH2IndexBase {
                         inlineIdxs,
                         computeInlineSize(inlineIdxs, inlineSize),
                         cctx.mvccEnabled(),
-                        rowCache) {
+                        rowCache,
+                        cctx.kernalContext().failure()) {
                         @Override public int compareValues(Value v1, Value v2) {
                             return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                         }
