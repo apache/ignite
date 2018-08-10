@@ -73,9 +73,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests putAll() method along with failover and different configurations.
  */
 public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Size of the test map. */
     private static final int TEST_MAP_SIZE = 30_000;
 
@@ -105,7 +102,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** Filter to include only worker nodes. */
     private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
-        @SuppressWarnings("unchecked")
         @Override public boolean apply(ClusterNode n) {
              return "worker".equals(n.attribute("segment"));
         }
@@ -673,10 +669,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
 
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         discoverySpi.setAckTimeout(60000);
-        discoverySpi.setIpFinder(ipFinder);
         discoverySpi.setForceServerMode(true);
 
         cfg.setDiscoverySpi(discoverySpi);
