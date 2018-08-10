@@ -30,6 +30,8 @@ class ClientFailoverSocket
 
     private $socket;
     private $state;
+    private $endpointsNumber;
+    private $endpointIndex;
             
     public function __construct()
     {
@@ -43,18 +45,24 @@ class ClientFailoverSocket
             $this->disconnect();
         }
         $this->config = $config;
-        $this->socket = new ClientSocket($this->config->getEndpoints()[0], $this->config);
-        $this->changeState(ClientFailoverSocket::STATE_CONNECTING);
-        $this->socket->connect();
-        $this->changeState(ClientFailoverSocket::STATE_CONNECTED);
+        $this->endpointsNumber = count($this->config->getEndpoints());
+        $this->endpointIndex = rand(0, $this->endpointsNumber - 1);
+        $this->failoverConnect();
     }
-
+    
     public function send(int $opCode, callable $payloadWriter, callable $payloadReader = null): void
     {
         if ($this->state !== ClientFailoverSocket::STATE_CONNECTED) {
             throw new ConnectionException();
         }
-        $this->socket->sendRequest($opCode, $payloadWriter, $payloadReader);
+        try {
+            $this->socket->sendRequest($opCode, $payloadWriter, $payloadReader);
+        } catch (ConnectionException $e) {
+            $this->socket->disconnect();
+            $this->changeState(ClientFailoverSocket::STATE_DISCONNECTED);
+            $this->endpointIndex++;
+            $this->failoverConnect();
+        }
     }
 
     public function disconnect(): void
@@ -68,11 +76,36 @@ class ClientFailoverSocket
         }
     }
 
-    private function changeState(int $state): void
+    private function failoverConnect(): void
     {
-        if (Logger::isDebug() && $this->socket) {
+        $errors = [];
+        for ($i = 0; $i < $this->endpointsNumber; $i++) {
+            $index = ($this->endpointIndex + $i) % $this->endpointsNumber;
+            $endpoint = $this->config->getEndpoints()[$index];
+            try {
+                $this->changeState(ClientFailoverSocket::STATE_CONNECTING, $endpoint);
+                $this->socket = new ClientSocket($endpoint, $this->config);
+                $this->socket->connect();
+                $this->changeState(ClientFailoverSocket::STATE_CONNECTED, $endpoint);
+                $this->endpointIndex = $index;
+                return;
+            } catch (ConnectionException $e) {
+                Logger::logError($e->getMessage());
+                array_push($errors, sprintf('[%s] %s', $endpoint, $e->getMessage()));
+                $this->changeState(ClientFailoverSocket::STATE_DISCONNECTED, $endpoint);
+            }
+        }
+        $this->socket = null;
+        throw new ConnectionException(implode(';', $errors));
+    }
+
+    private function changeState(int $state, ?string $endpoint = null): void
+    {
+        if (Logger::isDebug()) {
             Logger::logDebug(sprintf('Socket %s: %s -> %s',
-                $this->socket->getEndpoint(), $this->getState($this->state), $this->getState($state)));
+                $endpoint ? $endpoint : ($this->socket ? $this->socket->getEndpoint() : ''),
+                $this->getState($this->state),
+                $this->getState($state)));
         }
         $this->state = $state;
     }
