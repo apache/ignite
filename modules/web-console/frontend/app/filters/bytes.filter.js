@@ -16,6 +16,10 @@
  */
 
 export default () => {
+    /**
+     * @param {number} bytes
+     * @param {number} precision
+     */
     return (bytes, precision) => {
         if (bytes === 0)
             return '0 bytes';
