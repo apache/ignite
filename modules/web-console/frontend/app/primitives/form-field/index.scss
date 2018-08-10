@@ -329,7 +329,11 @@
             width: 38px;
         }
 
-        div {
+        div:first-child {
+            display: none;
+        }
+
+        [bs-tooltip] {
             z-index: 1;
             position: absolute;
             top: 0;
@@ -338,7 +342,7 @@
             height: 36px;
         }
 
-        svg {
+        [ignite-icon] {
             position: absolute;
             top: 10px;
             right: 0;
@@ -393,17 +397,26 @@
         text-align: left;
         line-height: 14px;
 
-        &:before {
-            content: attr(message);
-
-            position: relative;
-            right: initial;
-            width: auto;
+        div:first-child {
+            display: block;
         }
 
-        > * {
+        [bs-tooltip],
+        [ignite-icon] {
             display: none;
         }
+
+        // &:before {
+        //     content: attr(message);
+
+        //     position: relative;
+        //     right: initial;
+        //     width: auto;
+        // }
+
+        // > * {
+        //     display: none;
+        // }
     }
 
     .form-field__error + .form-field__error {
