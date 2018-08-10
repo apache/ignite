@@ -360,7 +360,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final boolean DFLT_TCP_NODELAY = true;
 
     /** Default SO_LINGER to set for socket, 0 means enabled with zero timeout. */
-    public static final int DFLT_SO_LINGER = 0;
+    public static final int DFLT_SO_LINGER = 5;
 
     /** Default value for {@code FILTER_REACHABLE_ADDRESSES} socket option (value is <tt>false</tt>). */
     public static final boolean DFLT_FILTER_REACHABLE_ADDRESSES = false;
