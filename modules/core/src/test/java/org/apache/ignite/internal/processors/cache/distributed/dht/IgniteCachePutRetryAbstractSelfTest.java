@@ -137,8 +137,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(GRID_CNT);
@@ -149,8 +147,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
         super.afterTestsStopped();
 
         stopAllGrids();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
     /** {@inheritDoc} */

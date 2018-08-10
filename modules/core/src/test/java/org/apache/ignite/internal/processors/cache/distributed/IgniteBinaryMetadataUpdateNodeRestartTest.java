@@ -81,7 +81,7 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
 
         CacheConfiguration ccfg1 = cacheConfiguration(TX_CACHE, TRANSACTIONAL);
         CacheConfiguration ccfg2 = cacheConfiguration(ATOMIC_CACHE, ATOMIC);
-        
+
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 
         cfg.setClientMode(client);
@@ -90,17 +90,8 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL,"true");
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
         super.afterTestsStopped();
     }
