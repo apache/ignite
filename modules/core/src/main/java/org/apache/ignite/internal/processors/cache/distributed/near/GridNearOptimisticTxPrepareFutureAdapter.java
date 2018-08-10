@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -164,7 +165,19 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * @param fut Future.
      * @param clo Closure.
      */
-    void applyWhenReady(final IgniteInternalFuture<?> fut, GridAbsClosureX clo) {
+    protected void applyWhenReady(final IgniteInternalFuture<?> fut, GridAbsClosureX clo) {
+        long remaining = tx.remainingTime();
+
+        if (remaining == -1) {
+            IgniteCheckedException e = tx.timeoutException();
+
+            ERR_UPD.compareAndSet(this, null, e);
+
+            onDone(e);
+
+            return;
+        }
+
         if (fut == null || fut.isDone()) {
             try {
                 clo.applyx();
@@ -176,14 +189,21 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             }
         }
         else {
-            long remaining = tx.remainingTime();
+            if (remaining == 0) {
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
+                        try {
+                            fut.get();
 
-            if (remaining == -1) {
-                IgniteCheckedException e = tx.timeoutException();
+                            clo.applyx();
+                        }
+                        catch (IgniteCheckedException e) {
+                            ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
 
-                ERR_UPD.compareAndSet(this, null, e);
-
-                onDone(e);
+                            onDone(e);
+                        }
+                    }
+                });
             }
             else {
                 cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
