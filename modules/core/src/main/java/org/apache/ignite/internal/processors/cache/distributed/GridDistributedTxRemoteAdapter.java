@@ -789,12 +789,16 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 cctx.wal().flush(ptr, false);
                         }
                         catch (StorageException e) {
+                            err = e;
+
                             throw new IgniteCheckedException("Failed to log transaction record " +
                                 "(transaction will be rolled back): " + this, e);
                         }
                     }
                     finally {
                         cctx.database().checkpointReadUnlock();
+
+                        notifyDrManager(state() == COMMITTING && err == null);
 
                         if (wrapper != null)
                             wrapper.initialize(ret);
@@ -811,6 +815,28 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 state(COMMITTED);
             }
+        }
+    }
+
+    /**
+     * Notify Dr on tx finished.
+     *
+     * @param commit {@code True} if commited, {@code False} otherwise.
+     */
+    private void notifyDrManager(boolean commit) {
+        if (system() || internal())
+            return;
+
+        Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap = updateCountersMap();
+
+        if (mvccSnapshot == null || F.isEmpty(updCntrsMap))
+            return;
+
+        for (Integer cacheId : updCntrsMap.keySet()) {
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            if (ctx0.isDrEnabled())
+                ctx0.dr().onTxFinished(mvccSnapshot, commit, topologyVersionSnapshot());
         }
     }
 
@@ -920,6 +946,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public final void rollbackRemoteTx() {
         try {
+            notifyDrManager(false);
+
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {

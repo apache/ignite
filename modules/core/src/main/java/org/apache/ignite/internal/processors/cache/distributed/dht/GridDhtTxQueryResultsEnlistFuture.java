@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgniteUuid;
 public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEnlistFuture implements UpdateSourceIterator<Object> {
     /** */
     private static final long serialVersionUID = -4933550335145438798L;
+
     /** */
     private GridCacheOperation op;
 

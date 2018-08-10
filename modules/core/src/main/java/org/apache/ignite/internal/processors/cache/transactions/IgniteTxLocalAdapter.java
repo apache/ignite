@@ -714,28 +714,28 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             final GridCacheVersion dhtVer0 = dhtVer;
 
                                             updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerSet(
-                                                    null,
-                                                    eventNodeId(),
-                                                    nodeId,
-                                                    val0,
-                                                    false,
-                                                    false,
-                                                    txEntry.ttl(),
-                                                    false,
-                                                    metrics0,
-                                                    txEntry.keepBinary(),
-                                                    txEntry.hasOldValue(),
-                                                    txEntry.oldValue(),
-                                                    topVer,
-                                                    CU.empty0(),
-                                                    DR_NONE,
-                                                    txEntry.conflictExpireTime(),
-                                                    null,
-                                                    CU.subjectId(this, cctx),
-                                                    resolveTaskName(),
-                                                    dhtVer0,
-                                                    null,
-                                                    mvccSnapshot())
+                                                null,
+                                                eventNodeId(),
+                                                nodeId,
+                                                val0,
+                                                false,
+                                                false,
+                                                txEntry.ttl(),
+                                                false,
+                                                metrics0,
+                                                txEntry.keepBinary(),
+                                                txEntry.hasOldValue(),
+                                                txEntry.oldValue(),
+                                                topVer,
+                                                CU.empty0(),
+                                                DR_NONE,
+                                                txEntry.conflictExpireTime(),
+                                                null,
+                                                CU.subjectId(this, cctx),
+                                                resolveTaskName(),
+                                                dhtVer0,
+                                                null,
+                                                mvccSnapshot())
                                             );
                                         }
                                     }
@@ -752,7 +752,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             txEntry.oldValue(),
                                             topVer,
                                             null,
-                                            cached.detached()  ? DR_NONE : drType,
+                                            cached.detached() ? DR_NONE : drType,
                                             cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
@@ -776,24 +776,24 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             final GridCacheVersion dhtVer0 = dhtVer;
 
                                             updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerRemove(
-                                                    null,
-                                                    eventNodeId(),
-                                                    nodeId,
-                                                    false,
-                                                    false,
-                                                    metrics0,
-                                                    txEntry.keepBinary(),
-                                                    txEntry.hasOldValue(),
-                                                    txEntry.oldValue(),
-                                                    topVer,
-                                                    CU.empty0(),
-                                                    DR_NONE,
-                                                    null,
-                                                    CU.subjectId(this, cctx),
-                                                    resolveTaskName(),
-                                                    dhtVer0,
-                                                    null,
-                                                    mvccSnapshot())
+                                                null,
+                                                eventNodeId(),
+                                                nodeId,
+                                                false,
+                                                false,
+                                                metrics0,
+                                                txEntry.keepBinary(),
+                                                txEntry.hasOldValue(),
+                                                txEntry.oldValue(),
+                                                topVer,
+                                                CU.empty0(),
+                                                DR_NONE,
+                                                null,
+                                                CU.subjectId(this, cctx),
+                                                resolveTaskName(),
+                                                dhtVer0,
+                                                null,
+                                                mvccSnapshot())
                                             );
                                         }
                                     }
@@ -833,7 +833,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             log.debug("Ignoring READ entry when committing: " + txEntry);
                                     }
                                     else {
-                                        assert ownsLock(txEntry.cached()):
+                                        assert ownsLock(txEntry.cached()) :
                                             "Transaction does not own lock for group lock entry during  commit [tx=" +
                                                 this + ", txEntry=" + txEntry + ']';
 
@@ -932,6 +932,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             finally {
                 cctx.database().checkpointReadUnlock();
 
+                notifyDrManager(state() == COMMITTING);
+
                 cctx.tm().resetContext();
             }
         }
@@ -948,6 +950,26 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || committedVers != null;
                 assert !needsCompletedVersions || rolledbackVers != null;
             }
+        }
+    }
+
+    /**
+     * Notify Dr on tx finished.
+     *
+     * @param commit {@code True} if commited, {@code False} otherwise.
+     */
+    protected void notifyDrManager(boolean commit) {
+        if (system() || internal())
+            return;
+
+        if (mvccSnapshot == null || F.isEmpty(updCntrs))
+            return;
+
+        for (Integer cacheId : updCntrs.keySet()) {
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            if (ctx0.isDrEnabled())
+                ctx0.dr().onTxFinished(mvccSnapshot, commit, topologyVersionSnapshot());
         }
     }
 
@@ -1072,6 +1094,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 ", tx=" + this + ']');
         }
 
+        notifyDrManager(false);
+
         if (near()) {
             // Must evict near entries before rolling back from
             // transaction manager, so they will be removed from cache.
@@ -1132,8 +1156,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param read {@code True} if read.
      * @param accessTtl TTL for read operation.
      * @param filter Filter to check entries.
-     * @throws IgniteCheckedException If error.
      * @param computeInvoke If {@code true} computes return value for invoke operation.
+     * @throws IgniteCheckedException If error.
      */
     @SuppressWarnings("unchecked")
     protected final void postLockWrite(

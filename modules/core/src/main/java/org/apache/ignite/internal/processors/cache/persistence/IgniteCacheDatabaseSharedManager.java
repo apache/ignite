@@ -1092,9 +1092,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         initPageMemoryDataStructures(memCfg);
 
-        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx)) {
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx))
             lsnr.afterInitialise(this);
-        }
     }
 
     /** {@inheritDoc} */

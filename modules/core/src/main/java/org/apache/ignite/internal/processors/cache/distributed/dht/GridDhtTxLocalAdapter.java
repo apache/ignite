@@ -797,6 +797,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 userRollback(clearThreadMap);
         }
         catch (IgniteCheckedException e) {
+            if(commit)
+                notifyDrManager(false);
+
             err = e;
 
             commit = false;

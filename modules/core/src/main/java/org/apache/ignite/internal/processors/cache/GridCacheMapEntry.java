@@ -6402,6 +6402,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long expireTime = CU.EXPIRE_TIME_ETERNAL;
             long ttl = CU.TTL_ETERNAL;
 
+            GridCacheVersion ver = tx.writeVersion();
+
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
@@ -6409,12 +6411,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     val,
                     op,
                     tx.nearXidVersion(),
-                    tx.writeVersion(),
+                    ver,
                     CU.EXPIRE_TIME_ETERNAL,
                     key.partition(),
                     updateCntr)));
 
-            update(val, expireTime, ttl, tx.writeVersion(), true);
+            update(val, expireTime, ttl, ver, true);
+
+            mvccDrReplicate(DR_BACKUP, val, ver, topVer, mvccVer);
 
             recordNodeId(affNodeId, topVer);
         }

@@ -3338,7 +3338,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (state != COMMITTING && state != COMMITTED)
                     throw isRollbackOnly() ? timedOut() ? timeoutException() : rollbackException() :
                         new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
-                        ", tx=" + this + ']');
+                            ", tx=" + this + ']');
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Invalid transaction state for commit (another thread is committing): " + this);
@@ -3367,6 +3367,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 userRollback(clearThreadMap);
         }
         catch (IgniteCheckedException e) {
+            if(commit)
+                notifyDrManager(false);
+
             err = e;
 
             commit = false;

@@ -1163,7 +1163,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         }
 
                         try {
-                            if (!cctx.localNode().isClient()) {
+                            if (!cctx.kernalContext().clientNode()) {
                                 if (dht() && remote())
                                     cctx.coordinators().updateState(mvccSnapshot, txState, false);
                                 else if (local()) {
