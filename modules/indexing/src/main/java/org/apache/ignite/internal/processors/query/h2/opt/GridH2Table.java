@@ -90,7 +90,7 @@ public class GridH2Table extends TableBase {
     private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
 
     /** */
-    private final GridH2TableLock tableLock = new GridH2TableLock();
+    private final GridH2TableLock tableLock;
 
     /** */
     private boolean destroyed;
@@ -199,6 +199,8 @@ public class GridH2Table extends TableBase {
         pkIndexPos = hasHashIndex ? 2 : 1;
 
         sysIdxsCnt = idxs.size();
+
+        tableLock = new GridH2TableLock(cctx.kernalContext(), this);
     }
 
     /**
@@ -250,7 +252,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
-        return tableLock.lock(ses, this, exclusive);
+        return tableLock.lock(ses, exclusive);
     }
 
     /**
@@ -283,7 +285,7 @@ public class GridH2Table extends TableBase {
     /** {@inheritDoc} */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Override public void removeChildrenAndResources(Session ses) {
-        tableLock.lock(ses, this, true);
+        tableLock.lock(ses, true);
 
         try {
             super.removeChildrenAndResources(ses);
@@ -323,7 +325,7 @@ public class GridH2Table extends TableBase {
      * Destroy the table.
      */
     public void destroy() {
-        tableLock.lock(this, true);
+        tableLock.lock(true);
 
         try {
             ensureNotDestroyed();
@@ -337,7 +339,7 @@ public class GridH2Table extends TableBase {
                     index(i).destroy(rmIndex);
         }
         finally {
-            tableLock.unlock(this);
+            tableLock.unlock();
         }
     }
 
@@ -352,7 +354,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void unlock(Session ses) {
-        tableLock.unlock(ses, this);
+        tableLock.unlock(ses);
     }
 
     /**
@@ -396,7 +398,7 @@ public class GridH2Table extends TableBase {
             prevRow0.prepareValuesCache();
 
         try {
-            tableLock.lock(this, false);
+            tableLock.lock(false);
 
             try {
                 ensureNotDestroyed();
@@ -427,7 +429,7 @@ public class GridH2Table extends TableBase {
                 }
             }
             finally {
-                tableLock.unlock(this);
+                tableLock.unlock();
             }
         }
         finally {
@@ -448,7 +450,7 @@ public class GridH2Table extends TableBase {
     public boolean remove(CacheDataRow row) throws IgniteCheckedException {
         GridH2Row row0 = desc.createRow(row);
 
-        tableLock.lock(this, false);
+        tableLock.lock(false);
 
         try {
             ensureNotDestroyed();
@@ -474,7 +476,7 @@ public class GridH2Table extends TableBase {
             return rmv;
         }
         finally {
-            tableLock.unlock(this);
+            tableLock.unlock();
         }
     }
 
@@ -525,7 +527,7 @@ public class GridH2Table extends TableBase {
     public void proposeUserIndex(Index idx) throws IgniteCheckedException {
         assert idx instanceof GridH2IndexBase;
 
-        tableLock.lock(this, true);
+        tableLock.lock(true);
 
         try {
             ensureNotDestroyed();
@@ -540,7 +542,7 @@ public class GridH2Table extends TableBase {
             assert oldTmpIdx == null;
         }
         finally {
-            tableLock.unlock(this);
+            tableLock.unlock();
         }
     }
 
@@ -552,7 +554,7 @@ public class GridH2Table extends TableBase {
      * @return Temporary index with given name.
      */
     private Index commitUserIndex(Session ses, String idxName) {
-        tableLock.lock(ses, this,true);
+        tableLock.lock(ses, true);
 
         try {
             ensureNotDestroyed();
@@ -585,7 +587,7 @@ public class GridH2Table extends TableBase {
             return idx;
         }
         finally {
-            tableLock.unlock(ses, this);
+            tableLock.unlock(ses);
         }
     }
 
@@ -595,7 +597,7 @@ public class GridH2Table extends TableBase {
      * @param idxName Index name.
      */
     public void rollbackUserIndex(String idxName) {
-        tableLock.lock(this, true);
+        tableLock.lock(true);
 
         try {
             ensureNotDestroyed();
@@ -605,7 +607,7 @@ public class GridH2Table extends TableBase {
             assert rmvIdx != null;
         }
         finally {
-            tableLock.unlock(this);
+            tableLock.unlock();
         }
     }
 
@@ -637,7 +639,7 @@ public class GridH2Table extends TableBase {
      * @param h2Idx the index to remove
      */
     public void removeIndex(Session session, Index h2Idx) {
-        tableLock.lock(session, this,true);
+        tableLock.lock(session, true);
 
         try {
             ArrayList<Index> idxs = new ArrayList<>(this.idxs);
@@ -666,7 +668,7 @@ public class GridH2Table extends TableBase {
             this.idxs = idxs;
         }
         finally {
-            tableLock.unlock(session, this);
+            tableLock.unlock(session);
         }
     }
 
@@ -848,7 +850,7 @@ public class GridH2Table extends TableBase {
     public void addColumns(List<QueryField> cols, boolean ifNotExists) {
         assert !ifNotExists || cols.size() == 1;
 
-        tableLock.lock(this, true);
+        tableLock.lock(true);
 
         try {
             int pos = columns.length;
@@ -887,7 +889,7 @@ public class GridH2Table extends TableBase {
             setModified();
         }
         finally {
-            tableLock.unlock(this);
+            tableLock.unlock();
         }
     }
 
@@ -899,7 +901,7 @@ public class GridH2Table extends TableBase {
     public void dropColumns(List<String> cols, boolean ifExists) {
         assert !ifExists || cols.size() == 1;
 
-        tableLock.lock(this, true);
+        tableLock.lock(true);
 
         try {
             int size = columns.length;
@@ -949,7 +951,7 @@ public class GridH2Table extends TableBase {
             setModified();
         }
         finally {
-            tableLock.unlock(this);
+            tableLock.unlock();
         }
     }
 

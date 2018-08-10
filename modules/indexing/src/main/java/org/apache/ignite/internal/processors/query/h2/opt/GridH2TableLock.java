@@ -24,6 +24,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
 import org.h2.table.Table;
@@ -39,6 +41,12 @@ public class GridH2TableLock {
     /** Lock exclusive session. */
     private volatile IgniteSession lockExclusiveSession;
 
+    /** Logger. */
+    public final IgniteLogger log;
+
+    /** H2 table to lock. */
+    public final Table table;
+
     /** Lock shared sessions. */
     private HashSet<IgniteSession> lockSharedSessions = New.hashSet();
 
@@ -52,14 +60,25 @@ public class GridH2TableLock {
     private final ArrayDeque<IgniteSession> waitingSessions = new ArrayDeque<>();
 
     /**
+     * @param ctx Kernal.
+     * @param table Table.
+     */
+    public GridH2TableLock(GridKernalContext ctx, Table table) {
+        this.log = ctx.log(GridH2Table.class);
+        this.table = table;
+    }
+
+    /**
      * @param session Session.
      * @param table Table.
      * @param exclusive Exclusive lock.
      * @param msg Message.
      */
-    private void traceLock(IgniteSession session, Table table, boolean exclusive, String msg) {
-        System.out.println("Table lock: " + msg + ". [session=" +session.getClass().getSimpleName() + "#" +  session.getId()
-            + ", exclusive=" + exclusive + ", table=" + table.getName() + ']');
+    private void log(IgniteSession session, Table table, boolean exclusive, String msg) {
+        if (log.isDebugEnabled()) {
+            log.debug("Table lock: " + msg + ". [session=" + session.getClass().getSimpleName() + "#" + session.getId()
+                + ", exclusive=" + exclusive + ", table=" + table.getName() + ']');
+        }
     }
 
     /**
@@ -87,25 +106,22 @@ public class GridH2TableLock {
 
     /**
      * @param s Session.
-     * @param table Table.
      */
-    public void unlock(Session s, Table table) {
-        unlock(new IgniteH2Session(s), table);
+    public void unlock(Session s) {
+        unlock(new IgniteH2Session(s));
     }
 
     /**
-     * @param table Table.
      */
-    public void unlock(Table table) {
-        unlock(new IgniteInternalSession(), table);
+    public void unlock() {
+        unlock(new IgniteInternalSession());
     }
 
     /**
      * @param s Session.
-     * @param table Table.
      */
-    private void unlock(IgniteSession s, Table table) {
-        traceLock(s, table, F.eq(lockExclusiveSession, s), "unlock");
+    private void unlock(IgniteSession s) {
+        log(s, table, F.eq(lockExclusiveSession, s), "unlock");
 
         synchronized (mux) {
             if (F.eq(lockExclusiveSession,  s))
@@ -121,30 +137,27 @@ public class GridH2TableLock {
 
     /**
      * @param session Session.
-     * @param table Table.
      * @param exclusive Exclusively lock flag.
      * @return {@code true} if locked.
      */
-    public boolean lock(Session session, Table table, boolean exclusive) {
-        return lock(new IgniteH2Session(session), table, exclusive);
+    public boolean lock(Session session, boolean exclusive) {
+        return lock(new IgniteH2Session(session), exclusive);
     }
 
     /**
-     * @param table Table.
      * @param exclusive Exclusively lock flag.
      * @return {@code true} if locked.
      */
-    public boolean lock(Table table, boolean exclusive) {
-        return lock(new IgniteInternalSession(), table, exclusive);
+    public boolean lock(boolean exclusive) {
+        return lock(new IgniteInternalSession(), exclusive);
     }
 
     /**
      * @param session Session.
-     * @param table Table.
      * @param exclusive Exclusively lock flag.
      * @return {@code true} if locked.
      */
-    private boolean lock(IgniteSession session, Table table, boolean exclusive) {
+    private boolean lock(IgniteSession session, boolean exclusive) {
             if (F.eq(lockExclusiveSession, session))
                 return true;
 
@@ -177,7 +190,7 @@ public class GridH2TableLock {
      * @param exclusive {@code true} in case exclusive lock is requested.
      */
     private void doLock1(IgniteSession session, Table table, boolean exclusive) {
-        traceLock(session, table, exclusive, "request");
+        log(session, table, exclusive, "request");
 
         // don't get the current time unless necessary
         long max = 0;
@@ -206,11 +219,11 @@ public class GridH2TableLock {
                 max = now + TimeUnit.MILLISECONDS.toNanos(session.getLockTimeout());
             }
             else if (now >= max) {
-                traceLock(session, table, exclusive, "timeout after " + session.getLockTimeout());
+                log(session, table, exclusive, "timeout after " + session.getLockTimeout());
                 throw new IgniteException("Table lock timeout [table=" + table.getName());
             }
             try {
-                traceLock(session, table, exclusive, "waiting for");
+                log(session, table, exclusive, "waiting for");
 
                 // don't wait too long so that deadlocks are detected early
                 mux.wait(1);
@@ -233,7 +246,7 @@ public class GridH2TableLock {
         if (exclusive) {
             if (lockExclusiveSession == null) {
                 if (lockSharedSessions.isEmpty()) {
-                    traceLock(session, table, exclusive, "added for");
+                    log(session, table, exclusive, "added for");
 
                     session.addLock(table);
 
@@ -244,7 +257,7 @@ public class GridH2TableLock {
                 else if (lockSharedSessions.size() == 1 &&
                     lockSharedSessions.contains(session)) {
 
-                    traceLock(session, table, exclusive, "add (upgraded) for ");
+                    log(session, table, exclusive, "add (upgraded) for ");
 
                     lockExclusiveSession = session;
 
@@ -255,7 +268,7 @@ public class GridH2TableLock {
         else {
             if (lockExclusiveSession == null) {
                 if (!lockSharedSessions.contains(session)) {
-                    traceLock(session, table, exclusive, "ok");
+                    log(session, table, exclusive, "ok");
 
                     session.addLock(table);
 
