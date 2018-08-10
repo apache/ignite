@@ -476,7 +476,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          */
         PartitionEvictionTask pollAny() {
             for (int bucket = 0; bucket < bucketSizes.length; bucket++){
-                if (bucketSizes[bucket] > 0)
+                if (!buckets[bucket].isEmpty())
                     return poll(bucket);
             }
 
