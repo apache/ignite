@@ -130,7 +130,7 @@
     }
    .ignite-form-field__errors {
         color: $ignite-brand-primary;
-        padding: 5px 10px 0px;
+        padding: 5px 10px 0;
         line-height: 14px;
         font-size: 12px;
         clear: both;
@@ -220,7 +220,7 @@
             box-sizing: border-box;
             width: 100%;
             max-width: initial;
-            min-width: 0px;
+            min-width: 0;
             height: 36px;
             padding: 9px 10px;
             margin-right: 0;

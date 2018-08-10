@@ -44,9 +44,12 @@ const getResolvePromises = ($transition) => $transition.getResolveTokens()
  */
 export const errorState = ($uiRouter) => {
     $uiRouter.transitionService.onError(match, ($transition) => {
-        if ($transition.error().type !== RejectType.ERROR) return;
+        if ($transition.error().type !== RejectType.ERROR)
+            return;
+
         go($transition);
     });
+
     $uiRouter.transitionService.onStart(match, ($transition) => {
         Promise.all(getResolvePromises($transition)).catch((e) => go($transition));
     });

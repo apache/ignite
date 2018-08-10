@@ -144,6 +144,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** {@inheritDoc} */
     @Override public void close() {
         datasetCache.destroy();
+        ComputeUtils.removeData(ignite, datasetId);
     }
 
     /**

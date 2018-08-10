@@ -439,7 +439,6 @@ div(ng-if='notebook')
             label {{notebook.name}}
             .btn-group(ng-if='!demo')
                 +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
-                +btn-toolbar('fa-trash', 'removeNotebook(notebook)', '{{$ctrl.isDemo ? "Demo notebook cannot be deleted" : "Remove notebook"}}')
 
         h1(ng-show='notebook.edit')
             input.form-control(ng-model='notebook.editName' required ignite-on-enter='renameNotebook(notebook.editName)' ignite-on-escape='notebook.edit = false;')

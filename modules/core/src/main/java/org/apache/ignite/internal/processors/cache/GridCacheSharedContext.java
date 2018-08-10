@@ -246,23 +246,8 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void activate() throws IgniteCheckedException {
-        if (!kernalCtx.clientNode())
-            dbMgr.lock();
-
-        boolean success = false;
-
-        try {
-            for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
-                mgr.onActivate(kernalCtx);
-
-            success = true;
-        }
-        finally {
-            if (!success) {
-                if (!kernalCtx.clientNode())
-                    dbMgr.unLock();
-            }
-        }
+        for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
+            mgr.onActivate(kernalCtx);
     }
 
     /**

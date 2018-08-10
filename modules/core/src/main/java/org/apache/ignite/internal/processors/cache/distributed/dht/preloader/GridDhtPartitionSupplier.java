@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -118,19 +120,20 @@ class GridDhtPartitionSupplier {
     }
 
     /**
-     * Handles new topology version and clears supply context map of outdated contexts.
-     *
-     * @param topVer Topology version.
+     * Handle topology change and clear supply context map of outdated contexts.
      */
-    @SuppressWarnings("ConstantConditions")
-    void onTopologyChanged(AffinityTopologyVersion topVer) {
+    void onTopologyChanged() {
         synchronized (scMap) {
             Iterator<T3<UUID, Integer, AffinityTopologyVersion>> it = scMap.keySet().iterator();
+
+            Collection<UUID> aliveNodes = grp.shared().discovery().aliveServerNodes().stream()
+                .map(ClusterNode::id)
+                .collect(Collectors.toList());
 
             while (it.hasNext()) {
                 T3<UUID, Integer, AffinityTopologyVersion> t = it.next();
 
-                if (topVer.compareTo(t.get3()) > 0) { // Clear all obsolete contexts.
+                if (!aliveNodes.contains(t.get1())) { // Clear all obsolete contexts.
                     clearContext(scMap.get(t), log);
 
                     it.remove();
@@ -170,17 +173,6 @@ class GridDhtPartitionSupplier {
 
         AffinityTopologyVersion curTop = grp.affinity().lastVersion();
         AffinityTopologyVersion demTop = d.topologyVersion();
-
-        if (curTop.compareTo(demTop) > 0) {
-            if (log.isDebugEnabled())
-                log.debug("Demand request outdated [grp=" + grp.cacheOrGroupName()
-                        + ", currentTopVer=" + curTop
-                        + ", demandTopVer=" + demTop
-                        + ", from=" + nodeId
-                        + ", topicId=" + topicId + "]");
-
-            return;
-        }
 
         T3<UUID, Integer, AffinityTopologyVersion> contextId = new T3<>(nodeId, topicId, demTop);
 
