@@ -27,7 +27,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
@@ -37,9 +36,18 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run kNN regression trainer over distributed dataset.
- *
- * @see KNNClassificationTrainer
+ * Run kNN regression trainer ({@link KNNRegressionTrainer}) over distributed dataset.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (based on the
+ * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
+ * <p>
+ * After that it trains the model based on the specified data using kNN  regressionalgorithm.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
+ * does this point belongs to and compares prediction to expected outcome (ground truth).</p>
+ * <p>
+ * You can change the test data used in this example or trainer object settings and re-run it to investigate
+ * this algorithm further.</p>
  */
 public class KNNRegressionExample {
     /** Run example. */
@@ -65,6 +73,10 @@ public class KNNRegressionExample {
                     .withDistanceMeasure(new ManhattanDistance())
                     .withStrategy(KNNStrategy.WEIGHTED);
 
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> | Prediction\t| Ground Truth\t|");
+                System.out.println(">>> ---------------------------------");
+
                 int totalAmount = 0;
                 // Calculate mean squared error (MSE)
                 double mse = 0.0;
@@ -83,7 +95,11 @@ public class KNNRegressionExample {
                         mae += Math.abs(prediction - groundTruth);
 
                         totalAmount++;
+
+                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                     }
+
+                    System.out.println(">>> ---------------------------------");
 
                     mse = mse / totalAmount;
                     System.out.println("\n>>> Mean squared error (MSE) " + mse);
