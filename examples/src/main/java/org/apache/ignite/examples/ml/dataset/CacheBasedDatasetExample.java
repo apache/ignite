@@ -31,6 +31,13 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 /**
  * Example that shows how to create dataset based on an existing Ignite Cache and then use it to calculate {@code mean}
  * and {@code std} values as well as {@code covariance} and {@code correlation} matrices.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
+ * <p>
+ * After that it creates the dataset based on the data in the cache and uses Dataset API to find and output
+ * various statistical metrics of the data.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to investigate this algorithm further.</p>
  */
 public class CacheBasedDatasetExample {
     /** Run example. */
