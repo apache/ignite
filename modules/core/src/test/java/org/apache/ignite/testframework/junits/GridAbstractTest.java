@@ -166,6 +166,9 @@ public abstract class GridAbstractTest extends TestCase {
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
+    private static final int DFLT_TEAR_DOWN_WAIT_TIMEOUT = 30_000;
+
+    /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
 
     /** */
@@ -1749,7 +1752,9 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** {@inheritDoc} */
     @Override protected void tearDown() throws Exception {
-        long dur = System.currentTimeMillis() - ts;
+        long startTime = System.currentTimeMillis();
+
+        long dur = startTime - ts;
 
         info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
 
@@ -1760,7 +1765,13 @@ public abstract class GridAbstractTest extends TestCase {
                 ", stopped=" + cntrs.getStopped() + ']');
 
         try {
-            afterTest();
+            IgniteInternalFuture<Object> afterTestFut = GridTestUtils.runAsync(() -> {
+                afterTest();
+
+                return null;
+            });
+
+            afterTestFut.get(DFLT_TEAR_DOWN_WAIT_TIMEOUT);
         }
         finally {
             serializedObj.clear();
@@ -1779,7 +1790,18 @@ public abstract class GridAbstractTest extends TestCase {
                 // Set reset flags, so counters will be reset on the next setUp.
                 counters.setReset(true);
 
-                afterTestsStopped();
+                IgniteInternalFuture<Object> afterTestsStoppedFut = GridTestUtils.runAsync(() -> {
+                    afterTestsStopped();
+
+                    return null;
+                });
+
+                try {
+                    afterTestsStoppedFut.get(DFLT_TEAR_DOWN_WAIT_TIMEOUT + startTime - System.currentTimeMillis());
+                }
+                catch (Throwable e) {
+                    log.error("Failed to execute afterTestsStopped method during tearing down.");
+                }
 
                 if(isSafeTopology())
                     stopAllGrids(false);
