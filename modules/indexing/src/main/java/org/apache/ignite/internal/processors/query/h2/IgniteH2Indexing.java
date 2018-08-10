@@ -1258,19 +1258,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             long longQryExecTimeout = ctx.config().getLongQueryWarningTimeout();
 
             if (time > longQryExecTimeout) {
-                String msg = "Query execution is too long (" + time + " ms): " + sql;
-
                 ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql,
                     params, false), 0, null);
 
                 plan.next();
 
                 // Add SQL explain result message into log.
-                String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
+                String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
                     ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
                     (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
 
-                LT.warn(log, longMsg, msg);
+                LT.warn(log, msg);
             }
 
             return rs;
