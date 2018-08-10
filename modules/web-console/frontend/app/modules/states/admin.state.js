@@ -17,8 +17,6 @@
 
 import angular from 'angular';
 
-import template from 'views/base2.pug';
-
 angular
 .module('ignite-console.states.admin', [
     'ui.router'
@@ -28,15 +26,7 @@ angular
     $stateProvider
     .state('base.settings.admin', {
         url: '/admin',
-        views: {
-            '@': {
-                template
-            },
-            '@base.settings.admin': {
-                template: '<page-admin></page-admin>'
-            }
-        },
-        // templateUrl,
+        component: 'pageAdmin',
         permission: 'admin_page',
         tfMetaTags: {
             title: 'Admin panel'

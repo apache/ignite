@@ -18,12 +18,12 @@
 package org.apache.ignite.ml.math.primitives.matrix.impl;
 
 import java.io.Externalizable;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
-import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.primitives.matrix.AbstractMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
 import org.apache.ignite.ml.math.primitives.matrix.storage.ViewMatrixStorage;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Implements the rectangular view into the parent {@link Matrix}.

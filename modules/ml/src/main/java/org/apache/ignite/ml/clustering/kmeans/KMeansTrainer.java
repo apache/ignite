@@ -28,11 +28,11 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledDataset;
@@ -43,7 +43,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 /**
  * The trainer for KMeans algorithm.
  */
-public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
+public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     /** Amount of clusters. */
     private int k = 2;
 

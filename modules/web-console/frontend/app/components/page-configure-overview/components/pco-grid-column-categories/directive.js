@@ -38,7 +38,9 @@ export default function directive(uiGridConstants) {
         require: '^uiGrid',
         link: {
             pre(scope, el, attr, grid) {
-                if (!grid.grid.options.enableColumnCategories) return;
+                if (!grid.grid.options.enableColumnCategories)
+                    return;
+
                 grid.grid.api.core.registerColumnsProcessor((cp) => {
                     const oldCategories = grid.grid.options.categories;
                     const newCategories = uniqBy(cp.filter(notSelectionColumn).map(({colDef: cd}) => {
