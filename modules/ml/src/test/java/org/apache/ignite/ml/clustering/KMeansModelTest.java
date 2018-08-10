@@ -44,7 +44,7 @@ public class KMeansModelTest {
         centers[2] = new DenseVector(new double[]{1.0, -1.0});
         centers[3] = new DenseVector(new double[]{-1.0, -1.0});
 
-        KMeansModel mdl = new KMeansModel(centers, distanceMeasure);
+        KMeansModel mdl = new KMeansModel(centers, null, distanceMeasure);
 
         Assert.assertEquals(mdl.apply(new DenseVector(new double[]{1.1, 1.1})), 0.0, PRECISION);
         Assert.assertEquals(mdl.apply(new DenseVector(new double[]{-1.1, 1.1})), 1.0, PRECISION);

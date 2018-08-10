@@ -58,7 +58,7 @@ public class LocalModelsTest {
 
             Assert.assertNotNull(load);
 
-            KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
+            KMeansModel importedMdl = new KMeansModel(load.getCenters(), null, load.getDistance());
 
             Assert.assertTrue("", mdl.equals(importedMdl));
 

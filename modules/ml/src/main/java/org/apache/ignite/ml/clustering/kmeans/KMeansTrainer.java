@@ -77,6 +77,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         );
 
         Vector[] centers;
+        TotalCostAndCounts totalRes = null;
 
         try (Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
@@ -91,7 +92,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
             while (iteration < maxIterations && !converged) {
                 Vector[] newCentroids = new DenseVector[k];
 
-                TotalCostAndCounts totalRes = calcDataForNewCentroids(centers, dataset, cols);
+                totalRes = calcDataForNewCentroids(centers, dataset, cols);
 
                 converged = true;
 
@@ -111,7 +112,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return new KMeansModel(centers, distance);
+        return new KMeansModel(centers, totalRes, distance);
     }
 
     /**
@@ -162,10 +163,12 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         int bestInd = 0;
 
         for (int i = 0; i < centers.length; i++) {
-            double dist = distance.compute(centers[i], pnt.features());
-            if (dist < bestDistance) {
-                bestDistance = dist;
-                bestInd = i;
+            if(centers[i] != null) {
+                double dist = distance.compute(centers[i], pnt.features());
+                if (dist < bestDistance) {
+                    bestDistance = dist;
+                    bestInd = i;
+                }
             }
         }
         return new IgniteBiTuple<>(bestInd, bestDistance);
@@ -199,7 +202,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     }
 
     /** Service class used for statistics. */
-    private static class TotalCostAndCounts {
+    public static class TotalCostAndCounts {
         /** */
         double totalCost;
 
@@ -209,13 +212,24 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         /** Count of points closest to the center with a given index. */
         ConcurrentHashMap<Integer, Integer> counts = new ConcurrentHashMap<>();
 
+
+        /** Count of points closest to the center with a given index. */
+        ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> centroidStat = new ConcurrentHashMap<>();
+
         /** Merge current */
         TotalCostAndCounts merge(TotalCostAndCounts other) {
             this.totalCost += totalCost;
             this.sums = MapUtil.mergeMaps(sums, other.sums, Vector::plus, ConcurrentHashMap::new);
             this.counts = MapUtil.mergeMaps(counts, other.counts, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
+            this.centroidStat = MapUtil.mergeMaps(centroidStat, other.centroidStat, (m1, m2) ->
+                MapUtil.mergeMaps(m1, m2, (i1, i2) -> i1 + i2, ConcurrentHashMap::new), ConcurrentHashMap::new);
             return this;
         }
+
+        public ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> getCentroidStat() {
+            return centroidStat;
+        }
+
     }
 
     /**
