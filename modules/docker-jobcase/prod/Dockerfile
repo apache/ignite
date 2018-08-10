@@ -50,7 +50,7 @@ ENV JOBCASE_LOGS ${JOBCASE_HOME}/logs
 
 # Ports
 ENV IGNITE_SERVER_PORT 11211
-ENV IGNITE_JMX_PORT 49112
+ENV IGNITE_JMX_PORT 9000
 ENV IGNITE_DISCOVERY_PORT 47500
 ENV IGNITE_COMMUNICATION_PORT 47100
 ENV IGNITE_JDBC_PORT 10800
@@ -157,7 +157,7 @@ COPY ./common.node.config.xml ${JOBCASE_CONFIG}/
 COPY ./file.discovery.node.config.xml ${JOBCASE_CONFIG}/
 
 # Copy s3 bucket discovery grid configuration file
-COPY ./s3bucket.discovery.node.config.xml ${JOBCASE_CONFIG}/
+COPY ./s3bucket.discovery.node.config.xml ${JOBCASE_CONFIG}/    
 
 # Copy default grid configuration file
 COPY ./multicast.discovery.node.config.xml ${JOBCASE_CONFIG}/
