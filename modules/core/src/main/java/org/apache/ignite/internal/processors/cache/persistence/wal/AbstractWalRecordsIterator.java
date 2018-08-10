@@ -162,6 +162,13 @@ public abstract class AbstractWalRecordsIterator
                 }
             }
             catch (WalSegmentTailReachedException e) {
+                AbstractReadFileHandle currWalSegment = this.currWalSegment;
+
+                if (!currWalSegment.workDir())
+                    throw new IgniteCheckedException(
+                        "WAL tail reached in archive directory, " +
+                            "WAL segment file is corrupted.", e);
+
                 log.warning(e.getMessage());
 
                 curRec = null;
@@ -197,7 +204,8 @@ public abstract class AbstractWalRecordsIterator
      * @throws IgniteCheckedException if reading failed
      */
     protected abstract AbstractReadFileHandle advanceSegment(
-        @Nullable final AbstractReadFileHandle curWalSegment) throws IgniteCheckedException;
+        @Nullable final AbstractReadFileHandle curWalSegment
+    ) throws IgniteCheckedException;
 
     /**
      * Switches to new record.
@@ -222,8 +230,11 @@ public abstract class AbstractWalRecordsIterator
             return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
-            if (e instanceof WalSegmentTailReachedException)
-                throw (WalSegmentTailReachedException)e;
+            if (e instanceof WalSegmentTailReachedException) {
+                throw new WalSegmentTailReachedException(
+                    "WAL segment tail reached. [idx=" + hnd.idx() +
+                        ", isWorkDir=" + hnd.workDir() + ", serVer=" + hnd.ser() + "]", e);
+            }
 
             if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
                 IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
