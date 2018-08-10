@@ -453,12 +453,13 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * Poll eviction task from queue for specific bucket.
          *
          * @param bucket Bucket index.
-         * @return Partition evict task.
+         * @return Partition evict task, or {@code null} if bucket queue is empty.
          */
         PartitionEvictionTask poll(int bucket) {
             PartitionEvictionTask task = buckets[bucket].poll();
 
-            bucketSizes[bucket] -= task.size;
+            if (task != null)
+                bucketSizes[bucket] -= task.size;
 
             return task;
         }
