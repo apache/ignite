@@ -34,7 +34,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Tests for {@LogisticRegressionSGDTrainer}.
+ * Tests for {@link LogisticRegressionSGDTrainer}.
  */
 @RunWith(Parameterized.class)
 public class LogisticRegressionSGDTrainerTest {
@@ -85,7 +85,7 @@ public class LogisticRegressionSGDTrainerTest {
         }
 
         LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-            new SimpleGDUpdateCalculator(0.2),
+            new SimpleGDUpdateCalculator().withLearningRate(0.2),
             SimpleGDParameterUpdate::sumLocal,
             SimpleGDParameterUpdate::avg
         ), 100000,  10, 100, 123L);

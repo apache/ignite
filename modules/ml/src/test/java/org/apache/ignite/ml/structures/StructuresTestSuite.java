@@ -17,30 +17,15 @@
 
 package org.apache.ignite.ml.structures;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Labeled vector specialized to double label.
- *
- * @param <V> Type of vector.
+ * Test suite for all tests located in org.apache.ignite.ml.trees package.
  */
-public class LabeledVectorDouble<V extends Vector> extends LabeledVector<V, Double> {
-    /**
-     * Construct LabeledVectorDouble.
-     *
-     * @param vector Vector.
-     * @param lb Label.
-     */
-    public LabeledVectorDouble(V vector, Double lb) {
-        super(vector, lb);
-    }
-
-    /**
-     * Get label as double.
-     *
-     * @return label as double.
-     */
-    public double doubleLabel() {
-        return label();
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    DatasetStructureTest.class
+})
+public class StructuresTestSuite {
 }
