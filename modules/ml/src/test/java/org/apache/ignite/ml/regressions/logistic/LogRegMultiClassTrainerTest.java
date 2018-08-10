@@ -93,6 +93,10 @@ public class LogRegMultiClassTrainerTest {
             (k, v) -> v[0]
         );
 
+        Assert.assertTrue(mdl.toString().length() > 0);
+        Assert.assertTrue(mdl.toString(true).length() > 0);
+        Assert.assertTrue(mdl.toString(false).length() > 0);
+
         TestUtils.assertEquals(-1, mdl.apply(new DenseVector(new double[]{100, 10})), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(new DenseVector(new double[]{10, 100})), PRECISION);
     }
