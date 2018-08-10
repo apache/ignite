@@ -206,6 +206,7 @@ public class GridH2TableLock {
 
             if (checkDeadlock && session instanceof IgniteH2Session) {
                 ArrayList<Session> sessions = checkDeadlock(((IgniteH2Session)session).session(), null, null);
+
                 if (sessions != null)
                     throw new IgniteException("Table deadlock is detected. " + getDeadlockDetails(sessions, exclusive));
             }
@@ -220,6 +221,7 @@ public class GridH2TableLock {
             }
             else if (now >= max) {
                 log(session, table, exclusive, "timeout after " + session.getLockTimeout());
+
                 throw new IgniteException("Table lock timeout [table=" + table.getName());
             }
             try {

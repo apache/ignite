@@ -1162,9 +1162,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ses.setQueryTimeout(timeoutMillis);
 
         try {
-
-            log.info("+++ QRY on CONN=" + Integer.toHexString(System.identityHashCode(stmt.getConnection())));
-
             return stmt.executeQuery();
         }
         catch (SQLException e) {
@@ -2460,8 +2457,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         connCache.remove();
 
         assert reusableConnection.object().connection() == connection.connection();
-
-        log.info("+++ DETACH CONN=" + Integer.toHexString(System.identityHashCode(reusableConnection.object().connection())));
 
         return reusableConnection;
     }

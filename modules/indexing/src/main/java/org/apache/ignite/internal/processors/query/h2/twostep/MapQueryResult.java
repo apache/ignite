@@ -64,7 +64,7 @@ class MapQueryResult {
     private final IgniteH2Indexing h2;
 
     /** */
-    public final ResultInterface res;
+    private final ResultInterface res;
 
     /** */
     private final ResultSet rs;
@@ -259,8 +259,6 @@ class MapQueryResult {
             closed = true;
 
             U.closeQuiet(rs);
-
-            System.out.println("+++ [" + Thread.currentThread().getName()+ "] Close " + res  + ", closed=" + res.isClosed());
         }
     }
 }

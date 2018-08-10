@@ -41,11 +41,17 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
     public static class Reusable<T extends AutoCloseable> {
         /** */
         private final ThreadLocalObjectPool<T> pool;
-        /** */
-        private final T object;
 
         /** */
+        private volatile T object;
+
+        /**
+         * @param pool Pool.
+         * @param object Object.
+         */
         private Reusable(ThreadLocalObjectPool<T> pool, T object) {
+            assert object != null;
+
             this.pool = pool;
             this.object = object;
         }
@@ -61,7 +67,12 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
          * Returns an object to a pool or closes it if the pool is already full.
          */
         public void recycle() {
+            // TODO: recycle check is not enough: we check double recycling only in one thread
+            // several recycle of one object from different thread must be checked.
+            assert !pool.bag.get().contains(this) : "Already recycled";
+
             Queue<Reusable<T>> bag = pool.bag.get();
+
             if (bag.size() < pool.poolSize)
                 bag.add(this);
             else
@@ -71,8 +82,10 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
 
     /** */
     private final Supplier<E> objectFactory;
+
     /** */
     private final ThreadLocal<Queue<Reusable<E>>> bag = ThreadLocal.withInitial(LinkedList::new);
+
     /** */
     private final int poolSize;
 
@@ -93,10 +106,14 @@ public final class ThreadLocalObjectPool<E extends AutoCloseable> {
      */
     public Reusable<E> borrow() {
         Reusable<E> pooled = bag.get().poll();
+
         return pooled != null ? pooled : new Reusable<>(this, objectFactory.get());
     }
 
-    /** Visible for test */
+    /**
+     * Visible for test
+     * @return Pool bag size.
+     */
     int bagSize() {
         return bag.get().size();
     }

@@ -695,9 +695,6 @@ public class GridMapQueryExecutor {
                         throw new QueryCancelledException();
                     }
 
-                    // Send the first page.
-                    //sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
-
                     qryIdx++;
                 }
 
@@ -709,11 +706,10 @@ public class GridMapQueryExecutor {
 
                 assert conn == reusableConn.object().connection();
 
-                // Send the first page.
+                // Send the first page after detach connection to prevent handle 'nexPage' message
+                // before detach connection.
                 for (int i = 0 ; i < qryIdxMax; ++i)
                     sendNextPage(nodeRess, node, qr, i, segmentId, pageSize);
-
-                log.info("+++ first page sent. conn=" + Integer.toHexString(System.identityHashCode(reusableConn.object().connection())));
 
                 // All request results are in the memory in result set already, so it's ok to release partitions.
                 if (!lazy)
@@ -721,7 +717,6 @@ public class GridMapQueryExecutor {
 
                 if (GridH2QueryContext.get() != null)
                     GridH2QueryContext.clearThreadLocal();
-
             }
             catch (Throwable e){
                 releaseReservations();
@@ -1004,23 +999,10 @@ public class GridMapQueryExecutor {
 
                     // Release reservations if the last page fetched in lazy mode
                     if (qr.detachedConnection() != null) {
-                        log.info("+++ release CONN=" + Integer.toHexString(
-                            System.identityHashCode(qr.detachedConnection().object().connection())));
-
                         releaseReservations();
 
-                        Session s = H2Utils.session(qr.detachedConnection().object().connection());
-
-                        s.unlockReadLocks();
-                        if (s.getLocks().length != 0) {
-                            log.info("+++ res " + res.res + ", closed=" + res.res.isClosed());
-                            assert false;
-                        }
-
                         qr.detachedConnection().recycle();
-//                    qr.detachedConnection().object().close();
                     }
-
                 }
             }
 
