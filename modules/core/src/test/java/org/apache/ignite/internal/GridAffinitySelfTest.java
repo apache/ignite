@@ -53,8 +53,6 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
-
         if (igniteInstanceName.endsWith("1"))
             cfg.setClientMode(true);
         else {
