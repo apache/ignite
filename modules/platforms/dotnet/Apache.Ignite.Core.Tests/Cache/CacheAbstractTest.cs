@@ -655,6 +655,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestWithExpiryPolicy()
         {
+            Assert.Fail("https://issues.apache.org/jira/browse/IGNITE-8983");
+
             TestWithExpiryPolicy((cache, policy) => cache.WithExpiryPolicy(policy), true);
         }
 
