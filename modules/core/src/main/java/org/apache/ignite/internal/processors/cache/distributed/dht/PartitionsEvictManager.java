@@ -260,7 +260,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         private final Set<Integer> partIds = new GridConcurrentHashSet<>();
 
         /** Future for currently running partition eviction task. */
-        private final List<IgniteInternalFuture<?>> partsEvictFutures = new ArrayList<>();
+        private final Map<Integer, IgniteInternalFuture<?>> partsEvictFutures = new ConcurrentHashMap<>();
 
         /** Flag indicates that eviction process has stopped for this group. */
         private volatile boolean stop;
@@ -308,13 +308,15 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
             GridFutureAdapter<?> fut = task.finishFut;
 
-            partsEvictFutures.add(fut);
+            int partId = task.part.id();
+
+            partsEvictFutures.put(partId, fut);
 
             fut.listen(f -> {
                 synchronized (this) {
                     taskInProgress--;
 
-                    partsEvictFutures.remove(f);
+                    partsEvictFutures.remove(partId, f);
 
                     if (totalTasks.decrementAndGet() == 0)
                         evictionGroupsMap.remove(grp.groupId());
@@ -332,7 +334,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /**
          * Await evict finish.
          */
-        private synchronized void awaitFinishAll(){
+        private void awaitFinishAll(){
             partsEvictFutures.forEach(this::awaitFinish);
 
             evictionGroupsMap.remove(grp.groupId());
@@ -341,9 +343,12 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /**
          * Await evict finish partition.
          */
-        private synchronized void awaitFinish(IgniteInternalFuture<?> fut){
+        private void awaitFinish(Integer part, IgniteInternalFuture<?> fut) {
             // Wait for last offered partition eviction completion
             try {
+                log.info("Await partition evict, grpName=" + grp.cacheOrGroupName() +
+                    ", grpId=" + grp.groupId() + ", partId=" + part);
+
                 fut.get();
             }
             catch (IgniteCheckedException e) {
