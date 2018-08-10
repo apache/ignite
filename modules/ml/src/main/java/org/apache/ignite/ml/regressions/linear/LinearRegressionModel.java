@@ -22,7 +22,7 @@ import java.util.Objects;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Simple linear regression model which predicts result value Y as a linear combination of input variables:
@@ -99,9 +99,14 @@ public class LinearRegressionModel implements Model<Vector, Double>, Exportable<
             return builder.toString();
         }
 
-        return "LinearRegressionModel{" +
+        return "LinearRegressionModel [" +
             "weights=" + weights +
             ", intercept=" + intercept +
-            '}';
+            ']';
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return toString();
     }
 }

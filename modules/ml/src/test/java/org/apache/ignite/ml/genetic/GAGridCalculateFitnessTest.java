@@ -27,11 +27,10 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.junit.After;
-
-import static org.junit.Assert.*;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Calculate Fitness Test
@@ -44,7 +43,7 @@ public class GAGridCalculateFitnessTest {
     private GAGrid gaGrid = null;
 
     /** GAConfiguraton */
-    private GAConfiguration gaConfig = null;
+    private GAConfiguration gaCfg = null;
 
     /**
      * Setup test
@@ -58,20 +57,20 @@ public class GAGridCalculateFitnessTest {
             ignite = Ignition.start();
 
             // Create GAConfiguration
-            gaConfig = new GAConfiguration();
+            gaCfg = new GAConfiguration();
 
             // set Gene Pool
             List<Gene> genes = this.getGenePool();
-            gaConfig.setGenePool(genes);
+            gaCfg.setGenePool(genes);
 
             // set the Chromosome Length to '8' since password contains 8 characters.
-            gaConfig.setChromosomeLength(8);
+            gaCfg.setChromosomeLen(8);
 
             // create and set Fitness function
             PasswordFitnessFunction function = new PasswordFitnessFunction();
-            gaConfig.setFitnessFunction(function);
+            gaCfg.setFitnessFunction(function);
 
-            gaGrid = new GAGrid(gaConfig, ignite);
+            gaGrid = new GAGrid(gaCfg, ignite);
             gaGrid.initializeGenePopulation();
             gaGrid.initializePopulation();
 
@@ -91,7 +90,7 @@ public class GAGridCalculateFitnessTest {
 
             List<Long> chromosomeKeys = gaGrid.getPopulationKeys();
 
-            Boolean boolValue = this.ignite.compute().execute(new FitnessTask(this.gaConfig), chromosomeKeys);
+            Boolean boolVal = this.ignite.compute().execute(new FitnessTask(this.gaCfg), chromosomeKeys);
 
             IgniteCache<Long, Chromosome> populationCache = ignite.cache(GAGridConstants.POPULATION_CACHE);
 
@@ -102,13 +101,12 @@ public class GAGridCalculateFitnessTest {
 
             List<List<?>> res = cursor.getAll();
 
-            Long count = new Long(0);
+            Long cnt = 0L;
 
-            for (List row : res) {
-                count = (Long)row.get(0);
-            }
+            for (List row : res)
+                cnt = (Long)row.get(0);
 
-            assertEquals(500, count.longValue());
+            assertEquals(500, cnt.longValue());
         }
 
         catch (Exception e) {

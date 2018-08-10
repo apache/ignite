@@ -18,9 +18,10 @@
 package org.apache.ignite.ml.tree;
 
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Base interface for decision tree nodes.
  */
-public interface DecisionTreeNode extends Model<double[], Double> {
+public interface DecisionTreeNode extends Model<Vector, Double> {
 }

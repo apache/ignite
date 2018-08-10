@@ -19,16 +19,14 @@ FROM testcafe/testcafe:latest
 
 USER 0
 
-RUN mkdir -p /opt/testcafe/tests
-
 WORKDIR /opt/testcafe/tests
 
-COPY . /opt/testcafe/tests
+COPY . .
 
-ENV NPM_CONFIG_LOGLEVEL warn
+ENV NPM_CONFIG_LOGLEVEL error
 
-RUN npm install --production && \
+RUN npm install --no-optional --production && \
  npm cache verify --force && \
  rm -rf /tmp/*
 
-ENTRYPOINT ["node", "./testcafe.js"]
+ENTRYPOINT ["node", "./index.js"]

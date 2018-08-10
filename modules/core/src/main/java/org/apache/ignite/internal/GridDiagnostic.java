@@ -61,14 +61,12 @@ final class GridDiagnostic {
 
                         if (!locHost.isReachable(REACH_TIMEOUT)) {
                             U.warn(log, "Default local host is unreachable. This may lead to delays on " +
-                                "grid network operations. Check your OS network setting to correct it.",
-                                "Default local host is unreachable.");
+                                "grid network operations. Check your OS network setting to correct it.");
                         }
                     }
                     catch (IOException ignore) {
                         U.warn(log, "Failed to perform network diagnostics. It is usually caused by serious " +
-                            "network configuration problem. Check your OS network setting to correct it.",
-                            "Failed to perform network diagnostics.");
+                            "network configuration problem. Check your OS network setting to correct it.");
                     }
                 }
             });
@@ -80,14 +78,12 @@ final class GridDiagnostic {
 
                         if (locHost.isLoopbackAddress()) {
                             U.warn(log, "Default local host is a loopback address. This can be a sign of " +
-                                "potential network configuration problem.",
-                                "Default local host is a loopback address.");
+                                "potential network configuration problem.");
                         }
                     }
                     catch (IOException ignore) {
                         U.warn(log, "Failed to perform network diagnostics. It is usually caused by serious " +
-                            "network configuration problem. Check your OS network setting to correct it.",
-                            "Failed to perform network diagnostics.");
+                            "network configuration problem. Check your OS network setting to correct it.");
                     }
                 }
             });
@@ -98,8 +94,7 @@ final class GridDiagnostic {
                     if (!U.isSufficientlyTestedOs()) {
                         U.warn(log, "This operating system has been tested less rigorously: " + U.osString() +
                             ". Our team will appreciate the feedback if you experience any problems running " +
-                            "ignite in this environment.",
-                            "This OS is tested less rigorously: " + U.osString());
+                            "ignite in this environment.");
                     }
                 }
             });
@@ -109,8 +104,7 @@ final class GridDiagnostic {
                     // Fix for GG-1075.
                     if (F.isEmpty(U.allLocalMACs()))
                         U.warn(log, "No live network interfaces detected. If IP-multicast discovery is used - " +
-                            "make sure to add 127.0.0.1 as a local address.",
-                            "No live network interfaces. Add 127.0.0.1 as a local address.");
+                            "make sure to add 127.0.0.1 as a local address.");
                 }
             });
 
@@ -131,7 +125,7 @@ final class GridDiagnostic {
 
                         U.warn(log, "JMX remote management is enabled but JMX port is either not set or invalid. " +
                             "Check system property 'com.sun.management.jmxremote.port' to make sure it specifies " +
-                            "valid TCP/IP port.", "JMX remote port is invalid - JMX management is off.");
+                            "valid TCP/IP port.");
                     }
                 }
             });
