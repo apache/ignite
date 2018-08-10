@@ -44,6 +44,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -55,6 +58,9 @@ import static java.util.concurrent.ThreadLocalRandom.current;
  *
  */
 public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** WAL segment size. */
     private static final int WAL_SEGMENT_SIZE = 10 * 1024 * 1024;
 
@@ -72,6 +78,8 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
                 )
         );
 
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
 
         return cfg;
@@ -80,6 +88,8 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        cleanPersistenceDir();
 
         Ignite ig = startGrid();
 
@@ -113,12 +123,11 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         IgniteWriteAheadLogManager wal = ig.context().cache().context().wal();
 
-        File walWorkDir = U.field(wal, "walWorkDir");
         File walArchiveDir = U.field(wal, "walArchiveDir");
 
         IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
 
-        doTest(wal, iteratorFactory.iterator(walWorkDir, walArchiveDir));
+        doTest(wal, iteratorFactory.iterator(walArchiveDir));
     }
 
     /**
@@ -149,7 +158,7 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
                 .filesOrDirs(walArchiveDir)
         );
 
-        int maxIndex = descs.size();
+        int maxIndex = descs.size() - 1;
         int minIndex = 1;
 
         int corruptedIdx = current().nextInt(minIndex, maxIndex);
