@@ -27,14 +27,12 @@ import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
 
 /**
  * Example that shows how to use binarization preprocessor to binarize data.
- *
- * Machine learning preprocessors are built as a chain. Most often a first preprocessor is a feature extractor as shown
- * in this example. The second preprocessor here is a normalization preprocessor which is built on top of the feature
- * extractor and represents a chain of itself and the underlying feature extractor.
  */
 public class BinarizationExample {
     /** Run example. */
@@ -45,16 +43,14 @@ public class BinarizationExample {
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
             // Defines first preprocessor that extracts features from an upstream data.
-            IgniteBiFunction<Integer, Person, double[]> featureExtractor = (k, v) -> new double[] {
+            IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
                 v.getAge()
-            };
+            );
 
             // Defines second preprocessor that normalizes features.
-            IgniteBiFunction<Integer, Person, double[]> preprocessor = new BinarizationTrainer<Integer, Person>()
+            IgniteBiFunction<Integer, Person, Vector> preprocessor = new BinarizationTrainer<Integer, Person>()
                 .withThreshold(40)
                 .fit(ignite, persons, featureExtractor);
-
-
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {

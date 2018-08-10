@@ -24,7 +24,7 @@
                 .col-sm-4
                     input.form-control(id='paragraph-rate' ng-init='value = paragraph.rate.value' ng-model='value' type='number' min='1' required ignite-auto-focus)
                 .col-sm-8(style='padding-left: 5px')
-                    button.form-control.select-toggle(id='paragraph-unit' ng-init='unit = paragraph.rate.unit' ng-model='unit' required placeholder='Time unit' bs-select bs-options='item.value as item.label for item in timeUnit' data-container='false' tabindex='0')
+                    button.form-control.select-toggle(id='paragraph-unit' ng-init='unit = paragraph.rate.unit' ng-model='unit' required placeholder='Time unit' bs-select bs-options='item.value as item.label for item in timeUnit' tabindex='0')
             .form-actions(style='margin-top: 30px; padding: 5px')
                 button.btn.btn-primary(id='paragraph-rate-start' ng-disabled='popoverForm.$invalid' ng-click='startRefresh(paragraph, value, unit); $hide()') Start
                 button.btn.btn-primary.btn-default(id='paragraph-rate-stop' ng-click='stopRefresh(paragraph); $hide()' ng-disabled='!paragraph.rate.installed') Stop

@@ -17,20 +17,22 @@
 
 package org.apache.ignite.ml.preprocessing.normalization;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link NormalizationTrainer}.
+ * Tests for {@link BinarizationTrainer}.
  */
 @RunWith(Parameterized.class)
 public class NormalizationTrainerTest {
@@ -63,14 +65,18 @@ public class NormalizationTrainerTest {
 
         DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
-        NormalizationTrainer<Integer, double[]> standardizationTrainer = new NormalizationTrainer<>();
+        NormalizationTrainer<Integer, double[]> normalizationTrainer = new NormalizationTrainer<Integer, double[]>()
+            .withP(3);
 
-        NormalizationPreprocessor<Integer, double[]> preprocessor = standardizationTrainer.fit(
+        assertEquals(3., normalizationTrainer.p(), 0);
+
+        NormalizationPreprocessor<Integer, double[]> preprocessor = normalizationTrainer.fit(
             datasetBuilder,
-            (k, v) -> v
+            (k, v) -> VectorUtils.of(v)
         );
 
-        assertArrayEquals(new double[] {0, 4, 1}, preprocessor.getMin(), 1e-8);
-        assertArrayEquals(new double[] {4, 22, 300}, preprocessor.getMax(), 1e-8);
+        assertEquals(normalizationTrainer.p(), preprocessor.p(), 0);
+
+        assertArrayEquals(new double[] {0.125, 0.99, 0.125}, preprocessor.apply(5, new double[]{1., 8., 1.}).asArray(), 1e-2);
     }
 }

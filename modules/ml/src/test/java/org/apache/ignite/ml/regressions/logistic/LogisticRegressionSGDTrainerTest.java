@@ -17,8 +17,13 @@
 
 package org.apache.ignite.ml.regressions.logistic;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
@@ -28,13 +33,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-
 /**
- * Tests for {@LogisticRegressionSGDTrainer}.
+ * Tests for {@link LogisticRegressionSGDTrainer}.
  */
 @RunWith(Parameterized.class)
 public class LogisticRegressionSGDTrainerTest {
@@ -85,7 +85,7 @@ public class LogisticRegressionSGDTrainerTest {
         }
 
         LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
-            new SimpleGDUpdateCalculator(0.2),
+            new SimpleGDUpdateCalculator().withLearningRate(0.2),
             SimpleGDParameterUpdate::sumLocal,
             SimpleGDParameterUpdate::avg
         ), 100000,  10, 100, 123L);
@@ -93,11 +93,11 @@ public class LogisticRegressionSGDTrainerTest {
         LogisticRegressionModel mdl = trainer.fit(
             data,
             10,
-            (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(0, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), PRECISION);
+        TestUtils.assertEquals(0, mdl.apply(new DenseVector(new double[]{100, 10})), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(new DenseVector(new double[]{10, 100})), PRECISION);
     }
 }

@@ -157,7 +157,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsNameToWrite, e);
             }
 
-            this.typeId = ctx.descriptorForClass(cls, false).typeId();
+            this.typeId = ctx.descriptorForClass(cls, false, false).typeId();
 
             registeredType = false;
 
@@ -422,7 +422,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         else if (!nullFieldVal) {
             String newFldTypeName = BinaryUtils.fieldTypeName(newFldTypeId);
 
-            if (!F.eq(newFldTypeName, oldFldTypeName)) {
+            if (!F.eq(newFldTypeName, oldFldTypeName) &&
+                !oldFldTypeName.equals(BinaryUtils.fieldTypeName(GridBinaryMarshaller.OBJ))) {
                 throw new BinaryObjectException(
                     "Wrong value has been set [" +
                         "typeName=" + (typeName == null ? meta.typeName() : typeName) +

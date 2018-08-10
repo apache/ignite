@@ -116,7 +116,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
             };
 
             uuid = grid(0).context().cache().cache(cache.getName()).context().continuousQueries()
-                .executeInternalQuery(lsnr, new SerializableFilter(), false, true, true);
+                .executeInternalQuery(lsnr, new SerializableFilter(), false, true, true, false);
 
             for (int i = 10; i < 20; i++)
                 cache.put(i, i);
@@ -319,7 +319,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
                     updatePartitionCounter(cache, key, partCntr);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 
@@ -334,7 +334,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
                     updatePartitionCounter(cache, key, partCntr);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 
@@ -364,7 +364,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
                     updatePartitionCounter(cache, key, partCntr);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 

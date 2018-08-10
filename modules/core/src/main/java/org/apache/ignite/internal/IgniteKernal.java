@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import java.io.BufferedReader;
 import java.io.Externalizable;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -197,6 +193,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
@@ -242,6 +239,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -261,6 +259,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
@@ -274,8 +273,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
-import static org.apache.ignite.marshaller.MarshallerUtils.CLS_NAMES_FILE;
-import static org.apache.ignite.marshaller.MarshallerUtils.JDK_CLS_NAMES_FILE;
 
 /**
  * Ignite kernal.
@@ -302,9 +299,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Separator for formatted coordinator properties. */
     public static final String COORDINATOR_PROPERTIES_SEPARATOR = ",";
 
-    static {
-        LongJVMPauseDetector.start();
-    }
+    /** Long jvm pause detector. */
+    private LongJVMPauseDetector longJVMPauseDetector;
 
     /** */
     @GridToStringExclude
@@ -477,17 +473,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public long getLongJVMPausesCount() {
-        return LongJVMPauseDetector.longPausesCount();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesCount() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public long getLongJVMPausesTotalDuration() {
-        return LongJVMPauseDetector.longPausesTotalDuration();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesTotalDuration() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public Map<Long, Long> getLongJVMPauseLastEvents() {
-        return LongJVMPauseDetector.longPauseEvents();
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPauseEvents() : Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -764,6 +760,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param schemaExecSvc Schema executor service.
      * @param customExecSvcs Custom named executors.
      * @param errHnd Error handler to use for notification about startup problems.
+     * @param workerRegistry Worker registry.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
@@ -785,7 +782,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
-        GridAbsClosure errHnd
+        GridAbsClosure errHnd,
+        WorkersRegistry workerRegistry
     )
         throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
@@ -834,6 +832,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         log = (GridLoggerProxy)cfg.getGridLogger().getLogger(
             getClass().getName() + (igniteInstanceName != null ? '%' + igniteInstanceName : ""));
+
+        longJVMPauseDetector = new LongJVMPauseDetector(log);
+
+        longJVMPauseDetector.start();
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
@@ -902,7 +904,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 schemaExecSvc,
                 customExecSvcs,
                 plugins,
-                classNameFilter()
+                MarshallerUtils.classNameFilter(this.getClass().getClassLoader()),
+                workerRegistry
             );
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
@@ -1105,7 +1108,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         comp.onKernalStart(active);
                     }
                     catch (IgniteNeedReconnectException e) {
-                        assert ctx.discovery().reconnectSupported();
+                        ClusterNode locNode = ctx.discovery().localNode();
+
+                        assert CU.clientNode(locNode);
+
+                        if (!locNode.isClient())
+                            throw new IgniteCheckedException("Client node in forceServerMode " +
+                                "is not allowed to reconnect to the cluster and will be stopped.");
 
                         if (log.isDebugEnabled())
                             log.debug("Failed to start node components on node start, will wait for reconnect: " + e);
@@ -1516,6 +1525,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
     private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
+        ctx.addNodeAttribute(ATTR_REBALANCE_POOL_SIZE, configuration().getRebalanceThreadPoolSize());
         ctx.addNodeAttribute(ATTR_DATA_STREAMER_POOL_SIZE, configuration().getDataStreamerThreadPoolSize());
 
         final String[] incProps = cfg.getIncludeProperties();
@@ -1578,8 +1588,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Warn about loopback.
         if (ips.isEmpty() && macs.isEmpty())
             U.warn(log, "Ignite is starting on loopback address... Only nodes on the same physical " +
-                    "computer can participate in topology.",
-                "Ignite is starting on loopback address...");
+                "computer can participate in topology.");
 
         // Stick in network context into attributes.
         add(ATTR_IPS, (ips.isEmpty() ? "" : ips));
@@ -1664,6 +1673,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getConnectorConfiguration() != null)
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
+
+        // Whether rollback of dynamic cache start is supported or not.
+        // This property is added because of backward compatibility.
+        add(ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED, Boolean.TRUE);
 
         // Save data storage configuration.
         addDataStorageConfigurationAttributes();
@@ -1759,105 +1772,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start processor: " + proc, e);
-        }
-    }
-
-    /**
-     * Returns class name filter for marshaller.
-     *
-     * @return Class name filter for marshaller.
-     */
-    private IgnitePredicate<String> classNameFilter() throws IgniteCheckedException {
-        ClassSet whiteList = classWhiteList();
-        ClassSet blackList = classBlackList();
-
-        return new IgnitePredicate<String>() {
-            @Override public boolean apply(String s) {
-                // Allows all primitive arrays and checks arrays' type.
-                if ((blackList != null || whiteList != null) && s.charAt(0) == '[') {
-                    if (s.charAt(1) == 'L' && s.length() > 2)
-                        s = s.substring(2, s.length() - 1);
-                    else
-                        return true;
-                }
-
-                return (blackList == null || !blackList.contains(s)) && (whiteList == null || whiteList.contains(s));
-            }
-        };
-    }
-
-    /**
-     * @return White list of classes.
-     */
-    private ClassSet classWhiteList() throws IgniteCheckedException {
-        ClassSet clsSet = null;
-
-        String fileName = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_MARSHALLER_WHITELIST);
-
-        if (fileName != null) {
-            clsSet = new ClassSet();
-
-            addClassNames(JDK_CLS_NAMES_FILE, clsSet);
-            addClassNames(CLS_NAMES_FILE, clsSet);
-            addClassNames(fileName, clsSet);
-        }
-
-        return clsSet;
-    }
-
-    /**
-     * @return Black list of classes.
-     */
-    private ClassSet classBlackList() throws IgniteCheckedException {
-        ClassSet clsSet = null;
-
-        String blackListFileName = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST);
-
-        if (blackListFileName != null)
-            addClassNames(blackListFileName, clsSet = new ClassSet());
-
-        return clsSet;
-    }
-
-    /**
-     * Reads class names from resource referred by given system property name and returns set of classes.
-     *
-     * @param fileName File name containing list of classes.
-     * @param clsSet Class set for update.
-     * @return Set of classes.
-     */
-    private void addClassNames(String fileName, ClassSet clsSet) throws IgniteCheckedException {
-        InputStream is = this.getClass().getClassLoader().getResourceAsStream(fileName);
-
-        if (is == null) {
-            try {
-                is = new FileInputStream(new File(fileName));
-            }
-            catch (FileNotFoundException e) {
-                throw new IgniteCheckedException("File " + fileName + " not found.");
-            }
-        }
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-            String line;
-
-            for (int i = 1; (line = reader.readLine()) != null; i++) {
-                String s = line.trim();
-
-                if (!s.isEmpty() && s.charAt(0) != '#' && s.charAt(0) != '[') {
-                    try {
-                        clsSet.add(s);
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw new IgniteCheckedException("Exception occurred while reading list of classes" +
-                            "[path=" + fileName + ", row=" + i + ", line=" + s + ']', e);
-                    }
-                }
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Exception occurred while reading and creating list of classes " +
-                "[path=" + fileName + ']', e);
         }
     }
 
@@ -2237,6 +2151,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (longOpDumpTask != null)
                 longOpDumpTask.close();
 
+            if (longJVMPauseDetector != null)
+                longJVMPauseDetector.stop();
+
             boolean interrupted = false;
 
             while (true) {
@@ -2597,9 +2514,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.warn(
                 log,
                 "Peer class loading is enabled (disable it in production for performance and " +
-                    "deployment consistency reasons)",
-                "Peer class loading is enabled (disable it for better performance)"
-            );
+                    "deployment consistency reasons)");
     }
 
     /**
@@ -4186,7 +4101,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     // No-op.
                 }
             }
+        }
 
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ReconnectState.class, this);
         }
     }
 

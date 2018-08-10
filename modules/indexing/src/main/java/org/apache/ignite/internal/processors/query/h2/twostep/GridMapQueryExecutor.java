@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsReservation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -293,6 +294,8 @@ public class GridMapQueryExecutor {
      * @param topVer Topology version.
      * @param explicitParts Explicit partitions list.
      * @param reserved Reserved list.
+     * @param nodeId Node ID.
+     * @param reqId Request ID.
      * @return {@code true} If all the needed partitions successfully reserved.
      * @throws IgniteCheckedException If failed.
      */
@@ -300,7 +303,9 @@ public class GridMapQueryExecutor {
         @Nullable List<Integer> cacheIds,
         AffinityTopologyVersion topVer,
         final int[] explicitParts,
-        List<GridReservable> reserved
+        List<GridReservable> reserved,
+        UUID nodeId,
+        long reqId
     ) throws IgniteCheckedException {
         assert topVer != null;
 
@@ -312,8 +317,14 @@ public class GridMapQueryExecutor {
         for (int i = 0; i < cacheIds.size(); i++) {
             GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheIds.get(i));
 
-            if (cctx == null) // Cache was not found, probably was not deployed yet.
+            // Cache was not found, probably was not deployed yet.
+            if (cctx == null) {
+                logRetry("Failed to reserve partitions for query (cache is not found on local node) [" +
+                    "rmtNodeId=" + nodeId + ", reqId=" + reqId + ", affTopVer=" + topVer + ", cacheId=" +
+                    cacheIds.get(i) + "]");
+
                 return false;
+            }
 
             if (cctx.isLocal() || !cctx.rebalanceEnabled())
                 continue;
@@ -325,8 +336,13 @@ public class GridMapQueryExecutor {
 
             if (explicitParts == null && r != null) { // Try to reserve group partition if any and no explicits.
                 if (r != MapReplicatedReservation.INSTANCE) {
-                    if (!r.reserve())
+                    if (!r.reserve()) {
+                        logRetry("Failed to reserve partitions for query (group reservation failed) [" +
+                            "rmtNodeId=" + nodeId + ", reqId=" + reqId + ", affTopVer=" + topVer +
+                            ", cacheId=" + cacheIds.get(i) + ", cacheName=" + cctx.name() + "]");
+
                         return false; // We need explicit partitions here -> retry.
+                    }
 
                     reserved.add(r);
                 }
@@ -340,8 +356,17 @@ public class GridMapQueryExecutor {
                             GridDhtLocalPartition part = partition(cctx, p);
 
                             // We don't need to reserve partitions because they will not be evicted in replicated caches.
-                            if (part == null || part.state() != OWNING)
+                            GridDhtPartitionState partState = part != null ? part.state() : null;
+
+                            if (partState != OWNING) {
+                                logRetry("Failed to reserve partitions for query (partition of " +
+                                    "REPLICATED cache is not in OWNING state) [rmtNodeId=" + nodeId +
+                                    ", reqId=" + reqId + ", affTopVer=" + topVer + ", cacheId=" + cacheIds.get(i) +
+                                    ", cacheName=" + cctx.name() + ", part=" + p + ", partFound=" + (part != null) +
+                                    ", partState=" + partState + "]");
+
                                 return false;
+                            }
                         }
 
                         // Mark that we checked this replicated cache.
@@ -355,14 +380,31 @@ public class GridMapQueryExecutor {
                     for (int partId : partIds) {
                         GridDhtLocalPartition part = partition(cctx, partId);
 
-                        if (part == null || part.state() != OWNING || !part.reserve())
+                        GridDhtPartitionState partState = part != null ? part.state() : null;
+
+                        if (partState != OWNING || !part.reserve()) {
+                            logRetry("Failed to reserve partitions for query (partition of " +
+                                "PARTITIONED cache cannot be reserved) [rmtNodeId=" + nodeId + ", reqId=" + reqId +
+                                ", affTopVer=" + topVer + ", cacheId=" + cacheIds.get(i) +
+                                ", cacheName=" + cctx.name() + ", part=" + partId + ", partFound=" + (part != null) +
+                                ", partState=" + partState + "]");
+
                             return false;
+                        }
 
                         reserved.add(part);
 
                         // Double check that we are still in owning state and partition contents are not cleared.
-                        if (part.state() != OWNING)
+                        partState = part.state();
+
+                        if (part.state() != OWNING) {
+                            logRetry("Failed to reserve partitions for query (partition of " +
+                                "PARTITIONED cache is not in OWNING state after reservation) [rmtNodeId=" + nodeId +
+                                ", reqId=" + reqId + ", affTopVer=" + topVer + ", cacheId=" + cacheIds.get(i) +
+                                ", cacheName=" + cctx.name() + ", part=" + partId + ", partState=" + partState + "]");
+
                             return false;
+                        }
                     }
 
                     if (explicitParts == null) {
@@ -385,6 +427,15 @@ public class GridMapQueryExecutor {
         }
 
         return true;
+    }
+
+    /**
+     * Load failed partition reservation.
+     *
+     * @param msg Message.
+     */
+    private void logRetry(String msg) {
+        log.info(msg);
     }
 
     /**
@@ -622,7 +673,7 @@ public class GridMapQueryExecutor {
         try {
             if (topVer != null) {
                 // Reserve primary for topology version or explicit partitions.
-                if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
+                if (!reservePartitions(cacheIds, topVer, parts, reserved, node.id(), reqId)) {
                     // Unregister lazy worker because re-try may never reach this node again.
                     if (lazy)
                         stopAndUnregisterCurrentLazyWorker();
@@ -739,8 +790,14 @@ public class GridMapQueryExecutor {
             if (lazy)
                 stopAndUnregisterCurrentLazyWorker();
 
-            if (X.hasCause(e, GridH2RetryException.class))
+            GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
+
+            if (retryErr != null) {
+                logRetry("Failed to execute non-collocated query (will retry) [nodeId=" + node.id() +
+                    ", reqId=" + reqId + ", errMsg=" + retryErr.getMessage() + ']');
+
                 sendRetry(node, reqId, segmentId);
+            }
             else {
                 U.error(log, "Failed to execute local query.", e);
 
@@ -788,7 +845,7 @@ public class GridMapQueryExecutor {
 
         List<GridReservable> reserved = new ArrayList<>();
 
-        if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
+        if (!reservePartitions(cacheIds, topVer, parts, reserved, node.id(), reqId)) {
             U.error(log, "Failed to reserve partitions for DML request. [localNodeId=" + ctx.localNodeId() +
                 ", nodeId=" + node.id() + ", reqId=" + req.requestId() + ", cacheIds=" + cacheIds +
                 ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');

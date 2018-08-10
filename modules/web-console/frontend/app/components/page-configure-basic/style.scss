@@ -46,31 +46,6 @@ page-configure-basic {
         }
     }
 
-    .pcb-buttons-group {
-        display: flex;
-        flex-direction: row;
-
-        &>*+* {
-            margin-left: 10px;
-        }
-
-        .link-primary + .link-primary {
-            margin-left: 40px;
-        }
-    }
-
-    .pcb-select-existing-cache {
-        position: relative;
-
-        button {
-            background: none;
-            border: none;
-            padding: 0;
-            margin: 0;
-            outline: none !important;
-        }
-    }
-
     .pcb-section-notification {
         font-size: 14px;
         color: #757575;
@@ -155,6 +130,9 @@ page-configure-basic {
             &>.pc-form-grid-col-120 {
                 flex: 0 0 100%;
             }
+            &>.pc-form-grid-col-free {
+                flex: 1;
+            }
         }
         @media(max-width: 992px) {
             &>.pc-form-grid-col-10 {
@@ -176,6 +154,9 @@ page-configure-basic {
             &>.pc-form-grid-col-60,
             &>.pc-form-grid-col-120 {
                 flex: 0 0 100%;
+            }
+            &>.pc-form-grid-col-free {
+                flex: 1;
             }
         }
     }

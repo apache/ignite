@@ -51,14 +51,10 @@ public class IgniteWalConverter {
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
 
-        boolean printRecords = IgniteSystemProperties.getBoolean("PRINT_RECORDS", false);
-        boolean printStat = IgniteSystemProperties.getBoolean("PRINT_STAT", true);
+        boolean printRecords = IgniteSystemProperties.getBoolean("PRINT_RECORDS", false); //TODO read them from argumetns
+        boolean printStat = IgniteSystemProperties.getBoolean("PRINT_STAT", true); //TODO read them from argumetns
 
-        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger(),
-            Integer.parseInt(args[0]),
-            null,
-            null,
-            false);
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger());
 
         final File walWorkDirWithConsistentId = new File(args[1]);
 
@@ -69,7 +65,11 @@ public class IgniteWalConverter {
 
         @Nullable final WalStat stat = printStat ? new WalStat() : null;
 
-        try (WALIterator stIt = factory.iteratorWorkFiles(workFiles)) {
+        IgniteWalIteratorFactory.IteratorParametersBuilder iteratorParametersBuilder =
+                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(workFiles)
+                    .pageSize(Integer.parseInt(args[0]));
+
+        try (WALIterator stIt = factory.iterator(iteratorParametersBuilder)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 
@@ -87,7 +87,7 @@ public class IgniteWalConverter {
         if (args.length >= 3) {
             final File walArchiveDirWithConsistentId = new File(args[2]);
 
-            try (WALIterator stIt = factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId)) {
+            try (WALIterator stIt = factory.iterator(walArchiveDirWithConsistentId)) {
                 while (stIt.hasNextX()) {
                     IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 

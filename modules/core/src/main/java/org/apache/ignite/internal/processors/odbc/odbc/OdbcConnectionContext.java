@@ -23,17 +23,16 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
-import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * ODBC Connection Context.
  */
-public class OdbcConnectionContext implements ClientListenerConnectionContext {
+public class OdbcConnectionContext extends ClientListenerAbstractConnectionContext {
     /** Version 2.1.0. */
     public static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
 
@@ -54,9 +53,6 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
-
-    /** Context. */
-    private final GridKernalContext ctx;
 
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -82,10 +78,12 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
      * Constructor.
      * @param ctx Kernal Context.
      * @param busyLock Shutdown busy lock.
+     * @param connId
      * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
-        this.ctx = ctx;
+    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId, int maxCursors) {
+        super(ctx, connId);
+
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
     }
@@ -127,27 +125,7 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
             passwd = reader.readString();
         }
 
-        AuthorizationContext actx = null;
-
-        try {
-            if (ctx.authentication().enabled())
-            {
-                if (F.isEmpty(user))
-                    throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
-
-                actx = ctx.authentication().authenticate(user, passwd);
-
-                if (actx == null)
-                    throw new IgniteCheckedException("Unknown authentication error");
-            }
-            else {
-                if (!F.isEmpty(user))
-                    throw new IgniteCheckedException("Authentication is disabled for the node.");
-            }
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
-        }
+        AuthorizationContext actx = authenticate(user, passwd);
 
         handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
                 enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate, actx);
