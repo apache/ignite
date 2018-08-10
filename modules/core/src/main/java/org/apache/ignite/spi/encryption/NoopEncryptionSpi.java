@@ -77,12 +77,12 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
 
     /** {@inheritDoc} */
     @Override public int encryptedSize(int dataSize) {
-        throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
+        return dataSize;
     }
 
     /** {@inheritDoc} */
     @Override public int encryptedSizeNoPadding(int dataSize) {
-        throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
+        return dataSize;
     }
 
     /** {@inheritDoc} */
