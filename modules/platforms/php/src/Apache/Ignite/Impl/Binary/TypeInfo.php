@@ -22,10 +22,14 @@ use Apache\Ignite\Type\ObjectType;
 
 class TypeInfo
 {
-    private $name;
-    private $size;
-    private $nullable;
-    private $elementTypeCode;
+    const NAME = 'name';
+    const SIZE = 'size';
+    const MIN_VALUE = 'min';
+    const MAX_VALUE = 'max';
+    const NULLABLE = 'nullable';
+    const ELEMENT_TYPE_CODE = 'element_type';
+    
+    private $properties;
     
     private static $info;
     private static $primitiveTypes;
@@ -33,38 +37,168 @@ class TypeInfo
     public static function init(): void
     {
         TypeInfo::$info = array(
-            ObjectType::BYTE => new TypeInfo('byte', 1),
-            ObjectType::SHORT => new TypeInfo('short', 2),
-            ObjectType::INTEGER => new TypeInfo('integer', 4),
-            ObjectType::LONG => new TypeInfo('long', 8),
-            ObjectType::FLOAT => new TypeInfo('float', 4),
-            ObjectType::DOUBLE => new TypeInfo('double', 8),
-            ObjectType::CHAR => new TypeInfo('char', 2),
-            ObjectType::BOOLEAN => new TypeInfo('boolean', 1),
-            ObjectType::STRING => new TypeInfo('string', 0, true),
-            ObjectType::UUID => new TypeInfo('UUID', 16, true),
-            ObjectType::DATE => new TypeInfo('date', 8, true),
-            ObjectType::BYTE_ARRAY => new TypeInfo('byte array', 0, true, ObjectType::BYTE),
-            ObjectType::SHORT_ARRAY => new TypeInfo('short array', 0, true, ObjectType::SHORT),
-            ObjectType::INTEGER_ARRAY => new TypeInfo('integer array', 0, true, ObjectType::INTEGER),
-            ObjectType::LONG_ARRAY => new TypeInfo('long array', 0, true, ObjectType::LONG),
-            ObjectType::FLOAT_ARRAY => new TypeInfo('float array', 0, true, ObjectType::FLOAT),
-            ObjectType::DOUBLE_ARRAY => new TypeInfo('double array', 0, true, ObjectType::DOUBLE),
-            ObjectType::CHAR_ARRAY => new TypeInfo('char array', 0, true, ObjectType::CHAR),
-            ObjectType::BOOLEAN_ARRAY => new TypeInfo('boolean array', 0, true, ObjectType::BOOLEAN),
-            ObjectType::STRING_ARRAY => new TypeInfo('string array', 0, true, ObjectType::STRING),
-            ObjectType::UUID_ARRAY => new TypeInfo('UUID array', 0, true, ObjectType::UUID),
-            ObjectType::DATE_ARRAY => new TypeInfo('date array', 0, true, ObjectType::DATE),
-            ObjectType::MAP => new TypeInfo('map', 0, true),
-            ObjectType::ENUM => new TypeInfo('enum', 0, true),
-            ObjectType::ENUM_ARRAY => new TypeInfo('enum array', 0, true, ObjectType::ENUM),
-            ObjectType::DECIMAL => new TypeInfo('decimal', 0, true),
-            ObjectType::DECIMAL_ARRAY => new TypeInfo('decimal array', 0, true, ObjectType::DECIMAL),
-            ObjectType::TIMESTAMP => new TypeInfo('timestamp', 12, true),
-            ObjectType::TIMESTAMP_ARRAY => new TypeInfo('date', 0, true, ObjectType::TIMESTAMP),
-            ObjectType::TIME => new TypeInfo('time', 8, true),
-            ObjectType::TIME_ARRAY => new TypeInfo('date', 8, true, ObjectType::TIME),
-            ObjectType::NULL => new TypeInfo('null', 0, true),
+            ObjectType::BYTE => new TypeInfo([
+                TypeInfo::NAME => 'byte',
+                TypeInfo::SIZE => 1,
+                TypeInfo::MIN_VALUE => -128,
+                TypeInfo::MAX_VALUE => 127,
+            ]),
+            ObjectType::SHORT => new TypeInfo([
+                TypeInfo::NAME => 'short',
+                TypeInfo::SIZE => 2,
+                TypeInfo::MIN_VALUE => -32768,
+                TypeInfo::MAX_VALUE => 32767,
+            ]),
+            ObjectType::INTEGER => new TypeInfo([
+                TypeInfo::NAME => 'integer',
+                TypeInfo::SIZE => 4,
+                TypeInfo::MIN_VALUE => -2147483648,
+                TypeInfo::MAX_VALUE => 2147483647,
+            ]),
+            ObjectType::LONG => new TypeInfo([
+                TypeInfo::NAME => 'long',
+                TypeInfo::SIZE => 8,
+            ]),
+            ObjectType::FLOAT => new TypeInfo([
+                TypeInfo::NAME => 'float',
+                TypeInfo::SIZE => 4,
+            ]),
+            ObjectType::DOUBLE => new TypeInfo([
+                TypeInfo::NAME => 'double',
+                TypeInfo::SIZE => 8,
+            ]),
+            ObjectType::CHAR => new TypeInfo([
+                TypeInfo::NAME => 'char',
+                TypeInfo::SIZE => 2,
+            ]),
+            ObjectType::BOOLEAN => new TypeInfo([
+                TypeInfo::NAME => 'boolean',
+                TypeInfo::SIZE => 1,
+            ]),
+            ObjectType::STRING => new TypeInfo([
+                TypeInfo::NAME => 'string',
+                TypeInfo::NULLABLE => true,
+            ]),
+            ObjectType::UUID => new TypeInfo([
+                TypeInfo::NAME => 'UUID',
+                TypeInfo::SIZE => 16,
+                TypeInfo::NULLABLE => true,
+            ]),
+            ObjectType::DATE => new TypeInfo([
+                TypeInfo::NAME => 'date',
+                TypeInfo::SIZE => 8,
+                TypeInfo::NULLABLE => true,
+            ]),
+            ObjectType::BYTE_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'byte array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::BYTE
+            ]),
+            ObjectType::SHORT_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'short array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::SHORT
+            ]),
+            ObjectType::INTEGER_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'integer array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::INTEGER
+            ]),
+            ObjectType::LONG_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'long array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::LONG
+            ]),
+            ObjectType::FLOAT_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'float array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::FLOAT
+            ]),
+            ObjectType::DOUBLE_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'double array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::DOUBLE
+            ]),
+            ObjectType::CHAR_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'char array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::CHAR
+            ]),
+            ObjectType::BOOLEAN_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'boolean array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::BOOLEAN
+            ]),
+            ObjectType::STRING_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'string array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::STRING
+            ]),
+            ObjectType::UUID_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'UUID array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::UUID
+            ]),
+            ObjectType::DATE_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'date array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::DATE
+            ]),
+            ObjectType::OBJECT_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'object array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::COMPLEX_OBJECT
+            ]),
+            ObjectType::COLLECTION => new TypeInfo([
+                TypeInfo::NAME => 'collection',
+                TypeInfo::NULLABLE => true,
+            ]),
+            ObjectType::MAP => new TypeInfo([
+                TypeInfo::NAME => 'map',
+                TypeInfo::NULLABLE => true,
+            ]),
+            ObjectType::ENUM => new TypeInfo([
+                TypeInfo::NAME => 'enum',
+                TypeInfo::NULLABLE => true,
+            ]),
+            ObjectType::ENUM_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'enum array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::ENUM
+            ]),
+            ObjectType::DECIMAL => new TypeInfo([
+                TypeInfo::NAME => 'decimal',
+                TypeInfo::NULLABLE => true,
+            ]),
+            ObjectType::DECIMAL_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'decimal array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::DECIMAL
+            ]),
+            ObjectType::TIMESTAMP => new TypeInfo([
+                TypeInfo::NAME => 'timestamp',
+                TypeInfo::SIZE => 12,
+                TypeInfo::NULLABLE => true,
+            ]),
+            ObjectType::TIMESTAMP_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'timestamp array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::TIMESTAMP
+            ]),
+            ObjectType::TIME => new TypeInfo([
+                TypeInfo::NAME => 'time',
+                TypeInfo::SIZE => 8,
+                TypeInfo::NULLABLE => true,
+            ]),
+            ObjectType::TIME_ARRAY => new TypeInfo([
+                TypeInfo::NAME => 'time array',
+                TypeInfo::NULLABLE => true,
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::TIME
+            ]),
+            ObjectType::NULL => new TypeInfo([
+                TypeInfo::NAME => 'null',
+                TypeInfo::NULLABLE => true,
+            ])
         );
         
         TypeInfo::$primitiveTypes = [
@@ -111,32 +245,44 @@ class TypeInfo
         return TypeInfo::$primitiveTypes;
     }
     
-    private function __construct(string $name, int $size, bool $nullable = false, int $elementTypeCode = 0)
+    private function __construct(array $properties)
     {
-        $this->name = $name;
-        $this->size = $size;
-        $this->nullable = $nullable;
-        $this->elementTypeCode = $elementTypeCode;
+        $this->properties = $properties;
     }
     
     public function getName(): string
     {
-        return $this->name;
+        return $this->getProperty(TypeInfo::NAME, null);
     }
 
     public function getSize(): int
     {
-        return $this->size;
+        return $this->getProperty(TypeInfo::SIZE, 0);
     }
     
     public function isNullable(): bool
     {
-        return $this->nullable;
+        return $this->getProperty(TypeInfo::NULLABLE, false);
     }
     
     public function getElementTypeCode(): int
     {
-        return $this->elementTypeCode;
+        return $this->getProperty(TypeInfo::ELEMENT_TYPE_CODE, 0);
+    }
+    
+    public function getMinValue()
+    {
+        return $this->getProperty(TypeInfo::MIN_VALUE, null);
+    }
+    
+    public function getMaxValue()
+    {
+        return $this->getProperty(TypeInfo::MAX_VALUE, null);
+    }
+    
+    private function getProperty(string $propName, $defaultValue)
+    {
+        return array_key_exists($propName, $this->properties) ? $this->properties[$propName] : $defaultValue;
     }
 }
 

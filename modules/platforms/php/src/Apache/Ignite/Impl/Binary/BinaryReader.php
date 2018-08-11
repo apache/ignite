@@ -19,10 +19,12 @@
 namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
+use Ds\Set;
 use Brick\Math\BigDecimal;
 use Brick\Math\BigInteger;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
+use Apache\Ignite\Type\CollectionObjectType;
 use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
@@ -37,6 +39,11 @@ class BinaryReader
         $typeCode = $buffer->readByte();
         BinaryUtils::checkTypesComatibility($expectedType, $typeCode);
         return BinaryReader::readTypedObject($buffer, $typeCode, $expectedType);
+    }
+    
+    public static function readStringArray(MessageBuffer $buffer): array
+    {
+        return BinaryReader::readTypedObject($buffer, ObjectType::STRING_ARRAY);
     }
     
     private static function readTypedObject(MessageBuffer $buffer, int $objectTypeCode, $expectedType = null)
@@ -85,6 +92,8 @@ class BinaryReader
             case ObjectType::TIMESTAMP_ARRAY:
             case ObjectType::TIME_ARRAY:
                 return BinaryReader::readArray($buffer, $objectTypeCode, $expectedType);
+            case ObjectType::COLLECTION:
+                return BinaryReader::readCollection($buffer, $expectedType);
             case ObjectType::MAP:
                 return BinaryReader::readMap($buffer, $expectedType);
             case ObjectType::BINARY_OBJECT:
@@ -179,6 +188,23 @@ class BinaryReader
         return $result;
     }
     
+    private static function readCollection(MessageBuffer $buffer, CollectionObjectType $expectedColType = null)
+    {
+        $size = $buffer->readInteger();
+        $subType = $buffer->readByte();
+        $isSet = CollectionObjectType::isSet($subType);
+        $result = $isSet ? new Set() : [];
+        for ($i = 0; $i < $size; $i++) {
+            $element = BinaryReader::readObject($buffer, $expectedColType ? $expectedColType->getElementType() : null);
+            if ($isSet) {
+                $result->add($element);
+            } else {
+                array_push($result, $element);
+            }
+        }
+        return $result;
+    }
+
     private static function readMap(MessageBuffer $buffer, MapObjectType $expectedMapType = null): Map
     {
         $size = $buffer->readInteger();

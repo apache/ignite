@@ -18,6 +18,9 @@
 
 namespace Apache\Ignite\Type;
 
+use Apache\Ignite\Impl\Utils\ArgumentChecker;
+use Apache\Ignite\Impl\Binary\BinaryUtils;
+
 /** 
  * Class representing a collection type of Ignite object.
  * 
@@ -79,7 +82,7 @@ class CollectionObjectType extends ObjectType
      * will try to make automatic mapping between PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
-     * @param int $subType collection subtype, one of the CollectionObjectType constants.
+     * @param int $subType collection subtype, one of @ref CollectionSubType constants.
      * @param int|ObjectType|null $elementType type of elements in the collection:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
@@ -106,7 +109,30 @@ class CollectionObjectType extends ObjectType
         $this->elementType = $elementType;
     }
 
-    public static function isSet($subType): void
+    /**
+     * Returns collection subtype, one of @ref CollectionSubType constants.
+     * 
+     * @return int collection subtype, one of @ref CollectionSubType constants.
+     */
+    public function getSubType(): int
+    {
+        return $this->subType;
+    }
+    
+    /**
+     * Returns type of elements in the collection.
+     * 
+     * @return int|ObjectType|null type of elements in the collection:
+     *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (or not specified) that means the type is not specified
+     */
+    public function getElementType()
+    {
+        return $this->elementType;
+    }
+    
+    public static function isSet($subType): bool
     {
         return $subType === CollectionObjectType::USER_SET ||
             $subType === CollectionObjectType::HASH_SET ||

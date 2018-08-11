@@ -19,9 +19,11 @@
 namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
+use Ds\Set;
 use Brick\Math\BigDecimal;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
+use Apache\Ignite\Type\CollectionObjectType;
 use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
@@ -104,6 +106,9 @@ class BinaryWriter
             case ObjectType::TIMESTAMP_ARRAY:
             case ObjectType::TIME_ARRAY:
                 BinaryWriter::writeArray($buffer, $object, $objectType, $objectTypeCode);
+                break;
+            case ObjectType::COLLECTION:
+                BinaryWriter::writeCollection($buffer, $object, $objectType);
                 break;
             case ObjectType::MAP:
                 BinaryWriter::writeMap($buffer, $object, $objectType);
@@ -193,6 +198,15 @@ class BinaryWriter
         }
     }
     
+    private static function writeCollection(MessageBuffer $buffer, $collection, CollectionObjectType $collectionType): void
+    {
+        $buffer->writeInteger($collection instanceof Set ? $collection->count() : count($collection));
+        $buffer->writeByte($collectionType->getSubType());
+        foreach ($collection as $element) {
+            BinaryWriter::writeObject($buffer, $element, $collectionType->getElementType());
+        }
+    }    
+
     private static function writeMap(MessageBuffer $buffer, $map, MapObjectType $mapType): void
     {
         if (!($map instanceof Map)) {

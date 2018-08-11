@@ -19,11 +19,13 @@
 namespace Apache\Ignite\Tests;
 
 use Ds\Map;
+use Ds\Set;
 use PHPUnit\Framework\TestCase;
 use Apache\Ignite\CacheInterface;
 use Apache\Ignite\Exception\OperationException;
 use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Type\MapObjectType;
+use Apache\Ignite\Type\CollectionObjectType;
 
 final class CachePutGetTestCase extends TestCase
 {
@@ -101,6 +103,10 @@ final class CachePutGetTestCase extends TestCase
                 if (array_key_exists('typeOptional', $typeInfo2)) {
                     $this->putGetMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP, $type1), $map);
                 }
+                if (array_key_exists('typeOptional', $typeInfo1) && array_key_exists('typeOptional', $typeInfo2)) {
+                    $this->putGetMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP), $map);
+                    $this->putGetMaps(null, $map);
+                }
             }
         }
     }
@@ -130,11 +136,125 @@ final class CachePutGetTestCase extends TestCase
                 if (array_key_exists('typeOptional', $typeInfo2)) {
                     $this->putGetArrayMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP, $type1), $map);
                 }
+                if (array_key_exists('typeOptional', $typeInfo1) && array_key_exists('typeOptional', $typeInfo2)) {
+                    $this->putGetArrayMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP), $map);
+                    $this->putGetArrayMaps(null, $map);
+                }
             }
         }
     }
     
-    private function putGetArrayMaps(MapObjectType $mapType, $value): void
+    public function testPutGetMapsWithArrays(): void
+    {
+        foreach (TestingHelper::$primitiveValues as $type1 => $typeInfo1) {
+            if (!$typeInfo1['isMapKey']) {
+                continue;
+            }
+            foreach (TestingHelper::$arrayValues as $type2 => $typeInfo2) {
+                $primitiveType2 = $typeInfo2['elemType'];
+                $values2 = TestingHelper::$primitiveValues[$primitiveType2]['values'];
+                $map = new Map();
+                $index2 = 0;
+                $arrayValues2 = [$values2, null, array_reverse($values2)];
+                foreach ($typeInfo1['values'] as $value1) {
+                    $map->put($value1, $arrayValues2[$index2]);
+                    $index2++;
+                    if ($index2 >= count($arrayValues2)) {
+                        $index2 = 0;
+                    }
+                }
+                $this->putGetMaps(new MapObjectType(MapObjectType::HASH_MAP, $type1, $type2), $map);
+                $this->putGetMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP, $type1, $type2), $map);
+                if (array_key_exists('typeOptional', $typeInfo1)) {
+                    $this->putGetMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP, null, $type2), $map);
+                }
+                if (array_key_exists('typeOptional', $typeInfo2)) {
+                    $this->putGetMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP, $type1), $map);
+                }
+                if (array_key_exists('typeOptional', $typeInfo1) && array_key_exists('typeOptional', $typeInfo2)) {
+                    $this->putGetMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP), $map);
+                    $this->putGetMaps(null, $map);
+                }
+            }
+        }
+    }
+
+    public function testPutGetArrayMapsWithArrays(): void
+    {
+        foreach (TestingHelper::$primitiveValues as $type1 => $typeInfo1) {
+            if (!$typeInfo1['isArrayKey']) {
+                continue;
+            }
+            foreach (TestingHelper::$arrayValues as $type2 => $typeInfo2) {
+                $primitiveType2 = $typeInfo2['elemType'];
+                $values2 = TestingHelper::$primitiveValues[$primitiveType2]['values'];
+                $map = [];
+                $index2 = 0;
+                $arrayValues2 = [$values2, null, array_reverse($values2)];
+                foreach ($typeInfo1['values'] as $value1) {
+                    $map[$value1] = $arrayValues2[$index2];
+                    $index2++;
+                    if ($index2 >= count($arrayValues2)) {
+                        $index2 = 0;
+                    }
+                }
+                $this->putGetArrayMaps(new MapObjectType(MapObjectType::HASH_MAP, $type1, $type2), $map);
+                $this->putGetArrayMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP, $type1, $type2), $map);
+                if (array_key_exists('typeOptional', $typeInfo1)) {
+                    $this->putGetArrayMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP, null, $type2), $map);
+                }
+                if (array_key_exists('typeOptional', $typeInfo2)) {
+                    $this->putGetArrayMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP, $type1), $map);
+                }
+                if (array_key_exists('typeOptional', $typeInfo1) && array_key_exists('typeOptional', $typeInfo2)) {
+                    $this->putGetArrayMaps(new MapObjectType(MapObjectType::LINKED_HASH_MAP), $map);
+                    $this->putGetArrayMaps(null, $map);
+                }
+            }
+        }
+    }
+    
+    public function testPutGetSets(): void
+    {
+        foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+            $set = new Set();
+            foreach ($typeInfo['values'] as $value) {
+                $set->add($value);
+            }
+            $this->putGetSets(new CollectionObjectType(CollectionObjectType::USER_SET, $type), $set);
+            $this->putGetSets(new CollectionObjectType(CollectionObjectType::HASH_SET, $type), $set);
+            $this->putGetSets(new CollectionObjectType(CollectionObjectType::LINKED_HASH_SET, $type), $set);
+            if (array_key_exists('typeOptional', $typeInfo)) {
+                $this->putGetSets(new CollectionObjectType(CollectionObjectType::LINKED_HASH_SET), $set);
+                $this->putGetSets(null, $set);
+            }
+        }
+    }
+    
+    private function putGetSets(?CollectionObjectType $setType, ?Set $value): void
+    {
+        $key = microtime();
+        CachePutGetTestCase::$cache->
+            setKeyType(null)->
+            setValueType($setType);
+        try {
+            CachePutGetTestCase::$cache->put($key, $value);
+            $result = CachePutGetTestCase::$cache->get($key);
+            $strResult = TestingHelper::printValue($result);
+            $strValue = TestingHelper::printValue($value);
+            $strValueType = TestingHelper::printValue($setType ? $setType->getElementType() : null);
+            $this->assertTrue(
+                $result instanceof Set,
+                "result is not Set: result={$strResult}");
+            $this->assertTrue(
+                TestingHelper::compare($value, $result),
+                "Sets are not equal: valueType={$strValueType}, put value={$strValue}, get value={$strResult}");
+        } finally {
+            CachePutGetTestCase::$cache->removeAll();
+        }
+    }
+    
+    private function putGetArrayMaps(?MapObjectType $mapType, ?array $value): void
     {
         CachePutGetTestCase::$cache->
             setKeyType(null)->
@@ -145,7 +265,7 @@ final class CachePutGetTestCase extends TestCase
             $result = CachePutGetTestCase::$cache->get($key);
             $strResult = TestingHelper::printValue($result);
             $strValue = TestingHelper::printValue($value);
-            $strValueType = TestingHelper::printValue($mapType->getValueType());
+            $strValueType = TestingHelper::printValue($mapType ? $mapType->getValueType() : null);
             $this->assertTrue(
                 $result instanceof Map,
                 "result is not Map: result={$strResult}");
@@ -157,7 +277,7 @@ final class CachePutGetTestCase extends TestCase
         }
     }
     
-    private function putGetMaps(MapObjectType $mapType, $value): void
+    private function putGetMaps(?MapObjectType $mapType, ?Map $value): void
     {
         CachePutGetTestCase::$cache->
             setKeyType(null)->
@@ -168,7 +288,7 @@ final class CachePutGetTestCase extends TestCase
             $result = CachePutGetTestCase::$cache->get($key);
             $strResult = TestingHelper::printValue($result);
             $strValue = TestingHelper::printValue($value);
-            $strValueType = TestingHelper::printValue($mapType->getValueType());
+            $strValueType = TestingHelper::printValue($mapType ? $mapType->getValueType() : null);
             $this->assertTrue(
                 $result instanceof Map,
                 "result is not Map: result={$strResult}");

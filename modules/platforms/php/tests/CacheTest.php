@@ -78,8 +78,14 @@ final class CacheTestCase extends TestCase
 
     public function testGetCacheNames(): void
     {
-        //TODO
-        $this->assertTrue(true);
+        $client = TestingHelper::$client;
+        $client->getOrCreateCache(CacheTestCase::CACHE_NAME);
+        $client->getOrCreateCache(CacheTestCase::CACHE_NAME2);
+        $cacheNames = $client->cacheNames();
+        $this->assertContains(CacheTestCase::CACHE_NAME, $cacheNames);
+        $this->assertContains(CacheTestCase::CACHE_NAME2, $cacheNames);
+        $client->destroyCache(CacheTestCase::CACHE_NAME);
+        $client->destroyCache(CacheTestCase::CACHE_NAME2);
     }
     
     public function testDestroyCache(): void

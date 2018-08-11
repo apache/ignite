@@ -23,6 +23,7 @@ use Apache\Ignite\Impl\Binary\MessageBuffer;
 use Apache\Ignite\Impl\Utils\ArgumentChecker;
 use Apache\Ignite\Impl\Utils\Logger;
 use Apache\Ignite\Impl\Binary\ClientOperation;
+use Apache\Ignite\Impl\Binary\BinaryReader;
 use Apache\Ignite\Impl\Binary\BinaryWriter;
 use Apache\Ignite\Impl\Binary\BinaryTypeStorage;
 use Apache\Ignite\Impl\Cache;
@@ -180,6 +181,15 @@ class Client
      */
     public function cacheNames(): array
     {
+        $names = null;
+        $this->socket->send(
+            ClientOperation::CACHE_GET_NAMES,
+            null,
+            function (MessageBuffer $payload) use (&$names)
+            {
+                $names = BinaryReader::readStringArray($payload);
+            });
+        return $names;
     }
     
     /**

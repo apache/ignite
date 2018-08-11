@@ -26,6 +26,7 @@ use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
 use Apache\Ignite\Type\CollectionObjectType;
 use Apache\Ignite\Type\ComplexObjectType;
+use Apache\Ignite\Type\ObjectArrayType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
@@ -69,13 +70,20 @@ class BinaryUtils
             $typeCode !== ObjectType::COMPLEX_OBJECT;
     }
 
-    public static function checkStandardTypeCompatibility($value, $typeCode, $type = null) {
+    public static function checkStandardTypeCompatibility($value, $typeCode, $type = null, $signed = true) {
         $valueType = gettype($value);
         switch ($typeCode) {
             case ObjectType::BYTE:
             case ObjectType::SHORT:
             case ObjectType::INTEGER:
                 if (!is_integer($value)) {
+                    BinaryUtils::valueCastError($value, $typeCode);
+                }
+                $typeInfo = TypeInfo::getTypeInfo($typeCode);
+                $min = $typeInfo->getMinValue();
+                $max = $typeInfo->getMaxValue();
+                if ($signed && ($min && $value < $min || $max && $value > $max) ||
+                    !$signed && ($value < 0 || $value > $max - $min)) {
                     BinaryUtils::valueCastError($value, $typeCode);
                 }
                 return;
@@ -107,7 +115,7 @@ class BinaryUtils
                     BinaryUtils::valueCastError(value, typeCode);
                 }
                 foreach ($value as $element) {
-                    BinaryUtils::checkStandardTypeCompatibility($element, ObjectType::BYTE);
+                    BinaryUtils::checkStandardTypeCompatibility($element, ObjectType::BYTE, null, false);
                 }
                 return;
             case ObjectType::DATE:
@@ -278,18 +286,20 @@ class BinaryUtils
                 return ObjectType::TIMESTAMP_ARRAY;
             case ObjectType::TIME:
                 return ObjectType::TIME_ARRAY;
+            case ObjectType::BINARY_OBJECT:
+                return new ObjectArrayType();
             default:
-                BinaryUtils::unsupportedType(BinaryUtils::getTypeName($elementType));
+                return new ObjectArrayType($elementType);
         }
     }
     
     public static function getArrayElementType($arrayType)
     {
-//        if ($arrayType instanceof ObjectArrayType) {
-//            return $arrayType->elementType;
-//        } elseif ($arrayType === ObjectType::OBJECT_ARRAY) {
-//            return null;
-//        }
+        if ($arrayType instanceof ObjectArrayType) {
+            return $arrayType->getElementType();
+        } elseif ($arrayType === ObjectType::OBJECT_ARRAY) {
+            return null;
+        }
         $info = TypeInfo::getTypeInfo($arrayType);
         if (!$info || !$info->getElementTypeCode()) {
             BinaryUtils::internalError();
@@ -357,11 +367,7 @@ class BinaryUtils
     
     public static function intval32(int $value): int
     {
-        $value = ($value & 0xFFFFFFFF);
-        if ($value & 0x80000000) {
-            $value = -((~$value & 0xFFFFFFFF) + 1);
-        }
-        return $value;
+        return (($value ^ 0x80000000) & 0xFFFFFFFF) - 0x80000000;
     }
     
     public static function internalError(string $message = null): void

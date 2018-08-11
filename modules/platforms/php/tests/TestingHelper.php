@@ -20,6 +20,7 @@ namespace Apache\Ignite\Tests;
 
 use \DateTime;
 use Ds\Map;
+use Ds\Set;
 use Brick\Math\BigDecimal;
 use Apache\Ignite\Client;
 use Apache\Ignite\ClientConfiguration;
@@ -74,6 +75,7 @@ class TestingHelper
         $output = null;
         $return_var = 0;
         exec('php ' . __DIR__ . '/../examples/' . $name, $output, $return_var);
+        TestingHelper::logDebug(print_r($output, true));
         $testCase->assertEquals($return_var, 0);
         foreach ($output as $out) {
             $testCase->assertNotContains('ERROR:', $out);
@@ -136,7 +138,23 @@ class TestingHelper
                 }
             }
             return true;
+        } elseif ($value1 instanceof Set && $value2 instanceof Set) {
+            if ($value1->count() !== $value2->count()) {
+                TestingHelper::logDebug('compare: set sizes are different');
+                return false;
+            }
+            $value1Arr = $value1->toArray();
+            $value2Arr = $value2->toArray();
+            sort($value1Arr);
+            sort($value2Arr);
+            if (!TestingHelper::compare($value1Arr, $value2Arr)) {
+                TestingHelper::logDebug(sprintf('compare: sets are different: %s and %s',
+                    TestingHelper::printValue($value1Arr), TestingHelper::printValue($value2Arr)));
+                return false;
+            }
+            return true;
         }
+        
         return false;
     }
     

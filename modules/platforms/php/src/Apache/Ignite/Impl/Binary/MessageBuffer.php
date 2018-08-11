@@ -100,21 +100,21 @@ class MessageBuffer
 
     public function writeFloat(float $value): void
     {
-        // TODO: check size
         $this->writeNumber($value, ObjectType::FLOAT);
     }
 
     public function writeDouble(float $value): void
     {
-        // TODO: check size
         $this->writeNumber($value, ObjectType::DOUBLE);
     }
 
     public function writeNumber($value, int $type, bool $signed = true): void
     {
         $format = $this->getNumberFormat($type, $signed);
-        // TODO: check pack errors
         $strValue = pack($format, $value);
+        if (strlen($strValue) !== TypeInfo::getTypeInfo($type)->getSize()) {
+            BinaryUtils::unsupportedType(BinaryUtils::getTypeName($type));
+        }
         $this->convertEndianness($strValue, $type);
         $this->writeStr($strValue);
     }
