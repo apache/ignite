@@ -33,11 +33,14 @@ if [ ! -z "$EXTERNAL_LIBS" ]; then
   done
 fi
 
+# HOSTNAME of the docker host
+# The information is useful for any kind of communication between container and docker host.
+export DOCKER_HOST_NAME=`cat $IGNITE_PERSISTENT_STORE/hostname`
+
 # form a consistent ID from the ECS host's name and the cluster name
 if [ -z "$IGNITE_CONSISTENT_ID" ]; then
     if [ ! -z "$IGNITE_CLUSTER_NAME" ]  && [ ! -z "$IGNITE_PERSISTENT_STORE" ]  &&  [ -f "$IGNITE_PERSISTENT_STORE/hostname" ]; then
-        HOST_NAME=`cat $IGNITE_PERSISTENT_STORE/hostname`
-        export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}-${HOST_NAME}
+        export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}-${DOCKER_HOST_NAME}
     fi
 fi
 
