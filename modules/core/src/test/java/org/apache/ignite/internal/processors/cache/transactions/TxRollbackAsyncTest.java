@@ -894,22 +894,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks if all tx futures are finished.
-     */
-    private void checkFutures() {
-        for (Ignite ignite : G.allGrids()) {
-            IgniteEx ig = (IgniteEx)ignite;
-
-            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
-
-            for (GridCacheFuture<?> fut : futs)
-                log.info("Waiting for future: " + fut);
-
-            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
-        }
-    }
-
-    /**
      * @param tx Tx to rollback.
      */
     private IgniteInternalFuture<?> rollbackAsync(final Transaction tx) throws Exception {
