@@ -41,7 +41,14 @@ if [ -z "$IGNITE_CONSISTENT_ID" ]; then
     fi
 fi
 
-export JVM_OPTS="$JVM_OPTS $JVM_DEBUG_OPTS"
+# Datadog seems to require that java.rmi.server.hostname be set.  
+# There is confusion as to what happens if the datadog container is using a different network mode.
+if [ ! -z $IGNITE_JMX_PORT ]; then
+    HOST_IP=`hostname -i`
+    export JVM_DEBUG_OPTS="-Djava.rmi.server.hostname=${HOST_IP} $JVM_DEBUG_OPTS"
+fi
+
+export JVM_OPTS="$JVM_OPTS $JVM_DEBUG_OPTS $JVM_ADDITIONAL_OPTS"
 
 if [ ! -z "${JVM_IGNITE_GC_LOGGING_OPTS}" ] &&  [ ! -z "${JOBCASE_LOGS}" ]; then
     export JVM_OPTS="$JVM_OPTS $JVM_IGNITE_GC_LOGGING_OPTS  -Xloggc:${JOBCASE_LOGS}/jvm-gc.log"
@@ -53,7 +60,7 @@ fi
 
 if [ ! -z "${JVM_HEAP_SIZE}" ]; then
     export JVM_OPTS="$JVM_OPTS -Xms${JVM_HEAP_SIZE} -Xmx${JVM_HEAP_SIZE}"
-fi    
+fi
 
 QUIET=""
 

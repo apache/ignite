@@ -50,7 +50,7 @@ ENV JOBCASE_LOGS ${JOBCASE_HOME}/logs
 
 # Ports
 ENV IGNITE_SERVER_PORT 11211
-ENV IGNITE_JMX_PORT 49112
+ENV IGNITE_JMX_PORT 9000
 ENV IGNITE_DISCOVERY_PORT 47500
 ENV IGNITE_COMMUNICATION_PORT 47100
 ENV IGNITE_JDBC_PORT 10800
@@ -88,6 +88,9 @@ ENV JVM_METASPACE_SIZE 1g
 # As default, it enables remote debug on port 1044.
 ENV JVM_DEBUG_OPTS "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044"
 ENV JVM_DEBUG_PORT 1044
+
+# other things to pass to JVM without needing to restate default values.
+ENV JVM_ADDITIONAL_OPTS ""
 
 # Ignite common JVM settings.   Run.sh will concatenate the above settings.
 ENV JVM_OPTS="-server -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC"
@@ -154,7 +157,7 @@ COPY ./common.node.config.xml ${JOBCASE_CONFIG}/
 COPY ./file.discovery.node.config.xml ${JOBCASE_CONFIG}/
 
 # Copy s3 bucket discovery grid configuration file
-COPY ./s3bucket.discovery.node.config.xml ${JOBCASE_CONFIG}/
+COPY ./s3bucket.discovery.node.config.xml ${JOBCASE_CONFIG}/    
 
 # Copy default grid configuration file
 COPY ./multicast.discovery.node.config.xml ${JOBCASE_CONFIG}/
