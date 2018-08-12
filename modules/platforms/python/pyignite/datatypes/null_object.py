@@ -21,7 +21,7 @@ There can't be null type, because null payload takes exactly 0 bytes.
 
 import ctypes
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from .type_codes import TC_NULL
 
 
@@ -44,8 +44,8 @@ class Null:
         )
 
     @classmethod
-    def parse(cls, conn: Connection):
-        buffer = conn.recv(ctypes.sizeof(ctypes.c_byte))
+    def parse(cls, client: Client):
+        buffer = client.recv(ctypes.sizeof(ctypes.c_byte))
         data_type = cls.build_c_type()
         return data_type, buffer
 

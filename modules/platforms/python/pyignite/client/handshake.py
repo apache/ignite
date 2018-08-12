@@ -42,10 +42,10 @@ class HandshakeRequest(ctypes.LittleEndianStructure):
         self.client_code = 2
 
 
-def read_response(conn):
-    buffer = conn.recv(4)
+def read_response(client):
+    buffer = client.recv(4)
     length = int.from_bytes(buffer, byteorder='little')
-    buffer += conn.recv(length)
+    buffer += client.recv(length)
     op_code = int.from_bytes(buffer[4:5], byteorder='little')
     fields = [
         ('length', ctypes.c_int),

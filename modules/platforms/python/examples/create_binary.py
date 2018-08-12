@@ -13,14 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.datatypes import BinaryObject, DoubleObject, IntObject, String
 from pyignite.datatypes.prop_codes import *
 
-conn = Connection()
-conn.connect('127.0.0.1', 10800)
+client = Client()
+client.connect('127.0.0.1', 10800)
 
-student_cache = conn.create_cache({
+student_cache = client.create_cache({
         PROP_NAME: 'SQL_PUBLIC_STUDENT',
         PROP_SQL_SCHEMA: 'PUBLIC',
         PROP_QUERY_ENTITIES: [
@@ -73,7 +73,7 @@ student_cache = conn.create_cache({
         ],
     })
 
-student_type = conn.put_binary_type(
+student_type = client.put_binary_type(
     'SQL_PUBLIC_STUDENT_TYPE',
     schema={
         'NAME': String,
@@ -100,7 +100,7 @@ student_cache.put(
     value_hint=BinaryObject,
 )
 
-result = conn.sql(
+result = client.sql(
     r'SELECT * FROM Student',
     include_field_names=True
 )
@@ -111,11 +111,11 @@ print(*result)
 # [1, 'John Doe', 'jdoe', 17, 4.25]
 
 # DROP_QUERY = 'DROP TABLE Student'
-# conn.sql(DROP_QUERY)
+# client.sql(DROP_QUERY)
 #
 # pyignite.exceptions.SQLError: class org.apache.ignite.IgniteCheckedException:
 # Only cache created with CREATE TABLE may be removed with DROP TABLE
 # [cacheName=SQL_PUBLIC_STUDENT]
 
 student_cache.destroy()
-conn.close()
+client.close()

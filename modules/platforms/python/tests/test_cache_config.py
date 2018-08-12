@@ -17,21 +17,21 @@ from pyignite.api import *
 from pyignite.datatypes.prop_codes import *
 
 
-def test_get_configuration(conn):
+def test_get_configuration(client):
 
-    result = cache_get_or_create(conn, 'my_unique_cache')
+    result = cache_get_or_create(client, 'my_unique_cache')
     assert result.status == 0
 
-    result = cache_get_configuration(conn, 'my_unique_cache')
+    result = cache_get_configuration(client, 'my_unique_cache')
     assert result.status == 0
     assert result.value[PROP_NAME] == 'my_unique_cache'
 
 
-def test_create_with_config(conn):
+def test_create_with_config(client):
 
     cache_name = 'my_very_unique_name'
 
-    result = cache_create_with_config(conn, {
+    result = cache_create_with_config(client, {
         PROP_NAME: cache_name,
         PROP_CACHE_KEY_CONFIGURATION: [
             {
@@ -42,20 +42,20 @@ def test_create_with_config(conn):
     })
     assert result.status == 0
 
-    result = cache_get_names(conn)
+    result = cache_get_names(client)
     assert cache_name in result.value
 
-    result = cache_create_with_config(conn, {
+    result = cache_create_with_config(client, {
         PROP_NAME: cache_name,
     })
     assert result.status != 0
 
 
-def test_get_or_create_with_config(conn):
+def test_get_or_create_with_config(client):
 
     cache_name = 'my_very_unique_name'
 
-    result = cache_get_or_create_with_config(conn, {
+    result = cache_get_or_create_with_config(client, {
         PROP_NAME: cache_name,
         PROP_CACHE_KEY_CONFIGURATION: [
             {
@@ -66,10 +66,10 @@ def test_get_or_create_with_config(conn):
     })
     assert result.status == 0
 
-    result = cache_get_names(conn)
+    result = cache_get_names(client)
     assert cache_name in result.value
 
-    result = cache_get_or_create_with_config(conn, {
+    result = cache_get_or_create_with_config(client, {
         PROP_NAME: cache_name,
     })
     assert result.status == 0

@@ -16,7 +16,9 @@
 """
 This module is a source of some basic information about the binary protocol.
 
-Most importantly, it contains `Query` and `Response` base classes.
+Most importantly, it contains `Query` and `Response` base classes. They are
+used internally by :mod:`pyignite.api` module. They, in turn, based on
+:mod:`pyignite.datatypes` binary parser/generator classes.
 """
 
 from collections import OrderedDict
@@ -25,7 +27,7 @@ from random import randint
 
 import attr
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.constants import *
 from pyignite.datatypes import (
     AnyDataObject, Bool, Int, Long, String, StringArray, Struct,
@@ -139,19 +141,19 @@ class Response:
             },
         )
 
-    def parse(self, conn: Connection):
+    def parse(self, client: Client):
         header_class = self.build_header()
-        buffer = conn.recv(ctypes.sizeof(header_class))
+        buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
         fields = []
 
         if header.status_code == OP_SUCCESS:
             for name, ignite_type in self.following:
-                c_type, buffer_fragment = ignite_type.parse(conn)
+                c_type, buffer_fragment = ignite_type.parse(client)
                 buffer += buffer_fragment
                 fields.append((name, c_type))
         else:
-            c_type, buffer_fragment = String.parse(conn)
+            c_type, buffer_fragment = String.parse(client)
             buffer += buffer_fragment
             fields.append(('error_message', c_type))
 
@@ -205,9 +207,9 @@ class SQLResponse:
             return 'fields', StringArray
         return 'field_count', Int
 
-    def parse(self, conn: Connection):
+    def parse(self, client: Client):
         header_class = self.build_header()
-        buffer = conn.recv(ctypes.sizeof(header_class))
+        buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
         fields = []
 
@@ -219,7 +221,7 @@ class SQLResponse:
             if self.has_cursor:
                 following.insert(0, ('cursor', Long))
             body_struct = Struct(following)
-            body_class, body_buffer = body_struct.parse(conn)
+            body_class, body_buffer = body_struct.parse(client)
             body = body_class.from_buffer_copy(body_buffer)
 
             if self.include_field_names:
@@ -233,7 +235,7 @@ class SQLResponse:
                 row_fields = []
                 row_buffer = b''
                 for j in range(field_count):
-                    field_class, field_buffer = AnyDataObject.parse(conn)
+                    field_class, field_buffer = AnyDataObject.parse(client)
                     row_fields.append(('column_{}'.format(j), field_class))
                     row_buffer += field_buffer
 
@@ -262,7 +264,7 @@ class SQLResponse:
             ]
             buffer += body_buffer + data_buffer
         else:
-            c_type, buffer_fragment = String.parse(conn)
+            c_type, buffer_fragment = String.parse(client)
             buffer += buffer_fragment
             fields.append(('error_message', c_type))
 
@@ -274,7 +276,7 @@ class SQLResponse:
                 '_fields_': fields,
             }
         )
-        buffer += conn.recv(ctypes.sizeof(final_class) - len(buffer))
+        buffer += client.recv(ctypes.sizeof(final_class) - len(buffer))
         return final_class, buffer
 
     def to_python(self, ctype_object):

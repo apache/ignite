@@ -16,13 +16,13 @@
 from pyignite.api import cache_create, cache_get_names
 
 
-def test_get_names(conn):
+def test_get_names(client):
 
     bucket_names = ['my_bucket', 'my_bucket_2', 'my_bucket_3']
     for name in bucket_names:
-        cache_create(conn, name)
+        cache_create(client, name)
 
-    result = cache_get_names(conn)
+    result = cache_get_names(client)
     assert result.status == 0
     assert type(result.value) == list
     assert len(result.value) == len(bucket_names)

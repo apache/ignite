@@ -15,7 +15,7 @@
 
 import ctypes
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from .prop_codes import *
 from .cache_config import (
     CacheMode, CacheAtomicityMode, PartitionLossPolicy, RebalanceMode,
@@ -93,10 +93,10 @@ class PropBase:
         )
 
     @classmethod
-    def parse(cls, conn: Connection):
+    def parse(cls, client: Client):
         header_class = cls.build_header()
-        header_buffer = conn.recv(ctypes.sizeof(header_class))
-        data_class, data_buffer = cls.prop_data_class.parse(conn)
+        header_buffer = client.recv(ctypes.sizeof(header_class))
+        data_class, data_buffer = cls.prop_data_class.parse(client)
         prop_class = type(
             cls.__name__,
             (header_class,),

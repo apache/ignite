@@ -15,7 +15,7 @@
 
 from typing import Any, Iterable, Optional, Union
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.datatypes import prop_codes
 from pyignite.exceptions import (
     CacheCreationError, CacheError, ParameterError, SQLError,
@@ -60,7 +60,7 @@ CACHE_CREATE_FUNCS = {
 class Cache:
     """
     Ignite cache abstraction. Can be obtained by calling
-    `Connection.create_cache` or `Connection.get_or_create_cache` methods.
+    `Client.create_cache` or `Client.get_or_create_cache` methods.
     """
     _cache_id = None
     _name = None
@@ -83,22 +83,22 @@ class Cache:
             raise ParameterError('One or more settings was not recognized')
 
     def __init__(
-        self, conn: Connection, settings: Union[str, dict]=None,
+        self, client: Client, settings: Union[str, dict]=None,
         with_get: bool=False
     ):
         """
         Initialize cache object. Normally you should not calling this directly.
-        `Connection.create_cache` or `Connection.get_or_create_cache` methods
+        `Client.create_cache` or `Client.get_or_create_cache` methods
         will do it for you.
 
-        :param conn: Connection to Ignite server,
+        :param client: Ignite client,
         :param settings: cache settings. Can be a string (cache name) or a dict
          of cache properties and their values. In this case PROP_NAME is
          mandatory,
         :param with_get: (optional) do not raise exception, if the cache
          is already exists. Defaults to False.
         """
-        self._conn = conn
+        self._conn = client
         self.validate_settings(settings)
         if type(settings) == str:
             self._name = settings
@@ -106,7 +106,7 @@ class Cache:
             self._name = settings[prop_codes.PROP_NAME]
 
         func = CACHE_CREATE_FUNCS[type(settings) is dict][with_get]
-        result = func(conn, settings)
+        result = func(client, settings)
         if result.status != 0:
             raise CacheCreationError(result.message)
 
@@ -138,11 +138,11 @@ class Cache:
         return self._name
 
     @property
-    def conn(self) -> Connection:
+    def client(self) -> Client:
         """
-        Connection.
+        Ignite Client object.
 
-        :return: Connection object, through which the cache is accessed.
+        :return: Client object, through which the cache is accessed.
         """
         return self._conn
 

@@ -18,7 +18,7 @@ import ssl
 
 import pytest
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.constants import *
 from pyignite.api import cache_create, cache_get_names, cache_destroy
 
@@ -57,11 +57,11 @@ class SSLVersionParser(argparse.Action):
 
 
 @pytest.fixture(scope='module')
-def conn(
+def client(
     ignite_host, ignite_port, use_ssl, ssl_keyfile, ssl_certfile,
     ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version
 ):
-    conn = Connection(
+    client = Client(
         use_ssl=use_ssl,
         ssl_keyfile=ssl_keyfile,
         ssl_certfile=ssl_certfile,
@@ -70,19 +70,19 @@ def conn(
         ssl_ciphers=ssl_ciphers,
         ssl_version=ssl_version
     )
-    conn.connect(ignite_host, ignite_port)
-    yield conn
-    for cache_name in cache_get_names(conn).value:
-        cache_destroy(conn, cache_name)
-    conn.close()
+    client.connect(ignite_host, ignite_port)
+    yield client
+    for cache_name in cache_get_names(client).value:
+        cache_destroy(client, cache_name)
+    client.close()
 
 
 @pytest.fixture
-def cache(conn):
+def cache(client):
     cache_name = 'my_bucket'
-    cache_create(conn, cache_name)
+    cache_create(client, cache_name)
     yield cache_name
-    cache_destroy(conn, cache_name)
+    cache_destroy(client, cache_name)
 
 
 def pytest_addoption(parser):

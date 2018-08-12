@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 
-conn = Connection()
-conn.connect('127.0.0.1', 10800)
+client = Client()
+client.connect('127.0.0.1', 10800)
 
-my_cache = conn.create_cache('my cache')
+my_cache = client.create_cache('my cache')
 
 my_cache.put_all({'key_{}'.format(v): v for v in range(20)})
 # {
@@ -52,4 +52,4 @@ print(dict(result))
 # }
 
 my_cache.destroy()
-conn.close()
+client.close()

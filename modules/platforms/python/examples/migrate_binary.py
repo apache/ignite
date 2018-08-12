@@ -17,7 +17,7 @@ from collections import OrderedDict
 from datetime import date
 from decimal import Decimal
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.datatypes import (
     BinaryObject, BoolObject, DateObject, DecimalObject, LongObject, String,
 )
@@ -98,12 +98,12 @@ old_data = [
 #     'cashier': LongObject,
 # }
 
-conn = Connection()
-conn.connect('127.0.0.1', 10800)
+client = Client()
+client.connect('127.0.0.1', 10800)
 
-accounting = conn.create_cache('accounting')
+accounting = client.create_cache('accounting')
 
-result = conn.put_binary_type(
+result = client.put_binary_type(
     'ExpenseVoucher',
     schema=old_schema,
 )
@@ -123,7 +123,7 @@ for key, value in old_data:
         value_hint=BinaryObject,
     )
 
-result = conn.get_binary_type('ExpenseVoucher')
+result = client.get_binary_type('ExpenseVoucher')
 print(result)
 # {
 #     'type_id': -1171639466,
@@ -162,13 +162,13 @@ schema['report_date'] = DateObject
 del schema['reported']
 schema['sum'] = DecimalObject
 
-result = conn.put_binary_type(
+result = client.put_binary_type(
     'ExpenseVoucher',
     schema=schema,
 )
 new_schema_id = result['schema_id']
 
-result = conn.get_binary_type(type_id)
+result = client.get_binary_type(type_id)
 print(result)
 # {
 #     'type_id': -1171639466,
@@ -250,4 +250,4 @@ migrate(accounting, result)
 
 # cleanup
 accounting.destroy()
-conn.close()
+client.close()

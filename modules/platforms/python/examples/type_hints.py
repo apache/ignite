@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.datatypes import CharObject, ShortObject
 
-conn = Connection()
-conn.connect('127.0.0.1', 10800)
+client = Client()
+client.connect('127.0.0.1', 10800)
 
-my_cache = conn.create_cache('my cache')
+my_cache = client.create_cache('my cache')
 
 my_cache.put('my key', 42)
 # value ‘42’ takes 9 bytes of memory as a LongObject
@@ -48,4 +48,4 @@ my_cache.remove_keys([
 ])
 
 my_cache.destroy()
-conn.close()
+client.close()

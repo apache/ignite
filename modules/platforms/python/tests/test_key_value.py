@@ -17,31 +17,31 @@ from pyignite.api import *
 from pyignite.datatypes import IntObject
 
 
-def test_put_get(conn, cache):
+def test_put_get(client, cache):
 
-    result = cache_put(conn, cache, 'my_key', 5)
+    result = cache_put(client, cache, 'my_key', 5)
     assert result.status == 0
 
-    result = cache_get(conn, cache, 'my_key')
+    result = cache_get(client, cache, 'my_key')
     assert result.status == 0
     assert result.value == 5
 
 
-def test_get_all(conn, cache):
+def test_get_all(client, cache):
 
-    result = cache_get_all(conn, cache, ['key_1', 2, (3, IntObject)])
+    result = cache_get_all(client, cache, ['key_1', 2, (3, IntObject)])
     assert result.status == 0
     assert result.value == {}
 
-    cache_put(conn, cache, 'key_1', 4)
-    cache_put(conn, cache, 3, 18, key_hint=IntObject)
+    cache_put(client, cache, 'key_1', 4)
+    cache_put(client, cache, 3, 18, key_hint=IntObject)
 
-    result = cache_get_all(conn, cache, ['key_1', 2, (3, IntObject)])
+    result = cache_get_all(client, cache, ['key_1', 2, (3, IntObject)])
     assert result.status == 0
     assert result.value == {'key_1': 4, 3: 18}
 
 
-def test_put_all(conn, cache):
+def test_put_all(client, cache):
 
     test_dict = {
         1: 2,
@@ -50,10 +50,10 @@ def test_put_all(conn, cache):
     }
     test_keys = ['key_1', 1, 3]
 
-    result = cache_put_all(conn, cache, test_dict)
+    result = cache_put_all(client, cache, test_dict)
     assert result.status == 0
 
-    result = cache_get_all(conn, cache, test_keys)
+    result = cache_get_all(client, cache, test_keys)
     assert result.status == 0
     assert len(test_dict) == 3
 
@@ -61,267 +61,267 @@ def test_put_all(conn, cache):
         assert key in test_keys
 
 
-def test_contains_key(conn, cache):
+def test_contains_key(client, cache):
 
-    cache_put(conn, cache, 'test_key', 42)
+    cache_put(client, cache, 'test_key', 42)
 
-    result = cache_contains_key(conn, cache, 'test_key')
+    result = cache_contains_key(client, cache, 'test_key')
     assert result.value is True
 
-    result = cache_contains_key(conn, cache, 'non-existant-key')
+    result = cache_contains_key(client, cache, 'non-existant-key')
     assert result.value is False
 
 
-def test_contains_keys(conn, cache):
+def test_contains_keys(client, cache):
 
-    cache_put(conn, cache, 5, 6)
-    cache_put(conn, cache, 'test_key', 42)
+    cache_put(client, cache, 5, 6)
+    cache_put(client, cache, 'test_key', 42)
 
-    result = cache_contains_keys(conn, cache, [5, 'test_key'])
+    result = cache_contains_keys(client, cache, [5, 'test_key'])
     assert result.value is True
 
-    result = cache_contains_keys(conn, cache, [5, 'non-existent-key'])
+    result = cache_contains_keys(client, cache, [5, 'non-existent-key'])
     assert result.value is False
 
 
-def test_get_and_put(conn, cache):
+def test_get_and_put(client, cache):
 
-    result = cache_get_and_put(conn, cache, 'test_key', 42)
+    result = cache_get_and_put(client, cache, 'test_key', 42)
     assert result.status == 0
     assert result.value is None
 
-    result = cache_get(conn, cache, 'test_key')
+    result = cache_get(client, cache, 'test_key')
     assert result.status == 0
     assert result.value is 42
 
-    result = cache_get_and_put(conn, cache, 'test_key', 1234)
+    result = cache_get_and_put(client, cache, 'test_key', 1234)
     assert result.status == 0
     assert result.value == 42
 
 
-def test_get_and_replace(conn, cache):
+def test_get_and_replace(client, cache):
 
-    result = cache_get_and_replace(conn, cache, 'test_key', 42)
+    result = cache_get_and_replace(client, cache, 'test_key', 42)
     assert result.status == 0
     assert result.value is None
 
-    result = cache_get(conn, cache, 'test_key')
+    result = cache_get(client, cache, 'test_key')
     assert result.status == 0
     assert result.value is None
 
-    cache_put(conn, cache, 'test_key', 42)
+    cache_put(client, cache, 'test_key', 42)
 
-    result = cache_get_and_replace(conn, cache, 'test_key', 1234)
+    result = cache_get_and_replace(client, cache, 'test_key', 1234)
     assert result.status == 0
     assert result.value == 42
 
 
-def test_get_and_remove(conn, cache):
+def test_get_and_remove(client, cache):
 
-    result = cache_get_and_remove(conn, cache, 'test_key')
+    result = cache_get_and_remove(client, cache, 'test_key')
     assert result.status == 0
     assert result.value is None
 
-    cache_put(conn, cache, 'test_key', 42)
+    cache_put(client, cache, 'test_key', 42)
 
-    result = cache_get_and_remove(conn, cache, 'test_key')
+    result = cache_get_and_remove(client, cache, 'test_key')
     assert result.status == 0
     assert result.value == 42
 
 
-def test_put_if_absent(conn, cache):
+def test_put_if_absent(client, cache):
 
-    result = cache_put_if_absent(conn, cache, 'test_key', 42)
+    result = cache_put_if_absent(client, cache, 'test_key', 42)
     assert result.status == 0
     assert result.value is True
 
-    result = cache_put_if_absent(conn, cache, 'test_key', 1234)
+    result = cache_put_if_absent(client, cache, 'test_key', 1234)
     assert result.status == 0
     assert result.value is False
 
 
-def test_get_and_put_if_absent(conn, cache):
+def test_get_and_put_if_absent(client, cache):
 
-    result = cache_get_and_put_if_absent(conn, cache, 'test_key', 42)
+    result = cache_get_and_put_if_absent(client, cache, 'test_key', 42)
     assert result.status == 0
     assert result.value is None
 
-    result = cache_get_and_put_if_absent(conn, cache, 'test_key', 1234)
+    result = cache_get_and_put_if_absent(client, cache, 'test_key', 1234)
     assert result.status == 0
     assert result.value == 42
 
-    result = cache_get_and_put_if_absent(conn, cache, 'test_key', 5678)
+    result = cache_get_and_put_if_absent(client, cache, 'test_key', 5678)
     assert result.status == 0
     assert result.value == 42
 
 
-def test_replace(conn, cache):
+def test_replace(client, cache):
 
-    result = cache_replace(conn, cache, 'test_key', 42)
+    result = cache_replace(client, cache, 'test_key', 42)
     assert result.status == 0
     assert result.value is False
 
-    cache_put(conn, cache, 'test_key', 1234)
+    cache_put(client, cache, 'test_key', 1234)
 
-    result = cache_replace(conn, cache, 'test_key', 42)
+    result = cache_replace(client, cache, 'test_key', 42)
     assert result.status == 0
     assert result.value is True
 
-    result = cache_get(conn, cache, 'test_key')
+    result = cache_get(client, cache, 'test_key')
     assert result.status == 0
     assert result.value == 42
 
 
-def test_replace_if_equals(conn, cache):
+def test_replace_if_equals(client, cache):
 
-    result = cache_replace_if_equals(conn, cache, 'my_test', 42, 1234)
+    result = cache_replace_if_equals(client, cache, 'my_test', 42, 1234)
     assert result.status == 0
     assert result.value is False
 
-    cache_put(conn, cache, 'my_test', 42)
+    cache_put(client, cache, 'my_test', 42)
 
-    result = cache_replace_if_equals(conn, cache, 'my_test', 42, 1234)
+    result = cache_replace_if_equals(client, cache, 'my_test', 42, 1234)
     assert result.status == 0
     assert result.value is True
 
-    result = cache_get(conn, cache, 'my_test')
+    result = cache_get(client, cache, 'my_test')
     assert result.status == 0
     assert result.value == 1234
 
 
-def test_clear(conn, cache):
+def test_clear(client, cache):
 
-    result = cache_put(conn, cache, 'my_test', 42)
+    result = cache_put(client, cache, 'my_test', 42)
     assert result.status == 0
 
-    result = cache_clear(conn, cache)
+    result = cache_clear(client, cache)
     assert result.status == 0
 
-    result = cache_get(conn, cache, 'my_test')
-    assert result.status == 0
-    assert result.value is None
-
-
-def test_clear_key(conn, cache):
-
-    result = cache_put(conn, cache, 'my_test', 42)
-    assert result.status == 0
-
-    result = cache_put(conn, cache, 'another_test', 24)
-    assert result.status == 0
-
-    result = cache_clear_key(conn, cache, 'my_test')
-    assert result.status == 0
-
-    result = cache_get(conn, cache, 'my_test')
+    result = cache_get(client, cache, 'my_test')
     assert result.status == 0
     assert result.value is None
 
-    result = cache_get(conn, cache, 'another_test')
+
+def test_clear_key(client, cache):
+
+    result = cache_put(client, cache, 'my_test', 42)
+    assert result.status == 0
+
+    result = cache_put(client, cache, 'another_test', 24)
+    assert result.status == 0
+
+    result = cache_clear_key(client, cache, 'my_test')
+    assert result.status == 0
+
+    result = cache_get(client, cache, 'my_test')
+    assert result.status == 0
+    assert result.value is None
+
+    result = cache_get(client, cache, 'another_test')
     assert result.status == 0
     assert result.value == 24
 
 
-def test_clear_keys(conn, cache):
+def test_clear_keys(client, cache):
 
-    result = cache_put(conn, cache, 'my_test_key', 42)
+    result = cache_put(client, cache, 'my_test_key', 42)
     assert result.status == 0
 
-    result = cache_put(conn, cache, 'another_test', 24)
+    result = cache_put(client, cache, 'another_test', 24)
     assert result.status == 0
 
-    result = cache_clear_keys(conn, cache, [
+    result = cache_clear_keys(client, cache, [
         'my_test_key',
         'nonexistent_key',
     ])
     assert result.status == 0
 
-    result = cache_get(conn, cache, 'my_test_key')
+    result = cache_get(client, cache, 'my_test_key')
     assert result.status == 0
     assert result.value is None
 
-    result = cache_get(conn, cache, 'another_test')
+    result = cache_get(client, cache, 'another_test')
     assert result.status == 0
     assert result.value == 24
 
 
-def test_remove_key(conn, cache):
+def test_remove_key(client, cache):
 
-    result = cache_put(conn, cache, 'my_test_key', 42)
+    result = cache_put(client, cache, 'my_test_key', 42)
     assert result.status == 0
 
-    result = cache_remove_key(conn, cache, 'my_test_key')
+    result = cache_remove_key(client, cache, 'my_test_key')
     assert result.status == 0
     assert result.value is True
 
-    result = cache_remove_key(conn, cache, 'non_existent_key')
+    result = cache_remove_key(client, cache, 'non_existent_key')
     assert result.status == 0
     assert result.value is False
 
 
-def test_remove_if_equals(conn, cache):
+def test_remove_if_equals(client, cache):
 
-    result = cache_put(conn, cache, 'my_test', 42)
+    result = cache_put(client, cache, 'my_test', 42)
     assert result.status == 0
 
-    result = cache_remove_if_equals(conn, cache, 'my_test', 1234)
+    result = cache_remove_if_equals(client, cache, 'my_test', 1234)
     assert result.status == 0
     assert result.value is False
 
-    result = cache_remove_if_equals(conn, cache, 'my_test', 42)
+    result = cache_remove_if_equals(client, cache, 'my_test', 42)
     assert result.status == 0
     assert result.value is True
 
-    result = cache_get(conn, cache, 'my_test')
+    result = cache_get(client, cache, 'my_test')
     assert result.status == 0
     assert result.value is None
 
 
-def test_remove_keys(conn, cache):
+def test_remove_keys(client, cache):
 
-    result = cache_put(conn, cache, 'my_test', 42)
+    result = cache_put(client, cache, 'my_test', 42)
     assert result.status == 0
 
-    result = cache_put(conn, cache, 'another_test', 24)
+    result = cache_put(client, cache, 'another_test', 24)
     assert result.status == 0
 
-    result = cache_remove_keys(conn, cache, ['my_test', 'non_existent'])
+    result = cache_remove_keys(client, cache, ['my_test', 'non_existent'])
     assert result.status == 0
 
-    result = cache_get(conn, cache, 'my_test')
+    result = cache_get(client, cache, 'my_test')
     assert result.status == 0
     assert result.value is None
 
-    result = cache_get(conn, cache, 'another_test')
+    result = cache_get(client, cache, 'another_test')
     assert result.status == 0
     assert result.value == 24
 
 
-def test_remove_all(conn, cache):
+def test_remove_all(client, cache):
 
-    result = cache_put(conn, cache, 'my_test', 42)
+    result = cache_put(client, cache, 'my_test', 42)
     assert result.status == 0
 
-    result = cache_put(conn, cache, 'another_test', 24)
+    result = cache_put(client, cache, 'another_test', 24)
     assert result.status == 0
 
-    result = cache_remove_all(conn, cache)
+    result = cache_remove_all(client, cache)
     assert result.status == 0
 
-    result = cache_get(conn, cache, 'my_test')
-    assert result.status == 0
-    assert result.value is None
-
-    result = cache_get(conn, cache, 'another_test')
+    result = cache_get(client, cache, 'my_test')
     assert result.status == 0
     assert result.value is None
 
+    result = cache_get(client, cache, 'another_test')
+    assert result.status == 0
+    assert result.value is None
 
-def test_cache_get_size(conn, cache):
 
-    result = cache_put(conn, cache, 'my_test', 42)
+def test_cache_get_size(client, cache):
+
+    result = cache_put(client, cache, 'my_test', 42)
     assert result.status == 0
 
-    result = cache_get_size(conn, cache)
+    result = cache_get_size(client, cache)
     assert result.status == 0
     assert result.value == 1

@@ -53,11 +53,11 @@ def int_overflow(value: int) -> int:
     return ((value ^ 0x80000000) & 0xffffffff) - 0x80000000
 
 
-def unwrap_binary(conn, wrapped: tuple, recurse: bool=True):
+def unwrap_binary(client, wrapped: tuple, recurse: bool=True):
     """
     Unwrap wrapped BinaryObject and convert it to Python data.
 
-    :param conn: connection to Ignite cluster,
+    :param client: connection to Ignite cluster,
     :param wrapped: `WrappedDataObject` value,
     :param recurse: unwrap recursively using a simple heuristic to detect
      nested `WrappedDataObject`\ s,
@@ -66,7 +66,7 @@ def unwrap_binary(conn, wrapped: tuple, recurse: bool=True):
     from pyignite.datatypes import BinaryObject
 
     blob, offset = wrapped
-    mock_conn = conn.make_buffered(blob)
+    mock_conn = client.mock(blob)
     mock_conn.pos = offset
     data_class, data_bytes = BinaryObject.parse(mock_conn)
     result = BinaryObject.to_python(data_class.from_buffer_copy(data_bytes))
@@ -74,7 +74,7 @@ def unwrap_binary(conn, wrapped: tuple, recurse: bool=True):
     if recurse:
         for key, value in result['fields'].items():
             if is_wrapped(value):
-                result[key] = unwrap_binary(conn, value, recurse)
+                result[key] = unwrap_binary(client, value, recurse)
 
     return result
 

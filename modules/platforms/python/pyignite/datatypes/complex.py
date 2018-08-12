@@ -17,7 +17,7 @@ from collections import OrderedDict
 import ctypes
 from importlib import import_module
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
 from pyignite.utils import hashcode, is_hinted
@@ -55,14 +55,14 @@ class ObjectArrayObject:
         )
 
     @classmethod
-    def parse(cls, conn: Connection):
+    def parse(cls, client: Client):
         header_class = cls.build_header()
-        buffer = conn.recv(ctypes.sizeof(header_class))
+        buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
         fields = []
 
         for i in range(header.length):
-            c_type, buffer_fragment = AnyDataObject.parse(conn)
+            c_type, buffer_fragment = AnyDataObject.parse(client)
             buffer += buffer_fragment
             fields.append(('element_{}'.format(i), c_type))
 
@@ -136,9 +136,9 @@ class WrappedDataObject:
         )
 
     @classmethod
-    def parse(cls, conn: Connection):
+    def parse(cls, client: Client):
         header_class = cls.build_header()
-        buffer = conn.recv(ctypes.sizeof(header_class))
+        buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
 
         final_class = type(
@@ -152,7 +152,7 @@ class WrappedDataObject:
                 ],
             }
         )
-        buffer += conn.recv(
+        buffer += client.recv(
             ctypes.sizeof(final_class) - ctypes.sizeof(header_class)
         )
         return final_class, buffer
@@ -217,16 +217,16 @@ class Map:
         )
 
     @classmethod
-    def parse(cls, conn: Connection):
+    def parse(cls, client: Client):
         from .internal import AnyDataObject
 
         header_class = cls.build_header()
-        buffer = conn.recv(ctypes.sizeof(header_class))
+        buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
         fields = []
 
         for i in range(header.length << 1):
-            c_type, buffer_fragment = AnyDataObject.parse(conn)
+            c_type, buffer_fragment = AnyDataObject.parse(client)
             buffer += buffer_fragment
             fields.append(('element_{}'.format(i), c_type))
 
@@ -360,12 +360,12 @@ class BinaryObject:
         return ctypes.c_uint
 
     @staticmethod
-    def get_fields(conn: Connection, header) -> list:
+    def get_fields(client: Client, header) -> list:
         from pyignite.api import get_binary_type
         from pyignite.datatypes.internal import tc_map
 
         # get field names from outer space
-        temp_conn = conn.clone()
+        temp_conn = client.clone()
         result = get_binary_type(temp_conn, header.type_id)
         temp_conn.close()
         schema = result.value['schema'][header.schema_id]
@@ -377,23 +377,23 @@ class BinaryObject:
         ]
 
     @classmethod
-    def parse(cls, conn: Connection):
+    def parse(cls, client: Client):
         from pyignite.datatypes import Struct
 
         header_class = cls.build_header()
-        buffer = conn.recv(ctypes.sizeof(header_class))
+        buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
 
         # TODO: valid only on compact schema approach
-        fields = cls.get_fields(conn, header)
+        fields = cls.get_fields(client, header)
         object_fields_struct = Struct(fields)
-        object_fields, object_fields_buffer = object_fields_struct.parse(conn)
+        object_fields, object_fields_buffer = object_fields_struct.parse(client)
         buffer += object_fields_buffer
         final_class_fields = [('object_fields', object_fields)]
 
         if header.flags & cls.HAS_SCHEMA:
             schema = cls.offset_c_type(header.flags) * len(fields)
-            buffer += conn.recv(ctypes.sizeof(schema))
+            buffer += client.recv(ctypes.sizeof(schema))
             final_class_fields.append(('schema', schema))
 
         final_class = type(

@@ -18,7 +18,7 @@ from datetime import date, datetime, time, timedelta
 import decimal
 import uuid
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.constants import *
 from .type_codes import *
 from .null_object import Null
@@ -47,14 +47,14 @@ class StandardObject:
         raise NotImplementedError('This object is generic')
 
     @classmethod
-    def parse(cls, conn: Connection):
-        tc_type = conn.recv(ctypes.sizeof(ctypes.c_byte))
+    def parse(cls, client: Client):
+        tc_type = client.recv(ctypes.sizeof(ctypes.c_byte))
 
         if tc_type == TC_NULL:
             return Null.build_c_type(), tc_type
 
         c_type = cls.build_c_type()
-        buffer = tc_type + conn.recv(ctypes.sizeof(c_type) - len(tc_type))
+        buffer = tc_type + client.recv(ctypes.sizeof(c_type) - len(tc_type))
         return c_type, buffer
 
 
@@ -81,17 +81,17 @@ class String:
         )
 
     @classmethod
-    def parse(cls, conn: Connection):
-        tc_type = conn.recv(ctypes.sizeof(ctypes.c_byte))
+    def parse(cls, client: Client):
+        tc_type = client.recv(ctypes.sizeof(ctypes.c_byte))
         # String or Null
         if tc_type == TC_NULL:
             return Null.build_c_type(), tc_type
 
-        buffer = tc_type + conn.recv(ctypes.sizeof(ctypes.c_int))
+        buffer = tc_type + client.recv(ctypes.sizeof(ctypes.c_int))
         length = int.from_bytes(buffer[1:], byteorder=PROTOCOL_BYTE_ORDER)
 
         data_type = cls.build_c_type(length)
-        buffer += conn.recv(ctypes.sizeof(data_type) - len(buffer))
+        buffer += client.recv(ctypes.sizeof(data_type) - len(buffer))
 
         return data_type, buffer
 
@@ -143,14 +143,14 @@ class DecimalObject:
         )
 
     @classmethod
-    def parse(cls, conn: Connection):
-        tc_type = conn.recv(ctypes.sizeof(ctypes.c_byte))
+    def parse(cls, client: Client):
+        tc_type = client.recv(ctypes.sizeof(ctypes.c_byte))
         # Decimal or Null
         if tc_type == TC_NULL:
             return Null.build_c_type(), tc_type
 
         header_class = cls.build_c_header()
-        buffer = tc_type + conn.recv(
+        buffer = tc_type + client.recv(
             ctypes.sizeof(header_class)
             - len(tc_type)
         )
@@ -165,7 +165,7 @@ class DecimalObject:
                 ],
             }
         )
-        buffer += conn.recv(
+        buffer += client.recv(
             ctypes.sizeof(data_type)
             - ctypes.sizeof(header_class)
         )
@@ -493,13 +493,13 @@ class StandardArray:
         )
 
     @classmethod
-    def parse(cls, conn: Connection):
+    def parse(cls, client: Client):
         header_class = cls.build_header_class()
-        buffer = conn.recv(ctypes.sizeof(header_class))
+        buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
         fields = []
         for i in range(header.length):
-            c_type, buffer_fragment = cls.standard_type.parse(conn)
+            c_type, buffer_fragment = cls.standard_type.parse(client)
             buffer += buffer_fragment
             fields.append(('element_{}'.format(i), c_type))
 

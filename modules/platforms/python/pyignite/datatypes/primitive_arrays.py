@@ -15,7 +15,7 @@
 
 import ctypes
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.constants import *
 from .primitive import *
 from .type_codes import *
@@ -50,9 +50,9 @@ class PrimitiveArray:
         )
 
     @classmethod
-    def parse(cls, conn: Connection):
+    def parse(cls, client: Client):
         header_class = cls.build_header_class()
-        buffer = conn.recv(ctypes.sizeof(header_class))
+        buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
         final_class = type(
             cls.__name__,
@@ -64,7 +64,7 @@ class PrimitiveArray:
                 ],
             }
         )
-        buffer += conn.recv(
+        buffer += client.recv(
             ctypes.sizeof(final_class) - ctypes.sizeof(header_class)
         )
         return final_class, buffer

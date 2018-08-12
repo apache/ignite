@@ -15,7 +15,7 @@
 
 import ctypes
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.constants import *
 
 
@@ -42,8 +42,8 @@ class Primitive:
     c_type = None
 
     @classmethod
-    def parse(cls, conn: Connection):
-        return cls.c_type, conn.recv(ctypes.sizeof(cls.c_type))
+    def parse(cls, client: Client):
+        return cls.c_type, client.recv(ctypes.sizeof(cls.c_type))
 
     @staticmethod
     def to_python(ctype_object):

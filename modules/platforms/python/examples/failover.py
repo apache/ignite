@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.exceptions import SocketError
 
 
@@ -23,18 +23,18 @@ nodes = [
     ('127.0.0.1', 10802),
 ]
 
-conn = Connection(timeout=4.0)
-conn.connect(nodes)
-print('Connected to {}'.format(conn))
+client = Client(timeout=4.0)
+client.connect(nodes)
+print('Connected to {}'.format(client))
 
 while True:
     try:
-        my_cache = conn.get_or_create_cache('my_cache')
+        my_cache = client.get_or_create_cache('my_cache')
         test_value = my_cache.get('test_key')
         my_cache.put('test_key', test_value + 1 if test_value else 1)
     except (OSError, SocketError) as e:
         print('Error: {}'.format(e))
-        conn.reconnect()
-        print('Reconnected to {}'.format(conn))
+        client.reconnect()
+        print('Reconnected to {}'.format(client))
 
 # pyignite.exceptions.ReconnectError: Can not reconnect: out of nodes

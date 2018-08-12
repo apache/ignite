@@ -15,7 +15,7 @@
 
 from typing import Iterable, Union
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.queries.op_codes import *
 from pyignite.datatypes import (
     Map, Bool, Byte, Int, Long, AnyDataArray, AnyDataObject,
@@ -27,13 +27,13 @@ from pyignite.utils import cache_id
 
 
 def cache_put(
-    conn: Connection, cache: Union[str, int], key, value,
+    client: Client, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Puts a value with a given key to cache (overwriting existing value if any).
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
@@ -67,10 +67,10 @@ def cache_put(
         'value': value,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -81,13 +81,13 @@ def cache_put(
 
 
 def cache_get(
-    conn: Connection, cache: Union[str, int], key,
+    client: Client, cache: Union[str, int], key,
     key_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Retrieves a value from cache by key.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -116,12 +116,12 @@ def cache_get(
         'key': key,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('value', AnyDataObject),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -132,13 +132,13 @@ def cache_get(
 
 
 def cache_get_all(
-    conn: Connection, cache: Union[str, int], keys: Iterable, binary=False,
+    client: Client, cache: Union[str, int], keys: Iterable, binary=False,
     query_id=None,
 ) -> APIResult:
     """
     Retrieves multiple key-value pairs from cache.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param keys: list of keys or tuples of (key, key_hint),
     :param binary: (optional) pass True to keep the value in binary form.
@@ -165,12 +165,12 @@ def cache_get_all(
         'flag': 1 if binary else 0,
         'keys': keys,
     })
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('data', Map),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -181,14 +181,14 @@ def cache_get_all(
 
 
 def cache_put_all(
-    conn: Connection, cache: Union[str, int], pairs: dict,
+    client: Client, cache: Union[str, int], pairs: dict,
     binary=False, query_id=None,
 ) -> APIResult:
     """
     Puts multiple key-value pairs to cache (overwriting existing associations
     if any).
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param pairs: dictionary type parameters, contains key-value pairs to save.
      Each key or value can be an item of representable Python type or a tuple
@@ -216,10 +216,10 @@ def cache_put_all(
         'flag': 1 if binary else 0,
         'data': pairs,
     })
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -227,13 +227,13 @@ def cache_put_all(
 
 
 def cache_contains_key(
-    conn: Connection, cache: Union[str, int], key,
+    client: Client, cache: Union[str, int], key,
     key_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Returns a value indicating whether given key is present in cache.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -263,12 +263,12 @@ def cache_contains_key(
         'key': key,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('value', Bool),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -279,13 +279,13 @@ def cache_contains_key(
 
 
 def cache_contains_keys(
-    conn: Connection, cache: Union[str, int], keys: Iterable,
+    client: Client, cache: Union[str, int], keys: Iterable,
     binary=False, query_id=None,
 ) -> APIResult:
     """
     Returns a value indicating whether all given keys are present in cache.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param keys: a list of keys or (key, type hint) tuples,
     :param binary: pass True to keep the value in binary form. False
@@ -312,12 +312,12 @@ def cache_contains_keys(
         'flag': 1 if binary else 0,
         'keys': keys,
     })
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('value', Bool),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -328,14 +328,14 @@ def cache_contains_keys(
 
 
 def cache_get_and_put(
-    conn: Connection, cache: Union[str, int], key, value,
+    client: Client, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Puts a value with a given key to cache, and returns the previous value
     for that key, or null value if there was not such key.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
@@ -370,12 +370,12 @@ def cache_get_and_put(
         'value': value,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('value', AnyDataObject),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -386,7 +386,7 @@ def cache_get_and_put(
 
 
 def cache_get_and_replace(
-    conn: Connection, cache: Union[str, int], key, value,
+    client: Client, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
@@ -394,7 +394,7 @@ def cache_get_and_replace(
     for that key, if and only if there is a value currently mapped
     for that key.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
@@ -428,12 +428,12 @@ def cache_get_and_replace(
         'value': value,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('value', AnyDataObject),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -444,13 +444,13 @@ def cache_get_and_replace(
 
 
 def cache_get_and_remove(
-    conn: Connection, cache: Union[str, int], key,
+    client: Client, cache: Union[str, int], key,
     key_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Removes the cache entry with specified key, returning the value.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -479,12 +479,12 @@ def cache_get_and_remove(
         'key': key,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('value', AnyDataObject),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -495,14 +495,14 @@ def cache_get_and_remove(
 
 
 def cache_put_if_absent(
-    conn: Connection, cache: Union[str, int], key, value,
+    client: Client, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Puts a value with a given key to cache only if the key
     does not already exist.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
@@ -536,12 +536,12 @@ def cache_put_if_absent(
         'value': value,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('success', Bool),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -552,14 +552,14 @@ def cache_put_if_absent(
 
 
 def cache_get_and_put_if_absent(
-    conn: Connection, cache: Union[str, int], key, value,
+    client: Client, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Puts a value with a given key to cache only if the key does not
     already exist.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
@@ -593,12 +593,12 @@ def cache_get_and_put_if_absent(
         'value': value,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('value', AnyDataObject),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -609,13 +609,13 @@ def cache_get_and_put_if_absent(
 
 
 def cache_replace(
-    conn: Connection, cache: Union[str, int], key, value,
+    client: Client, cache: Union[str, int], key, value,
     key_hint=None, value_hint=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Puts a value with a given key to cache only if the key already exist.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key: key for the cache entry. Can be of any supported type,
     :param value: value for the key,
@@ -650,12 +650,12 @@ def cache_replace(
         'value': value,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('success', Bool),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -666,7 +666,7 @@ def cache_replace(
 
 
 def cache_replace_if_equals(
-    conn: Connection, cache: Union[str, int], key, sample, value,
+    client: Client, cache: Union[str, int], key, sample, value,
     key_hint=None, sample_hint=None, value_hint=None,
     binary=False, query_id=None,
 ) -> APIResult:
@@ -674,7 +674,7 @@ def cache_replace_if_equals(
     Puts a value with a given key to cache only if the key already exists
     and value equals provided sample.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key:  key for the cache entry,
     :param sample: a sample to compare the stored value with,
@@ -714,12 +714,12 @@ def cache_replace_if_equals(
         'value': value,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('success', Bool),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -730,12 +730,12 @@ def cache_replace_if_equals(
 
 
 def cache_clear(
-    conn: Connection, cache: Union[str, int], binary=False, query_id=None,
+    client: Client, cache: Union[str, int], binary=False, query_id=None,
 ) -> APIResult:
     """
     Clears the cache without notifying listeners or cache writers.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param binary: (optional) pass True to keep the value in binary form.
      False by default,
@@ -758,10 +758,10 @@ def cache_clear(
         'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
     })
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -769,13 +769,13 @@ def cache_clear(
 
 
 def cache_clear_key(
-    conn: Connection, cache: Union[str, int], key,
+    client: Client, cache: Union[str, int], key,
     key_hint: object=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Clears the cache key without notifying listeners or cache writers.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key:  key for the cache entry,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -803,10 +803,10 @@ def cache_clear_key(
         'flag': 1 if binary else 0,
         'key': key,
     })
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -814,12 +814,12 @@ def cache_clear_key(
 
 
 def cache_clear_keys(
-    conn: Connection, cache: Union[str, int], keys: list, binary=False, query_id=None,
+    client: Client, cache: Union[str, int], keys: list, binary=False, query_id=None,
 ) -> APIResult:
     """
     Clears the cache keys without notifying listeners or cache writers.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param keys: list of keys or tuples of (key, key_hint),
     :param binary: (optional) pass True to keep the value in binary form.
@@ -845,10 +845,10 @@ def cache_clear_keys(
         'flag': 1 if binary else 0,
         'keys': keys,
     })
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -856,13 +856,13 @@ def cache_clear_keys(
 
 
 def cache_remove_key(
-    conn: Connection, cache: Union[str, int], key,
+    client: Client, cache: Union[str, int], key,
     key_hint: object=None, binary=False, query_id=None,
 ) -> APIResult:
     """
     Clears the cache key without notifying listeners or cache writers.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key:  key for the cache entry,
     :param key_hint: (optional) Ignite data type, for which the given key
@@ -891,12 +891,12 @@ def cache_remove_key(
         'flag': 1 if binary else 0,
         'key': key,
     })
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('success', Bool),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -907,7 +907,7 @@ def cache_remove_key(
 
 
 def cache_remove_if_equals(
-    conn: Connection, cache: Union[str, int], key, sample,
+    client: Client, cache: Union[str, int], key, sample,
     key_hint=None, sample_hint=None,
     binary=False, query_id=None,
 ) -> APIResult:
@@ -915,7 +915,7 @@ def cache_remove_if_equals(
     Removes an entry with a given key if provided value is equal to
     actual value, notifying listeners and cache writers.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param key:  key for the cache entry,
     :param sample: a sample to compare the stored value with,
@@ -950,12 +950,12 @@ def cache_remove_if_equals(
         'sample': sample,
     })
 
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('success', Bool),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -966,13 +966,13 @@ def cache_remove_if_equals(
 
 
 def cache_remove_keys(
-    conn: Connection, cache: Union[str, int], keys: Iterable,
+    client: Client, cache: Union[str, int], keys: Iterable,
     binary=False, query_id=None,
 ) -> APIResult:
     """
     Removes entries with given keys, notifying listeners and cache writers.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param keys: list of keys or tuples of (key, key_hint),
     :param binary: (optional) pass True to keep the value in binary form.
@@ -998,10 +998,10 @@ def cache_remove_keys(
         'flag': 1 if binary else 0,
         'keys': keys,
     })
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -1009,12 +1009,12 @@ def cache_remove_keys(
 
 
 def cache_remove_all(
-    conn: Connection, cache: Union[str, int], binary=False, query_id=None,
+    client: Client, cache: Union[str, int], binary=False, query_id=None,
 ) -> APIResult:
     """
     Removes all entries from cache, notifying listeners and cache writers.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param binary: (optional) pass True to keep the value in binary form.
      False by default,
@@ -1037,10 +1037,10 @@ def cache_remove_all(
         'hash_code': cache_id(cache),
         'flag': 1 if binary else 0,
     })
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)
@@ -1048,13 +1048,13 @@ def cache_remove_all(
 
 
 def cache_get_size(
-    conn: Connection, cache: Union[str, int], peek_modes=0,
+    client: Client, cache: Union[str, int], peek_modes=0,
     binary=False, query_id=None,
 ) -> APIResult:
     """
     Gets the number of entries in cache.
 
-    :param conn: connection to Ignite server,
+    :param client: connection to Ignite server,
     :param cache: name or ID of the cache,
     :param peek_modes: (optional) limit count to near cache partition
      (PeekModes.NEAR), primary cache (PeekModes.PRIMARY), or backup cache
@@ -1088,12 +1088,12 @@ def cache_get_size(
         'flag': 1 if binary else 0,
         'peek_modes': peek_modes,
     })
-    conn.send(send_buffer)
+    client.send(send_buffer)
 
     response_struct = Response([
         ('count', Long),
     ])
-    response_class, recv_buffer = response_struct.parse(conn)
+    response_class, recv_buffer = response_struct.parse(client)
     response = response_class.from_buffer_copy(recv_buffer)
 
     result = APIResult(response)

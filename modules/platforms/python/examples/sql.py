@@ -15,7 +15,7 @@
 
 from decimal import Decimal
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 
 
 COUNTRY_TABLE_NAME = 'Country'
@@ -192,8 +192,8 @@ LANGUAGE_DATA = [
 
 
 # establish connection
-conn = Connection()
-conn.connect('127.0.0.1', 10800)
+client = Client()
+client.connect('127.0.0.1', 10800)
 
 # create tables
 for query in [
@@ -201,27 +201,27 @@ for query in [
     CITY_CREATE_TABLE_QUERY,
     LANGUAGE_CREATE_TABLE_QUERY,
 ]:
-    conn.sql(query)
+    client.sql(query)
 
 # create indices
 for query in [CITY_CREATE_INDEX, LANGUAGE_CREATE_INDEX]:
-    conn.sql(query)
+    client.sql(query)
 
 # load data
 for row in COUNTRY_DATA:
-    conn.sql(COUNTRY_INSERT_QUERY, query_args=row)
+    client.sql(COUNTRY_INSERT_QUERY, query_args=row)
 
 for row in CITY_DATA:
-    conn.sql(CITY_INSERT_QUERY, query_args=row)
+    client.sql(CITY_INSERT_QUERY, query_args=row)
 
 for row in LANGUAGE_DATA:
-    conn.sql(LANGUAGE_INSERT_QUERY, query_args=row)
+    client.sql(LANGUAGE_INSERT_QUERY, query_args=row)
 
 # 10 most populated cities (with pagination)
 MOST_POPULATED_QUERY = '''
 SELECT name, population FROM City ORDER BY population DESC LIMIT 10'''
 
-result = conn.sql(MOST_POPULATED_QUERY)
+result = client.sql(MOST_POPULATED_QUERY)
 print('Most 10 populated cities:')
 for row in result:
     print(row)
@@ -245,7 +245,7 @@ SELECT country.name as country_name, city.name as city_name, MAX(city.population
     GROUP BY country.name, city.name ORDER BY max_pop DESC LIMIT 10
 '''
 
-result = conn.sql(
+result = client.sql(
     MOST_POPULATED_IN_3_COUNTRIES_QUERY,
     include_field_names=True,
 )
@@ -271,7 +271,7 @@ for row in result:
 # show city info
 CITY_INFO_QUERY = '''SELECT * FROM City WHERE id = ?'''
 
-result = conn.sql(
+result = client.sql(
     CITY_INFO_QUERY,
     query_args=[3802],
     include_field_names=True,
@@ -295,4 +295,4 @@ for table_name in [
     LANGUAGE_TABLE_NAME,
     COUNTRY_TABLE_NAME,
 ]:
-    result = conn.sql(DROP_TABLE_QUERY.format(table_name))
+    result = client.sql(DROP_TABLE_QUERY.format(table_name))

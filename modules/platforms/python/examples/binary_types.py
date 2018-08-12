@@ -15,7 +15,7 @@
 
 from decimal import Decimal
 
-from pyignite.connection import Connection
+from pyignite.client import Client
 from pyignite.datatypes.prop_codes import *
 
 
@@ -193,8 +193,8 @@ LANGUAGE_DATA = [
 
 
 # establish connection
-conn = Connection()
-conn.connect('127.0.0.1', 10800)
+client = Client()
+client.connect('127.0.0.1', 10800)
 
 # create tables
 for query in [
@@ -202,24 +202,24 @@ for query in [
     CITY_CREATE_TABLE_QUERY,
     LANGUAGE_CREATE_TABLE_QUERY,
 ]:
-    conn.sql(query)
+    client.sql(query)
 
 # create indices
 for query in [CITY_CREATE_INDEX, LANGUAGE_CREATE_INDEX]:
-    conn.sql(query)
+    client.sql(query)
 
 # load data
 for row in COUNTRY_DATA:
-    conn.sql(COUNTRY_INSERT_QUERY, query_args=row)
+    client.sql(COUNTRY_INSERT_QUERY, query_args=row)
 
 for row in CITY_DATA:
-    conn.sql(CITY_INSERT_QUERY, query_args=row)
+    client.sql(CITY_INSERT_QUERY, query_args=row)
 
 for row in LANGUAGE_DATA:
-    conn.sql(LANGUAGE_INSERT_QUERY, query_args=row)
+    client.sql(LANGUAGE_INSERT_QUERY, query_args=row)
 
 # examine the storage
-result = conn.get_cache_names()
+result = client.get_cache_names()
 print(result)
 # [
 #     'SQL_PUBLIC_CITY',
@@ -228,7 +228,7 @@ print(result)
 #     'SQL_PUBLIC_COUNTRYLANGUAGE'
 # ]
 
-city_cache = conn.get_or_create_cache('SQL_PUBLIC_CITY')
+city_cache = client.get_or_create_cache('SQL_PUBLIC_CITY')
 print(city_cache.settings[PROP_NAME])
 # 'SQL_PUBLIC_CITY'
 
@@ -267,11 +267,11 @@ print(key_binary_type_name, value_binary_type_name)
 # SQL_PUBLIC_CITY_88f6c30c_b9dc_4a38_858a_5b4950d3fffd_KEY
 # SQL_PUBLIC_CITY_88f6c30c_b9dc_4a38_858a_5b4950d3fffd
 
-result = conn.get_binary_type(key_binary_type_name)
+result = client.get_binary_type(key_binary_type_name)
 print(result['type_exists'])
 # True
 
-result = conn.get_binary_type(value_binary_type_name)
+result = client.get_binary_type(value_binary_type_name)
 print(result['type_exists'])
 # True
 
@@ -331,4 +331,4 @@ for table_name in [
     LANGUAGE_TABLE_NAME,
     COUNTRY_TABLE_NAME,
 ]:
-    result = conn.sql(DROP_TABLE_QUERY.format(table_name))
+    result = client.sql(DROP_TABLE_QUERY.format(table_name))

@@ -45,16 +45,16 @@ drop_query = 'DROP TABLE Student IF EXISTS'
 page_size = 4
 
 
-def test_sql(conn):
+def test_sql(client):
 
-    cache_get_or_create(conn, 'PUBLIC')
+    cache_get_or_create(client, 'PUBLIC')
 
     # cleanup
-    result = sql_fields(conn, 'PUBLIC', drop_query, page_size)
+    result = sql_fields(client, 'PUBLIC', drop_query, page_size)
     assert result.status == 0
 
     result = sql_fields(
-        conn,
+        client,
         'PUBLIC',
         create_query,
         page_size,
@@ -65,7 +65,7 @@ def test_sql(conn):
     for i, data_line in enumerate(initial_data, start=1):
         fname, lname, grade = data_line
         result = sql_fields(
-            conn,
+            client,
             'PUBLIC',
             insert_query,
             page_size,
@@ -74,12 +74,12 @@ def test_sql(conn):
         )
         assert result.status == 0, result.message
 
-    result = cache_get_configuration(conn, 'SQL_PUBLIC_STUDENT')
+    result = cache_get_configuration(client, 'SQL_PUBLIC_STUDENT')
     assert result.status == 0, result.message
 
     binary_type_name = result.value[PROP_QUERY_ENTITIES][0]['value_type_name']
     result = sql(
-        conn,
+        client,
         'SQL_PUBLIC_STUDENT',
         binary_type_name,
         'TRUE',
@@ -90,34 +90,34 @@ def test_sql(conn):
     assert result.value['more'] is True
 
     for wrapped_object in result.value['data'].values():
-        data = unwrap_binary(conn, wrapped_object)
+        data = unwrap_binary(client, wrapped_object)
         assert data['type_id'] == entity_id(binary_type_name)
 
     cursor = result.value['cursor']
 
     while result.value['more']:
-        result = sql_cursor_get_page(conn, cursor)
+        result = sql_cursor_get_page(client, cursor)
         assert result.status == 0, result.message
 
         for wrapped_object in result.value['data'].values():
-            data = unwrap_binary(conn, wrapped_object)
+            data = unwrap_binary(client, wrapped_object)
             assert data['type_id'] == entity_id(binary_type_name)
 
     # repeat cleanup
-    result = sql_fields(conn, 'PUBLIC', drop_query, page_size)
+    result = sql_fields(client, 'PUBLIC', drop_query, page_size)
     assert result.status == 0
 
 
-def test_sql_fields(conn):
+def test_sql_fields(client):
 
-    cache_get_or_create(conn, 'PUBLIC')
+    cache_get_or_create(client, 'PUBLIC')
 
     # cleanup
-    result = sql_fields(conn, 'PUBLIC', drop_query, page_size)
+    result = sql_fields(client, 'PUBLIC', drop_query, page_size)
     assert result.status == 0
 
     result = sql_fields(
-        conn,
+        client,
         'PUBLIC',
         create_query,
         page_size,
@@ -128,7 +128,7 @@ def test_sql_fields(conn):
     for i, data_line in enumerate(initial_data, start=1):
         fname, lname, grade = data_line
         result = sql_fields(
-            conn,
+            client,
             'PUBLIC',
             insert_query,
             page_size,
@@ -138,7 +138,7 @@ def test_sql_fields(conn):
         assert result.status == 0, result.message
 
     result = sql_fields(
-        conn,
+        client,
         'PUBLIC',
         select_query,
         page_size,
@@ -150,11 +150,11 @@ def test_sql_fields(conn):
 
     cursor = result.value['cursor']
 
-    result = sql_fields_cursor_get_page(conn, cursor, field_count=4)
+    result = sql_fields_cursor_get_page(client, cursor, field_count=4)
     assert result.status == 0
     assert len(result.value['data']) == len(initial_data) - page_size
     assert result.value['more'] is False
 
     # repeat cleanup
-    result = sql_fields(conn, 'PUBLIC', drop_query, page_size)
+    result = sql_fields(client, 'PUBLIC', drop_query, page_size)
     assert result.status == 0

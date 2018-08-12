@@ -21,7 +21,7 @@ import uuid
 
 import attr
 
-from pyignite.connection import Connection, PrefetchConnection
+from pyignite.client import Client
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
 from pyignite.utils import is_hinted, is_iterable
@@ -49,13 +49,13 @@ class StructArray:
             },
         )
 
-    def parse(self, conn: Connection):
-        buffer = conn.recv(ctypes.sizeof(self.counter_type))
+    def parse(self, client: Client):
+        buffer = client.recv(ctypes.sizeof(self.counter_type))
         length = int.from_bytes(buffer, byteorder=PROTOCOL_BYTE_ORDER)
         fields = []
 
         for i in range(length):
-            c_type, buffer_fragment = Struct(self.following).parse(conn)
+            c_type, buffer_fragment = Struct(self.following).parse(client)
             buffer += buffer_fragment
             fields.append(('element_{}'.format(i), c_type))
 
@@ -102,12 +102,12 @@ class Struct:
     fields = attr.ib(type=list)
     dict_type = attr.ib(default=OrderedDict)
 
-    def parse(self, conn: Connection):
+    def parse(self, client: Client):
         buffer = b''
         fields = []
 
         for name, c_type in self.fields:
-            c_type, buffer_fragment = c_type.parse(conn)
+            c_type, buffer_fragment = c_type.parse(client)
             buffer += buffer_fragment
 
             fields.append((name, c_type))
@@ -239,13 +239,14 @@ class AnyDataObject:
             return type_first
 
     @classmethod
-    def parse(cls, conn: Connection):
-        type_code = conn.recv(ctypes.sizeof(ctypes.c_byte))
+    def parse(cls, client: Client):
+        type_code = client.recv(ctypes.sizeof(ctypes.c_byte))
         try:
             data_class = tc_map(type_code)
         except KeyError:
             raise ParseError('Unknown type code: `{}`'.format(type_code))
-        return data_class.parse(PrefetchConnection(conn, prefetch=type_code))
+        client.prefetch += type_code
+        return data_class.parse(client)
 
     @classmethod
     def to_python(cls, ctype_object):
@@ -350,14 +351,14 @@ class AnyDataArray(AnyDataObject):
             }
         )
 
-    def parse(self, conn: Connection):
+    def parse(self, client: Client):
         header_class = self.build_header()
-        buffer = conn.recv(ctypes.sizeof(header_class))
+        buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
         fields = []
 
         for i in range(header.length):
-            c_type, buffer_fragment = super().parse(conn)
+            c_type, buffer_fragment = super().parse(client)
             buffer += buffer_fragment
             fields.append(('element_{}'.format(i), c_type))
 

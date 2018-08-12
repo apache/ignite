@@ -24,13 +24,13 @@ from pyignite.datatypes import (
 from pyignite.datatypes.prop_codes import *
 
 
-def test_cache_create(conn):
-    cache = conn.create_cache('my_oop_cache')
+def test_cache_create(client):
+    cache = client.create_cache('my_oop_cache')
     assert cache.name == cache.settings[PROP_NAME] == 'my_oop_cache'
     cache.destroy()
 
 
-def test_cache_config(conn):
+def test_cache_config(client):
     cache_config = {
         PROP_NAME: 'my_oop_cache',
         PROP_CACHE_KEY_CONFIGURATION: [
@@ -40,9 +40,9 @@ def test_cache_config(conn):
             },
         ],
     }
-    conn.create_cache(cache_config)
+    client.create_cache(cache_config)
 
-    cache = conn.get_or_create_cache('my_oop_cache')
+    cache = client.get_or_create_cache('my_oop_cache')
     assert cache.name == cache_config[PROP_NAME]
     assert (
         cache.settings[PROP_CACHE_KEY_CONFIGURATION]
@@ -52,16 +52,16 @@ def test_cache_config(conn):
     cache.destroy()
 
 
-def test_cache_get_put(conn):
-    cache = conn.create_cache('my_oop_cache')
+def test_cache_get_put(client):
+    cache = client.create_cache('my_oop_cache')
     cache.put('my_key', 42)
     result = cache.get('my_key')
     assert result, 42
     cache.destroy()
 
 
-def test_cache_binary_get_put(conn):
-    binary_type = conn.put_binary_type(
+def test_cache_binary_get_put(client):
+    binary_type = client.put_binary_type(
         'TestBinaryType',
         schema=OrderedDict([
             ('TEST_BOOL', BoolObject),
@@ -70,7 +70,7 @@ def test_cache_binary_get_put(conn):
             ('TEST_DECIMAL', DecimalObject),
         ])
     )
-    cache = conn.create_cache('my_oop_cache')
+    cache = client.create_cache('my_oop_cache')
     cache.put(
         'my_key',
         {
@@ -95,8 +95,8 @@ def test_cache_binary_get_put(conn):
     cache.destroy()
 
 
-def test_get_binary_type(conn):
-    conn.put_binary_type(
+def test_get_binary_type(client):
+    client.put_binary_type(
         'TestBinaryType',
         schema=OrderedDict([
             ('TEST_BOOL', BoolObject),
@@ -104,7 +104,7 @@ def test_get_binary_type(conn):
             ('TEST_INT', IntObject),
         ])
     )
-    conn.put_binary_type(
+    client.put_binary_type(
         'TestBinaryType',
         schema=OrderedDict([
             ('TEST_BOOL', BoolObject),
@@ -113,7 +113,7 @@ def test_get_binary_type(conn):
             ('TEST_FLOAT', FloatObject),
         ])
     )
-    conn.put_binary_type(
+    client.put_binary_type(
         'TestBinaryType',
         schema=OrderedDict([
             ('TEST_BOOL', BoolObject),
@@ -123,13 +123,13 @@ def test_get_binary_type(conn):
         ])
     )
 
-    binary_type_info = conn.get_binary_type('TestBinaryType')
+    binary_type_info = client.get_binary_type('TestBinaryType')
     assert len(binary_type_info['binary_fields']) == 5
     assert len(binary_type_info['schema']) == 3
 
 
 @pytest.mark.parametrize('page_size', range(1, 17, 5))
-def test_cache_scan(conn, page_size):
+def test_cache_scan(client, page_size):
     test_data = {
         1: 'This is a test',
         2: 'One more test',
@@ -148,7 +148,7 @@ def test_cache_scan(conn, page_size):
         15: 'sollicitudin iaculis',
     }
 
-    cache = conn.create_cache('my_oop_cache')
+    cache = client.create_cache('my_oop_cache')
     cache.put_all(test_data)
 
     gen = cache.scan(page_size=page_size)
@@ -162,8 +162,8 @@ def test_cache_scan(conn, page_size):
     cache.destroy()
 
 
-def test_get_and_put_if_absent(conn):
-    cache = conn.create_cache('my_oop_cache')
+def test_get_and_put_if_absent(client):
+    cache = client.create_cache('my_oop_cache')
 
     value = cache.get_and_put_if_absent('my_key', 42)
     assert value is None

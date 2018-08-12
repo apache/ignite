@@ -16,7 +16,7 @@
 
 class RoundRobin:
     """
-    Round-robin generator for use with `Connection.connect`. Cycles a node
+    Round-robin generator for use with `Client.connect()`. Cycles a node
     list until a maximum number of reconnects is reached (if set).
     """
 

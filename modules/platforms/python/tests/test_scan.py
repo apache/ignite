@@ -18,49 +18,49 @@ from pyignite.api import (
 )
 
 
-def test_scan(conn, cache):
+def test_scan(client, cache):
 
     page_size = 10
 
-    result = cache_put_all(conn, cache, {
+    result = cache_put_all(client, cache, {
         'key_{}'.format(v): v for v in range(page_size * 2)
     })
     assert result.status == 0
 
-    result = scan(conn, cache, page_size)
+    result = scan(client, cache, page_size)
     assert result.status == 0
     assert len(result.value['data']) == page_size
     assert result.value['more'] is True
 
     cursor = result.value['cursor']
 
-    result = scan_cursor_get_page(conn, cursor)
+    result = scan_cursor_get_page(client, cursor)
     assert result.status == 0
     assert len(result.value['data']) == page_size
     assert result.value['more'] is False
 
-    result = scan_cursor_get_page(conn, cursor)
+    result = scan_cursor_get_page(client, cursor)
     assert result.status != 0
 
 
-def test_close_resource(conn, cache):
+def test_close_resource(client, cache):
 
     page_size = 10
 
-    result = cache_put_all(conn, cache, {
+    result = cache_put_all(client, cache, {
         'key_{}'.format(v): v for v in range(page_size * 2)
     })
     assert result.status == 0
 
-    result = scan(conn, cache, page_size)
+    result = scan(client, cache, page_size)
     assert result.status == 0
     assert len(result.value['data']) == page_size
     assert result.value['more'] is True
 
     cursor = result.value['cursor']
 
-    result = resource_close(conn, cursor)
+    result = resource_close(client, cursor)
     assert result.status == 0
 
-    result = scan_cursor_get_page(conn, cursor)
+    result = scan_cursor_get_page(client, cursor)
     assert result.status != 0

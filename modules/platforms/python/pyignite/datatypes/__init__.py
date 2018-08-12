@@ -14,9 +14,8 @@
 # limitations under the License.
 
 """
-This module contains ctypes classes and class generator functions (metaclasses
-in a broad sense of the word), used internally for parsing and creating binary
-data streams.
+This module contains classes, used internally by `pyignite` for parsing and
+creating binary data.
 """
 
 from .complex import *

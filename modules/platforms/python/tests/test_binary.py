@@ -66,13 +66,13 @@ SELECT (test_pk, test_bool, test_int, test_decimal, test_str) FROM {}
 drop_query = 'DROP TABLE {}'.format(table_sql_name)
 
 
-def test_sql_read_as_binary(conn):
+def test_sql_read_as_binary(client):
 
-    cache_create(conn, scheme_name)
+    cache_create(client, scheme_name)
 
     # create table
     result = sql_fields(
-        conn,
+        client,
         scheme_name,
         create_query,
         page_size
@@ -82,7 +82,7 @@ def test_sql_read_as_binary(conn):
     # insert some rows
     for line in insert_data:
         result = sql_fields(
-            conn,
+            client,
             scheme_name,
             insert_query,
             page_size,
@@ -90,7 +90,7 @@ def test_sql_read_as_binary(conn):
         )
         assert result.status == 0, result.message
 
-    result = scan(conn, table_cache_name, 100)
+    result = scan(client, table_cache_name, 100)
     assert result.status == 0, result.message
 
     # now `data` is a dict of table rows with primary index column as a key
@@ -99,28 +99,28 @@ def test_sql_read_as_binary(conn):
     for key, value in result.value['data'].items():
         # we can't automagically unwind the contents of the WrappedDataObject
         # the same way we do for Map or Collection, we got bytes instead
-        binary_obj = unwrap_binary(conn, value)
+        binary_obj = unwrap_binary(client, value)
         assert len(binary_obj['fields']) == 4
 
-    result = cache_get_configuration(conn, table_cache_name)
+    result = cache_get_configuration(client, table_cache_name)
     assert result.status == 0, result.message
 
     # cleanup
-    result = sql_fields(conn, scheme_name, drop_query, page_size)
+    result = sql_fields(client, scheme_name, drop_query, page_size)
     assert result.status == 0, result.message
 
-    result = cache_destroy(conn, scheme_name)
+    result = cache_destroy(client, scheme_name)
     assert result.status == 0, result.message
 
 
-def test_sql_write_as_binary(conn):
+def test_sql_write_as_binary(client):
 
-    cache_create(conn, scheme_name)
+    cache_create(client, scheme_name)
 
     # configure cache as an SQL table
     type_name = table_cache_name
 
-    result = cache_create_with_config(conn, {
+    result = cache_create_with_config(client, {
         PROP_NAME: table_cache_name,
         PROP_SQL_SCHEMA: scheme_name,
         PROP_QUERY_ENTITIES: [
@@ -174,12 +174,12 @@ def test_sql_write_as_binary(conn):
     })
     assert result.status == 0, result.message
 
-    result = cache_get_configuration(conn, table_cache_name)
+    result = cache_get_configuration(client, table_cache_name)
     assert result.status == 0, result.message
 
     # register binary type
     result = put_binary_type(
-        conn,
+        client,
         type_name,
         schema=OrderedDict([
             ('TEST_BOOL', BoolObject),
@@ -194,7 +194,7 @@ def test_sql_write_as_binary(conn):
     schema_id = result.value['schema_id']
 
     # recheck
-    result = get_binary_type(conn, sql_type_id)
+    result = get_binary_type(client, sql_type_id)
     assert result.status == 0, result.message
     assert schema_id in result.value['schema'], (
         'Client-side schema ID calculation is incorrect'
@@ -203,7 +203,7 @@ def test_sql_write_as_binary(conn):
     # insert rows as k-v
     for row in insert_data:
         result = cache_put(
-            conn,
+            client,
             table_cache_name,
             key=row[0],
             key_hint=IntObject,
@@ -222,12 +222,12 @@ def test_sql_write_as_binary(conn):
         )
         assert result.status == 0, result.message
 
-    result = scan(conn, table_cache_name, 100)
+    result = scan(client, table_cache_name, 100)
     assert result.status == 0, result.message
 
     # read rows as SQL
     result = sql_fields(
-        conn,
+        client,
         scheme_name,
         select_query,
         100,
@@ -237,16 +237,16 @@ def test_sql_write_as_binary(conn):
     assert len(result.value['data']) == len(insert_data)
 
     # cleanup
-    result = cache_destroy(conn, table_cache_name)
+    result = cache_destroy(client, table_cache_name)
     assert result.status == 0, result.message
 
-    result = cache_destroy(conn, scheme_name)
+    result = cache_destroy(client, scheme_name)
     assert result.status == 0, result.message
 
 
-def test_nested_binary_objects(conn):
+def test_nested_binary_objects(client):
 
-    cache_create(conn, 'nested_binary')
+    cache_create(client, 'nested_binary')
 
     inner_schema = OrderedDict([
         ('inner_int', LongObject),
@@ -259,16 +259,16 @@ def test_nested_binary_objects(conn):
         ('outer_str', String),
     ])
 
-    result = put_binary_type(conn, 'InnerType', schema=inner_schema)
+    result = put_binary_type(client, 'InnerType', schema=inner_schema)
     inner_type_id = result.value['type_id']
     inner_schema_id = result.value['schema_id']
 
-    result = put_binary_type(conn, 'OuterType', schema=outer_schema)
+    result = put_binary_type(client, 'OuterType', schema=outer_schema)
     outer_type_id = result.value['type_id']
     outer_schema_id = result.value['schema_id']
 
     result = cache_put(
-        conn,
+        client,
         'nested_binary',
         1,
         {
@@ -294,10 +294,10 @@ def test_nested_binary_objects(conn):
     )
     assert result.status == 0, result.message
 
-    result = cache_get(conn, 'nested_binary', 1)
+    result = cache_get(client, 'nested_binary', 1)
     assert result.status == 0, result.message
 
-    data = unwrap_binary(conn, result.value, recurse=False)['fields']
+    data = unwrap_binary(client, result.value, recurse=False)['fields']
     assert data['outer_str'] == 'Hello'
     assert data['outer_int'] == 42
 
@@ -305,25 +305,25 @@ def test_nested_binary_objects(conn):
     assert inner_data['inner_str'] == 'World'
     assert inner_data['inner_int'] == 24
 
-    cache_destroy(conn, 'nested_binary')
+    cache_destroy(client, 'nested_binary')
 
 
-def test_add_schema_to_binary_object(conn):
+def test_add_schema_to_binary_object(client):
 
-    cache_create(conn, 'migrate_binary')
+    cache_create(client, 'migrate_binary')
 
     original_schema = OrderedDict([
         ('test_str', String),
         ('test_int', LongObject),
         ('test_bool', BoolObject),
     ])
-    result = put_binary_type(conn, 'MyBinaryType', schema=original_schema)
+    result = put_binary_type(client, 'MyBinaryType', schema=original_schema)
     assert result.status == 0, result.message
     type_id = result.value['type_id']
     original_schema_id = result.value['schema_id']
 
     result = cache_put(
-        conn,
+        client,
         'migrate_binary',
         1,
         {
@@ -344,7 +344,7 @@ def test_add_schema_to_binary_object(conn):
     modified_schema['test_decimal'] = DecimalObject
     del modified_schema['test_bool']
 
-    result = put_binary_type(conn, 'MyBinaryType', schema=modified_schema)
+    result = put_binary_type(client, 'MyBinaryType', schema=modified_schema)
     assert result.status == 0, result.message
     modified_schema_id = result.value['schema_id']
     assert result.value['type_id'] == type_id
@@ -352,7 +352,7 @@ def test_add_schema_to_binary_object(conn):
     assert original_schema_id != modified_schema_id
 
     result = cache_put(
-        conn,
+        client,
         'migrate_binary',
         2,
         {
@@ -369,12 +369,12 @@ def test_add_schema_to_binary_object(conn):
     )
     assert result.status == 0, result.message
 
-    result = cache_get(conn, 'migrate_binary', 2)
+    result = cache_get(client, 'migrate_binary', 2)
     assert result.status == 0, result.message
-    data = unwrap_binary(conn, result.value)['fields']
+    data = unwrap_binary(client, result.value)['fields']
     assert len(data) == 3
     assert 'test_str' in data
     assert 'test_decimal' in data
     assert 'test_bool' not in data
 
-    cache_destroy(conn, 'migrate_binary')
+    cache_destroy(client, 'migrate_binary')
