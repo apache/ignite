@@ -28,6 +28,7 @@ class TypeInfo
     const MAX_VALUE = 'max';
     const NULLABLE = 'nullable';
     const ELEMENT_TYPE_CODE = 'element_type';
+    const KEEP_ELEMENT_TYPE = 'keep_element_type';
     
     private $properties;
     
@@ -132,22 +133,26 @@ class TypeInfo
             ObjectType::STRING_ARRAY => new TypeInfo([
                 TypeInfo::NAME => 'string array',
                 TypeInfo::NULLABLE => true,
-                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::STRING
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::STRING,
+                TypeInfo::KEEP_ELEMENT_TYPE => true
             ]),
             ObjectType::UUID_ARRAY => new TypeInfo([
                 TypeInfo::NAME => 'UUID array',
                 TypeInfo::NULLABLE => true,
-                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::UUID
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::UUID,
+                TypeInfo::KEEP_ELEMENT_TYPE => true
             ]),
             ObjectType::DATE_ARRAY => new TypeInfo([
                 TypeInfo::NAME => 'date array',
                 TypeInfo::NULLABLE => true,
-                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::DATE
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::DATE,
+                TypeInfo::KEEP_ELEMENT_TYPE => true
             ]),
             ObjectType::OBJECT_ARRAY => new TypeInfo([
                 TypeInfo::NAME => 'object array',
                 TypeInfo::NULLABLE => true,
-                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::COMPLEX_OBJECT
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::COMPLEX_OBJECT,
+                TypeInfo::KEEP_ELEMENT_TYPE => true
             ]),
             ObjectType::COLLECTION => new TypeInfo([
                 TypeInfo::NAME => 'collection',
@@ -164,7 +169,8 @@ class TypeInfo
             ObjectType::ENUM_ARRAY => new TypeInfo([
                 TypeInfo::NAME => 'enum array',
                 TypeInfo::NULLABLE => true,
-                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::ENUM
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::ENUM,
+                TypeInfo::KEEP_ELEMENT_TYPE => true
             ]),
             ObjectType::DECIMAL => new TypeInfo([
                 TypeInfo::NAME => 'decimal',
@@ -173,7 +179,8 @@ class TypeInfo
             ObjectType::DECIMAL_ARRAY => new TypeInfo([
                 TypeInfo::NAME => 'decimal array',
                 TypeInfo::NULLABLE => true,
-                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::DECIMAL
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::DECIMAL,
+                TypeInfo::KEEP_ELEMENT_TYPE => true
             ]),
             ObjectType::TIMESTAMP => new TypeInfo([
                 TypeInfo::NAME => 'timestamp',
@@ -183,7 +190,8 @@ class TypeInfo
             ObjectType::TIMESTAMP_ARRAY => new TypeInfo([
                 TypeInfo::NAME => 'timestamp array',
                 TypeInfo::NULLABLE => true,
-                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::TIMESTAMP
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::TIMESTAMP,
+                TypeInfo::KEEP_ELEMENT_TYPE => true
             ]),
             ObjectType::TIME => new TypeInfo([
                 TypeInfo::NAME => 'time',
@@ -193,7 +201,8 @@ class TypeInfo
             ObjectType::TIME_ARRAY => new TypeInfo([
                 TypeInfo::NAME => 'time array',
                 TypeInfo::NULLABLE => true,
-                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::TIME
+                TypeInfo::ELEMENT_TYPE_CODE => ObjectType::TIME,
+                TypeInfo::KEEP_ELEMENT_TYPE => true
             ]),
             ObjectType::NULL => new TypeInfo([
                 TypeInfo::NAME => 'null',
@@ -268,6 +277,11 @@ class TypeInfo
     public function getElementTypeCode(): int
     {
         return $this->getProperty(TypeInfo::ELEMENT_TYPE_CODE, 0);
+    }
+    
+    public function keepElementType(): bool
+    {
+        return $this->getProperty(TypeInfo::KEEP_ELEMENT_TYPE, false);
     }
     
     public function getMinValue()

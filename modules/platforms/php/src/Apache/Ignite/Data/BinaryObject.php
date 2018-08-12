@@ -115,11 +115,10 @@ class BinaryObject
         $typeBuilder = BinaryTypeBuilder::fromObject($object, $complexObjectType);
         $result = new BinaryObject($typeBuilder->getTypeName());
         $result->typeBuilder = $typeBuilder;
-        $className = $typeBuilder->getType()->getName();
         try {
-            $class = new \ReflectionClass($className);
+            $class = new \ReflectionClass($object);
         } catch (\ReflectionException $e) {
-            BinaryUtils::serializationError(true, sprintf('class "%s" does not exist', $className));
+            BinaryUtils::serializationError(true, sprintf('class "%s" does not exist', get_class($object)));
         }
         foreach ($typeBuilder->getFields() as $field) {
             $fieldName = $field->getName();
@@ -249,6 +248,9 @@ class BinaryObject
         $className = $complexObjectType->getPhpClassName();
         if (!$className) {
             $className = $this->getTypeName();
+        }
+        if (!class_exists($className)) {
+            BinaryUtils::serializationError(false, sprintf('class "%s" does not exist', $className));
         }
         $result = new $className;
         foreach ($this->fields as $field) {

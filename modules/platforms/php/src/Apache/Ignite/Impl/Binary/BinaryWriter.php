@@ -191,7 +191,17 @@ class BinaryWriter
     private static function writeArray(MessageBuffer $buffer, array $array, $arrayType, int $arrayTypeCode): void
     {
         $elementType = BinaryUtils::getArrayElementType($arrayType);
-        $keepElementType = !$elementType || TypeInfo::getTypeInfo(BinaryUtils::getTypeCode($elementType))->isNullable();
+        $keepElementType = !$elementType || TypeInfo::getTypeInfo($arrayTypeCode)->keepElementType();
+        if ($arrayTypeCode === ObjectType::OBJECT_ARRAY) {
+            $typeId = -1;
+            if ($elementType instanceof ComplexObjectType) {
+                $typeName = BinaryTypeBuilder::calcTypeName($elementType, count($array) > 0 ? $array[0] : null);
+                if ($typeName) {
+                    $typeId = BinaryType::calculateId($typeName);
+                }
+            }
+            $buffer->writeInteger($typeId);
+        }
         $buffer->writeInteger(count($array));
         foreach ($array as $elem) {
             BinaryWriter::writeObject($buffer, $elem, $elementType, $keepElementType);

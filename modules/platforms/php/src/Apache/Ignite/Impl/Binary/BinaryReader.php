@@ -176,7 +176,7 @@ class BinaryReader
         }
         $length = $buffer->readInteger();
         $elementType = BinaryUtils::getArrayElementType($arrayType ? $arrayType : $arrayTypeCode);
-        $keepElementType = $elementType === null ? true : TypeInfo::getTypeInfo(BinaryUtils::getTypeCode($elementType))->isNullable();
+        $keepElementType = $elementType === null ? true : TypeInfo::getTypeInfo($arrayTypeCode)->keepElementType();
         $result = array();
         for ($i = 0; $i < $length; $i++) {
             array_push(

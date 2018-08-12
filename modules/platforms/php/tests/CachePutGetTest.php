@@ -26,6 +26,39 @@ use Apache\Ignite\Exception\OperationException;
 use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Type\MapObjectType;
 use Apache\Ignite\Type\CollectionObjectType;
+use Apache\Ignite\Type\ObjectArrayType;
+use Apache\Ignite\Type\ComplexObjectType;
+use Apache\Ignite\Data\BinaryObject;
+
+class TstComplObjectWithPrimitiveFields
+{
+    public $field1;
+    public $field2;
+    public $field3;
+    public $field4;
+    public $field5;
+    public $field6;
+    public $field7;
+    public $field8;
+    public $field9;
+    public $field10;
+    public $field11;
+    public $field30;
+    public $field33;
+    public $field36;
+}
+
+class TstComplObjectWithDefaultFieldTypes
+{
+    public $field3;
+    public $field6;
+    public $field8;
+    public $field9;
+    public $field11;
+    public $field30;
+    public $field33;
+    public $field36;
+}
 
 final class CachePutGetTestCase extends TestCase
 {
@@ -230,8 +263,283 @@ final class CachePutGetTestCase extends TestCase
             }
         }
     }
+
+    public function testPutGetLists(): void
+    {
+        foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+            $list = array();
+            foreach ($typeInfo['values'] as $value) {
+                array_push($list, $value);
+            }
+            $this->putGetLists(new CollectionObjectType(CollectionObjectType::USER_COL, $type), $list);
+            $this->putGetLists(new CollectionObjectType(CollectionObjectType::ARRAY_LIST, $type), $list);
+            $this->putGetLists(new CollectionObjectType(CollectionObjectType::LINKED_LIST, $type), $list);
+            if (array_key_exists('typeOptional', $typeInfo)) {
+                $this->putGetLists(new CollectionObjectType(CollectionObjectType::ARRAY_LIST), $list);
+            }
+//            $singletonList = [$typeInfo['values'][0]];
+//            $this->putGetLists(new CollectionObjectType(CollectionObjectType::SINGLETON_LIST, $type), $singletonList);
+        }
+    }
     
-    private function putGetSets(?CollectionObjectType $setType, ?Set $value): void
+    public function testPutGetObjectArrayOfMaps(): void
+    {
+        foreach (TestingHelper::$primitiveValues as $type1 => $typeInfo1) {
+            if (!$typeInfo1['isMapKey']) {
+                continue;
+            }
+            foreach (TestingHelper::$primitiveValues as $type2 => $typeInfo2) {
+                $map = new Map();
+                $index2 = 0;
+                foreach ($typeInfo1['values'] as $value1) {
+                    $value2 = $typeInfo2['values'][$index2];
+                    $index2++;
+                    if ($index2 >= count($typeInfo2['values'])) {
+                        $index2 = 0;
+                    }
+                    $map->put($value1, $value2);
+                }
+                $array = array();
+                for ($i = 0; $i < 10; $i++) {
+                    $map->reverse();
+                    array_push($array, $map);
+                }
+                $this->putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType::HASH_MAP, $type1, $type2)), $array);
+                if (array_key_exists('typeOptional', $typeInfo1)) {
+                    $this->putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType::LINKED_HASH_MAP, null, $type2)), $array);
+                }
+                if (array_key_exists('typeOptional', $typeInfo2)) {
+                    $this->putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType::LINKED_HASH_MAP, $type1)), $array);
+                }
+                if (array_key_exists('typeOptional', $typeInfo1) && array_key_exists('typeOptional', $typeInfo2)) {
+                    $this->putGetObjectArrays(new ObjectArrayType(), $array);
+                    $this->putGetObjectArrays(null, $array);
+                }
+            }
+        }
+    }
+
+    public function testPutGetObjectArrayOfPrimitives(): void
+    {
+        foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+            $array = $typeInfo['values'];
+            $this->putGetObjectArrays(new ObjectArrayType($type), $array);
+            if (array_key_exists('typeOptional', $typeInfo)) {
+                $this->putGetObjectArrays(new ObjectArrayType(), $array);
+            }
+        }
+    }
+
+    public function testPutGetObjectArrayOfPrimitiveArrays(): void
+    {
+        foreach (TestingHelper::$arrayValues as $type => $typeInfo) {
+            $primitiveType = $typeInfo['elemType'];
+            $values = TestingHelper::$primitiveValues[$primitiveType]['values'];
+            $array = [];
+            for ($i = 0; $i < 10; $i++) {
+                $values = array_reverse($values);
+                array_push($array, $values);
+            }
+            $this->putGetObjectArrays(new ObjectArrayType($type), $array);
+            if (array_key_exists('typeOptional', $typeInfo)) {
+                $this->putGetObjectArrays(new ObjectArrayType(), $array);
+                $this->putGetObjectArrays(null, $array);
+            }
+        }
+    }
+    
+    public function testPutGetObjectArrayOfSets(): void
+    {
+        foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+            $set = new Set();
+            $values = $typeInfo['values'];
+            $array = array();
+            for ($i = 0; $i < 10; $i++) {
+                $values = array_reverse($values);
+                array_push($array, new Set($values));
+            }
+            $this->putGetObjectArrays(new ObjectArrayType(new CollectionObjectType(CollectionObjectType::USER_SET, $type)), $array);
+            $this->putGetObjectArrays(new ObjectArrayType(new CollectionObjectType(CollectionObjectType::HASH_SET, $type)), $array);
+            $this->putGetObjectArrays(new ObjectArrayType(new CollectionObjectType(CollectionObjectType::LINKED_HASH_SET, $type)), $array);
+            if (array_key_exists('typeOptional', $typeInfo)) {
+                $this->putGetObjectArrays(new ObjectArrayType(), $array);
+                $this->putGetObjectArrays(null, $array);
+            }
+        }
+    }
+    
+    public function testPutGetObjectArrayOfLists(): void
+    {
+        foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+            $set = new Set();
+            $values = $typeInfo['values'];
+            $array = array();
+            for ($i = 0; $i < 10; $i++) {
+                $values = array_reverse($values);
+                array_push($array, $values);
+            }
+            $this->putGetObjectArrays(new ObjectArrayType(new CollectionObjectType(CollectionObjectType::USER_COL, $type)), $array);
+            $this->putGetObjectArrays(new ObjectArrayType(new CollectionObjectType(CollectionObjectType::ARRAY_LIST, $type)), $array);
+            $this->putGetObjectArrays(new ObjectArrayType(new CollectionObjectType(CollectionObjectType::LINKED_LIST, $type)), $array);
+            if (array_key_exists('typeOptional', $typeInfo)) {
+                $this->putGetObjectArrays(new ObjectArrayType(new CollectionObjectType(CollectionObjectType::ARRAY_LIST)), $array);
+            }
+        }
+    }
+    
+    public function testPutGetObjectArrayOfComplexObjects(): void
+    {
+        $array = array();
+        for ($i = 0; $i < 5; $i++) {
+            $object = new TstComplObjectWithPrimitiveFields();
+            foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+                $fieldName = 'field' . $type;
+                $index = ($i < count($typeInfo['values'])) ? $i : $i % count($typeInfo['values']);
+                $object->$fieldName = $typeInfo['values'][$index];
+            }
+            array_push($array, $object);
+        }
+        
+        $fullComplexObjectType = new ComplexObjectType();
+        $partComplexObjectType = new ComplexObjectType();
+        foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+            $fullComplexObjectType->setFieldType('field' . $type, $type);
+            if (!array_key_exists('typeOptional', $typeInfo)) {
+                $partComplexObjectType->setFieldType('field' . $type, $type);
+            }
+        }
+        $this->putGetObjectArrays(new ObjectArrayType($fullComplexObjectType), $array);
+        $this->putGetObjectArrays(new ObjectArrayType($partComplexObjectType), $array);
+    }
+    
+    public function testPutGetObjectArrayOfComplexObjectsWithDefaultFieldTypes(): void
+    {
+        $array = array();
+        for ($i = 0; $i < 5; $i++) {
+            $object = new TstComplObjectWithDefaultFieldTypes();
+            foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+                if (!array_key_exists('typeOptional', $typeInfo)) {
+                    continue;
+                }
+                $fieldName = 'field' . $type;
+                $index = ($i < count($typeInfo['values'])) ? $i : $i % count($typeInfo['values']);
+                $object->$fieldName = $typeInfo['values'][$index];
+            }
+            array_push($array, $object);
+        }
+        $this->putGetObjectArrays(new ObjectArrayType(new ComplexObjectType()), $array);
+    }
+
+    public function testPutGetObjectArrayOfBinaryObjects(): void
+    {
+        $array = array();
+        for ($i = 0; $i < 5; $i++) {
+            $binaryObject = new BinaryObject('tstBinaryObj');
+            foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+                $fieldName = 'field' . $type;
+                $index = ($i < count($typeInfo['values'])) ? $i : $i % count($typeInfo['values']);
+                $binaryObject->setField($fieldName, $typeInfo['values'][$index], $type);
+            }
+            array_push($array, $binaryObject);
+        }
+        $this->putGetObjectArrays(new ObjectArrayType(), $array);
+        $this->putGetObjectArrays(null, $array);
+    }
+    
+    public function testPutGetObjectArrayOfObjectArrays(): void
+    {
+        $complexObjectType = new ComplexObjectType();
+        foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+            $complexObjectType->setFieldType('field' . $type, $type);
+        }
+        $array = array();
+        for ($i = 0; $i < 2; $i++) {
+            $innerArray = array();
+            for ($j = 0; $j < 2; $j++) {
+                $object = new TstComplObjectWithPrimitiveFields();
+                foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+                    $fieldName = 'field' . $type;
+                    $index = $i * 10 + $j;
+                    $index = ($index < count($typeInfo['values'])) ? $index : $index % count($typeInfo['values']);
+                    $object->$fieldName = $typeInfo['values'][$index];
+                }
+                array_push($innerArray, $object);
+            }
+            array_push($array, $innerArray);
+        }
+        $this->putGetObjectArrays(new ObjectArrayType(new ObjectArrayType($complexObjectType)), $array);
+    }
+
+    public function testPutGetObjectArrayOfObjectArraysOfComplexObjectsWithDefaultFieldTypes(): void
+    {
+        $array = array();
+        for ($i = 0; $i < 2; $i++) {
+            $innerArray = array();
+            for ($j = 0; $j < 2; $j++) {
+                $object = new TstComplObjectWithDefaultFieldTypes();
+                foreach (TestingHelper::$primitiveValues as $type => $typeInfo) {
+                    if (!array_key_exists('typeOptional', $typeInfo)) {
+                        continue;
+                    }
+                    $fieldName = 'field' . $type;
+                    $index = $i * 10 + $j;
+                    $index = ($index < count($typeInfo['values'])) ? $index : $index % count($typeInfo['values']);
+                    $object->$fieldName = $typeInfo['values'][$index];
+                }
+                array_push($innerArray, $object);
+            }
+            array_push($array, $innerArray);
+        }
+        $this->putGetObjectArrays(new ObjectArrayType(new ObjectArrayType(new ComplexObjectType())), $array);
+    }
+
+    private function putGetObjectArrays(?ObjectArrayType $arrayType, array $value): void
+    {
+        $key = microtime();
+        CachePutGetTestCase::$cache->
+            setKeyType(null)->
+            setValueType($arrayType);
+        try {
+            CachePutGetTestCase::$cache->put($key, $value);
+            $result = CachePutGetTestCase::$cache->get($key);
+            $strResult = TestingHelper::printValue($result);
+            $strValue = TestingHelper::printValue($value);
+            $strValueType = TestingHelper::printValue($arrayType ? $arrayType->getElementType() : null);
+            $this->assertTrue(
+                is_array($result),
+                "result is not array: result={$strResult}");
+            $this->assertTrue(
+                TestingHelper::compare($value, $result),
+                "Arrays are not equal: valueType={$strValueType}, put value={$strValue}, get value={$strResult}");
+        } finally {
+            CachePutGetTestCase::$cache->removeAll();
+        }
+    }
+    
+    private function putGetLists(?CollectionObjectType $listType, array $value): void
+    {
+        $key = microtime();
+        CachePutGetTestCase::$cache->
+            setKeyType(null)->
+            setValueType($listType);
+        try {
+            CachePutGetTestCase::$cache->put($key, $value);
+            $result = CachePutGetTestCase::$cache->get($key);
+            $strResult = TestingHelper::printValue($result);
+            $strValue = TestingHelper::printValue($value);
+            $strValueType = TestingHelper::printValue($listType ? $listType->getElementType() : null);
+            $this->assertTrue(
+                is_array($result),
+                "result is not array: result={$strResult}");
+            $this->assertTrue(
+                TestingHelper::compare($value, $result),
+                "Lists are not equal: valueType={$strValueType}, put value={$strValue}, get value={$strResult}");
+        } finally {
+            CachePutGetTestCase::$cache->removeAll();
+        }
+    }
+    
+    private function putGetSets(?CollectionObjectType $setType, Set $value): void
     {
         $key = microtime();
         CachePutGetTestCase::$cache->
@@ -254,7 +562,7 @@ final class CachePutGetTestCase extends TestCase
         }
     }
     
-    private function putGetArrayMaps(?MapObjectType $mapType, ?array $value): void
+    private function putGetArrayMaps(?MapObjectType $mapType, array $value): void
     {
         CachePutGetTestCase::$cache->
             setKeyType(null)->
@@ -277,7 +585,7 @@ final class CachePutGetTestCase extends TestCase
         }
     }
     
-    private function putGetMaps(?MapObjectType $mapType, ?Map $value): void
+    private function putGetMaps(?MapObjectType $mapType, Map $value): void
     {
         CachePutGetTestCase::$cache->
             setKeyType(null)->

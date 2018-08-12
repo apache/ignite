@@ -29,6 +29,7 @@ use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Data\Date;
 use Apache\Ignite\Data\Time;
 use Apache\Ignite\Data\Timestamp;
+use Apache\Ignite\Data\BinaryObject;
 
 /**
  * Helper class for testing apache-ignite-client library.
@@ -153,6 +154,73 @@ class TestingHelper
                 return false;
             }
             return true;
+        } elseif ($value2 instanceof BinaryObject) {
+            if ($value1 instanceof BinaryObject) {
+                if ($value1->getTypeName() !== $value2->getTypeName()) {
+                    TestingHelper::logDebug(sprintf('compare: binary object type names are different'));
+                    return false;
+                }
+                if (!TestingHelper::compare($value1->getFieldNames(), $value2->getFieldNames())) {
+                    TestingHelper::logDebug(sprintf('compare: binary object field names are different'));
+                    return false;
+                }
+                foreach ($value1->getFieldNames() as $fieldName) {
+                    if (!$value1->hasField($fieldName) || !$value2->hasField($fieldName) ||
+                        !TestingHelper::compare($value1->getField($fieldName), $value2->getField($fieldName))) {
+                        TestingHelper::logDebug(sprintf('compare: binary objects field "%s" values are different', $fieldName));
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else {
+                $reflect1 = new \ReflectionClass($value1);
+                $properties1 = $reflect1->getProperties(\ReflectionProperty::IS_PUBLIC);
+                foreach ($properties1 as $property1) {
+                    if ($property1->isStatic()) {
+                        continue;
+                    }
+                    $propName = $property1->getName();
+                    $propValue1 = $property1->getValue($value1);
+                    $propValue2 = $value2->getField($propName);
+                    if (!TestingHelper::compare($propValue1, $propValue2)) {
+                        TestingHelper::logDebug(sprintf('compare: binary object values for field %s are different: %s and %s',
+                            TestingHelper::printValue($propName), TestingHelper::printValue($propValue1), TestingHelper::printValue($propValue2)));
+                        return false;
+                    }
+                }
+                return true;
+            }
+        } else {
+            $reflect1 = new \ReflectionClass($value1);
+            $properties1 = $reflect1->getProperties(\ReflectionProperty::IS_PUBLIC);
+            $reflect2 = new \ReflectionClass($value1);
+            foreach ($properties1 as $property1) {
+                if ($property1->isStatic()) {
+                    continue;
+                }
+                $propName = $property1->getName();
+                if ($reflect2->hasProperty($propName)) {
+                    $property2 = $reflect2->getProperty($propName);
+                    if ($property1->getModifiers() !== $property2->getModifiers()) {
+                        TestingHelper::logDebug(sprintf(
+                            'compare: objects are different: object property modifiers for property %s are different', $propName));
+                        return false;
+                    } else {
+                        $propValue1 = $property1->getValue($value1);
+                        $propValue2 = $property2->getValue($value2);
+                        if (!TestingHelper::compare($propValue1, $propValue2)) {
+                            TestingHelper::logDebug(sprintf('compare: objects are different, property %s values: %s and %s',
+                                $propName, TestingHelper::printValue($propValue1), TestingHelper::printValue($propValue2)));
+                            return false;
+                        }
+                    }
+                } else {
+                    TestingHelper::logDebug(sprintf('compare: objects are different: %s property is absent', $propName));
+                    return false;
+                }
+            }
+            return true;
         }
         
         return false;
@@ -183,12 +251,12 @@ class TestingHelper
                 'isArrayKey' => false,
             ],
             ObjectType::FLOAT => [
-                'values' => [-1.155, 0, 123e-5],
+                'values' => [-1.155, 0.0, 123e-5],
                 'isMapKey' => false,
                 'isArrayKey' => false,
             ],
             ObjectType::DOUBLE => [
-                'values' => [-123e5, 0, 0.0001],
+                'values' => [-123e5, 0.0, 0.0001],
                 'isMapKey' => false,
                 'isArrayKey' => false,
                 'typeOptional' => true

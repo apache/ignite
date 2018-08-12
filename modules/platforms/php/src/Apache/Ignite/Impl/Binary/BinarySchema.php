@@ -61,9 +61,9 @@ class BinarySchema
     {
         $result = new BinarySchema();
         $result->id = $this->id;
-        $result->fieldIds = array($this->fieldIds); new Set(this._fieldIds);
+        $result->fieldIds = array_merge($this->fieldIds);
         $result->isValid = $this->isValid;
-        return result;
+        return $result;
     }
     
     public function addField(int $fieldId): void

@@ -51,7 +51,7 @@ class BinaryUtils
         $typeCode = BinaryUtils::getTypeCode($type);
         if ($value === null) {
             if (!TypeInfo::getTypeInfo($typeCode)->isNullable()) {
-                BinaryUtils::typeCastError(ObjectTypeNULL, typeCode);
+                BinaryUtils::typeCastError(ObjectType::NULL, $typeCode);
             }
             return;
         } elseif (BinaryUtils::isStandardType($typeCode)) {
@@ -223,7 +223,7 @@ class BinaryUtils
                 $firstElem = $values[0];
                 if ($firstElem !== null) {
                     if ($values === $object) {
-                        // sequential array
+                        // indexed array
                         return BinaryUtils::getArrayType(BinaryUtils::calcObjectType($firstElem));
                     } else {
                         // associative array

@@ -68,11 +68,12 @@ class ComplexObjectType extends ObjectType
      *
      * @param string|null $phpClassName name of the PHP class or null (the name is not specified).
      * 
-     * @return ComplexObjectType the same instance of the ComplexObjectType. ???
+     * @return ComplexObjectType the same instance of the ComplexObjectType.
      */
-    public function setPhpClassName(?string $phpClassName): void
+    public function setPhpClassName(?string $phpClassName): ComplexObjectType
     {
         $this->phpClassName = $phpClassName;
+        return $this;
     }
     
     /**
@@ -86,7 +87,6 @@ class ComplexObjectType extends ObjectType
     }
     
     /**
-     * Rename to setIgniteTypeName ???
      * Sets the name of the Ignite complex type.
      *
      * Affects data writing operations only.
@@ -98,20 +98,20 @@ class ComplexObjectType extends ObjectType
      *
      * @param string|null $typeName name of the Ignite complex type or null (the name is not specified).
      * 
-     * @return ComplexObjectType the same instance of the ComplexObjectType. ???
+     * @return ComplexObjectType the same instance of the ComplexObjectType.
      */
-    public function setTypeName(?string $typeName): void
+    public function setIgniteTypeName(?string $typeName): ComplexObjectType
     {
         $this->typeName = $typeName;
+        return $this;
     }
 
     /**
-     * Rename to getIgniteTypeName ???
      * Gets the name of the Ignite complex type.
      * 
      * @return string|null name of the Ignite complex type or null (the name is not specified).
      */
-    public function getTypeName(): ?string
+    public function getIgniteTypeName(): ?string
     {
         return $this->typeName;
     }

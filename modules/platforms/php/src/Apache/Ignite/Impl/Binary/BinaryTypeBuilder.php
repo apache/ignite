@@ -87,6 +87,15 @@ class BinaryTypeBuilder
         }
         return $result;
     }
+    
+    public static function calcTypeName(ComplexObjectType $complexObjectType, object $object): string
+    {
+        $typeName = $complexObjectType->getIgniteTypeName();
+        if (!$typeName) {
+            $typeName = $object ? get_class($object) : null;
+        }
+        return $typeName;
+    }
 
     public function getType(): BinaryType
     {
@@ -152,10 +161,7 @@ class BinaryTypeBuilder
 
     private function fromComplexObject(ComplexObjectType $complexObjectType, object $object): void
     {
-        $typeName = $complexObjectType->getTypeName();
-        if (!$typeName) {
-            $typeName = get_class($object);
-        }
+        $typeName = BinaryTypeBuilder::calcTypeName($complexObjectType, $object);
         $this->init($typeName);
         $this->setFields($complexObjectType, $object);
     }
@@ -180,6 +186,9 @@ class BinaryTypeBuilder
         $reflect = new \ReflectionClass($object);
         $properties  = $reflect->getProperties(\ReflectionProperty::IS_PUBLIC);
         foreach ($properties as $property) {
+            if ($property->isStatic()) {
+                continue;
+            }
             $fieldName = $property->getName();
             $fieldType = $complexObjectType->getFieldType($fieldName);
             if (!$fieldType) {

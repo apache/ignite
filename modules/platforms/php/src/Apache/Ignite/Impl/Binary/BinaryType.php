@@ -120,8 +120,8 @@ class BinaryType
             if ($this->hasField($fieldId)) {
                 if ($this->getField($fieldId)->getTypeCode() !== $field->getTypeCode()) {
                     BinaryUtils::serializationError(
-                        true, printf('type conflict for field "%s" of complex object type "%s"'),
-                        $field->getName(), $this->name);
+                        true, sprintf('type conflict for field "%s" of complex object type "%s"',
+                        $field->getName(), $this->name));
                 }
             } else {
                 $this->setField($field);
@@ -132,13 +132,13 @@ class BinaryType
 
     public function cloneType(): BinaryType
     {
-        $result = new BinaryType();
+        $result = new BinaryType(null);
         $result->name = $this->name;
         $result->id = $this->id;
-        $result->fields = array($this->fields);
-        $result->schemas = array($this->schemas);
+        $result->fields = array_merge($this->fields);
+        $result->schemas = array_merge($this->schemas);
         $result->isEnum = $this->isEnum;
-        return result;
+        return $result;
     }
 
     public function write(MessageBuffer $buffer): void

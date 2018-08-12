@@ -18,6 +18,8 @@
 
 namespace Apache\Ignite\Type;
 
+use Apache\Ignite\Impl\Binary\BinaryUtils;
+
 /**
  * Class representing an array type of Ignite objects.
  *

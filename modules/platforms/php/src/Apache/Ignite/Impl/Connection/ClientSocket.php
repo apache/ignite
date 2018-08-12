@@ -34,7 +34,7 @@ class ClientSocket
     const HANDSHAKE_SUCCESS_STATUS_CODE = 1;
     const REQUEST_SUCCESS_STATUS_CODE = 0;
     const PORT_DEFAULT = 10800;
-    const SOCKET_READ_SIZE = 1024;
+    const SOCKET_READ_SIZE = 8192;
     
     private static $supportedVersions;
 
@@ -74,8 +74,8 @@ class ClientSocket
                 ($isSsl ? 'ssl://' : 'tcp://') . $this->endpoint,
                 $errno,
                 $errstr,
-                ini_get("default_socket_timeout"), 
-                STREAM_CLIENT_CONNECT | STREAM_CLIENT_PERSISTENT,
+                ini_get('default_socket_timeout'),
+                STREAM_CLIENT_CONNECT,
                 $context))) {
             throw new ConnectionException($errstr);
         }
