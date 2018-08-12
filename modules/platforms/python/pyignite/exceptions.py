@@ -13,38 +13,67 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from socket import error as SocketError
+
 
 class ParseError(Exception):
-    pass
-
-
-class SocketError(Exception):
+    """
+    This exception is raised, when `pyignite` is unable to build a query to,
+    or parse a response from, Ignite node.
+    """
     pass
 
 
 class SocketWriteError(SocketError):
-    pass
-
-
-class ParameterError(Exception):
-    pass
-
-
-class CacheError(Exception):
+    """
+    This exception is raised, when `Client.send` method is called during
+    a binary string parsing.
+    """
     pass
 
 
 class ReconnectError(Exception):
+    """
+    This exception is raised by `Client.reconnect` method, when no more
+    nodes are left to connect to. It is not meant to be an error, but rather
+    a flow control tool, similar to `StopIteration`.
+    """
+    pass
+
+
+class ParameterError(Exception):
+    """
+    This exception represents the parameter validation error in any `pyignite`
+    method.
+    """
+    pass
+
+
+class CacheError(Exception):
+    """
+    This exception is raised, whenever any remote Thin client operation
+    returns an error.
+    """
     pass
 
 
 class BinaryTypeError(CacheError):
+    """
+    A remote error in operation with Complex Object registry.
+    """
     pass
 
 
 class CacheCreationError(CacheError):
+    """
+    This exception is raised, when any complex operation failed
+    on cache creation phase.
+    """
     pass
 
 
 class SQLError(CacheError):
+    """
+    An error in SQL query.
+    """
     pass
