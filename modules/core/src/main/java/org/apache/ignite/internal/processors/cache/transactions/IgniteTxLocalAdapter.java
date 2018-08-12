@@ -1242,7 +1242,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         Object key0 = null;
         Object val0 = null;
 
-        IgniteThread.onEntryProcessorEntered();
+        IgniteThread.onEntryProcessorEntered(true);
 
         try {
             Object res = null;

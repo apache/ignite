@@ -2109,7 +2109,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     boolean validation = false;
 
-                    IgniteThread.onEntryProcessorEntered();
+                    IgniteThread.onEntryProcessorEntered(true);
 
                     try {
                         Object computed = entryProcessor.process(invokeEntry, req.invokeArguments());

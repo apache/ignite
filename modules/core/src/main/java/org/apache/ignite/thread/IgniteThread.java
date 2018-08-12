@@ -59,6 +59,9 @@ public class IgniteThread extends Thread {
     /** */
     private boolean executingEntryProcessor;
 
+    /** */
+    private boolean holdsTopLock;
+
     /**
      * Creates thread with given worker.
      *
@@ -167,14 +170,21 @@ public class IgniteThread extends Thread {
         return executingEntryProcessor;
     }
 
+    public boolean holdsTopLock() {
+        return holdsTopLock;
+    }
+
     /**
      * Callback before entry processor execution is started.
      */
-    public static void onEntryProcessorEntered() {
+    public static void onEntryProcessorEntered(boolean holdsTopLock) {
         Thread curThread = Thread.currentThread();
 
-        if (curThread instanceof IgniteThread)
+        if (curThread instanceof IgniteThread) {
             ((IgniteThread)curThread).executingEntryProcessor = true;
+
+            ((IgniteThread)curThread).holdsTopLock = holdsTopLock;
+        }
     }
 
     /**

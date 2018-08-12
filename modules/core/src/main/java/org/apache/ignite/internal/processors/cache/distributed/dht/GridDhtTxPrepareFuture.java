@@ -416,7 +416,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val,
                                     txEntry.cached().version(), keepBinary, txEntry.cached());
 
-                                IgniteThread.onEntryProcessorEntered();
+                                IgniteThread.onEntryProcessorEntered(false);
 
                                 try {
                                     EntryProcessor<Object, Object, Object> processor = t.get1();

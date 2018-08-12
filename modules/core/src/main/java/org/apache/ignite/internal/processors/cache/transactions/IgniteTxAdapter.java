@@ -1608,7 +1608,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 Object procRes = null;
                 Exception err = null;
 
-                IgniteThread.onEntryProcessorEntered();
+                IgniteThread.onEntryProcessorEntered(true);
 
                 try {
                     EntryProcessor<Object, Object, Object> processor = t.get1();

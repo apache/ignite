@@ -1496,7 +1496,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(key, old, version(), keepBinary, this);
 
-                IgniteThread.onEntryProcessorEntered();
+                IgniteThread.onEntryProcessorEntered(true);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
@@ -1831,7 +1831,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             CacheInvokeEntry<Object, Object> entry =
                                 new CacheInvokeEntry<>(key, prevVal, version(), keepBinary, this);
 
-                            IgniteThread.onEntryProcessorEntered();
+                            IgniteThread.onEntryProcessorEntered(true);
 
                             try {
                                 entryProcessor.process(entry, invokeArgs);
@@ -5418,7 +5418,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private IgniteBiTuple<Object, Exception> runEntryProcessor(CacheInvokeEntry<Object, Object> invokeEntry) {
             EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
 
-            IgniteThread.onEntryProcessorEntered();
+            IgniteThread.onEntryProcessorEntered(true);
 
             try {
                 Object computed = entryProcessor.process(invokeEntry, invokeArgs);
