@@ -155,7 +155,7 @@ class Cache:
         """
         return self._cache_id
 
-    def process_binary(self, value: Any) -> Any:
+    def _process_binary(self, value: Any) -> Any:
         """
         Detects and recursively unwraps Binary Object.
 
@@ -185,7 +185,7 @@ class Cache:
         :return: value retrieved.
         """
         result = cache_get(self._conn, self._cache_id, key, key_hint=key_hint)
-        result.value = self.process_binary(result.value)
+        result.value = self._process_binary(result.value)
         return result
 
     @status_to_exception(CacheError)
@@ -217,7 +217,7 @@ class Cache:
         result = cache_get_all(self._conn, self._cache_id, keys)
         if result.value:
             for key, value in result.value.items():
-                result.value[key] = self.process_binary(value)
+                result.value[key] = self._process_binary(value)
         return result
 
     @status_to_exception(CacheError)
@@ -250,7 +250,7 @@ class Cache:
             self._conn, self._cache_id, key, value,
             key_hint=key_hint, value_hint=value_hint
         )
-        result.value = self.process_binary(result.value)
+        result.value = self._process_binary(result.value)
         return result
 
     @status_to_exception(CacheError)
@@ -320,7 +320,7 @@ class Cache:
         result = cache_get_and_put(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
-        result.value = self.process_binary(result.value)
+        result.value = self._process_binary(result.value)
         return result
 
     @status_to_exception(CacheError)
@@ -342,7 +342,7 @@ class Cache:
         result = cache_get_and_put_if_absent(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
-        result.value = self.process_binary(result.value)
+        result.value = self._process_binary(result.value)
         return result
 
     @status_to_exception(CacheError)
@@ -375,7 +375,7 @@ class Cache:
         result = cache_get_and_remove(
             self._conn, self._cache_id, key, key_hint
         )
-        result.value = self.process_binary(result.value)
+        result.value = self._process_binary(result.value)
         return result
 
     @status_to_exception(CacheError)
@@ -398,7 +398,7 @@ class Cache:
         result = cache_get_and_replace(
             self._conn, self._cache_id, key, value, key_hint, value_hint
         )
-        result.value = self.process_binary(result.value)
+        result.value = self._process_binary(result.value)
         return result
 
     @status_to_exception(CacheError)
@@ -467,7 +467,7 @@ class Cache:
             self._conn, self._cache_id, key, sample, value,
             key_hint, sample_hint, value_hint
         )
-        result.value = self.process_binary(result.value)
+        result.value = self._process_binary(result.value)
         return result
 
     @status_to_exception(CacheError)
@@ -501,8 +501,8 @@ class Cache:
 
         cursor = result.value['cursor']
         for k, v in result.value['data'].items():
-            k = self.process_binary(k)
-            v = self.process_binary(v)
+            k = self._process_binary(k)
+            v = self._process_binary(v)
             yield k, v
 
         while result.value['more']:
@@ -511,8 +511,8 @@ class Cache:
                 raise CacheError(result.message)
 
             for k, v in result.value['data'].items():
-                k = self.process_binary(k)
-                v = self.process_binary(v)
+                k = self._process_binary(k)
+                v = self._process_binary(v)
                 yield k, v
 
     def sql(
@@ -541,8 +541,8 @@ class Cache:
             cursor = value['cursor']
             more = value['more']
             for k, v in value['data'].items():
-                k = self.process_binary(k)
-                v = self.process_binary(v)
+                k = self._process_binary(k)
+                v = self._process_binary(v)
                 yield k, v
 
             while more:
@@ -551,8 +551,8 @@ class Cache:
                     raise SQLError(result.message)
                 more = inner_result.value['more']
                 for k, v in inner_result.value['data'].items():
-                    k = self.process_binary(k)
-                    v = self.process_binary(v)
+                    k = self._process_binary(k)
+                    v = self._process_binary(v)
                     yield k, v
 
         type_name = self.settings[
