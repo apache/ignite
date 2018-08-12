@@ -180,6 +180,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** */
     private int miniId;
 
+    /** Used for synchronization between lock cancellation and mapping phase. */
+    private boolean mappingsReady;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -547,8 +550,19 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * Cancellation has special meaning for lock futures. It's called then lock must be released on rollback.
      */
     @Override public boolean cancel() {
-        if (inTx())
+        if (inTx()) {
             onError(tx.rollbackException());
+
+            synchronized (this) {
+                while (!mappingsReady)
+                    try {
+                        wait();
+                    }
+                    catch (InterruptedException e) {
+                        // Ignore interrupts.
+                    }
+            }
+        }
 
         return onComplete(false, true);
     }
@@ -850,6 +864,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         catch (IgniteCheckedException ex) {
             onDone(false, ex);
         }
+        finally {
+            synchronized (this) {
+                mappingsReady = true;
+
+                notifyAll();
+            }
+        }
     }
 
     /**
@@ -1114,9 +1135,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             map = mappings.poll();
         }
 
-        // If there are no more mappings to process, complete the future.
+        // If there are no more mappings to process or prepare has timed out, complete the future.
         if (map == null)
             return;
+
+        // Fail fast if the transaction is timed out.
+        if (tx != null && tx.remainingTime() == -1) {
+            GridDhtColocatedLockFuture.this.onDone(false, tx.timeoutException());
+
+            clear();
+
+            return;
+        }
 
         final GridNearLockRequest req = map.request();
         final Collection<KeyCacheObject> mappedKeys = map.distributedKeys();
