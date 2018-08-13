@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sys.view;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
@@ -52,7 +53,7 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+    @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         List<Row> rows = new ArrayList<>();
 
         Collection<ClusterNode> nodes;
@@ -87,7 +88,7 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
                 );
         }
 
-        return rows;
+        return rows.iterator();
     }
 
     /** {@inheritDoc} */

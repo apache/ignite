@@ -52,7 +52,7 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+    @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         Collection<ClusterNode> nodes;
 
         SqlSystemViewColumnCondition idCond = conditionForColumn("NODE_ID", first, last);
@@ -94,10 +94,10 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
                     );
             }
 
-            return rows;
+            return rows.iterator();
         }
         else {
-            return new ParentChildRowIterable<>(ses, nodes,
+            return new ParentChildRowIterator<>(ses, nodes.iterator(),
                 new IgniteClosure<ClusterNode, Iterator<Map.Entry<String, Object>>>() {
                     @Override public Iterator<Map.Entry<String, Object>> apply(ClusterNode node) {
                         return node.attributes().entrySet().iterator();
@@ -112,46 +112,6 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
                         };
                     }
                 });
-        }
-    }
-
-    /**
-     * Parent-child Row iterable.
-     *
-     * @param <P> Parent class.
-     * @param <C> Child class
-     */
-    private class ParentChildRowIterable<P, C> implements Iterable<Row> {
-        /** Session. */
-        private final Session ses;
-
-        /** Parent iterable. */
-        private final Iterable<P> parents;
-
-        /** Child iterator closure. */
-        private final IgniteClosure<P, Iterator<C>> cloChildIter;
-
-        /** Result from parent and child closure. */
-        private final IgniteBiClosure<P, C, Object[]> cloRowFromParentChild;
-
-        /**
-         * @param ses Session.
-         * @param parents Parents.
-         * @param cloChildIter Child iterator closure.
-         * @param cloRowFromParentChild Row columns from parent and child closure.
-         */
-        ParentChildRowIterable(Session ses, Iterable<P> parents,
-            IgniteClosure<P, Iterator<C>> cloChildIter,
-            IgniteBiClosure<P, C, Object[]> cloRowFromParentChild) {
-            this.ses = ses;
-            this.parents = parents;
-            this.cloChildIter = cloChildIter;
-            this.cloRowFromParentChild = cloRowFromParentChild;
-        }
-
-        /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Row> iterator() {
-            return new ParentChildRowIterator<>(ses, parents.iterator(), cloChildIter, cloRowFromParentChild);
         }
     }
 
