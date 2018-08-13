@@ -2242,22 +2242,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     public boolean fastReplyOnSingleMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
         GridDhtPartitionsExchangeFuture futToFastReply = this;
 
-        boolean fastReply;
+        ExchangeLocalState currState;
 
         synchronized (mux) {
-            if (state == ExchangeLocalState.MERGED) {
-                futToFastReply = mergedWith;
+            currState = state;
 
-                fastReply = true;
-            }
-            else
-                fastReply = state == ExchangeLocalState.DONE;
+            if (currState == ExchangeLocalState.MERGED)
+                futToFastReply = mergedWith;
         }
 
-        if (fastReply)
+        if (currState == ExchangeLocalState.DONE)
             futToFastReply.processSingleMessage(node.id(), msg);
+        else if (currState == ExchangeLocalState.MERGED)
+            futToFastReply.processMergedMessage(node, msg);
 
-        return fastReply;
+        return currState == ExchangeLocalState.MERGED || currState == ExchangeLocalState.DONE;
     }
 
     /**

@@ -338,8 +338,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         boolean fastReplied = fut.fastReplyOnSingleMessage(node, msg);
 
-                        if (fastReplied)
+                        if (fastReplied) {
+                            if (log.isInfoEnabled()) {
+                                log.info("Fast replied on " + exchangeId + " to " + node.id());
+                            }
+
                             return;
+                        }
                     }
 
                     if (!crdInitFut.isDone() && !msg.restoreState()) {
