@@ -26,9 +26,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.TimeZone;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -223,6 +225,37 @@ public class VisorTxInfo extends VisorDataTransferObject {
             startTime = in.readLong();
         }
 
+    }
+
+    /**
+     * Get tx info as user string.
+     *
+     * @return User string.
+     */
+    public String toUserString() {
+        return "    Tx: [xid=" + getXid() +
+            ", label=" + getLabel() +
+            ", state=" + getState() +
+            ", startTime=" + getFormattedStartTime() +
+            ", duration=" + getDuration() / 1000 +
+            ", isolation=" + getIsolation() +
+            ", concurrency=" + getConcurrency() +
+            ", timeout=" + getTimeout() +
+            ", size=" + getSize() +
+            ", dhtNodes=" + (getPrimaryNodes() == null ? "N/A" :
+            F.transform(getPrimaryNodes(), new IgniteClosure<UUID, String>() {
+                @Override public String apply(UUID id) {
+                    return U.id8(id);
+                }
+            })) +
+            ", nearXid=" + getNearXid() +
+            ", parentNodeIds=" + (getMasterNodeIds() == null ? "N/A" :
+            F.transform(getMasterNodeIds(), new IgniteClosure<UUID, String>() {
+                @Override public String apply(UUID id) {
+                    return U.id8(id);
+                }
+            })) +
+            ']';
     }
 
     /** {@inheritDoc} */
