@@ -102,7 +102,7 @@
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
         <postgres.connector.version>9.4.1208.jre7</postgres.connector.version>
-        <rocketmq.version>4.2.0</rocketmq.version>
+        <rocketmq.version>4.3.0</rocketmq.version>
         <scala210.jline.version>2.10.4</scala210.jline.version>
         <scala210.library.version>2.10.6</scala210.library.version>
         <scala211.library.version>2.11.8</scala211.library.version>
