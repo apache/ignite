@@ -699,10 +699,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         checkFutures();
     }
 
-    @Override protected long getTestTimeout() {
-        return 10000000000000L;
-    }
-
     /**
      *
      */
