@@ -527,6 +527,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             WALPointer ptr = null;
 
+            Exception err = null;
+
             cctx.database().checkpointReadLock();
 
             try {
@@ -886,7 +888,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         else {
                             boolean hasInvalidEnvironmentIssue = X.hasCause(ex, InvalidEnvironmentException.class);
 
-                            IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
+                            IgniteCheckedException err0 = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
                                 "(all transaction entries will be invalidated, however there was a window when " +
                                 "entries for this transaction were visible to others): " + this, ex);
 
@@ -895,9 +897,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     "[tx=" + this + ", err=" + ex + ']');
                             }
                             else
-                                U.error(log, "Heuristic transaction failure.", err);
+                                U.error(log, "Heuristic transaction failure.", err0);
 
-                            COMMIT_ERR_UPD.compareAndSet(this, null, err);
+                            COMMIT_ERR_UPD.compareAndSet(this, null, err0);
 
                             state(UNKNOWN);
 
@@ -915,7 +917,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             if (ex instanceof Error)
                                 throw ex;
 
-                            throw err;
+                            throw err0;
                         }
                     }
                 }
@@ -926,13 +928,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     cctx.wal().flush(ptr, false);
             }
             catch (StorageException e) {
+                err = e;
+
                 throw new IgniteCheckedException("Failed to log transaction record " +
                     "(transaction will be rolled back): " + this, e);
             }
             finally {
                 cctx.database().checkpointReadUnlock();
 
-                notifyDrManager(state() == COMMITTING);
+                notifyDrManager(state() == COMMITTING && err == null);
 
                 cctx.tm().resetContext();
             }
@@ -1067,14 +1071,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     @Override public void userRollback(boolean clearThreadMap) throws IgniteCheckedException {
         TransactionState state = state();
 
+        notifyDrManager(false);
+
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
             setRollbackOnly();
 
             throw new IgniteCheckedException("Invalid transaction state for rollback [state=" + state +
                 ", tx=" + this + ']');
         }
-
-        notifyDrManager(false);
 
         if (near()) {
             // Must evict near entries before rolling back from

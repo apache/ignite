@@ -3367,9 +3367,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 userRollback(clearThreadMap);
         }
         catch (IgniteCheckedException e) {
-            if(commit)
-                notifyDrManager(false);
-
             err = e;
 
             commit = false;
