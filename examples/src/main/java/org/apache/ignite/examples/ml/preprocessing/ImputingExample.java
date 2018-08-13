@@ -32,7 +32,17 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 
 /**
- * Example that shows how to use Imputing preprocessor to impute the missing value in the given data.
+ * Example that shows how to use <a href="https://en.wikipedia.org/wiki/Imputation_(statistics)">Imputing</a>
+ * preprocessor to impute the missing value in the given data.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
+ * <p>
+ * After that it defines preprocessors that extract features from an upstream data and impute missing values.</p>
+ * <p>
+ * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output
+ * various statistical metrics of the data.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
 public class ImputingExample {
     /** Run example. */

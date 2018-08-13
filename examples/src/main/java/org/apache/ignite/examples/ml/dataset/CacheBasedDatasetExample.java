@@ -37,7 +37,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * After that it creates the dataset based on the data in the cache and uses Dataset API to find and output
  * various statistical metrics of the data.</p>
  * <p>
- * You can change the test data used in this example and re-run it to investigate this algorithm further.</p>
+ * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
 public class CacheBasedDatasetExample {
     /** Run example. */

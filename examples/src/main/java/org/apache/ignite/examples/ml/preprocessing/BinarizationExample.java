@@ -33,6 +33,15 @@ import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
 
 /**
  * Example that shows how to use binarization preprocessor to binarize data.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
+ * <p>
+ * After that it defines preprocessors that extract features from an upstream data and normalize features.</p>
+ * <p>
+ * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output
+ * various statistical metrics of the data.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
 public class BinarizationExample {
     /** Run example. */
