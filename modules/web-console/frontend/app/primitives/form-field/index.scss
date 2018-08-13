@@ -197,6 +197,11 @@
 
         svg {
             flex: 0 0 auto;
+            margin-left: 4px;
+        }
+
+        [ignite-icon='info'] {
+            color: $ignite-brand-success;
         }
     }
 
