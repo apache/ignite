@@ -249,12 +249,15 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(queryable != null);
 
+            var tableName = queryable.TableName;
+
             var cacheCfg = queryable.CacheConfiguration;
+            var schemaName = cacheCfg.SqlSchema ?? cacheCfg.Name;
 
             return string.Format(cacheCfg.SqlEscapeAll
                     ? "\"{0}\".\"{1}\""
                     : "\"{0}\".{1}",
-                cacheCfg.Name, queryable.TableName);
+                schemaName, tableName);
         }
     }
 }
