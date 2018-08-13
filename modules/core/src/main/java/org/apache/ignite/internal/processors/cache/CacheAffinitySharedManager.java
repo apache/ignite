@@ -2361,7 +2361,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         Map<Integer, CacheGroupDescriptor> descriptorMap = cctx.cache().cacheGroupDescriptors();
 
         if(!GridFunc.eqNotOrdered(caches.registeredGrps, descriptorMap))
-            log.warning("Cache group are not same : affinity=" + caches.registeredCaches + ", cache=" + descriptorMap);
+            log.warning("Cache group are not same : affinity=" + caches.registeredGrps + ", cache=" + descriptorMap);
 
         return caches.registeredGrps;
     }
@@ -2804,6 +2804,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             registeredGrps.clear();
 
             registeredCaches.clear();
+
+            log.warning("Clear was executed");
         }
     }
 
