@@ -127,9 +127,6 @@ public class CacheGroupContext {
     /** */
     private GridCachePreloader preldr;
 
-    /** Partition evictor. */
-    private GridDhtPartitionsEvictor evictor;
-
     /** */
     private final DataRegion dataRegion;
 
@@ -260,13 +257,6 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Partitions evictor.
-     */
-    public GridDhtPartitionsEvictor evictor() {
-        return evictor;
-    }
-
-    /**
      * @return IO policy for the given cache group.
      */
     public byte ioPolicy() {
@@ -320,7 +310,7 @@ public class CacheGroupContext {
             drEnabled = true;
 
         this.caches = caches;
-   }
+    }
 
     /**
      * @param cctx Cache context.
@@ -379,8 +369,8 @@ public class CacheGroupContext {
         List<GridCacheContext> caches = this.caches;
 
         assert !sharedGroup() && caches.size() == 1 :
-            "stopping=" +  ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
-            ", caches=" + caches;
+            "stopping=" + ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
+                ", caches=" + caches;
 
         return caches.get(0);
     }
@@ -441,6 +431,7 @@ public class CacheGroupContext {
             }
         }
     }
+
     /**
      * Adds partition unload event.
      *
@@ -730,7 +721,7 @@ public class CacheGroupContext {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
-        evictor.stop();
+        ctx.evict().onCacheGroupStopped(this);
 
         aff.cancelFutures(err);
 
@@ -905,8 +896,6 @@ public class CacheGroupContext {
         }
         else
             preldr = new GridCachePreloaderAdapter(this);
-
-        evictor = new GridDhtPartitionsEvictor(this);
 
         if (persistenceEnabled()) {
             try {
