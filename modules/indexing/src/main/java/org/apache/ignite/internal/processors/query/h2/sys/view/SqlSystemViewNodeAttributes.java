@@ -100,30 +100,14 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
             AtomicLong rowKey = new AtomicLong();
 
             return F.iterator(
-                F.concat(F.iterator(nodes, new IgniteClosure<ClusterNode, Iterator<IgniteBiTuple<ClusterNode,
-                    Map.Entry<String, Object>>>>() {
-                    @Override public Iterator<IgniteBiTuple<ClusterNode, Map.Entry<String, Object>>> apply(
-                        ClusterNode node) {
-                        return F.iterator(node.attributes().entrySet(),
-                            new IgniteClosure<Map.Entry<String, Object>, IgniteBiTuple<ClusterNode,
-                                Map.Entry<String, Object>>>() {
-                            @Override public IgniteBiTuple<ClusterNode, Map.Entry<String, Object>> apply(
-                                Map.Entry<String, Object> attr) {
-                                return new IgniteBiTuple<>(node, attr);
-                            }
-                        }, true).iterator();
-                    }
-                }, true)),
-                new IgniteClosure<IgniteBiTuple<ClusterNode, Map.Entry<String, Object>>, Row>() {
-                    @Override public Row apply(IgniteBiTuple<ClusterNode, Map.Entry<String, Object>> nodeAttr) {
-                        return createRow(ses,
-                            rowKey.incrementAndGet(),
-                            nodeAttr.get1().id(),
-                            nodeAttr.get2().getKey(),
-                            nodeAttr.get2().getValue()
-                        );
-                    }
-                }, true);
+                F.concat(F.iterator(nodes, node -> F.iterator(node.attributes().entrySet(),
+                    attr -> new IgniteBiTuple<>(node, attr), true).iterator(), true)),
+                nodeAttr -> createRow(ses,
+                    rowKey.incrementAndGet(),
+                    nodeAttr.get1().id(),
+                    nodeAttr.get2().getKey(),
+                    nodeAttr.get2().getValue()
+                ), true);
         }
     }
 }
