@@ -15,14 +15,25 @@
  * limitations under the License.
  */
 
-import {Selector, t} from 'testcafe'
+import {Selector, t} from 'testcafe';
+import {PanelCollapsible} from '../components/PanelCollapsible';
+import {FormField} from '../components/FormField';
 
 export class PageConfigurationAdvancedCluster {
     constructor() {
-        this._selector = Selector('page-configure-advanced-cluster')
-        this.saveButton = Selector('.pc-form-actions-panel .btn-ignite').withText('Save')
+        this.saveButton = Selector('.pc-form-actions-panel .btn-ignite').withText('Save');
+
+        this.sections = {
+            connectorConfiguration: {
+                panel: new PanelCollapsible('Connector configuration'),
+                inputs: {
+                    enable: new FormField({id: 'restEnabledInput'})
+                }
+            }
+        };
     }
+
     async save() {
-        await t.click(this.saveButton)
+        await t.click(this.saveButton);
     }
 }
