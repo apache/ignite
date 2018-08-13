@@ -124,6 +124,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTa
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
@@ -1179,9 +1180,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
         CacheConfiguration cfg = cacheCtx.config();
-
-        if (cacheCtx.userCache())
-            authorizeCacheCreate(cacheCtx.name(), cfg);
 
         // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
         if (cfg.isStoreKeepBinary() && cfg.isStoreKeepBinary() != CacheConfiguration.DFLT_STORE_KEEP_BINARY
@@ -2549,6 +2547,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             StringBuilder errorMessage = new StringBuilder();
 
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
+                try {
+                    byte[] secCtxBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+
+                    if (secCtxBytes != null) {
+                        SecurityContext secCtx = U.unmarshal(marsh, secCtxBytes, U.resolveClassLoader(ctx.config()));
+
+                        if (secCtx != null && cacheInfo.cacheType() == CacheType.USER)
+                            authorizeCacheCreate(cacheInfo.cacheData().config(), secCtx);
+                    }
+                }
+                catch (SecurityException | IgniteCheckedException ex) {
+                    if (errorMessage.length() > 0)
+                        errorMessage.append("\n");
+
+                    errorMessage.append(ex.getMessage());
+                }
+
                 DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
                 if (localDesc == null)
@@ -3412,28 +3427,30 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Authorize dynamic cache management.
+     * Authorize creating cache.
+     * @param cfg Cache configuration.
+     * @param secCtx Optional security context.
      */
-    private void authorizeCacheChange(DynamicCacheChangeRequest req) {
-        if (req.cacheType() == null || req.cacheType() == CacheType.USER) {
-            if (req.stop())
-                ctx.security().authorize(req.cacheName(), SecurityPermission.CACHE_DESTROY, null);
-            else
-                authorizeCacheCreate(req.cacheName(), req.startCacheConfiguration());
-        }
+    private void authorizeCacheCreate(CacheConfiguration cfg, SecurityContext secCtx) {
+        ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, secCtx);
+
+        if (cfg != null && cfg.isOnheapCacheEnabled() &&
+            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE))
+            throw new SecurityException("Authorization failed for enabling on-heap cache.");
     }
 
     /**
-     * Authorize start/create cache operation.
+     * Authorize dynamic cache management for this node.
+     * @param req start/stop cache request.
      */
-    private void authorizeCacheCreate(String cacheName, CacheConfiguration cacheCfg) {
-        ctx.security().authorize(cacheName, SecurityPermission.CACHE_CREATE, null);
-
-        if (cacheCfg != null && cacheCfg.isOnheapCacheEnabled() &&
-            System.getProperty(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE, "false")
-                .toUpperCase().equals("TRUE")
-            )
-            throw new SecurityException("Authorization failed for enabling on-heap cache.");
+    private void authorizeCacheChange(DynamicCacheChangeRequest req) {
+        // Null security context means authorize this node.
+        if (req.cacheType() == null || req.cacheType() == CacheType.USER) {
+            if (req.stop())
+                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, null);
+            else
+                authorizeCacheCreate(req.startCacheConfiguration(), null);
+        }
     }
 
     /**
