@@ -31,9 +31,9 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_INACTIVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_DEACTIVATE;
 
 /**
  *
@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER
 public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter {
     /** Commands. */
     private static final Collection<GridRestCommand> commands =
-        U.sealList(CLUSTER_ACTIVE, CLUSTER_INACTIVE, CLUSTER_CURRENT_STATE);
+        U.sealList(CLUSTER_ACTIVATE, CLUSTER_DEACTIVATE, CLUSTER_CURRENT_STATE);
 
     /**
      * @param ctx Context.
@@ -69,8 +69,11 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
 
                 res.setResponse(currentState);
             }
-            else
-                ctx.grid().active(req.active());
+            else {
+                ctx.grid().cluster().active(req.active());
+
+                res.setResponse(req.command().key() + " started");
+            }
 
             fut.onDone(res);
         }

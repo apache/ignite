@@ -880,8 +880,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case NAME:
             case LOG:
             case CLUSTER_CURRENT_STATE:
-            case CLUSTER_ACTIVE:
-            case CLUSTER_INACTIVE:
+            case CLUSTER_ACTIVATE:
+            case CLUSTER_DEACTIVATE:
             case AUTHENTICATE:
             case ADD_USER:
             case REMOVE_USER:

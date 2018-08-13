@@ -160,10 +160,10 @@ public enum GridRestCommand {
     CLOSE_SQL_QUERY("qrycls"),
 
     /** */
-    CLUSTER_ACTIVE("active"),
+    CLUSTER_ACTIVATE("activate"),
 
     /** */
-    CLUSTER_INACTIVE("inactive"),
+    CLUSTER_DEACTIVATE("deactivate"),
 
     /** */
     CLUSTER_CURRENT_STATE("currentstate"),

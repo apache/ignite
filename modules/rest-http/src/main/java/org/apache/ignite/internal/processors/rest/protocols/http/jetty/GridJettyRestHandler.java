@@ -74,7 +74,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_G
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_QUERY;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 
@@ -722,15 +722,15 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
-            case CLUSTER_ACTIVE:
-            case CLUSTER_INACTIVE:
+            case CLUSTER_ACTIVATE:
+            case CLUSTER_DEACTIVATE:
             case CLUSTER_CURRENT_STATE: {
                 GridRestChangeStateRequest restReq0 = new GridRestChangeStateRequest();
 
                 if (cmd == CLUSTER_CURRENT_STATE)
                     restReq0.reqCurrentState();
                 else
-                    restReq0.active(cmd == CLUSTER_ACTIVE);
+                    restReq0.active(cmd == CLUSTER_ACTIVATE);
 
                 restReq = restReq0;
 
