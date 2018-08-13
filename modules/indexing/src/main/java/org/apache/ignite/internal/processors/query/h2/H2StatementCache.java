@@ -97,4 +97,11 @@ final class H2StatementCache {
     void remove(String schemaName, String sql) {
         lruStmtCache.remove(new H2CachedStatementKey(schemaName, sql));
     }
+
+    /**
+     * @return Cache size.
+     */
+    int size() {
+        return lruStmtCache.size();
+    }
 }

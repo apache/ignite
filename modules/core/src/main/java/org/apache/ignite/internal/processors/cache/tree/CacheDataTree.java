@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -79,7 +78,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             metaPageId,
             reuseList,
             innerIO(grp),
-            leafIO(grp));
+            leafIO(grp),
+            grp.shared().kernalContext().failure());
 
         assert rowStore != null;
 

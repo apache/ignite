@@ -431,6 +431,17 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cacheId Cache ID.
      * @param part Partition.
+     * @return Partition data iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public default GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part)
+        throws IgniteCheckedException {
+        return cachePartitionIterator(cacheId, part, null);
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param part Partition.
      * @param mvccSnapshot MVCC snapshot.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
@@ -614,7 +625,7 @@ public interface IgniteCacheOffheapManager {
         long updateCounter();
 
         /**
-         *
+         * @param val Update counter.
          */
         void updateCounter(long val);
 
@@ -622,6 +633,16 @@ public interface IgniteCacheOffheapManager {
          * @return Next update counter.
          */
         public long nextUpdateCounter();
+
+        /**
+         * @return Next mvcc update counter.
+         */
+        long nextMvccUpdateCounter();
+
+        /**
+         * @return Current mvcc update counter value.
+         */
+        long mvccUpdateCounter();
 
         /**
          * @return Initial update counter.

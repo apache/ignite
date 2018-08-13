@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -71,6 +73,9 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** */
     private MvccSnapshot mvccSnapshot;
 
+    /** Map of update counters made by this tx. Mapping: cacheId -> partId -> updCntr. */
+    @GridDirectMap(keyType = Integer.class, valueType = GridDhtPartitionsUpdateCountersMap.class)
+    private Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs;
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -214,7 +219,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         Collection<Long> updateIdxs,
         boolean retVal,
         boolean waitRemoteTxs,
-        MvccSnapshot mvccSnapshot
+        MvccSnapshot mvccSnapshot,
+        Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs
     ) {
         this(nearNodeId,
             futId,
@@ -248,6 +254,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             for (Long idx : updateIdxs)
                 partUpdateCnt.add(idx);
         }
+
+        this.updCntrs = updCntrs;
     }
 
     /**
@@ -354,6 +362,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     public void needReturnValue(boolean retVal) {
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
     }
+    /**
+     * @return Partition update counters map.
+     */
+    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap() {
+        return updCntrs;
+    }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
@@ -407,6 +421,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 27:
+                if (!writer.writeMap("updCntrs", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 28:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
@@ -481,6 +501,14 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 27:
+                updCntrs = reader.readMap("updCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 28:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
@@ -500,7 +528,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 28;
+        return 29;
     }
 
     /** {@inheritDoc} */

@@ -25,8 +25,9 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Interface for trainers. Trainer is just a function which produces model from the data.
@@ -34,7 +35,10 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * @param <M> Type of a produced model.
  * @param <L> Type of a label.
  */
-public interface DatasetTrainer<M extends Model, L> {
+public abstract class DatasetTrainer<M extends Model, L> {
+    /** Learning Environment. */
+    protected LearningEnvironment environment = LearningEnvironment.DEFAULT;
+
     /**
      * Trains model based on the specified data.
      *
@@ -45,7 +49,7 @@ public interface DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+    public abstract <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor);
 
     /**
@@ -59,7 +63,7 @@ public interface DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public default <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache,
+    public <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return fit(
             new CacheBasedDatasetBuilder<>(ignite, cache),
@@ -80,7 +84,7 @@ public interface DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public default <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
+    public <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return fit(
             new CacheBasedDatasetBuilder<>(ignite, cache, filter),
@@ -100,7 +104,7 @@ public interface DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public default <K, V> M fit(Map<K, V> data, int parts, IgniteBiFunction<K, V, Vector> featureExtractor,
+    public <K, V> M fit(Map<K, V> data, int parts, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         return fit(
             new LocalDatasetBuilder<>(data, parts),
@@ -121,7 +125,7 @@ public interface DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public default <K, V> M fit(Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
+    public <K, V> M fit(Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         return fit(
@@ -129,5 +133,13 @@ public interface DatasetTrainer<M extends Model, L> {
             featureExtractor,
             lbExtractor
         );
+    }
+
+    /**
+     * Sets learning Environment
+     * @param environment Environment.
+     */
+    public void setEnvironment(LearningEnvironment environment) {
+        this.environment = environment;
     }
 }

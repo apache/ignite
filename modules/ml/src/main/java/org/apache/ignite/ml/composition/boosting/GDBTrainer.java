@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -28,10 +27,11 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -42,36 +42,39 @@ import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Abstract Gradient Boosting trainer.
- * It implements gradient descent in functional space using user-selected regressor in child class.
- * Each learning iteration the trainer evaluate gradient of error-function and fit regression model
- * to it. After learning step the model is used in models composition of regressions with weight
- * equal to gradient descent step.
+ * Abstract Gradient Boosting trainer. It implements gradient descent in functional space using user-selected regressor
+ * in child class. Each learning iteration the trainer evaluate gradient of error-function and fit regression model to
+ * it. After learning step the model is used in models composition of regressions with weight equal to gradient descent
+ * step.
  *
- * These classes can be used as regressor trainers:
- * {@link DecisionTreeRegressionTrainer}, {@link KNNRegressionTrainer},
- * {@link LinearRegressionLSQRTrainer}, {@link RandomForestRegressionTrainer},
- * {@link LinearRegressionSGDTrainer}.
+ * These classes can be used as regressor trainers: {@link DecisionTreeRegressionTrainer}, {@link KNNRegressionTrainer},
+ * {@link LinearRegressionLSQRTrainer}, {@link RandomForestRegressionTrainer}, {@link LinearRegressionSGDTrainer}.
  *
  * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
-abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Double> {
+public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
     /** Gradient step. */
     private final double gradientStep;
+
     /** Count of iterations. */
     private final int cntOfIterations;
-    /** Gradient of loss function. First argument is sample size, second argument is valid answer,
-     * third argument is current model prediction. */
-    private final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
+
+    /**
+     * Gradient of loss function. First argument is sample size, second argument is valid answer, third argument is
+     * current model prediction.
+     */
+    protected final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
 
     /**
      * Constructs GDBTrainer instance.
      *
      * @param gradStepSize Grad step size.
      * @param cntOfIterations Count of learning iterations.
-     * @param lossGradient Gradient of loss function. First argument is sample size, second argument is valid answer third argument is current model prediction.
+     * @param lossGradient Gradient of loss function. First argument is sample size, second argument is valid answer
+     * third argument is current model prediction.
      */
-    public GDBTrainer(double gradStepSize, Integer cntOfIterations, IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
+    public GDBTrainer(double gradStepSize, Integer cntOfIterations,
+        IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
         gradientStep = gradStepSize;
         this.cntOfIterations = cntOfIterations;
         this.lossGradient = lossGradient;
@@ -89,24 +92,25 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
         Double mean = initAndSampleSize.get1();
         Long sampleSize = initAndSampleSize.get2();
 
-        List<Model<Vector, Double>> models = new ArrayList<>();
         double[] compositionWeights = new double[cntOfIterations];
         Arrays.fill(compositionWeights, gradientStep);
         WeightedPredictionsAggregator resAggregator = new WeightedPredictionsAggregator(compositionWeights, mean);
 
-        for (int i = 0; i < cntOfIterations; i++) {
-            double[] weights = Arrays.copyOf(compositionWeights, i);
-            WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, mean);
-            Model<Vector, Double> currComposition = new ModelsComposition(models, aggregator);
+        long learningStartTs = System.currentTimeMillis();
 
-            IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
-                Double realAnswer = externalLabelToInternal(lbExtractor.apply(k, v));
-                Double mdlAnswer = currComposition.apply(featureExtractor.apply(k, v));
-                return -lossGradient.apply(sampleSize, realAnswer, mdlAnswer);
-            };
+        List<Model<Vector, Double>> models = getLearningStrategy()
+            .withBaseModelTrainerBuilder(this::buildBaseModelTrainer)
+            .withExternalLabelToInternal(this::externalLabelToInternal)
+            .withCntOfIterations(cntOfIterations)
+            .withCompositionWeights(compositionWeights)
+            .withEnvironment(environment)
+            .withLossGradient(lossGradient)
+            .withSampleSize(sampleSize)
+            .withMeanLabelValue(mean)
+            .learnModels(datasetBuilder, featureExtractor, lbExtractor);
 
-            models.add(buildBaseModelTrainer().fit(datasetBuilder, featureExtractor, lbExtractorWrap));
-        }
+        double learningTime = (double)(System.currentTimeMillis() - learningStartTs) / 1000.0;
+        environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
 
         return new ModelsComposition(models, resAggregator) {
             @Override public Double apply(Vector features) {
@@ -122,13 +126,14 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
      * @param featureExtractor Feature extractor.
      * @param lExtractor Labels extractor.
      */
-    protected abstract  <V, K> void learnLabels(DatasetBuilder<K, V> builder,
+    protected abstract <V, K> void learnLabels(DatasetBuilder<K, V> builder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lExtractor);
 
     /**
      * Returns regressor model trainer for one step of GDB.
      */
-    @NotNull protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
+    @NotNull
+    protected abstract DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer();
 
     /**
      * Maps external representation of label to internal.
@@ -157,7 +162,7 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = builder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, false)
         )) {
             IgniteBiTuple<Double, Long> meanTuple = dataset.compute(
                 data -> {
@@ -182,5 +187,14 @@ abstract class GDBTrainer implements DatasetTrainer<Model<Vector, Double>, Doubl
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Returns learning strategy.
+     *
+     * @return learning strategy.
+     */
+    protected GDBLearningStrategy getLearningStrategy() {
+        return new GDBLearningStrategy();
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -37,6 +38,9 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
     /** */
     private IgniteUuid dhtFutId;
 
+    /** */
+    private GridLongList updCntrs;
+
     /**
      * Default-constructor.
      */
@@ -50,13 +54,23 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
      * @param miniId Mini future id.
      * @param lockVer Lock version.
      * @param res Result.
+     * @param dhtFutId Dht future id.
+     * @param dhtVer Dht version.
+     * @param updCntrs Update counters.
      */
-    public GridNearTxQueryResultsEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer,
-        long res, GridCacheVersion dhtVer, IgniteUuid dhtFutId) {
+    public GridNearTxQueryResultsEnlistResponse(int cacheId,
+        IgniteUuid futId,
+        int miniId,
+        GridCacheVersion lockVer,
+        long res,
+        GridCacheVersion dhtVer,
+        IgniteUuid dhtFutId,
+        GridLongList updCntrs) {
         super(cacheId, futId, miniId, lockVer, res, false);
 
         this.dhtVer = dhtVer;
         this.dhtFutId = dhtFutId;
+        this.updCntrs = updCntrs;
     }
 
     /**
@@ -66,7 +80,10 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
      * @param lockVer Lock version.
      * @param err Error.
      */
-    public GridNearTxQueryResultsEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer,
+    public GridNearTxQueryResultsEnlistResponse(int cacheId,
+        IgniteUuid futId,
+        int miniId,
+        GridCacheVersion lockVer,
         Throwable err) {
         super(cacheId, futId, miniId, lockVer, err);
     }
@@ -85,9 +102,16 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
         return dhtFutId;
     }
 
+    /**
+     * @return Update counters.
+     */
+    public GridLongList updateCounters() {
+        return updCntrs;
+    }
+
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */
@@ -117,6 +141,11 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
 
                 writer.incrementState();
 
+            case 11:
+                if (!writer.writeMessage("updCntrs", updCntrs))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -149,6 +178,13 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
 
                 reader.incrementState();
 
+            case 11:
+                updCntrs = reader.readMessage("updCntrs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridNearTxQueryResultsEnlistResponse.class);

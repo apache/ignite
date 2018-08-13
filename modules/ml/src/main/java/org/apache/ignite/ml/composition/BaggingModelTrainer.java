@@ -22,25 +22,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.environment.logging.MLLogger;
+import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Abstract trainer implementing bagging logic.
- * In each learning iteration the algorithm trains one model on subset of learning sample and
- * subspace of features space. Each model is produced from same model-class [e.g. Decision Trees].
+ * Abstract trainer implementing bagging logic. In each learning iteration the algorithm trains one model on subset of
+ * learning sample and subspace of features space. Each model is produced from same model-class [e.g. Decision Trees].
  */
-public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsComposition, Double> {
+public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsComposition, Double> {
     /**
      * Predictions aggregator.
      */
@@ -89,11 +92,23 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        List<ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
-        for (int i = 0; i < ensembleSize; i++)
-            learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
+        MLLogger log = environment.logger(getClass());
+        log.log(MLLogger.VerboseLevel.LOW, "Start learning");
 
-        return new ModelsComposition(learnedModels, predictionsAggregator);
+        Long startTs = System.currentTimeMillis();
+
+        List<IgniteSupplier<ModelOnFeaturesSubspace>> tasks = new ArrayList<>();
+        for(int i = 0; i < ensembleSize; i++)
+            tasks.add(() -> learnModel(datasetBuilder, featureExtractor, lbExtractor));
+
+        List<Model<Vector, Double>> models = environment.parallelismStrategy().submit(tasks)
+            .stream().map(Promise::unsafeGet)
+            .collect(Collectors.toList());
+
+        double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+        log.log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
+        log.log(MLLogger.VerboseLevel.LOW, "Learning finished");
+        return new ModelsComposition(models, predictionsAggregator);
     }
 
     /**
@@ -114,10 +129,13 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
         //TODO: IGNITE-8867 Need to implement bootstrapping algorithm
+        Long startTs = System.currentTimeMillis();
         Model<Vector, Double> mdl = buildDatasetTrainerForModel().fit(
             datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerMdl),
             wrapFeatureExtractor(featureExtractor, featuresMapping),
             lbExtractor);
+        double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+        environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH, "One model training time was %.2fs", learningTime);
 
         return new ModelOnFeaturesSubspace(featuresMapping, mdl);
     }

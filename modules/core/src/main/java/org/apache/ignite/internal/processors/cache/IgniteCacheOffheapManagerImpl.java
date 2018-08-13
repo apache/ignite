@@ -1403,6 +1403,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** Update counter. */
         protected final AtomicLong cntr = new AtomicLong();
 
+        /**
+         * Mvcc update counter. This counter is used for an mvcc-style entries updates where this counter is
+         * incremented on each entry write (which happens before commit), but main update counter is updated
+         * on commit phase only.
+         */
+        protected final AtomicLong mvccUpdCntr = new AtomicLong();
+
         /** Partition size. */
         private final AtomicLong storageSize = new AtomicLong();
 
@@ -1510,13 +1517,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public long nextUpdateCounter() {
+            return cntr.incrementAndGet();
+        }
+
+        /** {@inheritDoc} */
         @Override public long updateCounter() {
             return cntr.get();
         }
 
-        /**
-         * @param val Update index value.
-         */
+        /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
             while (true) {
                 long val0 = cntr.get();
@@ -1527,6 +1537,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (cntr.compareAndSet(val0, val))
                     break;
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public long nextMvccUpdateCounter() {
+            return mvccUpdCntr.incrementAndGet();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccUpdateCounter() {
+            return mvccUpdCntr.get();
         }
 
         /** {@inheritDoc} */
@@ -2311,6 +2331,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert oldRow == null || oldRow.cacheId() == cacheId : oldRow;
 
+                if (key.partition() == -1)
+                    key.partition(partId);
+
                 DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -2723,13 +2746,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public RowStore rowStore() {
             return rowStore;
-        }
-
-        /**
-         * @return Next update index.
-         */
-        @Override public long nextUpdateCounter() {
-            return cntr.incrementAndGet();
         }
 
         /** {@inheritDoc} */

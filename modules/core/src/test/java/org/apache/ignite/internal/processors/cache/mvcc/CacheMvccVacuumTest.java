@@ -129,7 +129,9 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
      * @param node Node.
      */
     private void ensureVacuum(Ignite node) {
-        MvccProcessor crd = ((IgniteEx)node).context().cache().context().coordinators();
+        MvccProcessorImpl crd = mvccProcessor(node);
+
+        assertNotNull(crd);
 
         List<GridWorker> vacuumWorkers = GridTestUtils.getFieldValue(crd, "vacuumWorkers");
 
@@ -148,10 +150,9 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
      * @param node Node.
      */
     private void ensureNoVacuum(Ignite node) {
-        MvccProcessor crd = ((IgniteEx)node).context().cache().context().coordinators();
+        MvccProcessorImpl crd = mvccProcessor(node);
 
-        List<VacuumWorker> vacuumWorkers = GridTestUtils.getFieldValue(crd, "vacuumWorkers");
-
-        assertNull(vacuumWorkers);
+        if (crd != null)
+            assertNull(GridTestUtils.<List<GridWorker>>getFieldValue(crd, "vacuumWorkers"));
     }
 }

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.ml.optimization;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Class containing popular loss functions.

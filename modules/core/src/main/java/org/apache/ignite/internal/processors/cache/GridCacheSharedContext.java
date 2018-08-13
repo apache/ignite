@@ -258,23 +258,8 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void activate() throws IgniteCheckedException {
-        if (!kernalCtx.clientNode())
-            dbMgr.lock();
-
-        boolean success = false;
-
-        try {
-            for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
-                mgr.onActivate(kernalCtx);
-
-            success = true;
-        }
-        finally {
-            if (!success) {
-                if (!kernalCtx.clientNode())
-                    dbMgr.unLock();
-            }
-        }
+        for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
+            mgr.onActivate(kernalCtx);
     }
 
     /**
@@ -922,9 +907,6 @@ public class GridCacheSharedContext<K, V> {
             int cacheId = activeCacheIds.get(i);
 
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
-
-            if (cacheCtx.mvccEnabled() != activeCacheCtx.mvccEnabled())
-                return "caches with different mvcc settings can't be enlisted in one transaction";
 
             if (cacheCtx.systemTx()) {
                 if (activeCacheCtx.cacheId() != cacheCtx.cacheId())

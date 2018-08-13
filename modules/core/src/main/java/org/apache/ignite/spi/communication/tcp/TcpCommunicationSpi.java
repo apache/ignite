@@ -368,7 +368,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private ConnectGateway connectGate;
 
     /** */
-    private ConnectionPolicy connPlc;
+    private ConnectionPolicy connPlc = new FirstConnectionPolicy();
 
     /** */
     private boolean enableForcibleNodeKill = IgniteSystemProperties
@@ -2089,20 +2089,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 "Specified 'unackedMsgsBufSize' is too low, it should be at least 'ackSndThreshold * 5'.");
         }
 
-        if (connectionsPerNode > 1) {
-            connPlc = new ConnectionPolicy() {
-                @Override public int connectionIndex() {
-                    return (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
-                }
-            };
-        }
-        else {
-            connPlc = new ConnectionPolicy() {
-                @Override public int connectionIndex() {
-                    return 0;
-                }
-            };
-        }
+        if (connectionsPerNode > 1)
+            connPlc = new RoundRobinConnectionPolicy();
+        else
+            connPlc = new FirstConnectionPolicy();
 
         try {
             locHost = U.resolveLocalHost(locAddr);
@@ -3470,7 +3460,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         if (client == null)
-            processClientCreationError(node, addrs, errs);
+            processClientCreationError(node, addrs, errs == null ? new IgniteCheckedException("No clients found") : errs);
 
         return client;
     }
@@ -4765,6 +4755,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
          * @return Thread connection index.
          */
         int connectionIndex();
+    }
+
+    /** */
+    private static class FirstConnectionPolicy implements ConnectionPolicy {
+        /** {@inheritDoc} */
+        @Override public int connectionIndex() {
+            return 0;
+        }
+    }
+
+    /** */
+    private class RoundRobinConnectionPolicy implements ConnectionPolicy {
+        /** {@inheritDoc} */
+        @Override public int connectionIndex() {
+            return (int)(U.safeAbs(Thread.currentThread().getId()) % connectionsPerNode);
+        }
     }
 
     /**
