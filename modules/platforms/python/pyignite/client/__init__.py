@@ -335,7 +335,7 @@ class Client:
         :param settings: cache name or cache properties,
         :return: Cache object.
         """
-        from pyignite.api.cache import Cache
+        from pyignite.cache import Cache
 
         return Cache(self, settings)
 
@@ -346,7 +346,7 @@ class Client:
         :param settings: cache name or cache properties,
         :return: Cache object.
         """
-        from pyignite.api.cache import Cache
+        from pyignite.cache import Cache
 
         return Cache(self, settings, with_get=True)
 

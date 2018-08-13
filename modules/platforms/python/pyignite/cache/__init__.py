@@ -23,12 +23,12 @@ from pyignite.exceptions import (
 from pyignite.utils import (
     cache_id, is_wrapped, status_to_exception, unwrap_binary,
 )
-from .cache_config import (
+from pyignite.api.cache_config import (
     cache_create, cache_create_with_config,
     cache_get_or_create, cache_get_or_create_with_config,
     cache_destroy, cache_get_configuration,
 )
-from .key_value import (
+from pyignite.api.key_value import (
     cache_get, cache_put, cache_get_all, cache_put_all, cache_replace,
     cache_clear, cache_clear_key, cache_clear_keys,
     cache_contains_key, cache_contains_keys,
@@ -37,7 +37,9 @@ from .key_value import (
     cache_remove_key, cache_remove_keys, cache_remove_all,
     cache_remove_if_equals, cache_replace_if_equals, cache_get_size,
 )
-from .sql import scan, scan_cursor_get_page, sql, sql_cursor_get_page
+from pyignite.api.sql import (
+    scan, scan_cursor_get_page, sql, sql_cursor_get_page,
+)
 
 
 PROP_CODES = set([
