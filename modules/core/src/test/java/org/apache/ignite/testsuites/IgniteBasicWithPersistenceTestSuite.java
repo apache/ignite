@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.failure.AccountTransferTransactionTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
@@ -52,7 +51,6 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Basic With Persistence Test Suite");
 
         suite.addTestSuite(IoomFailureHandlerTest.class);
-        suite.addTestSuite(AccountTransferTransactionTest.class);
         suite.addTestSuite(ClusterBaselineNodesMetricsSelfTest.class);
         suite.addTestSuite(ServiceDeploymentOnActivationTest.class);
         suite.addTestSuite(ServiceDeploymentOutsideBaselineTest.class);
