@@ -387,13 +387,16 @@ mixin paragraph-query
                     i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='{{ $ctrl.cacheMetadataTemplateUrl }}' data-placement='bottom-right' data-trigger='click' data-container='#{{ paragraph.id }}')
                     .input-tip
                         input.form-control(type='text' st-search='label' placeholder='Filter caches...')
-                    div(ng-repeat='cache in displayedCaches track by cache.name')
-                        +form-field__radio({
-                            label: '{{ cache.label }}',
-                            model: 'paragraph.cacheName',
-                            name: '"cache_" + [paragraph.id, $index].join("_")',
-                            value: 'cache.name'
-                        })
+
+                    .queries-notebook-displayed-caches
+                        div(ng-repeat='cache in displayedCaches track by cache.name')
+                            +form-field__radio({
+                                label: '{{ cache.label }}',
+                                model: 'paragraph.cacheName',
+                                name: '"cache_" + [paragraph.id, $index].join("_")',
+                                value: 'cache.name'
+                            })
+
                     .settings-row
                         .row(ng-if='ddlAvailable(paragraph)')
                             +form-field__checkbox({

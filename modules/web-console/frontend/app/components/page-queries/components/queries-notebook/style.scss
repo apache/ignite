@@ -131,4 +131,11 @@ queries-notebook {
             color: #0067b9;
         }
     }
+
+    .queries-notebook-displayed-caches {
+        max-height: 210px;
+        margin-top: 10px;
+
+        overflow-y: auto;
+    }
 }
