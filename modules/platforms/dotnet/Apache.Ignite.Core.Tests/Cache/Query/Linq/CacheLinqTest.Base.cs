@@ -46,10 +46,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         private const string PersonOrgCacheName = "person_org";
 
         /** Cache schema. */
-        private const string PersonOrgCacheSchema = "person_org_schema";
+        private const string PersonOrgCacheSchema = "person_org_Schema";
 
         /** Cache name. */
         private const string PersonSecondCacheName = "person_cache";
+
+        /** Cache schema. */
+        private const string PersonSecondCacheSchema = "\"person_cache_SCHEMA\"";
 
         /** Role cache name. */
         private const string RoleCacheName = "role_cache";
@@ -235,7 +238,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                         })
                     {
                         CacheMode = CacheMode.Replicated,
-                        SqlEscapeAll = GetSqlEscapeAll()
+                        SqlEscapeAll = GetSqlEscapeAll(),
+                        SqlSchema = PersonSecondCacheSchema
                     });
         }
 
