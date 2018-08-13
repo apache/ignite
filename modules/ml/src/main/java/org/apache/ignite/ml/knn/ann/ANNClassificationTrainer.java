@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.classification;
+package org.apache.ignite.ml.knn.ann;
 
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,11 +39,13 @@ import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * kNN algorithm trainer to solve multi-class classification task.
+ * ANN algorithm trainer to solve multi-class classification task.
+ * This trainer is based on ACD strategy and KMeans clustering algorithm to find centroids.
  */
-public class KNNACDClassificationTrainer extends SingleLabelDatasetTrainer<KNNWithACDClassificationModel> {
+public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClassificationModel> {
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
 
@@ -55,29 +57,68 @@ public class KNNACDClassificationTrainer extends SingleLabelDatasetTrainer<KNNWi
      * @param lbExtractor      Label extractor.
      * @return Model.
      */
-    @Override public <K, V> KNNWithACDClassificationModel fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        return null;
+    @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        final Vector[] centers = getCentroids(featureExtractor, lbExtractor, datasetBuilder);
+
+        final CentroidStat centroidStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
+
+        final LabeledDataset<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
+
+        return new ANNClassificationModel(dataset);
     }
 
     /**
      * Trains model based on the specified data.
      *
-     * @param ignite Ignite instance.
-     * @param cache Ignite cache.
+     * @param ignite           Ignite instance.
+     * @param cache            Ignite cache.
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
+     * @param lbExtractor      Label extractor.
+     * @param <K>              Type of a key in {@code upstream} data.
+     * @param <V>              Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public <K, V> KNNWithACDClassificationModel fit(Ignite ignite, IgniteCache<K, V> cache,
-                        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    public <K, V> ANNClassificationModel fit(Ignite ignite, IgniteCache<K, V> cache,
+                                             IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
+        final CacheBasedDatasetBuilder<K, V> datasetBuilder = new CacheBasedDatasetBuilder<>(ignite, cache);
+
+        final Vector[] centers = getCentroids(featureExtractor, lbExtractor, datasetBuilder);
+
+        final CentroidStat centroidStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
+
+        final LabeledDataset<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
+
+        return new ANNClassificationModel(dataset);
+
+    }
+
+    /** */
+    @NotNull private LabeledDataset<ProbableLabel, LabeledVector> buildLabelsForCandidates(Vector[] centers, CentroidStat centroidStat) {
+        // init
+        final LabeledVector<Vector, ProbableLabel>[] arr = new LabeledVector[centers.length];
+
+        // fill label for each centroid
+        for (int i = 0; i < centers.length; i++)
+            arr[i] = new LabeledVector<>(centers[i], fillProbableLabel(i, centroidStat));
+
+        return new LabeledDataset<>(arr);
+    }
+
+    /**
+     * Perform KMeans clusterization algorithm to find centroids.
+     *
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor      Label extractor.
+     * @param datasetBuilder   The dataset builder.
+     * @param <K>              Type of a key in {@code upstream} data.
+     * @param <V>              Type of a value in {@code upstream} data.
+     * @return The arrays of vectors.
+     */
+    private <K, V> Vector[] getCentroids(IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, DatasetBuilder<K, V> datasetBuilder) {
         KMeansTrainer trainer = new KMeansTrainer()
             .withK(10)
             .withSeed(7867L);
-
-        CacheBasedDatasetBuilder<K, V> datasetBuilder = new CacheBasedDatasetBuilder<>(ignite, cache);
 
         KMeansModel mdl = trainer.fit(
             datasetBuilder,
@@ -85,50 +126,36 @@ public class KNNACDClassificationTrainer extends SingleLabelDatasetTrainer<KNNWi
             lbExtractor
         );
 
-
-        CentroidStat centroidStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, mdl);
-
-        // init
-        LabeledVector<Vector, ProbableLabel>[] arr = new LabeledVector[mdl.centers().length];
-
-        // fill label for each centroid
-        for (int i = 0; i < mdl.centers().length; i++)
-            arr[i] = new LabeledVector<>(mdl.centers()[i], fillProbableLabel(i, centroidStat));
-
-        LabeledDataset<ProbableLabel, LabeledVector> dataset = new LabeledDataset<>(arr);
-
-        return new KNNWithACDClassificationModel(dataset);
-
+        return mdl.centers();
     }
 
+    /** */
     private ProbableLabel fillProbableLabel(int centroidIdx, CentroidStat centroidStat) {
         TreeMap<Double, Double> clsLbls = new TreeMap<>();
+
         // add all class labels as keys
-        clsLbls.keySet().addAll(centroidStat.clsLblsSet);
+        centroidStat.clsLblsSet.forEach(t -> clsLbls.put(t, 0.0));
 
         ConcurrentHashMap<Double, Integer> centroidLbDistribution
-            = centroidStat.getCentroidStat().get(centroidIdx);
+            = centroidStat.centroidStat().get(centroidIdx);
 
-        int clusterSize = centroidStat.counts.get(centroidIdx);
+        int clusterSize = centroidStat
+            .counts
+            .get(centroidIdx);
 
-        clsLbls.keySet().forEach((label)->{
-            clsLbls.put(label,
-                (double) (centroidLbDistribution.get(label)/clusterSize) // calculate percentage for specific class
-            );
-        });
+        clsLbls.keySet().forEach(
+            (label) -> clsLbls.put(label, centroidLbDistribution.containsKey(label) ? (double) (centroidLbDistribution.get(label) / clusterSize) : 0.0)
+        );
 
         return new ProbableLabel(clsLbls);
     }
 
-
-    private <K, V> CentroidStat getCentroidStat(CacheBasedDatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, KMeansModel mdl) {
+    /** */
+    private <K, V> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, Vector[] centers) {
         PartitionDataBuilder<K, V, EmptyContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
             featureExtractor,
             lbExtractor
         );
-
-        Vector[] centers = mdl.centers();
-        CentroidStat totalRes = null;
 
         try (Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
@@ -147,12 +174,12 @@ public class KNNACDClassificationTrainer extends SingleLabelDatasetTrainer<KNNWi
                     double lb = data.label(i);
 
                     // add new label to label set
-                    res.getClsLblsSet().add(lb);
+                    res.labels().add(lb);
 
 
                     ConcurrentHashMap<Double, Integer> centroidStat = res.centroidStat.get(centroidIdx);
 
-                    if(centroidStat == null){
+                    if (centroidStat == null) {
                         centroidStat = new ConcurrentHashMap<>();
                         centroidStat.put(lb, 1);
                         res.centroidStat.put(centroidIdx, centroidStat);
@@ -162,30 +189,28 @@ public class KNNACDClassificationTrainer extends SingleLabelDatasetTrainer<KNNWi
                     }
 
                     res.counts.merge(centroidIdx, 1,
-                        (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
+                        (IgniteBiFunction<Integer, Integer, Integer>) (i1, i2) -> i1 + i2);
                 }
                 return res;
             }, (a, b) -> a == null ? b : a.merge(b));
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
-
 
     /**
      * Find the closest cluster center index and distance to it from a given point.
      *
      * @param centers Centers to look in.
-     * @param pnt Point.
+     * @param pnt     Point.
      */
     private IgniteBiTuple<Integer, Double> findClosestCentroid(Vector[] centers, LabeledVector pnt) {
         double bestDistance = Double.POSITIVE_INFINITY;
         int bestInd = 0;
 
         for (int i = 0; i < centers.length; i++) {
-            if(centers[i] != null) {
+            if (centers[i] != null) {
                 double dist = distance.compute(centers[i], pnt.features());
                 if (dist < bestDistance) {
                     bestDistance = dist;
@@ -196,7 +221,6 @@ public class KNNACDClassificationTrainer extends SingleLabelDatasetTrainer<KNNWi
         return new IgniteBiTuple<>(bestInd, bestDistance);
     }
 
-
     /** Service class used for statistics. */
     public static class CentroidStat {
 
@@ -206,10 +230,7 @@ public class KNNACDClassificationTrainer extends SingleLabelDatasetTrainer<KNNWi
         /** Count of points closest to the center with a given index. */
         ConcurrentHashMap<Integer, Integer> counts = new ConcurrentHashMap<>();
 
-        public ConcurrentSkipListSet<Double> getClsLblsSet() {
-            return clsLblsSet;
-        }
-
+        /** Set of unique labels. */
         ConcurrentSkipListSet<Double> clsLblsSet = new ConcurrentSkipListSet<>();
 
         /** Merge current */
@@ -221,9 +242,14 @@ public class KNNACDClassificationTrainer extends SingleLabelDatasetTrainer<KNNWi
             return this;
         }
 
-        public ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> getCentroidStat() {
-            return centroidStat;
+        /** */
+        public ConcurrentSkipListSet<Double> labels() {
+            return clsLblsSet;
         }
 
+        /** */
+        ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> centroidStat() {
+            return centroidStat;
+        }
     }
 }

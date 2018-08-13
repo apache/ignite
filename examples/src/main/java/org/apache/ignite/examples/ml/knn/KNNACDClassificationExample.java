@@ -27,11 +27,11 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.knn.classification.KNNACDClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
+import org.apache.ignite.ml.knn.NNClassificationModel;
+import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
-import org.apache.ignite.ml.knn.classification.KNNWithACDClassificationModel;
+import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -46,20 +46,20 @@ public class KNNACDClassificationExample {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         System.out.println();
-        System.out.println(">>> kNN multi-class classification algorithm over cached dataset usage example started.");
+        System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
-        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite-bench.xml")) {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 KNNACDClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                KNNACDClassificationTrainer trainer = new KNNACDClassificationTrainer();
+                ANNClassificationTrainer trainer = new ANNClassificationTrainer();
 
                 long startTrainingTime = System.currentTimeMillis();
 
-                KNNWithACDClassificationModel knnMdl = trainer.fit(
+                NNClassificationModel knnMdl = trainer.fit(
                     ignite,
                     dataCache,
                     (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -96,7 +96,7 @@ public class KNNACDClassificationExample {
                         if (groundTruth != prediction)
                             amountOfErrors++;
 
-                       // System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                        // System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                     }
 
                     //System.out.println(">>> ---------------------------------");
@@ -106,6 +106,7 @@ public class KNNACDClassificationExample {
 
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
                     System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
+                    System.out.println(totalAmount);
                 }
             });
 
@@ -123,20 +124,20 @@ public class KNNACDClassificationExample {
     private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
         CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 20));
 
         IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
 
-        for(int k = 0; k < 1; k++){
+        for (int k = 0; k < 10000; k++) {
             for (int i = 0; i < data.length; i++)
-                cache.put(k*10000 + i, mutate(data[i], k));
+                cache.put(k * 10000 + i, mutate(data[i], k));
         }
 
         return cache;
     }
 
     private static double[] mutate(double[] datum, int k) {
-        for (int i = 0; i < datum.length; i++) datum[i] += k/100;
+        for (int i = 0; i < datum.length; i++) datum[i] += k / 100000;
         return datum;
     }
 
