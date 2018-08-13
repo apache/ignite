@@ -34,9 +34,16 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run linear regression model over cached dataset.
- *
- * @see LinearRegressionLSQRTrainer
+ * Run linear regression model ({@link LinearRegressionLSQRTrainer}) over cached dataset.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
+ * <p>
+ * After that it trains the linear regression model based on the specified data.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict the target value
+ * and compares prediction to expected outcome (ground truth).</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LinearRegressionLSQRTrainerExample {
     /** */
@@ -138,6 +145,8 @@ public class LinearRegressionLSQRTrainerExample {
                 }
 
                 System.out.println(">>> ---------------------------------");
+
+                System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
             });
 
             igniteThread.start();

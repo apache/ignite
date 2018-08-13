@@ -101,6 +101,8 @@ public class KMeansClusterizationExample {
 
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
                     System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+
+                    System.out.println(">>> KMeans clustering algorithm over cached dataset usage example completed.");
                 }
             });
 

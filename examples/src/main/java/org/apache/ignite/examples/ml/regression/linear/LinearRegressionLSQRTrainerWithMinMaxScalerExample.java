@@ -37,11 +37,19 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run linear regression model over cached dataset.
- *
- * @see LinearRegressionLSQRTrainer
- * @see MinMaxScalerTrainer
- * @see MinMaxScalerPreprocessor
+ * Run linear regression model ({@link LinearRegressionLSQRTrainer}) over cached dataset that was created using
+ * a minmaxscaling preprocessor ({@link MinMaxScalerTrainer}, {@link MinMaxScalerPreprocessor}).
+ * <p>
+ * Code in this example launches Ignite grid, fills the cache with simple test data, and defines minmaxscaling
+ * trainer and preprocessor.</p>
+ * <p>
+ * After that it trains the linear regression model based on the specified data that has been processed
+ * using minmaxscaling.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict predict the target
+ * value and compares prediction to expected outcome (ground truth).</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
     /** */
@@ -104,7 +112,7 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         System.out.println();
-        System.out.println(">>> Linear regression model over cached dataset usage example started.");
+        System.out.println(">>> Linear regression model with minmaxscaling preprocessor over cached dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -151,6 +159,8 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
                 }
 
                 System.out.println(">>> ---------------------------------");
+
+                System.out.println(">>> Linear regression model with minmaxscaling preprocessor over cache based dataset usage example completed.");
             });
 
             igniteThread.start();
