@@ -99,15 +99,15 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
         else {
             AtomicLong rowKey = new AtomicLong();
 
-            return F.iterator(
-                F.concat(F.iterator(nodes, node -> F.iterator(node.attributes().entrySet(),
-                    attr -> new IgniteBiTuple<>(node, attr), true).iterator(), true)),
-                nodeAttr -> createRow(ses,
-                    rowKey.incrementAndGet(),
-                    nodeAttr.get1().id(),
-                    nodeAttr.get2().getKey(),
-                    nodeAttr.get2().getValue()
-                ), true);
+            return F.concat(F.iterator(nodes,
+                node -> F.iterator(node.attributes().entrySet(),
+                    attr -> createRow(ses,
+                        rowKey.incrementAndGet(),
+                        node.id(),
+                        attr.getKey(),
+                        attr.getValue()),
+                    true).iterator(),
+                true));
         }
     }
 }
