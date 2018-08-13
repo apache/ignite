@@ -124,7 +124,6 @@ mixin query-actions
             i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(true)')
             span.tipLabelExecute Execute on selected node
 
-
     a.btn.btn-default(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}') Explain
 
 mixin table-result-heading-query
@@ -293,7 +292,7 @@ mixin paragraph-query
             .col-xs-4.col-sm-3
                 div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
                     lable.labelField.labelFormField Caches:
-                    i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='{{ $ctrl.cacheMetadataTemplateUrl }}' data-placement='bottom' data-trigger='click' data-container='#{{ paragraph.id }}')
+                    i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='{{ $ctrl.cacheMetadataTemplateUrl }}' data-placement='bottom-right' data-trigger='click' data-container='#{{ paragraph.id }}')
                     .input-tip
                         input.form-control(type='text' st-search='label' placeholder='Filter caches...')
                     table.links
@@ -347,7 +346,6 @@ div(ng-if='notebook')
             label {{notebook.name}}
             .btn-group(ng-if='!demo')
                 +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
-                +btn-toolbar('fa-trash', 'removeNotebook(notebook)', '{{$ctrl.isDemo ? "Demo notebook cannot be deleted" : "Remove notebook"}}')
 
         h1(ng-show='notebook.edit')
             input.form-control(ng-model='notebook.editName' required ignite-on-enter='renameNotebook(notebook.editName)' ignite-on-escape='notebook.edit = false;')

@@ -477,6 +477,12 @@ public final class IgniteSystemProperties {
     /** Force all SQL queries to be processed lazily regardless of what clients request. */
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
+    /** Disable SQL system views. */
+    public static final String IGNITE_SQL_DISABLE_SYSTEM_VIEWS = "IGNITE_SQL_DISABLE_SYSTEM_VIEWS";
+
+    /** SQL retry timeout. */
+    public static final String IGNITE_SQL_RETRY_TIMEOUT = "IGNITE_SQL_RETRY_TIMEOUT";
+
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
 
@@ -929,6 +935,16 @@ public final class IgniteSystemProperties {
      * Default is 500 ms.
      */
     public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
+
+    /**
+     * Threshold for throttling operations logging.
+     */
+    public static final String IGNITE_THROTTLE_LOG_THRESHOLD = "IGNITE_THROTTLE_LOG_THRESHOLD";
+
+    /**
+     * Number of concurrent operation for evict partitions.
+     */
+    public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
      * Enforces singleton.

@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -66,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BPLUS_TREE_LOCK_RETRIES;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Bool.DONE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Bool.FALSE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Bool.READY;
@@ -96,7 +100,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** */
     private static final int LOCK_RETRIES = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.IGNITE_BPLUS_TREE_LOCK_RETRIES, IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT);
+        IGNITE_BPLUS_TREE_LOCK_RETRIES, IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT);
 
     /** */
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
@@ -127,6 +131,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** */
     private volatile TreeMetaData treeMeta;
+
+    /** Failure processor. */
+    private final FailureProcessor failureProcessor;
 
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
@@ -724,6 +731,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param reuseList Reuse list.
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
+     * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
     protected BPlusTree(
@@ -735,9 +743,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long metaPageId,
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
-        IOVersions<? extends BPlusLeafIO<L>> leafIos
+        IOVersions<? extends BPlusLeafIO<L>> leafIos,
+        @Nullable FailureProcessor failureProcessor
     ) throws IgniteCheckedException {
-        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
         setIos(innerIos, leafIos);
     }
 
@@ -749,6 +758,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param globalRmvId Remove ID.
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
+     * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
     protected BPlusTree(
@@ -758,7 +768,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
         long metaPageId,
-        ReuseList reuseList
+        ReuseList reuseList,
+        @Nullable FailureProcessor failureProcessor
     ) throws IgniteCheckedException {
         super(cacheId, pageMem, wal);
 
@@ -774,6 +785,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         this.name = name;
         this.reuseList = reuseList;
         this.globalRmvId = globalRmvId;
+        this.failureProcessor = failureProcessor;
 
         // Initialize page handlers.
         askNeighbor = (PageHandler<Get, Result>) pageHndWrapper.wrap(this, new AskNeighbor());
@@ -2555,8 +2567,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If the operation can not be retried.
          */
         final void checkLockRetry() throws IgniteCheckedException {
-            if (lockRetriesCnt == 0)
-                throw new IgniteCheckedException("Maximum of retries " + getLockRetries() + " reached.");
+            if (lockRetriesCnt == 0) {
+                IgniteCheckedException e = new IgniteCheckedException("Maximum number of retries " +
+                    getLockRetries() + " reached for " + getClass().getSimpleName() + " operation " +
+                    "(the tree may be corrupted). Increase " + IGNITE_BPLUS_TREE_LOCK_RETRIES + " system property " +
+                    "if you regularly see this message (current value is " + getLockRetries() + ").");
+
+                if (failureProcessor != null)
+                    failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                throw e;
+            }
 
             lockRetriesCnt--;
         }

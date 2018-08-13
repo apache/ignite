@@ -73,6 +73,17 @@ public class RandomForestRegressionTrainer extends RandomForestTrainer {
 
     /** {@inheritDoc} */
     @Override protected DatasetTrainer<DecisionTreeNode, Double> buildDatasetTrainerForModel() {
-        return new DecisionTreeRegressionTrainer(maxDeep, minImpurityDecrease);
+        return new DecisionTreeRegressionTrainer(maxDeep, minImpurityDecrease).withUseIndex(useIndex);
+    }
+
+    /**
+     * Sets useIndex parameter and returns trainer instance.
+     *
+     * @param useIndex Use index.
+     * @return Decision tree trainer.
+     */
+    public RandomForestRegressionTrainer withUseIndex(boolean useIndex) {
+        this.useIndex = useIndex;
+        return this;
     }
 }
