@@ -146,20 +146,24 @@ mixin java-package(label, model, name, enabled, required, tip)
         tip
     })
 
-mixin form-field__java-package({ label, model, name, disabled, required, tip })
+mixin form-field__java-package({ label, model, name, disabled, required, tip, placeholder })
     +form-field__text({
         label,
         model,
         name,
         disabled,
         required,
-        tip
+        tip,
+        placeholder
     })(
         data-java-keywords='true'
         data-java-package-name='package-only'
-    )
-        +form-field__error({ error: 'javaPackageName', message: 'Package name is invalid' })
-        +form-field__error({ error: 'javaKeywords', message: 'Package name could not contains reserved java keyword' })
+    )&attributes(attributes)
+        if  block
+            block
+
+        +form-field__error({ error: 'javaPackageName', message: 'Package name is invalid!' })
+        +form-field__error({ error: 'javaKeywords', message: 'Package name could not contains reserved java keyword!' })
 
 //- Mixin for text field with IP address check.
 mixin text-ip-address(label, model, name, enabled, placeholder, tip)
@@ -473,26 +477,6 @@ mixin list-java-class-field(label, model, name, items)
         +form-field__error({ error: 'javaKeywords', message: `${ label } could not contains reserved Java keyword!` })
         +form-field__error({ error: 'javaPackageSpecified', message: `${ label } does not have package specified!` })
         +form-field__error({ error: 'javaIdentifier', message: `${ label } is invalid Java identifier!` })
-
-        if block
-            block
-
-mixin list-java-package-field(label, model, name, items)
-    +form-field__text({
-        label,
-        model,
-        name,
-        required: true,
-        placeholder: 'Enter package name'
-    })(
-        data-java-keywords='true'
-        data-java-package-name='package-only'
-
-        data-ignite-unique=items
-        data-ignite-form-field-input-autofocus='true'
-    )&attributes(attributes)
-        +form-field__error({ error: 'javaKeywords', message: 'Package name could not contains reserved Java keyword!' })
-        +form-field__error({ error: 'javaPackageName', message: 'Package name is invalid!' })
 
         if block
             block
