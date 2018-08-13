@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
@@ -2481,6 +2482,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheIoManager ioMgr = new GridCacheIoManager();
         CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();
         GridCacheSharedTtlCleanupManager ttl = new GridCacheSharedTtlCleanupManager();
+        PartitionsEvictManager evict = new PartitionsEvictManager();
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
 
@@ -2499,6 +2501,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             topMgr,
             ioMgr,
             ttl,
+            evict,
             jta,
             storeSesLsnrs
         );

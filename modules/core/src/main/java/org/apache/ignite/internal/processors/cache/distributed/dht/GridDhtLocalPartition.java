@@ -688,7 +688,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
         }
 
-        grp.evictor().evictPartitionAsync(this);
+        ctx.evict().evictPartitionAsync(grp,this);
     }
 
     /**
@@ -700,6 +700,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             return;
 
         clear = true;
+
         clearAsync0(false);
     }
 
