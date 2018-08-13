@@ -1109,7 +1109,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
                         boolean validation = false;
 
-                        IgniteThread.onEntryProcessorEntered(true);
+                        IgniteThread.onEntryProcessorEntered(false);
 
                         try {
                             Object computed = entryProcessor.process(invokeEntry, invokeArgs);

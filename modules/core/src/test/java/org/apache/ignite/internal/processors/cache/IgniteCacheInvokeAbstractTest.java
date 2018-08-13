@@ -323,10 +323,12 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         for (Map.Entry<MyKey, Integer> entry : all.entrySet()) {
             if (entry.getKey().key.startsWith("remove"))
                 assertNull(entry.getValue());
-            else
-                assertEquals('"' + entry.getKey().key + "' entry has wrong value", 1, (int)entry.getValue());
-        }
+            else {
+                int value = entry.getValue();
 
+                assertEquals('"' + entry.getKey().key + "' entry has wrong value, exp=1 actl=" + value, 1, value);
+            }
+        }
     }
 
     /**

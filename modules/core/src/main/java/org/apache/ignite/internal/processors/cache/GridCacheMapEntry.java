@@ -1496,7 +1496,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(key, old, version(), keepBinary, this);
 
-                IgniteThread.onEntryProcessorEntered(true);
+                IgniteThread.onEntryProcessorEntered(false);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
