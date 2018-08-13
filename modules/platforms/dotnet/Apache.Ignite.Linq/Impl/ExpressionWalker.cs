@@ -261,6 +261,7 @@ namespace Apache.Ignite.Linq.Impl
                 tableName = string.Format("{0}{1}{0}", SqlQuote, tableName);
             }
 
+            // TODO: Handle weird characters in cache.Name, see org.apache.ignite.internal.processors.query.QueryUtils#normalizeSchemaName
             var schemaName = cacheCfg.SqlSchema ??
                              string.Format("{0}{1}{0}", SqlQuote, cacheCfg.Name);
 
