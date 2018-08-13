@@ -30,7 +30,6 @@
 #   define BOOST_TEST_DYN_LINK
 #endif
 
-#include <boost/regex.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -1625,10 +1624,9 @@ BOOST_AUTO_TEST_CASE(TestErrorMessage)
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
     std::string error = GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt);
-    std::string pattern = "42000: Table \"B\" not found; SQL statement:\\vSELECT a FROM B.*";
+    std::string pattern = "42000: Table \"B\" not found; SQL statement:\nSELECT a FROM B";
 
-    boost::cmatch what;
-    if (!boost::regex_match(error.c_str(), what, boost::regex(pattern)))
+    if (error.substr(0, pattern.size()) != pattern)
         BOOST_FAIL("'" + error + "' does not match '" + pattern + "'");
 }
 
