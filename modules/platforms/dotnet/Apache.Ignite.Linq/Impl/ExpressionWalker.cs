@@ -261,11 +261,15 @@ namespace Apache.Ignite.Linq.Impl
                 tableName = string.Format("{0}{1}{0}", SqlQuote, tableName);
             }
 
-            var schemaName = cacheCfg.SqlSchema ?? cacheCfg.Name;
-            if (!schemaName.StartsWith(SqlQuote))
+            var schemaName = cacheCfg.Name;
+            if (cacheCfg.SqlSchema != null)
             {
-                // Non-quoted schema name is case-insensitive and must be in upper case.
-                schemaName = string.Format("{0}{1}{0}", SqlQuote, schemaName.ToUpper(CultureInfo.InvariantCulture));
+                schemaName = cacheCfg.SqlSchema;
+                if (!schemaName.StartsWith(SqlQuote))
+                {
+                    // Non-quoted schema name is case-insensitive and must be in upper case.
+                    schemaName = string.Format("{0}{1}{0}", SqlQuote, schemaName.ToUpper(CultureInfo.InvariantCulture));
+                }
             }
 
             return string.Format("{0}.{1}", schemaName, tableName);
