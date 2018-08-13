@@ -24,17 +24,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.lang.IgniteParentChildIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * System view: node attributes.
@@ -97,48 +97,33 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
             return rows.iterator();
         }
         else {
-            return new ParentChildRowIterator<>(ses, nodes.iterator(),
-                new IgniteClosure<ClusterNode, Iterator<Map.Entry<String, Object>>>() {
-                    @Override public Iterator<Map.Entry<String, Object>> apply(ClusterNode node) {
-                        return node.attributes().entrySet().iterator();
-                    }
-                },
-                new IgniteBiClosure<ClusterNode, Map.Entry<String, Object>, Object[]>() {
-                    @Override public Object[] apply(ClusterNode node, Map.Entry<String, Object> attr) {
-                        return new Object[] {
-                            node.id(),
-                            attr.getKey(),
-                            attr.getValue()
-                        };
-                    }
-                });
-        }
-    }
+            AtomicLong rowKey = new AtomicLong();
 
-    /**
-     * Parent-child Row iterator.
-     *
-     * @param <P> Parent class.
-     * @param <C> Child class
-     */
-    private class ParentChildRowIterator<P, C> extends IgniteParentChildIterator<P, C, Row> {
-        /**
-         * @param ses Session.
-         * @param parentIter Parent iterator.
-         * @param cloChildIter Child iterator closure.
-         * @param cloResFromParentChild Row columns from parent and child closure.
-         */
-        ParentChildRowIterator(final Session ses, Iterator<P> parentIter,
-            IgniteClosure<P, Iterator<C>> cloChildIter,
-            final IgniteBiClosure<P, C, Object[]> cloResFromParentChild) {
-            super(parentIter, cloChildIter, new IgniteBiClosure<P, C, Row>() {
-                /** Row count. */
-                private int rowCnt = 0;
-
-                @Override public Row apply(P p, C c) {
-                    return SqlSystemViewNodeAttributes.this.createRow(ses, ++rowCnt, cloResFromParentChild.apply(p, c));
-                }
-            });
+            return F.iterator(
+                F.concat(F.iterator(nodes, new IgniteClosure<ClusterNode, Iterator<IgniteBiTuple<ClusterNode,
+                    Map.Entry<String, Object>>>>() {
+                    @Override public Iterator<IgniteBiTuple<ClusterNode, Map.Entry<String, Object>>> apply(
+                        ClusterNode node) {
+                        return F.iterator(node.attributes().entrySet(),
+                            new IgniteClosure<Map.Entry<String, Object>, IgniteBiTuple<ClusterNode,
+                                Map.Entry<String, Object>>>() {
+                            @Override public IgniteBiTuple<ClusterNode, Map.Entry<String, Object>> apply(
+                                Map.Entry<String, Object> attr) {
+                                return new IgniteBiTuple<>(node, attr);
+                            }
+                        }, true).iterator();
+                    }
+                }, true)),
+                new IgniteClosure<IgniteBiTuple<ClusterNode, Map.Entry<String, Object>>, Row>() {
+                    @Override public Row apply(IgniteBiTuple<ClusterNode, Map.Entry<String, Object>> nodeAttr) {
+                        return createRow(ses,
+                            rowKey.incrementAndGet(),
+                            nodeAttr.get1().id(),
+                            nodeAttr.get2().getKey(),
+                            nodeAttr.get2().getValue()
+                        );
+                    }
+                }, true);
         }
     }
 }
