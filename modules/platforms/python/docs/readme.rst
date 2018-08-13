@@ -139,7 +139,7 @@ If you feel that old version is stuck, do
 
 $ cd ignite/modules/platforms/python/docs
 $ make clean
-$ sphinx-apidoc -M -o source/ ../pyignite
+$ sphinx-apidoc -feM -o source/ ../ ../setup.py
 $ make html
 
 And that should be it.

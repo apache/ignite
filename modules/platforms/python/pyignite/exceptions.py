@@ -27,7 +27,7 @@ class ParseError(Exception):
 class SocketWriteError(SocketError):
     """
     This exception is raised, when `Client.send` method is called during
-    a binary string parsing.
+    a mock data parsing.
     """
     pass
 

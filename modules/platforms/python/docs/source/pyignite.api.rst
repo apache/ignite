@@ -9,52 +9,11 @@ pyignite.api package
 Submodules
 ----------
 
-pyignite.api.binary module
---------------------------
+.. toctree::
 
-.. automodule:: pyignite.api.binary
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pyignite.api.cache module
--------------------------
-
-.. automodule:: pyignite.api.cache
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pyignite.api.cache\_config module
----------------------------------
-
-.. automodule:: pyignite.api.cache_config
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pyignite.api.key\_value module
-------------------------------
-
-.. automodule:: pyignite.api.key_value
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pyignite.api.result module
---------------------------
-
-.. automodule:: pyignite.api.result
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pyignite.api.sql module
------------------------
-
-.. automodule:: pyignite.api.sql
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+   pyignite.api.binary
+   pyignite.api.cache_config
+   pyignite.api.key_value
+   pyignite.api.result
+   pyignite.api.sql
 

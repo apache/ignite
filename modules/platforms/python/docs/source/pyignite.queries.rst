@@ -9,12 +9,7 @@ pyignite.queries package
 Submodules
 ----------
 
-pyignite.queries.op\_codes module
----------------------------------
+.. toctree::
 
-.. automodule:: pyignite.queries.op_codes
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+   pyignite.queries.op_codes
 

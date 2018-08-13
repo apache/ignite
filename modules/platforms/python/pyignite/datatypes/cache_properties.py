@@ -28,8 +28,8 @@ from .standard import *
 __all__ = [
     'PropName', 'PropCacheMode', 'PropCacheAtomicityMode', 'PropBackupsNumber',
     'PropWriteSynchronizationMode', 'PropCopyOnRead', 'PropReadFromBackup',
-    'PropDataRegionName', 'PropIsOnheapcacheEnabled', 'PropQueryEntities',
-    'PropQueryParallelism', 'PropQueryDetailMetricsSize', 'PropSQLSchema',
+    'PropDataRegionName', 'PropIsOnheapCacheEnabled', 'PropQueryEntities',
+    'PropQueryParallelism', 'PropQueryDetailMetricSize', 'PropSQLSchema',
     'PropSQLIndexInlineMaxSize', 'PropSqlEscapeAll', 'PropMaxQueryIterators',
     'PropRebalanceMode', 'PropRebalanceDelay', 'PropRebalanceTimeout',
     'PropRebalanceBatchSize', 'PropRebalanceBatchesPrefetchCount',
@@ -50,10 +50,10 @@ def prop_map(code: int):
         PROP_COPY_ON_READ: PropCopyOnRead,
         PROP_READ_FROM_BACKUP: PropReadFromBackup,
         PROP_DATA_REGION_NAME: PropDataRegionName,
-        PROP_IS_ONHEAPCACHE_ENABLED: PropIsOnheapcacheEnabled,
+        PROP_IS_ONHEAP_CACHE_ENABLED: PropIsOnheapCacheEnabled,
         PROP_QUERY_ENTITIES: PropQueryEntities,
         PROP_QUERY_PARALLELISM: PropQueryParallelism,
-        PROP_QUERY_DETAIL_METRICS_SIZE: PropQueryDetailMetricsSize,
+        PROP_QUERY_DETAIL_METRIC_SIZE: PropQueryDetailMetricSize,
         PROP_SQL_SCHEMA: PropSQLSchema,
         PROP_SQL_INDEX_INLINE_MAX_SIZE: PropSQLIndexInlineMaxSize,
         PROP_SQL_ESCAPE_ALL: PropSqlEscapeAll,
@@ -161,8 +161,8 @@ class PropDataRegionName(PropBase):
     prop_data_class = String
 
 
-class PropIsOnheapcacheEnabled(PropBase):
-    prop_code = PROP_IS_ONHEAPCACHE_ENABLED
+class PropIsOnheapCacheEnabled(PropBase):
+    prop_code = PROP_IS_ONHEAP_CACHE_ENABLED
     prop_data_class = Bool
 
 
@@ -176,8 +176,8 @@ class PropQueryParallelism(PropBase):
     prop_data_class = Int
 
 
-class PropQueryDetailMetricsSize(PropBase):
-    prop_code = PROP_QUERY_DETAIL_METRICS_SIZE
+class PropQueryDetailMetricSize(PropBase):
+    prop_code = PROP_QUERY_DETAIL_METRIC_SIZE
     prop_data_class = Int
 
 
