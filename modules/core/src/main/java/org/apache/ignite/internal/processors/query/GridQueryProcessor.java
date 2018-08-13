@@ -520,13 +520,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (cacheDesc != null && F.eq(cacheDesc.deploymentId(), proposeMsg.deploymentId())) {
                     cacheDesc.schemaChangeFinish(msg);
 
-                    try {
-                        ctx.cache().saveCacheConfiguration(cacheDesc);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Error while saving cache configuration on disk, cfg = "
-                            + cacheDesc.cacheConfiguration(), e);
-                    }
+                    ctx.cache().overwriteCacheConfiguration(cacheDesc);
                 }
             }
 

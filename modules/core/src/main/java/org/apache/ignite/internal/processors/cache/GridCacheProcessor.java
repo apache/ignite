@@ -2624,13 +2624,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (desc.cacheConfiguration().isStatisticsEnabled() != msg.enabled()) {
                         desc.cacheConfiguration().setStatisticsEnabled(msg.enabled());
 
-                        try {
-                            ctx.cache().saveCacheConfiguration(desc);
-                        }
-                        catch (IgniteCheckedException e) {
-                            log.error("Error while saving cache configuration to disk, cfg = "
-                                + desc.cacheConfiguration(), e);
-                        }
+                        overwriteCacheConfiguration(desc);
                     }
                 }
                 else
@@ -3342,16 +3336,38 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Save cache configuration to persistent store if necessary.
+     * Create cache configuration to persistent store or overwrite if it already exists.
      *
      * @param desc Cache descriptor.
      */
-    public void saveCacheConfiguration(DynamicCacheDescriptor desc) throws IgniteCheckedException {
+    public void overwriteCacheConfiguration(DynamicCacheDescriptor desc) {
+        saveCacheConfiguration(desc, true);
+    }
+
+    /**
+     * Create cache configuration to persistent store and nothing to do if it already exists.
+     *
+     * @param desc Cache descriptor.
+     */
+    public void createCacheConfiguration(DynamicCacheDescriptor desc) {
+        saveCacheConfiguration(desc, false);
+    }
+
+    /**
+     * @param desc Cache descriptor.
+     */
+    private void saveCacheConfiguration(DynamicCacheDescriptor desc, boolean overwrite) {
         assert desc != null;
 
         if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
-            isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
-            sharedCtx.pageStore().storeCacheData(desc.toStoredData(), true);
+            isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration())) {
+            try {
+                sharedCtx.pageStore().storeCacheData(desc.toStoredData(), overwrite);
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Error while saving cache configuration to disk, cfg = " + desc.cacheConfiguration(), e);
+            }
+        }
     }
 
     /**
