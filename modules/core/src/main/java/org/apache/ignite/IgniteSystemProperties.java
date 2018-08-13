@@ -937,6 +937,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
 
     /**
+     * Number of concurrent operation for evict partitions.
+     */
+    public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

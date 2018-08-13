@@ -38,6 +38,8 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVICTION_PERMITS;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 
 /**
@@ -57,6 +59,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
     /** Eviction progress frequency in ms. */
     private final long evictionProgressFreqMs = getLong(SHOW_EVICTION_PROGRESS_FREQ, DEFAULT_SHOW_EVICTION_PROGRESS_FREQ_MS);
+
+    /** */
+    private final int confPermits = getInteger(IGNITE_EVICTION_PERMITS, -1);
 
     /** Next time of show eviction progress. */
     private long nextShowProgressTime;
@@ -225,13 +230,20 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        int sysPoolSize = cctx.kernalContext().config().getSystemThreadPoolSize();
+        // If property is not setup, calculate permits as parts of sys pool.
+        if (confPermits == -1) {
+            int sysPoolSize = cctx.kernalContext().config().getSystemThreadPoolSize();
 
-        threads = permits = sysPoolSize / 4;
+            threads = permits = sysPoolSize / 4;
+        }
+        else
+            threads = permits = confPermits;
 
         // Avoid 0 permits if sys pool size less that 4.
         if (threads == 0)
             threads = permits = 1;
+
+        log.info("Evict partition permits=" + permits);
 
         evictionQueue = new BucketQueue(threads);
     }
