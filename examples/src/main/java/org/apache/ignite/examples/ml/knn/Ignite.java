@@ -7,7 +7,7 @@ import org.apache.ignite.Ignition;
  */
 public class Ignite {
     public static void main(String[] args) {
-     org.apache.ignite.Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
+     org.apache.ignite.Ignite ignite = Ignition.start("examples/config/example-ignite-bench.xml");
         while(true){
 
         }

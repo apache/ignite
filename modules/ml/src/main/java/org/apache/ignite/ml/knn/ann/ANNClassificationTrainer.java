@@ -20,22 +20,19 @@ package org.apache.ignite.ml.knn.ann;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MapUtil;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
@@ -46,8 +43,20 @@ import org.jetbrains.annotations.NotNull;
  * This trainer is based on ACD strategy and KMeans clustering algorithm to find centroids.
  */
 public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClassificationModel> {
+    /** Amount of clusters. */
+    private int k = 2;
+
+    /** Amount of iterations. */
+    private int maxIterations = 10;
+
+    /** Delta of convergence. */
+    private double epsilon = 1e-4;
+
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
+
+    /** KMeans initializer. */
+    private long seed;
 
     /**
      * Trains model based on the specified data.
@@ -62,39 +71,13 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
 
         final CentroidStat centroidStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
 
-        final LabeledDataset<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
+        final LabeledVectorSet<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
 
         return new ANNClassificationModel(dataset);
-    }
-
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param ignite           Ignite instance.
-     * @param cache            Ignite cache.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
-     * @param <K>              Type of a key in {@code upstream} data.
-     * @param <V>              Type of a value in {@code upstream} data.
-     * @return Model.
-     */
-    public <K, V> ANNClassificationModel fit(Ignite ignite, IgniteCache<K, V> cache,
-                                             IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        final CacheBasedDatasetBuilder<K, V> datasetBuilder = new CacheBasedDatasetBuilder<>(ignite, cache);
-
-        final Vector[] centers = getCentroids(featureExtractor, lbExtractor, datasetBuilder);
-
-        final CentroidStat centroidStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
-
-        final LabeledDataset<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
-
-        return new ANNClassificationModel(dataset);
-
     }
 
     /** */
-    @NotNull private LabeledDataset<ProbableLabel, LabeledVector> buildLabelsForCandidates(Vector[] centers, CentroidStat centroidStat) {
+    @NotNull private LabeledVectorSet<ProbableLabel, LabeledVector> buildLabelsForCandidates(Vector[] centers, CentroidStat centroidStat) {
         // init
         final LabeledVector<Vector, ProbableLabel>[] arr = new LabeledVector[centers.length];
 
@@ -102,7 +85,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         for (int i = 0; i < centers.length; i++)
             arr[i] = new LabeledVector<>(centers[i], fillProbableLabel(i, centroidStat));
 
-        return new LabeledDataset<>(arr);
+        return new LabeledVectorSet<>(arr);
     }
 
     /**
@@ -117,8 +100,11 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      */
     private <K, V> Vector[] getCentroids(IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, DatasetBuilder<K, V> datasetBuilder) {
         KMeansTrainer trainer = new KMeansTrainer()
-            .withK(10)
-            .withSeed(7867L);
+            .withK(k)
+            .withMaxIterations(maxIterations)
+            .withSeed(seed)
+            .withDistance(distance)
+            .withEpsilon(epsilon);
 
         KMeansModel mdl = trainer.fit(
             datasetBuilder,
@@ -139,25 +125,27 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         ConcurrentHashMap<Double, Integer> centroidLbDistribution
             = centroidStat.centroidStat().get(centroidIdx);
 
-        int clusterSize = centroidStat
-            .counts
-            .get(centroidIdx);
+        if(centroidStat.counts.containsKey(centroidIdx)){
 
-        clsLbls.keySet().forEach(
-            (label) -> clsLbls.put(label, centroidLbDistribution.containsKey(label) ? (double) (centroidLbDistribution.get(label) / clusterSize) : 0.0)
-        );
+            int clusterSize = centroidStat
+                .counts
+                .get(centroidIdx);
 
+            clsLbls.keySet().forEach(
+                (label) -> clsLbls.put(label, centroidLbDistribution.containsKey(label) ? (double) (centroidLbDistribution.get(label) / clusterSize) : 0.0)
+            );
+        }
         return new ProbableLabel(clsLbls);
     }
 
     /** */
     private <K, V> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, Vector[] centers) {
-        PartitionDataBuilder<K, V, EmptyContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
             featureExtractor,
             lbExtractor
         );
 
-        try (Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
@@ -219,6 +207,107 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             }
         }
         return new IgniteBiTuple<>(bestInd, bestDistance);
+    }
+
+
+    /**
+     * Gets the amount of clusters.
+     *
+     * @return The parameter value.
+     */
+    public int getK() {
+        return k;
+    }
+
+    /**
+     * Set up the amount of clusters.
+     *
+     * @param k The parameter value.
+     * @return Model with new amount of clusters parameter value.
+     */
+    public ANNClassificationTrainer withK(int k) {
+        this.k = k;
+        return this;
+    }
+
+    /**
+     * Gets the max number of iterations before convergence.
+     *
+     * @return The parameter value.
+     */
+    public int getMaxIterations() {
+        return maxIterations;
+    }
+
+    /**
+     * Set up the max number of iterations before convergence.
+     *
+     * @param maxIterations The parameter value.
+     * @return Model with new max number of iterations before convergence parameter value.
+     */
+    public ANNClassificationTrainer withMaxIterations(int maxIterations) {
+        this.maxIterations = maxIterations;
+        return this;
+    }
+
+    /**
+     * Gets the epsilon.
+     *
+     * @return The parameter value.
+     */
+    public double getEpsilon() {
+        return epsilon;
+    }
+
+    /**
+     * Set up the epsilon.
+     *
+     * @param epsilon The parameter value.
+     * @return Model with new epsilon parameter value.
+     */
+    public ANNClassificationTrainer withEpsilon(double epsilon) {
+        this.epsilon = epsilon;
+        return this;
+    }
+
+    /**
+     * Gets the distance.
+     *
+     * @return The parameter value.
+     */
+    public DistanceMeasure getDistance() {
+        return distance;
+    }
+
+    /**
+     * Set up the distance.
+     *
+     * @param distance The parameter value.
+     * @return Model with new distance parameter value.
+     */
+    public ANNClassificationTrainer withDistance(DistanceMeasure distance) {
+        this.distance = distance;
+        return this;
+    }
+
+    /**
+     * Gets the seed number.
+     *
+     * @return The parameter value.
+     */
+    public long getSeed() {
+        return seed;
+    }
+
+    /**
+     * Set up the seed.
+     *
+     * @param seed The parameter value.
+     * @return Model with new seed parameter value.
+     */
+    public ANNClassificationTrainer withSeed(long seed) {
+        this.seed = seed;
+        return this;
     }
 
     /** Service class used for statistics. */

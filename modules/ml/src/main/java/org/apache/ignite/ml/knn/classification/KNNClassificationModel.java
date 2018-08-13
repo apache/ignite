@@ -18,10 +18,7 @@
 package org.apache.ignite.ml.knn.classification;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,17 +27,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.knn.NNClassificationModel;
-import org.apache.ignite.ml.math.distances.DistanceMeasure;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.ModelTrace;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * kNN algorithm model to solve multi-class classification task.
@@ -50,13 +42,13 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
     private static final long serialVersionUID = -127386523291350345L;
 
     /** Dataset. */
-    private Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset;
+    private Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset;
 
     /**
      * Builds the model via prepared dataset.
      * @param dataset Specially prepared object to run algorithm over it.
      */
-    public KNNClassificationModel(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset) {
+    public KNNClassificationModel(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
         this.dataset = dataset;
     }
 
@@ -89,14 +81,14 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
             return Arrays.asList(getKClosestVectors(data, distanceIdxPairs));
         }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
 
-        LabeledDataset<Double, LabeledVector> neighborsToFilter = buildLabeledDatasetOnListOfVectors(neighborsFromPartitions);
+        LabeledVectorSet<Double, LabeledVector> neighborsToFilter = buildLabeledDatasetOnListOfVectors(neighborsFromPartitions);
 
         return Arrays.asList(getKClosestVectors(neighborsToFilter, getDistances(v, neighborsToFilter)));
     }
 
 
     /** */
-    private double classify(List<LabeledVector> neighbors, Vector v, KNNStrategy stgy) {
+    private double classify(List<LabeledVector> neighbors, Vector v, NNStrategy stgy) {
         Map<Double, Double> clsVotes = new HashMap<>();
 
         for (LabeledVector neighbor : neighbors) {
@@ -116,4 +108,6 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
         }
         return getClassWithMaxVotes(clsVotes);
     }
+
+
 }

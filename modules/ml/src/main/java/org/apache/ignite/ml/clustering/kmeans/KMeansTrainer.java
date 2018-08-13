@@ -35,8 +35,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.util.MapUtil;
-import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
@@ -71,15 +71,14 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
             featureExtractor,
             lbExtractor
         );
 
         Vector[] centers;
-        TotalCostAndCounts totalRes = null;
 
-        try (Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
@@ -92,7 +91,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
             while (iteration < maxIterations && !converged) {
                 Vector[] newCentroids = new DenseVector[k];
 
-                totalRes = calcDataForNewCentroids(centers, dataset, cols);
+                TotalCostAndCounts totalRes = calcDataForNewCentroids(centers, dataset, cols);
 
                 converged = true;
 
@@ -106,13 +105,16 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
                 }
 
                 iteration++;
-                centers = newCentroids;
+                for (int i = 0; i < centers.length; i++) {
+                    if(newCentroids[i]!=null)
+                        centers[i] = newCentroids[i];
+                }
             }
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return new KMeansModel(centers, totalRes, distance);
+        return new KMeansModel(centers, distance);
     }
 
     /**
@@ -124,7 +126,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * @return Helper data to calculate the new centroids.
      */
     private TotalCostAndCounts calcDataForNewCentroids(Vector[] centers,
-        Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset, int cols) {
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset, int cols) {
         final Vector[] finalCenters = centers;
 
         return dataset.compute(data -> {
@@ -163,12 +165,10 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         int bestInd = 0;
 
         for (int i = 0; i < centers.length; i++) {
-            if(centers[i] != null) {
-                double dist = distance.compute(centers[i], pnt.features());
-                if (dist < bestDistance) {
-                    bestDistance = dist;
-                    bestInd = i;
-                }
+            double dist = distance.compute(centers[i], pnt.features());
+            if (dist < bestDistance) {
+                bestDistance = dist;
+                bestInd = i;
             }
         }
         return new IgniteBiTuple<>(bestInd, bestDistance);
@@ -181,7 +181,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * @param k Amount of clusters.
      * @return K cluster centers.
      */
-    private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset,
+    private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset,
         int k) {
 
         Vector[] initCenters = new DenseVector[k];

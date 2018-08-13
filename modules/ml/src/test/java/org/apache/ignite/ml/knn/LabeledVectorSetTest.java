@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
@@ -37,7 +37,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.fail;
 
 /** Tests behaviour of KNNClassificationTest. */
-public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
+public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet> {
     /** */
     private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
 
@@ -67,7 +67,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
         String[] featureNames = new String[] {"x", "y"};
-        final LabeledDataset dataset = new LabeledDataset(mtx, lbs, featureNames, false);
+        final LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs, featureNames, false);
 
         assertEquals(dataset.getFeatureName(0), "x");
     }
@@ -85,7 +85,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
                 {-2.0, -1.0}};
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
-        final LabeledDataset dataset = new LabeledDataset(mtx, lbs, null, false);
+        final LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs, null, false);
 
         assertEquals(dataset.colSize(), 2);
         assertEquals(dataset.rowSize(), 6);
@@ -112,7 +112,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
         double[] lbs = new double[] {};
 
         try {
-            new LabeledDataset(mtx, lbs);
+            new LabeledVectorSet(mtx, lbs);
             fail("CardinalityException");
         }
         catch (CardinalityException e) {
@@ -129,7 +129,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
         try {
-            new LabeledDataset(mtx, lbs);
+            new LabeledVectorSet(mtx, lbs);
             fail("CardinalityException");
         }
         catch (CardinalityException e) {
@@ -141,7 +141,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
     /** */
     @Test
     public void testLoadingCorrectTxtFile() {
-        LabeledDataset training = LabeledDatasetHelper.loadDatasetFromTxt(KNN_IRIS_TXT, false);
+        LabeledVectorSet training = LabeledDatasetHelper.loadDatasetFromTxt(KNN_IRIS_TXT, false);
         assertEquals(training.rowSize(), 150);
     }
 
@@ -174,7 +174,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
     /** */
     @Test
     public void testLoadingFileWithIncorrectData() {
-        LabeledDataset training = LabeledDatasetHelper.loadDatasetFromTxt(IRIS_INCORRECT_TXT, false);
+        LabeledVectorSet training = LabeledDatasetHelper.loadDatasetFromTxt(IRIS_INCORRECT_TXT, false);
         assertEquals(149, training.rowSize());
     }
 
@@ -197,7 +197,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
     public void testLoadingFileWithMissedData() throws URISyntaxException, IOException {
         Path path = Paths.get(this.getClass().getClassLoader().getResource(IRIS_MISSED_DATA).toURI());
 
-        LabeledDataset training = LabeledDatasetLoader.loadFromTxtFile(path, ",", false, false);
+        LabeledVectorSet training = LabeledDatasetLoader.loadFromTxtFile(path, ",", false, false);
 
         assertEquals(training.features(2).get(1), 0.0);
     }
@@ -215,7 +215,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
                 {-2.0, -1.0}};
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
-        LabeledDataset training = new LabeledDataset(mtx, lbs);
+        LabeledVectorSet training = new LabeledVectorSet(mtx, lbs);
 
         LabeledDatasetTestTrainPair split1 = new LabeledDatasetTestTrainPair(training, 0.67);
 
@@ -251,7 +251,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
                 {-2.0, -1.0}};
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
-        LabeledDataset dataset = new LabeledDataset(mtx, lbs);
+        LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs);
         final double[] labels = dataset.labels();
         for (int i = 0; i < lbs.length; i++)
             assertEquals(lbs[i], labels[i]);
@@ -269,7 +269,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
                 {-2.0, -1.0}};
         double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
-        LabeledDataset dataset = new LabeledDataset(mtx, lbs);
+        LabeledVectorSet dataset = new LabeledVectorSet(mtx, lbs);
         this.externalizeTest(dataset);
     }
 }

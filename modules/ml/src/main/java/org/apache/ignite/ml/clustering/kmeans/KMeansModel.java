@@ -34,22 +34,18 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
     /** Centers of clusters. */
     private final Vector[] centers;
 
-    private final KMeansTrainer.TotalCostAndCounts totalCostAndCounts;
-
     /** Distance measure. */
     private final DistanceMeasure distanceMeasure;
 
     /**
      * Construct KMeans model with given centers and distanceMeasure measure.
-     *  @param centers Centers.
-     * @param totalRes
+     *
+     * @param centers Centers.
      * @param distanceMeasure Distance measure.
      */
-    public KMeansModel(Vector[] centers, KMeansTrainer.TotalCostAndCounts totalRes, DistanceMeasure distanceMeasure) {
+    public KMeansModel(Vector[] centers, DistanceMeasure distanceMeasure) {
         this.centers = centers;
         this.distanceMeasure = distanceMeasure;
-        this.totalCostAndCounts = totalRes;
-
     }
 
     /** Distance measure. */
@@ -66,8 +62,6 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
     @Override public Vector[] centers() {
         return Arrays.copyOf(centers, centers.length);
     }
-
-
 
     /**
      * Predict closest center index for a given vector.
@@ -134,9 +128,5 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
             .addField("distance measure", measureName)
             .addField("centroids", centersList)
             .toString();
-    }
-
-    public KMeansTrainer.TotalCostAndCounts getTotalCostAndCounts() {
-        return totalCostAndCounts;
     }
 }

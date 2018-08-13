@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.knn;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,14 +24,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import org.apache.ignite.ml.Exportable;
+import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.knn.classification.KNNModelFormat;
+import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.ModelTrace;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
  * Common methods and fields for all kNN and aNN models
  * to predict label based on neighbours' labels.
  */
-public abstract class NNClassificationModel implements Model<Vector, Double> {
+public abstract class NNClassificationModel implements Model<Vector, Double>, Exportable<KNNModelFormat> {
     /** Amount of nearest neighbors. */
     protected int k = 5;
 
@@ -49,7 +49,7 @@ public abstract class NNClassificationModel implements Model<Vector, Double> {
     protected DistanceMeasure distanceMeasure = new EuclideanDistance();
 
     /** kNN strategy. */
-    protected KNNStrategy stgy = KNNStrategy.SIMPLE;
+    protected NNStrategy stgy = NNStrategy.SIMPLE;
 
     /**
      * Set up parameter of the NN model.
@@ -66,7 +66,7 @@ public abstract class NNClassificationModel implements Model<Vector, Double> {
      * @param stgy Strategy of calculations.
      * @return Model.
      */
-    public NNClassificationModel withStrategy(KNNStrategy stgy) {
+    public NNClassificationModel withStrategy(NNStrategy stgy) {
         this.stgy = stgy;
         return this;
     }
@@ -82,13 +82,13 @@ public abstract class NNClassificationModel implements Model<Vector, Double> {
     }
 
     /** */
-    protected LabeledDataset<Double, LabeledVector> buildLabeledDatasetOnListOfVectors(
+    protected LabeledVectorSet<Double, LabeledVector> buildLabeledDatasetOnListOfVectors(
         List<LabeledVector> neighborsFromPartitions) {
         LabeledVector[] arr = new LabeledVector[neighborsFromPartitions.size()];
         for (int i = 0; i < arr.length; i++)
             arr[i] = neighborsFromPartitions.get(i);
 
-        return new LabeledDataset<Double, LabeledVector>(arr);
+        return new LabeledVectorSet<Double, LabeledVector>(arr);
     }
 
     /**
@@ -98,7 +98,7 @@ public abstract class NNClassificationModel implements Model<Vector, Double> {
      * @param distanceIdxPairs The distance map.
      * @return K-nearest neighbors.
      */
-    @NotNull protected LabeledVector[] getKClosestVectors(LabeledDataset<Double, LabeledVector> trainingData,
+    @NotNull protected LabeledVector[] getKClosestVectors(LabeledVectorSet<Double, LabeledVector> trainingData,
                                                           TreeMap<Double, Set<Integer>> distanceIdxPairs) {
         LabeledVector[] res;
 
@@ -134,7 +134,7 @@ public abstract class NNClassificationModel implements Model<Vector, Double> {
      * @return Key - distanceMeasure from given features before features with idx stored in value. Value is presented
      * with Set because there can be a few vectors with the same distance.
      */
-    @NotNull protected TreeMap<Double, Set<Integer>> getDistances(Vector v, LabeledDataset<Double, LabeledVector> trainingData) {
+    @NotNull protected TreeMap<Double, Set<Integer>> getDistances(Vector v, LabeledVectorSet<Double, LabeledVector> trainingData) {
         TreeMap<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
 
         for (int i = 0; i < trainingData.rowSize(); i++) {
@@ -167,8 +167,8 @@ public abstract class NNClassificationModel implements Model<Vector, Double> {
     }
 
     /** */
-    protected double getClassVoteForVector(KNNStrategy stgy, double distance) {
-        if (stgy.equals(KNNStrategy.WEIGHTED))
+    protected double getClassVoteForVector(NNStrategy stgy, double distance) {
+        if (stgy.equals(NNStrategy.WEIGHTED))
             return 1 / distance; // strategy.WEIGHTED
         else
             return 1.0; // strategy.SIMPLE
@@ -211,4 +211,7 @@ public abstract class NNClassificationModel implements Model<Vector, Double> {
             .addField("strategy", stgy.name())
             .toString();
     }
+
+    /** */
+    public abstract <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path);
 }

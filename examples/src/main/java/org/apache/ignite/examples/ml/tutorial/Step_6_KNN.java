@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
@@ -93,7 +93,7 @@ public class Step_6_KNN {
                         dataCache,
                         normalizationPreprocessor,
                         lbExtractor
-                    ).withK(1).withStrategy(KNNStrategy.WEIGHTED);
+                    ).withK(1).withStrategy(NNStrategy.WEIGHTED);
 
                     double accuracy = Evaluator.evaluate(
                         dataCache,

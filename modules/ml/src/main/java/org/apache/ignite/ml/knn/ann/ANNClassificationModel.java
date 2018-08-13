@@ -24,10 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.knn.NNClassificationModel;
-import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.knn.classification.KNNModelFormat;
+import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.ModelTrace;
 import org.jetbrains.annotations.NotNull;
@@ -35,18 +37,24 @@ import org.jetbrains.annotations.NotNull;
 /**
  * ANN model to predict labels in multi-class classification task.
  */
-public class ANNClassificationModel extends NNClassificationModel implements Exportable<ANNModelFormat> {
+public class ANNClassificationModel extends NNClassificationModel  {
     /** */
     private static final long serialVersionUID = -127312378991350345L;
 
-    private final LabeledDataset<ProbableLabel, LabeledVector> candidates;
+    /** The labeled set of candidates. */
+    private final LabeledVectorSet<ProbableLabel, LabeledVector> candidates;
 
     /**
      * Build the model based on a candidates set.
      * @param centers The candidates set.
      */
-    public ANNClassificationModel(LabeledDataset<ProbableLabel, LabeledVector> centers) {
+    public ANNClassificationModel(LabeledVectorSet<ProbableLabel, LabeledVector> centers) {
        this.candidates = centers;
+    }
+
+    /** */
+    public LabeledVectorSet<ProbableLabel, LabeledVector> getCandidates() {
+        return candidates;
     }
 
     /** {@inheritDoc} */
@@ -56,8 +64,8 @@ public class ANNClassificationModel extends NNClassificationModel implements Exp
     }
 
     /** */
-    @Override public <P> void saveModel(Exporter<ANNModelFormat, P> exporter, P path) {
-        ANNModelFormat mdlData = new ANNModelFormat(k, distanceMeasure, stgy);
+    @Override public <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path) {
+        ANNModelFormat mdlData = new ANNModelFormat(k, distanceMeasure, stgy, candidates);
         exporter.save(mdlData, path);
     }
 
@@ -127,7 +135,7 @@ public class ANNClassificationModel extends NNClassificationModel implements Exp
     }
 
     /** */
-    private double classify(List<LabeledVector> neighbors, Vector v, KNNStrategy stgy) {
+    private double classify(List<LabeledVector> neighbors, Vector v, NNStrategy stgy) {
         Map<Double, Double> clsVotes = new HashMap<>();
 
         for (LabeledVector neighbor : neighbors) {

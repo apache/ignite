@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.knn.classification;
 
 /** This enum contains settings for kNN algorithm. */
-public enum KNNStrategy {
+public enum NNStrategy {
     /** The default strategy. All k neighbors have the same weight which is independent
      * on their distance to the query point.*/
     SIMPLE,

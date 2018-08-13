@@ -15,44 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.classification;
+package org.apache.ignite.ml.knn.ann;
 
 import java.io.Serializable;
+import org.apache.ignite.ml.knn.classification.KNNModelFormat;
+import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 
 /**
- * kNN model representation.
+ * ANN model representation.
  *
- * @see KNNClassificationModel
+ * @see ANNClassificationModel
  */
-public class KNNModelFormat implements Serializable {
-    /** Amount of nearest neighbors. */
-    protected int k;
-
-    /** Distance measure. */
-    protected DistanceMeasure distanceMeasure;
-
-    /** kNN strategy. */
-    protected NNStrategy stgy;
-
-    /** Gets amount of nearest neighbors.*/
-    public int getK() {
-        return k;
-    }
-
-    /** Gets distance measure. */
-    public DistanceMeasure getDistanceMeasure() {
-        return distanceMeasure;
-    }
-
-    /** Gets kNN strategy.*/
-    public NNStrategy getStgy() {
-        return stgy;
-    }
-
-    /** */
-    public KNNModelFormat() {
-    }
+public class ANNModelFormat extends KNNModelFormat implements Serializable {
+    /** The labeled set of candidates. */
+    private LabeledVectorSet<ProbableLabel, LabeledVector> candidates;
 
     /**
      * Creates an instance.
@@ -60,10 +39,19 @@ public class KNNModelFormat implements Serializable {
      * @param measure Distance measure.
      * @param stgy kNN strategy.
      */
-    public KNNModelFormat(int k, DistanceMeasure measure, NNStrategy stgy) {
+    public ANNModelFormat(int k,
+                          DistanceMeasure measure,
+                          NNStrategy stgy,
+                          LabeledVectorSet<ProbableLabel, LabeledVector> candidates) {
         this.k = k;
         this.distanceMeasure = measure;
         this.stgy = stgy;
+        this.candidates = candidates;
+    }
+
+    /** */
+    public LabeledVectorSet<ProbableLabel, LabeledVector> getCandidates() {
+        return candidates;
     }
 
     /** {@inheritDoc} */
@@ -73,6 +61,7 @@ public class KNNModelFormat implements Serializable {
         res = res * 37 + k;
         res = res * 37 + distanceMeasure.hashCode();
         res = res * 37 + stgy.hashCode();
+        res = res * 37 + candidates.hashCode();
 
         return res;
     }
@@ -85,8 +74,11 @@ public class KNNModelFormat implements Serializable {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        KNNModelFormat that = (KNNModelFormat)obj;
+        ANNModelFormat that = (ANNModelFormat)obj;
 
-        return k == that.k && distanceMeasure.equals(that.distanceMeasure) && stgy.equals(that.stgy);
+        return k == that.k
+            && distanceMeasure.equals(that.distanceMeasure)
+            && stgy.equals(that.stgy)
+            && candidates.equals(that.candidates);
     }
 }

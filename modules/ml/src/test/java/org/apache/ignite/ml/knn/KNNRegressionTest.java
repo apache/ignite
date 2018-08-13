@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
@@ -77,7 +77,7 @@ public class KNNRegressionTest {
             (k, v) -> v[0]
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(KNNStrategy.SIMPLE);
+            .withStrategy(NNStrategy.SIMPLE);
 
         Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
         System.out.println(knnMdl.apply(vector));
@@ -112,7 +112,7 @@ public class KNNRegressionTest {
             (k, v) -> v[0]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(KNNStrategy.SIMPLE);
+            .withStrategy(NNStrategy.SIMPLE);
 
         Vector vector = new DenseVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
         System.out.println(knnMdl.apply(vector));
@@ -147,7 +147,7 @@ public class KNNRegressionTest {
             (k, v) -> v[0]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(KNNStrategy.SIMPLE);
+            .withStrategy(NNStrategy.SIMPLE);
 
         Vector vector = new DenseVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
         System.out.println(knnMdl.apply(vector));
