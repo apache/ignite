@@ -31,6 +31,77 @@ from .type_codes import *
 __all__ = ['AnyDataArray', 'AnyDataObject', 'Struct', 'StructArray', 'tc_map']
 
 
+def tc_map(key: bytes):
+    """
+    Returns a default parser/generator class for the given type code.
+
+    This mapping is used internally inside listed complex parser/generator
+    classes, so it has to be a function. Local imports are used for the same
+    reason.
+
+    :param key: Ignite type code,
+    :return: parser/generator class for the type code.
+    """
+    from pyignite.datatypes import (
+        Null, ByteObject, ShortObject, IntObject, LongObject, FloatObject,
+        DoubleObject, CharObject, BoolObject, UUIDObject, DateObject,
+        TimestampObject, TimeObject, EnumObject, BinaryEnumObject,
+        ByteArrayObject, ShortArrayObject, IntArrayObject, LongArrayObject,
+        FloatArrayObject, DoubleArrayObject, CharArrayObject, BoolArrayObject,
+        UUIDArrayObject, DateArrayObject, TimestampArrayObject,
+        TimeArrayObject, EnumArrayObject, String, StringArrayObject,
+        DecimalObject, DecimalArrayObject, ObjectArrayObject, CollectionObject,
+        MapObject, BinaryObject, WrappedDataObject,
+    )
+
+    return {
+        TC_NULL: Null,
+
+        TC_BYTE: ByteObject,
+        TC_SHORT: ShortObject,
+        TC_INT: IntObject,
+        TC_LONG: LongObject,
+        TC_FLOAT: FloatObject,
+        TC_DOUBLE: DoubleObject,
+        TC_CHAR: CharObject,
+        TC_BOOL: BoolObject,
+
+        TC_UUID: UUIDObject,
+        TC_DATE: DateObject,
+        TC_TIMESTAMP: TimestampObject,
+        TC_TIME: TimeObject,
+        TC_ENUM: EnumObject,
+        TC_BINARY_ENUM: BinaryEnumObject,
+
+        TC_BYTE_ARRAY: ByteArrayObject,
+        TC_SHORT_ARRAY: ShortArrayObject,
+        TC_INT_ARRAY: IntArrayObject,
+        TC_LONG_ARRAY: LongArrayObject,
+        TC_FLOAT_ARRAY: FloatArrayObject,
+        TC_DOUBLE_ARRAY: DoubleArrayObject,
+        TC_CHAR_ARRAY: CharArrayObject,
+        TC_BOOL_ARRAY: BoolArrayObject,
+
+        TC_UUID_ARRAY: UUIDArrayObject,
+        TC_DATE_ARRAY: DateArrayObject,
+        TC_TIMESTAMP_ARRAY: TimestampArrayObject,
+        TC_TIME_ARRAY: TimeArrayObject,
+        TC_ENUM_ARRAY: EnumArrayObject,
+
+        TC_STRING: String,
+        TC_STRING_ARRAY: StringArrayObject,
+        TC_DECIMAL: DecimalObject,
+        TC_DECIMAL_ARRAY: DecimalArrayObject,
+
+        TC_OBJECT_ARRAY: ObjectArrayObject,
+        TC_COLLECTION: CollectionObject,
+        TC_MAP: MapObject,
+
+        TC_COMPLEX_OBJECT: BinaryObject,
+        TC_ARRAY_WRAPPED_OBJECTS: WrappedDataObject,
+    }[key]
+
+
 @attr.s
 class StructArray:
     """ `counter_type` counter, followed by count*following structure. """
@@ -136,67 +207,6 @@ class Struct:
             buffer += el_class.from_python(value[name])
 
         return buffer
-
-
-def tc_map(key: bytes):
-    from pyignite.datatypes import (
-        Null, ByteObject, ShortObject, IntObject, LongObject, FloatObject,
-        DoubleObject, CharObject, BoolObject, UUIDObject, DateObject,
-        TimestampObject, TimeObject, EnumObject, BinaryEnumObject,
-        ByteArrayObject, ShortArrayObject, IntArrayObject, LongArrayObject,
-        FloatArrayObject, DoubleArrayObject, CharArrayObject, BoolArrayObject,
-        UUIDArrayObject, DateArrayObject, TimestampArrayObject,
-        TimeArrayObject, EnumArrayObject, String, StringArrayObject,
-        DecimalObject, DecimalArrayObject, ObjectArrayObject, CollectionObject,
-        MapObject, BinaryObject, WrappedDataObject,
-    )
-
-    return {
-        TC_NULL: Null,
-
-        TC_BYTE: ByteObject,
-        TC_SHORT: ShortObject,
-        TC_INT: IntObject,
-        TC_LONG: LongObject,
-        TC_FLOAT: FloatObject,
-        TC_DOUBLE: DoubleObject,
-        TC_CHAR: CharObject,
-        TC_BOOL: BoolObject,
-
-        TC_UUID: UUIDObject,
-        TC_DATE: DateObject,
-        TC_TIMESTAMP: TimestampObject,
-        TC_TIME: TimeObject,
-        TC_ENUM: EnumObject,
-        TC_BINARY_ENUM: BinaryEnumObject,
-
-        TC_BYTE_ARRAY: ByteArrayObject,
-        TC_SHORT_ARRAY: ShortArrayObject,
-        TC_INT_ARRAY: IntArrayObject,
-        TC_LONG_ARRAY: LongArrayObject,
-        TC_FLOAT_ARRAY: FloatArrayObject,
-        TC_DOUBLE_ARRAY: DoubleArrayObject,
-        TC_CHAR_ARRAY: CharArrayObject,
-        TC_BOOL_ARRAY: BoolArrayObject,
-
-        TC_UUID_ARRAY: UUIDArrayObject,
-        TC_DATE_ARRAY: DateArrayObject,
-        TC_TIMESTAMP_ARRAY: TimestampArrayObject,
-        TC_TIME_ARRAY: TimeArrayObject,
-        TC_ENUM_ARRAY: EnumArrayObject,
-
-        TC_STRING: String,
-        TC_STRING_ARRAY: StringArrayObject,
-        TC_DECIMAL: DecimalObject,
-        TC_DECIMAL_ARRAY: DecimalArrayObject,
-
-        TC_OBJECT_ARRAY: ObjectArrayObject,
-        TC_COLLECTION: CollectionObject,
-        TC_MAP: MapObject,
-
-        TC_COMPLEX_OBJECT: BinaryObject,
-        TC_ARRAY_WRAPPED_OBJECTS: WrappedDataObject,
-    }[key]
 
 
 class AnyDataObject:
