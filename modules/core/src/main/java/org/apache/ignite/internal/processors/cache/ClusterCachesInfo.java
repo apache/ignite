@@ -396,8 +396,8 @@ class ClusterCachesInfo {
     }
 
     /**
-     * Creates exchanges actions. Forms a list of caches and cache groups to be stopped
-     * due to dynamic cache start failure.
+     * Creates exchanges actions. Forms a list of caches and cache groups to be stopped due to dynamic cache start
+     * failure.
      *
      * @param failMsg Dynamic change request fail message.
      * @param topVer Topology version.
@@ -415,7 +415,7 @@ class ClusterCachesInfo {
             requests.add(DynamicCacheChangeRequest.stopRequest(ctx, cacheName, cacheDescr.sql(), true));
         }
 
-        processCacheChangeRequests(exchangeActions, requests, topVer,false);
+        processCacheChangeRequests(exchangeActions, requests, topVer, false);
 
         failMsg.exchangeActions(exchangeActions);
     }
@@ -583,7 +583,7 @@ class ClusterCachesInfo {
                             req.deploymentId(),
                             req.schema());
 
-                        DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
+                        DynamicCacheDescriptor old = registerCacheDescriptor(startDesc);
 
                         restartingCaches.remove(ccfg.getName());
 
@@ -1130,7 +1130,7 @@ class ClusterCachesInfo {
 
             desc.receivedOnDiscovery(true);
 
-            registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
+            registerCacheDescriptor(desc);
 
             ctx.discovery().setCacheFilter(
                 desc.cacheId(),
@@ -1159,16 +1159,16 @@ class ClusterCachesInfo {
             if (!isClusterActive && !patchesToApply.isEmpty()) {
                 for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
                     if (entry.getKey().applySchemaPatch(entry.getValue()))
-                        saveCacheConfiguration(entry.getKey());
+                        ctx.cache().overwriteCacheConfiguration(entry.getKey());
                 }
 
                 for (DynamicCacheDescriptor descriptor : cachesToSave) {
-                    saveCacheConfiguration(descriptor);
+                    ctx.cache().overwriteCacheConfiguration(descriptor);
                 }
             }
             else if (patchesToApply.isEmpty()) {
                 for (DynamicCacheDescriptor descriptor : cachesToSave) {
-                    saveCacheConfiguration(descriptor);
+                    ctx.cache().overwriteCacheConfiguration(descriptor);
                 }
             }
         }
@@ -1244,20 +1244,6 @@ class ClusterCachesInfo {
     }
 
     /**
-     * Save dynamic cache descriptor on disk.
-     *
-     * @param desc Cache to save.
-     */
-    private void saveCacheConfiguration(DynamicCacheDescriptor desc) {
-        try {
-            ctx.cache().saveCacheConfiguration(desc);
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Error while saving cache configuration to disk, cfg = " + desc.cacheConfiguration(), e);
-        }
-    }
-
-    /**
      * Get started node query entities by cacheName.
      *
      * @param cacheName Cache for which query entities will be returned.
@@ -1276,8 +1262,8 @@ class ClusterCachesInfo {
     }
 
     /**
-     * Initialize collection with caches to be start:
-     * {@code locJoinStartCaches} or {@code locCfgsForActivation} if cluster is inactive.
+     * Initialize collection with caches to be start: {@code locJoinStartCaches} or {@code locCfgsForActivation} if
+     * cluster is inactive.
      *
      * @param firstNode {@code True} if first node in cluster starts.
      */
@@ -1367,7 +1353,8 @@ class ClusterCachesInfo {
      * @return Exchange action.
      * @throws IgniteCheckedException If configuration validation failed.
      */
-    public ExchangeActions onStateChangeRequest(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer, DiscoveryDataClusterState curState)
+    public ExchangeActions onStateChangeRequest(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer,
+        DiscoveryDataClusterState curState)
         throws IgniteCheckedException {
         ExchangeActions exchangeActions = new ExchangeActions();
 
@@ -1607,9 +1594,9 @@ class ClusterCachesInfo {
 
         //If conflict was detected we don't merge config and we leave existed config.
         if (!hasSchemaPatchConflict && !patchesToApply.isEmpty())
-            for(Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry: patchesToApply.entrySet()){
+            for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
                 if (entry.getKey().applySchemaPatch(entry.getValue()))
-                    saveCacheConfiguration(entry.getKey());
+                    ctx.cache().overwriteCacheConfiguration(entry.getKey());
             }
 
         if (joinData.startCaches()) {
@@ -1662,9 +1649,21 @@ class ClusterCachesInfo {
             joinData.cacheDeploymentId(),
             new QuerySchema(cacheInfo.cacheData().queryEntities()));
 
-        DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
+        DynamicCacheDescriptor old = registerCacheDescriptor(desc);
 
         assert old == null : old;
+    }
+
+    /**
+     * @param desc Descriptor for registration.
+     * @return Old cache descriptor if it was existed.
+     */
+    private DynamicCacheDescriptor registerCacheDescriptor(DynamicCacheDescriptor desc) {
+        DynamicCacheDescriptor old = registeredCaches.put(desc.cacheName(), desc);
+
+        ctx.cache().createCacheConfiguration(desc);
+
+        return old;
     }
 
     /**
@@ -1815,7 +1814,8 @@ class ClusterCachesInfo {
      * @param exchActions Optional exchange actions to update if new group was added.
      * @param startedCacheCfg Started cache configuration.
      */
-    private boolean resolvePersistentFlag(@Nullable ExchangeActions exchActions, CacheConfiguration<?, ?> startedCacheCfg) {
+    private boolean resolvePersistentFlag(@Nullable ExchangeActions exchActions,
+        CacheConfiguration<?, ?> startedCacheCfg) {
         if (!ctx.clientNode()) {
             // On server, we always can determine whether cache is persistent by local storage configuration.
             return CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration());
@@ -1947,6 +1947,7 @@ class ClusterCachesInfo {
 
     /**
      * Returns registered cache descriptors ordered by {@code comparator}
+     *
      * @param comparator Comparator (DIRECT, REVERSE or custom) to order cache descriptors.
      * @return Ordered by comparator cache descriptors.
      */
@@ -2092,9 +2093,8 @@ class ClusterCachesInfo {
     }
 
     /**
-     * Holds direct comparator (first system caches) and reverse comparator (first user caches).
-     * Use DIRECT comparator for ordering cache start operations.
-     * Use REVERSE comparator for ordering cache stop operations.
+     * Holds direct comparator (first system caches) and reverse comparator (first user caches). Use DIRECT comparator
+     * for ordering cache start operations. Use REVERSE comparator for ordering cache stop operations.
      */
     static class CacheComparators {
         /**
