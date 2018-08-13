@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
@@ -429,6 +430,9 @@ public class QueryUtils {
         if (keyCls == null)
             keyCls = Object.class;
 
+        ensureClassMetadata(ctx, keyCls);
+        ensureClassMetadata(ctx, valCls);
+
         String simpleValType = ((valCls == null) ? typeName(qryEntity.findValueType()) : typeName(valCls));
 
         desc.name(simpleValType);
@@ -531,6 +535,22 @@ public class QueryUtils {
         desc.typeId(valTypeId);
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
+    }
+
+    /**
+     * Ensure class metadata is registered.
+     *
+     * @param ctx Kernal context.
+     * @param cls Class to ensure the metadata is registered for.
+     */
+    private static void ensureClassMetadata(GridKernalContext ctx, Class<?> cls) {
+        IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
+
+        if (cacheObjProc instanceof CacheObjectBinaryProcessorImpl) {
+            ((CacheObjectBinaryProcessorImpl)cacheObjProc)
+                .binaryContext()
+                .descriptorForClass(cls, false, false);
+        }
     }
 
     /**
