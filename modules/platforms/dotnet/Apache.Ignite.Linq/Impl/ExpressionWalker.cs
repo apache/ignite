@@ -21,6 +21,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -33,6 +34,9 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal static class ExpressionWalker
     {
+        /** SQL quote */
+        private const string SqlQuote = "\"";
+
         /** Compiled member readers. */
         private static readonly CopyOnWriteConcurrentDictionary<MemberInfo, Func<object, object>> MemberReaders =
             new CopyOnWriteConcurrentDictionary<MemberInfo, Func<object, object>>();
@@ -249,15 +253,22 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(queryable != null);
 
-            var tableName = queryable.TableName;
-
             var cacheCfg = queryable.CacheConfiguration;
-            var schemaName = cacheCfg.SqlSchema ?? cacheCfg.Name;
 
-            return string.Format(cacheCfg.SqlEscapeAll
-                    ? "\"{0}\".\"{1}\""
-                    : "\"{0}\".{1}",
-                schemaName, tableName);
+            var tableName = queryable.TableName;
+            if (cacheCfg.SqlEscapeAll)
+            {
+                tableName = string.Format("{0}{1}{0}", SqlQuote, tableName);
+            }
+
+            var schemaName = cacheCfg.SqlSchema ?? cacheCfg.Name;
+            if (!schemaName.StartsWith(SqlQuote))
+            {
+                // Non-quoted schema name is case-insensitive and must be in upper case.
+                schemaName = string.Format("{0}{1}{0}", SqlQuote, schemaName.ToUpper(CultureInfo.InvariantCulture));
+            }
+
+            return string.Format("{0}.{1}", schemaName, tableName);
         }
     }
 }
