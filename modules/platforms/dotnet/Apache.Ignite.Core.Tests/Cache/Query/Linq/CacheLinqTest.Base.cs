@@ -45,6 +45,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /** Cache name. */
         private const string PersonOrgCacheName = "person_org";
 
+        /** Cache schema. */
+        private const string PersonOrgCacheSchema = "person_org_schema";
+
         /** Cache name. */
         private const string PersonSecondCacheName = "person_cache";
 
@@ -199,7 +202,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                     new QueryEntity(typeof (int), typeof (Organization)))
                 {
                     CacheMode = CacheMode.Replicated,
-                    SqlEscapeAll = GetSqlEscapeAll()
+                    SqlEscapeAll = GetSqlEscapeAll(),
+                    SqlSchema = PersonOrgCacheSchema
                 });
         }
 
@@ -238,7 +242,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// <summary>
         /// Checks that function maps to SQL function properly.
         /// </summary>
-        private static void CheckFunc<T, TR>(Expression<Func<T, TR>> exp, IQueryable<T> query, 
+        private static void CheckFunc<T, TR>(Expression<Func<T, TR>> exp, IQueryable<T> query,
             Func<TR, TR> localResultFunc = null)
         {
             localResultFunc = localResultFunc ?? (x => x);
@@ -263,7 +267,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// <summary>
         /// Checks that function used in Where Clause maps to SQL function properly
         /// </summary>
-        private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query, 
+        private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query,
             Expression<Func<ICacheEntry<TKey, TEntry>,bool>> whereExpression)
         {
             // Calculate result locally, using real method invocation
