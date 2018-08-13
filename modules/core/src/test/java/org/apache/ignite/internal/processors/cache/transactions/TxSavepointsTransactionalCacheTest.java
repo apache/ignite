@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -32,7 +31,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.lang.IgniteFuture;
@@ -91,6 +91,24 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
             new NodeCombination(1, 1, 1, 1)
     };
 
+    /**
+     * @return Cache configurations to test.
+     */
+    private List<CacheConfiguration<Integer, Integer>> cacheConfigurations() {
+        List<CacheConfiguration<Integer, Integer>> cfgs = new ArrayList<>();
+
+        cfgs.add(cacheConfiguration(PARTITIONED, 0, false));
+        cfgs.add(cacheConfiguration(PARTITIONED, 0, true));
+        cfgs.add(cacheConfiguration(PARTITIONED, 1, false));
+        cfgs.add(cacheConfiguration(PARTITIONED, 1, true));
+        cfgs.add(cacheConfiguration(REPLICATED, 0, false));
+        cfgs.add(cacheConfiguration(REPLICATED, 0, true));
+        cfgs.add(cacheConfiguration(LOCAL, 0, false));
+        cfgs.add(cacheConfiguration(LOCAL, 0, true));
+
+        return cfgs;
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;
@@ -98,7 +116,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60_000;
+        return 600_000;
     }
 
     /**
@@ -166,7 +184,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                                 () -> assertTrue(cacheAsync.putIfAbsent(key, 1)),
                                 "_put");
 
-                            waitForSecondCandidate(txType.concurrency, cache, key);
+                            waitForSecondCandidate(txType.concurrency, nodes.primaryForKey(), cache, cacheAsync, key);
 
                             tx.rollbackToSavepoint("sp");
 
@@ -217,7 +235,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                                 },
                                 "_put");
 
-                            waitForSecondCandidate(txType.concurrency, cache, key);
+                            waitForSecondCandidate(txType.concurrency, nodes.primaryForKey(), cache, cacheAsync, key);
 
                             tx.rollbackToSavepoint("sp");
 
@@ -267,7 +285,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                                 () -> assertTrue(cacheAsync.putIfAbsent(key, 1)),
                                 "_put");
 
-                            waitForSecondCandidate(txType.concurrency, cache, key);
+                            waitForSecondCandidate(txType.concurrency, nodes.primaryForKey(), cache, cacheAsync, key);
 
                             tx.rollbackToSavepoint("sp");
 
@@ -315,7 +333,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                                 () -> assertTrue(cacheAsync.remove(key, 1)),
                                 "_remove");
 
-                            waitForSecondCandidate(txType.concurrency, cache, key);
+                            waitForSecondCandidate(txType.concurrency, nodes.primaryForKey(), cache, cacheAsync, key);
 
                             tx.rollbackToSavepoint("sp");
 
@@ -372,7 +390,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                                 assertTrue(fut3.get());
                             }, "_putAll");
 
-                            waitForSecondCandidate(txType.concurrency, cache, key1);
+                            waitForSecondCandidate(txType.concurrency, nodes.primaryForKey(), cache, cacheAsync, key1);
 
                             tx.rollbackToSavepoint("sp");
 
@@ -555,7 +573,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                                 assertTrue(fut3.get());
                             }, "_remove");
 
-                            waitForSecondCandidate(txType.concurrency, cache, key1);
+                            waitForSecondCandidate(txType.concurrency, nodes.primaryForKey(), cache, cacheAsync, key1);
 
                             tx.rollbackToSavepoint("sp");
 
@@ -867,7 +885,8 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                             IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(() -> cacheAsync.putIfAbsent(key2, 1),
                                 "_putMultiKeys");
 
-                            waitForSecondCandidate(txType.concurrency, cache, key2);
+                            waitForSecondCandidate(txType.concurrency, nodes.primaryForAnotherKey(),
+                                cache, cacheAsync, key2);
 
                             tx.rollbackToSavepoint("sp");
 
@@ -1192,24 +1211,6 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
     }
 
     /**
-     * @return Cache configurations to test.
-     */
-    private List<CacheConfiguration<Integer, Integer>> cacheConfigurations() {
-        List<CacheConfiguration<Integer, Integer>> cfgs = new ArrayList<>();
-
-        cfgs.add(cacheConfiguration(PARTITIONED, 0, false));
-        cfgs.add(cacheConfiguration(PARTITIONED, 0, true));
-        cfgs.add(cacheConfiguration(PARTITIONED, 1, false));
-        cfgs.add(cacheConfiguration(PARTITIONED, 1, true));
-        cfgs.add(cacheConfiguration(REPLICATED, 0, false));
-        cfgs.add(cacheConfiguration(REPLICATED, 0, true));
-        cfgs.add(cacheConfiguration(LOCAL, 0, false));
-        cfgs.add(cacheConfiguration(LOCAL, 0, true));
-
-        return cfgs;
-    }
-
-    /**
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param nearCache If {@code true} near cache is enabled.
@@ -1321,22 +1322,29 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
      * Waits for second candidate to lock key. Optimistic transactions don't lock keys until commit/rollback.
      *
      * @param concurrency Transaction concurrency.
-     * @param cache Cache.
+     * @param primary Primary for key.
+     * @param cache1 Cache.
+     * @param cache2 Cache.
      * @param key Key to check.
      * @throws IgniteInterruptedCheckedException If was interrupted.
      */
-    private void waitForSecondCandidate(TransactionConcurrency concurrency, IgniteCache cache, int key)
+    private void waitForSecondCandidate(TransactionConcurrency concurrency, IgniteEx primary,
+        IgniteCache<Integer, Integer> cache1, IgniteCache<Integer, Integer> cache2, int key)
         throws IgniteInterruptedCheckedException {
         if (concurrency == TransactionConcurrency.PESSIMISTIC) {
             assertTrue("Wait for second lock candidate was timed out.", GridTestUtils.waitForCondition(() -> {
-                try {
-                    return
-                        ((IgniteEx)grid(((IgniteCacheProxy)cache).context().cache().affinity().mapKeyToNode(key)))
-                            .cachex(cache.getName()).context().cache().entryEx(key).localCandidates().size() == 2;
+                if (((IgniteCacheProxy)cache1).context().config().getCacheMode() == LOCAL)
+                    return cache1.isLocalLocked(key, true) && cache2.isLocalLocked(key, false);
+
+                GridCacheContext<Object, Object> ctx = primary.cachex(cache1.getName()).context();
+                int cnt = 0;
+
+                for (GridCacheMvccCandidate cand : ctx.mvcc().localCandidates()) {
+                    if (cand.key().key().value(ctx.cacheObjectContext(), false).equals(key))
+                        cnt++;
                 }
-                catch (GridCacheEntryRemovedException e) {
-                    throw new IgniteException("Wait for second lock candidate was failed", e);
-                }
+
+                return cnt > 1;
             }, FUT_TIMEOUT));
         }
     }
