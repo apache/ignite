@@ -32,14 +32,22 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
+/**
+ *
+ */
 public class CacheMvccBulkLoadTest extends CacheMvccAbstractTest {
+    /** */
     private IgniteCache<Object, Object> sqlNexus;
+
+    /** */
     private Statement stmt;
 
+    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.PARTITIONED;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -54,19 +62,25 @@ public class CacheMvccBulkLoadTest extends CacheMvccAbstractTest {
         stmt = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1").createStatement();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testCopyStoresData() throws Exception {
         String csvFilePath = new File(getClass().getResource("mvcc_person.csv").toURI()).getAbsolutePath();
         stmt.executeUpdate("copy from '" + csvFilePath + "' into person (id, name) format csv");
 
         List<List<?>> rows = sqlNexus.query(q("select * from person")).getAll();
 
-        List<List<? extends Serializable>> expected = asList(
+        List<List<? extends Serializable>> exp = asList(
             asList(1, "John"),
             asList(2, "Jack")
         );
-        assertEquals(expected, rows);
+        assertEquals(exp, rows);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testCopyDoesNotOverwrite() throws Exception {
         sqlNexus.query(q("insert into person values(1, 'Old')"));
         String csvFilePath = new File(getClass().getResource("mvcc_person.csv").toURI()).getAbsolutePath();
@@ -74,13 +88,16 @@ public class CacheMvccBulkLoadTest extends CacheMvccAbstractTest {
 
         List<List<?>> rows = sqlNexus.query(q("select * from person")).getAll();
 
-        List<List<? extends Serializable>> expected = asList(
+        List<List<? extends Serializable>> exp = asList(
             asList(1, "Old"),
             asList(2, "Jack")
         );
-        assertEquals(expected, rows);
+        assertEquals(exp, rows);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testCopyLeavesPartialResultsInCaseOfFailure() throws Exception {
         String csvFilePath = new File(getClass().getResource("mvcc_person_broken.csv").toURI()).getAbsolutePath();
         try {
@@ -88,17 +105,18 @@ public class CacheMvccBulkLoadTest extends CacheMvccAbstractTest {
             fail();
         }
         catch (SQLException ignored) {
-            // assert is thrown
+            // assert exception is thrown
         }
 
         List<List<?>> rows = sqlNexus.query(q("select * from person")).getAll();
 
-        List<List<? extends Serializable>> expected = singletonList(
+        List<List<? extends Serializable>> exp = singletonList(
             asList(1, "John")
         );
-        assertEquals(expected, rows);
+        assertEquals(exp, rows);
     }
 
+    /** */
     private static SqlFieldsQuery q(String sql) {
         return new SqlFieldsQuery(sql);
     }

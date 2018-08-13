@@ -32,14 +32,22 @@ import org.apache.ignite.configuration.CacheConfiguration;
 
 import static java.util.Arrays.asList;
 
+/**
+ *
+ */
 public class CacheMvccStreamingInsertTest extends CacheMvccAbstractTest {
+    /** */
     private IgniteCache<Object, Object> sqlNexus;
+
+    /** */
     private Connection conn;
 
+    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.PARTITIONED;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -57,6 +65,9 @@ public class CacheMvccStreamingInsertTest extends CacheMvccAbstractTest {
         conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1", props);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testStreamingInsertWithoutOverwrite() throws Exception {
         conn.createStatement().execute("SET STREAMING 1 BATCH_SIZE 2 ALLOW_OVERWRITE 0 " +
             " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY 100");
@@ -72,13 +83,16 @@ public class CacheMvccStreamingInsertTest extends CacheMvccAbstractTest {
         TimeUnit.MILLISECONDS.sleep(500);
 
         List<List<?>> rows = sqlNexus.query(q("select * from person")).getAll();
-        List<List<?>> expected = asList(
+        List<List<?>> exp = asList(
             asList(1, "ivan"),
             asList(2, "bar")
         );
-        assertEquals(expected, rows);
+        assertEquals(exp, rows);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testUpdateWithOverwrite() throws Exception {
         conn.createStatement().execute("SET STREAMING 1 BATCH_SIZE 2 ALLOW_OVERWRITE 1 " +
             " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY 100");
@@ -94,13 +108,14 @@ public class CacheMvccStreamingInsertTest extends CacheMvccAbstractTest {
         TimeUnit.MILLISECONDS.sleep(500);
 
         List<List<?>> rows = sqlNexus.query(q("select * from person")).getAll();
-        List<List<?>> expected = asList(
+        List<List<?>> exp = asList(
             asList(1, "foo"),
             asList(2, "bar")
         );
-        assertEquals(expected, rows);
+        assertEquals(exp, rows);
     }
 
+    /** */
     private static SqlFieldsQuery q(String sql) {
         return new SqlFieldsQuery(sql);
     }
