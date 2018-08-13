@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__dropdown({ label, model, name, disabled, required, multiple, placeholder, placeholderEmpty, options, optionLabel = 'label', tip })
+mixin form-field__dropdown({ label, model, name, disabled, required, multiple, placeholder, placeholderEmpty, options, optionLabel = 'label', tip, tipOpts })
     -var errLbl = label ? label.substring(0, label.length - 1) : 'Field';
 
     mixin __form-field__input()
