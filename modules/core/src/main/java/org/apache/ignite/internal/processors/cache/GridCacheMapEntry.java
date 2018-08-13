@@ -4972,6 +4972,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 entry.update(null, 0, 0, newVer, true);
 
+                entry.mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, null, newVer, topVer, mvccVer);
+
                 entry.recordNodeId(affNodeId, topVer);
             }
             catch (IgniteCheckedException e) {
@@ -5250,6 +5252,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             updateCntr0)));
 
                 entry.update(val, expireTime, ttl, newVer, true);
+
+                entry.mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, val, newVer, topVer, mvccVer);
 
                 entry.recordNodeId(affNodeId, topVer);
             }

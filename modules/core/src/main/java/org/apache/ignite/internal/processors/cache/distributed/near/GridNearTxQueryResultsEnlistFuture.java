@@ -365,6 +365,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                 }
             }
 
+            tx.addActiveCache(cctx, false);
+
             dhtTx.mvccEnlistBatch(cctx, it.operation(), keys, vals, mvccSnapshot.withoutActiveTransactions(), updCntrs);
         }
         catch (IgniteCheckedException e) {

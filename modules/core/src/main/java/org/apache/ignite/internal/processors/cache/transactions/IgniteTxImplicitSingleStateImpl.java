@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -57,14 +58,20 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     private boolean recovery;
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
         assert cacheCtx == null : "Cache already set [cur=" + cacheCtx.name() + ", new=" + ctx.name() + ']';
+        assert tx instanceof  IgniteTxLocalAdapter;
 
         cacheCtx = ctx;
         this.recovery = recovery;
 
-        tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
+        ((IgniteTxLocalAdapter)tx).activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridIntList cacheIds() {
+        return  GridIntList.asList(cacheCtx.cacheId());
     }
 
     /** {@inheritDoc} */

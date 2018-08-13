@@ -819,28 +819,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /**
-     * Notify Dr on tx finished.
-     *
-     * @param commit {@code True} if commited, {@code False} otherwise.
-     */
-    private void notifyDrManager(boolean commit) {
-        if (system() || internal())
-            return;
-
-        Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrsMap = updateCountersMap();
-
-        if (mvccSnapshot == null || F.isEmpty(updCntrsMap))
-            return;
-
-        for (Integer cacheId : updCntrsMap.keySet()) {
-            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
-
-            if (ctx0.isDrEnabled())
-                ctx0.dr().onTxFinished(mvccSnapshot, commit, topologyVersionSnapshot());
-        }
-    }
-
-    /**
      * Applies update counters to the local partitions.
      */
     private void updateLocalCounters() {

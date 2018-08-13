@@ -383,6 +383,17 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /**
+     * Adds cache to the list of active caches in transaction.
+     *
+     * @param cacheCtx Cache context to add.
+     * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
+     *      cache (e.g. they have different stores).
+     */
+    public final void addActiveCache(GridCacheContext cacheCtx) throws IgniteCheckedException {
+        txState.addActiveCache(cacheCtx, false, this);
+    }
+
+    /**
      *
      * @param ctx Cache context.
      * @param op Cache operation.

@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -1790,6 +1791,32 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         return F.t(op, ctx);
+    }
+
+    /**
+     * Notify Dr on tx finished.
+     *
+     * @param commit {@code True} if commited, {@code False} otherwise.
+     */
+    protected void notifyDrManager(boolean commit) {
+        if (system() || internal())
+            return;
+
+        IgniteTxState txState = txState();
+
+        if (mvccSnapshot == null || txState.cacheIds().isEmpty())
+            return;
+
+        GridIntIterator iter = txState.cacheIds().iterator();
+
+        while (iter.hasNext()) {
+            int cacheId = iter.next();
+
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            if (ctx0.isDrEnabled())
+                ctx0.dr().onTxFinished(mvccSnapshot, commit, topologyVersionSnapshot());
+        }
     }
 
     /**

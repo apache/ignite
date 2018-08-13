@@ -954,26 +954,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * Notify Dr on tx finished.
-     *
-     * @param commit {@code True} if commited, {@code False} otherwise.
-     */
-    protected void notifyDrManager(boolean commit) {
-        if (system() || internal())
-            return;
-
-        if (mvccSnapshot == null || F.isEmpty(updCntrs))
-            return;
-
-        for (Integer cacheId : updCntrs.keySet()) {
-            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
-
-            if (ctx0.isDrEnabled())
-                ctx0.dr().onTxFinished(mvccSnapshot, commit, topologyVersionSnapshot());
-        }
-    }
-
-    /**
      * @param waitTxs Tx ids to wait for.
      */
     private void updateWaitTxs(@Nullable GridLongList waitTxs) {

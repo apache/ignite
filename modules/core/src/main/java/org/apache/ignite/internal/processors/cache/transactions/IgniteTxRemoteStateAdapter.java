@@ -21,7 +21,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,6 +33,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
  *
  */
 public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState {
+    /** Active cache IDs. */
+    private GridIntList activeCacheIds = new GridIntList();
+
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return false;
@@ -41,6 +46,11 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
         assert false;
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridIntList cacheIds() {
+        return activeCacheIds;
     }
 
     /** {@inheritDoc} */
@@ -67,9 +77,18 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext cctx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
-        assert false;
+        assert tx instanceof GridDistributedTxRemoteAdapter;
+
+        int cacheId = cctx.cacheId();
+
+        // Check if we can enlist new cache to transaction.
+        if (!activeCacheIds.contains(cacheId)) {
+            assert cctx.shared().verifyTxCompatibility(tx, activeCacheIds, cctx) == null;
+
+            activeCacheIds.add(cacheId);
+        }
     }
 
     /** {@inheritDoc} */
