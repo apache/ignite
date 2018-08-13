@@ -48,14 +48,14 @@ const Logger = require('./internal/Logger');
  *     If disconnect() method is called, the client moves to DISCONNECTED state.
  */
 const STATE = Object.freeze({
-    DISCONNECTED : 0,
-    CONNECTING : 1,
-    CONNECTED : 2
+    DISCONNECTED: 0,
+    CONNECTING: 1,
+    CONNECTED: 2
 });
 
 /**
  * Class representing Ignite client.
- * 
+ *
  */
 class IgniteClient {
 
@@ -69,8 +69,18 @@ class IgniteClient {
      */
     constructor(onStateChanged = null) {
         const ClientFailoverSocket = require('./internal/ClientFailoverSocket');
-        this._socket = new ClientFailoverSocket(onStateChanged);
-        BinaryTypeStorage.createEntity(this._socket);
+
+        const _onStateChanged = (state, reason, ...args) => {
+            if (state === IgniteClient.STATE.CONNECTED) {
+                BinaryTypeStorage.createEntity(this._socket);
+            }
+
+            if (onStateChanged) {
+                onStateChanged(state, reason, ...args);
+            }
+        };
+
+        this._socket = new ClientFailoverSocket(_onStateChanged);
     }
 
     static get STATE() {
