@@ -146,7 +146,7 @@ mixin java-package(label, model, name, enabled, required, tip)
         tip
     })
 
-mixin form-field__java-package({ label, model, name, disabled, required, tip, placeholder })
+mixin form-field__java-package({ label, model, name, disabled, required, tip, tipOpts, placeholder })
     +form-field__text({
         label,
         model,
@@ -154,6 +154,7 @@ mixin form-field__java-package({ label, model, name, disabled, required, tip, pl
         disabled,
         required,
         tip,
+        tipOpts,
         placeholder
     })(
         data-java-keywords='true'
