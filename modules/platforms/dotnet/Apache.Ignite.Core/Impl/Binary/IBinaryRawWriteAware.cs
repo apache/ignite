@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
-    /// Represents an object that can write itself to a raw binary writer using specific server version
+    /// Represents an object that can write itself to a raw binary writer using specific server version.
     /// </summary>
     internal interface IBinaryRawWriteAwareEx<in T> where T : IBinaryRawWriter
     {
@@ -51,7 +51,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Writes this object to the given writer.
         /// </summary> 
         /// <param name="writer">Writer.</param>
-        /// <param name="srvVer">Server version.</param>
         /// <exception cref="System.IO.IOException">If write failed.</exception>
         void Write(T writer);
     }

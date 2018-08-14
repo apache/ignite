@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.sql;
 
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.odbc.SqlStateCode.CONSTRAINT_VIOLATION;
 
 /**
  */
@@ -85,9 +88,45 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
         checkSQLThrows("MERGE INTO char_table_2(id, str) VALUES(?, ?)", 1, "123456");
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDropColumnWithConstraint() throws Exception {
+        execSQL("CREATE TABLE char_table_3(id INT PRIMARY KEY, field CHAR(5), field2 INTEGER)");
+
+        execSQL("INSERT INTO char_table_3(id, field, field2) VALUES(?, ?, ?)", 1, "12345", 1);
+
+        checkSQLThrows("INSERT INTO char_table_3(id, field, field2) VALUES(?, ?, ?)", 2, "123456", 1);
+
+        execSQL("ALTER TABLE char_table_3 DROP COLUMN field");
+
+        execSQL("INSERT INTO char_table_3(id, field2) VALUES(?, ?)", 3, 3);
+    }
+
+    public void testSqlState() throws Exception {
+        execSQL("CREATE TABLE char_table_4(id INT PRIMARY KEY, field CHAR(5))");
+
+        IgniteSQLException err = (IgniteSQLException)
+            checkSQLThrows("INSERT INTO char_table_4(id, field) VALUES(?, ?)", 1, "123456");
+
+        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
+
+        execSQL("INSERT INTO char_table_4(id, field) VALUES(?, ?)", 2, "12345");
+
+        err = (IgniteSQLException)
+            checkSQLThrows("UPDATE char_table_4 SET field = ? WHERE id = ?", "123456", 2);
+
+        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
+
+        err = (IgniteSQLException)
+            checkSQLThrows("MERGE INTO char_table_2(id, str) VALUES(?, ?)", 2, "123456");
+
+        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
+    }
+
     /** */
-    private void checkSQLThrows(String sql, Object... args) {
-        GridTestUtils.assertThrowsWithCause(() -> {
+    private Throwable checkSQLThrows(String sql, Object... args) {
+        return GridTestUtils.assertThrowsWithCause(() -> {
             execSQL(sql, args);
 
             return 0;
