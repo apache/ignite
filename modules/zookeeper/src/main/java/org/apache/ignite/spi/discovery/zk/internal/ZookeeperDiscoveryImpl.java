@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -2268,28 +2269,27 @@ public class ZookeeperDiscoveryImpl {
 
         ZookeeperClient client = rtState.zkClient;
 
-        // TODO ZK: use multi, better batching + max-size safe + NoNodeException safe.
+        List<String> batch = new LinkedList<>();
+
         List<String> evtChildren = rtState.zkClient.getChildren(zkPaths.evtsPath);
 
         for (String evtPath : evtChildren) {
             String evtDir = zkPaths.evtsPath + "/" + evtPath;
 
-            removeChildren(evtDir);
+            batch.addAll(ZkIgnitePaths.addParentPath(evtDir, rtState.zkClient.getChildren(evtDir)));
         }
 
-        client.deleteAll(zkPaths.evtsPath, evtChildren, -1);
+        batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.evtsPath, evtChildren));
 
-        client.deleteAll(zkPaths.customEvtsDir,
-            client.getChildren(zkPaths.customEvtsDir),
-            -1);
+        batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.customEvtsDir, client.getChildren(zkPaths.customEvtsDir)));
 
-        rtState.zkClient.deleteAll(zkPaths.customEvtsPartsDir,
-            rtState.zkClient.getChildren(zkPaths.customEvtsPartsDir),
-            -1);
+        batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.customEvtsPartsDir,
+            rtState.zkClient.getChildren(zkPaths.customEvtsPartsDir)));
 
-        rtState.zkClient.deleteAll(zkPaths.customEvtsAcksDir,
-            rtState.zkClient.getChildren(zkPaths.customEvtsAcksDir),
-            -1);
+        batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.customEvtsAcksDir,
+            rtState.zkClient.getChildren(zkPaths.customEvtsAcksDir)));
+
+        rtState.zkClient.deleteAll(batch, -1);
 
         if (startInternalOrder > 0) {
             for (String alive : rtState.zkClient.getChildren(zkPaths.aliveNodesDir)) {
@@ -2304,14 +2304,6 @@ public class ZookeeperDiscoveryImpl {
             if (log.isInfoEnabled())
                 log.info("Previous cluster data cleanup time: " + time);
         }
-    }
-
-    /**
-     * @param path Path.
-     * @throws Exception If failed.
-     */
-    private void removeChildren(String path) throws Exception {
-        rtState.zkClient.deleteAll(path, rtState.zkClient.getChildren(path), -1);
     }
 
     /**
