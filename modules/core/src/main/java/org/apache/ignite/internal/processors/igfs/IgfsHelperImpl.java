@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.igfs.IgfsEvictionFilter;
+import org.apache.ignite.cache.eviction.igfs.IgfsEvictionFilterFactory;
 import org.apache.ignite.cache.eviction.igfs.IgfsPerBlockLruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,8 +37,8 @@ public class IgfsHelperImpl implements IgfsHelper {
             (EvictionPolicy)cfg.getEvictionPolicyFactory().create()
             : cfg.getEvictionPolicy();
 
-        if (evictPlc instanceof IgfsPerBlockLruEvictionPolicy && cfg.getEvictionFilter() == null)
-            cfg.setEvictionFilter(new IgfsEvictionFilter());
+        if (evictPlc instanceof IgfsPerBlockLruEvictionPolicy && cfg.getEvictionFilterFactory() == null)
+            cfg.setEvictionFilterFactory(new IgfsEvictionFilterFactory());
     }
 
     /** {@inheritDoc} */
@@ -46,7 +48,8 @@ public class IgfsHelperImpl implements IgfsHelper {
             : cfg.getEvictionPolicy();
 
         if (evictPlc != null && evictPlc instanceof IgfsPerBlockLruEvictionPolicy) {
-            EvictionFilter evictFilter = cfg.getEvictionFilter();
+            Factory factory = cfg.getEvictionFilterFactory();
+            EvictionFilter evictFilter = factory != null ? (EvictionFilter)factory.create() : cfg.getEvictionFilter();
 
             if (evictFilter != null && !(evictFilter instanceof IgfsEvictionFilter))
                 throw new IgniteCheckedException("Eviction filter cannot be set explicitly when using " +
