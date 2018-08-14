@@ -59,8 +59,8 @@ public class UnmarshallCallable<T> implements Callable<T> {
         this.classLoader = classLoader;
     }
 
-    @Override
-    public T call() throws Exception {
+    /** @{inheritDoc}  */
+    @Override public T call() throws Exception {
         return compressed
                 ? U.unmarshalZip(gridCacheSharedContext.marshaller(), payload, classLoader)
                 : U.unmarshal(gridCacheSharedContext, payload, classLoader);

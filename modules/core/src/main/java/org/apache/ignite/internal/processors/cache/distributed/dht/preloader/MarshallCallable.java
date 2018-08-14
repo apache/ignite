@@ -48,7 +48,7 @@ public class MarshallCallable implements Callable<byte[]> {
         this.compress = compress;
     }
 
-    /** @{{inheritDoc} */
+    /** @{inheritDoc} */
     @Override public byte[] call() throws Exception {
         byte[] marshalled = U.marshal(gridCacheSharedContext, payload);
 
