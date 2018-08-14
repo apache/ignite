@@ -88,8 +88,6 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL, "true");
-
         cleanupTestData();
     }
 
@@ -111,10 +109,20 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
         System.clearProperty(IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL);
     }
 
+    public void testParallelStartAndStop() throws Exception {
+        testParallelStartAndStop(true);
+    }
+
+    public void testSequentialStartAndStop() throws Exception {
+        testParallelStartAndStop(false);
+    }
+
     /**
      *
      */
-    public void testParallelStartAndStop() throws Exception {
+    private void testParallelStartAndStop(boolean parallel) throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL, String.valueOf(parallel));
+
         IgniteEx igniteEx = startGrid(0);
 
         IgniteEx igniteEx2 = startGrid(1);

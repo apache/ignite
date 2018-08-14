@@ -10862,7 +10862,7 @@ public abstract class IgniteUtils {
     public static int[] calculateOptimalBatchSizes(int parallelismLvl, int size) {
         int[] batcheSizes = new int[Math.min(parallelismLvl, size)];
 
-        for(int i =0; i <size; i++)
+        for (int i = 0; i < size; i++)
             batcheSizes[i % batcheSizes.length]++;
 
         return batcheSizes;
