@@ -61,12 +61,12 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
         assert cacheCtx == null : "Cache already set [cur=" + cacheCtx.name() + ", new=" + ctx.name() + ']';
-        assert tx instanceof  IgniteTxLocalAdapter;
+        assert tx.local();
 
         cacheCtx = ctx;
         this.recovery = recovery;
 
-        ((IgniteTxLocalAdapter)tx).activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
+        tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
     }
 
     /** {@inheritDoc} */

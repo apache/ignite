@@ -208,7 +208,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
-        assert tx instanceof IgniteTxLocalAdapter;
+        assert tx.local();
 
         GridCacheSharedContext cctx = cacheCtx.shared();
 
@@ -249,7 +249,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                 activeCacheIds.add(cacheId);
 
             if (activeCacheIds.size() == 1)
-                ((IgniteTxLocalAdapter)tx).activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
+                tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
         }
     }
 

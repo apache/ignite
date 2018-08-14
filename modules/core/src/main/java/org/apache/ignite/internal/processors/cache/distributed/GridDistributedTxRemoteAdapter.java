@@ -204,6 +204,18 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
+        throw new UnsupportedOperationException("Remote tx doesn't support deployment.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+        assert !recovery;
+
+        txState.addActiveCache(cacheCtx, recovery, this);
+    }
+
     /**
      * @return Checks if transaction has no entries.
      */

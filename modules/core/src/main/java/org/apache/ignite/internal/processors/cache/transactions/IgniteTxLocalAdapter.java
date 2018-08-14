@@ -300,10 +300,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         return depEnabled;
     }
 
-    /**
-     * @param depEnabled Flag indicating whether deployment is enabled for caches from this transaction or not.
-     */
-    public void activeCachesDeploymentEnabled(boolean depEnabled) {
+    /** {@inheritDoc} */
+    @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
         this.depEnabled = depEnabled;
     }
 
@@ -1339,14 +1337,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         return !txState.init(txSize) || cctx.tm().onStarted(this);
     }
 
-    /**
-     * Adds cache to the list of active caches in transaction.
-     *
-     * @param cacheCtx Cache context to add.
-     * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
-     *      cache (e.g. they have different stores).
-     */
-    public final void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public final void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
         txState.addActiveCache(cacheCtx, recovery, this);
     }
 

@@ -263,6 +263,11 @@ public interface IgniteInternalTx {
     public boolean activeCachesDeploymentEnabled();
 
     /**
+     * @param depEnabled Flag indicating whether deployment is enabled for caches from this transaction or not.
+     */
+    public void activeCachesDeploymentEnabled(boolean depEnabled);
+
+    /**
      * Attempts to set topology version and returns the current value.
      * If topology version was previously set, then it's value will
      * be returned (but not updated).

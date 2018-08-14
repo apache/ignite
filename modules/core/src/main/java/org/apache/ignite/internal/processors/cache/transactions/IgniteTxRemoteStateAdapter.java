@@ -43,9 +43,7 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
 
     /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
-        assert false;
-
-        return null;
+        return activeCacheIds.isEmpty() ? null : activeCacheIds.get(0);
     }
 
     /** {@inheritDoc} */
@@ -79,7 +77,7 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     /** {@inheritDoc} */
     @Override public void addActiveCache(GridCacheContext cctx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
-        assert tx instanceof GridDistributedTxRemoteAdapter;
+        assert !tx.local();
 
         int cacheId = cctx.cacheId();
 
