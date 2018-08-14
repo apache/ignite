@@ -21,6 +21,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.PartitionRebalanceRequestMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -109,6 +110,9 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
             return false;
 
         if (msg instanceof ChangeGlobalStateMessage && ((ChangeGlobalStateMessage)msg).activate())
+            return true;
+
+        if (msg instanceof PartitionRebalanceRequestMessage)
             return true;
 
         if (msg instanceof SnapshotDiscoveryMessage) {

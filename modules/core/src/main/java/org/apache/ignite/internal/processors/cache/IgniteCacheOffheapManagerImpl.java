@@ -1248,10 +1248,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param val Update index value.
          */
         @Override public void updateCounter(long val) {
+           updateCounter(val, false);
+        }
+
+        /**
+         * @param val Update index value.
+         */
+        @Override public void updateCounter(long val, boolean force) {
             while (true) {
                 long val0 = cntr.get();
 
-                if (val0 >= val)
+                if (val0 >= val && !force)
                     break;
 
                 if (cntr.compareAndSet(val0, val))

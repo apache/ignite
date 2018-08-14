@@ -37,6 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -78,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
+import org.apache.ignite.internal.processors.cache.PartitionRebalanceRequestMessage;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
@@ -682,9 +685,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     exchange = onCacheChangeRequest(crdNode);
                 }
-                else if (msg instanceof SnapshotDiscoveryMessage) {
+                else if (msg instanceof SnapshotDiscoveryMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
-                }
+                else if (msg instanceof PartitionRebalanceRequestMessage)
+                    exchange = onCustomMessageNoAffinityChange(crdNode);
                 else if (msg instanceof WalStateAbstractMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
                 else {
@@ -1213,6 +1217,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         boolean topChanged = firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
+        if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
+                ((DiscoveryCustomEvent)firstDiscoEvt).customMessage() instanceof PartitionRebalanceRequestMessage)
+            processPartitionRebalanceRequest(((DiscoveryCustomEvent)firstDiscoEvt));
+
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal() || cacheStopping(cacheCtx.cacheId()))
                 continue;
@@ -1698,6 +1707,64 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     ", exchId=" + exchId + ']', e);
             }
         }
+    }
+
+    /**
+     * Reset states of request partitions in order to rebalancer them.
+     *
+     * @param evt Discovery event that triggers partition rebalance.
+     */
+    private void processPartitionRebalanceRequest(DiscoveryCustomEvent evt) {
+        PartitionRebalanceRequestMessage msg = (PartitionRebalanceRequestMessage)evt.customMessage();
+
+        ClusterNode locNode = cctx.localNode();
+
+        for(Map.Entry<Integer, Map<Integer, Set<UUID>>> grpReq: msg.partitions().entrySet()) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpReq.getKey());
+
+            if (grp == null || grp.topology().localPartitions().isEmpty())
+                continue;
+
+
+            GridDhtPartitionMap locParts = grp.topology().localPartitionMap();
+
+            List<List<ClusterNode>> allPartOwners = grp.topology().allOwners();
+
+            Map<Integer, Set<UUID>> reqParts = grpReq.getValue();
+
+            for (Map.Entry<Integer, Set<UUID>> pReq: reqParts.entrySet()) {
+                int pId = pReq.getKey();
+
+                Set<UUID> nodes = pReq.getValue();
+
+                Set<UUID> owners = allPartOwners.get(pId).stream().map(ClusterNode::id).collect(Collectors.toSet());
+
+                if (!locParts.containsKey(pId) || !nodes.contains(locNode.id())
+                        || !isPartitionSafeToRebalance(nodes, owners))
+                    continue;
+
+                GridDhtPartitionState pState = locParts.get(pId);
+
+                if (pState== GridDhtPartitionState.OWNING)  {
+                    GridDhtLocalPartition p = grp.topology().localPartition(pId);
+
+                    if (p != null) {
+                        p.moving();
+
+                        if (p.dataStore() != null)
+                            p.dataStore().updateCounter(0, true);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param reqNodes Nodes from rebalance request.
+     * @param owners Owners nodes.
+     */
+    private boolean isPartitionSafeToRebalance(Set<UUID> reqNodes, Set<UUID> owners) {
+        return owners.stream().filter(o -> !reqNodes.contains(o)).collect(Collectors.toSet()).size() > 0;
     }
 
     /**
@@ -2847,9 +2914,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (activateCluster() || changedBaseline())
                     assignPartitionsStates();
 
-                DiscoveryCustomMessage discoveryCustomMessage = ((DiscoveryCustomEvent) firstDiscoEvt).customMessage();
+                DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent) firstDiscoEvt).customMessage();
 
-                if (discoveryCustomMessage instanceof DynamicCacheChangeBatch) {
+                if (customMsg instanceof DynamicCacheChangeBatch) {
                     if (exchActions != null) {
                         assignPartitionsStates();
 
@@ -2859,8 +2926,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             resetLostPartitions(caches);
                     }
                 }
-                else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
-                        && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
+                else if (customMsg instanceof PartitionRebalanceRequestMessage)
+                    assignPartitionsStates();
+                else if (customMsg instanceof SnapshotDiscoveryMessage && ((SnapshotDiscoveryMessage)customMsg).needAssignPartitions())
                     assignPartitionsStates();
             }
             else {

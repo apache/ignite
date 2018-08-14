@@ -407,6 +407,11 @@ public interface IgniteCacheOffheapManager {
         void updateCounter(long val);
 
         /**
+         *
+         */
+        void updateCounter(long val, boolean force);
+
+        /**
          * @return Next update counter.
          */
         public long nextUpdateCounter();
