@@ -1176,7 +1176,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     }
                     catch (IgniteFutureTimeoutCheckedException ignored) {
                         // Additional failover to break waiting on node left/fail
-                        // in case left/fail event processing failed of hanged.
+                        // in case left/fail event processing failed or hanged.
                         if (!ctx.discovery().alive(nodeId)) {
                             SyncMessageAckFuture fut0 = syncMsgFuts.remove(futId);
 
