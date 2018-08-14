@@ -17,22 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -43,6 +38,14 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Information about partitions of all nodes in topology.
@@ -410,69 +413,51 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             (!F.isEmpty(errs) && errsBytes == null);
 
         if (marshal) {
-            byte[] partsBytes0 = null;
-            byte[] partCntrsBytes0 = null;
-            byte[] partCntrsBytes20 = null;
-            byte[] partHistSuppliersBytes0 = null;
-            byte[] partsToReloadBytes0 = null;
-            byte[] partsSizesBytes0 = null;
-            byte[] errsBytes0 = null;
+            GridClosureProcessor gridClosureProcessor = ctx.kernalContext().closure();
+
+            IgniteInternalFuture<byte[]> partsFuture = null;
+            IgniteInternalFuture<byte[]> partCntrsFuture = null;
+            IgniteInternalFuture<byte[]> partCntrs2Future = null;
+            IgniteInternalFuture<byte[]> partHistSuppliersFuture = null;
+            IgniteInternalFuture<byte[]> partsToReloadFuture = null;
+            IgniteInternalFuture<byte[]> partsSizesFuture = null;
+            IgniteInternalFuture<byte[]> errsFuture = null;
 
             if (!F.isEmpty(parts) && partsBytes == null)
-                partsBytes0 = U.marshal(ctx, parts);
+                partsFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, parts, compress), true);
 
             if (partCntrs != null && !partCntrs.empty() && partCntrsBytes == null)
-                partCntrsBytes0 = U.marshal(ctx, partCntrs);
+                partCntrsFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, partCntrs, compress), true);
 
             if (partCntrs2 != null && !partCntrs2.empty() && partCntrsBytes2 == null)
-                partCntrsBytes20 = U.marshal(ctx, partCntrs2);
+                partCntrs2Future = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, partCntrs2, compress), true);
+
 
             if (partHistSuppliers != null && partHistSuppliersBytes == null)
-                partHistSuppliersBytes0 = U.marshal(ctx, partHistSuppliers);
+                partHistSuppliersFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, partHistSuppliers, compress), true);
 
             if (partsToReload != null && partsToReloadBytes == null)
-                partsToReloadBytes0 = U.marshal(ctx, partsToReload);
+                partsToReloadFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, partsToReload, compress), true);
 
             if (partsSizes != null && partsSizesBytes == null)
-                partsSizesBytes0 = U.marshal(ctx, partsSizes);
+                partsSizesFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, partsSizes, compress), true);
 
             if (!F.isEmpty(errs) && errsBytes == null)
-                errsBytes0 = U.marshal(ctx, errs);
+                errsFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, errs, compress), true);
+
+            partsBytes = partsFuture != null ? partsFuture.get() : null;
+            partCntrsBytes = partCntrsFuture != null ? partCntrsFuture.get() : null;
+            partCntrsBytes2 = partCntrs2Future != null ? partCntrs2Future.get() : null;
+            partHistSuppliersBytes = partHistSuppliersFuture != null ? partHistSuppliersFuture.get() : null;
+            partsToReloadBytes = partsToReloadFuture != null ? partsToReloadFuture.get() : null;
+            partsSizesBytes = partsSizesFuture != null ? partsSizesFuture.get() : null;
+            errsBytes = errsFuture != null ? errsFuture.get() : null;
 
             if (compress) {
                 assert !compressed();
 
-                try {
-                    byte[] partsBytesZip = U.zip(partsBytes0);
-                    byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
-                    byte[] partCntrsBytes2Zip = U.zip(partCntrsBytes20);
-                    byte[] partHistSuppliersBytesZip = U.zip(partHistSuppliersBytes0);
-                    byte[] partsToReloadBytesZip = U.zip(partsToReloadBytes0);
-                    byte[] partsSizesBytesZip = U.zip(partsSizesBytes0);
-                    byte[] exsBytesZip = U.zip(errsBytes0);
-
-                    partsBytes0 = partsBytesZip;
-                    partCntrsBytes0 = partCntrsBytesZip;
-                    partCntrsBytes20 = partCntrsBytes2Zip;
-                    partHistSuppliersBytes0 = partHistSuppliersBytesZip;
-                    partsToReloadBytes0 = partsToReloadBytesZip;
-                    partsSizesBytes0 = partsSizesBytesZip;
-                    errsBytes0 = exsBytesZip;
-
-                    compressed(true);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(ctx.logger(getClass()), "Failed to compress partitions data: " + e, e);
-                }
+                compressed(true);
             }
-
-            partsBytes = partsBytes0;
-            partCntrsBytes = partCntrsBytes0;
-            partCntrsBytes2 = partCntrsBytes20;
-            partHistSuppliersBytes = partHistSuppliersBytes0;
-            partsToReloadBytes = partsToReloadBytes0;
-            partsSizesBytes = partsSizesBytes0;
-            errsBytes = errsBytes0;
         }
     }
 
@@ -494,11 +479,42 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (partsBytes != null && parts == null) {
-            if (compressed())
-                parts = U.unmarshalZip(ctx.marshaller(), partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                parts = U.unmarshal(ctx, partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        GridClosureProcessor gridClosureProcessor = ctx.kernalContext().closure();
+
+        ClassLoader classLoader = U.resolveClassLoader(ldr, ctx.gridConfig());
+
+        IgniteInternalFuture<Map<Integer, GridDhtPartitionFullMap>> partsFuture = null;
+        IgniteInternalFuture<IgniteDhtPartitionCountersMap> partsCntrsFuture = null;
+        IgniteInternalFuture<IgniteDhtPartitionCountersMap2> partsCntrs2Future = null;
+        IgniteInternalFuture<IgniteDhtPartitionHistorySuppliersMap> partHistSuppliersFuture = null;
+        IgniteInternalFuture<IgniteDhtPartitionsToReloadMap> partsToReloadFuture = null;
+        IgniteInternalFuture<Map<Integer, Map<Integer, Long>>> partsSizesFuture = null;
+        IgniteInternalFuture<Map<UUID, Exception>> errsFuture = null;
+
+        if (partsBytes != null && parts == null)
+            partsFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partsBytes, compressed(), classLoader));
+
+        if (partCntrsBytes != null && partCntrs == null)
+            partsCntrsFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partCntrsBytes, compressed(), classLoader));
+
+        if (partCntrsBytes2 != null && partCntrs2 == null)
+            partsCntrs2Future = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partCntrsBytes, compressed(), classLoader));
+
+        if (partHistSuppliersBytes != null && partHistSuppliers == null)
+            partHistSuppliersFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partHistSuppliersBytes, compressed(), classLoader));
+
+        if (partsToReloadBytes != null && partsToReload == null)
+            partsToReloadFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partsToReloadBytes, compressed(), classLoader));
+
+        if (partsSizesBytes != null && partsSizes == null)
+            partsSizesFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partsSizesBytes, compressed(), classLoader));
+
+
+        if (errsBytes != null && errs == null)
+            errsFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, errsBytes, compressed(), classLoader));
+
+        if (partsFuture != null) {
+            parts = partsFuture.get();
 
             if (dupPartsData != null) {
                 assert parts != null;
@@ -528,53 +544,41 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             }
         }
 
+        if (partsCntrsFuture != null)
+            partCntrs = partsCntrsFuture.get();
+
+        if (partsCntrs2Future != null)
+            partCntrs2 = partsCntrs2Future.get();
+
+        if (partHistSuppliersFuture != null)
+            partHistSuppliers = partHistSuppliersFuture.get();
+
+        if (partsToReloadFuture != null)
+            partsToReload = partsToReloadFuture.get();
+
+        if (partsSizesFuture != null)
+            partsSizes = partsSizesFuture.get();
+
+        if (errsFuture != null)
+            errs = errsFuture.get();
+
         if (parts == null)
             parts = new HashMap<>();
-
-        if (partCntrsBytes != null && partCntrs == null) {
-            if (compressed())
-                partCntrs = U.unmarshalZip(ctx.marshaller(), partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                partCntrs = U.unmarshal(ctx, partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
-
-        if (partCntrsBytes2 != null && partCntrs2 == null) {
-            if (compressed())
-                partCntrs2 = U.unmarshalZip(ctx.marshaller(), partCntrsBytes2, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                partCntrs2 = U.unmarshal(ctx, partCntrsBytes2, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
-
-        if (partHistSuppliersBytes != null && partHistSuppliers == null) {
-            if (compressed())
-                partHistSuppliers = U.unmarshalZip(ctx.marshaller(), partHistSuppliersBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                partHistSuppliers = U.unmarshal(ctx, partHistSuppliersBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
-
-        if (partsToReloadBytes != null && partsToReload == null) {
-            if (compressed())
-                partsToReload = U.unmarshalZip(ctx.marshaller(), partsToReloadBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                partsToReload = U.unmarshal(ctx, partsToReloadBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
-
-        if (partsSizesBytes != null && partsSizes == null) {
-            if (compressed())
-                partsSizes = U.unmarshalZip(ctx.marshaller(), partsSizesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                partsSizes = U.unmarshal(ctx, partsSizesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
 
         if (partCntrs == null)
             partCntrs = new IgniteDhtPartitionCountersMap();
 
-        if (errsBytes != null && errs == null) {
-            if (compressed())
-                errs = U.unmarshalZip(ctx.marshaller(), errsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-            else
-                errs = U.unmarshal(ctx, errsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-        }
+        if (partCntrs2 == null)
+            partCntrs2 = new IgniteDhtPartitionCountersMap2();
+
+        if(partHistSuppliers == null)
+            partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
+
+        if(partsToReload == null)
+            partsToReload = new IgniteDhtPartitionsToReloadMap();
+
+        if(partsSizes == null)
+            partsSizes = new HashMap<>();
 
         if (errs == null)
             errs = new HashMap<>();
