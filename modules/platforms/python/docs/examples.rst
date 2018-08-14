@@ -367,10 +367,10 @@ one node should remain active.
 .. code-block:: python3
 
     # Connected to node 0
-    # “Socket connection broken.” just happened; switching to node 1.
+    # Error: Socket connection broken.
     # Connected to node 1
-    # “Socket connection broken.” just happened; switching to node 2.
-    # “[Errno 111] Client refused” just happened; switching to node 0.
+    # Error: Socket connection broken.
+    # Error: [Errno 111] Client refused
     # Connected to node 0
 
 SSL/TLS
