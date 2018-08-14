@@ -32,6 +32,9 @@ import org.jetbrains.annotations.Nullable;
  * Supply message with supplier error transfer support.
  */
 public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Available since. */
     public static IgniteProductVersion AVAILABLE_SINCE = IgniteProductVersion.fromString("2.7.0");
 
