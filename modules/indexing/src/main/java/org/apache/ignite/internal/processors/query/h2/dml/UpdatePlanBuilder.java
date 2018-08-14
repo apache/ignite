@@ -118,6 +118,11 @@ public final class UpdatePlanBuilder {
                 o = GridSqlAlias.unwrap((GridSqlAst)o);
 
             if (o instanceof GridSqlTable) {
+                if (((GridSqlTable)o).dataTable() == null) { // Check for virtual tables.
+                    throw new IgniteSQLException("Operation not supported for table '" +
+                        ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+
                 if (cctx == null)
                     mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
                 else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
@@ -174,9 +179,7 @@ public final class UpdatePlanBuilder {
 
             GridH2Table h2Tbl = tbl.dataTable();
 
-            if (h2Tbl == null)
-                throw new IgniteSQLException("Operation not supported for table '" + tbl.tableName() + "'",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            assert h2Tbl != null;
 
             desc = h2Tbl.rowDescriptor();
 
@@ -382,9 +385,7 @@ public final class UpdatePlanBuilder {
 
         GridH2Table h2Tbl = tbl.dataTable();
 
-        if (h2Tbl == null)
-            throw new IgniteSQLException("Operation not supported for table '" + tbl.tableName() + "'",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        assert h2Tbl != null;
 
         GridH2RowDescriptor desc = h2Tbl.rowDescriptor();
 

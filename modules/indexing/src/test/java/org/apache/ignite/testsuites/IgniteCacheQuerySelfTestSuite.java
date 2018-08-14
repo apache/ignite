@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerCoord
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFIlterBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFilterCoordinatorBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2ConnectionLeaksSelfTest;
+import org.apache.ignite.internal.processors.cache.index.IgniteDecimalSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsClientBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerCoordinatorBasicSelfTest;
@@ -130,10 +131,10 @@ import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexingComple
 import org.apache.ignite.internal.processors.cache.index.H2DynamicTableSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCachePageEvictionTest;
 import org.apache.ignite.internal.processors.cache.index.H2RowCacheSelfTest;
-import org.apache.ignite.internal.processors.cache.index.IgniteDecimalSelfTest;
 import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
+import org.apache.ignite.internal.processors.cache.index.SqlTransactionsComandsWithMvccDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SqlTransactionsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
@@ -172,7 +173,7 @@ import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildSelfTest;
 import org.apache.ignite.internal.processors.query.h2.H2StatementCacheSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
-import org.apache.ignite.internal.processors.query.h2.ObjectPoolSelfTest;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPoolSelfTest;
 import org.apache.ignite.internal.processors.query.h2.PreparedStatementExSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
@@ -270,6 +271,15 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCachePartitionedQueryP2PDisabledSelfTest.class);
         suite.addTestSuite(IgniteCachePartitionedQueryEvtsDisabledSelfTest.class);
 
+        //suite.addTestSuite(IgniteCacheUnionDuplicatesTest.class);
+        //suite.addTestSuite(IgniteCacheConfigVariationsQueryTest.class);
+        //suite.addTestSuite(IgniteCacheJoinPartitionedAndReplicatedCollocationTest.class);
+        //suite.addTestSuite(IgniteClientReconnectCacheQueriesFailoverTest.class);
+        //suite.addTestSuite(IgniteErrorOnRebalanceTest.class);
+        //suite.addTestSuite(CacheQueryBuildValueTest.class);
+        //suite.addTestSuite(CacheOffheapBatchIndexingMultiTypeTest.class);
+        //suite.addTestSuite(CacheOffheapBatchIndexingBaseTest.class);
+
         suite.addTestSuite(IgniteCacheQueryIndexSelfTest.class);
         suite.addTestSuite(IgniteCacheCollocatedQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheLargeResultSelfTest.class);
@@ -314,6 +324,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheMultipleIndexedTypesTest.class);
         suite.addTestSuite(IgniteSqlQueryMinMaxTest.class);
 
+        //suite.addTestSuite(GridCircularQueueTest.class);
+        //suite.addTestSuite(IndexingSpiQueryWithH2IndexingSelfTest.class);
+
         // DDL.
         suite.addTestSuite(H2DynamicIndexTransactionalReplicatedSelfTest.class);
         suite.addTestSuite(H2DynamicIndexTransactionalPartitionedSelfTest.class);
@@ -327,13 +340,18 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(H2DynamicColumnsServerCoordinatorBasicSelfTest.class);
 
         // DML+DDL.
+        //suite.addTestSuite(H2DynamicIndexingComplexAbstractTest.class);
         suite.addTestSuite(H2DynamicIndexingComplexClientAtomicPartitionedTest.class);
+        //suite.addTestSuite(H2DynamicIndexingComplexClientAtomicPartitionedNoBackupsTest.class);
         suite.addTestSuite(H2DynamicIndexingComplexClientAtomicReplicatedTest.class);
         suite.addTestSuite(H2DynamicIndexingComplexClientTransactionalPartitionedTest.class);
+        //suite.addTestSuite(H2DynamicIndexingComplexClientTransactionalPartitionedNoBackupsTest.class);
         suite.addTestSuite(H2DynamicIndexingComplexClientTransactionalReplicatedTest.class);
         suite.addTestSuite(H2DynamicIndexingComplexServerAtomicPartitionedTest.class);
+        //suite.addTestSuite(H2DynamicIndexingComplexServerAtomicPartitionedNoBackupsTest.class);
         suite.addTestSuite(H2DynamicIndexingComplexServerAtomicReplicatedTest.class);
         suite.addTestSuite(H2DynamicIndexingComplexServerTransactionalPartitionedTest.class);
+        //suite.addTestSuite(H2DynamicIndexingComplexServerTransactionalPartitionedNoBackupsTest.class);
         suite.addTestSuite(H2DynamicIndexingComplexServerTransactionalReplicatedTest.class);
 
         suite.addTestSuite(DdlTransactionSelfTest.class);
@@ -421,6 +439,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridIndexRebuildSelfTest.class);
 
         suite.addTestSuite(SqlTransactionsSelfTest.class);
+        suite.addTestSuite(SqlTransactionsComandsWithMvccDisabledSelfTest.class);
 
         suite.addTestSuite(IgniteSqlDefaultValueTest.class);
         suite.addTestSuite(IgniteDecimalSelfTest.class);
@@ -433,7 +452,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(SqlParserUserSelfTest.class);
         suite.addTestSuite(SqlUserCommandSelfTest.class);
 
-        suite.addTestSuite(ObjectPoolSelfTest.class);
+        suite.addTestSuite(ThreadLocalObjectPoolSelfTest.class);
         suite.addTestSuite(H2StatementCacheSelfTest.class);
         suite.addTestSuite(PreparedStatementExSelfTest.class);
 

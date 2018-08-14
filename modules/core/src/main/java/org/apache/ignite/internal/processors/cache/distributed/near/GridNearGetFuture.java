@@ -502,7 +502,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         return saved;
                     }
 
-                    if (cctx.statisticsEnabled() && !skipVals && !affNode.isLocal())
+                    if (cctx.statisticsEnabled() && !skipVals && !affNode.isLocal() && !isNear)
                         cache().metrics0().onRead(false);
 
                     LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(affNode);

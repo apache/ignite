@@ -1658,8 +1658,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             GridDhtPartitionsUpdateCountersMap resBackupCntrs = new GridDhtPartitionsUpdateCountersMap();
 
-            res.putIfAbsent(entry.getKey(), resBackupCntrs);
-
             for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
                 Long cntr = partsCntrs.get(e.getKey());
 
@@ -1669,6 +1667,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     resBackupCntrs.updateCounters().put(e.getKey(), cntr);
                 }
             }
+
+            if (!resBackupCntrs.updateCounters().isEmpty())
+                res.put(entry.getKey(), resBackupCntrs);
         }
 
         return res;

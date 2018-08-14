@@ -27,7 +27,10 @@ export function registerState($uiRouter) {
         unsaved: true,
         redirectTo: (trans) => {
             const skipStates = new Set(['signup', 'forgotPassword', 'landing']);
-            if (skipStates.has(trans.from().name)) return;
+
+            if (skipStates.has(trans.from().name))
+                return;
+
             return trans.injector().get('User').read()
                 .then(() => {
                     try {

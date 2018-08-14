@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 /**
  *
  */
-public class CompoundLockFuture extends GridFutureAdapter<Void> implements IgniteInClosure<IgniteInternalFuture<?>> {
+public class CompoundLockFuture extends GridFutureAdapter<Void> implements DhtLockFuture<Void>, IgniteInClosure<IgniteInternalFuture<?>> {
     /** */
     private static final long serialVersionUID = 4644646033267042131L;
     /** */
@@ -101,5 +101,12 @@ public class CompoundLockFuture extends GridFutureAdapter<Void> implements Ignit
 
             onDone(err);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onError(Throwable error) {
+        assert error != null;
+
+        onDone(error);
     }
 }

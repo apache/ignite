@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -73,9 +73,9 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     }
 
     /**
-     * @return Topology version.
+     * @return Topology version based on last {@link GridDhtPartitionTopologyImpl#readyTopVer}.
      */
-    AffinityTopologyVersion topologyVersion() {
+    public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 

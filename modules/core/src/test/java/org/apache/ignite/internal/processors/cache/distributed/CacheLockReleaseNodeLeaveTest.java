@@ -132,6 +132,8 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLockTopologyChange() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9213");
+
         final int nodeCnt = 5;
         int threadCnt = 8;
         final int keys = 100;
