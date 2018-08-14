@@ -37,14 +37,23 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalcula
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
 import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassTrainer;
-import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run Logistic Regression multi-class classification trainer over distributed dataset to build two models:
- * one with minmaxscaling and one without minmaxscaling.
- *
- * @see SVMLinearMultiClassClassificationModel
+ * Run Logistic Regression multi-class classification trainer ({@link LogRegressionMultiClassModel}) over distributed
+ * dataset to build two models: one with minmaxscaling and one without minmaxscaling.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points
+ * (<a href="https://archive.ics.uci.edu/ml/datasets/Glass+Identification">preprocessed Glass dataset</a>).</p>
+ * <p>
+ * After that it trains two logistic regression models based on the specified data - one model is with minmaxscaling
+ * and one without minmaxscaling.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained models to predict the target value,
+ * compares prediction to expected outcome (ground truth), and builds
+ * <a href="https://en.wikipedia.org/wiki/Confusion_matrix">confusion matrices</a>.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LogRegressionMultiClassClassificationExample {
     /** Run example. */
@@ -157,6 +166,8 @@ public class LogRegressionMultiClassClassificationExample {
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrorsWithNormalization);
                     System.out.println("\n>>> Accuracy " + (1 - amountOfErrorsWithNormalization / (double)totalAmount));
                     System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtxWithNormalization));
+
+                    System.out.println(">>> Logistic Regression Multi-class classification model over cached dataset usage example completed.");
                 }
             });
 

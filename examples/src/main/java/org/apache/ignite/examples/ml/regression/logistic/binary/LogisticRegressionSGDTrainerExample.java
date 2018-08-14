@@ -37,9 +37,19 @@ import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDT
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
- *
- * @see LogisticRegressionSGDTrainer
+ * Run logistic regression model based on stochastic gradient descent algorithm ({@link LogisticRegressionSGDTrainer})
+ * over distributed cache.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (based on the
+ * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
+ * <p>
+ * After that it trains the logistic regression model based on the specified data.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict the target value,
+ * compares prediction to expected outcome (ground truth), and builds
+ * <a href="https://en.wikipedia.org/wiki/Confusion_matrix">confusion matrix</a>.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LogisticRegressionSGDTrainerExample {
     /** Run example. */
@@ -105,6 +115,8 @@ public class LogisticRegressionSGDTrainerExample {
 
                 System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
                 System.out.println(">>> ---------------------------------");
+
+                System.out.println(">>> Logistic regression model over partitioned dataset usage example completed.");
             });
 
             igniteThread.start();
