@@ -196,12 +196,12 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
         client.createIfNeeded("/apacheIgnite/2", null, CreateMode.PERSISTENT);
 
-        client.deleteAll("/apacheIgnite", Arrays.asList("1", "2"), -1);
+        client.deleteAll(ZkIgnitePaths.addParentPath("/apacheIgnite", Arrays.asList("1", "2")), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
 
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
-        client.deleteAll("/apacheIgnite", Collections.singletonList("1"), -1);
+        client.deleteAll(ZkIgnitePaths.addParentPath("/apacheIgnite", Collections.singletonList("1")), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
@@ -232,7 +232,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++)
             subPaths.add(String.valueOf(i));
 
-        client.deleteAll("/apacheIgnite", subPaths, -1);
+        client.deleteAll(ZkIgnitePaths.addParentPath("/apacheIgnite", subPaths), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
@@ -249,7 +249,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
         client.createIfNeeded("/apacheIgnite/2", null, CreateMode.PERSISTENT);
 
-        client.deleteAll("/apacheIgnite", Arrays.asList("1", "2", "3"), -1);
+        client.deleteAll(ZkIgnitePaths.addParentPath("/apacheIgnite", Arrays.asList("1", "2", "3")), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
