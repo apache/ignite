@@ -77,7 +77,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         if (plcEnabled)
             prepare(cfg, plc, cctx.isNear());
 
-        filter = cfg.getEvictionFilter();
+        if (cfg.getEvictionFilterFactory() != null)
+            filter = (EvictionFilter)cfg.getEvictionFilterFactory().create();
+        else
+            filter = cfg.getEvictionFilter();
 
         if (log.isDebugEnabled())
             log.debug("Eviction manager started on node: " + cctx.nodeId());
