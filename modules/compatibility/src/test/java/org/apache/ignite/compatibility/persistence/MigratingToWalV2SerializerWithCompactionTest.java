@@ -59,7 +59,10 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(true))
+                new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)
+                    .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+            )
             .setWalSegmentSize(WAL_SEGMENT_SIZE)
             .setWalCompactionEnabled(true)
             .setWalMode(WALMode.LOG_ONLY)

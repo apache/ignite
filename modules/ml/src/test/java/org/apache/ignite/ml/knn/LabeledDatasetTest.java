@@ -21,11 +21,13 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import org.apache.ignite.ml.math.ExternalizableTest;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
+import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
@@ -36,7 +38,7 @@ import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.fail;
 
-/** Tests behaviour of KNNClassificationTest. */
+/** Tests behaviour of LabeledDataset. */
 public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
     /** */
     private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
@@ -90,12 +92,22 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
         assertEquals(dataset.colSize(), 2);
         assertEquals(dataset.rowSize(), 6);
 
+        assertEquals(dataset.label(0), lbs[0], 0);
+
+        assertEquals(dataset.copy().colSize(), 2);
+
+        @SuppressWarnings("unchecked")
         final LabeledVector<Vector, Double> row = (LabeledVector<Vector, Double>)dataset.getRow(0);
 
         assertEquals(row.features().get(0), 1.0);
         assertEquals(row.label(), 1.0);
         dataset.setLabel(0, 2.0);
         assertEquals(row.label(), 2.0);
+
+        assertEquals(0, new LabeledDataset().rowSize());
+        assertEquals(1, new LabeledDataset(1, 2).rowSize());
+        assertEquals(1, new LabeledDataset(1, 2, true).rowSize());
+        assertEquals(1, new LabeledDataset(1, 2, null, true).rowSize());
     }
 
     /** */
@@ -142,7 +154,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
     @Test
     public void testLoadingCorrectTxtFile() {
         LabeledDataset training = LabeledDatasetHelper.loadDatasetFromTxt(KNN_IRIS_TXT, false);
-        assertEquals(training.rowSize(), 150);
+        assertEquals(Objects.requireNonNull(training).rowSize(), 150);
     }
 
     /** */
@@ -175,7 +187,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
     @Test
     public void testLoadingFileWithIncorrectData() {
         LabeledDataset training = LabeledDatasetHelper.loadDatasetFromTxt(IRIS_INCORRECT_TXT, false);
-        assertEquals(149, training.rowSize());
+        assertEquals(149, Objects.requireNonNull(training).rowSize());
     }
 
     /** */
@@ -195,7 +207,7 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
     /** */
     @Test
     public void testLoadingFileWithMissedData() throws URISyntaxException, IOException {
-        Path path = Paths.get(this.getClass().getClassLoader().getResource(IRIS_MISSED_DATA).toURI());
+        Path path = Paths.get(Objects.requireNonNull(this.getClass().getClassLoader().getResource(IRIS_MISSED_DATA)).toURI());
 
         LabeledDataset training = LabeledDatasetLoader.loadFromTxtFile(path, ",", false, false);
 
@@ -255,6 +267,13 @@ public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
         final double[] labels = dataset.labels();
         for (int i = 0; i < lbs.length; i++)
             assertEquals(lbs[i], labels[i]);
+    }
+
+    /** */
+    @Test(expected = NoLabelVectorException.class)
+    @SuppressWarnings("unchecked")
+    public void testSetLabelInvalid() {
+        new LabeledDataset(new LabeledVector[1]).setLabel(0, 2.0);
     }
 
     /** */
