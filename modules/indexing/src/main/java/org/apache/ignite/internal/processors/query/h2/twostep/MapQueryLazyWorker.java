@@ -24,9 +24,14 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.ObjectPool;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -51,8 +56,20 @@ public class MapQueryLazyWorker extends GridWorker {
     /** Latch decremented when worker finishes. */
     private final CountDownLatch stopLatch = new CountDownLatch(1);
 
+    /** Latch decremented when worker finishes. */
+    private GridH2QueryContext qctx;
+
     /** Map query result. */
     private volatile MapQueryResult res;
+
+    /** Worker is started. */
+    private volatile boolean started;
+
+    /** Worker is stopped. */
+    private volatile boolean stopped;
+
+    /** Detached connection. */
+    private ObjectPool.Reusable<H2ConnectionWrapper> detached;
 
     /**
      * Constructor.
@@ -70,11 +87,26 @@ public class MapQueryLazyWorker extends GridWorker {
         this.exec = exec;
     }
 
+    /**
+     *
+     */
+    void start() {
+        started = true;
+
+        IgniteThread thread = new IgniteThread(this);
+
+        thread.start();
+    }
+
     /** {@inheritDoc} */
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
         LAZY_WORKER.set(this);
 
         ACTIVE_CNT.increment();
+
+        GridH2QueryContext.set(qctx);
+
+        GridH2Table.attachReadLocksToCurrentThread(H2Utils.session(detached.object().connection()));
 
         try {
             while (!isCancelled()) {
@@ -126,13 +158,19 @@ public class MapQueryLazyWorker extends GridWorker {
      * @param nodeStop Node is stopping.
      */
     public void stop(final boolean nodeStop) {
-        if (MapQueryLazyWorker.currentWorker() == null)
+        if (stopped)
+            return;
+
+        if (started && currentWorker() == null)
             submit(new Runnable() {
                 @Override public void run() {
                     stop(nodeStop);
                 }
             });
         else {
+            if (stopped)
+                return;
+
             GridH2QueryContext qctx = GridH2QueryContext.get();
 
             if (qctx != null) {
@@ -144,6 +182,10 @@ public class MapQueryLazyWorker extends GridWorker {
             isCancelled = true;
 
             stopLatch.countDown();
+
+            detached.recycle();
+
+            stopped = true;
         }
     }
 
@@ -181,6 +223,13 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
+     * @param qctx Query context.
+     */
+    public void queryContext(GridH2QueryContext qctx) {
+        this.qctx = qctx;
+    }
+
+    /**
      * Construct worker name.
      *
      * @param instanceName Instance name.
@@ -190,5 +239,19 @@ public class MapQueryLazyWorker extends GridWorker {
     private static String workerName(String instanceName, MapQueryLazyWorkerKey key) {
         return "query-lazy-worker_" + instanceName + "_" + key.nodeId() + "_" + key.queryRequestId() + "_" +
             key.segment();
+    }
+
+    /**
+     * @param conn Detached H2 connection.
+     */
+    public void detachedConnection(ObjectPool.Reusable<H2ConnectionWrapper> conn) {
+        this.detached = conn;
+    }
+
+    /**
+     * @return {@code true} if the worker have started.
+     */
+    public boolean isStarted() {
+        return started;
     }
 }

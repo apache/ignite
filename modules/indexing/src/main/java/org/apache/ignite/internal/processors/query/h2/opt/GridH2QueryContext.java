@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -86,6 +88,9 @@ public class GridH2QueryContext {
 
     /** */
     private MapQueryLazyWorker lazyWorker;
+
+    /** */
+    private Set<GridH2Table> lockedTables = new HashSet<>();
 
     /**
      * @param locNodeId Local node ID.
@@ -505,6 +510,13 @@ public class GridH2QueryContext {
         this.lazyWorker = lazyWorker;
 
         return this;
+    }
+
+    /**
+     * @return The set of tables have been locked by current thread.
+     */
+    public Set<GridH2Table> lockedTables() {
+        return lockedTables;
     }
 
     /** {@inheritDoc} */

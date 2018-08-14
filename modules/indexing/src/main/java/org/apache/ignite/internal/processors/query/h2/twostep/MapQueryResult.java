@@ -174,8 +174,6 @@ class MapQueryResult {
      * @return {@code true} If there are no more rows available.
      */
     synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
-        assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
-
         if (closed)
             return true;
 
@@ -259,7 +257,7 @@ class MapQueryResult {
      * Close the result.
      */
     public void close() {
-        if (lazyWorker != null && MapQueryLazyWorker.currentWorker() == null) {
+        if (lazyWorker != null && MapQueryLazyWorker.currentWorker() == null && lazyWorker.isStarted()) {
             lazyWorker.submit(new Runnable() {
                 @Override public void run() {
                     close();
@@ -272,7 +270,7 @@ class MapQueryResult {
         }
 
         synchronized (this) {
-            assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
+            assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker() || !lazyWorker.isStarted();
 
             if (closed)
                 return;

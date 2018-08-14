@@ -60,12 +60,15 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -80,7 +83,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.thread.IgniteThread;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -528,51 +530,31 @@ public class GridMapQueryExecutor {
 
             final int segment = i;
 
-            if (lazy) {
-                onQueryRequest0(node,
-                    req.requestId(),
-                    segment,
-                    req.schemaName(),
-                    req.queries(),
-                    cacheIds,
-                    req.topologyVersion(),
-                    partsMap,
-                    parts,
-                    req.pageSize(),
-                    joinMode,
-                    enforceJoinOrder,
-                    false, // Replicated is always false here (see condition above).
-                    req.timeout(),
-                    params,
-                    true); // Lazy = true.
-            }
-            else {
-                ctx.closure().callLocal(
-                    new Callable<Void>() {
-                        @Override
-                        public Void call() throws Exception {
-                            onQueryRequest0(node,
-                                req.requestId(),
-                                segment,
-                                req.schemaName(),
-                                req.queries(),
-                                cacheIds,
-                                req.topologyVersion(),
-                                partsMap,
-                                parts,
-                                req.pageSize(),
-                                joinMode,
-                                enforceJoinOrder,
-                                false,
-                                req.timeout(),
-                                params,
-                                false); // Lazy = false.
+            ctx.closure().callLocal(
+                new Callable<Void>() {
+                    @Override
+                    public Void call() throws Exception {
+                        onQueryRequest0(node,
+                            req.requestId(),
+                            segment,
+                            req.schemaName(),
+                            req.queries(),
+                            cacheIds,
+                            req.topologyVersion(),
+                            partsMap,
+                            parts,
+                            req.pageSize(),
+                            joinMode,
+                            enforceJoinOrder,
+                            false,
+                            req.timeout(),
+                            params,
+                            lazy);
 
-                            return null;
-                        }
+                        return null;
                     }
-                    , QUERY_POOL);
-            }
+                }
+                , QUERY_POOL);
         }
 
         onQueryRequest0(node,
@@ -625,19 +607,13 @@ public class GridMapQueryExecutor {
         final Object[] params,
         boolean lazy
     ) {
-        MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
+        MapQueryLazyWorker worker = null;
 
-        if (lazy && worker == null) {
+        if (lazy) {
             // Lazy queries must be re-submitted to dedicated workers.
             MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
-            worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
 
-            worker.submit(new Runnable() {
-                @Override public void run() {
-                    onQueryRequest0(node, reqId, segmentId, schemaName, qrys, cacheIds, topVer, partsMap, parts,
-                        pageSize, distributedJoinMode, enforceJoinOrder, replicated, timeout, params, true);
-                }
-            });
+            worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
 
             if (lazyWorkerBusyLock.enterBusy()) {
                 try {
@@ -645,10 +621,6 @@ public class GridMapQueryExecutor {
 
                     if (oldWorker != null)
                         oldWorker.stop(false);
-
-                    IgniteThread thread = new IgniteThread(worker);
-
-                    thread.start();
                 }
                 finally {
                     lazyWorkerBusyLock.leaveBusy();
@@ -656,8 +628,6 @@ public class GridMapQueryExecutor {
             }
             else
                 log.info("Ignored query request (node is stopping) [nodeId=" + node.id() + ", reqId=" + reqId + ']');
-
-            return;
         }
 
         // Prepare to run queries.
@@ -676,7 +646,7 @@ public class GridMapQueryExecutor {
                 if (!reservePartitions(cacheIds, topVer, parts, reserved, node.id(), reqId)) {
                     // Unregister lazy worker because re-try may never reach this node again.
                     if (lazy)
-                        stopAndUnregisterCurrentLazyWorker();
+                        stopAndUnregisterLazyWorker(worker);
 
                     sendRetry(node, reqId, segmentId);
 
@@ -684,7 +654,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, MapQueryLazyWorker.currentWorker());
+            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, worker);
 
             if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
@@ -705,7 +675,7 @@ public class GridMapQueryExecutor {
 
             Connection conn = h2.connectionForSchema(schemaName);
 
-            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
+            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
 
             GridH2QueryContext.set(qctx);
 
@@ -763,15 +733,37 @@ public class GridMapQueryExecutor {
                         throw new QueryCancelledException();
                     }
 
-                    // Send the first page.
-                    sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
-
                     qryIdx++;
+                }
+
+                if (lazy) {
+                    // Detach connection before send first pages results to
+                    // setup connection for worker.
+                    ObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.detach();
+
+                    worker.detachedConnection(detachedConn);
+                }
+
+                int maxIdx = qryIdx;
+                for (int i = 0; i < maxIdx; ++i) {
+                    // Send the first page.
+                    sendNextPage(nodeRess, node, qr, i, segmentId, pageSize);
                 }
 
                 // All request results are in the memory in result set already, so it's ok to release partitions.
                 if (!lazy)
                     releaseReservations();
+                else if (!qr.isAllClosed()) {
+                    worker.queryContext(qctx);
+
+                    GridH2Table.detachReadLocksFromCurrentThread(H2Utils.session(conn));
+
+                    worker.start();
+
+                    GridH2QueryContext.clearThreadLocal();
+                }
+                else
+                    unregisterLazyWorker(worker);
             }
             catch (Throwable e){
                 releaseReservations();
@@ -786,9 +778,9 @@ public class GridMapQueryExecutor {
                 qr.cancel(false);
             }
 
-            // Unregister worker after possible cancellation.
+            // Stop and unregister worker after possible cancellation.
             if (lazy)
-                stopAndUnregisterCurrentLazyWorker();
+                stopAndUnregisterLazyWorker(worker);
 
             GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
 
@@ -830,7 +822,7 @@ public class GridMapQueryExecutor {
         }
     }
 
-    /**
+     /**
      * @param node Node.
      * @param req DML request.
      */
@@ -1049,7 +1041,7 @@ public class GridMapQueryExecutor {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
                 // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
-                if (MapQueryLazyWorker.currentWorker() != null)
+                if (qr.lazyWorker() != null)
                     releaseReservations();
             }
         }
@@ -1115,17 +1107,16 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * Unregister lazy worker if needed (i.e. if we are currently in lazy worker thread).
+     * Unregister lazy worker if needed.
+     * @param worker Lazy worker.
      */
-    public void stopAndUnregisterCurrentLazyWorker() {
-        MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
+    public void stopAndUnregisterLazyWorker(MapQueryLazyWorker worker) {
+        assert worker != null;
 
-        if (worker != null) {
-            worker.stop(false);
+        worker.stop(false);
 
-            // Just stop is not enough as worker may be registered, but not started due to exception.
-            unregisterLazyWorker(worker);
-        }
+        // Just stop is not enough as worker may be registered, but not started due to exception.
+        unregisterLazyWorker(worker);
     }
 
     /**

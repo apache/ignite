@@ -40,7 +40,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * Tests for lazy query execution.
  */
 public class LazyQuerySelfTest extends GridCommonAbstractTest {
-    /** Keys ocunt. */
+    /** Keys count. */
     private static final int KEY_CNT = 200;
 
     /** Base query argument. */
@@ -91,6 +91,20 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      */
     public void testMultipleNodesWithParallelism() throws Exception {
         checkMultipleNodes(4);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDbg() throws Exception {
+        Ignite srv1 = startGrid(1);
+        Ignite srv2 = startGrid(2);
+
+        srv2.createCache(cacheConfiguration(2));
+
+        populateBaseQueryData(srv2);
+
+        checkShortLazyQuery(srv2);
     }
 
     /**
@@ -151,18 +165,18 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         assertNoWorkers();
 
         // Test server node leave with active worker.
-        cursor = execute(srv1, baseQuery().setPageSize(PAGE_SIZE_SMALL));
+        FieldsQueryCursor<List<?>> cursor2 = execute(srv1, baseQuery().setPageSize(PAGE_SIZE_SMALL));
 
         try {
-            iter = cursor.iterator();
+            Iterator<List<?>> iter2 = cursor2.iterator();
 
             for (int i = 0; i < 30; i++)
-                iter.next();
+                iter2.next();
 
             stopGrid(2);
         }
         finally {
-            cursor.close();
+            cursor2.close();
         }
 
         assertNoWorkers();
@@ -233,7 +247,54 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
             }
         }
 
+        checkHoldLazyQuery(node);
+
+        checkShortLazyQuery(node);
+    }
+
+    /**
+     * @param node Ignite node.
+     * @throws Exception If failed.
+     */
+    public void checkHoldLazyQuery(Ignite node) throws Exception {
+        ArrayList rows = new ArrayList<>();
+
+        FieldsQueryCursor<List<?>> cursor0 = execute(node, query(BASE_QRY_ARG).setPageSize(PAGE_SIZE_SMALL));
+
+        // Do many concurrent queries to Test full iteration.
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < 10; ++i) {
+                    FieldsQueryCursor<List<?>> cursor = execute(node, query(10).setPageSize(PAGE_SIZE_SMALL));
+
+                    cursor.getAll();
+                }
+            }
+        }, 20, "usr-qry");
+
+        for (List<?> row : cursor0)
+            rows.add(row);
+
+        assertBaseQueryResults(rows);
+    }
+
+    /**
+     * @param node Ignite node.
+     * @throws Exception If failed.
+     */
+    public void checkShortLazyQuery(Ignite node) throws Exception {
+        ArrayList rows = new ArrayList<>();
+
+        FieldsQueryCursor<List<?>> cursor0 = execute(node, query(KEY_CNT - PAGE_SIZE_SMALL + 1).setPageSize(PAGE_SIZE_SMALL));
+
+        Iterator<List<?>> it = cursor0.iterator();
+
         assertNoWorkers();
+
+        while (it.hasNext())
+            rows.add(it.next());
+
+        assertQueryResults(rows, KEY_CNT - PAGE_SIZE_SMALL + 1);
     }
 
     /**
@@ -278,7 +339,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      * @return Query.
      */
     private static SqlFieldsQuery query(long arg) {
-        return new SqlFieldsQuery("SELECT id, name FROM Person WHERE id >= ?").setArgs(arg);
+        return new SqlFieldsQuery("SELECT id, name FROM Person WHERE id >= " + arg);
     }
 
     /**
@@ -287,13 +348,23 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      * @param rows Result rows.
      */
     private static void assertBaseQueryResults(List<List<?>> rows) {
-        assertEquals(KEY_CNT - BASE_QRY_ARG, rows.size());
+        assertQueryResults(rows, BASE_QRY_ARG);
+    }
+
+    /**
+     * Assert base query results.
+     *
+     * @param rows Result rows.
+     * @param resSize Result size.
+     */
+    private static void assertQueryResults(List<List<?>> rows, int resSize) {
+        assertEquals(KEY_CNT - resSize, rows.size());
 
         for (List<?> row : rows) {
             Long id = (Long)row.get(0);
             String name = (String)row.get(1);
 
-            assertTrue(id >= BASE_QRY_ARG);
+            assertTrue(id >= resSize);
             assertEquals(nameForId(id), name);
         }
     }
