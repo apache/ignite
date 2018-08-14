@@ -1175,17 +1175,18 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         break;
                     }
                     catch (IgniteFutureTimeoutCheckedException ignored) {
+                        // Additional failover to break waiting on node left/fail
+                        // in case left/fail event processing failed of hanged.
                         if (!ctx.discovery().alive(nodeId)) {
-                            // In case more than one node received message but failed before it was processed
-                            // we will gain deadlock at first 'node failed/left' event processing
-                            // since it will wait for all tx locks, but other locks can released only
-                            // during other 'node failed/left' events processing, which possible only after
-                            // current event processing finished.
-                            ClusterTopologyCheckedException err = new ClusterTopologyCheckedException(
-                                "Node left grid after receiving, but before processing the message [node=" +
-                                    nodeId + "]");
+                            SyncMessageAckFuture fut0 = syncMsgFuts.remove(futId);
 
-                            fut.onDone(err);
+                            if (fut0 != null) {
+                                ClusterTopologyCheckedException err = new ClusterTopologyCheckedException(
+                                    "Node left grid after receiving, but before processing the message [node=" +
+                                        nodeId + "]");
+
+                                fut0.onDone(err);
+                            }
 
                             break;
                         }
