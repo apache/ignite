@@ -10756,9 +10756,12 @@ public abstract class IgniteUtils {
      * @param <T> Type of data.
      * @throws IgniteCheckedException if parallel execution was failed.
      */
-    public static <T> void doInParallel(ExecutorService executorSvc, Collection<T> srcDatas,
-        IgniteThrowableConsumer<T> operation) throws IgniteCheckedException, IgniteInterruptedCheckedException {
-        doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
+    public static <T, R> Collection<R> doInParallel(
+        ExecutorService executorSvc,
+        Collection<T> srcDatas,
+        IgniteThrowableConsumer<T, R> operation
+    ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        return doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
     }
 
     /**
@@ -10769,38 +10772,58 @@ public abstract class IgniteUtils {
      * @param srcDatas List of data for parallelization.
      * @param operation Logic for execution of on each item of data.
      * @param <T> Type of data.
+     * @param <R> Type of return value.
      * @throws IgniteCheckedException if parallel execution was failed.
      */
-    public static <T> void doInParallel(
+    public static <T, R> Collection<R> doInParallel(
         int parallelismLvl,
         ExecutorService executorSvc,
         Collection<T> srcDatas,
-        IgniteThrowableConsumer<T> operation
+        IgniteThrowableConsumer<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        if(srcDatas.isEmpty())
+            return Collections.emptyList();
+
+        int batchSize = srcDatas.size() / parallelismLvl;
+
+        final int finalBatchSize = batchSize == 0 ? srcDatas.size() : batchSize;
+
         List<List<T>> batches = IntStream.range(0, parallelismLvl)
-            .mapToObj(i -> new ArrayList<T>())
+            .mapToObj(i -> new ArrayList<T>(finalBatchSize))
             .collect(Collectors.toList());
 
-        int i = 0;
+        int batchIndex = 0;
 
-        for (T src : srcDatas)
-            batches.get(i++ % parallelismLvl).add(src);
+        final int maxBatchIndex = batches.size() -1;
 
-        List<Future<Object>> consumerFutures = batches.stream()
+        List<T> currentBatch = batches.get(batchIndex);
+
+        for (T src : srcDatas) {
+            currentBatch.add(src);
+
+            if(currentBatch.size() >= batchSize && batchIndex < maxBatchIndex)
+                currentBatch = batches.get(++batchIndex);
+        }
+
+        List<Future<Collection<R>>> consumerFutures = batches.stream()
             .filter(batch -> !batch.isEmpty())
             .map(batch -> executorSvc.submit(() -> {
-                for (T item : batch)
-                    operation.accept(item);
+                Collection<R> results = new ArrayList<>(batch.size());
 
-                return null;
+                for (T item : batch)
+                    results.add(operation.accept(item));
+
+                return results;
             }))
             .collect(Collectors.toList());
 
         Throwable error =null;
 
-        for (Future<Object> future : consumerFutures) {
+        Collection<R> results = new ArrayList<>(srcDatas.size());
+
+        for (Future<Collection<R>> future : consumerFutures) {
             try {
-                future.get();
+                results.addAll(future.get());
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -10833,6 +10856,8 @@ public abstract class IgniteUtils {
 
             throw new IgniteCheckedException(error);
         }
+
+        return results;
     }
 
     /**
