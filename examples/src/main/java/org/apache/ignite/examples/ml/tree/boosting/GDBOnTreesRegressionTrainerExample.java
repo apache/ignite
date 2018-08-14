@@ -44,6 +44,8 @@ public class GDBOnTreesRegressionTrainerExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String... args) throws InterruptedException {
+        System.out.println();
+        System.out.println(">>> GDB regression trainer example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -79,7 +81,7 @@ public class GDBOnTreesRegressionTrainerExample {
 
                 System.out.println(">>> ---------------------------------");
 
-                System.out.println(">>> GDB Regression trainer example completed.");
+                System.out.println(">>> GDB regression trainer example completed.");
             });
 
             igniteThread.start();

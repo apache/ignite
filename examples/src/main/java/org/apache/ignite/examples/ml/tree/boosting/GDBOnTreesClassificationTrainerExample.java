@@ -44,6 +44,8 @@ public class GDBOnTreesClassificationTrainerExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String... args) throws InterruptedException {
+        System.out.println();
+        System.out.println(">>> GDB classification trainer example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
