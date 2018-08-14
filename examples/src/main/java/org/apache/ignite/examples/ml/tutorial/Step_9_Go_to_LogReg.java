@@ -87,7 +87,7 @@ public class Step_9_Go_to_LogReg {
                         imputingPreprocessor
                     );
 
-                    // Tune hyperparams with K-fold Cross-Validation on the splitted training set.
+                    // Tune hyperparams with K-fold Cross-Validation on the split training set.
                     int[] pSet = new int[]{1, 2};
                     int[] maxIterationsSet = new int[]{ 100, 1000};
                     int[] batchSizeSet = new int[]{100, 10};

@@ -93,7 +93,7 @@ public class Step_8_CV {
                         imputingPreprocessor
                     );
 
-                    // Tune hyperparams with K-fold Cross-Validation on the splitted training set.
+                    // Tune hyperparams with K-fold Cross-Validation on the split training set.
                     int[] pSet = new int[]{1, 2};
                     int[] maxDeepSet = new int[]{1, 2, 3, 4, 5, 10, 20};
                     int bestP = 1;

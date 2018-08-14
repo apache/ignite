@@ -70,9 +70,9 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     * Helper to print Phrase
+     * Helper to print Phrase.
      *
-     * @param List of Genes
+     * @param genes List of Genes.
      */
     private void printPhrase(List<Gene> genes) {
 

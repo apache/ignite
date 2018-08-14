@@ -103,7 +103,7 @@ public class Step_8_CV_with_Param_Grid {
                             minMaxScalerPreprocessor
                         );
 
-                    // Tune hyperparams with K-fold Cross-Validation on the splitted training set.
+                    // Tune hyperparams with K-fold Cross-Validation on the split training set.
 
                     DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
 
@@ -138,9 +138,8 @@ public class Step_8_CV_with_Param_Grid {
                     System.out.println("Best hyper params: " + crossValidationRes.getBestHyperParams());
                     System.out.println("Best average score: " + crossValidationRes.getBestAvgScore());
 
-                    crossValidationRes.getScoringBoard().forEach((hyperParams, score) -> {
-                        System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams);
-                    });
+                    crossValidationRes.getScoringBoard().forEach((hyperParams, score)
+                        -> System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams));
 
                     // Train decision tree model.
                     DecisionTreeNode bestMdl = trainer.fit(

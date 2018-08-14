@@ -17,13 +17,13 @@
 
 package org.apache.ignite.examples.ml.preprocessing;
 
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
+import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -64,25 +64,7 @@ public class ImputingExample {
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
-                // Calculation of the mean value. This calculation will be performed in map-reduce manner.
-                double[] mean = dataset.mean();
-                System.out.println("Mean \n\t" + Arrays.toString(mean));
-
-                // Calculation of the standard deviation. This calculation will be performed in map-reduce manner.
-                double[] std = dataset.std();
-                System.out.println("Standard deviation \n\t" + Arrays.toString(std));
-
-                // Calculation of the covariance matrix.  This calculation will be performed in map-reduce manner.
-                double[][] cov = dataset.cov();
-                System.out.println("Covariance matrix ");
-                for (double[] row : cov)
-                    System.out.println("\t" + Arrays.toString(row));
-
-                // Calculation of the correlation matrix.  This calculation will be performed in map-reduce manner.
-                double[][] corr = dataset.corr();
-                System.out.println("Correlation matrix ");
-                for (double[] row : corr)
-                    System.out.println("\t" + Arrays.toString(row));
+                new DatasetHelper(dataset).describe();
             }
 
             System.out.println(">>> Imputing example completed.");

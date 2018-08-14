@@ -37,7 +37,7 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
     private Ignite ignite = null;
 
     /**
-     * @param ignite
+     * @param ignite Ignite instance.
      */
     public MovieTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;

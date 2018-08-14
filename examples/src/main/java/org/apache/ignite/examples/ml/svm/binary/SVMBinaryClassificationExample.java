@@ -18,15 +18,13 @@
 package org.apache.ignite.examples.ml.svm.binary;
 
 import java.util.Arrays;
-import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.util.TestCache;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
@@ -49,7 +47,7 @@ public class SVMBinaryClassificationExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 SVMBinaryClassificationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).get(data);
 
                 SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
 
@@ -105,26 +103,6 @@ public class SVMBinaryClassificationExample {
             igniteThread.join();
         }
     }
-
-    /**
-     * Fills cache with data and returns it.
-     *
-     * @param ignite Ignite instance.
-     * @return Filled Ignite Cache.
-     */
-    private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
-        CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-        IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
-
-        for (int i = 0; i < data.length; i++)
-            cache.put(i, data[i]);
-
-        return cache;
-    }
-
 
     /** The 1st and 2nd classes from the Iris dataset. */
     private static final double[][] data = {

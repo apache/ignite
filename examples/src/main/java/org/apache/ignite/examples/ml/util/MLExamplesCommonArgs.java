@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml;
+package org.apache.ignite.examples.ml.util;
 
 /**
  * Some common arguments for examples in ML module.

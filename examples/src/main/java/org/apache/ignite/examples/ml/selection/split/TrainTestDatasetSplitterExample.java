@@ -18,15 +18,13 @@
 package org.apache.ignite.examples.ml.selection.split;
 
 import java.util.Arrays;
-import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.util.TestCache;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
@@ -36,7 +34,7 @@ import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run linear regression model over dataset splitted on train and test subsets.
+ * Run linear regression model over dataset split on train and test subsets.
  *
  * @see TrainTestDatasetSplitter
  */
@@ -108,7 +106,7 @@ public class TrainTestDatasetSplitterExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 TrainTestDatasetSplitterExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).get(data);
 
                 System.out.println(">>> Create new linear regression trainer object.");
                 LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
@@ -153,24 +151,5 @@ public class TrainTestDatasetSplitterExample {
 
             igniteThread.join();
         }
-    }
-
-    /**
-     * Fills cache with data and returns it.
-     *
-     * @param ignite Ignite instance.
-     * @return Filled Ignite Cache.
-     */
-    private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
-        CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 3));
-
-        IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
-
-        for (int i = 0; i < data.length; i++)
-            cache.put(i, data[i]);
-
-        return cache;
     }
 }

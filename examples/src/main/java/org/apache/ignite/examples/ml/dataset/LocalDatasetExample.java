@@ -17,10 +17,10 @@
 
 package org.apache.ignite.examples.ml.dataset;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.examples.ml.dataset.model.Person;
+import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -49,25 +49,7 @@ public class LocalDatasetExample {
             2,
             (k, v) -> VectorUtils.of(v.getAge(), v.getSalary())
         )) {
-            // Calculation of the mean value. This calculation will be performed in map-reduce manner.
-            double[] mean = dataset.mean();
-            System.out.println("Mean \n\t" + Arrays.toString(mean));
-
-            // Calculation of the standard deviation. This calculation will be performed in map-reduce manner.
-            double[] std = dataset.std();
-            System.out.println("Standard deviation \n\t" + Arrays.toString(std));
-
-            // Calculation of the covariance matrix.  This calculation will be performed in map-reduce manner.
-            double[][] cov = dataset.cov();
-            System.out.println("Covariance matrix ");
-            for (double[] row : cov)
-                System.out.println("\t" + Arrays.toString(row));
-
-            // Calculation of the correlation matrix.  This calculation will be performed in map-reduce manner.
-            double[][] corr = dataset.corr();
-            System.out.println("Correlation matrix ");
-            for (double[] row : corr)
-                System.out.println("\t" + Arrays.toString(row));
+            new DatasetHelper(dataset).describe();
         }
 
         System.out.println(">>> Local Dataset example completed.");

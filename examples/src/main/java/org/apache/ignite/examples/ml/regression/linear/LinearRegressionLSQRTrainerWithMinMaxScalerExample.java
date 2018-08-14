@@ -18,15 +18,13 @@
 package org.apache.ignite.examples.ml.regression.linear;
 
 import java.util.Arrays;
-import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.util.TestCache;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -119,7 +117,7 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 LinearRegressionLSQRTrainerWithMinMaxScalerExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, Vector> dataCache = getTestCache(ignite);
+                IgniteCache<Integer, Vector> dataCache = new TestCache(ignite).getVectors(data);
 
                 System.out.println(">>> Create new minmaxscaling trainer object.");
                 MinMaxScalerTrainer<Integer, Vector> normalizationTrainer = new MinMaxScalerTrainer<>();
@@ -167,24 +165,5 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
 
             igniteThread.join();
         }
-    }
-
-    /**
-     * Fills cache with data and returns it.
-     *
-     * @param ignite Ignite instance.
-     * @return Filled Ignite Cache.
-     */
-    private static IgniteCache<Integer, Vector> getTestCache(Ignite ignite) {
-        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-        IgniteCache<Integer, Vector> cache = ignite.createCache(cacheConfiguration);
-
-        for (int i = 0; i < data.length; i++)
-            cache.put(i, VectorUtils.of(data[i]));
-
-        return cache;
     }
 }
