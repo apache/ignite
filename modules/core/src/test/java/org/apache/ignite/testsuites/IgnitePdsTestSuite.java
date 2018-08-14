@@ -104,7 +104,7 @@ public class IgnitePdsTestSuite extends TestSuite {
      *
      * @param suite suite to add tests into.
      */
-    public static void addRealPageStoreTestsLongRunning(TestSuite suite) {
+    private static void addRealPageStoreTestsLongRunning(TestSuite suite) {
         // Basic PageMemory tests.
         suite.addTestSuite(IgnitePdsPageReplacementTest.class);
     }

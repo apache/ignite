@@ -51,7 +51,6 @@ public class IgniteLostAndFoundTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite List And Found Test Suite");
 
-        suite.addTestSuite(FileDownloaderTest.class);
         suite.addTestSuite(FileIOTest.class);
         suite.addTestSuite(FileLocksTest.class);
         suite.addTestSuite(GridComputeJobExecutionErrorToLogManualTest.class);
