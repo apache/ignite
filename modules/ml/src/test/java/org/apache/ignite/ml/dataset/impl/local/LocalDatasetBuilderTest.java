@@ -38,18 +38,10 @@ public class LocalDatasetBuilderTest {
 
         LocalDatasetBuilder<Integer, Integer> builder = new LocalDatasetBuilder<>(data, 10);
 
-        LocalDataset<Serializable, TestPartitionData> dataset = builder.build(
-            (upstream, upstreamSize) -> null,
-            (upstream, upstreamSize, ctx) -> {
-                int[] arr = new int[Math.toIntExact(upstreamSize)];
+        LocalDataset<Serializable, TestPartitionData> dataset = buildDataset(builder);
 
-                int ptr = 0;
-                while (upstream.hasNext())
-                    arr[ptr++] = upstream.next().getValue();
-
-                return new TestPartitionData(arr);
-            }
-        );
+        assertEquals(10, dataset.getCtx().size());
+        assertEquals(10, dataset.getData().size());
 
         AtomicLong cnt = new AtomicLong();
 
@@ -76,18 +68,7 @@ public class LocalDatasetBuilderTest {
 
         LocalDatasetBuilder<Integer, Integer> builder = new LocalDatasetBuilder<>(data, (k, v) -> k % 2 == 0,10);
 
-        LocalDataset<Serializable, TestPartitionData> dataset = builder.build(
-            (upstream, upstreamSize) -> null,
-            (upstream, upstreamSize, ctx) -> {
-                int[] arr = new int[Math.toIntExact(upstreamSize)];
-
-                int ptr = 0;
-                while (upstream.hasNext())
-                    arr[ptr++] = upstream.next().getValue();
-
-                return new TestPartitionData(arr);
-            }
-        );
+        LocalDataset<Serializable, TestPartitionData> dataset = buildDataset(builder);
 
         AtomicLong cnt = new AtomicLong();
 
@@ -103,6 +84,23 @@ public class LocalDatasetBuilderTest {
         });
 
         assertEquals(10, cnt.intValue());
+    }
+
+    /** */
+    private LocalDataset<Serializable, TestPartitionData> buildDataset(
+        LocalDatasetBuilder<Integer, Integer> builder) {
+        return builder.build(
+                (upstream, upstreamSize) -> null,
+                (upstream, upstreamSize, ctx) -> {
+                    int[] arr = new int[Math.toIntExact(upstreamSize)];
+
+                    int ptr = 0;
+                    while (upstream.hasNext())
+                        arr[ptr++] = upstream.next().getValue();
+
+                    return new TestPartitionData(arr);
+                }
+            );
     }
 
     /**
@@ -122,7 +120,7 @@ public class LocalDatasetBuilderTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             // Do nothing, GC will clean up.
         }
     }
