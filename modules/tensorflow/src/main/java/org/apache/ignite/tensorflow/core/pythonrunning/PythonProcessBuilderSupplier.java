@@ -17,6 +17,8 @@
 
 package org.apache.ignite.tensorflow.core.pythonrunning;
 
+import java.lang.management.ManagementFactory;
+import java.util.Map;
 import org.apache.ignite.tensorflow.util.SerializableSupplier;
 
 /**
@@ -32,13 +34,18 @@ public class PythonProcessBuilderSupplier implements SerializableSupplier<Proces
     /** Interactive flag (allows to used standard input to pass Python script). */
     private final boolean interactive;
 
+    /** Meta information that adds to script as arguments. */
+    private final String[] meta;
+
     /**
      * Constructs a new instance of Python process builder supplier.
      *
      * @param interactive Interactive flag (allows to used standard input to pass Python script).
+     * @param meta Meta information that adds to script as arguments.
      */
-    public PythonProcessBuilderSupplier(boolean interactive) {
+    public PythonProcessBuilderSupplier(boolean interactive, String... meta) {
         this.interactive = interactive;
+        this.meta = meta;
     }
 
     /**
@@ -52,6 +59,35 @@ public class PythonProcessBuilderSupplier implements SerializableSupplier<Proces
         if (python == null)
             python = "python3";
 
-        return interactive ? new ProcessBuilder(python, "-i") : new ProcessBuilder(python);
+        ProcessBuilder procBldr;
+        if (interactive) {
+            String[] cmd = new String[meta.length + 3];
+
+            cmd[0] = python;
+            cmd[1] = "-i";
+            cmd[2] = "-";
+
+            System.arraycopy(meta, 0, cmd, 3, meta.length);
+
+            procBldr = new ProcessBuilder(cmd);
+        }
+        else
+            procBldr = new ProcessBuilder(python);
+
+        Map<String, String> env = procBldr.environment();
+        env.put("PPID", String.valueOf(getProcessId()));
+
+        return procBldr;
+    }
+
+    /**
+     * Returns current process identifier.
+     *
+     * @return Process identifier.
+     */
+    private long getProcessId() {
+        String pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+
+        return Long.parseLong(pid);
     }
 }
