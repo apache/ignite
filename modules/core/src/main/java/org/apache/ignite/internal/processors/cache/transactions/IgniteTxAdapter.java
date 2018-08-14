@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -1793,6 +1795,32 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
+     * Notify Dr on tx finished.
+     *
+     * @param commit {@code True} if commited, {@code False} otherwise.
+     */
+    protected void notifyDrManager(boolean commit) {
+        if (system() || internal())
+            return;
+
+        IgniteTxState txState = txState();
+
+        if (mvccSnapshot == null || txState.cacheIds().isEmpty())
+            return;
+
+        GridIntIterator iter = txState.cacheIds().iterator();
+
+        while (iter.hasNext()) {
+            int cacheId = iter.next();
+
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            if (ctx0.isDrEnabled())
+                ctx0.dr().onTxFinished(mvccSnapshot, commit, topologyVersionSnapshot());
+        }
+    }
+
+    /**
      * @param e Transaction entry.
      * @param primaryOnly Flag to include backups into check or not.
      * @return {@code True} if entry is locally mapped as a primary or back up node.
@@ -1921,6 +1949,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @Override public int hashCode() {
         return xidVer.hashCode();
     }
+
+    /**
+     * Adds cache to the list of active caches in transaction.
+     *
+     * @param cacheCtx Cache context to add.
+     * @param recovery Recovery flag. See {@link CacheOperationContext#setRecovery(boolean)}.
+     * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
+     *      cache (e.g. they have different stores).
+     */
+    public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public String toString() {
@@ -2083,6 +2121,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public boolean activeCachesDeploymentEnabled() {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */

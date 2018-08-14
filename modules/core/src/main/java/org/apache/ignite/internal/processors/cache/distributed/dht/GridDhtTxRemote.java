@@ -400,6 +400,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
         GridDhtCacheAdapter dht = ctx.dht();
 
+        addActiveCache(ctx, false);
+
         for (int i = 0; i < keys.size(); i++) {
             KeyCacheObject key = keys.get(i);
 
