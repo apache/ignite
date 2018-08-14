@@ -115,10 +115,9 @@ public class CacheGroupContext {
     /** */
     private final boolean storeCacheId;
 
-    /** */
-    private volatile List<GridCacheContext> caches = new ArrayList<>();
+    /** We modify content under lock, by making defencive copy, field always contains unmodifiable list. */
+    private volatile List<GridCacheContext> caches = Collections.unmodifiableList(new ArrayList<>());
 
-    /** */
     private volatile List<GridCacheContext> contQryCaches;
 
     /** */
@@ -328,7 +327,7 @@ public class CacheGroupContext {
 
             add = copy.add(cctx);
 
-            caches = copy;
+            caches = Collections.unmodifiableList(copy);
         }
 
         assert add : cctx.name();
@@ -359,7 +358,7 @@ public class CacheGroupContext {
                 }
             }
 
-            caches = copy;
+            caches = Collections.unmodifiableList(copy);
         }
 
         if (QueryUtils.isEnabled(cctx.config())) {
@@ -974,7 +973,7 @@ public class CacheGroupContext {
      * @return Caches in this group.
      */
     public List<GridCacheContext> caches() {
-        return Collections.unmodifiableList(caches);
+        return caches;
     }
 
     /**
