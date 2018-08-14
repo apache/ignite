@@ -101,7 +101,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     private static final String CUSTOM_CFG_ATTR_VAL = "true";
 
     /** */
-    private static final long WAIT_TIMEOUT = 60 * 1000;
+    private static final long WAIT_TIMEOUT = 80 * 1000;
 
     /** */
     private String pwd;
