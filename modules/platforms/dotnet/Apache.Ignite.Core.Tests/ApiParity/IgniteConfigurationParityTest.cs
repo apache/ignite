@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "ConnectorConfiguration",
             "ServiceConfiguration",
             "WarmupClosure",
-            "ClassLoader",
+            "ClassLoader",FileWriteAheadLogManager.java
             "CacheStoreSessionListenerFactories",
             "PlatformConfiguration",
             "ExecutorConfiguration",
@@ -81,7 +81,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "TimeServerPortBase",
             "TimeServerPortRange",
             "IncludeProperties",
-            "isAutoActivationEnabled"  // IGNITE-7301
+            "isAutoActivationEnabled",  // IGNITE-7301
+            "NetworkCompressionLevel"
         };
 
         /// <summary>
