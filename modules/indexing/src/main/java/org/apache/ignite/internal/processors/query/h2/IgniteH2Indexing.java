@@ -2982,7 +2982,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         AffinityTopologyVersion initVer = fut.initialVersion();
 
-        return initVer.compareTo(readyVer) > 0 && !CU.clientNode(fut.firstEvent().node());
+        return initVer.compareTo(readyVer) > 0 && !fut.firstEvent().node().isClient();
     }
 
     /**
