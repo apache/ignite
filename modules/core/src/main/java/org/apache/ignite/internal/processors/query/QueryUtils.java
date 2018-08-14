@@ -75,6 +75,9 @@ public class QueryUtils {
     /** Default schema. */
     public static final String DFLT_SCHEMA = "PUBLIC";
 
+    /** Schema for system view. */
+    public static final String SCHEMA_SYS = "IGNITE";
+
     /** Field name for key. */
     public static final String KEY_FIELD_NAME = "_KEY";
 

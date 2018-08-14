@@ -45,6 +45,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -126,6 +127,9 @@ public class GridCacheSharedContext<K, V> {
     /** Ttl cleanup manager. */
     private GridCacheSharedTtlCleanupManager ttlMgr;
 
+    /** */
+    private PartitionsEvictManager evictMgr;
+
     /** Cache contexts map. */
     private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -199,13 +203,30 @@ public class GridCacheSharedContext<K, V> {
         CacheAffinitySharedManager<K, V> affMgr,
         GridCacheIoManager ioMgr,
         GridCacheSharedTtlCleanupManager ttlMgr,
+        PartitionsEvictManager evictMgr,
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, walStateMgr, dbMgr, snpMgr, depMgr,
-            exchMgr, affMgr, ioMgr, ttlMgr);
+        setManagers(
+            mgrs,
+            txMgr,
+            jtaMgr,
+            verMgr,
+            mvccMgr,
+            pageStoreMgr,
+            walMgr,
+            walStateMgr,
+            dbMgr,
+            snpMgr,
+            depMgr,
+            exchMgr,
+            affMgr,
+            ioMgr,
+            ttlMgr,
+            evictMgr
+        );
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -246,23 +267,8 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void activate() throws IgniteCheckedException {
-        if (!kernalCtx.clientNode())
-            dbMgr.lock();
-
-        boolean success = false;
-
-        try {
-            for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
-                mgr.onActivate(kernalCtx);
-
-            success = true;
-        }
-        finally {
-            if (!success) {
-                if (!kernalCtx.clientNode())
-                    dbMgr.unLock();
-            }
-        }
+        for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
+            mgr.onActivate(kernalCtx);
     }
 
     /**
@@ -364,7 +370,9 @@ public class GridCacheSharedContext<K, V> {
     void onReconnected(boolean active) throws IgniteCheckedException {
         List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
 
-        setManagers(mgrs, txMgr,
+        setManagers(
+            mgrs,
+            txMgr,
             jtaMgr,
             verMgr,
             mvccMgr,
@@ -377,7 +385,9 @@ public class GridCacheSharedContext<K, V> {
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
             ioMgr,
-            ttlMgr);
+            ttlMgr,
+            evictMgr
+        );
 
         this.mgrs = mgrs;
 
@@ -419,7 +429,8 @@ public class GridCacheSharedContext<K, V> {
      * @param ttlMgr Ttl cleanup manager.
      */
     @SuppressWarnings("unchecked")
-    private void setManagers(List<GridCacheSharedManager<K, V>> mgrs,
+    private void setManagers(
+        List<GridCacheSharedManager<K, V>> mgrs,
         IgniteTxManager txMgr,
         CacheJtaManagerAdapter jtaMgr,
         GridCacheVersionManager verMgr,
@@ -433,7 +444,9 @@ public class GridCacheSharedContext<K, V> {
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
         GridCacheIoManager ioMgr,
-        GridCacheSharedTtlCleanupManager ttlMgr) {
+        GridCacheSharedTtlCleanupManager ttlMgr,
+        PartitionsEvictManager evictMgr
+    ) {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
@@ -448,6 +461,7 @@ public class GridCacheSharedContext<K, V> {
         this.affMgr = add(mgrs, affMgr);
         this.ioMgr = add(mgrs, ioMgr);
         this.ttlMgr = add(mgrs, ttlMgr);
+        this.evictMgr = add(mgrs, evictMgr);
     }
 
     /**
@@ -777,6 +791,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridTimeoutProcessor time() {
         return kernalCtx.timeout();
+    }
+
+    /**
+     * @return Partition evict manager.
+     */
+    public PartitionsEvictManager evict() {
+        return evictMgr;
     }
 
     /**

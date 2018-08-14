@@ -19,9 +19,6 @@ package org.apache.ignite.examples.ml.tree.randomforest;
 
 import java.util.Arrays;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -31,6 +28,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
 import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.thread.IgniteThread;
@@ -49,8 +47,6 @@ public class RandomForestClassificationExample {
      * Run example.
      */
     public static void main(String[] args) throws InterruptedException {
-        ExecutorService threadPool = Executors.newFixedThreadPool(3);
-
         System.out.println();
         System.out.println(">>> Random Forest multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
@@ -61,10 +57,10 @@ public class RandomForestClassificationExample {
                     RandomForestClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(13, 4, 101, 0.3, 2, 0, threadPool);
+                RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(13, 4, 101, 0.3, 2, 0);
 
                 ModelsComposition randomForest = trainer.fit(ignite, dataCache,
-                        (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+                        (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
                         (k, v) -> v[0]
                 );
 
@@ -77,7 +73,7 @@ public class RandomForestClassificationExample {
                         double[] inputs = Arrays.copyOfRange(val, 1, val.length);
                         double groundTruth = val[0];
 
-                        double prediction = randomForest.apply(inputs);
+                        double prediction = randomForest.apply(VectorUtils.of(inputs));
 
                         totalAmount++;
                         if (groundTruth != prediction)
@@ -93,9 +89,6 @@ public class RandomForestClassificationExample {
             igniteThread.start();
             igniteThread.join();
         }
-
-        threadPool.shutdown();
-        threadPool.awaitTermination(1, TimeUnit.MINUTES);
     }
 
     /**

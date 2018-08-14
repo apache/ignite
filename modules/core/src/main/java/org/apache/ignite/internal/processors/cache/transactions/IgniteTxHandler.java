@@ -23,6 +23,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -797,9 +799,9 @@ public class IgniteTxHandler {
         if (locTx != null)
             req.txState(locTx.txState());
 
-        // 'baseVersion' message field is re-used for version to be added in completed versions.
-        if (!req.commit() && req.baseVersion() != null)
-            ctx.tm().addRolledbackTx(null, req.baseVersion());
+        // Always add near version to rollback history to prevent races with rollbacks.
+        if (!req.commit())
+            ctx.tm().addRolledbackTx(null, req.version());
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
@@ -954,7 +956,23 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
-            U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
+            try {
+                U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
+            }
+            catch (Throwable e0) {
+                ClusterNode node0 = ctx.discovery().node(nodeId);
+
+                U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" +
+                        CU.txString(tx) + ']', e);
+
+                U.error(log, "Failed to log message due to an error: ", e0);
+
+                if (node0 != null && (!node0.isClient() || node0.isLocal())) {
+                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                    throw e;
+                }
+            }
 
             if (tx != null) {
                 tx.commitError(e);
