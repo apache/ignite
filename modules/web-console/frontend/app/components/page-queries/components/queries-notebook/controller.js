@@ -66,7 +66,7 @@ const _fullColName = (col) => {
 let paragraphId = 0;
 
 class Paragraph {
-    constructor($animate, $timeout, JavaTypes, paragraph) {
+    constructor($animate, $timeout, JavaTypes, errorParser, paragraph) {
         const self = this;
 
         self.id = 'paragraph-' + paragraphId++;
@@ -146,14 +146,14 @@ class Paragraph {
 
         this.setError = (err) => {
             this.error.root = err;
-            this.error.message = err.message;
+            this.error.message = errorParser.extractMessage(err);
 
             let cause = err;
 
             while (nonNil(cause)) {
                 if (nonEmpty(cause.className) &&
                     _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
-                    this.error.message = cause.message || cause.className;
+                    this.error.message = errorParser.extractMessage(cause.message || cause.className);
 
                     break;
                 }
@@ -251,16 +251,16 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', CSV.name];
+    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', CSV.name, 'IgniteErrorParser'];
 
     /**
      * @param {CSV} CSV
      */
-    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV) {
+    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser) {
         const $ctrl = this;
 
         this.CSV = CSV;
-        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes });
+        Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser });
 
         // Define template urls.
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
@@ -957,6 +957,10 @@ export class NotebookCtrl {
                 .subscribe();
         };
 
+        const _newParagraph = (paragraph) => {
+            return new Paragraph($animate, $timeout, JavaTypes, errorParser, paragraph);
+        };
+
         Notebook.find($state.params.noteId)
             .then((notebook) => {
                 $scope.notebook = _.cloneDeep(notebook);
@@ -969,8 +973,7 @@ export class NotebookCtrl {
                 if (!$scope.notebook.paragraphs)
                     $scope.notebook.paragraphs = [];
 
-                $scope.notebook.paragraphs = _.map($scope.notebook.paragraphs,
-                    (paragraph) => new Paragraph($animate, $timeout, JavaTypes, paragraph));
+                $scope.notebook.paragraphs = _.map($scope.notebook.paragraphs, (p) => _newParagraph(p));
 
                 if (_.isEmpty($scope.notebook.paragraphs))
                     $scope.addQuery();
@@ -1042,7 +1045,7 @@ export class NotebookCtrl {
 
             ActivitiesData.post({ action: '/queries/add/query' });
 
-            const paragraph = new Paragraph($animate, $timeout, JavaTypes, {
+            const paragraph = _newParagraph({
                 name: 'Query' + (sz === 0 ? '' : sz),
                 query: '',
                 pageSize: $scope.pageSizes[1],
@@ -1071,7 +1074,7 @@ export class NotebookCtrl {
 
             ActivitiesData.post({ action: '/queries/add/scan' });
 
-            const paragraph = new Paragraph($animate, $timeout, JavaTypes, {
+            const paragraph = _newParagraph({
                 name: 'Scan' + (sz === 0 ? '' : sz),
                 query: '',
                 pageSize: $scope.pageSizes[1],
@@ -1546,6 +1549,10 @@ export class NotebookCtrl {
         };
 
         $scope.explain = (paragraph) => {
+            const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
+            const enforceJoinOrder = !!paragraph.enforceJoinOrder;
+            const collocated = !!paragraph.collocated;
+
             if (!$scope.queryAvailable(paragraph))
                 return;
 
@@ -1568,7 +1575,7 @@ export class NotebookCtrl {
 
                     ActivitiesData.post({ action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false, args.collocated);
+                    return agentMgr.querySql(nid, args.cacheName, args.query, nonCollocatedJoins, enforceJoinOrder, false, false, args.pageSize, false, collocated);
                 })
                 .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
@@ -1933,9 +1940,7 @@ export class NotebookCtrl {
 
                 const addToTrace = (item) => {
                     if (nonNil(item)) {
-                        const clsName = _.isEmpty(item.className) ? '' : '[' + JavaTypes.shortClassName(item.className) + '] ';
-
-                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + (item.message || ''));
+                        scope.content.push((scope.content.length > 0 ? tab : '') + errorParser.extractFullMessage(item));
 
                         addToTrace(item.cause);
 

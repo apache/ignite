@@ -173,13 +173,6 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
-     * @return {@code True} if cluster active state change is in progress, {@code false} otherwise.
-     */
-    public boolean activeStateChanging() {
-        return transition() && (prevState == null || (prevState.active != active));
-    }
-
-    /**
      * @return State change exchange version.
      */
     public AffinityTopologyVersion transitionTopologyVersion() {

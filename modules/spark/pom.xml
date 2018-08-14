@@ -124,12 +124,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson2.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.json4s</groupId>
             <artifactId>json4s-core_2.11</artifactId>
             <version>3.5.0</version>

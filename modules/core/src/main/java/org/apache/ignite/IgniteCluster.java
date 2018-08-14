@@ -421,6 +421,13 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void enableStatistics(Collection<String> caches, boolean enabled);
 
     /**
+     * Clear statistics for caches cluster wide.
+     *
+     * @param caches Collection of cache names.
+     */
+    public void clearStatistics(Collection<String> caches);
+
+    /**
      * Sets transaction timeout on partition map exchange.
      *
      * @param timeout Transaction timeout on partition map exchange in milliseconds.

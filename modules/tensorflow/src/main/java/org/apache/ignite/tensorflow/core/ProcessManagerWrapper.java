@@ -17,11 +17,11 @@
 
 package org.apache.ignite.tensorflow.core;
 
-import org.apache.ignite.tensorflow.core.longrunning.task.util.LongRunningProcessStatus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.tensorflow.core.longrunning.task.util.LongRunningProcessStatus;
 
 /**
  * Process manager wrapper that allows to define how one type of process specification should be transformed into
@@ -31,9 +31,6 @@ import java.util.UUID;
  * @param <R> Type of accepted process specifications.
  */
 public abstract class ProcessManagerWrapper<T, R> implements ProcessManager<R> {
-    /** */
-    private static final long serialVersionUID = -6397225095261457524L;
-
     /** Delegate. */
     private final ProcessManager<T> delegate;
 
