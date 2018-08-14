@@ -87,17 +87,17 @@ public class KNNRegressionTest {
     /** */
     @Test
     public void testLongly() {
-        testLongly(KNNStrategy.SIMPLE);
+        testLongly(NNStrategy.SIMPLE);
     }
 
     /** */
     @Test
     public void testLonglyWithWeightedStrategy() {
-        testLongly(KNNStrategy.WEIGHTED);
+        testLongly(NNStrategy.WEIGHTED);
     }
 
     /** */
-    private void testLongly(KNNStrategy stgy) {
+    private void testLongly(NNStrategy stgy) {
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {60323, 83.0, 234289, 2356, 1590, 107608, 1947});
         data.put(1, new double[] {61122, 88.5, 259426, 2325, 1456, 108632, 1948});
@@ -130,9 +130,5 @@ public class KNNRegressionTest {
         Assert.assertNotNull(knnMdl.apply(vector));
 
         Assert.assertEquals(67857, knnMdl.apply(vector), 2000);
-
-        Assert.assertTrue(knnMdl.toString().contains(stgy.name()));
-        Assert.assertTrue(knnMdl.toString(true).contains(stgy.name()));
-        Assert.assertTrue(knnMdl.toString(false).contains(stgy.name()));
     }
 }

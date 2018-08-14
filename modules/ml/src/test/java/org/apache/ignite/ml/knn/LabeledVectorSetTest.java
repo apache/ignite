@@ -104,10 +104,10 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
         dataset.setLabel(0, 2.0);
         assertEquals(row.label(), 2.0);
 
-        assertEquals(0, new LabeledDataset().rowSize());
-        assertEquals(1, new LabeledDataset(1, 2).rowSize());
-        assertEquals(1, new LabeledDataset(1, 2, true).rowSize());
-        assertEquals(1, new LabeledDataset(1, 2, null, true).rowSize());
+        assertEquals(0, new LabeledVectorSet().rowSize());
+        assertEquals(1, new LabeledVectorSet(1, 2).rowSize());
+        assertEquals(1, new LabeledVectorSet(1, 2, true).rowSize());
+        assertEquals(1, new LabeledVectorSet(1, 2, null, true).rowSize());
     }
 
     /** */
@@ -273,7 +273,7 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
     @Test(expected = NoLabelVectorException.class)
     @SuppressWarnings("unchecked")
     public void testSetLabelInvalid() {
-        new LabeledDataset(new LabeledVector[1]).setLabel(0, 2.0);
+        new LabeledVectorSet(new LabeledVector[1]).setLabel(0, 2.0);
     }
 
     /** */
