@@ -5,6 +5,10 @@ Cache Properties
 The :mod:`~pyignite.datatypes.prop_codes` module contains a list of ordinal
 values, that represent various cache settings.
 
+Please refer to the `Apache Ignite Data Grid`_ documentation on cache
+synchronization, rebalance, affinity and other cache configuration-related
+matters.
+
 +---------------------------------------+----------+----------+-------------------------------------------------------+
 | Property                              | Ordinal  | Property | Description                                           |
 | name                                  | value    | type     |                                                       |
@@ -31,7 +35,7 @@ values, that represent various cache settings.
 +---------------------------------------+----------+----------+-------------------------------------------------------+
 | PROP_IS_ONHEAP_CACHE_ENABLED          |      101 | bool     | Is OnHeap cache enabled?                              |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
-| PROP_QUERY_ENTITIES                   |      200 | dict     | Query entities                                        |
+| PROP_QUERY_ENTITIES                   |      200 | list     | A list of query entities (see `Query entity`_)        |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
 | PROP_QUERY_PARALLELISM                |      201 | int      | Query parallelism                                     |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
@@ -61,7 +65,7 @@ values, that represent various cache settings.
 +---------------------------------------+----------+----------+-------------------------------------------------------+
 | PROP_GROUP_NAME                       |      400 | str      | Group name                                            |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
-| PROP_CACHE_KEY_CONFIGURATION          |      401 | dict     | Cache key configuration                               |
+| PROP_CACHE_KEY_CONFIGURATION          |      401 | list     | Cache key configuration (see `Cache key`_)            |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
 | PROP_DEFAULT_LOCK_TIMEOUT             |      402 | int      | Default lock timeout (ms)                             |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
@@ -79,3 +83,57 @@ values, that represent various cache settings.
 +---------------------------------------+----------+----------+-------------------------------------------------------+
 | PROP_INVALIDATE                       |       -1 | bool     | Invalidate                                            |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
+
+Query entity
+------------
+
+A dict with all ot the following keys:
+
+- `table_name`: SQL table name,
+- `key_field_name`: name of the key field,
+- `key_type_name`: name of the key type (Java type or complex object),
+- `value_field_name`: name of the value field,
+- `value_type_name`: name of the value type,
+- `field_name_aliases`: a list of 0 or more dicts of aliases
+  (see `Field name alias`_),
+- `query_fields`: a list of 0 or more query field names (see `Query field`_),
+- `query_indexes`: a list of 0 or more query indexes (see `Query index`_).
+
+Field name alias
+================
+
+- `field_name`: field name,
+- `alias`: alias (str).
+
+Query field
+===========
+
+- `name`: field name,
+- `type_name`: name of Java type or complex object,
+- `is_key_field`: boolean value,
+- `is_notnull_constraint_field`: boolean value,
+- `default_value`: anything that can be converted to `type_name` type.
+
+Query index
+===========
+
+- `index_name`: index name,
+- `index_type`: index type code as an integer value in unsigned byte range,
+- `inline_size`: integer value,
+- `fields`: a list of 0 or more indexed fields (see `Fields`_).
+
+Fields
+======
+
+- `name`: field name,
+- `is_descending`: boolean value.
+
+Cache key
+---------
+
+A dict of the following format:
+
+- `type_name`: name of the complex object,
+- `affinity_key_field_name`: name of the affinity key field.
+
+.. _Apache Ignite Data Grid: https://apacheignite.readme.io/docs/data-grid
