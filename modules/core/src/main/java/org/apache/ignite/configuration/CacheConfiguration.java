@@ -223,7 +223,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private int sqlOnheapCacheMaxSize = DFLT_SQL_ONHEAP_CACHE_MAX_SIZE;
 
     /** Eviction filter. */
+    @Deprecated
     private EvictionFilter<?, ?> evictFilter;
+
+    /** Eviction filter factory */
+    private Factory evictFilterFactory;
 
     /** Eager ttl flag. */
     private boolean eagerTtl = DFLT_EAGER_TTL;
@@ -413,6 +417,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         dfltLockTimeout = cc.getDefaultLockTimeout();
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
+        evictFilterFactory = cc.getEvictionFilterFactory();
         evictPlc = cc.getEvictionPolicy();
         evictPlcFactory = cc.getEvictionPolicyFactory();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
@@ -626,6 +631,31 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Gets eviction filter factory. By default, returns {@code null}
+     * which means that filter are disabled for eviction policy.
+     *
+     * @return Eviction filter factory or {@code null}
+     * or if {@link #getEvictionFilter()} should be used instead.
+     */
+    @Nullable public Factory<EvictionFilter<? super K, ? super V>> getEvictionFilterFactory() {
+        return evictFilterFactory;
+    }
+
+    /**
+     * Sets eviction filter factory.
+     * Note: Eviction filter factory should be {@link Serializable}.
+     *
+     * @param evictFilterFactory Eviction filter factory.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEvictionFilterFactory(
+        @Nullable Factory<? extends EvictionFilter<? super K, ? super V>> evictFilterFactory) {
+        this.evictFilterFactory = evictFilterFactory;
+
+        return this;
+    }
+
+    /**
      * Checks if the on-heap cache is enabled for the off-heap based page memory.
      *
      * @return On-heap cache enabled flag.
@@ -776,17 +806,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * {@link #getEvictionPolicyFactory()} eviction policy} configuration.
      *
      * @return Eviction filter or {@code null}.
+     *
+     * @deprecated Use {@link #getEvictionFilterFactory()} instead.
      */
     @SuppressWarnings("unchecked")
     public EvictionFilter<K, V> getEvictionFilter() {
         return (EvictionFilter<K, V>)evictFilter;
     }
 
+
     /**
      * Sets eviction filter.
      *
      * @param evictFilter Eviction filter.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link #setEvictionFilterFactory(Factory)} instead.
      */
     public CacheConfiguration<K, V> setEvictionFilter(EvictionFilter<K, V> evictFilter) {
         this.evictFilter = evictFilter;
