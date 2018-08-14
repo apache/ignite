@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -141,7 +142,7 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
 
                         cache1.put(key1, 0);
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         int key2 = primaryKey(cache2);
 

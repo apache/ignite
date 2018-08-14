@@ -1229,7 +1229,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
                 lockedLatch.countDown();
 
-                unlockLatch.await();
+                unlockLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 lock.unlock();
 
@@ -1880,7 +1880,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                             log.info("Iteration: " + cntr);
 
                         if (updateBarrier != null)
-                            updateBarrier.await();
+                            updateBarrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
 
                     return null;

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteServices;
@@ -57,7 +59,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         TestCase.assertEquals(name, 1, DummyService.started(name));
         TestCase.assertEquals(name, 0, DummyService.cancelled(name));
@@ -143,7 +145,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
             info("Finished waiting for service future: " + name);
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             // Ensure service is deployed
             assertNotNull(client.services().serviceProxy(name, Service.class, false, 2000));
@@ -162,7 +164,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             startExtraNodes(servers, clients);
 
             try {
-                latch.await();
+                latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 waitForDeployment(name, servers);
 
@@ -210,7 +212,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
             info("Finished waiting for service future: " + name);
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             // Ensure service is deployed
             assertNotNull(client.services().serviceProxy(name, Service.class, false, 2000));
@@ -229,7 +231,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             startExtraNodes(servers, clients);
 
             try {
-                latch.await();
+                latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 waitForDeployment(name, clients);
 
@@ -284,7 +286,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
             info("Finished waiting for service future: " + name);
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             // Ensure service is deployed
             assertNotNull(client.services().serviceProxy(name, Service.class, false, 2000));
@@ -304,7 +306,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             startExtraNodes(servers, clients);
 
             try {
-                latch.await();
+                latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 waitForDeployment(name, prestartedNodes + extraNodes);
 
@@ -359,7 +361,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -375,7 +377,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         startExtraNodes(extraNodes);
 
         try {
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             waitForDeployment(name, totalInstances);
 

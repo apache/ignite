@@ -24,6 +24,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -296,7 +297,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         while (!updatesQueue.isEmpty())
             Thread.sleep(1000);
 
-        FINISH_LATCH_NO_CLIENTS.await();
+        FINISH_LATCH_NO_CLIENTS.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         IgniteEx ignite0 = grid(0);
 
@@ -403,7 +404,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         @Override public void run() {
             Thread curr = Thread.currentThread();
             try {
-                START_LATCH.await();
+                START_LATCH.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 while (!curr.isInterrupted()) {
                     int idx = ThreadLocalRandom.current().nextInt(5);
@@ -454,7 +455,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
             Thread curr = Thread.currentThread();
 
             try {
-                START_LATCH.await();
+                START_LATCH.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 while (!curr.isInterrupted()) {
                     Integer idx = srvResurrectQueue.takeFirst();

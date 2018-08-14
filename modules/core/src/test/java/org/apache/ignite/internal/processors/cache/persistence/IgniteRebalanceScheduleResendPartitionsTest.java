@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -132,7 +133,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
 
         runAsync(() -> {
             try {
-                latch.await();
+                latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 // Sleep should be less that full awaitPartitionMapExchange().
                 Thread.sleep(super.getPartitionMapExchangeTimeout());

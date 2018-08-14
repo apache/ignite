@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -263,9 +264,9 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
             Thread thread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        startBarrier.await();
+                        startBarrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
-                    catch (InterruptedException | BrokenBarrierException ignore) {
+                    catch (InterruptedException | BrokenBarrierException | TimeoutException ignore) {
                         return ;
                     }
 
@@ -332,7 +333,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
                                 try {
                                     while (cmp)
-                                        putCond.await();
+                                        putCond.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                                 }
                                 finally {
                                     lock.unlock();

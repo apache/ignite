@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -204,7 +205,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 Ignite ignite = startGrid(startIdx.getAndIncrement());
 
@@ -216,7 +217,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
             }
         }, 5, "start-thread");
 
-        barrier.await();
+        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         U.sleep(ThreadLocalRandom.current().nextInt(10, 100));
 

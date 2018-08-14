@@ -27,6 +27,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -418,7 +419,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
                         if (!locked || switched) {
                             try {
-                                barr.await();
+                                barr.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                             }
                             catch (BrokenBarrierException ignore) {
                                 // Done.

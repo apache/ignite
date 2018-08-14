@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -352,7 +353,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 Ignite client = clients.get(clientIdx.getAndIncrement());
 
@@ -381,7 +382,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 startGrid(srvIdx.incrementAndGet());
 

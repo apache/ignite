@@ -25,6 +25,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
@@ -136,7 +138,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
 
                     assert checkNodes.size() > 1;
 
-                    b.await();
+                    b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     for (int i = 0; i < 100; i++) {
                         IgniteFuture<BitSet> fut = spi.checkConnection(checkNodes);

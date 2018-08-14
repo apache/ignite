@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -76,7 +78,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
 
                         startLatch.countDown();
 
-                        stopLatch.await();
+                        stopLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         G.stop(g.name(), false);
 
@@ -90,7 +92,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
             GridTestUtils.runMultiThreaded(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
-                        startLatch.await();
+                        startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         startGrid("second");
 

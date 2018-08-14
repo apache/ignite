@@ -268,7 +268,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                         cache.put(key1, 0);
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         if (threadNum == threads) {
                             log.info(">>> Performs sleep. [node=" + ((IgniteKernal)ignite).localNode() +
@@ -357,7 +357,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                         cache.put(new TestKey(key1), 1);
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         int key2 = primaryKey(cache);
 

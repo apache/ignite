@@ -1525,7 +1525,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             }
 
                             try {
-                                barrier.await();
+                                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                             }
                             catch (BrokenBarrierException ignored) {
                                 // No-op.

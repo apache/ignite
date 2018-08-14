@@ -148,7 +148,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                latch.await();
+                latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 U.sleep((new Random().nextInt(15) + 30) * 1000);
 
@@ -210,7 +210,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<Ignite> fut = GridTestUtils.runAsync(new Callable<Ignite>() {
                 @Override public Ignite call() throws Exception {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     String nodeName = "client" + idx;
 
@@ -291,7 +291,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<Ignite> fut = GridTestUtils.runAsync(new Callable<Ignite>() {
                 @Override public Ignite call() throws Exception {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     String igniteInstanceName = "client" + idx;
 

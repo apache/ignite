@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -202,7 +203,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             fut.onDone();
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             final CountDownLatch doneLatch = new CountDownLatch(1);
 
@@ -216,7 +217,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             assert doneLatch.getCount() == 0;
 
-            doneLatch.await();
+            doneLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
             ctx.stop(false);

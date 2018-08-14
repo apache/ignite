@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -520,7 +521,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             final CyclicBarrier b = new CyclicBarrier(START_NODES + 1);
 
             IgniteInternalFuture<Void> fut1 = GridTestUtils.runAsync(() -> {
-                b.await();
+                b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 U.sleep(ThreadLocalRandom.current().nextLong(100) + 1);
 
@@ -534,7 +535,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             IgniteInternalFuture<Long> fut2 = GridTestUtils.runMultiThreadedAsync((Callable<Void>)() -> {
                 int idx = nodeIdx.getAndIncrement();
 
-                b.await();
+                b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 startGrid(idx);
 

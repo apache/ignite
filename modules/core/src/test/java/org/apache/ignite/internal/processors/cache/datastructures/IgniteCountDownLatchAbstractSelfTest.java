@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -202,11 +203,11 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
         assert latch.count() == 0;
 
         // Test await on removed future.
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         assert latch.await(10);
         assert latch.await(10, SECONDS);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         // Test countdown.
         assert latch.countDown() == 0;
@@ -369,7 +370,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
             if (i == 9) {
                 countedDown.set(true);
 
-                allLatchesObtained.await();
+                allLatchesObtained.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
             }
 
             latch.countDown();

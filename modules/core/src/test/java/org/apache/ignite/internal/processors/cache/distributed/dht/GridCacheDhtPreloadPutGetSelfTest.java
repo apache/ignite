@@ -212,7 +212,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
 
                             writeLatch.countDown();
 
-                            readLatch.await();
+                            readLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                         }
 
                         return null;

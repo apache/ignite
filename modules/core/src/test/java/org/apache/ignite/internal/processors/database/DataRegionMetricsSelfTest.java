@@ -231,7 +231,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
         joinAllocationThreads();
 
         watcherThread.interrupt();
-        watcherThread.join();
+        watcherThread.join(getMaxAwaitTimeout());
     }
 
     /**
@@ -242,7 +242,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
         assert allocationThreads.length > 0;
 
         for (Thread allocationThread : allocationThreads)
-            allocationThread.join();
+            allocationThread.join(getMaxAwaitTimeout());
     }
 
     /**

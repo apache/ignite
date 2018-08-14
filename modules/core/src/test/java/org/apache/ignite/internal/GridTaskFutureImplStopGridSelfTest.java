@@ -94,7 +94,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
                 /** {@inheritDoc} */
                 @Override public void run() {
                     try {
-                        startSignal.await();
+                        startSignal.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         Object res = fut.get();
 

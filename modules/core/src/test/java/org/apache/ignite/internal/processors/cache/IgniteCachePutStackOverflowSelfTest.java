@@ -119,7 +119,7 @@ public class IgniteCachePutStackOverflowSelfTest extends GridCommonAbstractTest 
             System.out.println("Waiting for threads to finish...");
 
             for (Thread thread : threads)
-                thread.join();
+                thread.join(getMaxAwaitTimeout());
         }
         finally {
             ignite.destroyCache("cache");

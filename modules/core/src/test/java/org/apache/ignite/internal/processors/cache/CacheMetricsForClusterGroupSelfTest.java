@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -187,7 +189,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
         for (int i = 0; i < GRID_CNT; i++)
             grid(i).events().localListen(lsnr, EVT_NODE_METRICS_UPDATED);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
     }
 
     /**

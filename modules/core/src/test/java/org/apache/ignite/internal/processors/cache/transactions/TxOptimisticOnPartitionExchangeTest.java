@@ -23,6 +23,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -159,7 +160,7 @@ public class TxOptimisticOnPartitionExchangeTest extends GridCommonAbstractTest 
             }
         });
 
-        txStarted.await();
+        txStarted.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         try {
             info(">>> Grid starting.");

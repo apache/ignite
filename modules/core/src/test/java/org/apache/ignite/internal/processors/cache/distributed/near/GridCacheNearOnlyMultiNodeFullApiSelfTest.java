@@ -591,7 +591,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             lock.lock();
 
             try {
-                lockCnt.await();
+                lockCnt.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 assert nearCache.isLocalLocked(key, false);
                 assert cache.isLocalLocked(key, false);
@@ -600,7 +600,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                 lock.unlock();
             }
 
-            unlockCnt.await();
+            unlockCnt.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             for (int i = 0; i < 100; i++) {
                 if (cache.isLocalLocked(key, false))

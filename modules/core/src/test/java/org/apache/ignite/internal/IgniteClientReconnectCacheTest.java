@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
@@ -512,7 +513,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                         afterPut1.countDown();
 
-                        afterPut2.await();
+                        afterPut2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         cache.put(2, 2);
 

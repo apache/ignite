@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import javax.cache.expiry.Duration;
@@ -208,7 +209,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         lock.unlock();
 
-        t.join();
+        t.join(getMaxAwaitTimeout());
 
         assertTrue(isOk.get());
     }
@@ -247,13 +248,13 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             t.start();
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             Thread.sleep(300);
 
             t.interrupt();
 
-            t.join();
+            t.join(getMaxAwaitTimeout());
 
             lock1.unlock();
 
@@ -352,7 +353,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
                     assert lock2.tryLock();
 
-                    l2.await();
+                    l2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     lock.unlock();
 
@@ -378,7 +379,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
             @Nullable @Override public Object call() throws Exception {
                 info("Waiting for latch1...");
 
-                l1.await();
+                l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 info("Latch1 released.");
 
@@ -395,7 +396,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
                 info("Released latch2");
 
-                l3.await();
+                l3.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 assert lock.tryLock();
 
@@ -423,8 +424,8 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         t1.start();
         t2.start();
 
-        t1.join();
-        t2.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
 
         t1.checkError();
         t2.checkError();
@@ -454,7 +455,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             info("Start latch wait 1");
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             info("Stop latch wait 1");
 
@@ -469,7 +470,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             info("Start latch wait 2");
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             info("Stop latch wait 2");
 
@@ -483,7 +484,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             info("Start latch wait 3");
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             info("Stop latch wait 3");
 
@@ -519,7 +520,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             info("Start latch wait 1");
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             info("Stop latch wait 1");
 
@@ -535,7 +536,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             info("Start latch wait 2");
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             info("Stop latch wait 2");
 
@@ -550,7 +551,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             info("Start latch wait 3");
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             info("Stop latch wait 3");
 
@@ -686,7 +687,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
          * @throws InterruptedException If got interrupted.
          */
         void await() throws InterruptedException {
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         }
 
         /** {@inheritDoc} */

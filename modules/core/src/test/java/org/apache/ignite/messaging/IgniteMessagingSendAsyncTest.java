@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
@@ -258,7 +259,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
 
         sendOrderedMultiThreads(ignMsg, expMsg, actlMsg, msgs);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(expMsg.size(), actlMsgNode2.size());
 
@@ -311,7 +312,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
                 }
             }).start();
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(expMsg.size(), actlMsg.size());
 
@@ -348,7 +349,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
 
         send(igniteMsg, msgStr, cls, async);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -386,7 +387,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
         else
             igniteMsg.send(TOPIC, msgStr);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         cls.apply(val.get(), thread.get());
     }
@@ -420,7 +421,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
 
         sendOrdered(igniteMsg, msgs, cls);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertTrue(msgs.equals(received));
     }
@@ -456,7 +457,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
             }
         });
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         cls.apply(received, threads);
     }

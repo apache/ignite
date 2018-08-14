@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
@@ -157,7 +158,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
 
         runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                latchAct1.await();
+                latchAct1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 cnt.incrementAndGet();
                 return null;
             }
@@ -165,7 +166,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
 
         runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                latchAct2.await();
+                latchAct2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 cnt.incrementAndGet();
                 return null;
             }
@@ -173,7 +174,7 @@ public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobal
 
         runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                latchAct3.await();
+                latchAct3.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 cnt.incrementAndGet();
                 return null;
             }

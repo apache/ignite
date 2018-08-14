@@ -22,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -61,7 +63,7 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
 
             g.compute().executeAsync(CancelledTask.class, null);
 
-            cnt.await();
+            cnt.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         }
 
         assert cancelCall;

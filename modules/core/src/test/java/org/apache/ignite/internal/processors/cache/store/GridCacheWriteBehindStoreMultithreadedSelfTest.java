@@ -125,7 +125,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
             timer.start();
             exp = runPutGetRemoveMultithreaded(10, 10);
 
-            timer.join();
+            timer.join(getMaxAwaitTimeout());
 
             info(">>> There are " + store.getWriteBehindErrorRetryCount() + " entries in RETRY state");
 

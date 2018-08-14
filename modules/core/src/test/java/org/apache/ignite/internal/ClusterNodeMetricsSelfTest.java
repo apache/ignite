@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -177,7 +178,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         }, EVT_NODE_METRICS_UPDATED);
 
         // Wait for metrics update.
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -204,7 +205,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         }, EVT_NODE_METRICS_UPDATED);
 
         // Wait for metrics update.
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
@@ -261,7 +262,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         }, EVT_NODE_METRICS_UPDATED);
 
         // Wait for metrics update.
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
@@ -325,7 +326,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < MSG_CNT; i++)
             message(ignite0.cluster().forRemotes()).send(null, msg);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         ClusterMetrics metrics = ignite0.cluster().localNode().metrics();
 

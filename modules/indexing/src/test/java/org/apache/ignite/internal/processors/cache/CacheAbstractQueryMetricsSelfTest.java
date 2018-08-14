@@ -344,7 +344,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
             worker.start();
 
         for (CacheAbstractQueryMetricsSelfTest.Worker worker : workers)
-            worker.join();
+            worker.join(getMaxAwaitTimeout());
 
         checkMetrics(cache, repeat * 4, repeat * 4, 0, false);
     }

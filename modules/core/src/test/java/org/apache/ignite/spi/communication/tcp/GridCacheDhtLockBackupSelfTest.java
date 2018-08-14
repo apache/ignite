@@ -20,6 +20,7 @@ package org.apache.ignite.spi.communication.tcp;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -165,7 +166,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Waiting for latch1...");
 
-                l1.await();
+                l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 Lock lock = cache2.lock(kv);
 
@@ -192,8 +193,8 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         t1.start();
         t2.start();
 
-        t1.join();
-        t2.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
 
         info("Before remove all");
 

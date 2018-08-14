@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
@@ -604,7 +605,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                 Thread t = new Thread(new Runnable() {
                     @Override public void run() {
                         try {
-                            barrier.await();
+                            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             info("Starting put thread: " + gridIdx);
 
@@ -649,7 +650,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                 Thread t = new Thread(new Runnable() {
                     @Override public void run() {
                         try {
-                            barrier.await();
+                            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             info("Starting restart thread: " + gridIdx);
 
@@ -684,7 +685,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             }
 
             for (Thread t : threads)
-                t.join();
+                t.join(getMaxAwaitTimeout());
 
             if (err.get() != null)
                 throw err.get();
@@ -727,7 +728,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                 Thread t = new Thread(new Runnable() {
                     @Override public void run() {
                         try {
-                            barrier.await();
+                            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             info("Starting put thread: " + gridIdx);
 
@@ -811,7 +812,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                 Thread t = new Thread(new Runnable() {
                     @Override public void run() {
                         try {
-                            barrier.await();
+                            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             info("Starting restart thread: " + gridIdx);
 
@@ -843,7 +844,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             }
 
             for (Thread t : threads)
-                t.join();
+                t.join(getMaxAwaitTimeout());
 
             if (err.get() != null)
                 throw err.get();
@@ -884,7 +885,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                 Thread t = new Thread(new Runnable() {
                     @Override public void run() {
                         try {
-                            barrier.await();
+                            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             info("Starting put thread: " + gridIdx);
 
@@ -955,7 +956,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                 Thread t = new Thread(new Runnable() {
                     @Override public void run() {
                         try {
-                            barrier.await();
+                            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             info("Starting restart thread: " + gridIdx);
 
@@ -985,7 +986,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             }
 
             for (Thread t : threads)
-                t.join();
+                t.join(getMaxAwaitTimeout());
 
             if (err.get() != null)
                 throw err.get();

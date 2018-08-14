@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -152,7 +154,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
             stopTempNodes();
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         }
     }
 

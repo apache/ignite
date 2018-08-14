@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
@@ -121,7 +122,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
             IgniteInternalFuture fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
-                        startLatch.await();
+                        startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         info("Started evicting...");
 

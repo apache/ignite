@@ -117,7 +117,7 @@ public class LearningEnvironmentTest extends GridCommonAbstractTest {
         });
 
         igniteThread.start();
-        igniteThread.join();
+        igniteThread.join(getMaxAwaitTimeout());
 
         assertEquals("Total amount", 23, (int)actualAmount.get());
         assertTrue("Mean squared error (MSE)", actualMse.get() > 0);

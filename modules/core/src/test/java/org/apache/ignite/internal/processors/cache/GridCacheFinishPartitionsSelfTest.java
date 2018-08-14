@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCache;
@@ -129,7 +130,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         GridTestUtils.runMultiThreaded(new Callable() {
             @Override public Object call() throws Exception {
-                if (barrier.await() == 0)
+                if (barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS) == 0)
                     start.set(System.currentTimeMillis());
 
                 IgniteCache<String, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
@@ -156,7 +157,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
             }
         }, threadNum, "test-finish-partitions-thread");
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         return System.currentTimeMillis() - start.get();
     }
@@ -275,7 +276,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         lock2.unlock();
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -326,7 +327,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
             lock.unlock();
         }
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         return end.get() - start;
     }

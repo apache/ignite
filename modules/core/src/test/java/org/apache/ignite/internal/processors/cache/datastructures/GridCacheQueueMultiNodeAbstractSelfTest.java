@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -162,7 +163,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
                 }
             });
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             final Ignite g1 = startGrid(GRID_CNT + 2);
 

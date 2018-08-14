@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -115,12 +117,12 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
                 Random rnd = new GridRandom();
 
                 try {
-                    b.await();
+                    b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException e) {
                     throw new IgniteInterruptedException(e);
                 }
-                catch (BrokenBarrierException e) {
+                catch (BrokenBarrierException | TimeoutException e) {
                     throw new IllegalStateException(e);
                 }
 

@@ -24,6 +24,8 @@ import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -158,7 +160,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
                 txNumFromClient++;
         }
 
-        transactionStarter.await();
+        transactionStarter.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         //then:
         assertEquals(txNumFromOwner + txNumFromClient, txMXBean.getLockedKeysNumber());
@@ -198,7 +200,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
                 primaryKeys2.get(i)
             )).start();
 
-        transactionStarter.await();
+        transactionStarter.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         final Map<String, String> transactions = txMXBeanBackup.getAllOwnerTransactions();
 

@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
@@ -107,7 +108,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
                     arrive.countDown();
 
                     try {
-                        arrive.await();
+                        arrive.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -118,7 +119,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
             }, true);
         }
 
-        arrive.await();
+        arrive.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertTrue(InternalExecutor.counter.get() == 0);
 

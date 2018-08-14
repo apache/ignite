@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -174,7 +175,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
 
         grid().message().send(null, "PING");
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assert pingCnt.intValue() == PING_PONG_STEPS;
         assert pongCnt.intValue() == PING_PONG_STEPS;

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -213,7 +214,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
 
             final IgniteInternalFuture<Object> updFut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     for (int j = 1; j <= 3; j++) {
                         for (int i = 0; i < CNT; i++) {
@@ -235,7 +236,7 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
 
             final IgniteInternalFuture<Object> rebFut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     for (int i = 2; i < NODES; i++)
                         startGrid(i);

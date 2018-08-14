@@ -70,6 +70,6 @@ public class IgniteConcurrentEntryProcessorAccessStopTest extends GridCommonAbst
 
         stopGrid();
 
-        invoker.join();
+        invoker.join(getMaxAwaitTimeout());
     }
 }

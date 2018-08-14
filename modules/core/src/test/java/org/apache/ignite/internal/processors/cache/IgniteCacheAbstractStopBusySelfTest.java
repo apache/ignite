@@ -271,7 +271,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         Thread stopThread = new Thread(new StopRunnable());
 
-        blocked.await();
+        blocked.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         stopThread.start();
 
@@ -318,7 +318,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         Thread stopThread = new Thread(new StopRunnable());
 
-        blocked.await();
+        blocked.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         stopThread.start();
 

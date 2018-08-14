@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.rest;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -122,7 +124,7 @@ public class RestProcessorStartSelfTest extends GridCommonAbstractTest {
         });
 
         try {
-            gridReady.await();
+            gridReady.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             IgniteInternalFuture<GridClient> c = GridTestUtils.runAsync(new Callable<GridClient>() {
                 @Override public GridClient call() throws Exception {
@@ -156,7 +158,7 @@ public class RestProcessorStartSelfTest extends GridCommonAbstractTest {
             gridReady.countDown();
 
             try {
-                proceed.await();
+                proceed.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException e) {
                 throw new IgniteSpiException("Failed to await start signal.", e);

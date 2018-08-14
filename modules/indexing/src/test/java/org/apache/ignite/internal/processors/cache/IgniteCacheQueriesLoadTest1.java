@@ -258,8 +258,8 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
 
         preloadTrade.start();
 
-        preloadTrade.join();
-        preloadAccount.join();
+        preloadTrade.join(getMaxAwaitTimeout());
+        preloadAccount.join(getMaxAwaitTimeout());
     }
 
     /**

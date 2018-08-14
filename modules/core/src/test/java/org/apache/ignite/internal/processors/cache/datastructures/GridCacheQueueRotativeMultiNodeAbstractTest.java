@@ -174,7 +174,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
 
         info("Queue was removed: " + queue);
 
-        th.join();
+        th.join(getMaxAwaitTimeout());
     }
 
     /**

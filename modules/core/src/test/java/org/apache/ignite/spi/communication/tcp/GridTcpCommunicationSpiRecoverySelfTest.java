@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -238,7 +239,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
             spi1.sendMessage(node0, new GridTestMessage(node1.id(), ++msgId, 0));
         }
 
-        lsnr1.blockLatch.await();
+        lsnr1.blockLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         lsnr1.unblock();
 

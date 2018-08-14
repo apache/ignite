@@ -81,7 +81,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
             }
         }, "deploy-thread");
 
-        depLatch.await();
+        depLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         Ignition.stopAll(true);
 
@@ -122,7 +122,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         // Try to change topology once service has deployed.
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                depLatch.await();
+                depLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 node1.close();
 
@@ -133,7 +133,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
         // Stop node on unstable topology.
         GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                depLatch.await();
+                depLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 Thread.sleep(1000);
 

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -222,7 +224,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         startExtraNodes(extraNodes);
 
         try {
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             waitForDeployment(name, nodeCount() + 1);
 
@@ -278,7 +280,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         startExtraNodes(2, 2);
 
         try {
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             waitForDeployment(name, nodeCount() + newNodes);
 
@@ -316,7 +318,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         startExtraNodes(servers, clients);
 
         try {
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             waitForDeployment(name, nodeCount() + servers);
 

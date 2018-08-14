@@ -266,7 +266,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                     info("Unlocked key in thread 1: " + kv);
                 }
 
-                l2.await();
+                l2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 assert !cache1.isLocalLocked(kv, true);
                 assert !locked(kv, 1);
@@ -279,7 +279,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Waiting for latch1...");
 
-                l1.await();
+                l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 lock.lock();
 
@@ -310,8 +310,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         t1.start();
         t2.start();
 
-        t1.join();
-        t2.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
 
         t1.checkError();
         t2.checkError();
@@ -357,7 +357,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                     info("Unlocked cache key: 1");
                 }
 
-                l2.await();
+                l2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 assert !locked(1, 1);
                 assert !cache1.isLocalLocked(1, true);
@@ -370,7 +370,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Beginning to await on latch 1");
 
-                l1.await();
+                l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 info("Finished awaiting on latch 1");
 
@@ -395,8 +395,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         t1.start();
         t2.start();
 
-        t1.join();
-        t2.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
 
         t1.checkError();
         t2.checkError();
@@ -447,7 +447,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                         }
                     }
                     finally {
-                        l2.await();
+                        l2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         info("Before unlock keys in thread 1: " + keys);
 
@@ -467,7 +467,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                     info("Waiting for latch1...");
 
                     try {
-                        l1.await();
+                        l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         // This call should not acquire the lock since
                         // other thread is holding it.
@@ -534,7 +534,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 });
 
                 t.start();
-                t.join();
+                t.join(getMaxAwaitTimeout());
 
                 if (err.get() != null)
                     throw err.get();
@@ -558,7 +558,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 });
 
                 t.start();
-                t.join();
+                t.join(getMaxAwaitTimeout());
 
                 if (err.get() != null)
                     throw err.get();

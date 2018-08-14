@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -284,7 +285,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
                     involvedLockedKeys.add(key);
 
-                    barrier.await();
+                    barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     key = keys.get(1);
 

@@ -499,7 +499,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> failingFut = multithreadedAsync(
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        pingLatch.await();
+                        pingLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         Thread.sleep(3000);
 
@@ -557,7 +557,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> stoppingFut = multithreadedAsync(
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        pingLatch.await();
+                        pingLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         Thread.sleep(3000);
 
@@ -1349,7 +1349,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             }
         });
 
-        latch1.await();
+        latch1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         final String CACHE_NAME = "cache";
 
@@ -1637,7 +1637,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         ((TcpCommunicationSpi)ignite0.configuration().getCommunicationSpi()).simulateNodeFailure();
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         ignite0.close();
 

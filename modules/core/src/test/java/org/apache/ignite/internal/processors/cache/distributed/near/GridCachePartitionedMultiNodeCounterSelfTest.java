@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -298,7 +299,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                         try {
                             startLatch.countDown();
-                            startLatch.await();
+                            startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             for (int i = 0; i < RETRIES; i++) {
                                 if (DEBUG)
@@ -397,7 +398,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                             try {
                                 startLatch.countDown();
-                                startLatch.await();
+                                startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                                 for (int i = 0; i < RETRIES; i++) {
                                     if (DEBUG)
@@ -484,7 +485,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
             t.start();
 
         for (Thread t : threads)
-            t.join();
+            t.join(getMaxAwaitTimeout());
 
         X.println("*** ");
 

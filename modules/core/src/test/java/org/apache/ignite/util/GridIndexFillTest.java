@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
@@ -63,7 +64,7 @@ public class GridIndexFillTest extends GridCommonAbstractTest {
                 return latch;
 
             try {
-                l.await();
+                l.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException e) {
                 throw new RuntimeException(e);

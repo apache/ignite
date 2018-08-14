@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -118,11 +120,11 @@ public class DataStreamerClientReconnectAfterClusterRestartTest extends GridComm
 
             stopGrid(0);
 
-            disconnect.await();
+            disconnect.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             startGrid(0);
 
-            reconnect.await();
+            reconnect.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             try (IgniteDataStreamer<String, String> streamer = client.dataStreamer("test")) {
                 streamer.allowOverwrite(allowOverwrite);

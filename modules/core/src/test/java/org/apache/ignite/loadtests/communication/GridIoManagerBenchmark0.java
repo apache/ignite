@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
@@ -267,7 +268,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
                         snd.sendToCustomTopic(rcvNode, topic, new GridTestMessage(msgId, (String)null), PUBLIC_POOL);
 
-                        latch.await();
+                        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         msgCntr.increment();
                     }
@@ -431,7 +432,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
                     long start = System.currentTimeMillis();
 
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     info("Response time: " + (System.currentTimeMillis() - start));
                 }

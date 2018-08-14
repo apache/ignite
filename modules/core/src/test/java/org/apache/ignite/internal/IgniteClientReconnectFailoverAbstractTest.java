@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -114,7 +115,7 @@ public abstract class IgniteClientReconnectFailoverAbstractTest extends IgniteCl
                             log.info("Iteration: " + iter);
 
                         if (barrier != null)
-                            barrier.await();
+                            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
 
                     return null;

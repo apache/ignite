@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
@@ -142,7 +143,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                         @Override public void run() {
                             latch.countDown();
 
-                            latch.await();
+                            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             ig.cache(DEFAULT_CACHE_NAME).put(key, new byte[1024]);
                         }
@@ -151,7 +152,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
             slowFileIoEnabled.set(true);
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             for (IgniteFuture future: cancelFutures)
                 future.cancel();
@@ -275,7 +276,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
             stopThreads.set(true);
 
             for (Thread thread : threadList)
-                thread.join();
+                thread.join(getMaxAwaitTimeout());
 
             assertFalse(failure.get());
         }

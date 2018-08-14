@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.port;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -102,10 +103,10 @@ public class GridPortProcessorSelfTest extends GridCommonAbstractTest {
             new Thread() {
                 @Override public void run() {
                     try {
-                        beginLatch.await();
+                        beginLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
                     catch (InterruptedException ignore) {
-                        assertTrue(false);
+                        fail();
                     }
 
                     for (int j = 1; j <= cnt; j++)
@@ -118,7 +119,7 @@ public class GridPortProcessorSelfTest extends GridCommonAbstractTest {
 
         beginLatch.countDown();
 
-        finishLatch.await();
+        finishLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         int i = cnt * cnt;
 

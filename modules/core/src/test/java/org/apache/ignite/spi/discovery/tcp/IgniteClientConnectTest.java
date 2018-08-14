@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.ignite.Ignite;
@@ -140,7 +141,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
             if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 if (msg.senderNodeId() != null && clientJustStarted.get())
                     try {
-                        latch.await();
+                        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         Thread.sleep(3000);
                     } catch (InterruptedException e) {

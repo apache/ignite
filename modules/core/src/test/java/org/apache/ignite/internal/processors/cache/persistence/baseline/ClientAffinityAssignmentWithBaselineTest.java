@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -516,7 +517,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         releaseTx.set(true);
 
-        allTxsDoneLatch.await();
+        allTxsDoneLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         for (int i = 0; i < 10_000; i++)
             assertEquals("txtxtxtx" + (i % 10), dynamicCache.get(i % 10));
@@ -599,7 +600,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         releaseTx.set(true);
 
-        allTxsDoneLatch.await();
+        allTxsDoneLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         for (int i = 0; i < 10_000; i++)
             assertEquals("txtxtxtx" + (i % 10), dynamicCache.get(i % 10));
@@ -666,7 +667,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         releaseTx.set(true);
 
-        allTxsDoneLatch.await();
+        allTxsDoneLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         for (int i = 0; i < 10_000; i++)
             assertEquals("txtxtxtx" + (i % 10), clientJoinCache.get(i % 10));

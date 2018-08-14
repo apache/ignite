@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -177,7 +179,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
             @Override public void apply(Integer idx) {
                 try {
-                    b.await();
+                    b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     Ignite node = startGrid(idx + SRVS);
 

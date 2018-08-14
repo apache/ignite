@@ -2592,7 +2592,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                         else
                             readCache.getEntry(readKey);
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         writeCache.put(putKey.incrementAndGet(), 0);
 
@@ -2647,7 +2647,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                             try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
                                 cache.get(readKey);
 
-                                barrier.await();
+                                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                                 cache.put(putKey.incrementAndGet(), 0);
 
@@ -3694,7 +3694,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         log.info("Started update thread: " + ignite.name());
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         for (int i = 0; i < 1000; i++) {
                             if (i % 100 == 0 && U.currentTimeMillis() > stopTime)
@@ -3809,7 +3809,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         log.info("Started update thread: " + ignite.name());
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         for (int i = 0; i < 1000; i++) {
                             try {
@@ -3941,7 +3941,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         Thread.currentThread().setName("update-thread-" + ignite.name() + "-" + thread);
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         for (int i = 0; i < 50; i++) {
                             while (true) {
@@ -4463,7 +4463,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                         try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                             cache.putAll(keys);
 
-                            barrier.await();
+                            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             tx.commit();
 

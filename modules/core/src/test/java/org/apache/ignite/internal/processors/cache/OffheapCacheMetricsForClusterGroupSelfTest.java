@@ -25,6 +25,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
@@ -108,7 +109,7 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         for (int i = 0; i < GRID_CNT; i++)
             grid("server-" + i).events().localListen(lsnr, EVT_NODE_METRICS_UPDATED);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
     }
 
     private void assertGetOffHeapPrimaryEntriesCount(String cacheName, int count) throws Exception {

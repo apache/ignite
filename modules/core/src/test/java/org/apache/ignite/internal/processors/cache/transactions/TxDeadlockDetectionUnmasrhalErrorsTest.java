@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
@@ -123,7 +124,7 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
 
                         cache1.put(key1, 0);
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         int key2 = threadNum == 0 ? 1 : 0;
 
@@ -151,7 +152,7 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
                 }
             }, 2, "tx-thread");
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             Ignite client = grid(1);
 

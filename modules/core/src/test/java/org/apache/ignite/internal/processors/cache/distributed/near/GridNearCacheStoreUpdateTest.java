@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -212,7 +213,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
             final IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    storeLatch.await();
+                    storeLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     clientCache.get(key);
 
@@ -240,7 +241,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
             final IgniteInternalFuture<Object> fut3 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    storeLatch.await();
+                    storeLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     srvCache.put(key, "other");
 
@@ -350,7 +351,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
             final IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     clientCache.getAll(data1.keySet());
 
@@ -360,7 +361,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<Object> fut2 =  GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     srvCache.putAll(data2);
 

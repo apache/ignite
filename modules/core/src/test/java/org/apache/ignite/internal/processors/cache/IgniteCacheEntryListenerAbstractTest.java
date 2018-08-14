@@ -35,6 +35,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
@@ -422,7 +423,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                     false
                 );
 
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 for (int i = 0; i < 100; i++) {
                     cache.registerCacheEntryListener(cfg);

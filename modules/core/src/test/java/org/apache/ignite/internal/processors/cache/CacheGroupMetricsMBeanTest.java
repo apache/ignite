@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
@@ -299,7 +300,7 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         grid(0).events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 try {
-                    evictLatch.await();
+                    evictLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException e) {
                     log.error("Interrupted", e);

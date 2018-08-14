@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.sql.Connection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -92,7 +93,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
             }.start();
         }
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         checkConnectionLeaks();
     }
@@ -119,7 +120,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
                     latch.countDown();
 
                     try {
-                        latch2.await();
+                        latch2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
                     catch (InterruptedException e) {
                         // No-op;
@@ -129,7 +130,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
         }
 
         try {
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             checkConnectionLeaks();
         }

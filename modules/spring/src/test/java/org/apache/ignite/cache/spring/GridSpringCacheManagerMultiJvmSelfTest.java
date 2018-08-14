@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
@@ -72,7 +74,7 @@ public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTe
 
             IgniteInternalFuture<Integer> calledCntFut = GridTestUtils.runAsync(new Callable<Integer>() {
                 @Override public Integer call() throws Exception {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     return executeRemotely((IgniteProcessProxy)remote, new TestIgniteCallable<Integer>() {
                         @Override public Integer call(Ignite ignite) throws Exception {
@@ -89,7 +91,7 @@ public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTe
                                 new Callable() {
                                     @Override public Object call() throws Exception {
                                         for (int i = 0; i < entries; i++) {
-                                            barrier.await();
+                                            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                                             assertEquals("value" + i, dynamicSvc.cacheableSync(i));
                                             assertEquals("value" + i, dynamicSvc.cacheableSync(i));

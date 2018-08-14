@@ -148,7 +148,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
                             COMPUTE_JOB_STARTED.countDown();
 
                             // Simulate long-running job.
-                            new CountDownLatch(1).await();
+                            new CountDownLatch(1).await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             return null;
                         }

@@ -70,7 +70,7 @@ public class IgniteDynamicCacheAndNodeStop extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    barrier.await();
+                    barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     ignite.destroyCache(DEFAULT_CACHE_NAME);
 
@@ -80,7 +80,7 @@ public class IgniteDynamicCacheAndNodeStop extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    barrier.await();
+                    barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     stopGrid(1);
 

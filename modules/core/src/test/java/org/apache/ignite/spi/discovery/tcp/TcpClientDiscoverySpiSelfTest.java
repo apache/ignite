@@ -501,7 +501,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             <Socket>() {
             @Override public void apply(Socket sock) {
                 try {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -1723,7 +1723,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                latch.await();
+                latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 Ignite g = startGrid("client-" + clientIdx.getAndIncrement());
 

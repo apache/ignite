@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -468,7 +469,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                     Thread.currentThread().setName("start-thread-" + idx);
 
-                    barrier.await();
+                    barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     Ignite ignite = startGrid(idx);
 
@@ -480,7 +481,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                 }
             }, JOIN_NODES, "start-thread");
 
-            barrier.await();
+            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             U.sleep(ThreadLocalRandom.current().nextInt(10, 100));
 
@@ -536,7 +537,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                         Thread.currentThread().setName("start-thread-" + idx);
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         Ignite ignite = startGrid(idx);
 
@@ -562,7 +563,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                     }
                 }, JOIN_NODES, "start-thread");
 
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 U.sleep(ThreadLocalRandom.current().nextInt(10, 100));
 
@@ -615,7 +616,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                     Thread.currentThread().setName("start-thread-" + idx);
 
-                    barrier.await();
+                    barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     Ignite ignite = startGrid(idx);
                     assertTrue(ignite.configuration().isClientMode());
@@ -640,7 +641,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                 }
             }, JOIN_NODES, "start-thread");
 
-            barrier.await();
+            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             U.sleep(ThreadLocalRandom.current().nextInt(100, 500));
 

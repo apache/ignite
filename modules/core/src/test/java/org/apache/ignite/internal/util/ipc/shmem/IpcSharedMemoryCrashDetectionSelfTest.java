@@ -23,6 +23,8 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridJavaProcess;
@@ -156,7 +158,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
         finally {
             srvStartRes.proc().kill();
 
-            srvStartRes.isKilledLatch().await();
+            srvStartRes.isKilledLatch().await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -192,19 +194,19 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
         ProcessStartResult clientStartRes = startSharedMemoryTestClient();
 
         // Wait until client and server start to talk.
-        clientStartRes.isReadyLatch().await();
+        clientStartRes.isReadyLatch().await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         info("Going to kill server.");
 
         srvStartRes.proc().kill();
 
-        srvStartRes.isKilledLatch().await();
+        srvStartRes.isKilledLatch().await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         info("Going to kill client.");
 
         clientStartRes.proc().kill();
 
-        clientStartRes.isKilledLatch().await();
+        clientStartRes.isKilledLatch().await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         return clientStartRes.shmemIds();
     }
@@ -267,7 +269,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
             U.closeQuiet(client);
         }
 
-        srvStartRes.isKilledLatch().await();
+        srvStartRes.isKilledLatch().await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         return shmemIds;
     }
@@ -322,7 +324,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
             assertTrue(X.hasCause(e, IgniteCheckedException.class));
             assertTrue(X.cause(e, IgniteCheckedException.class).getMessage().contains("Shared memory segment has been closed"));
 
-            clientStartRes.isKilledLatch().await();
+            clientStartRes.isKilledLatch().await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             return shmemIds;
         }
@@ -337,7 +339,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
         // Cleanup client.
         clientStartRes.proc().kill();
 
-        clientStartRes.isKilledLatch().await();
+        clientStartRes.isKilledLatch().await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertFalse("No IOException have been thrown while the client should be killed.", killClient);
 
@@ -425,7 +427,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
             System.getProperty("surefire.test.class.path")
         );
 
-        srvReady.await();
+        srvReady.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         ProcessStartResult res = new ProcessStartResult();
 

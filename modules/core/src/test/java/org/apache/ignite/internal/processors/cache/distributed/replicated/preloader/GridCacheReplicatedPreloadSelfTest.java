@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
@@ -542,7 +543,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             rmtMsg.send("MyOrderedTopic", o);
             rmtMsg.sendOrdered("MyOrderedTopic", o, 0);
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             // Custom topic.
 
@@ -558,7 +559,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             rmtMsg.send(topic, topic);
             rmtMsg.sendOrdered(topic, topic, 0);
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         }
         finally {
@@ -611,7 +612,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             g1.cache(DEFAULT_CACHE_NAME).put("1", cls.newInstance());
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
             useExtClassLoader = false;

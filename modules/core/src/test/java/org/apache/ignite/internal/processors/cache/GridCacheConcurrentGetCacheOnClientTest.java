@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -79,7 +80,7 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
         runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    startLatch.await();
+                    startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     IgniteCache<Object, Object> cache = client2.cache(cacheName);
 
@@ -97,7 +98,7 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
         runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    startLatch.await();
+                    startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     IgniteCache<Object, Object> cache = client2.cache(cacheName);
 
@@ -121,7 +122,7 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
         if (cache == null)
             countFails.incrementAndGet();
 
-        stopLatch.await();
+        stopLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         if (countFails.get() != 0 || exceptionFails.get() != 0)
             fail("Cache return null in " + countFails.get() + " of 3 cases. Total exception: " + exceptionFails.get());

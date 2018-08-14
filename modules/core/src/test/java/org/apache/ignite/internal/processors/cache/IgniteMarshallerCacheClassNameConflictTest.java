@@ -121,7 +121,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 startLatch.countDown();
 
                 try {
-                    startLatch.await();
+                    startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -142,7 +142,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 startLatch.countDown();
 
                 try {
-                    startLatch.await();
+                    startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

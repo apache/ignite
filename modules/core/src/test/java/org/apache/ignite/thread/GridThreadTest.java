@@ -48,6 +48,6 @@ public class GridThreadTest extends GridCommonAbstractTest {
             t.start();
 
         for (IgniteThread t : ts)
-            t.join();
+            t.join(getMaxAwaitTimeout());
     }
 }

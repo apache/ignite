@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -173,7 +174,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                                     info(">>> Acquired explicit lock for key: " + key);
 
-                                    startLatch.await();
+                                    startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                                     info(">>> Acquiring explicit lock for key: " + key * 10);
 
@@ -281,7 +282,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                                     info(">>> Locked key, waiting for latch: " + key);
 
-                                    commitLatch.await();
+                                    commitLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                                     tx.commit();
                                 }
@@ -330,7 +331,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 }
             }, 1);
 
-            joinLatch.await();
+            joinLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             Thread.sleep(100);
 
@@ -433,7 +434,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                     cache.put(key, key);
 
-                                    commitLatch.await();
+                                    commitLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                                     tx.commit();
                                 }
@@ -470,7 +471,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             // Now stop the node.
             stopGrid(getTestIgniteInstanceName(3), true);
 
-            leaveLatch.await();
+            leaveLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             // Now check that new transactions will wait for new topology version to become available.
             Collection<IgniteInternalFuture> txFuts = new ArrayList<>(nodes.length);

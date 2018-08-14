@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -134,7 +136,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testMessageSet(IgniteFuture<?> fut, int initSize, Map map) throws Exception {
-        cancelLatch.await();
+        cancelLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertTrue(fut.cancel());
 
@@ -152,7 +154,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testMessageSet(IgniteInternalFuture<?> fut) throws Exception {
-        cancelLatch.await();
+        cancelLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertTrue(fut.cancel());
 

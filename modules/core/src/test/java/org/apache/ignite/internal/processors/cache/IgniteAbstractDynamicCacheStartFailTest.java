@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -510,7 +511,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
             }
         }, clientCnt, "start-client-thread");
 
-        stopLatch.await();
+        stopLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(numberOfAttempts * clientCnt, attemptCnt.get());
 

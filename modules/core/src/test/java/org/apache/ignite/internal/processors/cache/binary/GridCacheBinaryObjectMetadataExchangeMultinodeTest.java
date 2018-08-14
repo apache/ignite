@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
@@ -240,7 +241,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         ignite2.compute(cg2).withAsync().call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
                 try {
-                    LATCH1.await();
+                    LATCH1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException ignored) {
                     // No-op.

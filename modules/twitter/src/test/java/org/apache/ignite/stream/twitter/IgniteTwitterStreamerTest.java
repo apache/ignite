@@ -23,6 +23,8 @@ import com.twitter.hbc.core.HttpHosts;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -134,7 +136,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
         CountDownLatch latch = listener.getLatch();
 
         // Enough tweets was handled in 10 seconds. Limited by test's timeout.
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         unsubscribeToPutEvents(listener);
 

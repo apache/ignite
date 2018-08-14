@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -338,7 +339,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                         cache.putIfAbsent(key.get(), "dummy val");
 
                         l1.countDown();
-                        l2.await();
+                        l2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         tx.commit();
                     }
@@ -352,7 +353,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                     IgniteCache<Object, Object> cache = node1.cache(DEFAULT_CACHE_NAME);
 
                     try (Transaction tx = node1.transactions().txStart()) {
-                        l1.await();
+                        l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         cache.replace(key.get(), "dummy val2");
 

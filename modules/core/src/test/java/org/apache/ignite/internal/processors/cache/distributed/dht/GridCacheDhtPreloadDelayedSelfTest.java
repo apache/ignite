@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
@@ -162,7 +164,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         // Force preload.
         c1.rebalance();
 
-        l1.await();
+        l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         info("Cache1 is repartitioned.");
 
@@ -173,7 +175,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         // Force preload.
         c2.rebalance();
 
-        l2.await();
+        l2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         info("Cache2 is repartitioned.");
 

@@ -19,6 +19,8 @@ package org.apache.ignite.util;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -75,7 +77,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
                 }
             }, 1);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         U.sleep(100);
 

@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -785,7 +786,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         try {
             for (CountDownLatch start : starts)
-                start.await();
+                start.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
             cacheEvtsDisabled.destroy();
@@ -793,7 +794,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }
 
         for (CountDownLatch stop : stops)
-            stop.await();
+            stop.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         for (int i = 0; i < nodeCount(); i++)
             ignite(i).events().stopLocalListen(lsnrs[i]);
@@ -1174,7 +1175,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         stopGrid(nodeCount());
 
         for (CountDownLatch latch : latches)
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         for (int i = 0; i < nodeCount(); i++)
             ignite(i).events().stopLocalListen(lsnrs[i]);

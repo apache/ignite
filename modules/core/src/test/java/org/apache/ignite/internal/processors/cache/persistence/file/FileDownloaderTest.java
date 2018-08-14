@@ -25,6 +25,8 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -112,7 +114,7 @@ public class FileDownloaderTest extends GridCommonAbstractTest {
 
         downloader.download(finishFut.get(), null);
 
-        downLatch.await();
+        downLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertTrue(DOWNLOADER_PATH.toFile().exists());
 
