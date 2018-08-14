@@ -93,7 +93,7 @@ mixin query-settings
     div
         .form-field--inline(
             bs-tooltip
-            data-placement='bottom'
+            data-placement='top'
             data-title='Max number of rows to show in query result as one page'
         )
             +form-field__dropdown({
@@ -105,15 +105,14 @@ mixin query-settings
 
         .form-field--inline(
             bs-tooltip
-            data-placement='bottom'
+            data-placement='top'
             data-title='Limit query max results to specified number of pages'
         )
             +form-field__dropdown({
                 label: 'Max pages:',
                 model: 'paragraph.maxPages',
                 name: '"maxPages" + paragraph.id',
-                options: 'maxPages',
-                ttip: 'Limit query max results to specified number of pages'
+                options: 'maxPages'
             })
 
         .form-field--inline(
@@ -152,7 +151,7 @@ mixin query-settings
                 tip: 'Non-collocated joins is a special mode that allow to join data across cluster without collocation.<br/>\
                 Nested joins are not supported for now.<br/>\
                 <b>NOTE</b>: In some cases it may consume more heap memory or may take a long time than collocated joins.',
-                tipOpts: { placement: 'bottom' }
+                tipOpts: { placement: 'top' }
             })
 
         .row(ng-if='collocatedJoinsAvailable(paragraph)')
@@ -165,7 +164,7 @@ mixin query-settings
                 If you know in advance that the elements of your query selection are collocated together on the same node\
                 and you group by collocated key (primary or affinity key), then Ignite can make significant performance and\
                 network optimizations by grouping data on remote nodes.',
-                tipOpts: { placement: 'bottom' }
+                tipOpts: { placement: 'top' }
             })
 
         .row(ng-if='enforceJoinOrderAvailable(paragraph)')
@@ -177,7 +176,7 @@ mixin query-settings
                 If <b>set</b>, then query optimizer will not reorder tables within join.<br/>\
                 <b>NOTE:</b> It is not recommended to enable this property unless you have verified that\
                 indexes are not selected in optimal order.',
-                tipOpts: { placement: 'bottom' }
+                tipOpts: { placement: 'top' }
             })
 
         .row(ng-if='lazyQueryAvailable(paragraph)')
@@ -189,7 +188,7 @@ mixin query-settings
                 For small and medium result sets this provides optimal performance and minimize duration of internal database locks, thus increasing concurrency.<br/>\
                 If result set is too big to fit in available memory this could lead to excessive GC pauses and even OutOfMemoryError.<br/>\
                 Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory consumption at the cost of moderate performance hit.',
-                tipOpts: { placement: 'bottom' }
+                tipOpts: { placement: 'top' }
             })
 
 mixin query-actions
@@ -338,7 +337,7 @@ mixin paragraph-scan
                     name: '"pageSize" + paragraph.id',
                     options: 'pageSizesOptions',
                     tip: 'Max number of rows to show in query result as one page',
-                    tipOpts: { placement: 'bottom' }
+                    tipOpts: { placement: 'top' }
                 })
 
         .col-sm-12.sql-controls
@@ -405,7 +404,8 @@ mixin paragraph-query
                                 name: '"useAsDefaultSchema" + paragraph.id',
                                 tip: 'Use selected cache as default schema name.<br/>\
                                     This will allow to execute query on specified cache without specify schema name.<br/>\
-                                    <b>NOTE:</b> In future version of Ignite this feature will be removed.'
+                                    <b>NOTE:</b> In future version of Ignite this feature will be removed.',
+                                tipOpts: { placement: 'top' }
                             })
                 .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                     label Wrong caches filter
