@@ -574,6 +574,7 @@ public class GridReduceQueryExecutor {
 
         final long startTime = U.currentTimeMillis();
 
+        // TODO: Use previous query run
         final AtomicReference<String> rootCause = new AtomicReference<>();
 
         for (int attempt = 0;; attempt++) {
@@ -849,8 +850,10 @@ public class GridReduceQueryExecutor {
 
                 if (retry) {
                     assert r != null;
+
                     if (!F.isEmpty(r.rootCause()))
                         rootCause.compareAndSet(null, r.rootCause());
+
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
 
