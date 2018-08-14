@@ -426,7 +426,8 @@ class GridDhtPartitionSupplier {
             if (grp.shared().kernalContext().isStopping())
                 return;
 
-            boolean sendErrMsg = true;
+            // Sending supply messages with error requires new protocol.
+            boolean sendErrMsg = node.version().compareTo(GridDhtPartitionSupplyMessageV2.AVAILABLE_SINCE) >= 0;
 
             if (t instanceof IgniteSpiException) {
                 if (log.isDebugEnabled())
@@ -456,12 +457,13 @@ class GridDhtPartitionSupplier {
                 return;
 
             try {
-                GridDhtPartitionSupplyMessage errMsg = new GridDhtPartitionSupplyMessage(d.rebalanceId(),
+                GridDhtPartitionSupplyMessageV2 errMsg = new GridDhtPartitionSupplyMessageV2(
+                    d.rebalanceId(),
                     grp.groupId(),
                     d.topologyVersion(),
-                    grp.deploymentEnabled());
-
-                errMsg.error(t);
+                    grp.deploymentEnabled(),
+                    t
+                );
 
                 reply(node, d, errMsg, contextId);
             }
