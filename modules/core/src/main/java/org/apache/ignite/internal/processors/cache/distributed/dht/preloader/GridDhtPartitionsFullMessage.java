@@ -451,7 +451,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                     byte[] marshalled = U.marshal(ctx, payload.getInput());
 
                     if(compress)
-                        marshalled = U.zip(marshalled, ctx.gridConfig().getNetCompressionLevel());
+                        marshalled = U.zip(marshalled, ctx.gridConfig().getNetworkCompressionLevel());
 
                     payload.complete(marshalled);
                 }
