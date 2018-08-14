@@ -18,7 +18,7 @@ import ssl
 
 import pytest
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.constants import *
 from pyignite.api import cache_create, cache_get_names, cache_destroy
 

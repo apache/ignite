@@ -15,7 +15,7 @@
 
 from decimal import Decimal
 
-from pyignite.client import Client
+from pyignite import Client
 
 
 COUNTRY_TABLE_NAME = 'Country'

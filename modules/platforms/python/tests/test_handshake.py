@@ -15,7 +15,7 @@
 
 import socket
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.client.handshake import HandshakeRequest, read_response
 
 

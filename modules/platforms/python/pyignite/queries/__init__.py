@@ -27,7 +27,7 @@ from random import randint
 
 import attr
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.constants import *
 from pyignite.datatypes import (
     AnyDataObject, Bool, Int, Long, String, StringArray, Struct,

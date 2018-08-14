@@ -21,7 +21,7 @@ import uuid
 
 import attr
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
 from pyignite.utils import is_hinted, is_iterable

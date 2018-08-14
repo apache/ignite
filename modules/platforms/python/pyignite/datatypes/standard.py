@@ -18,7 +18,7 @@ from datetime import date, datetime, time, timedelta
 import decimal
 import uuid
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.constants import *
 from .type_codes import *
 from .null_object import Null

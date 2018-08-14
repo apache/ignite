@@ -49,10 +49,13 @@ Type hints usage
   :language: python
   :lines: 24-48
 
+Refer the :ref:`data_types` section for the full list
+of parser/constructor classes you can use as type hints.
+
 Scan
 ====
 
-Cache's :py:func:`~pyignite.api.cache.Cache.scan` method queries allows you
+Cache's :py:meth:`~pyignite.cache.Cache.scan` method queries allows you
 to get the whole contents of the cache, element by element.
 
 Let us put some data in cache.
@@ -61,7 +64,7 @@ Let us put some data in cache.
   :language: python
   :lines: 23-33
 
-:py:func:`~pyignite.api.cache.Cache.scan` returns a generator, that yields
+:py:meth:`~pyignite.cache.Cache.scan` returns a generator, that yields
 two-tuples of key and value. You can iterate through the generated pairs
 in a safe manner:
 
@@ -134,14 +137,14 @@ What are the 10 largest cities in our data sample (population-wise)?
   :language: python
   :lines: 24, 221-238
 
-The :py:func:`~pyignite.connection.Connection.sql` method returns a generator,
+The :py:meth:`~pyignite.client.Client.sql` method returns a generator,
 that yields the resulting rows.
 
 What are the 10 most populated cities throughout the 3 chosen countries?
 ========================================================================
 
 If you set the `include_field_names` argument to `True`, the
-:py:func:`~pyignite.connection.Connection.sql` method will generate a list of
+:py:meth:`~pyignite.client.Client.sql` method will generate a list of
 column names as a first yield. You can access field names with Python built-in
 `next` function.
 
@@ -194,7 +197,7 @@ We can see that Ignite created a cache for each of our table. The caches are
 conveniently named using ‘`SQL_<schema name>_<table name>`’ pattern.
 
 Now let us examine a configuration of a cache that contains SQL data
-using a :py:func:`~pyignite.api.cache.Cache.configuration` property.
+using a :py:attr:`~pyignite.cache.Cache.settings` property.
 
 .. literalinclude:: ../examples/binary_types.py
   :language: python
@@ -319,7 +322,7 @@ Revisit the `ExpenseVoucher` type.
 
 Now our binary type have two schemes. The old scheme (ID=-231598180) remained
 unchanged, while the new scheme (ID=547629991) has only those fields specified
-in the most recent :py:func:`~pyignite.connection.Connection.put_binary_type`
+in the most recent :py:meth:`~pyignite.client.Client.put_binary_type`
 call. None of the binary fields were actually removed, but two newly described
 fields, `expense_date` and `report_date`, were added.
 
@@ -331,7 +334,7 @@ Now migrate the data from the old schema to the new one.
 
 As you can see, old or new fields are available in the resulting binary object,
 depending on which schema was used when writing them using
-:py:func:`~pyignite.api.cache.Cache.put` or similar methods.
+:py:meth:`~pyignite.cache.Cache.put` or similar methods.
 
 This versioning mechanism is quite simple and robust, but it have its
 limitations. The main thing is: you can not change the type of the existing
@@ -347,7 +350,7 @@ Failover
 --------
 
 When connection to the server is broken or timed out,
-:class:`~pyignite.connection.Connection` object raises an appropriate
+:class:`~pyignite.client.Client` object raises an appropriate
 exception, but keeps its constructor's parameters intact, so user can
 reconnect, and the connection object remains valid.
 
@@ -356,7 +359,7 @@ Launch 3 Ignite nodes on `localhost` and run:
 
 .. literalinclude:: ../examples/failover.py
   :language: python
-  :lines: 16-64
+  :lines: 16-40
 
 Then try shutting down and restarting nodes, and see what happens. At least
 one node should remain active.
@@ -367,7 +370,7 @@ one node should remain active.
     # “Socket connection broken.” just happened; switching to node 1.
     # Connected to node 1
     # “Socket connection broken.” just happened; switching to node 2.
-    # “[Errno 111] Connection refused” just happened; switching to node 0.
+    # “[Errno 111] Client refused” just happened; switching to node 0.
     # Connected to node 0
 
 SSL/TLS
@@ -392,30 +395,30 @@ The server configuration process can be split up into these basic steps:
    `false`. You'll still have to set up the trust store on step 1 though.
 
 Client SSL settings is summarized here:
-:class:`~pyignite.connection.Connection`.
+:class:`~pyignite.client.Client`.
 
 To use the SSL encryption without certificate validation just `use_ssl`.
 
 .. code-block:: python3
 
-    from pyignite.connection import Connection
+    from pyignite import Client
 
-    conn = Connection(use_ssl=True)
-    conn.connect('127.0.0.1', 10800)
+    client = Client(use_ssl=True)
+    client.connect('127.0.0.1', 10800)
 
 To identify the client, create an SSL keypair and a certificate with
 `openssl`_ command and use them in this manner:
 
 .. code-block:: python3
 
-    from pyignite.connection import Connection
+    from pyignite import Client
 
-    conn = Connection(
+    client = Client(
         use_ssl=True,
         ssl_keyfile='etc/.ssl/keyfile.key',
         ssl_certfile='etc/.ssl/certfile.crt',
     )
-    conn.connect('ignite-example.com', 10800)
+    client.connect('ignite-example.com', 10800)
 
 To check the authenticity of the server, get the server certificate or
 certificate chain and provide its path in the `ssl_ca_certfile` parameter.
@@ -424,14 +427,14 @@ certificate chain and provide its path in the `ssl_ca_certfile` parameter.
 
     import ssl
 
-    from pyignite.connection import Connection
+    from pyignite import Client
 
-    conn = Connection(
+    client = Client(
         use_ssl=True,
         ssl_ca_certfile='etc/.ssl/ca_certs',
         ssl_cert_reqs=ssl.CERT_REQUIRED,
     )
-    conn.connect('ignite-example.com', 10800)
+    client.connect('ignite-example.com', 10800)
 
 You can also provide such parameters as the set of ciphers (`ssl_ciphers`) and
 the SSL version (`ssl_version`), if the defaults

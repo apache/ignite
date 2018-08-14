@@ -15,7 +15,7 @@
 
 from typing import Iterable, Union
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.queries.op_codes import *
 from pyignite.datatypes import (
     Map, Bool, Byte, Int, Long, AnyDataArray, AnyDataObject,

@@ -15,7 +15,7 @@
 
 import ctypes
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.constants import *
 from .type_codes import *
 

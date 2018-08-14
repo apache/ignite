@@ -15,7 +15,7 @@
 
 from typing import Any, Iterable, Optional, Union
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.datatypes import prop_codes
 from pyignite.exceptions import (
     CacheCreationError, CacheError, ParameterError, SQLError,

@@ -15,7 +15,7 @@
 
 import ctypes
 
-from pyignite.client import Client
+from pyignite import Client
 from .prop_codes import *
 from .cache_config import (
     CacheMode, CacheAtomicityMode, PartitionLossPolicy, RebalanceMode,

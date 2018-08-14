@@ -20,7 +20,7 @@ in progress.
 
 from typing import Union
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.datatypes import (
     AnyDataArray, AnyDataObject, Bool, Byte, Int, Long, Map, Null, String,
     StructArray,

@@ -15,7 +15,7 @@
 
 from decimal import Decimal
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.datatypes.prop_codes import *
 
 

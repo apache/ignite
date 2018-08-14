@@ -15,7 +15,7 @@
 
 from typing import Union
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.constants import *
 from pyignite.datatypes.binary import (
     body_struct, enum_struct, schema_struct, binary_fields_struct,

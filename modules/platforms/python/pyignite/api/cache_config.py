@@ -25,7 +25,7 @@ only non-persistent storage tier.)
 
 from typing import Union
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.datatypes.cache_config import cache_config_struct
 from pyignite.datatypes.cache_properties import prop_map
 from pyignite.datatypes import Int, Byte, Short, String, StringArray

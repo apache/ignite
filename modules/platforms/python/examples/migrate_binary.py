@@ -17,7 +17,7 @@ from collections import OrderedDict
 from datetime import date
 from decimal import Decimal
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.datatypes import (
     BinaryObject, BoolObject, DateObject, DecimalObject, LongObject, String,
 )

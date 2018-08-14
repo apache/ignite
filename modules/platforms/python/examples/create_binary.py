@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.datatypes import BinaryObject, DoubleObject, IntObject, String
 from pyignite.datatypes.prop_codes import *
 

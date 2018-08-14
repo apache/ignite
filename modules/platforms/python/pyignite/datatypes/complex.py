@@ -17,7 +17,7 @@ from collections import OrderedDict
 import ctypes
 from importlib import import_module
 
-from pyignite.client import Client
+from pyignite import Client
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
 from pyignite.utils import hashcode, is_hinted
