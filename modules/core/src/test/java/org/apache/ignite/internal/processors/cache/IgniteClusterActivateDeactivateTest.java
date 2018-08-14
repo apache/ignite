@@ -149,7 +149,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        super.afterTest();
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**
