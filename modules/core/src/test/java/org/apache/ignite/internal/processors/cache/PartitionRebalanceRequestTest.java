@@ -178,7 +178,7 @@ public class PartitionRebalanceRequestTest extends GridCommonAbstractTest {
             updCtrs.put(g.cluster().localNode().id(), nodeUpdCtr);
         }
 
-        ig.context().discovery().sendCustomEvent(createMessage(grpId, payload));
+        ig.context().cache().context().exchange().triggerRebalance(grpId, payload);
 
         finRebLatch.await();
 
@@ -201,17 +201,5 @@ public class PartitionRebalanceRequestTest extends GridCommonAbstractTest {
             else if (nodes.size() == 1)
                 assertTrue("Request for partition with all owners should be ignored", finRes.containsKey(parts.getKey()));
         }
-    }
-
-    /**
-     * @param gId Group id.
-     * @param payload Payload partition and nodes ids.
-     */
-    private PartitionRebalanceRequestMessage createMessage(Integer gId, Map<Integer, Set<UUID>> payload) {
-        Map<Integer, Map<Integer, Set<UUID>>> data = new HashMap<>();
-
-        data.put(gId, payload);
-
-        return new PartitionRebalanceRequestMessage(data);
     }
 }

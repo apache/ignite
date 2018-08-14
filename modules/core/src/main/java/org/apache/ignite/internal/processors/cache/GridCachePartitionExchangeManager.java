@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1456,6 +1457,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     fut.cleanUp();
             }
         }
+    }
+
+
+    /**
+     * Trigger rebalance on specified group, nodes and partitions
+     *
+     * @param gId Group id.
+     * @param partMap Partitions on set of nodes to rebalance.
+     */
+    public void triggerRebalance(Integer gId, Map<Integer, Set<UUID>> partMap) throws IgniteCheckedException {
+        Map<Integer, Map<Integer, Set<UUID>>> data = new HashMap<>();
+
+        data.put(gId, partMap);
+
+        cctx.discovery().sendCustomEvent(new PartitionRebalanceRequestMessage(data));
     }
 
     /**
