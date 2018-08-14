@@ -971,7 +971,10 @@ public class CacheGroupContext {
 
     /**
      * @return Caches in this group.
+     *
+     * caches is already Unmodifiable list, so we don't need to explicitly wrap it here.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public List<GridCacheContext> caches() {
         return caches;
     }
