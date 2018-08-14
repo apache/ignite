@@ -58,6 +58,7 @@ class ReduceQueryRun {
     private final AtomicReference<Object> state = new AtomicReference<>();
 
     /** Holder of root cause description*/
+    // TODO: Single atmoic with (state, rootCause, nodeId)
     private final AtomicReference<String> rootCause = new AtomicReference<>();
 
     /**
