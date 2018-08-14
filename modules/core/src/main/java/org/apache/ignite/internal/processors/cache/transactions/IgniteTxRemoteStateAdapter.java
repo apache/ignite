@@ -82,11 +82,8 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
         int cacheId = cctx.cacheId();
 
         // Check if we can enlist new cache to transaction.
-        if (!activeCacheIds.contains(cacheId)) {
-            assert cctx.shared().verifyTxCompatibility(tx, activeCacheIds, cctx) == null;
-
+        if (!activeCacheIds.contains(cacheId))
             activeCacheIds.add(cacheId);
-        }
     }
 
     /** {@inheritDoc} */
