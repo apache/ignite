@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.h2.jdbc.JdbcConnection;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,6 +56,9 @@ class ReduceQueryRun {
 
     /** Can be either CacheException in case of error or AffinityTopologyVersion to retry if needed. */
     private final AtomicReference<Object> state = new AtomicReference<>();
+
+    /** Holder of root cause description*/
+    private final AtomicReference<String> rootCause = new AtomicReference<>();
 
     /**
      * Constructor.
@@ -100,6 +104,16 @@ class ReduceQueryRun {
     }
 
     /**
+     * @param msg corresponding response message
+     * @param nodeId Node ID.
+     */
+    void stateWithMsg(GridQueryNextPageResponse msg, @Nullable UUID nodeId) {
+        assert msg != null;
+        rootCause.compareAndSet(null, msg.retryCause());
+        state(msg.retry(), nodeId);
+    }
+
+    /**
      * @param e Error.
      */
     void disconnected(CacheException e) {
@@ -132,6 +146,13 @@ class ReduceQueryRun {
      */
     Object state() {
         return state.get();
+    }
+
+    /**
+     * @return Root Cause.
+     */
+    String rootCause() {
+        return rootCause.get();
     }
 
     /**
