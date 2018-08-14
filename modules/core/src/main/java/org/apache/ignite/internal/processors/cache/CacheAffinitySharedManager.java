@@ -381,7 +381,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         List<DynamicCacheDescriptor> startDescs = new ArrayList<>(startReqs.size());
 
         for (DynamicCacheChangeRequest startReq : startReqs.values()) {
-            DynamicCacheDescriptor desc = caches.cache(CU.cacheId(startReq.cacheName()));
+            DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(CU.cacheId(startReq.cacheName()));
 
             if (desc == null) {
                 CacheException err = new CacheException("Failed to start client cache " +
@@ -651,7 +651,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if(!GridFunc.eqNotOrdered(caches.registeredCaches.keySet(), collect))
                 log.warning("Check caches are not same : affinity=" + caches.registeredCaches + ", cache=" + collect);
 
-            msg.checkCachesExist(caches.registeredCaches.keySet());
+            msg.checkCachesExist(cctx.cache().cacheDescriptors().keySet().stream().map(CU::cacheId).collect(Collectors.toSet()));
 
             try {
                 if (!msg.empty())
@@ -820,7 +820,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if(!GridFunc.eqNotOrdered(caches.registeredCaches.keySet(), collect))
                 log.warning("Check caches are not same : affinity=" + caches.registeredCaches + ", cache=" + collect);
 
-            msg.checkCachesExist(caches.registeredCaches.keySet());
+            msg.checkCachesExist(cctx.cache().cacheDescriptors().keySet().stream().map(CU::cacheId).collect(Collectors.toSet()));
 
             if (msg.empty())
                 clientCacheChanges.remove();
@@ -1796,6 +1796,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final boolean newAff) throws IgniteCheckedException {
         final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = new ArrayList<>();
 
+        log.info("init coordinator caches");
         final AffinityTopologyVersion topVer = fut.initialVersion();
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
@@ -2378,7 +2379,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 log.warning("Caches are not same : affinity=" + caches.registeredCaches + ", cache=" + descriptorMap);
 
 
-        return caches.registeredCaches;
+        return cctx.cache().cacheDescriptors().entrySet().stream().collect(Collectors.toMap(e->CU.cacheId(e.getKey()), Map.Entry::getValue));
     }
 
     /**

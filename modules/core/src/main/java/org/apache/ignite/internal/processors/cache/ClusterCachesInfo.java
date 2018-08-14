@@ -702,6 +702,7 @@ class ClusterCachesInfo {
                     grpDesc.onCacheStopped(desc.cacheName(), desc.cacheId());
 
                     if (!grpDesc.hasCaches()) {
+                        log.info("Remove group : " + grpDesc.groupId());
                         registeredCacheGrps.remove(grpDesc.groupId());
 
                         ctx.discovery().removeCacheGroup(grpDesc);
