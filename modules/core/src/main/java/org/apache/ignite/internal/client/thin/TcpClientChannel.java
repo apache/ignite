@@ -278,9 +278,7 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream res = new BinaryHeapInputStream(read(resSize));
 
-        boolean success = res.readBoolean();
-
-        if (!success) {
+        if (!res.readBoolean()) { // success flag
             ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
 
             try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {

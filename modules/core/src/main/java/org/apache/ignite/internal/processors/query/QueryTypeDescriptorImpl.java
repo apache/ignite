@@ -393,7 +393,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param isField {@code True} if {@code prop} if field, {@code False} if prop is "_KEY" or "_VAL".
      * @throws IgniteCheckedException In case of error.
      */
-    public void addProperty(GridQueryProperty prop, boolean failOnDuplicate, boolean isField) throws IgniteCheckedException {
+    public void addProperty(GridQueryProperty prop, boolean failOnDuplicate, boolean isField)
+        throws IgniteCheckedException {
         String name = prop.name();
 
         if (props.put(name, prop) != null && failOnDuplicate)
