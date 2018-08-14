@@ -35,7 +35,11 @@ BOOST_AUTO_TEST_CASE(TestCase)
 
     in.i32Field = 82;
 
+    BOOST_CHECKPOINT("Putting value in cache");
+
     testCache.Put(1, in);
+
+    BOOST_CHECKPOINT("Case 1");
 
     CheckSingleResult<int32_t>(
         "SELECT "
@@ -44,6 +48,8 @@ BOOST_AUTO_TEST_CASE(TestCase)
                 "ELSE (i32Field / 3) "
             "END "
         "FROM TestType", in.i32Field / 2);
+
+    BOOST_CHECKPOINT("Case 2");
 
     CheckSingleResult<int32_t>(
         "SELECT "
