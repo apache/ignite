@@ -238,8 +238,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         }
 
         U.warn(log, "Evictions started (cache may have reached its capacity)." +
-                " You may wish to increase 'maxSize' on eviction policy being used for cache: " + cctx.name(),
-            "Evictions started (cache may have reached its capacity): " + cctx.name());
+            " You may wish to increase 'maxSize' on eviction policy being used for cache: " + cctx.name());
     }
 
     /** {@inheritDoc} */

@@ -16,12 +16,17 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -46,6 +51,9 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
     /** Backoff ratio. Each next park will be this times longer. */
     private static final double BACKOFF_RATIO = 1.05;
 
+    /** Checkpoint buffer fullfill upper bound. */
+    private static final float CP_BUF_FILL_THRESHOLD = 2f / 3;
+
     /** Counter for dirty pages ratio throttling. */
     private final AtomicInteger notInCheckpointBackoffCntr = new AtomicInteger(0);
 
@@ -54,6 +62,9 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
 
     /** Logger. */
     private IgniteLogger log;
+
+    /** Currently parking threads. */
+    private final Collection<Thread> parkThrds = new ConcurrentLinkedQueue<>();
 
     /**
      * @param pageMemory Page memory.
@@ -85,7 +96,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         boolean shouldThrottle = false;
 
         if (isPageInCheckpoint) {
-            int checkpointBufLimit = pageMemory.checkpointBufferPagesSize() * 2 / 3;
+            int checkpointBufLimit = (int)(pageMemory.checkpointBufferPagesSize() * CP_BUF_FILL_THRESHOLD);
 
             shouldThrottle = pageMemory.checkpointBufferPagesCount() > checkpointBufLimit;
         }
@@ -126,10 +137,19 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
                     + " for timeout(ms)=" + (throttleParkTimeNs / 1_000_000));
             }
 
+            if (isPageInCheckpoint)
+                parkThrds.add(Thread.currentThread());
+
             LockSupport.parkNanos(throttleParkTimeNs);
         }
-        else
-            cntr.set(0);
+        else {
+            int oldCntr = cntr.getAndSet(0);
+
+            if (isPageInCheckpoint && oldCntr != 0) {
+                parkThrds.forEach(LockSupport::unpark);
+                parkThrds.clear();
+            }
+        }
     }
 
     /** {@inheritDoc} */
