@@ -41,7 +41,7 @@ import org.apache.ignite.thread.IgniteThread;
  * After that it trains the model based on the specified data using KMeans algorithm.</p>
  * <p>
  * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
- * does this point belongs to and compares prediction to expected outcome (ground truth).</p>
+ * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */

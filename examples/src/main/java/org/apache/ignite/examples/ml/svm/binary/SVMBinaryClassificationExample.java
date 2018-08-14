@@ -32,9 +32,18 @@ import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run SVM binary-class classification model over distributed dataset.
- *
- * @see SVMLinearBinaryClassificationModel
+ * Run SVM binary-class classification model ({@link SVMLinearBinaryClassificationModel}) over distributed dataset.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (based on the
+ * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
+ * <p>
+ * After that it trains the model based on the specified data using KMeans algorithm.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
+ * does this point belong to, compares prediction to expected outcome (ground truth), and builds
+ * <a href="https://en.wikipedia.org/wiki/Confusion_matrix">confusion matrix</a>.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class SVMBinaryClassificationExample {
     /** Run example. */
@@ -97,6 +106,8 @@ public class SVMBinaryClassificationExample {
                 }
 
                 System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
+
+                System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
             });
 
             igniteThread.start();

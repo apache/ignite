@@ -41,8 +41,8 @@ import org.apache.ignite.thread.IgniteThread;
  * Run Logistic Regression multi-class classification trainer ({@link LogRegressionMultiClassModel}) over distributed
  * dataset to build two models: one with minmaxscaling and one without minmaxscaling.
  * <p>
- * Code in this example launches Ignite grid and fills the cache with test data points
- * (<a href="https://archive.ics.uci.edu/ml/datasets/Glass+Identification">preprocessed Glass dataset</a>).</p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (preprocessed
+ * <a href="https://archive.ics.uci.edu/ml/datasets/Glass+Identification">Glass dataset</a>).</p>
  * <p>
  * After that it trains two logistic regression models based on the specified data - one model is with minmaxscaling
  * and one without minmaxscaling.</p>

@@ -35,10 +35,20 @@ import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run SVM multi-class classification trainer over distributed dataset to build two models:
- * one with minmaxscaling and one without minmaxscaling.
- *
- * @see SVMLinearMultiClassClassificationModel
+ * Run SVM multi-class classification trainer ({@link SVMLinearMultiClassClassificationModel}) over distributed dataset
+ * to build two models: one with minmaxscaling and one without minmaxscaling.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (preprocessed
+ * <a href="https://archive.ics.uci.edu/ml/datasets/Glass+Identification">Glass dataset</a>).</p>
+ * <p>
+ * After that it trains two SVM multi-class models based on the specified data - one model is with minmaxscaling
+ * and one without minmaxscaling.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained models to predict what cluster
+ * does this point belong to, compares prediction to expected outcome (ground truth), and builds
+ * <a href="https://en.wikipedia.org/wiki/Confusion_matrix">confusion matrix</a>.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class SVMMultiClassClassificationExample {
     /** Run example. */
@@ -142,6 +152,8 @@ public class SVMMultiClassClassificationExample {
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrorsWithNormalization);
                     System.out.println("\n>>> Accuracy " + (1 - amountOfErrorsWithNormalization / (double)totalAmount));
                     System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtxWithNormalization));
+
+                    System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
                 }
             });
 
