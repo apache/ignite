@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.store.CacheStoreListenerRWThroughDisabledAtomicCacheTest;
 import org.apache.ignite.cache.store.CacheStoreListenerRWThroughDisabledTransactionalCacheTest;
+import org.apache.ignite.cache.store.CacheStoreSessionListenerLifecycleSelfTest;
 import org.apache.ignite.cache.store.CacheStoreSessionListenerWriteBehindEnabledTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListenerSelfTest;
 import org.apache.ignite.internal.processors.GridCacheTxLoadFromStoreOnLockSelfTest;
@@ -56,10 +57,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateSelfT
 import org.apache.ignite.internal.processors.cache.GridCacheStoreManagerDeserializationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.GridLocalCacheStoreManagerDeserializationTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicCopyOnReadDisabledTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalPeekModesTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalStoreValueTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicNearEnabledStoreValueTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicNearPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicReplicatedPeekModesTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicStoreValueTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationDefaultTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheContainsKeyAtomicTest;
@@ -70,11 +75,15 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughT
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughStoreCallTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStartTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheTxCopyOnReadDisabledTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxLocalPeekModesTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheTxLocalStoreValueTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheTxNearEnabledStoreValueTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxNearPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxPreloadNoWriteTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxReplicatedPeekModesTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheTxStoreValueTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientCacheInitializationFailTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheMultinodeTest;
@@ -222,9 +231,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(GridCacheVersionMultinodeTest.class);
 
         suite.addTestSuite(IgniteCacheNearReadCommittedTest.class);
-        // TODO GG-11148 need decide if CopyOnRead flag makes sense.
-//        suite.addTestSuite(IgniteCacheAtomicCopyOnReadDisabledTest.class);
-//        suite.addTestSuite(IgniteCacheTxCopyOnReadDisabledTest.class);
+        suite.addTestSuite(IgniteCacheAtomicCopyOnReadDisabledTest.class);
+        suite.addTestSuite(IgniteCacheTxCopyOnReadDisabledTest.class);
 
         suite.addTestSuite(IgniteCacheTxPreloadNoWriteTest.class);
 
@@ -254,15 +262,12 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(IgniteCacheJdbcBlobStoreNodeRestartTest.class);
 
-        // TODO GG-11148 need decide if CopyOnRead flag makes sense.
-//        suite.addTestSuite(IgniteCacheAtomicLocalStoreValueTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicStoreValueTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicNearEnabledStoreValueTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderStoreValueTest.class);
-//        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderNearEnabledStoreValueTest.class);
-//        suite.addTestSuite(IgniteCacheTxLocalStoreValueTest.class);
-//        suite.addTestSuite(IgniteCacheTxStoreValueTest.class);
-//        suite.addTestSuite(IgniteCacheTxNearEnabledStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxNearEnabledStoreValueTest.class);
 
         suite.addTestSuite(IgniteCacheLockFailoverSelfTest.class);
         suite.addTestSuite(IgniteCacheMultiTxLockSelfTest.class);
@@ -288,6 +293,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheOffheapMapEntrySelfTest.class);
 
         suite.addTestSuite(CacheJdbcStoreSessionListenerSelfTest.class);
+        suite.addTestSuite(CacheStoreSessionListenerLifecycleSelfTest.class);
         suite.addTestSuite(CacheStoreListenerRWThroughDisabledAtomicCacheTest.class);
         suite.addTestSuite(CacheStoreListenerRWThroughDisabledTransactionalCacheTest.class);
         suite.addTestSuite(CacheStoreSessionListenerWriteBehindEnabledTest.class);
@@ -319,10 +325,6 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheVersionedEntryPartitionedTransactionalSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryReplicatedAtomicSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryReplicatedTransactionalSelfTest.class);
-
-        // TODO GG-11148.
-        // suite.addTestSuite(CacheSwapUnswapGetTest.class);
-        // suite.addTestSuite(CacheSwapUnswapGetTestSmallQueueSize.class);
 
         suite.addTestSuite(GridCacheDhtTxPreloadSelfTest.class);
         suite.addTestSuite(GridCacheNearTxPreloadSelfTest.class);

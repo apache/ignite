@@ -66,7 +66,11 @@ public class TensorFlowChiefRunner extends AsyncNativeProcessRunner {
         TensorFlowServer srv = new TensorFlowServer(spec, TensorFlowClusterResolver.CHIEF_JOB_NAME, 0);
 
         return new NativeProcessRunner(
-            new PythonProcessBuilderSupplier(true).get(),
+            new PythonProcessBuilderSupplier(
+                true,
+                "job:" + srv.getJobName(),
+                "task:" + srv.getTaskIdx()
+            ).get(),
             new TensorFlowServerScriptFormatter().format(srv, true, ignite),
             out,
             err
