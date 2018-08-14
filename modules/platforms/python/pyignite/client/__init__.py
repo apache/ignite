@@ -350,6 +350,20 @@ class Client:
 
         return Cache(self, settings, with_get=True)
 
+    def get_cache(self, settings: Union[str, dict]) -> 'Cache':
+        """
+        Creates Cache object with a given cache name without checking it up
+        on server. If such a cache does not exist, some kind of exception
+        (most probably `CacheError`) may be raised later.
+
+        :param settings: cache name or cache properties (but only `PROP_NAME`
+         property is allowed),
+        :return: Cache object.
+        """
+        from pyignite.cache import Cache
+
+        return Cache(self, settings, get_only=True)
+
     @status_to_exception(CacheError)
     def get_cache_names(self) -> list:
         """

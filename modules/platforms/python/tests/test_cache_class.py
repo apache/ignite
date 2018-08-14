@@ -22,12 +22,31 @@ from pyignite.datatypes import (
     BinaryObject, BoolObject, DecimalObject, FloatObject, IntObject, String,
 )
 from pyignite.datatypes.prop_codes import *
+from pyignite.exceptions import CacheError
 
 
 def test_cache_create(client):
     cache = client.create_cache('my_oop_cache')
     assert cache.name == cache.settings[PROP_NAME] == 'my_oop_cache'
     cache.destroy()
+
+
+def test_cache_get(client):
+    client.get_or_create_cache('my_cache')
+
+    my_cache = client.get_cache('my_cache')
+    assert my_cache.settings[PROP_NAME] == 'my_cache'
+    my_cache.destroy()
+
+    error = None
+
+    my_cache = client.get_cache('my_cache')
+    try:
+        _ = my_cache.settings[PROP_NAME]
+    except CacheError as e:
+        error = e
+
+    assert type(error) is CacheError
 
 
 def test_cache_config(client):

@@ -70,7 +70,9 @@ class Cache:
     _settings = None
 
     @staticmethod
-    def validate_settings(settings: Union[str, dict]=None):
+    def validate_settings(
+        settings: Union[str, dict]=None, get_only: bool=False,
+    ):
         if any([
             not settings,
             type(settings) not in (str, dict),
@@ -84,9 +86,12 @@ class Cache:
         ]):
             raise ParameterError('One or more settings was not recognized')
 
+        if get_only and type(settings) is dict and len(settings) != 1:
+            raise ParameterError('Only cache name allowed as a parameter')
+
     def __init__(
         self, client: Client, settings: Union[str, dict]=None,
-        with_get: bool=False
+        with_get: bool=False, get_only: bool=False,
     ):
         """
         Initialize cache object. Normally you should not calling this directly.
@@ -98,7 +103,9 @@ class Cache:
          of cache properties and their values. In this case PROP_NAME is
          mandatory,
         :param with_get: (optional) do not raise exception, if the cache
-         is already exists. Defaults to False.
+         is already exists. Defaults to False,
+        :param get_only: (optional) do not communicate with Ignite server
+         at all, only create Cache instance. Defaults to False.
         """
         self._conn = client
         self.validate_settings(settings)
@@ -107,10 +114,11 @@ class Cache:
         else:
             self._name = settings[prop_codes.PROP_NAME]
 
-        func = CACHE_CREATE_FUNCS[type(settings) is dict][with_get]
-        result = func(client, settings)
-        if result.status != 0:
-            raise CacheCreationError(result.message)
+        if not get_only:
+            func = CACHE_CREATE_FUNCS[type(settings) is dict][with_get]
+            result = func(client, settings)
+            if result.status != 0:
+                raise CacheCreationError(result.message)
 
         self._cache_id = cache_id(self._name)
 
@@ -123,7 +131,10 @@ class Cache:
         """
         if self._settings is None:
             config_result = cache_get_configuration(self._conn, self._cache_id)
-            self._settings = config_result.value
+            if config_result.status == 0:
+                self._settings = config_result.value
+            else:
+                raise CacheError(config_result.message)
 
         return self._settings
 
