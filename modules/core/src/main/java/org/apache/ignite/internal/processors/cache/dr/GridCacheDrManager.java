@@ -81,7 +81,7 @@ public interface GridCacheDrManager extends GridCacheManager {
     /**
      * @param mvccVer Tx mvcc version.
      * @param commit {@code True} if tx committed, {@code False} otherwise.
-     * @param version Tx snapshot affinity version.
+     * @param topVer Tx snapshot affinity version.
      * @throws IgniteCheckedException If failed.
      */
     void onTxFinished(MvccVersion mvccVer, boolean commit, AffinityTopologyVersion topVer);
