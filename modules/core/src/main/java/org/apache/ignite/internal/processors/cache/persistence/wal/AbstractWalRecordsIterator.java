@@ -164,10 +164,10 @@ public abstract class AbstractWalRecordsIterator
             catch (WalSegmentTailReachedException e) {
                 AbstractReadFileHandle currWalSegment = this.currWalSegment;
 
-                if (!currWalSegment.workDir())
-                    throw new IgniteCheckedException(
-                        "WAL tail reached in archive directory, " +
-                            "WAL segment file is corrupted.", e);
+                IgniteCheckedException e0 = validateTailReachedException(e, currWalSegment);
+
+                if (e0 != null)
+                    throw e0;
 
                 log.warning(e.getMessage());
 
@@ -176,6 +176,21 @@ public abstract class AbstractWalRecordsIterator
                 return;
             }
         }
+    }
+
+    /**
+     *
+     * @param tailReachedException Tail reached exception.
+     * @param currWalSegment Current WAL segment read handler.
+     * @return If need to throw exception after validation.
+     */
+    protected IgniteCheckedException validateTailReachedException(
+        WalSegmentTailReachedException tailReachedException,
+        AbstractReadFileHandle currWalSegment
+    ) {
+        return !currWalSegment.workDir() ? new IgniteCheckedException(
+            "WAL tail reached in archive directory, " +
+                "WAL segment file is corrupted.", tailReachedException) : null;
     }
 
     /**
