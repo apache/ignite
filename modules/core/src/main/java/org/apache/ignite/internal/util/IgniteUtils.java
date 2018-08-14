@@ -249,7 +249,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -10783,26 +10782,20 @@ public abstract class IgniteUtils {
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
         if(srcDatas.isEmpty())
             return Collections.emptyList();
+        int[] batchSizes = calculateOptimalBatchSizes(parallelismLvl, srcDatas.size());
 
-        int batchSize = srcDatas.size() / parallelismLvl;
+        List<List<T>> batches = new ArrayList<>(batchSizes.length);
 
-        final int finalBatchSize = batchSize == 0 ? srcDatas.size() : batchSize;
+        Iterator<T> iterator = srcDatas.iterator();
 
-        List<List<T>> batches = IntStream.range(0, parallelismLvl)
-            .mapToObj(i -> new ArrayList<T>(finalBatchSize))
-            .collect(Collectors.toList());
+        int batchIndex;
+        for(batchIndex = 0 ; batchIndex< batchSizes.length; batchIndex++) {
+            List<T> batch = new ArrayList<>(batchSizes[batchIndex]);
 
-        int batchIndex = 0;
+            for(int i =0 ; i< batchSizes[batchIndex]; i++)
+                batch.add(iterator.next());
 
-        final int maxBatchIndex = batches.size() -1;
-
-        List<T> currentBatch = batches.get(batchIndex);
-
-        for (T src : srcDatas) {
-            currentBatch.add(src);
-
-            if(currentBatch.size() >= batchSize && batchIndex < maxBatchIndex)
-                currentBatch = batches.get(++batchIndex);
+            batches.add(batch);
         }
 
         List<Future<Collection<R>>> consumerFutures = batches.stream()
@@ -10858,6 +10851,21 @@ public abstract class IgniteUtils {
         }
 
         return results;
+    }
+
+    /**
+     * Split number of tasks into optimized batches.
+     * @param parallelismLvl Level of parallelism.
+     * @param size number of tasks to split.
+     * @return array of batch sizes.
+     */
+    public static int[] calculateOptimalBatchSizes(int parallelismLvl, int size) {
+        int[] batcheSizes = new int[Math.min(parallelismLvl, size)];
+
+        for(int i =0; i <size; i++)
+            batcheSizes[i % batcheSizes.length]++;
+
+        return batcheSizes;
     }
 
     /**
