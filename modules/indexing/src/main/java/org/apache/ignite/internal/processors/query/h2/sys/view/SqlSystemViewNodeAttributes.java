@@ -58,7 +58,7 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
             try {
                 UUID nodeId = uuidFromValue(idCond.valueForEquality());
 
-                ClusterNode node = ctx.discovery().node(nodeId);
+                ClusterNode node = nodeId == null ? null : ctx.discovery().node(nodeId);
 
                 if (node != null)
                     nodes = Collections.singleton(node);
