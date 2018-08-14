@@ -28,7 +28,7 @@ import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
+import org.apache.ignite.ml.structures.LabeledVectorSetTestTrainPair;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 import org.junit.Test;
@@ -217,22 +217,22 @@ public class LabeledVectorSetTest implements ExternalizableTest<LabeledVectorSet
 
         LabeledVectorSet training = new LabeledVectorSet(mtx, lbs);
 
-        LabeledDatasetTestTrainPair split1 = new LabeledDatasetTestTrainPair(training, 0.67);
+        LabeledVectorSetTestTrainPair split1 = new LabeledVectorSetTestTrainPair(training, 0.67);
 
         assertEquals(4, split1.test().rowSize());
         assertEquals(2, split1.train().rowSize());
 
-        LabeledDatasetTestTrainPair split2 = new LabeledDatasetTestTrainPair(training, 0.65);
+        LabeledVectorSetTestTrainPair split2 = new LabeledVectorSetTestTrainPair(training, 0.65);
 
         assertEquals(3, split2.test().rowSize());
         assertEquals(3, split2.train().rowSize());
 
-        LabeledDatasetTestTrainPair split3 = new LabeledDatasetTestTrainPair(training, 0.4);
+        LabeledVectorSetTestTrainPair split3 = new LabeledVectorSetTestTrainPair(training, 0.4);
 
         assertEquals(2, split3.test().rowSize());
         assertEquals(4, split3.train().rowSize());
 
-        LabeledDatasetTestTrainPair split4 = new LabeledDatasetTestTrainPair(training, 0.3);
+        LabeledVectorSetTestTrainPair split4 = new LabeledVectorSetTestTrainPair(training, 0.3);
 
         assertEquals(1, split4.test().rowSize());
         assertEquals(5, split4.train().rowSize());

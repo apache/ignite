@@ -25,17 +25,12 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static junit.framework.TestCase.assertEquals;
 
 /** Tests behaviour of ANNClassificationTest. */
 @RunWith(Parameterized.class)
@@ -76,17 +71,27 @@ public class ANNClassificationTest {
         ThreadLocalRandom rndY = ThreadLocalRandom.current();
 
         for (int i = 0; i < AMOUNT_OF_OBSERVATIONS; i++) {
-            double x = rndX.nextDouble(-1000, 1000);
-            double y = rndY.nextDouble(-1000, 1000);
+            double x = rndX.nextDouble(500, 600);
+            double y = rndY.nextDouble(500, 600);
             double[] vec = new double[AMOUNT_OF_FEATURES + 1];
-            vec[0] = y - x > 0 ? 1 : 0; // assign label.
+            vec[0] = 0; // assign label.
             vec[1] = x;
             vec[2] = y;
             data.put(i, vec);
         }
 
+        for (int i = AMOUNT_OF_OBSERVATIONS; i < AMOUNT_OF_OBSERVATIONS * 2; i++) {
+            double x = rndX.nextDouble(-600, -500);
+            double y = rndY.nextDouble(-600, -500);
+            double[] vec = new double[AMOUNT_OF_FEATURES + 1];
+            vec[0] = 1; // assign label.
+            vec[1] = x;
+            vec[2] = y;
+            data.put(i, vec);
+        }
 
-        ANNClassificationTrainer trainer = new ANNClassificationTrainer();
+        ANNClassificationTrainer trainer = new ANNClassificationTrainer()
+            .withK(10);
 
         NNClassificationModel mdl = trainer.fit(
             data,
@@ -97,7 +102,7 @@ public class ANNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(550, 550)), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(-550, -550)), PRECISION);
     }
 }

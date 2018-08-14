@@ -57,7 +57,7 @@ public class ANNClassificationExample {
 
                 ANNClassificationTrainer trainer = new ANNClassificationTrainer()
                     .withDistance(new ManhattanDistance())
-                    .withK(10)
+                    .withK(50)
                     .withMaxIterations(1000)
                     .withSeed(1234L)
                     .withEpsilon(1e-2);
@@ -69,7 +69,7 @@ public class ANNClassificationExample {
                     dataCache,
                     (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
-                ).withK(3)
+                ).withK(5)
                     .withDistanceMeasure(new EuclideanDistance())
                     .withStrategy(NNStrategy.WEIGHTED);
 

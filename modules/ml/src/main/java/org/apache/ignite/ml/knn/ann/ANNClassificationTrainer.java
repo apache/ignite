@@ -132,7 +132,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                 .get(centroidIdx);
 
             clsLbls.keySet().forEach(
-                (label) -> clsLbls.put(label, centroidLbDistribution.containsKey(label) ? (double) (centroidLbDistribution.get(label) / clusterSize) : 0.0)
+                (label) -> clsLbls.put(label, centroidLbDistribution.containsKey(label) ? ((double) (centroidLbDistribution.get(label)) / clusterSize) : 0.0)
             );
         }
         return new ProbableLabel(clsLbls);
@@ -163,7 +163,6 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
 
                     // add new label to label set
                     res.labels().add(lb);
-
 
                     ConcurrentHashMap<Double, Integer> centroidStat = res.centroidStat.get(centroidIdx);
 

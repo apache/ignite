@@ -27,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Class for splitting Labeled Dataset on train and test sets.
  */
-public class LabeledDatasetTestTrainPair implements Serializable {
+public class LabeledVectorSetTestTrainPair implements Serializable {
     /** Data to keep train set. */
     private LabeledVectorSet train;
 
@@ -42,7 +42,7 @@ public class LabeledDatasetTestTrainPair implements Serializable {
      * @param dataset The dataset to split on train and test subsets.
      * @param testPercentage The percentage of the test subset.
      */
-    public LabeledDatasetTestTrainPair(LabeledVectorSet dataset, double testPercentage) {
+    public LabeledVectorSetTestTrainPair(LabeledVectorSet dataset, double testPercentage) {
         assert testPercentage > 0.0;
         assert testPercentage < 1.0;
         final int datasetSize = dataset.rowSize();
