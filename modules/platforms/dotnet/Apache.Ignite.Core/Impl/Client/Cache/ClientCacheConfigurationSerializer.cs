@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteInt((int)cfg.WriteSynchronizationMode);
 
             code(Op.KeyConfiguration);
-            writer.WriteCollectionRaw(cfg.KeyConfiguration, srvVer);
+            writer.WriteCollectionRaw(cfg.KeyConfiguration);
             
             code(Op.QueryEntities);
             writer.WriteCollectionRaw(cfg.QueryEntities, srvVer);

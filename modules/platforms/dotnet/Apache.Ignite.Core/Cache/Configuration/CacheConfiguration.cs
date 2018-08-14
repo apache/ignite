@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// <summary>
     /// Defines grid cache configuration.
     /// </summary>
-    public class CacheConfiguration : IBinaryRawWriteAware<BinaryWriter>
+    public class CacheConfiguration : IBinaryRawWriteAwareEx<BinaryWriter>
     {
         /// <summary> Default size of rebalance thread pool. </summary>
         public const int DefaultRebalanceThreadPoolSize = 2;
@@ -368,7 +368,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="writer">The writer.</param>
         /// <param name="srvVer">Server version.</param>
-        void IBinaryRawWriteAware<BinaryWriter>.Write(BinaryWriter writer, ClientProtocolVersion srvVer)
+        void IBinaryRawWriteAwareEx<BinaryWriter>.Write(BinaryWriter writer, ClientProtocolVersion srvVer)
         {
             Write(writer, srvVer);
         }
@@ -442,7 +442,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AffinityFunctionSerializer.Write(writer, AffinityFunction);
             ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
 
-            writer.WriteCollectionRaw(KeyConfiguration, srvVer);
+            writer.WriteCollectionRaw(KeyConfiguration);
 
             if (PluginConfigurations != null)
             {
