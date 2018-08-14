@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -28,13 +31,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
+import org.apache.ignite.internal.util.lang.IgniteCompletableObject;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -412,45 +415,70 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             (!F.isEmpty(errs) && errsBytes == null);
 
         if (marshal) {
-            GridClosureProcessor gridClosureProcessor = ctx.kernalContext().closure();
+            // Reserve at least 2 threads for system operations.
+            int parallelismLvl = Math.max(1, ctx.kernalContext().config().getSystemThreadPoolSize() - 2);
 
-            IgniteInternalFuture<byte[]> partsFuture = null;
-            IgniteInternalFuture<byte[]> partCntrsFuture = null;
-            IgniteInternalFuture<byte[]> partCntrs2Future = null;
-            IgniteInternalFuture<byte[]> partHistSuppliersFuture = null;
-            IgniteInternalFuture<byte[]> partsToReloadFuture = null;
-            IgniteInternalFuture<byte[]> partsSizesFuture = null;
-            IgniteInternalFuture<byte[]> errsFuture = null;
+            Collection<IgniteCompletableObject<Object, byte[]>> objectsToMarshall = new ArrayList<>();
 
             if (!F.isEmpty(parts) && partsBytes == null)
-                partsFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, parts, compress), true);
+                objectsToMarshall.add(new IgniteCompletableObject<>(parts));
 
             if (partCntrs != null && !partCntrs.empty() && partCntrsBytes == null)
-                partCntrsFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, partCntrs, compress), true);
+                objectsToMarshall.add(new IgniteCompletableObject<>(partCntrs));
 
             if (partCntrs2 != null && !partCntrs2.empty() && partCntrsBytes2 == null)
-                partCntrs2Future = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, partCntrs2, compress), true);
-
+                objectsToMarshall.add(new IgniteCompletableObject<>(partCntrs2));
 
             if (partHistSuppliers != null && partHistSuppliersBytes == null)
-                partHistSuppliersFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, partHistSuppliers, compress), true);
+                objectsToMarshall.add(new IgniteCompletableObject<>(partHistSuppliers));
 
             if (partsToReload != null && partsToReloadBytes == null)
-                partsToReloadFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, partsToReload, compress), true);
+                objectsToMarshall.add(new IgniteCompletableObject<>(partsToReload));
 
             if (partsSizes != null && partsSizesBytes == null)
-                partsSizesFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, partsSizes, compress), true);
+                objectsToMarshall.add(new IgniteCompletableObject<>(partsSizes));
 
             if (!F.isEmpty(errs) && errsBytes == null)
-                errsFuture = gridClosureProcessor.callLocalSafe(new MarshallCallable(ctx, errs, compress), true);
+                objectsToMarshall.add(new IgniteCompletableObject<>(errs));
 
-            partsBytes = partsFuture != null ? partsFuture.get() : null;
-            partCntrsBytes = partCntrsFuture != null ? partCntrsFuture.get() : null;
-            partCntrsBytes2 = partCntrs2Future != null ? partCntrs2Future.get() : null;
-            partHistSuppliersBytes = partHistSuppliersFuture != null ? partHistSuppliersFuture.get() : null;
-            partsToReloadBytes = partsToReloadFuture != null ? partsToReloadFuture.get() : null;
-            partsSizesBytes = partsSizesFuture != null ? partsSizesFuture.get() : null;
-            errsBytes = errsFuture != null ? errsFuture.get() : null;
+            U.doInParallel(
+                parallelismLvl,
+                ctx.kernalContext().getSystemExecutorService(),
+                objectsToMarshall,
+                new IgniteThrowableConsumer<IgniteCompletableObject<Object, byte[]>>() {
+
+                @Override public void accept(IgniteCompletableObject<Object, byte[]> payload) throws IgniteCheckedException {
+                    byte[] marshalled = U.marshal(ctx, payload.getInput());
+
+                    if(compress)
+                        marshalled = U.zip(marshalled, ctx.gridConfig().getNetCompressionLevel());
+
+                    payload.complete(marshalled);
+                }
+            });
+
+            Iterator<IgniteCompletableObject<Object, byte[]>> iterator = objectsToMarshall.iterator();
+
+            if (!F.isEmpty(parts) && partsBytes == null)
+                partsBytes = iterator.next().getResult();
+
+            if (partCntrs != null && !partCntrs.empty() && partCntrsBytes == null)
+                partCntrsBytes = iterator.next().getResult();
+
+            if (partCntrs2 != null && !partCntrs2.empty() && partCntrsBytes2 == null)
+                partCntrsBytes2 = iterator.next().getResult();
+
+            if (partHistSuppliers != null && partHistSuppliersBytes == null)
+                partHistSuppliersBytes = iterator.next().getResult();
+
+            if (partsToReload != null && partsToReloadBytes == null)
+                partsToReloadBytes = iterator.next().getResult();
+
+            if (partsSizes != null && partsSizesBytes == null)
+                partsSizesBytes = iterator.next().getResult();
+
+            if (!F.isEmpty(errs) && errsBytes == null)
+                errsBytes = iterator.next().getResult();
 
             if (compress) {
                 assert !compressed();
@@ -478,42 +506,53 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridClosureProcessor gridClosureProcessor = ctx.kernalContext().closure();
-
         ClassLoader classLoader = U.resolveClassLoader(ldr, ctx.gridConfig());
 
-        IgniteInternalFuture<Map<Integer, GridDhtPartitionFullMap>> partsFuture = null;
-        IgniteInternalFuture<IgniteDhtPartitionCountersMap> partsCntrsFuture = null;
-        IgniteInternalFuture<IgniteDhtPartitionCountersMap2> partsCntrs2Future = null;
-        IgniteInternalFuture<IgniteDhtPartitionHistorySuppliersMap> partHistSuppliersFuture = null;
-        IgniteInternalFuture<IgniteDhtPartitionsToReloadMap> partsToReloadFuture = null;
-        IgniteInternalFuture<Map<Integer, Map<Integer, Long>>> partsSizesFuture = null;
-        IgniteInternalFuture<Map<UUID, Exception>> errsFuture = null;
+        Collection<IgniteCompletableObject<byte[], Object>> objectsToUnmarshall = new ArrayList<>();
+
+        // Reserve at least 2 threads for system operations.
+        int parallelismLvl = Math.max(1, ctx.kernalContext().config().getSystemThreadPoolSize() - 2);
 
         if (partsBytes != null && parts == null)
-            partsFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partsBytes, compressed(), classLoader));
+            objectsToUnmarshall.add(new IgniteCompletableObject<>(partsBytes));
 
         if (partCntrsBytes != null && partCntrs == null)
-            partsCntrsFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partCntrsBytes, compressed(), classLoader));
+            objectsToUnmarshall.add(new IgniteCompletableObject<>(partCntrsBytes));
 
         if (partCntrsBytes2 != null && partCntrs2 == null)
-            partsCntrs2Future = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partCntrsBytes, compressed(), classLoader));
+            objectsToUnmarshall.add(new IgniteCompletableObject<>(partCntrsBytes2));
 
         if (partHistSuppliersBytes != null && partHistSuppliers == null)
-            partHistSuppliersFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partHistSuppliersBytes, compressed(), classLoader));
+            objectsToUnmarshall.add(new IgniteCompletableObject<>(partHistSuppliersBytes));
 
         if (partsToReloadBytes != null && partsToReload == null)
-            partsToReloadFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partsToReloadBytes, compressed(), classLoader));
+            objectsToUnmarshall.add(new IgniteCompletableObject<>(partsToReloadBytes));
 
         if (partsSizesBytes != null && partsSizes == null)
-            partsSizesFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, partsSizesBytes, compressed(), classLoader));
-
+            objectsToUnmarshall.add(new IgniteCompletableObject<>(partsSizesBytes));
 
         if (errsBytes != null && errs == null)
-            errsFuture = gridClosureProcessor.callLocalSafe(new UnmarshallCallable<>(ctx, errsBytes, compressed(), classLoader));
+            objectsToUnmarshall.add(new IgniteCompletableObject<>(errsBytes));
 
-        if (partsFuture != null) {
-            parts = partsFuture.get();
+        U.doInParallel(
+            parallelismLvl,
+            ctx.kernalContext().getSystemExecutorService(),
+            objectsToUnmarshall,
+            new IgniteThrowableConsumer<IgniteCompletableObject<byte[], Object>>() {
+                @Override public void accept(IgniteCompletableObject<byte[], Object> completableObject) throws IgniteCheckedException {
+                    Object unmarshalled = compressed()
+                        ? U.unmarshalZip(ctx.marshaller(), completableObject.getInput(), classLoader)
+                        : U.unmarshal(ctx, completableObject.getInput(), classLoader);
+
+                    completableObject.complete(unmarshalled);
+                }
+            }
+        );
+
+        Iterator<IgniteCompletableObject<byte[], Object>> iterator = objectsToUnmarshall.iterator();
+
+        if (partsBytes != null && parts == null) {
+            parts = (Map<Integer, GridDhtPartitionFullMap>)iterator.next().getResult();
 
             if (dupPartsData != null) {
                 assert parts != null;
@@ -543,23 +582,23 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             }
         }
 
-        if (partsCntrsFuture != null)
-            partCntrs = partsCntrsFuture.get();
+        if (partCntrsBytes != null && partCntrs == null)
+            partCntrs = (IgniteDhtPartitionCountersMap)iterator.next().getResult();
 
-        if (partsCntrs2Future != null)
-            partCntrs2 = partsCntrs2Future.get();
+        if (partCntrsBytes2 != null && partCntrs2 == null)
+            partCntrs2 = (IgniteDhtPartitionCountersMap2)iterator.next().getResult();
 
-        if (partHistSuppliersFuture != null)
-            partHistSuppliers = partHistSuppliersFuture.get();
+        if (partHistSuppliersBytes != null && partHistSuppliers == null)
+            partHistSuppliers = (IgniteDhtPartitionHistorySuppliersMap)iterator.next().getResult();
 
-        if (partsToReloadFuture != null)
-            partsToReload = partsToReloadFuture.get();
+        if (partsToReloadBytes != null && partsToReload == null)
+            partsToReload = (IgniteDhtPartitionsToReloadMap)iterator.next().getResult();
 
-        if (partsSizesFuture != null)
-            partsSizes = partsSizesFuture.get();
+        if (partsSizesBytes != null && partsSizes == null)
+            partsSizes = (Map<Integer, Map<Integer, Long>>)iterator.next().getResult();
 
-        if (errsFuture != null)
-            errs = errsFuture.get();
+        if (errsBytes != null && errs == null)
+            errs = (Map<UUID, Exception>)iterator.next().getResult();
 
         if (parts == null)
             parts = new HashMap<>();
