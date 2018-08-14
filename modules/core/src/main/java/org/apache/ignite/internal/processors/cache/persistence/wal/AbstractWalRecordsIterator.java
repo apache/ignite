@@ -162,6 +162,13 @@ public abstract class AbstractWalRecordsIterator
                 }
             }
             catch (WalSegmentTailReachedException e) {
+                AbstractReadFileHandle currWalSegment = this.currWalSegment;
+
+                IgniteCheckedException e0 = validateTailReachedException(e, currWalSegment);
+
+                if (e0 != null)
+                    throw e0;
+
                 log.warning(e.getMessage());
 
                 curRec = null;
@@ -169,6 +176,21 @@ public abstract class AbstractWalRecordsIterator
                 return;
             }
         }
+    }
+
+    /**
+     *
+     * @param tailReachedException Tail reached exception.
+     * @param currWalSegment Current WAL segment read handler.
+     * @return If need to throw exception after validation.
+     */
+    protected IgniteCheckedException validateTailReachedException(
+        WalSegmentTailReachedException tailReachedException,
+        AbstractReadFileHandle currWalSegment
+    ) {
+        return !currWalSegment.workDir() ? new IgniteCheckedException(
+            "WAL tail reached in archive directory, " +
+                "WAL segment file is corrupted.", tailReachedException) : null;
     }
 
     /**
@@ -197,7 +219,8 @@ public abstract class AbstractWalRecordsIterator
      * @throws IgniteCheckedException if reading failed
      */
     protected abstract AbstractReadFileHandle advanceSegment(
-        @Nullable final AbstractReadFileHandle curWalSegment) throws IgniteCheckedException;
+        @Nullable final AbstractReadFileHandle curWalSegment
+    ) throws IgniteCheckedException;
 
     /**
      * Switches to new record.
@@ -222,8 +245,11 @@ public abstract class AbstractWalRecordsIterator
             return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
-            if (e instanceof WalSegmentTailReachedException)
-                throw (WalSegmentTailReachedException)e;
+            if (e instanceof WalSegmentTailReachedException) {
+                throw new WalSegmentTailReachedException(
+                    "WAL segment tail reached. [idx=" + hnd.idx() +
+                        ", isWorkDir=" + hnd.workDir() + ", serVer=" + hnd.ser() + "]", e);
+            }
 
             if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
                 IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
