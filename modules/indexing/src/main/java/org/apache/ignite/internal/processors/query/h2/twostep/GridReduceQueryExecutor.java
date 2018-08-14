@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.CacheException;
@@ -289,7 +290,7 @@ public class GridReduceQueryExecutor {
      * @param node Node.
      * @param msg Message.
      */
-    private void onNextPage(final ClusterNode node, GridQueryNextPageResponse msg) {
+    private void onNextPage(final ClusterNode node, final GridQueryNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
         final int seg = msg.segmentId();
@@ -316,7 +317,8 @@ public class GridReduceQueryExecutor {
                         if (err0 != null && err0.getCause() instanceof IgniteClientDisconnectedException)
                             throw err0;
 
-                        CacheException e = new CacheException("Failed to fetch data from node: " + node.id());
+                        CacheException e = new CacheException(
+                            (msg.retryCause()!=null) ? msg.retryCause() : "Failed to fetch data from node: " + node.id());
 
                         if (err0 != null)
                             e.addSuppressed(err0);
@@ -349,7 +351,7 @@ public class GridReduceQueryExecutor {
         idx.addPage(page);
 
         if (msg.retry() != null)
-            retry(r, msg.retry(), node.id());
+            r.stateWithMsg(msg, node.id());
         else if (msg.page() == 0) // Do count down on each first page received.
             r.latch().countDown();
     }
@@ -572,10 +574,13 @@ public class GridReduceQueryExecutor {
 
         final long startTime = U.currentTimeMillis();
 
-        for (int attempt = 0;; attempt++) {
-            if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout))
-                throw new CacheException("Failed to map SQL query to topology.");
+        final AtomicReference<String> rootCause = new AtomicReference<>();
 
+        for (int attempt = 0;; attempt++) {
+            if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout)) {
+                String rcValue = rootCause.get();
+                throw new CacheException((!F.isEmpty(rcValue))?rcValue:("Failed to map SQL query to topology."));
+            }
             if (attempt != 0) {
                 try {
                     Thread.sleep(attempt * 10); // Wait for exchange.
@@ -843,6 +848,9 @@ public class GridReduceQueryExecutor {
                 }
 
                 if (retry) {
+                    assert r != null;
+                    if (!F.isEmpty(r.rootCause()))
+                        rootCause.compareAndSet(null, r.rootCause());
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
 
