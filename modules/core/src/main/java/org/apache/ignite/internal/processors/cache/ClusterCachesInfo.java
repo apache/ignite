@@ -703,7 +703,7 @@ class ClusterCachesInfo {
 
                     if (!grpDesc.hasCaches()) {
                         log.info("Remove group : " + grpDesc.groupId());
-                        registeredCacheGrps.remove(grpDesc.groupId());
+//                        removeGroup(grpDesc);
 
                         ctx.discovery().removeCacheGroup(grpDesc);
 
@@ -770,6 +770,10 @@ class ClusterCachesInfo {
         }
 
         return res;
+    }
+
+    public void removeGroup(CacheGroupDescriptor grpDesc) {
+        registeredCacheGrps.remove(grpDesc.groupId());
     }
 
     /**
@@ -1659,7 +1663,7 @@ class ClusterCachesInfo {
      * @param desc Descriptor for registration.
      * @return Old cache descriptor if it was existed.
      */
-    private DynamicCacheDescriptor registerCacheDescriptor(DynamicCacheDescriptor desc) {
+    public DynamicCacheDescriptor registerCacheDescriptor(DynamicCacheDescriptor desc) {
         DynamicCacheDescriptor old = registeredCaches.put(desc.cacheName(), desc);
 
         ctx.cache().createCacheConfiguration(desc);
