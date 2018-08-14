@@ -36,7 +36,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
     private static final long serialVersionUID = 0L;
 
     /** Available since. */
-    public static IgniteProductVersion AVAILABLE_SINCE = IgniteProductVersion.fromString("2.7.0");
+    public static final IgniteProductVersion AVAILABLE_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Supplying process error. */
     @GridDirectTransient
@@ -124,7 +124,6 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
 
         switch (reader.state()) {
             case 12:
-                // Keep 'updateSeq' name for compatibility.
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
