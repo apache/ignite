@@ -580,7 +580,7 @@ public class QueryUtils {
 
             Object dfltVal = dlftVals != null ? dlftVals.get(entry.getKey()) : null;
 
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, d.cacheName(), entry.getKey(),
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
                 U.classForName(entry.getValue(), Object.class, true),
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precision == null ? -1 : precision.getOrDefault(entry.getKey(), -1),
@@ -634,7 +634,6 @@ public class QueryUtils {
 
         QueryBinaryProperty prop = buildBinaryProperty(
             ctx, 
-            d.cacheName(), 
             name,
             U.classForName(typeName, Object.class, true),
             d.aliases(), 
@@ -644,7 +643,7 @@ public class QueryUtils {
             precision == null ? -1 : precision.getOrDefault(name, -1),
             scale == null ? -1 : scale.getOrDefault(name, -1));
 
-        d.addValidateProperty(prop);
+        d.addProperty(prop, true, false);
     }
 
     /**
@@ -775,7 +774,6 @@ public class QueryUtils {
      * Builds binary object property.
      *
      * @param ctx Kernal context.
-     * @param cacheName Cache name.
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
      * @param resType Result type.
@@ -788,7 +786,7 @@ public class QueryUtils {
      * @param scale Scale.
      * @return Binary property.
      */
-    public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String cacheName, String pathStr, 
+    public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr,
         Class<?> resType, Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
         int precision, int scale) {
         String[] path = pathStr.split("\\.");

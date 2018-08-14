@@ -44,7 +44,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BOOLEAN_FLAG;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BYTE_ARR_FLAG;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BYTE_FLAG;
@@ -168,7 +167,7 @@ public class GridTcpRestParser implements GridNioParser {
 
             case IGNITE_HANDSHAKE_RES:
                 if (buf.hasRemaining())
-                    res = new GridClientHandshakeResponse(buf.get(), CURRENT_VER);
+                    res = new GridClientHandshakeResponse(buf.get());
 
                 break;
 

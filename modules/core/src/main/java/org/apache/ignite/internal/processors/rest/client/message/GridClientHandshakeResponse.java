@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.rest.client.message;
 
 import java.io.Externalizable;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;
 
 /**
  * A client handshake response, containing result
@@ -34,19 +31,10 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
     public static final byte CODE_OK = 0;
 
     /** Response, indicating successful handshake. */
-    public static final GridClientHandshakeResponse OK = new GridClientHandshakeResponse(CODE_OK, CURRENT_VER);
+    public static final GridClientHandshakeResponse OK = new GridClientHandshakeResponse(CODE_OK);
 
     /** */
     private byte resCode;
-
-    /** */
-    private short major;
-
-    /** */
-    private short minor;
-
-    /** */
-    private short maintenance;
 
     /**
      * Constructor for {@link Externalizable}.
@@ -59,13 +47,9 @@ public class GridClientHandshakeResponse extends GridClientAbstractMessage {
      * Constructor.
      *
      * @param resCode Result code.
-     * @param srvVer Server version.
      */
-    public GridClientHandshakeResponse(byte resCode, ClientListenerProtocolVersion srvVer) {
+    public GridClientHandshakeResponse(byte resCode) {
         this.resCode = resCode;
-        this.major = srvVer.major();
-        this.minor = srvVer.minor();
-        this.maintenance = srvVer.maintenance();
     }
 
     /**

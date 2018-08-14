@@ -132,6 +132,8 @@ public final class IgniteQueryErrorCode {
     public static String codeToSqlState(int statusCode) {
         switch (statusCode) {
             case DUPLICATE_KEY:
+            case TOO_LONG_KEY:
+            case TOO_LONG_VALUE:
                 return SqlStateCode.CONSTRAINT_VIOLATION;
 
             case NULL_KEY:

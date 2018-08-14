@@ -111,9 +111,11 @@ namespace Apache.Ignite.Core.Impl.Client
             _socket = Connect(clientConfiguration);
             _stream = GetSocketStream(_socket, clientConfiguration);
 
+            ServerVersion = version.HasValue ? version.Value : CurrentProtocolVersion;
+
             Validate(clientConfiguration);
 
-            Handshake(clientConfiguration, version ?? CurrentProtocolVersion);
+            Handshake(clientConfiguration, ServerVersion);
 
             // Check periodically if any request has timed out.
             if (_timeout > TimeSpan.Zero)
@@ -309,13 +311,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (success)
                 {
-                    if (stream.Remaining > 0)
-                    {
-                        ServerVersion =
-                            new ClientProtocolVersion(stream.ReadShort(), stream.ReadShort(), stream.ReadShort());
-                    }
-                    else
-                        ServerVersion = Ver110;
+                    ServerVersion = version;
 
                     return;
                 }

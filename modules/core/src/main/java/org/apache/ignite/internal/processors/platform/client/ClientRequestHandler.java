@@ -78,9 +78,5 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** {@inheritDoc} */
     @Override public void writeHandshake(BinaryWriterExImpl writer) {
         writer.writeBoolean(true);
-
-        writer.writeShort(ctx.currentVersion().major());
-        writer.writeShort(ctx.currentVersion().minor());
-        writer.writeShort(ctx.currentVersion().maintenance());
     }
 }

@@ -280,10 +280,7 @@ class TcpClientChannel implements ClientChannel {
 
         boolean success = res.readBoolean();
 
-        if (success) {
-            ver = res.remaining() == 0 ? V1_1_0 :
-                new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
-        } else {
+        if (!success) {
             ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
 
             try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {

@@ -382,6 +382,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @throws IgniteCheckedException In case of error.
      */
     public void addProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
+        addProperty(prop, failOnDuplicate, true);
+    }
+
+    /**
+     * Adds property to the type descriptor.
+     *
+     * @param prop Property.
+     * @param failOnDuplicate Fail on duplicate flag.
+     * @param isField {@code True} if {@code prop} if field, {@code False} if prop is "_KEY" or "_VAL".
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void addProperty(GridQueryProperty prop, boolean failOnDuplicate, boolean isField) throws IgniteCheckedException {
         String name = prop.name();
 
         if (props.put(name, prop) != null && failOnDuplicate)
@@ -410,19 +422,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             propsWithDefaultValue.add(prop);
         }
 
-        fields.put(name, prop.type());
-    }
-
-    /**
-     * Adds validate property to the type descriptor.
-     *
-     * @param prop Property.
-     */
-    void addValidateProperty(GridQueryProperty prop) {
-        if (validateProps == null)
-            validateProps = new ArrayList<>();
-
-        validateProps.add(prop);
+        if (isField)
+            fields.put(name, prop.type());
     }
 
     /**

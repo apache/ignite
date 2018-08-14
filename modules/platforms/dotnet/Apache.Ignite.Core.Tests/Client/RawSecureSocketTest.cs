@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Client
             // ACK.
             var ack = ReceiveMessage(sock);
 
-            Assert.AreEqual(7, ack.Length);
+            Assert.AreEqual(1, ack.Length);
             Assert.AreEqual(1, ack[0]);
         }
 
