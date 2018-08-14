@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "ConnectorConfiguration",
             "ServiceConfiguration",
             "WarmupClosure",
-            "ClassLoader",FileWriteAheadLogManager.java
+            "ClassLoader",
             "CacheStoreSessionListenerFactories",
             "PlatformConfiguration",
             "ExecutorConfiguration",
