@@ -356,7 +356,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
 
     /** */
-    private final GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
+    private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
         new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
 
     /** */
@@ -2970,7 +2970,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Remove all cached queries from cached two-steps queries.
      */
     private void clearCachedQueries() {
-        twoStepCache.clear();
+        twoStepCache = new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
     }
 
     /** {@inheritDoc} */
