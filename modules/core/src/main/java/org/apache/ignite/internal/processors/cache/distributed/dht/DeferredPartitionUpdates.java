@@ -67,15 +67,17 @@ public class DeferredPartitionUpdates implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("updCntrs", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
-                    return false;
-
-                writer.incrementState();
-            case 1:
                 if (!writer.writeMap("sizeDeltas", sizeDeltas, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
+
+            case 1:
+                if (!writer.writeMap("updCntrs", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -90,19 +92,21 @@ public class DeferredPartitionUpdates implements Message {
 
         switch (reader.state()) {
             case 0:
-                updCntrs = reader.readMap("updCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-            case 1:
                 sizeDeltas = reader.readMap("sizeDeltas", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
+            case 1:
+                updCntrs = reader.readMap("updCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(DeferredPartitionUpdates.class);
