@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.io.Console;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -117,6 +118,7 @@ import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
+import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -2421,15 +2423,32 @@ public class CommandHandler {
 
             clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
-            if (!F.isEmpty(args.user())) {
-                clientCfg.setSecurityCredentialsProvider(
-                    new SecurityCredentialsBasicProvider(new SecurityCredentials(args.user(), args.password())));
-            }
+            boolean tryConnectAgain = true;
 
-            try (GridClient client = GridClientFactory.start(clientCfg)) {
-                switch (args.command()) {
-                    case ACTIVATE:
-                        activate(client);
+            int tryConnectMaxCount=3;
+
+            while (tryConnectAgain) {
+                tryConnectAgain = false;
+
+                if (!F.isEmpty(args.getUserName())) {
+                    SecurityCredentialsProvider securityCredential = clientCfg.getSecurityCredentialsProvider();
+
+                    if (securityCredential == null) {
+                        securityCredential = new SecurityCredentialsBasicProvider(
+                            new SecurityCredentials(args.getUserName(), args.getPassword())
+                        );
+
+                        clientCfg.setSecurityCredentialsProvider(securityCredential);
+                    }
+                    final SecurityCredentials credential = securityCredential.credentials();
+                    credential.setLogin(args.getUserName());
+                    credential.setPassword(args.getPassword());
+                }
+
+                try (GridClient client = GridClientFactory.start(clientCfg)) {
+                    switch (args.command()) {
+                        case ACTIVATE:
+                            activate(client);
 
                         break;
 
@@ -2461,7 +2480,41 @@ public class CommandHandler {
                     case WAL:
                         wal(client, args.walAction(), args.walArguments());
 
-                        break;
+                            break;
+                    }
+                }
+                catch (Throwable e) {
+                    if (tryConnectMaxCount > 0 && isAuthError(e)) {
+                        System.out.println("Authentication error, try connection again.");
+
+                        final Console console = System.console();
+
+                        if (console != null) {
+                            if (F.isEmpty(args.getUserName()))
+                                args.setUserName(console.readLine("user: "));
+
+                            args.setPassword(new String(console.readPassword("password: ")));
+                        }
+                        else {
+                            Scanner scanner = new Scanner(System.in);
+
+                            if (F.isEmpty(args.getUserName())){
+                                System.out.println("user: ");
+
+                                args.setUserName(scanner.next());
+                            }
+
+                            System.out.println("password: ");
+
+                            args.setPassword(scanner.next());
+                        }
+
+                        tryConnectAgain = true;
+
+                        tryConnectMaxCount--;
+                    }
+                    else
+                        throw e;
                 }
             }
 
