@@ -71,10 +71,10 @@ public class Arguments {
      */
     private String walArgs;
 
-    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}. */
     private long pingTimeout;
 
-    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}. */
     private long pingInterval;
 
     /** */
@@ -175,15 +175,29 @@ public class Arguments {
     /**
      * @return user name
      */
-    public String user() {
+    public String getUserName() {
         return user;
+    }
+
+    /**
+     * @param user New user name.
+     */
+    public void setUserName(String user) {
+        this.user = user;
     }
 
     /**
      * @return password
      */
-    public String password() {
+    public String getPassword() {
         return pwd;
+    }
+
+    /**
+     * @param pwd New password.
+     */
+    public void setPassword(String pwd) {
+        this.pwd = pwd;
     }
 
     /**
