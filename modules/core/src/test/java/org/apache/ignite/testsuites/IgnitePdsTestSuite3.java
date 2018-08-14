@@ -18,26 +18,32 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest2;
 
 /**
  *
  */
-public class IgnitePdsTestSuite4 extends TestSuite {
+public class IgnitePdsTestSuite3 extends TestSuite {
     /**
      * @return Suite.
      */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 4");
+        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 3");
 
-        suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class);
-
-        suite.addTestSuite(IgnitePdsPartitionPreloadTest.class);
-
-        suite.addTestSuite(IgnitePdsTaskCancelingTest.class);
+        addRealPageStoreTestsNotForDirectIo(suite);
 
         return suite;
+    }
+
+    /**
+     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to execute.
+     *
+     * @param suite suite to add tests into.
+     */
+    public static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
+        // Rebalancing test
+        suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
+        suite.addTestSuite(IgnitePdsContinuousRestartTest2.class);
     }
 }
