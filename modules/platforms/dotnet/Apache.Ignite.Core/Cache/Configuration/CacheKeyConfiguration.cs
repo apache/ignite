@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
