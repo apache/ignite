@@ -62,12 +62,6 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
     public static final int GRIDS_CNT = 2;
 
     /** */
-    public static final String CACHE_1 = "filled";
-
-    /** */
-    public static final String CACHE_2 = "empty";
-
-    /** */
     public static final String EVEN_GRP = "event";
 
     /** */
@@ -96,7 +90,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setCacheConfiguration(configuration(CACHE_1), configuration(CACHE_2));
+        cfg.setCacheConfiguration(configuration(DEFAULT_CACHE_NAME));
 
         return cfg;
     }
@@ -129,24 +123,24 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
             ignite.cluster().active(true);
 
-            List<Integer> toCp = movingKeysAfterJoin(ignite, CACHE_1, 1,
+            List<Integer> toCp = movingKeysAfterJoin(ignite, DEFAULT_CACHE_NAME, 1,
                 node -> ((GridTestNode)node).setAttribute(GRP_ATTR, ODD_GRP));
 
-            int blockPartId = ignite.affinity(CACHE_1).partition(toCp.get(0));
+            int blockPartId = ignite.affinity(DEFAULT_CACHE_NAME).partition(toCp.get(0));
 
             awaitPartitionMapExchange();
 
             int c = 0;
 
             for (int i = 0; i < 1000; i++) {
-                if (ignite.affinity(CACHE_1).partition(i) == blockPartId) {
-                    ignite.cache(CACHE_1).put(i, i);
+                if (ignite.affinity(DEFAULT_CACHE_NAME).partition(i) == blockPartId) {
+                    ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
                     c++;
                 }
             }
 
-            assertEquals(c, ignite.cache(CACHE_1).size());
+            assertEquals(c, ignite.cache(DEFAULT_CACHE_NAME).size());
 
             startGridsMultiThreaded(GRIDS_CNT / 2, GRIDS_CNT / 2);
 
@@ -158,7 +152,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
                         GridDhtPartitionDemandMessage msg = (GridDhtPartitionDemandMessage)message;
 
-                        return msg.groupId() == CU.cacheId(CACHE_1) || msg.groupId() == CU.cacheId(CACHE_2);
+                        return msg.groupId() == CU.cacheId(DEFAULT_CACHE_NAME);
                     }
 
                     return false;
@@ -174,7 +168,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
                 TestRecordingCommunicationSpi.spi(ig0).waitForBlocked();
             }
 
-            assertEquals(c, ignite.cache(CACHE_1).size());
+            assertEquals(c, ignite.cache(DEFAULT_CACHE_NAME).size());
 
             int i = 0;
 
@@ -187,7 +181,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
             awaitPartitionMapExchange();
 
             for (Ignite ig : G.allGrids()) {
-                GridDhtLocalPartition locPart = dht(ig.cache(CACHE_1)).topology().localPartition(blockPartId);
+                GridDhtLocalPartition locPart = dht(ig.cache(DEFAULT_CACHE_NAME)).topology().localPartition(blockPartId);
 
                 assertNotNull(locPart);
 
