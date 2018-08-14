@@ -19,10 +19,13 @@ package org.apache.ignite.ml.math;
 
 import java.util.Arrays;
 import java.util.function.BiPredicate;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.impls.vector.SparseLocalVector;
+import org.apache.ignite.ml.math.exceptions.NonSquareMatrixException;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,9 +34,9 @@ public class BlasTest {
     /** Test 'axpy' operation for two array-based vectors. */
     @Test
     public void testAxpyArrayArray() {
-        Vector y = new DenseLocalOnHeapVector(new double[] {1.0, 2.0});
+        Vector y = new DenseVector(new double[] {1.0, 2.0});
         double a = 2.0;
-        Vector x = new DenseLocalOnHeapVector(new double[] {1.0, 2.0});
+        Vector x = new DenseVector(new double[] {1.0, 2.0});
 
         Vector exp = x.times(a).plus(y);
         Blas.axpy(a, x, y);
@@ -44,11 +47,11 @@ public class BlasTest {
     /** Test 'axpy' operation for sparse vector and array-based vector. */
     @Test
     public void testAxpySparseArray() {
-        DenseLocalOnHeapVector y = new DenseLocalOnHeapVector(new double[] {1.0, 2.0});
+        DenseVector y = new DenseVector(new double[] {1.0, 2.0});
         double a = 2.0;
-        SparseLocalVector x = sparseFromArray(new double[] {1.0, 2.0});
+        SparseVector x = sparseFromArray(new double[] {1.0, 2.0});
 
-        SparseLocalVector exp = (SparseLocalVector)x.times(a).plus(y);
+        SparseVector exp = (SparseVector)x.times(a).plus(y);
         Blas.axpy(a, x, y);
 
         Assert.assertTrue(elementsEqual(exp, y));
@@ -57,8 +60,8 @@ public class BlasTest {
     /** Test 'dot' operation. */
     @Test
     public void testDot() {
-        DenseLocalOnHeapVector v1 = new DenseLocalOnHeapVector(new double[] {1.0, 1.0});
-        DenseLocalOnHeapVector v2 = new DenseLocalOnHeapVector(new double[] {2.0, 2.0});
+        DenseVector v1 = new DenseVector(new double[] {1.0, 1.0});
+        DenseVector v2 = new DenseVector(new double[] {2.0, 2.0});
 
         Assert.assertEquals(Blas.dot(v1, v2), v1.dot(v2), 0.0);
     }
@@ -69,8 +72,8 @@ public class BlasTest {
         double[] data = new double[] {1.0, 1.0};
         double alpha = 2.0;
 
-        DenseLocalOnHeapVector v = new DenseLocalOnHeapVector(data);
-        Vector exp = new DenseLocalOnHeapVector(data, true).times(alpha);
+        DenseVector v = new DenseVector(data);
+        Vector exp = new DenseVector(data, true).times(alpha);
         Blas.scal(alpha, v);
 
         Assert.assertEquals(v, exp);
@@ -82,7 +85,7 @@ public class BlasTest {
         double[] data = new double[] {1.0, 1.0};
         double alpha = 2.0;
 
-        SparseLocalVector v = sparseFromArray(data);
+        SparseVector v = sparseFromArray(data);
         Vector exp = sparseFromArray(data).times(alpha);
 
         Blas.scal(alpha, v);
@@ -95,20 +98,20 @@ public class BlasTest {
     public void testSprDenseDense() {
         double alpha = 3.0;
 
-        DenseLocalOnHeapVector v = new DenseLocalOnHeapVector(new double[] {1.0, 2.0});
-        DenseLocalOnHeapVector u = new DenseLocalOnHeapVector(new double[] {3.0, 13.0, 20.0, 0.0});
+        DenseVector v = new DenseVector(new double[] {1.0, 2.0});
+        DenseVector u = new DenseVector(new double[] {3.0, 13.0, 20.0, 0.0});
 
         // m is alpha * v * v^t
-        DenseLocalOnHeapMatrix m = (DenseLocalOnHeapMatrix)new DenseLocalOnHeapMatrix(new double[][] {
+        DenseMatrix m = (DenseMatrix)new DenseMatrix(new double[][] {
             {1.0, 0.0},
             {2.0, 4.0}}, StorageConstants.COLUMN_STORAGE_MODE).times(alpha);
-        DenseLocalOnHeapMatrix a = new DenseLocalOnHeapMatrix(new double[][] {{3.0, 0.0}, {13.0, 20.0}},
+        DenseMatrix a = new DenseMatrix(new double[][] {{3.0, 0.0}, {13.0, 20.0}},
             StorageConstants.COLUMN_STORAGE_MODE);
 
         //m := alpha * v * v.t + A
         Blas.spr(alpha, v, u);
 
-        DenseLocalOnHeapMatrix mu = fromVector(u, a.rowSize(), StorageConstants.COLUMN_STORAGE_MODE, (i, j) -> i >= j);
+        DenseMatrix mu = fromVector(u, a.rowSize(), StorageConstants.COLUMN_STORAGE_MODE, (i, j) -> i >= j);
         Assert.assertEquals(m.plus(a), mu);
     }
 
@@ -117,18 +120,18 @@ public class BlasTest {
     public void testSprSparseDense1() {
         double alpha = 3.0;
 
-        SparseLocalVector v = sparseFromArray(new double[] {1.0, 2.0});
-        DenseLocalOnHeapVector u = new DenseLocalOnHeapVector(new double[] {3.0, 13.0, 20.0, 0.0});
+        SparseVector v = sparseFromArray(new double[] {1.0, 2.0});
+        DenseVector u = new DenseVector(new double[] {3.0, 13.0, 20.0, 0.0});
 
-        DenseLocalOnHeapMatrix a = new DenseLocalOnHeapMatrix(new double[][] {{3.0, 0.0}, {13.0, 20.0}},
+        DenseMatrix a = new DenseMatrix(new double[][] {{3.0, 0.0}, {13.0, 20.0}},
             StorageConstants.COLUMN_STORAGE_MODE);
-        DenseLocalOnHeapMatrix exp = (DenseLocalOnHeapMatrix)new DenseLocalOnHeapMatrix(new double[][] {
+        DenseMatrix exp = (DenseMatrix)new DenseMatrix(new double[][] {
             {1.0, 0.0},
             {2.0, 4.0}}, StorageConstants.COLUMN_STORAGE_MODE).times(alpha).plus(a);
 
         //m := alpha * v * v.t + A
         Blas.spr(alpha, v, u);
-        DenseLocalOnHeapMatrix mu = fromVector(u, a.rowSize(), StorageConstants.COLUMN_STORAGE_MODE, (i, j) -> i >= j);
+        DenseMatrix mu = fromVector(u, a.rowSize(), StorageConstants.COLUMN_STORAGE_MODE, (i, j) -> i >= j);
         Assert.assertEquals(exp, mu);
     }
 
@@ -137,21 +140,21 @@ public class BlasTest {
     public void testSprSparseDense2() {
         double alpha = 3.0;
 
-        SparseLocalVector v = new SparseLocalVector(2, StorageConstants.RANDOM_ACCESS_MODE);
+        SparseVector v = new SparseVector(2, StorageConstants.RANDOM_ACCESS_MODE);
         v.set(0, 1);
 
-        DenseLocalOnHeapVector u = new DenseLocalOnHeapVector(new double[] {3.0, 13.0, 20.0, 0.0});
+        DenseVector u = new DenseVector(new double[] {3.0, 13.0, 20.0, 0.0});
 
         // m is alpha * v * v^t
-        DenseLocalOnHeapMatrix m = (DenseLocalOnHeapMatrix)new DenseLocalOnHeapMatrix(new double[][] {
+        DenseMatrix m = (DenseMatrix)new DenseMatrix(new double[][] {
             {1.0, 0.0},
             {0.0, 0.0}}, StorageConstants.COLUMN_STORAGE_MODE).times(alpha);
-        DenseLocalOnHeapMatrix a = new DenseLocalOnHeapMatrix(new double[][] {{3.0, 0.0}, {13.0, 20.0}},
+        DenseMatrix a = new DenseMatrix(new double[][] {{3.0, 0.0}, {13.0, 20.0}},
             StorageConstants.COLUMN_STORAGE_MODE);
 
         //m := alpha * v * v.t + A
         Blas.spr(alpha, v, u);
-        DenseLocalOnHeapMatrix mu = fromVector(u, a.rowSize(), StorageConstants.COLUMN_STORAGE_MODE, (i, j) -> i >= j);
+        DenseMatrix mu = fromVector(u, a.rowSize(), StorageConstants.COLUMN_STORAGE_MODE, (i, j) -> i >= j);
         Assert.assertEquals(m.plus(a), mu);
     }
 
@@ -159,11 +162,11 @@ public class BlasTest {
     @Test
     public void testSyrDenseDense() {
         double alpha = 2.0;
-        DenseLocalOnHeapVector x = new DenseLocalOnHeapVector(new double[] {1.0, 2.0});
-        DenseLocalOnHeapMatrix a = new DenseLocalOnHeapMatrix(new double[][] {{10.0, 20.0}, {20.0, 10.0}});
+        DenseVector x = new DenseVector(new double[] {1.0, 2.0});
+        DenseMatrix a = new DenseMatrix(new double[][] {{10.0, 20.0}, {20.0, 10.0}});
 
         // alpha * x * x^T + A
-        DenseLocalOnHeapMatrix exp = (DenseLocalOnHeapMatrix)new DenseLocalOnHeapMatrix(new double[][] {
+        DenseMatrix exp = (DenseMatrix)new DenseMatrix(new double[][] {
             {1.0, 2.0},
             {2.0, 4.0}}).times(alpha).plus(a);
 
@@ -177,12 +180,12 @@ public class BlasTest {
     public void testGemmDenseDenseDense() {
         // C := alpha * A * B + beta * C
         double alpha = 1.0;
-        DenseLocalOnHeapMatrix a = new DenseLocalOnHeapMatrix(new double[][] {{10.0, 11.0}, {0.0, 1.0}});
-        DenseLocalOnHeapMatrix b = new DenseLocalOnHeapMatrix(new double[][] {{1.0, 0.3}, {0.0, 1.0}});
+        DenseMatrix a = new DenseMatrix(new double[][] {{10.0, 11.0}, {0.0, 1.0}});
+        DenseMatrix b = new DenseMatrix(new double[][] {{1.0, 0.3}, {0.0, 1.0}});
         double beta = 0.0;
-        DenseLocalOnHeapMatrix c = new DenseLocalOnHeapMatrix(new double[][] {{1.0, 2.0}, {2.0, 3.0}});
+        DenseMatrix c = new DenseMatrix(new double[][] {{1.0, 2.0}, {2.0, 3.0}});
 
-        DenseLocalOnHeapMatrix exp = (DenseLocalOnHeapMatrix)a.times(b);//.times(alpha).plus(c.times(beta));
+        DenseMatrix exp = (DenseMatrix)a.times(b);//.times(alpha).plus(c.times(beta));
 
         Blas.gemm(alpha, a, b, beta, c);
 
@@ -194,12 +197,12 @@ public class BlasTest {
     public void testGemmSparseDenseDense() {
         // C := alpha * A * B + beta * C
         double alpha = 1.0;
-        SparseLocalOnHeapMatrix a = (SparseLocalOnHeapMatrix)new SparseLocalOnHeapMatrix(2, 2)
+        SparseMatrix a = (SparseMatrix)new SparseMatrix(2, 2)
             .assign(new double[][] {{10.0, 11.0}, {0.0, 1.0}});
-        DenseLocalOnHeapMatrix b = new DenseLocalOnHeapMatrix(new double[][] {{1.0, 0.3}, {0.0, 1.0}});
+        DenseMatrix b = new DenseMatrix(new double[][] {{1.0, 0.3}, {0.0, 1.0}});
 
         double beta = 0.0;
-        DenseLocalOnHeapMatrix c = new DenseLocalOnHeapMatrix(new double[][] {{1.0, 2.0}, {2.0, 3.0}});
+        DenseMatrix c = new DenseMatrix(new double[][] {{1.0, 2.0}, {2.0, 3.0}});
 
         Matrix exp = a.times(b);//.times(alpha).plus(c.times(beta));
 
@@ -213,14 +216,14 @@ public class BlasTest {
     public void testGemvSparseDenseDense() {
         // y := alpha * A * x + beta * y
         double alpha = 3.0;
-        SparseLocalOnHeapMatrix a = (SparseLocalOnHeapMatrix)new SparseLocalOnHeapMatrix(2, 2)
+        SparseMatrix a = (SparseMatrix)new SparseMatrix(2, 2)
             .assign(new double[][] {{10.0, 11.0}, {0.0, 1.0}});
-        DenseLocalOnHeapVector x = new DenseLocalOnHeapVector(new double[] {1.0, 2.0});
+        DenseVector x = new DenseVector(new double[] {1.0, 2.0});
 
         double beta = 2.0;
-        DenseLocalOnHeapVector y = new DenseLocalOnHeapVector(new double[] {3.0, 4.0});
+        DenseVector y = new DenseVector(new double[] {3.0, 4.0});
 
-        DenseLocalOnHeapVector exp = (DenseLocalOnHeapVector)y.times(beta).plus(a.times(x).times(alpha));
+        DenseVector exp = (DenseVector)y.times(beta).plus(a.times(x).times(alpha));
 
         Blas.gemv(alpha, a, x, beta, y);
 
@@ -232,14 +235,14 @@ public class BlasTest {
     public void testGemvDenseSparseDense() {
         // y := alpha * A * x + beta * y
         double alpha = 3.0;
-        SparseLocalOnHeapMatrix a = (SparseLocalOnHeapMatrix)new SparseLocalOnHeapMatrix(2, 2)
+        SparseMatrix a = (SparseMatrix)new SparseMatrix(2, 2)
             .assign(new double[][] {{10.0, 11.0}, {0.0, 1.0}});
-        SparseLocalVector x = sparseFromArray(new double[] {1.0, 2.0});
+        SparseVector x = sparseFromArray(new double[] {1.0, 2.0});
 
         double beta = 2.0;
-        DenseLocalOnHeapVector y = new DenseLocalOnHeapVector(new double[] {3.0, 4.0});
+        DenseVector y = new DenseVector(new double[] {3.0, 4.0});
 
-        DenseLocalOnHeapVector exp = (DenseLocalOnHeapVector)y.times(beta).plus(a.times(x).times(alpha));
+        DenseVector exp = (DenseVector)y.times(beta).plus(a.times(x).times(alpha));
 
         Blas.gemv(alpha, a, x, beta, y);
 
@@ -251,12 +254,12 @@ public class BlasTest {
     public void testGemvSparseSparseDense() {
         // y := alpha * A * x + beta * y
         double alpha = 3.0;
-        DenseLocalOnHeapMatrix a = new DenseLocalOnHeapMatrix(new double[][] {{10.0, 11.0}, {0.0, 1.0}}, 2);
-        SparseLocalVector x = sparseFromArray(new double[] {1.0, 2.0});
+        DenseMatrix a = new DenseMatrix(new double[][] {{10.0, 11.0}, {0.0, 1.0}}, 2);
+        SparseVector x = sparseFromArray(new double[] {1.0, 2.0});
         double beta = 2.0;
-        DenseLocalOnHeapVector y = new DenseLocalOnHeapVector(new double[] {3.0, 4.0});
+        DenseVector y = new DenseVector(new double[] {3.0, 4.0});
 
-        DenseLocalOnHeapVector exp = (DenseLocalOnHeapVector)y.times(beta).plus(a.times(x).times(alpha));
+        DenseVector exp = (DenseVector)y.times(beta).plus(a.times(x).times(alpha));
 
         Blas.gemv(alpha, a, x, beta, y);
 
@@ -268,16 +271,25 @@ public class BlasTest {
     public void testGemvDenseDenseDense() {
         // y := alpha * A * x + beta * y
         double alpha = 3.0;
-        DenseLocalOnHeapMatrix a = new DenseLocalOnHeapMatrix(new double[][] {{10.0, 11.0}, {0.0, 1.0}}, 2);
-        DenseLocalOnHeapVector x = new DenseLocalOnHeapVector(new double[] {1.0, 2.0});
+        DenseMatrix a = new DenseMatrix(new double[][] {{10.0, 11.0}, {0.0, 1.0}}, 2);
+        DenseVector x = new DenseVector(new double[] {1.0, 2.0});
         double beta = 2.0;
-        DenseLocalOnHeapVector y = new DenseLocalOnHeapVector(new double[] {3.0, 4.0});
+        DenseVector y = new DenseVector(new double[] {3.0, 4.0});
 
-        DenseLocalOnHeapVector exp = (DenseLocalOnHeapVector)y.times(beta).plus(a.times(x).times(alpha));
+        DenseVector exp = (DenseVector)y.times(beta).plus(a.times(x).times(alpha));
 
         Blas.gemv(alpha, a, x, beta, y);
 
         Assert.assertEquals(exp, y);
+    }
+
+    /** Tests 'syr' operation for non-square dense matrix A. */
+    @Test(expected = NonSquareMatrixException.class)
+    public void testSyrNonSquareMatrix() {
+        double alpha = 3.0;
+        DenseMatrix a = new DenseMatrix(new double[][] {{10.0, 11.0, 12.0}, {0.0, 1.0, 2.0}}, 2);
+        Vector x = new DenseVector(new double[] {1.0, 2.0});
+        new Blas().syr(alpha, x, a);
     }
 
     /**
@@ -286,8 +298,8 @@ public class BlasTest {
      * @param arr Array with vector elements.
      * @return sparse local on-heap vector.
      */
-    private static SparseLocalVector sparseFromArray(double[] arr) {
-        SparseLocalVector res = new SparseLocalVector(2, StorageConstants.RANDOM_ACCESS_MODE);
+    private static SparseVector sparseFromArray(double[] arr) {
+        SparseVector res = new SparseVector(2, StorageConstants.RANDOM_ACCESS_MODE);
 
         for (int i = 0; i < arr.length; i++)
             res.setX(i, arr[i]);
@@ -321,7 +333,7 @@ public class BlasTest {
      * @param p bipredicate to filter entities by.
      * @return dense local on-heap matrix.
      */
-    private static DenseLocalOnHeapMatrix fromVector(DenseLocalOnHeapVector v, int rows, int acsMode,
+    private static DenseMatrix fromVector(DenseVector v, int rows, int acsMode,
         BiPredicate<Integer, Integer> p) {
         double[] data = v.getStorage().data();
         int cols = data.length / rows;
@@ -344,6 +356,6 @@ public class BlasTest {
                 d[ind] = data[ind - shift];
             }
 
-        return new DenseLocalOnHeapMatrix(d, rows, acsMode);
+        return new DenseMatrix(d, rows, acsMode);
     }
 }

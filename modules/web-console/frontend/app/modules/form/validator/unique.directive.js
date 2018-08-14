@@ -42,12 +42,14 @@ class Controller {
 
             if (!this.skip) {
                 // Return true in case if array not exist, array empty.
-                if (!this.items || !this.items.length) return true;
+                if (!this.items || !this.items.length)
+                    return true;
 
                 const idx = this.items.findIndex(matches);
 
                 // In case of new element check all items.
-                if (isNew) return idx < 0;
+                if (isNew)
+                    return idx < 0;
 
                 // Case for new component list editable.
                 const $index = this.listEditableTransclude

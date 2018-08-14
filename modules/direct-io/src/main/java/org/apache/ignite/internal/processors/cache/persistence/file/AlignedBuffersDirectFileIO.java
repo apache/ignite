@@ -42,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * Works only for Linux
  */
-public class AlignedBuffersDirectFileIO implements FileIO {
+public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     /** Negative value for file offset: read/write starting from current file position */
     private static final int FILE_POS_USE_CURRENT = -1;
 
@@ -455,8 +455,8 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buf, int off, int len) throws IOException {
-        write(ByteBuffer.wrap(buf, off, len));
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
+        return write(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */

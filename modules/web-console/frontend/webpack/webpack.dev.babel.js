@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import webpack from 'webpack';
 import merge from 'webpack-merge';
 
 import path from 'path';
@@ -52,7 +51,8 @@ export default merge(commonCfg, {
                     {
                         loader: 'sass-loader',
                         options: {
-                            sourceMap: true
+                            sourceMap: true,
+                            includePaths: [ path.join(__dirname, '../') ]
                         }
                     }
                 ]
@@ -63,14 +63,10 @@ export default merge(commonCfg, {
         new MiniCssExtractPlugin({filename: 'assets/css/[name].css'})
     ],
     devServer: {
-        headers: {
-            'Content-Security-Policy': `script-src 'self' 'unsafe-inline' 'unsafe-eval' data: http: https:;`
-        },
         compress: true,
         historyApiFallback: true,
         disableHostCheck: true,
         contentBase: path.resolve('build'),
-        // hot: true,
         inline: true,
         proxy: {
             '/socket.io': {

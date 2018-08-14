@@ -814,17 +814,8 @@ public class ZookeeperDiscoveryImpl {
                     dirs.add(dir);
             }
 
-            try {
-                if (!dirs.isEmpty())
-                    client.createAll(dirs, PERSISTENT);
-            }
-            catch (KeeperException.NodeExistsException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to create nodes using bulk operation: " + e);
-
-                for (String dir : dirs)
-                    client.createIfNeeded(dir, null, PERSISTENT);
-            }
+            if (!dirs.isEmpty())
+                client.createAll(dirs, PERSISTENT);
         }
         catch (ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
@@ -1363,7 +1354,16 @@ public class ZookeeperDiscoveryImpl {
                 if (prevEvts.clusterId.equals(newEvts.clusterId)) {
                     U.warn(log, "All server nodes failed, notify all clients [locId=" + locNode.id() + ']');
 
-                    generateNoServersEvent(newEvts, stat);
+                    try {
+                        generateNoServersEvent(newEvts, stat);
+                    }
+                    catch (KeeperException.BadVersionException ignored) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to save no servers message. Path version changed.");
+
+                        rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null,
+                            new CheckClientsStatusCallback(rtState));
+                    }
                 }
                 else
                     U.warn(log, "All server nodes failed (received events from new cluster).");
@@ -1423,14 +1423,7 @@ public class ZookeeperDiscoveryImpl {
 
         byte[] newEvtsBytes = marshalZip(evtsData);
 
-        try {
-            rtState.zkClient.setData(zkPaths.evtsPath, newEvtsBytes, evtsStat.getVersion());
-        }
-        catch (KeeperException.BadVersionException e) {
-            // Version can change if new cluster started and saved new events.
-            if (log.isDebugEnabled())
-                log.debug("Failed to save no servers message");
-        }
+        rtState.zkClient.setData(zkPaths.evtsPath, newEvtsBytes, evtsStat.getVersion());
     }
 
     /**
@@ -2022,9 +2015,7 @@ public class ZookeeperDiscoveryImpl {
 
         if (subj == null) {
             U.warn(log, "Authentication failed [nodeId=" + node.id() +
-                    ", addrs=" + U.addressesAsString(node) + ']',
-                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
-                    U.addressesAsString(node) + ']');
+                ", addrs=" + U.addressesAsString(node) + ']');
 
             // Note: exception message test is checked in tests.
             return new ZkNodeValidateResult("Authentication failed");
@@ -2032,10 +2023,7 @@ public class ZookeeperDiscoveryImpl {
 
         if (!(subj instanceof Serializable)) {
             U.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
-                    ", addrs=" + U.addressesAsString(node) + ']',
-                "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
-                    ", addrs=" +
-                    U.addressesAsString(node) + ']');
+                ", addrs=" + U.addressesAsString(node) + ']');
 
             return new ZkNodeValidateResult("Authentication subject is not serializable");
         }
@@ -2609,9 +2597,6 @@ public class ZookeeperDiscoveryImpl {
 
         processNewEvents(newEvts);
 
-        if (rtState.joined)
-            rtState.evtsData = newEvts;
-
         return newEvts;
     }
 
@@ -2741,6 +2726,9 @@ public class ZookeeperDiscoveryImpl {
 
             throw e;
         }
+
+        if (rtState.joined)
+            rtState.evtsData = evtsData;
 
         if (rtState.crd)
             handleProcessedEvents("procEvt");

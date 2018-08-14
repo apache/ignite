@@ -99,11 +99,6 @@ public interface GridCacheEntryEx {
     public int partition();
 
     /**
-     * @return Start version.
-     */
-    public long startVersion();
-
-    /**
      * @return Key.
      */
     public KeyCacheObject key();
@@ -455,6 +450,7 @@ public interface GridCacheEntryEx {
      * @param taskName Task name.
      * @param updateCntr Update counter.
      * @param fut Dht atomic future.
+     * @param transformOp {@code True} if transform operation caused update.
      * @return Tuple where first value is flag showing whether operation succeeded,
      *      second value is old entry value if return value is requested, third is updated entry value,
      *      fourth is the version to enqueue for deferred delete the fifth is DR conflict context
@@ -491,7 +487,8 @@ public interface GridCacheEntryEx {
         String taskName,
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
-        @Nullable GridDhtAtomicAbstractUpdateFuture fut
+        @Nullable GridDhtAtomicAbstractUpdateFuture fut,
+        boolean transformOp
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -511,6 +508,7 @@ public interface GridCacheEntryEx {
      * @param intercept If {@code true} then calls cache interceptor.
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
+     * @param transformOp {@code True} if transform operation caused update.
      * @return Tuple containing success flag, old value and result for invoke operation.
      * @throws IgniteCheckedException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
@@ -530,7 +528,8 @@ public interface GridCacheEntryEx {
         @Nullable CacheEntryPredicate[] filter,
         boolean intercept,
         @Nullable UUID subjId,
-        String taskName
+        String taskName,
+        boolean transformOp
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

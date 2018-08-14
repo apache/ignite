@@ -48,6 +48,7 @@ import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
@@ -610,17 +611,22 @@ public class BinaryContext {
 
     /**
      * @param cls Class.
+     * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize)
+    public BinaryClassDescriptor descriptorForClass(Class<?> cls, boolean deserialize, boolean failIfUnregistered)
         throws BinaryObjectException {
         assert cls != null;
 
         BinaryClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null)
+        if (desc == null) {
+            if (failIfUnregistered)
+                throw new UnregisteredClassException(cls);
+
             desc = registerClassDescriptor(cls, deserialize);
+        }
         else if (!desc.registered()) {
             if (!desc.userType()) {
                 BinaryClassDescriptor desc0 = new BinaryClassDescriptor(
@@ -652,8 +658,12 @@ public class BinaryContext {
                     return desc0;
                 }
             }
-            else
+            else {
+                if (failIfUnregistered)
+                    throw new UnregisteredClassException(cls);
+
                 desc = registerUserClassDescriptor(desc);
+            }
         }
 
         return desc;
@@ -1176,8 +1186,8 @@ public class BinaryContext {
     /**
      * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
      * Other {@link BinaryContext}'s "register" methods and method
-     * {@link BinaryContext#descriptorForClass(Class, boolean)} already call this functionality so use this method
-     * only when registering class names whose {@link Class} is unknown.
+     * {@link BinaryContext#descriptorForClass(Class, boolean, boolean)} already call this functionality
+     * so use this method only when registering class names whose {@link Class} is unknown.
      *
      * @param typeId Type ID.
      * @param clsName Class Name.

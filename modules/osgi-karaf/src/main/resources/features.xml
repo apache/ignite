@@ -208,9 +208,9 @@
             install -s mvn:xom/xom/1.2.5]]>
         </details>
         <feature dependency="true">http</feature>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson2.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson2.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson2.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-lang/commons-lang/${commons.lang.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-collections/commons-collections/${commons.collections.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-rest-http/${project.version}</bundle>
@@ -324,8 +324,8 @@
         </details>
         <bundle start="true" dependency="true">mvn:org.apache.zookeeper/zookeeper/${zookeeper.version}</bundle>
         <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava16.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.codehaus.jackson/jackson-core-asl/${jackson.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.codehaus.jackson/jackson-mapper-asl/${jackson.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-client/${curator.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-framework/${curator.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-recipes/${curator.version}</bundle>
