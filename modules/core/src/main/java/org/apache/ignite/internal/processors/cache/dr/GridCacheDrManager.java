@@ -84,7 +84,7 @@ public interface GridCacheDrManager extends GridCacheManager {
      * @param version Tx snapshot affinity version.
      * @throws IgniteCheckedException If failed.
      */
-    void onTxFinished(MvccVersion mvccVer, boolean commit, AffinityTopologyVersion version);
+    void onTxFinished(MvccVersion mvccVer, boolean commit, AffinityTopologyVersion topVer);
 
     /**
      * Process partitions exchange event.

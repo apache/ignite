@@ -86,7 +86,7 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void onTxFinished(MvccVersion mvccVer, boolean commit, AffinityTopologyVersion version) {
+    @Override public void onTxFinished(MvccVersion mvccVer, boolean commit, AffinityTopologyVersion topVer) {
         // No-op.
     }
 
