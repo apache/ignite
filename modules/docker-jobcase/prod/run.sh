@@ -37,6 +37,22 @@ fi
 # The information is useful for any kind of communication between container and docker host.
 export DOCKER_HOST_NAME=`cat $IGNITE_PERSISTENT_STORE/hostname`
 
+if [ -e ${IGNITE_PERSISTENT_STORE}/host_ip_address ]; then
+  export DOCKER_HOST_IP=$(cat ${IGNITE_PERSISTENT_STORE}/host_ip_address)
+fi
+
+if [ -e ${IGNITE_PERSISTENT_STORE}/lvm_volume_group ]; then
+  export DOCKER_HOST_LVG=$(cat ${IGNITE_PERSISTENT_STORE}/lvm_volume_group)
+fi
+
+if [ -e ${IGNITE_PERSISTENT_STORE}/lvm_volume_name ]; then
+  export DOCKER_HOST_LV=$(cat ${IGNITE_PERSISTENT_STORE}/lvm_volume_name)
+fi
+
+if [ -e ${IGNITE_PERSISTENT_STORE}/mount_point ]; then
+  export DOCKER_HOST_MOUNT_POINT=$(cat ${IGNITE_PERSISTENT_STORE}/mount_point)
+fi
+
 # form a consistent ID from the ECS host's name and the cluster name
 if [ -z "$IGNITE_CONSISTENT_ID" ]; then
     if [ ! -z "$IGNITE_CLUSTER_NAME" ]  && [ ! -z "$IGNITE_PERSISTENT_STORE" ]  &&  [ -f "$IGNITE_PERSISTENT_STORE/hostname" ]; then
