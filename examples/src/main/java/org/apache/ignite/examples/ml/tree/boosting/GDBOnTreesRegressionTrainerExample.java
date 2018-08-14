@@ -32,10 +32,10 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Example represents a solution for the task of regression learning based on
- * Gradient Boosting on trees implementation. It shows an initialization of {@link org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer},
+ * Gradient Boosting on trees implementation. It shows an initialization of {@link GDBRegressionOnTreesTrainer},
  * initialization of Ignite Cache, learning step and comparing of predicted and real values.
- *
- * In this example dataset is creating automatically by parabolic function f(x) = x^2.
+ * <p>
+ * In this example dataset is created automatically by parabolic function {@code f(x) = x^2}.</p>
  */
 public class GDBOnTreesRegressionTrainerExample {
     /**
@@ -98,9 +98,9 @@ public class GDBOnTreesRegressionTrainerExample {
     }
 
     /**
-     * Fill parabola training data.
+     * Fill parabolic training data.
      *
-     * @param ignite Ignite.
+     * @param ignite Ignite instance.
      * @param trainingSetCfg Training set config.
      */
     @NotNull private static IgniteCache<Integer, double[]> fillTrainingData(Ignite ignite,
