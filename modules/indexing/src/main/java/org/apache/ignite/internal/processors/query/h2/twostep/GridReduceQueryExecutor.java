@@ -300,7 +300,7 @@ public class GridReduceQueryExecutor {
      * @param node Node.
      * @param msg Message.
      */
-    private void onNextPage(final ClusterNode node, final GridQueryNextPageResponse msg) {
+    private void onNextPage(final ClusterNode node, GridQueryNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
         final int seg = msg.segmentId();
