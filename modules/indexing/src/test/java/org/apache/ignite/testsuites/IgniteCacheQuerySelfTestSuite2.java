@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.QueryJoinWithDifferentNodeFiltersTest;
 import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallbackSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCrossCacheJoinRandomTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheObjectKeyIndexingSelfTest;
@@ -26,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePartitionedQueryMu
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryEvictsMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.QueryJoinWithDifferentNodeFiltersTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheClientQueryReplicatedNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeFailTest;
@@ -46,11 +46,11 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedT
 import org.apache.ignite.internal.processors.cache.query.ScanQueryOffheapExpiryPolicySelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteChangingBaselineCacheQueryNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineCacheQueryNodeRestartsSelfTest;
-import org.apache.ignite.internal.processors.query.CacheQueryMemoryLeakTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsCompareQueryTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmentedIndexSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**

@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -29,21 +30,17 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.GridDebug;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
 public class CacheQueryMemoryLeakTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** Heap dump file. */
-    private static final File DUMP_FILE = new File("test.hprof");
-
-    /** Maximum accepted change in heap memory size. */
-    private static final int LEAK_THRESHOLD = 10 * 1024 * 1024;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -67,7 +64,7 @@ public class CacheQueryMemoryLeakTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testResultIsMultipleOfPage() throws Exception {
-        startGrid("server");
+        IgniteEx srv = (IgniteEx)startGrid("server");
         Ignite client = startGrid("client");
 
         IgniteCache<Integer, Person> cache = startPeopleCache(client);
@@ -80,8 +77,6 @@ public class CacheQueryMemoryLeakTest extends GridCommonAbstractTest {
             cache.put(i, p);
         }
 
-        long size0 = heapSize();
-
         for (int i = 0; i < 100; i++) {
             Query<List<?>> qry = new SqlFieldsQuery("select * from people");
             qry.setPageSize(pageSize);
@@ -90,22 +85,29 @@ public class CacheQueryMemoryLeakTest extends GridCommonAbstractTest {
             cursor.close();
         }
 
-        long size = heapSize();
-
-        assertTrue("Possible leak detected. Size: " + (size - size0) / 1024 / 1024 + " MB",
-            size - size0 < LEAK_THRESHOLD);
-
-        // Remove dump if successful.
-        DUMP_FILE.delete();
+        assertTrue("MapNodeResults is not cleared on the map node.", isMapNodeResultsEmpty(srv));
     }
 
     /**
-     * @return Current Java heap size.
+     * @param node Ignite node.
+     * @return {@code True}, if all MapQueryResults are removed from internal node's structures. {@code False}
+     * otherwise.
      */
-    private long heapSize() {
-        GridDebug.dumpHeap(DUMP_FILE.getPath(), true);
+    private boolean isMapNodeResultsEmpty(IgniteEx node) {
+        IgniteH2Indexing idx = (IgniteH2Indexing)node.context().query().getIndexing();
+        GridMapQueryExecutor mapQryExec = idx.mapQueryExecutor();
+        Map<UUID, MapNodeResults> qryRess =
+            GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "qryRess");
 
-        return DUMP_FILE.length();
+        for (MapNodeResults nodeRess : qryRess.values()) {
+            Map<MapRequestKey, MapQueryResults> nodeQryRess =
+                GridTestUtils.getFieldValue(nodeRess, MapNodeResults.class, "res");
+
+            if (!nodeQryRess.isEmpty())
+                return false;
+        }
+
+        return true;
     }
 
     /**
