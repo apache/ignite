@@ -353,19 +353,24 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * @param leftNodeId Left node ID.
      */
-    public void removeExplicitNodeLocks(UUID leftNodeId,) {
-        for (GridDistributedCacheEntry entry : locked()) {
-            try {
-                entry.removeExplicitNodeLocks(leftNodeId);
+    public void removeExplicitNodeLocks(UUID leftNodeId) {
+        cctx.kernalContext().closure().runLocalSafe(
+            new Runnable() {
+                @Override public void run() {
+                    for (GridDistributedCacheEntry entry : locked()) {
+                        try {
+                            entry.removeExplicitNodeLocks(leftNodeId);
 
-                entry.context().evicts().touch(entry);
-            }
-            catch (GridCacheEntryRemovedException ignore) {
-                if (log.isDebugEnabled())
-                    log.debug("Attempted to remove node locks from removed entry in mvcc manager " +
-                        "disco callback (will ignore): " + entry);
-            }
-        }
+                            entry.context().evicts().touch(entry);
+                        }
+                        catch (GridCacheEntryRemovedException ignore) {
+                            if (log.isDebugEnabled())
+                                log.debug("Attempted to remove node locks from removed entry in mvcc manager " +
+                                    "disco callback (will ignore): " + entry);
+                        }
+                    }
+                }
+            }, true);
     }
 
     /**
