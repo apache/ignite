@@ -209,6 +209,22 @@ class ZkIgnitePaths {
     }
 
     /**
+     * Add the parent path to each element of a list.
+     *
+     * @param parent Parent path to add.
+     * @param paths List of paths.
+     * @return List of paths.
+     */
+    static List<String> addParentPath(@Nullable String parent, List<String> paths) {
+        List<String> data = new LinkedList<>();
+
+        for (String path : paths)
+            data.add(parent != null ? parent + "/" + path : path);
+
+        return data;
+    }
+
+    /**
      * @param prefix Prefix.
      * @param nodeId Node ID.
      * @param partCnt Parts count.
@@ -306,21 +322,5 @@ class ZkIgnitePaths {
         String flagsStr = path.substring(startIdx, startIdx + 2);
 
         return (byte)(Integer.parseInt(flagsStr, 16) - 128);
-    }
-
-    /**
-     * Add the parent path to each element of a list.
-     *
-     * @param parent Parent path to add.
-     * @param paths List of paths.
-     * @return List of paths.
-     */
-    static List<String> addParentPath(@Nullable String parent, List<String> paths) {
-        List<String> data = new LinkedList<>();
-
-        for (String path : paths)
-            data.add(parent != null ? parent + "/" + path : path);
-
-        return data;
     }
 }
