@@ -15,43 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.loadtests.mapper;
+package org.apache.ignite.ml.knn.classification;
 
-import java.io.Serializable;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
+/** This enum contains settings for kNN algorithm. */
+public enum NNStrategy {
+    /** The default strategy. All k neighbors have the same weight which is independent
+     * on their distance to the query point.*/
+    SIMPLE,
 
-/**
- * Test object.
- */
-public class TestObject implements Serializable {
-    /** ID. */
-    @QuerySqlField(index = true)
-    private int id;
-
-    /** Text. */
-    @QuerySqlField
-    private String txt;
-
-    /**
-     * @param id ID.
-     * @param txt Text.
-     */
-    public TestObject(int id, String txt) {
-        this.id = id;
-        this.txt = txt;
-    }
-
-    /**
-     * @return ID.
-     */
-    public int getId() {
-        return id;
-    }
-
-    /**
-     * @return Text.
-     */
-    public String getText() {
-        return txt;
-    }
+    /** A refinement of the k-NN classification algorithm is to weigh the contribution of each of the k neighbors
+     * according to their distance to the query point, giving greater weight to closer neighbors. */
+    WEIGHTED
 }

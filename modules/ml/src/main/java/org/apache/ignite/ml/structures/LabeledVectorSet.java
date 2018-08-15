@@ -24,13 +24,13 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
- * Class for set of labeled vectors.
+ * The set of labeled vectors used in local partition calculations.
  */
-public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
+public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
     /**
      * Default constructor (required by Externalizable).
      */
-    public LabeledDataset() {
+    public LabeledVectorSet() {
         super();
     }
 
@@ -41,7 +41,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
      * @param colSize Amount of attributes. Should be > 0.
      * @param isDistributed Use distributed data structures to keep data.
      */
-    public LabeledDataset(int rowSize, int colSize,  boolean isDistributed){
+    public LabeledVectorSet(int rowSize, int colSize, boolean isDistributed){
         this(rowSize, colSize, null, isDistributed);
     }
 
@@ -51,7 +51,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
      * @param rowSize Amount of instances. Should be > 0.
      * @param colSize Amount of attributes. Should be > 0.
      */
-    public LabeledDataset(int rowSize, int colSize){
+    public LabeledVectorSet(int rowSize, int colSize){
         this(rowSize, colSize, null, false);
     }
 
@@ -63,7 +63,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
      * @param featureNames Column names.
      * @param isDistributed Use distributed data structures to keep data.
      */
-    public LabeledDataset(int rowSize, int colSize, String[] featureNames, boolean isDistributed){
+    public LabeledVectorSet(int rowSize, int colSize, String[] featureNames, boolean isDistributed){
         super(rowSize, colSize, featureNames, isDistributed);
 
         initializeDataWithLabeledVectors();
@@ -74,7 +74,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
      *
      * @param data Should be initialized with one vector at least.
      */
-    public LabeledDataset(Row[] data) {
+    public LabeledVectorSet(Row[] data) {
         super(data);
     }
 
@@ -91,7 +91,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
      * @param data Should be initialized with one vector at least.
      * @param colSize Amount of observed attributes in each vector.
      */
-    public LabeledDataset(Row[] data, int colSize) {
+    public LabeledVectorSet(Row[] data, int colSize) {
         super(data, colSize);
     }
 
@@ -102,7 +102,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
      * @param mtx Given matrix with rows as observations.
      * @param lbs Labels of observations.
      */
-    public LabeledDataset(double[][] mtx, double[] lbs) {
+    public LabeledVectorSet(double[][] mtx, double[] lbs) {
        this(mtx, lbs, null, false);
     }
 
@@ -114,7 +114,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
      * @param featureNames Column names.
      * @param isDistributed Use distributed data structures to keep data.
      */
-    public LabeledDataset(double[][] mtx, double[] lbs, String[] featureNames, boolean isDistributed) {
+    public LabeledVectorSet(double[][] mtx, double[] lbs, String[] featureNames, boolean isDistributed) {
         super();
         assert mtx != null;
         assert lbs != null;
@@ -203,8 +203,8 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
     }
 
     /** Makes copy with new Label objects and old features and Metadata objects. */
-    public LabeledDataset copy(){
-        LabeledDataset res = new LabeledDataset(this.data, this.colSize);
+    public LabeledVectorSet copy(){
+        LabeledVectorSet res = new LabeledVectorSet(this.data, this.colSize);
         res.isDistributed = this.isDistributed;
         res.meta = this.meta;
         for (int i = 0; i < rowSize; i++)
