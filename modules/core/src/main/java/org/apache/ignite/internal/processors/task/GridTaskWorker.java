@@ -103,6 +103,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MAN
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
 
 /**
  * Grid task worker. Handles full task life cycle.
@@ -314,7 +315,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         marsh = ctx.config().getMarshaller();
 
-        resCache = dep.annotation(taskCls, ComputeTaskNoResultCache.class) == null;
+        boolean noResCacheAnnotation = dep.annotation(taskCls, ComputeTaskNoResultCache.class) != null;
+
+        Boolean noResCacheContextFlag = getThreadContext(TC_NO_RESULT_CACHE);
+
+        resCache = !(noResCacheAnnotation || (noResCacheContextFlag != null && noResCacheContextFlag));
 
         Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
 
