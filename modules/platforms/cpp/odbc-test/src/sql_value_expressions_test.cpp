@@ -35,13 +35,9 @@ BOOST_AUTO_TEST_CASE(TestCase)
 
     in.i32Field = 82;
 
-    BOOST_CHECKPOINT("Putting value in cache");
-
     testCache.Put(1, in);
 
-    BOOST_CHECKPOINT("Case 1");
-
-    CheckSingleResult<int32_t>(
+    SqlTestSuiteFixture::CheckSingleResult<int32_t>(
         "SELECT "
             "CASE i32Field WHEN 82 "
                 "THEN (i32Field / 2) "
@@ -49,9 +45,7 @@ BOOST_AUTO_TEST_CASE(TestCase)
             "END "
         "FROM TestType", in.i32Field / 2);
 
-    BOOST_CHECKPOINT("Case 2");
-
-    CheckSingleResult<int32_t>(
+    SqlTestSuiteFixture::CheckSingleResult<int32_t>(
         "SELECT "
             "CASE i32Field WHEN 22 "
                 "THEN (i32Field / 2) "

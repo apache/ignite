@@ -109,7 +109,7 @@ namespace ignite
         }
 
         /**
-         * Run query returning single result and check it to be equal to expected.
+         * Run query returning single result.
          *
          * @param request SQL request.
          * @param type Result type.

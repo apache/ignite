@@ -154,12 +154,12 @@ namespace ignite
 
                     case OdbcNativeType::AI_SIGNED_LONG:
                     {
-                        return PutNumToNumBuffer<long>(value);
+                        return PutNumToNumBuffer<int32_t>(value);
                     }
 
                     case OdbcNativeType::AI_UNSIGNED_LONG:
                     {
-                        return PutNumToNumBuffer<unsigned long>(value);
+                        return PutNumToNumBuffer<uint32_t>(value);
                     }
 
                     case OdbcNativeType::AI_SIGNED_BIGINT:
