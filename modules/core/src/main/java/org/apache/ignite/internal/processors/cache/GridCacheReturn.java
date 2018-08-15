@@ -269,7 +269,7 @@ public class GridCacheReturn implements Externalizable, Message {
                 invokeResCol = new ArrayList<>();
 
             CacheInvokeDirectResult res0 = err == null ?
-                new CacheInvokeDirectResult(key, cctx.toCacheObject(res)) : new CacheInvokeDirectResult(key, err);
+                CacheInvokeDirectResult.lazyResult(key, res) : new CacheInvokeDirectResult(key, err);
 
             invokeResCol.add(res0);
         }

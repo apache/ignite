@@ -2137,6 +2137,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
                     }
                     catch (Exception e) {
+                        if (e instanceof UnregisteredClassException || e instanceof UnregisteredBinaryTypeException)
+                            throw (IgniteException) e;
+
                         curInvokeRes = CacheInvokeResult.fromError(e);
 
                         updated = old;

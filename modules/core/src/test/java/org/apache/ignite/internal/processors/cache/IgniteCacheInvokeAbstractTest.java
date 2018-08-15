@@ -38,8 +38,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -60,6 +62,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private Integer lastKey = 0;
+    /** */
+    private IgniteEx client;
 
     /**
      * @throws Exception If failed.
@@ -266,8 +270,26 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             return Objects.hash(key, affkey);
         }
 
-
+        @Override public String toString() {
+            return "MyKey{" +
+                "key='" + key + '\'' +
+                '}';
+        }
     }
+
+    /** */
+    static class MyClass1{}
+    /** */
+    static class MyClass2{}
+    /** */
+    static class MyClass3{}
+
+    /** */
+    Object[] results = new Object[] {
+        new MyClass1(),
+        new MyClass2(),
+        new MyClass3()
+    };
 
     /**
      * @throws Exception If failed.
@@ -275,23 +297,34 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     public void testInvokeAllAppliedOnceOnBinaryTypeRegistration() throws Exception {
         IgniteCache<MyKey, Integer> cache = jcache();
 
+        Affinity<Object> affinity = grid(0).affinity(cache.getName());
+
+
+        for (int i = 0; i < gridCount(); i++) {
+            if(!affinity.isPrimary(grid(i).localNode(), new MyKey(""))) {
+                cache = jcache(i);
+                break;
+            }
+        }
+
 
         LinkedHashSet<MyKey> keys = new LinkedHashSet<>(Arrays.asList(
             new MyKey("remove_0"), new MyKey("1"), new MyKey("2"),
-            new MyKey("remove_3"), new MyKey("remove_4"), new MyKey("register_type_5"),
-            new MyKey("6"), new MyKey("remove_7"), new MyKey("register_type_8"),
-            new MyKey("9"), new MyKey("remove_10"), new MyKey("11"), new MyKey("12"), new MyKey("register_type_13")));
+            new MyKey("remove_3"), new MyKey("remove_4"), new MyKey("register_type_0"),
+            new MyKey("6"), new MyKey("remove_7"), new MyKey("register_type_1"),
+            new MyKey("9"), new MyKey("remove_10"), new MyKey("11"), new MyKey("12"), new MyKey("register_type_2")
+        ));
 
         for (MyKey key : keys)
             cache.put(key, 0);
 
         cache.invokeAll(keys,
-            new CacheEntryProcessor<MyKey, Integer, Void>() {
+            new CacheEntryProcessor<MyKey, Integer, Object>() {
 
                 @IgniteInstanceResource
                 Ignite ignite;
 
-                @Override public Void process(MutableEntry<MyKey, Integer> entry,
+                @Override public Object process(MutableEntry<MyKey, Integer> entry,
                     Object... objects) throws EntryProcessorException {
 
                     String key = entry.getKey().key;
@@ -304,11 +337,15 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
                     if (key.startsWith("remove")) {
                         entry.remove();
-                    } else {
+                    }
+                    else {
                         Integer value = entry.getValue() == null ? 0 : entry.getValue();
 
                         entry.setValue(++value);
                     }
+
+                    if (key.startsWith("register_type"))
+                        return results[Integer.parseInt(key.substring(key.lastIndexOf("_") + 1))];
 
                     return null;
                 }
@@ -317,16 +354,23 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         Map<MyKey, Integer> all = cache.getAll(keys);
 
-        for (MyKey key : keys)
-            System.out.println(key.key + " - " + cache.get(key));
 
         for (Map.Entry<MyKey, Integer> entry : all.entrySet()) {
-            if (entry.getKey().key.startsWith("remove"))
+            MyKey key = entry.getKey();
+
+            if (key.key.startsWith("remove")) {
                 assertNull(entry.getValue());
-            else {
+
+                if (cacheStoreFactory() != null)
+                    assertNull(storeMap.get(keys));
+            } else {
                 int value = entry.getValue();
 
-                assertEquals('"' + entry.getKey().key + "' entry has wrong value, exp=1 actl=" + value, 1, value);
+                assertEquals("\"" + key + "' entry has wrong value, exp=1 actl=" + value, 1, value);
+
+                if (cacheStoreFactory() != null)
+                    assertEquals("\"" + key + "' entry has wrong value in cache store, exp=1 actl=" + value,
+                        1, (int)storeMap.get(key));
             }
         }
     }
