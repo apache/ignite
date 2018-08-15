@@ -46,6 +46,7 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
@@ -187,6 +188,31 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
                 assertEquals("Unexpected state", OWNING, locPart.state());
             }
+
+            startGridsMultiThreaded(GRIDS_CNT / 2, GRIDS_CNT / 2);
+
+            awaitPartitionMapExchange(true, true, null);
+
+            for (Ignite ig : G.allGrids()) {
+                GridDhtLocalPartition locPart = dht(ig.cache(DEFAULT_CACHE_NAME)).topology().localPartition(blockPartId);
+
+                assertNotNull(locPart);
+
+                switch ((String)ig.cluster().localNode().attribute(GRP_ATTR)) {
+                    case EVEN_GRP:
+                        assertEquals("Unexpected state", EVICTED, locPart.state());
+
+                        break;
+
+                    case ODD_GRP:
+                        assertEquals("Unexpected state", OWNING, locPart.state());
+
+                        break;
+
+                    default:
+                        fail();
+                }
+            }
         }
         finally {
             stopAllGrids();
@@ -261,5 +287,10 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
             return assignments;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return Integer.MAX_VALUE;
     }
 }
