@@ -781,6 +781,79 @@ public interface EventType {
     public static final int EVT_WAL_SEGMENT_ARCHIVED = 128;
 
     /**
+     * Built-in event type: Transaction has been started.
+     * <p>
+     * Fired for each started transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_STARTED = 129;
+
+    /**
+     * Built-in event type: Transaction has been committed.
+     * <p>
+     * Fired for each committed transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_COMMITTED = 130;
+
+    /**
+     * Built-in event type: Transaction has been rolled back.
+     * <p>
+     * Fired for each rolled back transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_ROLLED_BACK = 131;
+
+    /**
+     * Built-in event type: Transaction has been suspended.
+     * <p>
+     * Fired for each suspended transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_SUSPENDED = 132;
+
+    /**
+     * Built-in event type: Transaction has been resumed.
+     * <p>
+     * Fired for each resumed transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_RESUMED = 133;
+
+    /**
+     * Built-in event type: WAL archive segment compaction is completed.
+     * <p>
+     * Fired for each WAL archive segment upon its compaction completion.
+     * <p>
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see WalSegmentArchivedEvent
+     */
+    public static final int EVT_WAL_SEGMENT_COMPACTED = 134;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.
