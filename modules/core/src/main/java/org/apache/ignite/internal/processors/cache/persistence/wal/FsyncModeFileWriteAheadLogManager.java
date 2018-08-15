@@ -875,6 +875,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
+    @Override public long lastCompactedSegment() {
+        return compressor != null ? compressor.lastCompressedIdx : -1L;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean reserved(WALPointer ptr) {
         FileWALPointer fPtr = (FileWALPointer)ptr;
 
