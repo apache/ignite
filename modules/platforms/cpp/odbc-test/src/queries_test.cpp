@@ -261,12 +261,12 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsUint16)
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt32)
 {
-    CheckTwoRowsInt<signed long>(SQL_C_SLONG);
+    CheckTwoRowsInt<SQLINTEGER>(SQL_C_SLONG);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsUint32)
 {
-    CheckTwoRowsInt<unsigned long>(SQL_C_ULONG);
+    CheckTwoRowsInt<SQLUINTEGER>(SQL_C_ULONG);
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt64)
