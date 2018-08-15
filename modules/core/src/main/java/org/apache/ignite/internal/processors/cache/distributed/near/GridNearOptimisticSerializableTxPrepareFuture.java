@@ -69,10 +69,6 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptimisticTxPrepareFutureAdapter {
     /** */
     @GridToStringExclude
-    private KeyLockFuture keyLockFut;
-
-    /** */
-    @GridToStringExclude
     private ClientRemapFuture remapFut;
 
     /** */

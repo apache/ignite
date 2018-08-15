@@ -244,6 +244,44 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testNodeStopWhileThereAreCacheActivitiesInServiceProcessor() throws Exception {
+        final int nodesCnt = 2;
+        final int maxSvc = 1024;
+
+        startGridsMultiThreaded(nodesCnt);
+
+        IgniteEx ignite = grid(0);
+
+        IgniteInternalCache<GridServiceAssignmentsKey, Object> sysCache = ignite.utilityCache();
+
+        // Adding some assignments without deployments.
+        for (int i = 0; i < maxSvc; i++) {
+            String name = "svc-" + i;
+
+            ServiceConfiguration svcCfg = new ServiceConfiguration();
+
+            svcCfg.setName(name);
+
+            GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(name);
+
+            UUID nodeId = grid(i % nodesCnt).localNode().id();
+
+            sysCache.put(key, new GridServiceAssignments(svcCfg, nodeId, ignite.cluster().topologyVersion()));
+        }
+
+        // Simulate exchange with merge.
+        GridTestUtils.runAsync(() -> startGrid(nodesCnt));
+        GridTestUtils.runAsync(() -> startGrid(nodesCnt + 1));
+        startGrid(nodesCnt + 2);
+
+        Thread.sleep((int)(1000 * ThreadLocalRandom.current().nextDouble()));
+
+        stopAllGrids();
+    }
+
+    /**
      * @param node Node.
      * @throws Exception If failed.
      */

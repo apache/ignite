@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication;
 
 import java.io.Serializable;
+import java.util.EventListener;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteRunnable;
 
@@ -27,7 +28,7 @@ import org.apache.ignite.lang.IgniteRunnable;
  * {@link CommunicationSpi} should ignore very first 4 bytes received from
  * sender node and pass the rest of the message to the listener.
  */
-public interface CommunicationListener<T extends Serializable> {
+public interface CommunicationListener<T extends Serializable> extends EventListener {
     /**
      * <b>NOTE:</b> {@link CommunicationSpi} should ignore very first 4 bytes received from
      * sender node and pass the rest of the received message to the listener.

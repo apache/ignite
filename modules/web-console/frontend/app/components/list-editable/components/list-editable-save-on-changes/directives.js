@@ -30,7 +30,9 @@ export function ngModel() {
          * @param {ng.INgModelController} ngModel
          */
         link(scope, el, attr, {ngModel, list}) {
-            if (!list) return;
+            if (!list)
+                return;
+
             ngModel.$viewChangeListeners.push(() => {
                 el[0].dispatchEvent(new CustomEvent(CUSTOM_EVENT_TYPE, {bubbles: true, cancelable: true}));
             });
@@ -54,15 +56,21 @@ export function listEditableTransclude() {
          * @param {ListEditableController} list
          */
         link(scope, el, attr, {list, transclude}) {
-            if (attr.listEditableTransclude !== 'itemEdit') return;
-            if (!list) return;
+            if (attr.listEditableTransclude !== 'itemEdit')
+                return;
+
+            if (!list)
+                return;
+
             let listener = (e) => {
                 e.stopPropagation();
                 scope.$evalAsync(() => {
                     if (scope.form.$valid) list.save(scope.item, transclude.$index);
                 });
             };
+
             el[0].addEventListener(CUSTOM_EVENT_TYPE, listener);
+
             scope.$on('$destroy', () => {
                 el[0].removeEventListener(CUSTOM_EVENT_TYPE, listener);
                 listener = null;
