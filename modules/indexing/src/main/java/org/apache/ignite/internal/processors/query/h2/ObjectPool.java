@@ -17,21 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Thread-safe pool for managing limited number objects for further reuse.
  *
- * @param <E> pooled objects type
+ * @param <E> Pooled objects type.
  */
 public final class ObjectPool<E extends AutoCloseable> {
     /**
      * Wrapper for a pooled object with capability to return the object to a pool.
      *
-     * @param <T> enclosed object type
+     * @param <T> Enclosed object type.
      */
     public static class Reusable<T extends AutoCloseable> {
         /** Object pool to recycle. */
@@ -50,7 +50,7 @@ public final class ObjectPool<E extends AutoCloseable> {
         }
 
         /**
-         * @return enclosed object
+         * @return Enclosed object.
          */
         public T object() {
             return object;
@@ -64,8 +64,12 @@ public final class ObjectPool<E extends AutoCloseable> {
 
             if (pool.bag.size() < pool.poolSize)
                 pool.bag.add(object);
-            else
-                U.closeQuiet(object);
+            else {
+                if (pool.closer == null)
+                    U.closeQuiet(object);
+                else
+                    pool.closer.accept(object);
+            }
 
             object = null;
         }
@@ -80,20 +84,25 @@ public final class ObjectPool<E extends AutoCloseable> {
     /** */
     private final int poolSize;
 
+    /** The function to close object. */
+    private final Consumer<E> closer;
+
     /**
-     * @param objectFactory factory used for new objects creation
-     * @param poolSize number of objects which pool can contain
+     * @param objectFactory Factory used for new objects creation.
+     * @param poolSize Number of objects which pool can contain.
+     * @param closer Fucntion to close object.
      */
-    public ObjectPool(Supplier<E> objectFactory, int poolSize) {
+    public ObjectPool(Supplier<E> objectFactory, int poolSize, Consumer<E> closer) {
         this.objectFactory = objectFactory;
         this.poolSize = poolSize;
+        this.closer = closer;
     }
 
     /**
      * Picks an object from the pool if one is present or creates new one otherwise.
      * Returns an object wrapper which could be returned to the pool.
      *
-     * @return reusable object wrapper
+     * @return Reusable object wrapper.
      */
     public Reusable<E> borrow() {
         E pooled = bag.poll();

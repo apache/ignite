@@ -114,11 +114,11 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -127,14 +127,14 @@ import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.SqlStrictParseException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
-import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
-import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -267,9 +267,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private String dbUrl = "jdbc:h2:mem:";
 
-    /** */
+    /** All connections are used by Ignite instance. Map of (H2ConnectionWrapper, Boolean) is used as a Set. */
     // TODO https://issues.apache.org/jira/browse/IGNITE-9062
-    private final ConcurrentMap<Thread, H2ConnectionWrapper> conns = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Thread, ConcurrentHashMap<H2ConnectionWrapper, Boolean>> conns = new ConcurrentHashMap<>();
 
     /** */
     private GridMapQueryExecutor mapQryExec;
@@ -300,7 +300,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final ThreadLocal<ObjectPool<H2ConnectionWrapper>> connectionPool
         = new ThreadLocal<ObjectPool<H2ConnectionWrapper>>() {
         @Override protected ObjectPool<H2ConnectionWrapper> initialValue() {
-            return new ObjectPool<>(IgniteH2Indexing.this::newConnectionWrapper, 5);
+            return new ObjectPool<>(
+                IgniteH2Indexing.this::newConnectionWrapper,
+                5,
+                IgniteH2Indexing.this::closePooledConnectionWrapper);
         }
     };
 
@@ -334,7 +337,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = pool.borrow();
 
-            conns.put(Thread.currentThread(), reusableConnection.object());
+            ConcurrentHashMap<H2ConnectionWrapper, Boolean> perThreadConns =
+                conns.getOrDefault(Thread.currentThread(), new ConcurrentHashMap<>());
+
+            perThreadConns.put(reusableConnection.object(), false);
 
             return reusableConnection;
         }
@@ -423,6 +429,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         } catch (SQLException e) {
             throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
         }
+    }
+
+    /**
+     * @param conn Connection wrapper to close.
+     */
+    private void closePooledConnectionWrapper(H2ConnectionWrapper conn) {
+        U.closeQuiet(conn);
     }
 
     /**
@@ -2427,18 +2440,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private void cleanupStatementCache() {
         long now = U.currentTimeMillis();
 
-        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = conns.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Thread, H2ConnectionWrapper> entry = it.next();
+        for (Iterator<Map.Entry<Thread, ConcurrentHashMap<H2ConnectionWrapper, Boolean>>> it
+            = conns.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Thread, ConcurrentHashMap<H2ConnectionWrapper, Boolean>> entry = it.next();
 
             Thread t = entry.getKey();
 
             if (t.getState() == Thread.State.TERMINATED) {
-                U.close(entry.getValue(), log);
+                for (H2ConnectionWrapper c : entry.getValue().keySet())
+                    U.close(c, log);
 
                 it.remove();
             }
-            else if (now - entry.getValue().statementCache().lastUsage() > STATEMENT_CACHE_THREAD_USAGE_TIMEOUT)
-                entry.getValue().clearStatementCache();
+            else {
+                for (H2ConnectionWrapper c : entry.getValue().keySet()) {
+                    if (now - c.statementCache().lastUsage() > STATEMENT_CACHE_THREAD_USAGE_TIMEOUT)
+                        c.clearStatementCache();
+                }
+            }
         }
     }
 
@@ -2446,13 +2465,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #conns}.
      */
     private void cleanupConnections() {
-        for (Iterator<Map.Entry<Thread, H2ConnectionWrapper>> it = conns.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<Thread, H2ConnectionWrapper> entry = it.next();
+        for (Iterator<Map.Entry<Thread, ConcurrentHashMap<H2ConnectionWrapper, Boolean>>> it
+            = conns.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Thread, ConcurrentHashMap<H2ConnectionWrapper, Boolean>> entry = it.next();
 
             Thread t = entry.getKey();
 
             if (t.getState() == Thread.State.TERMINATED) {
-                U.close(entry.getValue(), log);
+                for (H2ConnectionWrapper c : entry.getValue().keySet())
+                    U.close(c, log);
 
                 it.remove();
             }
@@ -2468,11 +2489,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
 
-        H2ConnectionWrapper connection = conns.remove(key);
+//        conns.get(key).remove(reusableConnection.object());
 
         connCache.remove();
-
-        assert reusableConnection.object().connection() == connection.connection();
 
         return reusableConnection;
     }
@@ -2823,8 +2842,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         mapQryExec.cancelLazyWorkers();
 
-        for (H2ConnectionWrapper c : conns.values())
-            U.close(c, log);
+        for (ConcurrentMap<H2ConnectionWrapper, Boolean> perThreadConns : conns.values()) {
+            for (H2ConnectionWrapper c : perThreadConns.keySet())
+                U.close(c, log);
+        }
 
         conns.clear();
         schemas.clear();
@@ -2945,7 +2966,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            conns.values().forEach(H2ConnectionWrapper::clearStatementCache);
+            conns.values().forEach(map -> map.keySet().forEach(H2ConnectionWrapper::clearStatementCache));
 
             for (H2TableDescriptor tbl : rmvTbls) {
                 for (Index idx : tbl.table().getIndexes())
@@ -3103,8 +3124,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void cancelAllQueries() {
-        for (H2ConnectionWrapper c : conns.values())
-            U.close(c, log);
+        for (ConcurrentHashMap<H2ConnectionWrapper, Boolean> perThreadConns : conns.values()) {
+            for (H2ConnectionWrapper c : perThreadConns.keySet())
+                U.close(c, log);
+        }
     }
 
     /**
