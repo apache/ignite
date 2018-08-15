@@ -18,9 +18,9 @@
 package org.apache.ignite.ml.clustering;
 
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Assert;
 import org.junit.Test;
@@ -45,6 +45,8 @@ public class KMeansModelTest {
         centers[3] = new DenseVector(new double[]{-1.0, -1.0});
 
         KMeansModel mdl = new KMeansModel(centers, distanceMeasure);
+
+        Assert.assertTrue(mdl.toString().contains("KMeansModel"));
 
         Assert.assertEquals(mdl.apply(new DenseVector(new double[]{1.1, 1.1})), 0.0, PRECISION);
         Assert.assertEquals(mdl.apply(new DenseVector(new double[]{-1.1, 1.1})), 1.0, PRECISION);

@@ -29,6 +29,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link LSQROnHeap}.
@@ -73,7 +75,17 @@ public class LSQROnHeapTest {
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
 
+        assertEquals(3, res.getIterations());
+        assertEquals(1, res.getIsstop());
+        assertEquals(7.240617907140957E-14, res.getR1norm(), 0.0001);
+        assertEquals(7.240617907140957E-14, res.getR2norm(), 0.0001);
+        assertEquals(6.344288770224759, res.getAnorm(), 0.0001);
+        assertEquals(40.540617492419464, res.getAcond(), 0.0001);
+        assertEquals(3.4072322214704627E-13, res.getArnorm(), 0.0001);
+        assertEquals(3.000000000000001, res.getXnorm(), 0.0001);
+        assertArrayEquals(new double[]{0.0, 0.0, 0.0}, res.getVar(), 1e-6);
         assertArrayEquals(new double[]{1, -2, -2}, res.getX(), 1e-6);
+        assertTrue(res.toString().length() > 0);
     }
 
     /** Tests solving simple linear system with specified x0. */
@@ -96,6 +108,8 @@ public class LSQROnHeapTest {
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false,
             new double[] {999, 999, 999});
+
+        assertEquals(3, res.getIterations());
 
         assertArrayEquals(new double[]{1, -2, -2}, res.getX(), 1e-6);
     }
@@ -125,6 +139,8 @@ public class LSQROnHeapTest {
             )
         )) {
             LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
+
+            assertEquals(8, res.getIterations());
 
             assertArrayEquals(new double[]{72.26948107,  15.95144674,  24.07403921,  66.73038781}, res.getX(), 1e-6);
         }
