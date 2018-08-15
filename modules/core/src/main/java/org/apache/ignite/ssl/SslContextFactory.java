@@ -349,13 +349,13 @@ public class SslContextFactory implements Factory<SSLContext> {
 
             SSLContext ctx = SSLContext.getInstance(proto);
 
-            if(cipherSuites != null || protocols != null) {
+            if (cipherSuites != null || protocols != null) {
                 SSLParameters sslParameters = new SSLParameters();
 
-                if(cipherSuites != null)
+                if (cipherSuites != null)
                     sslParameters.setCipherSuites(cipherSuites);
 
-                if(protocols != null)
+                if (protocols != null)
                     sslParameters.setProtocols(protocols);
 
                 ctx = new SSLContextWrapper(ctx, sslParameters);
