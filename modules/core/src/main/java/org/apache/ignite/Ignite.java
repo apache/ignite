@@ -386,9 +386,6 @@ public interface Ignite extends AutoCloseable {
     /**
      * Gets the collection of names of currently available caches.
      *
-     * Collection may contain {@code null} as a value for a cache name. Refer to {@link CacheConfiguration#getName()}
-     * for more info.
-     *
      * @return Collection of names of currently available caches or an empty collection if no caches are available.
      */
     public Collection<String> cacheNames();
