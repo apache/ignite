@@ -101,7 +101,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     private static final String CUSTOM_CFG_ATTR_VAL = "true";
 
     /** */
-    private static final long WAIT_TIMEOUT = 80 * 1000;
+    private static final long WAIT_TIMEOUT = 90 * 1000;
 
     /** */
     private String pwd;
@@ -839,7 +839,6 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @param timeout Timeout.
      * @param maxConn Max connection.
      * @param expNodes Count of nodes that should be started.
-     * @throws IgniteException Thrown in case of any errors.
      */
     private void startCheckNodes(
         Collection<Map<String, Object>> hosts,
@@ -847,8 +846,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         int timeout,
         int maxConn,
         int expNodes
-    )
-        throws IgniteException {
+    ) throws IgniteException {
         int startNodes = 0;
 
         for (int i = 0; i < 3; i++) {
@@ -868,7 +866,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
                             "Reason may be in ssh connection, will retry.");
                     }
                     else
-                        throw new IgniteException(errorMsg);
+                        fail(errorMsg);
                 }
                 else
                     startNodes++;
