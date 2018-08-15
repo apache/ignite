@@ -69,7 +69,7 @@ public class CacheQueryMemoryLeakTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Person> cache = startPeopleCache(client);
 
-        int pages = 10;
+        int pages = 3;
         int pageSize = 1024;
 
         for (int i = 0; i < pages * pageSize; i++) {
