@@ -15,20 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * <!-- Package description. -->
+ * Contains main APIs for ANN classification algorithms.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    ANNClassificationTest.class,
-    KNNClassificationTest.class,
-    KNNRegressionTest.class,
-    LabeledVectorSetTest.class
-})
-public class KNNTestSuite {
-}
+package org.apache.ignite.ml.knn.ann;
