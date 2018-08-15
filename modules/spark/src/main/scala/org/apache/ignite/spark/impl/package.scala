@@ -22,6 +22,7 @@ import org.apache.ignite.{Ignite, IgniteException, IgniteState, Ignition}
 import org.apache.ignite.cache.{CacheMode, QueryEntity}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName
 import org.apache.ignite.internal.util.lang.GridFunc.contains
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
@@ -88,42 +89,51 @@ package object impl {
     /**
       * @param ignite Ignite instance.
       * @param tabName Table name.
+      * @param schemaName Optional schema name
       * @return True if table exists false otherwise.
       */
-    def sqlTableExists(ignite: Ignite, tabName: String): Boolean =
-        sqlTableInfo(ignite, tabName).isDefined
+    def sqlTableExists(ignite: Ignite, tabName: String, schemaName: Option[String]): Boolean =
+        sqlTableInfo(ignite, tabName, schemaName).isDefined
 
     /**
       * @param ignite Ignite instance.
       * @param tabName Table name.
+      * @param schemaName Optional schema name
       * @return QueryEntity for a given table.
       */
-    def igniteSQLTable(ignite: Ignite, tabName: String): Option[QueryEntity] =
-        sqlTableInfo[Any, Any](ignite, tabName).map(_._2)
+    def igniteSQLTable(ignite: Ignite, tabName: String, schemaName: Option[String]): Option[QueryEntity] =
+        sqlTableInfo[Any, Any](ignite, tabName, schemaName).map(_._2)
 
     /**
       * @param ignite Ignite instance.
       * @param tabName Table name.
+      * @param schemaName Optional schema name
       * @return Cache name for given table.
       */
-    def sqlCacheName(ignite: Ignite, tabName: String): Option[String] =
-        sqlTableInfo[Any, Any](ignite, tabName).map(_._1.getName)
+    def sqlCacheName(ignite: Ignite, tabName: String, schemaName: Option[String]): Option[String] =
+        sqlTableInfo[Any, Any](ignite, tabName, schemaName).map(_._1.getName)
 
     /**
       * @param ignite Ignite instance.
       * @param tabName Table name.
+      * @param schemaName Optional schema name
       * @tparam K Key class.
       * @tparam V Value class.
       * @return CacheConfiguration and QueryEntity for a given table.
       */
-    def sqlTableInfo[K, V](ignite: Ignite, tabName: String): Option[(CacheConfiguration[K, V], QueryEntity)] =
-        ignite.cacheNames().map { cacheName ⇒
-            val ccfg = ignite.cache[K, V](cacheName).getConfiguration(classOf[CacheConfiguration[K, V]])
+    def sqlTableInfo[K, V](ignite: Ignite, tabName: String,
+        schemaName: Option[String]): Option[(CacheConfiguration[K, V], QueryEntity)] =
+        ignite.cacheNames()
+            .map(cacheName => ignite.cache[K, V](cacheName).getConfiguration(classOf[CacheConfiguration[K, V]]))
+            .filter(
+                ccfg => schemaName.isEmpty || schemaName.get.equalsIgnoreCase(normalizeSchemaName(ccfg.getName, ccfg.getSqlSchema)))
+            .map { ccfg ⇒
+                val cacheSchema = normalizeSchemaName(ccfg.getName, ccfg.getSqlSchema)
 
-            val queryEntities = ccfg.getQueryEntities
+                val queryEntities = ccfg.getQueryEntities
 
-            queryEntities.find(_.getTableName.equalsIgnoreCase(tabName)).map(qe ⇒ (ccfg, qe))
-        }.find(_.isDefined).flatten
+                queryEntities.find(_.getTableName.equalsIgnoreCase(tabName)).map(qe ⇒ (ccfg, qe))
+            }.find(_.isDefined).flatten
 
     /**
       * @param table Table.

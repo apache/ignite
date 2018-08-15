@@ -270,6 +270,16 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
             persons(0).getAs[Long]("city_id") should equal(2)
             persons(0).getAs[Long]("count(1)") should equal(3)
         }
+
+        it("should use the schema name where one is specified") {
+            val res = spark.sqlContext.sql("SELECT id FROM employeeWithSchema").rdd
+
+            res.count should equal(3)
+
+            val res2 = spark.sqlContext.sql("SELECT id FROM employeeWithSchema2").rdd
+
+            res2.count should equal(2)
+        }
     }
 
     override protected def beforeAll(): Unit = {
@@ -284,5 +294,24 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
             .load()
 
         personDataFrame.createOrReplaceTempView("person")
+
+        createEmployeeCache(client, "employeeCache1")
+        spark.read
+            .format(FORMAT_IGNITE)
+            .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+            .option(OPTION_TABLE, "employee")
+            .option(OPTION_SCHEMA, "employeeCache1")
+            .load()
+            .createOrReplaceTempView("employeeWithSchema")
+
+        createEmployeeCache(client, "employeeCache2")
+        client.cache("employeeCache2").remove("key1")
+        spark.read
+            .format(FORMAT_IGNITE)
+            .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+            .option(OPTION_TABLE, "employee")
+            .option(OPTION_SCHEMA, "employeeCache2")
+            .load()
+            .createOrReplaceTempView("employeeWithSchema2")
     }
 }

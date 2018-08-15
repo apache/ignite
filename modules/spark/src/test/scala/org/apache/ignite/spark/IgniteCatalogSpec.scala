@@ -39,9 +39,9 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         it("Should observe all available SQL tables") {
             val tables = igniteSession.catalog.listTables.collect()
 
-            tables.length should equal (3)
+            tables.length should equal(6)
 
-            tables.map(_.name).sorted should equal (Array("CITY", "EMPLOYEE", "PERSON"))
+            tables.map(_.name).sorted should equal(Array("CITY", "EMPLOYEE", "PERSON", "PUBLIC.CITY", "PUBLIC.PERSON", "cache3.EMPLOYEE"))
         }
 
         it("Should provide correct schema for SQL table") {
@@ -125,6 +125,18 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
                     (3, "St. Petersburg")
                 )
             )
+        }
+
+        it("Should allow schema specification in the table name for default schema") {
+            val res = igniteSession.sql("SELECT id, name FROM `public.city`").rdd
+
+            res.count should equal(4)
+        }
+
+        it("Should allow schema specification in the table name for non-default schema") {
+            val res = igniteSession.sql("SELECT id, name, salary FROM `cache3.employee`").rdd
+
+            res.count should equal(3)
         }
     }
 

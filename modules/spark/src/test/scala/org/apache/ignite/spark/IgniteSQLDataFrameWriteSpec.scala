@@ -220,7 +220,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .save()
             }
 
-            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME)
+            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME, None)
 
             assert(tblInfo.isDefined, s"Table $PERSON_TBL_NAME should exists.")
         }
@@ -236,7 +236,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .save()
             }
 
-            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME)
+            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME, None)
 
             assert(tblInfo.isDefined, s"Table $PERSON_TBL_NAME should exists.")
         }
@@ -252,7 +252,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .save()
             }
 
-            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME)
+            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME, None)
 
             assert(tblInfo.isDefined, s"Table $PERSON_TBL_NAME should exists.")
         }

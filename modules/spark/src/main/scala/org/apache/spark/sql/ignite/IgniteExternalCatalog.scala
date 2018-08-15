@@ -20,6 +20,7 @@ package org.apache.spark.sql.ignite
 import java.net.URI
 
 import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.internal.processors.query.QueryUtils.normalizeSchemaName
 import org.apache.ignite.spark.IgniteDataFrameSettings.OPTION_TABLE
 import org.apache.ignite.spark.IgniteContext
 import org.apache.ignite.spark.IgniteDataFrameSettings._
@@ -49,6 +50,16 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
       * Default Ignite instance.
       */
     @transient private var default: Ignite = defaultIgniteContext.ignite
+
+    case class TableNameAndSchema(tableName: String, schema: Option[String])
+
+    object TableNameAndSchema {
+        def apply(fullTableName: String): TableNameAndSchema =
+            if (fullTableName.contains('.'))
+                new TableNameAndSchema(fullTableName.substring(fullTableName.indexOf('.') + 1, fullTableName.length), Some(fullTableName.substring(0, fullTableName.indexOf('.'))))
+            else
+                new TableNameAndSchema(fullTableName, None)
+    }
 
     /**
       * @param db Ignite instance name.
@@ -99,7 +110,8 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
 
         val gridName = igniteName(ignite)
 
-        igniteSQLTable(ignite, tabName) match {
+        val tableNameAndSchema = TableNameAndSchema(tabName)
+        igniteSQLTable(ignite, tableNameAndSchema.tableName, tableNameAndSchema.schema) match {
             case Some(table) ⇒
                 val tableName = table.getTableName
 
@@ -129,8 +141,10 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
     }
 
     /** @inheritdoc */
-    override def tableExists(db: String, table: String): Boolean =
-        sqlTableExists(igniteOrDefault(db, default), table)
+    override def tableExists(db: String, table: String): Boolean = {
+        val tableNameAndSchema = TableNameAndSchema(table)
+        sqlTableExists(igniteOrDefault(db, default), tableNameAndSchema.tableName, tableNameAndSchema.schema)
+    }
 
     /** @inheritdoc */
     override def listTables(db: String): Seq[String] = listTables(db, ".*")
@@ -144,7 +158,9 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
 
             val ccfg = cache.getConfiguration(classOf[CacheConfiguration[Any, Any]])
 
-            ccfg.getQueryEntities.map(_.getTableName)
+            ccfg.getQueryEntities.flatMap(
+                e => Array(e.getTableName, normalizeSchemaName(ccfg.getName, ccfg.getSqlSchema)
+                    + "." + e.getTableName))
         }.toSeq
     }
 
@@ -163,7 +179,8 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
     override def listPartitionNames(db: String, table: String, partialSpec: Option[TablePartitionSpec]): Seq[String] = {
         val ignite = igniteOrDefault(db, default)
 
-        sqlCacheName(ignite, table).map { cacheName ⇒
+        val tableNameAndSchema = TableNameAndSchema(table)
+        sqlCacheName(ignite, tableNameAndSchema.tableName, tableNameAndSchema.schema).map { cacheName ⇒
             val parts = ignite.affinity(cacheName).partitions()
 
             (0 until parts).map(_.toString)
@@ -180,7 +197,9 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
         if (partitionNames.isEmpty)
             Seq.empty
         else {
-            val cacheName = sqlCacheName(ignite, table).get
+            val tableNameAndSchema = TableNameAndSchema(table)
+
+            val cacheName = sqlCacheName(ignite, tableNameAndSchema.tableName, tableNameAndSchema.schema).get
 
             val aff = ignite.affinity[Any](cacheName)
 
@@ -273,7 +292,8 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
     override protected def doCreateTable(tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit = {
         val ignite = igniteOrDefault(tableDefinition.identifier.database.getOrElse(DEFAULT_DATABASE), default)
 
-        igniteSQLTable(ignite, tableDefinition.identifier.table) match {
+        val tableNameAndSchema = TableNameAndSchema(tableDefinition.identifier.table)
+        igniteSQLTable(ignite, tableNameAndSchema.tableName, tableNameAndSchema.schema) match {
             case Some(_) ⇒
                 /* no-op */
 
@@ -292,7 +312,8 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
     override protected def doDropTable(db: String, tabName: String, ignoreIfNotExists: Boolean, purge: Boolean): Unit = {
         val ignite = igniteOrDefault(db, default)
 
-        igniteSQLTable(ignite, tabName) match {
+        var tableNameAndSchema = TableNameAndSchema(tabName)
+        igniteSQLTable(ignite, tableNameAndSchema.tableName, tableNameAndSchema.schema) match {
             case Some(table) ⇒
                 val tableName = table.getTableName
 

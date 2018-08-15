@@ -91,6 +91,7 @@ private[apache] object QueryHelper {
       *
       * @param data Data.
       * @param tblName Table name.
+      * @param schemaName Optional schema name
       * @param ctx Ignite context.
       * @param streamerAllowOverwrite Flag enabling overwriting existing values in cache.
       * @param streamerFlushFrequency Insert query streamer automatic flush frequency.
@@ -105,6 +106,7 @@ private[apache] object QueryHelper {
       */
     def saveTable(data: DataFrame,
         tblName: String,
+        schemaName: Option[String],
         ctx: IgniteContext,
         streamerAllowOverwrite: Option[Boolean],
         streamerFlushFrequency: Option[Long],
@@ -117,6 +119,7 @@ private[apache] object QueryHelper {
             savePartition(iterator,
                 insertQry,
                 tblName,
+                schemaName,
                 ctx,
                 streamerAllowOverwrite,
                 streamerFlushFrequency,
@@ -131,6 +134,7 @@ private[apache] object QueryHelper {
       * @param iterator Data iterator.
       * @param insertQry Insert query.
       * @param tblName Table name.
+      * @param schemaName Optional schema name
       * @param ctx Ignite context.
       * @param streamerAllowOverwrite Flag enabling overwriting existing values in cache.
       * @param streamerFlushFrequency Insert query streamer automatic flush frequency.
@@ -146,13 +150,14 @@ private[apache] object QueryHelper {
     private def savePartition(iterator: Iterator[Row],
         insertQry: String,
         tblName: String,
+        schemaName: Option[String],
         ctx: IgniteContext,
         streamerAllowOverwrite: Option[Boolean],
         streamerFlushFrequency: Option[Long],
         streamerPerNodeBufferSize: Option[Int],
         streamerPerNodeParallelOperations: Option[Int]
     ): Unit = {
-        val tblInfo = sqlTableInfo[Any, Any](ctx.ignite(), tblName).get
+        val tblInfo = sqlTableInfo[Any, Any](ctx.ignite(), tblName, schemaName).get
 
         val streamer = ctx.ignite().dataStreamer(tblInfo._1.getName)
 
