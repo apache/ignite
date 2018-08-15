@@ -52,7 +52,6 @@ public class ContinuousQueryMarshallerTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPeerClassLoadingEnabled(true);
         cfg.setClientMode(gridName.contains("client"));
 
         return cfg;
@@ -127,7 +126,7 @@ public class ContinuousQueryMarshallerTest extends GridCommonAbstractTest {
         for (int i = 10; i < 20; i++)
             cache1.put(i, new MarshallerCheckingEntry(i));
 
-        assert latch.await(5, TimeUnit.SECONDS) : latch.getCount();
+        assertTrue(Long.toString(latch.getCount()), latch.await(5, TimeUnit.SECONDS));
     }
 
     /** Checks that OptimizedMarshaller is never used (BinaryMarshaller is OK) */

@@ -196,6 +196,7 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C2MLA.class.getName());
         sysClss.add(GridClosureProcessor.C4.class.getName());
         sysClss.add(GridClosureProcessor.C4MLA.class.getName());
+
         // Scan query classes.
         sysClss.add(GridCacheQueryResponseEntry.class.getName());
 
