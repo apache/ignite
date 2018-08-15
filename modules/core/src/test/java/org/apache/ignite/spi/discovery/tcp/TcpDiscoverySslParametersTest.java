@@ -39,7 +39,8 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        SslContextFactory factory = (SslContextFactory)GridTestUtils.sslTrustedFactory("node01", "trustone");
+        SslContextFactory factory = (SslContextFactory)GridTestUtils.sslTrustedFactory(
+            "node01", "trustone");
 
         factory.setCipherSuites(cipherSuites);
 
@@ -116,6 +117,27 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testNonExistentCipherSuite() throws Exception {
+        checkDiscoveryFailure(
+            new String[][] {
+                new String[] {
+                    "TLS_RSA_WITH_AES_128_GCM_SHA256",
+                    "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
+                },
+                new String[] {
+                    "TLC_FAKE_CIPHER",
+                    "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
+                }
+            },
+            null,
+            IgniteCheckedException.class,
+            "Unsupported ciphersuite"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testNoCommonProtocols() throws Exception {
         checkDiscoveryFailure(
             null,
@@ -129,6 +151,26 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
                     "TLSv1.2",
                 }
             }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonExistentProtocol() throws Exception {
+        checkDiscoveryFailure(
+            null,
+            new String[][] {
+                new String[] {
+                    "SSLv3"
+                },
+                new String[] {
+                    "SSLv3",
+                    "SSLvDoesNotExist"
+                }
+            },
+            IgniteCheckedException.class,
+            "SSLvDoesNotExist"
         );
     }
 
@@ -193,6 +235,17 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkDiscoveryFailure(String[][] cipherSuites, String[][] protocols) throws Exception {
+        checkDiscoveryFailure(cipherSuites, protocols, IgniteCheckedException.class, "Unable to establish secure connection.");
+    }
+
+    /**
+     * @param cipherSuites list of cipher suites
+     * @param protocols list of protocols
+     * @param ex expected exception class
+     * @param msg exception message
+     * @throws Exception If failed.
+     */
+    private void checkDiscoveryFailure(String[][] cipherSuites, String[][] protocols, Class<? extends Throwable> ex, String msg) throws Exception {
         this.cipherSuites = cipherSuites != null ? cipherSuites[0] : null;
         this.protocols = protocols != null ? protocols[0] : null;
 
@@ -214,7 +267,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, IgniteCheckedException.class, "Unable to establish secure connection.");
+            }, ex, msg);
         }
     }
 
