@@ -68,8 +68,9 @@ public class CacheAffinityKeyQueryTest extends GridCommonAbstractTest {
     public void testAffinityKeyRegisteredStaticCache() throws Exception {
         Ignite ignite = startGrid();
 
-        checkAffinityKey(ignite, StaticKey.class, "affKey");
-        checkAffinityKey(ignite, StaticValue.class, "affKey");
+
+        assertEquals("affKey", getAffinityKey(ignite, StaticKey.class));
+        assertEquals("affKey", getAffinityKey(ignite, StaticValue.class));
     }
 
     /**
@@ -80,8 +81,8 @@ public class CacheAffinityKeyQueryTest extends GridCommonAbstractTest {
 
         ignite.createCache(cacheConfiguration(DYNAMIC_CACHE_NAME, DynamicKey.class, DynamicValue.class));
 
-        checkAffinityKey(ignite, DynamicKey.class, "affKey");
-        checkAffinityKey(ignite, DynamicValue.class, "affKey");
+        assertEquals("affKey", getAffinityKey(ignite, DynamicKey.class));
+        assertEquals("affKey", getAffinityKey(ignite, DynamicValue.class));
     }
 
     /**
@@ -107,13 +108,13 @@ public class CacheAffinityKeyQueryTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite instance.
-     * @param keyCls Class to check.
-     * @param expName Expected affinity key name.
+     * @param keyCls Key class.
+     * @return Name of affinity key field of the given class.
      */
-    private <K> void checkAffinityKey(Ignite ignite, Class<K> keyCls, String expName) {
+    private <K> String getAffinityKey(Ignite ignite, Class<K> keyCls) {
         BinaryType binType = ignite.binary().type(keyCls);
 
-        assertEquals(expName, binType.affinityKeyFieldName());
+        return binType.affinityKeyFieldName();
     }
 
     /**
