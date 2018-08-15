@@ -940,9 +940,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void allowCompressionUntil(WALPointer ptr) {
+    @Override public void notchLastCheckpointPtr(WALPointer ptr) {
         if (compressor != null)
-            compressor.allowCompressionUntil(((FileWALPointer)ptr).index());
+            compressor.keepUncompressedIdxFrom(((FileWALPointer)ptr).index() - 1);
     }
 
     /** {@inheritDoc} */
@@ -1420,7 +1420,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (failureProcessor != null)
                 failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
-            
+
             throw ex;
         }
     }
@@ -1896,7 +1896,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private volatile long lastCompressedIdx = -1L;
 
         /** All segments prior to this (inclusive) can be compressed. */
-        private volatile long lastAllowedToCompressIdx = -1L;
+        private volatile long minUncompressedIdxToKeep = -1L;
 
         /**
          *
@@ -1925,10 +1925,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
-         * @param lastCpStartIdx Segment index to allow compression until (exclusively).
+         * @param idx Minimum raw segment index that should be preserved from deletion.
          */
-        synchronized void allowCompressionUntil(long lastCpStartIdx) {
-            lastAllowedToCompressIdx = lastCpStartIdx - 1;
+        synchronized void keepUncompressedIdxFrom(long idx) {
+            minUncompressedIdxToKeep = idx;
 
             notify();
         }
@@ -1951,7 +1951,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (stopped)
                     return -1;
 
-                while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archivedMonitor.lastArchivedAbsoluteIndex())) {
+                while (segmentToCompress > archivedMonitor.lastArchivedAbsoluteIndex()) {
                     wait();
 
                     if (stopped)
@@ -1988,7 +1988,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (segmentReservedOrLocked(desc.idx))
                     return;
 
-                if (desc.idx < lastCompressedIdx && duplicateIndices.contains(desc.idx)) {
+                if (desc.idx < minUncompressedIdxToKeep && duplicateIndices.contains(desc.idx)) {
                     if (!desc.file.delete())
                         U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                             desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
