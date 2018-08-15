@@ -151,7 +151,7 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
         String evtDir = paths.distributedFutureBasePath(futId);
 
         if (client.exists(evtDir)) {
-            batch.addAll(ZkIgnitePaths.addParentPath(evtDir, client.getChildren(evtDir)));
+            batch.addAll(client.getChildrenPaths(evtDir));
 
             batch.add(evtDir);
         }

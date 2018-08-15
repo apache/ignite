@@ -504,9 +504,7 @@ public class ZookeeperClient implements Watcher {
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
-    List<String> getChildren(String path)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+    List<String> getChildren(String path) throws ZookeeperClientFailedException, InterruptedException {
         for (;;) {
             long connStartTime = this.connStartTime;
 
@@ -517,6 +515,25 @@ public class ZookeeperClient implements Watcher {
                 onZookeeperError(connStartTime, e);
             }
         }
+    }
+
+    /**
+     * Get children paths.
+     *
+     * @param path Path.
+     * @return Children paths.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
+    List<String> getChildrenPaths(String path) throws ZookeeperClientFailedException, InterruptedException {
+        List<String> children = getChildren(path);
+
+        ArrayList<String> paths = new ArrayList(children.size());
+
+        for (String child : children)
+            paths.add(path + "/" + child);
+
+        return paths;
     }
 
     /**

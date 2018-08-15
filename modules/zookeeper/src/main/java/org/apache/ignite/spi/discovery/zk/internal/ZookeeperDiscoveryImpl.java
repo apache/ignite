@@ -2271,24 +2271,18 @@ public class ZookeeperDiscoveryImpl {
 
         List<String> batch = new LinkedList<>();
 
-        List<String> evtChildren = client.getChildren(zkPaths.evtsPath);
+        List<String> evtChildren = client.getChildrenPaths(zkPaths.evtsPath);
 
-        for (String evtPath : evtChildren) {
-            String evtDir = zkPaths.evtsPath + "/" + evtPath;
+        for (String evtPath : evtChildren)
+            batch.addAll(client.getChildrenPaths(evtPath));
 
-            batch.addAll(ZkIgnitePaths.addParentPath(evtDir, client.getChildren(evtDir)));
-        }
+        batch.addAll(evtChildren);
 
-        batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.evtsPath, evtChildren));
+        batch.addAll(client.getChildrenPaths(zkPaths.customEvtsDir));
 
-        batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.customEvtsDir,
-            client.getChildren(zkPaths.customEvtsDir)));
+        batch.addAll(client.getChildrenPaths(zkPaths.customEvtsPartsDir));
 
-        batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.customEvtsPartsDir,
-            client.getChildren(zkPaths.customEvtsPartsDir)));
-
-        batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.customEvtsAcksDir,
-            client.getChildren(zkPaths.customEvtsAcksDir)));
+        batch.addAll(client.getChildrenPaths(zkPaths.customEvtsAcksDir));
 
         client.deleteAll(batch, -1);
 

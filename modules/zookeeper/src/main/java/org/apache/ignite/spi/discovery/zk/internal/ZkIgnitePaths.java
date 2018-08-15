@@ -17,10 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.UUID;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -206,22 +203,6 @@ class ZkIgnitePaths {
         assert partCnt >= 1 : partCnt;
 
         return partCnt;
-    }
-
-    /**
-     * Add the parent path to each element of a list.
-     *
-     * @param parent Parent path to add.
-     * @param paths List of paths.
-     * @return List of paths.
-     */
-    static List<String> addParentPath(@Nullable String parent, List<String> paths) {
-        List<String> data = new LinkedList<>();
-
-        for (String path : paths)
-            data.add(parent != null ? parent + "/" + path : path);
-
-        return data;
     }
 
     /**
