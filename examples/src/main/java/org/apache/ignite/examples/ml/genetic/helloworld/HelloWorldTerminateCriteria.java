@@ -81,5 +81,4 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
 
         igniteLog.info(sbPhrase.toString());
     }
-
 }

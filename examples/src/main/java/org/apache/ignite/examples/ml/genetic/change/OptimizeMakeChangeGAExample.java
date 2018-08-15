@@ -72,7 +72,6 @@ public class OptimizeMakeChangeGAExample {
             sAmountChange = System.getProperty("AMOUNTCHANGE");
 
         try {
-
             // Create an Ignite instance as you would in any other use case.
             Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
 
@@ -144,7 +143,6 @@ public class OptimizeMakeChangeGAExample {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-
     }
 
     /**
@@ -192,5 +190,4 @@ public class OptimizeMakeChangeGAExample {
 
         return list;
     }
-
 }

@@ -95,6 +95,5 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
         }
 
         return totalNumOfCoins;
-
     }
 }

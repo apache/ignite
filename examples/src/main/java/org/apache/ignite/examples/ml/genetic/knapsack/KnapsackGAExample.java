@@ -48,7 +48,6 @@ public class KnapsackGAExample {
         System.setProperty("IGNITE_QUIET", "false");
 
         try {
-
             // Create an Ignite instance as you would in any other use case.
             Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
 
@@ -84,7 +83,6 @@ public class KnapsackGAExample {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-
     }
 
     /**
@@ -310,5 +308,4 @@ public class KnapsackGAExample {
 
         return list;
     }
-
 }

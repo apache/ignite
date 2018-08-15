@@ -43,7 +43,7 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  * fitness score.
  */
 public class MovieFitnessFunction implements IFitnessFunction {
-    /** genes */
+    /** genres */
     private List<String> genres;
 
     /**

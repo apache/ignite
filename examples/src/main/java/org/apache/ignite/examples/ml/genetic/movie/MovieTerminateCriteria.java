@@ -79,7 +79,5 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
             igniteLog.info("Genres: " + ((Movie)gene.getVal()).getGenre().toString());
             igniteLog.info("IMDB Rating: " + ((Movie)gene.getVal()).getImdbRating());
         }
-
     }
-
 }

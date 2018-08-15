@@ -76,6 +76,5 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
             igniteLog.info("Coin Type: " + ((Coin)gene.getVal()).getCoinType().toString());
             igniteLog.info("Number of Coins: " + ((Coin)gene.getVal()).getNumOfCoins());
         }
-
     }
 }
