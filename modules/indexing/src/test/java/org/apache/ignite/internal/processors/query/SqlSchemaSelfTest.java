@@ -36,13 +36,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class SqlSchemaSelfTest extends GridCommonAbstractTest {
     /** Person cache name. */
-    private static final String CACHE_PERSON = "PersonCache";
+    protected static final String CACHE_PERSON = "PersonCache";
 
     /** Person cache 2 name. */
-    private static final String CACHE_PERSON_2 = "PersonCache2";
+    protected static final String CACHE_PERSON_2 = "PersonCache2";
 
     /** Node. */
-    private IgniteEx node;
+    protected IgniteEx node;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -61,10 +61,10 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testQueryWithoutCacheOnPublicSchema() throws Exception {
+    public void testQueryWithoutCacheOnDefaultSchema() throws Exception {
         GridQueryProcessor qryProc = node.context().query();
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema("PUBLIC");
+        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema(QueryUtils.DFLT_SCHEMA);
 
         List<List<?>> res = qryProc.querySqlFields(qry, true).getAll();
 
@@ -161,7 +161,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testSchemaChangeOnCacheWithPublicSchema() throws Exception {
+    public void testSchemaChangeOnCacheWithDefaultSchema() throws Exception {
         IgniteCache<PersonKey, Person> cache = node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
             .setIndexedTypes(PersonKey.class, Person.class)

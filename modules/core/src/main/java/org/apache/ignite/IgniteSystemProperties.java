@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -945,6 +946,12 @@ public final class IgniteSystemProperties {
      * Number of concurrent operation for evict partitions.
      */
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
+
+    /**
+     * SQL schema name that should be used as default one.
+     * H2 uses "PUBLIC" as default.
+     */
+    public static final String IGNITE_DEFAULT_SQL_SCHEMA = "IGNITE_DEFAULT_SQL_SCHEMA";
 
     /**
      * Enforces singleton.
