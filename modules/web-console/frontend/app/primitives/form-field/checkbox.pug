@@ -15,7 +15,7 @@
     limitations under the License.
 
 mixin form-field__checkbox({ label, model, name, disabled, required, tip })
-    .form-field.form-field__checkbox
+    .form-field.form-field__checkbox(id=`{{ ${name} }}Field`)
         +form-field__label({ label, name, required })
             +form-field__tooltip({ title: tip, options: tipOpts })
 

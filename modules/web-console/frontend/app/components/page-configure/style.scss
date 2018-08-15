@@ -224,6 +224,10 @@ list-editable .pc-form-group__text-title {
         flex-basis: calc(100% / 1);
     }
 
+    &>.pc-form-grid-col-free {
+        flex: 1;
+    }
+
     @media(max-width: 992px) {
         &>.pc-form-grid-col-10 {
             flex-basis: calc(25%);
