@@ -733,27 +733,20 @@ public class GridMapQueryExecutor {
                         throw new QueryCancelledException();
                     }
 
-                    qryIdx++;
-                }
-
-                if (lazy) {
-                    // Detach connection before send first pages results to
-                    // setup connection for worker.
-                    ObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.detach();
-
-                    worker.detachedConnection(detachedConn);
-                }
-
-                int maxIdx = qryIdx;
-                for (int i = 0; i < maxIdx; ++i) {
                     // Send the first page.
-                    sendNextPage(nodeRess, node, qr, i, segmentId, pageSize);
+                    sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
+
+                    qryIdx++;
                 }
 
                 // All request results are in the memory in result set already, so it's ok to release partitions.
                 if (!lazy)
                     releaseReservations();
                 else if (!qr.isAllClosed()) {
+                    ObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.detach();
+
+                    worker.detachedConnection(detachedConn);
+
                     worker.queryContext(qctx);
 
                     GridH2Table.detachReadLocksFromCurrentThread(H2Utils.session(conn));

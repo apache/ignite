@@ -157,6 +157,9 @@ class MapQueryResults {
                     cancel.cancel();
             }
         }
+
+        if (lazyWorker != null)
+            lazyWorker.stop(false);
     }
 
     /**

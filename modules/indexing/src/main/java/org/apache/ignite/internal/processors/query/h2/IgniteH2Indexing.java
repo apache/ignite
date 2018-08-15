@@ -302,7 +302,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Override protected ObjectPool<H2ConnectionWrapper> initialValue() {
             return new ObjectPool<>(
                 IgniteH2Indexing.this::newConnectionWrapper,
-                5,
+                50,
                 IgniteH2Indexing.this::closePooledConnectionWrapper);
         }
     };
@@ -425,7 +425,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private H2ConnectionWrapper newConnectionWrapper() {
         try {
-            return new H2ConnectionWrapper(DriverManager.getConnection(dbUrl));
+            Connection c = DriverManager.getConnection(dbUrl);
+            log.info("+++ new " + c);
+            return new H2ConnectionWrapper(c);
         } catch (SQLException e) {
             throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
         }
@@ -435,6 +437,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection wrapper to close.
      */
     private void closePooledConnectionWrapper(H2ConnectionWrapper conn) {
+        log.info("+++ closePooledConnectionWrapper " + conn);
         U.closeQuiet(conn);
     }
 

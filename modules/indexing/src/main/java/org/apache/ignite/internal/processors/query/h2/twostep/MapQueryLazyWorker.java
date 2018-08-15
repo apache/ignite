@@ -100,6 +100,7 @@ public class MapQueryLazyWorker extends GridWorker {
 
     /** {@inheritDoc} */
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+        log.info("+++ LAZY start");
         LAZY_WORKER.set(this);
 
         ACTIVE_CNT.increment();
@@ -134,6 +135,8 @@ public class MapQueryLazyWorker extends GridWorker {
             ACTIVE_CNT.decrement();
 
             exec.unregisterLazyWorker(this);
+
+            log.info("+++ LAZY end");
         }
     }
 
@@ -183,7 +186,8 @@ public class MapQueryLazyWorker extends GridWorker {
 
             stopLatch.countDown();
 
-            detached.recycle();
+            if (detached != null)
+                detached.recycle();
 
             stopped = true;
         }
