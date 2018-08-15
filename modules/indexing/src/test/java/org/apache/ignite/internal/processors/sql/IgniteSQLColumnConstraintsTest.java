@@ -119,7 +119,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
         assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
 
         err = (IgniteSQLException)
-            checkSQLThrows("MERGE INTO char_table_4(id, str) VALUES(?, ?)", 2, "123456");
+            checkSQLThrows("MERGE INTO char_table_4(id, field) VALUES(?, ?)", 2, "123456");
 
         assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
     }
