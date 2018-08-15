@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -78,7 +80,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     private final AtomicBoolean delayPartExchange = new AtomicBoolean(false);
 
     /** */
-    private final TopologyChanger killSingleNode = new TopologyChanger(false, Arrays.asList(3), Arrays.asList(0, 1, 2, 4));
+    private final TopologyChanger killSingleNode = new TopologyChanger(false, Arrays.asList(3), Arrays.asList(0, 1, 2, 4),0);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -167,7 +169,16 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     public void testReadWriteSafeAfterKillTwoNodes() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
-        checkLostPartition(true, true, new TopologyChanger(false, Arrays.asList(3, 2), Arrays.asList(0, 1, 4)));
+        checkLostPartition(true, true, new TopologyChanger(false, Arrays.asList(3, 2), Arrays.asList(0, 1, 4), 0));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testReadWriteSafeAfterKillTwoNodesWithDelay() throws Exception {
+        partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
+
+        checkLostPartition(true, true, new TopologyChanger(false, Arrays.asList(3, 2), Arrays.asList(0, 1, 4), 20));
     }
 
     /**
@@ -178,7 +189,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         backups = 1;
 
-        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 2, 1), Arrays.asList(0, 4)));
+        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 2, 1), Arrays.asList(0, 4), 0));
     }
 
     /**
@@ -187,7 +198,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     public void testReadWriteSafeAfterKillCrd() throws Exception {
         partLossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
 
-        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 0), Arrays.asList(1, 2, 4)));
+        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 0), Arrays.asList(1, 2, 4), 0));
     }
 
     /**
@@ -198,7 +209,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         backups = 1;
 
-        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 2), Arrays.asList(0, 1, 4)));
+        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 2), Arrays.asList(0, 1, 4), 0));
     }
 
     /**
@@ -209,7 +220,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         backups = 1;
 
-        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 0), Arrays.asList(1, 2, 4)));
+        checkLostPartition(true, true, new TopologyChanger(true, Arrays.asList(3, 0), Arrays.asList(1, 2, 4), 0));
     }
 
     /**
@@ -408,15 +419,21 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         /** List of nodes to be alive */
         private List<Integer> aliveNodes;
 
+        /** Delay between node stops */
+        private long stopDelay;
+
         /**
          * @param delayExchange Flag for delay partition exchange.
          * @param killNodes List of nodes to kill.
          * @param aliveNodes List of nodes to be alive.
+         * @param stopDelay Delay between stopping nodes.
          */
-        public TopologyChanger(boolean delayExchange, List<Integer> killNodes, List<Integer> aliveNodes) {
+        public TopologyChanger(boolean delayExchange, List<Integer> killNodes, List<Integer> aliveNodes,
+            long stopDelay) {
             this.delayExchange = delayExchange;
             this.killNodes = killNodes;
             this.aliveNodes = aliveNodes;
+            this.stopDelay = stopDelay;
         }
 
         /**
@@ -471,8 +488,19 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             if (delayExchange)
                 delayPartExchange.set(true);
 
-            for (Integer node : killNodes)
-                grid(node).close();
+            ExecutorService executor = Executors.newFixedThreadPool(killNodes.size());
+
+            for (Integer node : killNodes) {
+                executor.submit(new Runnable() {
+                    @Override public void run() {
+                        grid(node).close();
+                    }
+                });
+
+                Thread.sleep(stopDelay);
+            }
+
+            executor.shutdown();
 
             delayPartExchange.set(false);
 
