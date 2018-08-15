@@ -431,7 +431,9 @@ public class QueryUtils {
             keyCls = Object.class;
 
         ensureClassMetadata(ctx, keyCls);
-        ensureClassMetadata(ctx, valCls);
+
+        if (valCls != null)
+            ensureClassMetadata(ctx, valCls);
 
         String simpleValType = ((valCls == null) ? typeName(qryEntity.findValueType()) : typeName(valCls));
 
