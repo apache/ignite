@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
@@ -196,7 +195,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
+    @Override public void touch(GridCacheEntryEx e) {
         if (e.detached() || e.isInternal())
             return;
 

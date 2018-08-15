@@ -138,7 +138,6 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -896,7 +895,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         continue;
                     }
                     finally {
-                        ctx0.evicts().touch(e, null);
+                        ctx0.evicts().touch(e);
 
                         ctx.shared().database().checkpointReadUnlock();
                     }
@@ -951,7 +950,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return e.peek(heap, offheap, AffinityTopologyVersion.NONE, plc);
             }
             finally {
-                ctx.evicts().touch(e, null);
+                ctx.evicts().touch(e);
             }
         }
 
@@ -2057,7 +2056,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         readerArgs);
 
                                     if (res == null)
-                                        ctx.evicts().touch(entry, topVer);
+                                        ctx.evicts().touch(entry);
                                 }
                             }
 
@@ -2072,7 +2071,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     needVer);
 
                                 if (entry != null && (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED)))
-                                    ctx.evicts().touch(entry, topVer);
+                                    ctx.evicts().touch(entry);
 
                                 if (keysSize == 1)
                                     // Safe to return because no locks are required in READ_COMMITTED mode.
@@ -2154,7 +2153,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                                 if (tx0 == null || (!tx0.implicit() &&
                                                     tx0.isolation() == READ_COMMITTED))
-                                                    ctx.evicts().touch(entry, topVer);
+                                                    ctx.evicts().touch(entry);
 
                                                 break;
                                             }
@@ -2197,7 +2196,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         GridCacheEntryEx entry = peekEx(key);
 
                                         if (entry != null)
-                                            ctx.evicts().touch(entry, topVer);
+                                            ctx.evicts().touch(entry);
                                     }
                                 }
 
@@ -2225,7 +2224,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             catch (RuntimeException | AssertionError e) {
                 if (misses != null) {
                     for (KeyCacheObject key0 : misses.keySet())
-                        ctx.evicts().touch(peekEx(key0), topVer);
+                        ctx.evicts().touch(peekEx(key0));
                 }
 
                 if (newLocalEntries != null) {
@@ -2285,7 +2284,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             entry.clearReserveForLoad(e.getValue().version());
 
                         if (needTouch)
-                            ctx.evicts().touch(entry, topVer);
+                            ctx.evicts().touch(entry);
                     }
                 }
             }
@@ -3632,7 +3631,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 log.debug("Got removed entry during loadCache (will ignore): " + entry);
         }
         finally {
-            ctx.evicts().touch(entry, topVer);
+            ctx.evicts().touch(entry);
         }
 
         CU.unwindEvicts(ctx);

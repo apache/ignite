@@ -79,7 +79,7 @@ public class ExchangeDiscoveryEvents {
     public void processEvents(GridDhtPartitionsExchangeFuture fut) {
         for (DiscoveryEvent evt : evts) {
             if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
-                fut.sharedContext().mvcc().removeExplicitNodeLocks(evt.eventNode().id(), fut.initialVersion());
+                fut.sharedContext().mvcc().removeExplicitNodeLocks(evt.eventNode().id());
         }
 
         if (hasServerLeft())

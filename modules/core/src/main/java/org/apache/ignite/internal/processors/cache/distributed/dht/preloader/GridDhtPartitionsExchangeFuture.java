@@ -1341,7 +1341,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         this.partReleaseFut = partReleaseFut;
 
         if (exchId.isLeft())
-            cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
+            cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId());
 
         if (log.isDebugEnabled())
             log.debug("Before waiting for partition release future: " + this);
@@ -1482,7 +1482,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             grp.preloader().unwindUndeploys();
         }
 
-        cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
+        cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId());
     }
 
     /**
@@ -3770,7 +3770,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isDone() || !enterBusy())
             return;
 
-        cctx.mvcc().removeExplicitNodeLocks(node.id(), initialVersion());
+        cctx.mvcc().removeExplicitNodeLocks(node.id());
 
         try {
             onDiscoveryEvent(new IgniteRunnable() {

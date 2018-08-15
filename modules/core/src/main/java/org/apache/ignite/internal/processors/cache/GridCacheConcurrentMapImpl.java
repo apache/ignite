@@ -202,8 +202,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
                 if (touch)
                     ctx.evicts().touch(
-                        cur,
-                        topVer);
+                        cur
+                    );
             }
 
             assert Math.abs(sizeChange) <= 1;
