@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ChromosomeCriteria;
@@ -47,21 +46,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class OptimizeMakeChangeGAExample {
-    /** Ignite instance */
-    private static Ignite ignite = null;
-
-    /** GAGrid */
-    private static GAGrid gaGrid = null;
-
-    /** GAConfiguration */
-    private static GAConfiguration gaConfig = null;
-
-    /** amount of change */
-    private static String sAmountChange = null;
-
-    /** Ignite logger */
-    private static IgniteLogger logger = null;
-
     /**
      * Executes example.
      *
@@ -72,68 +56,66 @@ public class OptimizeMakeChangeGAExample {
     public static void main(String args[]) {
         System.setProperty("IGNITE_QUIET", "false");
 
-        sAmountChange = "75";
+        String sAmountChange = "75";
 
-        StringBuffer sbErrorMessage = new StringBuffer();
-        sbErrorMessage.append("AMOUNTCHANGE System property not set. Please provide a valid value between 1 and 99. ");
-        sbErrorMessage.append(" ");
-        sbErrorMessage.append("IE: -DAMOUNTCHANGE=75");
-        sbErrorMessage.append("\n");
-        sbErrorMessage.append("Using default value: 75");
+        StringBuffer sbErrorMsg = new StringBuffer();
+        sbErrorMsg.append("AMOUNTCHANGE System property not set. Please provide a valid value between 1 and 99. ");
+        sbErrorMsg.append(" ");
+        sbErrorMsg.append("IE: -DAMOUNTCHANGE=75");
+        sbErrorMsg.append("\n");
+        sbErrorMsg.append("Using default value: 75");
 
         //Check if -DAMOUNTCHANGE JVM system variable is provided
-        if (System.getProperty("AMOUNTCHANGE") == null) {
-            System.out.println(sbErrorMessage);
-        }
-        else {
+        if (System.getProperty("AMOUNTCHANGE") == null)
+            System.out.println(sbErrorMsg);
+        else
             sAmountChange = System.getProperty("AMOUNTCHANGE");
-        }
 
         try {
 
-            //Create an Ignite instance as you would in any other use case.
-            ignite = Ignition.start("examples/config/example-ignite.xml");
+            // Create an Ignite instance as you would in any other use case.
+            Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
 
-            logger = ignite.log();
+            IgniteLogger log = ignite.log();
 
             // Create GAConfiguration
-            gaConfig = new GAConfiguration();
+            GAConfiguration gaCfg = new GAConfiguration();
 
             // set Gene Pool
             List<Gene> genes = getGenePool();
 
             // set selection method
-            gaConfig.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTON_METHOD_ELETISM);
-            gaConfig.setElitismCnt(10);
+            gaCfg.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTON_METHOD_ELETISM);
+            gaCfg.setElitismCnt(10);
 
             // set the Chromosome Length to '4' since we have 4 coins.
-            gaConfig.setChromosomeLen(4);
+            gaCfg.setChromosomeLen(4);
 
             // set population size
-            gaConfig.setPopulationSize(500);
+            gaCfg.setPopulationSize(500);
 
             // initialize gene pool
-            gaConfig.setGenePool(genes);
+            gaCfg.setGenePool(genes);
 
             // set Truncate Rate
-            gaConfig.setTruncateRate(.10);
+            gaCfg.setTruncateRate(.10);
 
             // set Cross Over Rate
-            gaConfig.setCrossOverRate(.50);
+            gaCfg.setCrossOverRate(.50);
 
             // set Mutation Rate
-            gaConfig.setMutationRate(.50);
+            gaCfg.setMutationRate(.50);
 
             // create and set Fitness function
             OptimizeMakeChangeFitnessFunction function = new OptimizeMakeChangeFitnessFunction(new Integer(sAmountChange));
-            gaConfig.setFitnessFunction(function);
+            gaCfg.setFitnessFunction(function);
 
             // create and set TerminateCriteria
             OptimizeMakeChangeTerminateCriteria termCriteria = new OptimizeMakeChangeTerminateCriteria(ignite);
 
             ChromosomeCriteria chromosomeCriteria = new ChromosomeCriteria();
 
-            List values = new ArrayList();
+            List<String> values = new ArrayList<>();
 
             values.add("coinType=QUARTER");
             values.add("coinType=DIME");
@@ -142,27 +124,25 @@ public class OptimizeMakeChangeGAExample {
 
             chromosomeCriteria.setCriteria(values);
 
-            gaConfig.setChromosomeCriteria(chromosomeCriteria);
-            gaConfig.setTerminateCriteria(termCriteria);
+            gaCfg.setChromosomeCriteria(chromosomeCriteria);
+            gaCfg.setTerminateCriteria(termCriteria);
 
             // initialize GAGrid
-            gaGrid = new GAGrid(gaConfig, ignite);
+            GAGrid gaGrid = new GAGrid(gaCfg, ignite);
 
-            logger.info("##########################################################################################");
+            log.info("##########################################################################################");
 
-            logger.info("Calculating optimal set of coins where amount of change is " + sAmountChange);
+            log.info("Calculating optimal set of coins where amount of change is " + sAmountChange);
 
-            logger.info("##########################################################################################");
+            log.info("##########################################################################################");
 
-            Chromosome fittestChromosome = gaGrid.evolve();
+            gaGrid.evolve();
 
             Ignition.stop(true);
-
-            ignite = null;
-
         }
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
 
     }
@@ -170,12 +150,12 @@ public class OptimizeMakeChangeGAExample {
     /**
      * Helper routine to initialize Gene pool
      *
-     * In typical usecase genes may be stored in database.
+     * In typical use case genes may be stored in database.
      *
      * @return List of Genes
      */
     private static List<Gene> getGenePool() {
-        List<Gene> list = new ArrayList();
+        List<Gene> list = new ArrayList<>();
 
         Gene quarterGene1 = new Gene(new Coin(Coin.CoinType.QUARTER, 3));
         Gene quarterGene2 = new Gene(new Coin(Coin.CoinType.QUARTER, 2));

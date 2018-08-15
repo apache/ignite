@@ -32,39 +32,38 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  */
 public class HelloWorldTerminateCriteria implements ITerminateCriteria {
     /** Ignite logger */
-    private IgniteLogger igniteLogger = null;
+    private IgniteLogger igniteLog;
     /** Ignite instance */
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /**
      * @param ignite Ignite
      */
     public HelloWorldTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;
-        this.igniteLogger = ignite.log();
+        this.igniteLog = ignite.log();
     }
 
     /**
      * @param fittestChromosome Most fit chromosome at for the nth generation
      * @param averageFitnessScore Average fitness score as of the nth generation
-     * @param currentGeneration Current generation
+     * @param currGeneration Current generation
      * @return Boolean value
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
-        int currentGeneration) {
+        int currGeneration) {
         boolean isTerminate = true;
 
-        igniteLogger.info("##########################################################################################");
-        igniteLogger.info("Generation: " + currentGeneration);
-        igniteLogger.info("Fittest is Chromosome Key: " + fittestChromosome);
-        igniteLogger.info("Chromosome: " + fittestChromosome);
+        igniteLog.info("##########################################################################################");
+        igniteLog.info("Generation: " + currGeneration);
+        igniteLog.info("Fittest is Chromosome Key: " + fittestChromosome);
+        igniteLog.info("Chromosome: " + fittestChromosome);
         printPhrase(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
-        igniteLogger.info("Avg Chromosome Fitness: " + averageFitnessScore);
-        igniteLogger.info("##########################################################################################");
+        igniteLog.info("Avg Chromosome Fitness: " + averageFitnessScore);
+        igniteLog.info("##########################################################################################");
 
-        if (!(fittestChromosome.getFitnessScore() > 10)) {
+        if (!(fittestChromosome.getFitnessScore() > 10))
             isTerminate = false;
-        }
 
         return isTerminate;
     }
@@ -75,13 +74,12 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
      * @param genes List of Genes.
      */
     private void printPhrase(List<Gene> genes) {
+        StringBuilder sbPhrase = new StringBuilder();
 
-        StringBuffer sbPhrase = new StringBuffer();
-
-        for (Gene gene : genes) {
+        for (Gene gene : genes)
             sbPhrase.append(((Character)gene.getVal()).toString());
-        }
-        igniteLogger.info(sbPhrase.toString());
+
+        igniteLog.info(sbPhrase.toString());
     }
 
 }

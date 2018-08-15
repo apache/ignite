@@ -24,25 +24,30 @@ import java.io.Serializable;
  */
 public class Coin implements Serializable {
     /** Define Coin Type */
-    public static enum CoinType {
-        PENNY, QUARTER, NICKEL, DIME
+    public enum CoinType {
+        /** */
+        PENNY,
+        /** */
+        QUARTER,
+        /** */
+        NICKEL,
+        /** */
+        DIME
     }
 
-    ;
-
     /** number of coins */
-    private int numberOfCoins = 0;
+    private int numOfCoins;
 
     /** CoinType */
-    private CoinType coinType = null;
+    private CoinType coinType;
 
     /**
      * @param coinType Type of coin
-     * @param numberOfCoins Number of coins
+     * @param numOfCoins Number of coins
      */
-    public Coin(CoinType coinType, int numberOfCoins) {
+    Coin(CoinType coinType, int numOfCoins) {
         this.coinType = coinType;
-        this.numberOfCoins = numberOfCoins;
+        this.numOfCoins = numOfCoins;
     }
 
     /**
@@ -50,17 +55,17 @@ public class Coin implements Serializable {
      *
      * @return Number of coins
      */
-    public int getNumberOfCoins() {
-        return numberOfCoins;
+    public int getNumOfCoins() {
+        return numOfCoins;
     }
 
     /**
      * Set the number of coins
      *
-     * @param numberOfCoins Number of coins
+     * @param numOfCoins Number of coins
      */
-    public void setNumberOfCoins(int numberOfCoins) {
-        this.numberOfCoins = numberOfCoins;
+    public void setNumOfCoins(int numOfCoins) {
+        this.numOfCoins = numOfCoins;
     }
 
     /**
@@ -83,7 +88,7 @@ public class Coin implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Coin [numberOfCoins=" + numberOfCoins + ", coinType=" + coinType + "]";
+        return "Coin [numOfCoins=" + numOfCoins + ", coinType=" + coinType + "]";
     }
 
 }

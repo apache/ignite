@@ -32,39 +32,38 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  */
 public class MovieTerminateCriteria implements ITerminateCriteria {
     /** Ignite logger */
-    private IgniteLogger igniteLogger = null;
+    private IgniteLogger igniteLog;
     /** Ignite instance */
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /**
      * @param ignite Ignite instance.
      */
     public MovieTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;
-        this.igniteLogger = ignite.log();
+        this.igniteLog = ignite.log();
 
     }
 
     /**
      * @param fittestChromosome Most fit chromosome at for the nth generation
      * @param averageFitnessScore Average fitness score as of the nth generation
-     * @param currentGeneration Current generation
+     * @param currGeneration Current generation
      * @return Boolean value
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
-        int currentGeneration) {
+        int currGeneration) {
         boolean isTerminate = true;
 
-        igniteLogger.info("##########################################################################################");
-        igniteLogger.info("Generation: " + currentGeneration);
-        igniteLogger.info("Fittest is Chromosome Key: " + fittestChromosome);
-        igniteLogger.info("Chromsome: " + fittestChromosome);
+        igniteLog.info("##########################################################################################");
+        igniteLog.info("Generation: " + currGeneration);
+        igniteLog.info("Fittest is Chromosome Key: " + fittestChromosome);
+        igniteLog.info("Chromosome: " + fittestChromosome);
         printMovies(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
-        igniteLogger.info("##########################################################################################");
+        igniteLog.info("##########################################################################################");
 
-        if (!(fittestChromosome.getFitnessScore() > 32)) {
+        if (!(fittestChromosome.getFitnessScore() > 32))
             isTerminate = false;
-        }
 
         return isTerminate;
     }
@@ -76,9 +75,9 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
      */
     private void printMovies(List<Gene> genes) {
         for (Gene gene : genes) {
-            igniteLogger.info("Name: " + ((Movie)gene.getVal()).getName().toString());
-            igniteLogger.info("Genres: " + ((Movie)gene.getVal()).getGenre().toString());
-            igniteLogger.info("IMDB Rating: " + ((Movie)gene.getVal()).getImdbRating());
+            igniteLog.info("Name: " + ((Movie)gene.getVal()).getName());
+            igniteLog.info("Genres: " + ((Movie)gene.getVal()).getGenre().toString());
+            igniteLog.info("IMDB Rating: " + ((Movie)gene.getVal()).getImdbRating());
         }
 
     }

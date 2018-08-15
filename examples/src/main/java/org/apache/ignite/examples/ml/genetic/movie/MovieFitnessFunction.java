@@ -44,7 +44,7 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  */
 public class MovieFitnessFunction implements IFitnessFunction {
     /** genes */
-    private List<String> genres = null;
+    private List<String> genres;
 
     /**
      * @param genres List of genres
@@ -60,23 +60,21 @@ public class MovieFitnessFunction implements IFitnessFunction {
      * @return Fitness score
      */
     public double evaluate(List<Gene> genes) {
-
         double score = 0;
-        List<String> dups = new ArrayList();
+        List<String> duplicates = new ArrayList<>();
         int badSolution = 1;
 
-        for (int i = 0; i < genes.size(); i++) {
-            Movie movie = (Movie)genes.get(i).getVal();
-            if (dups.contains(movie.getName())) {
+        for (Gene gene : genes) {
+            Movie movie = (Movie)gene.getVal();
+            if (duplicates.contains(movie.getName()))
                 badSolution = 0;
-            }
-            else {
-                dups.add(movie.getName());
-            }
+            else
+                duplicates.add(movie.getName());
+
             double genreScore = getGenreScore(movie);
-            if (genreScore == 0) {
+            if (genreScore == 0)
                 badSolution = 0;
-            }
+
             score = (score + movie.getImdbRating()) + (genreScore);
         }
         return (score * badSolution);
@@ -92,9 +90,8 @@ public class MovieFitnessFunction implements IFitnessFunction {
         double genreScore = 0;
 
         for (String genre : this.genres) {
-            if (movie.getGenre().contains(genre)) {
+            if (movie.getGenre().contains(genre))
                 genreScore = genreScore + 1;
-            }
         }
         return genreScore;
     }

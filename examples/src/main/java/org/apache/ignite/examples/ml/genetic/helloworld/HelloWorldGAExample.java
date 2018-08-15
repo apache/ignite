@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
@@ -43,13 +42,6 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
  * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class HelloWorldGAExample {
-    /** Ignite instance */
-    private static Ignite ignite = null;
-    /** GAGrid */
-    private static GAGrid gaGrid = null;
-    /** GAConfiguration */
-    private static GAConfiguration gaConfig = null;
-
     /**
      * Executes example.
      *
@@ -60,43 +52,41 @@ public class HelloWorldGAExample {
 
         try {
 
-            //Create an Ignite instance as you would in any other use case.
-
-            ignite = Ignition.start("examples/config/example-ignite.xml");
+            // Create an Ignite instance as you would in any other use case.
+            Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
 
             // Create GAConfiguration
-            gaConfig = new GAConfiguration();
+            GAConfiguration gaCfg = new GAConfiguration();
 
             // set Gene Pool
             List<Gene> genes = getGenePool();
 
             // set the Chromosome Length to '11' since 'HELLO WORLD' contains 11 characters.
-            gaConfig.setChromosomeLen(11);
+            gaCfg.setChromosomeLen(11);
 
             // initialize gene pool
-            gaConfig.setGenePool(genes);
+            gaCfg.setGenePool(genes);
 
             // create and set Fitness function
             HelloWorldFitnessFunction function = new HelloWorldFitnessFunction();
-            gaConfig.setFitnessFunction(function);
+            gaCfg.setFitnessFunction(function);
 
             // create and set TerminateCriteria
             HelloWorldTerminateCriteria termCriteria = new HelloWorldTerminateCriteria(ignite);
-            gaConfig.setTerminateCriteria(termCriteria);
+            gaCfg.setTerminateCriteria(termCriteria);
 
             ignite.log();
 
-            gaGrid = new GAGrid(gaConfig, ignite);
+            GAGrid gaGrid = new GAGrid(gaCfg, ignite);
+
             // evolve the population
-            Chromosome fittestChromosome = gaGrid.evolve();
+            gaGrid.evolve();
 
             Ignition.stop(true);
-
-            ignite = null;
-
         }
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
 
     }
@@ -104,21 +94,22 @@ public class HelloWorldGAExample {
     /**
      * Helper routine to initialize Gene pool
      *
-     * In typical usecase genes may be stored in database.
+     * In typical use case genes may be stored in database.
      *
      * @return List<Gene>
      */
     private static List<Gene> getGenePool() {
-        List<Gene> list = new ArrayList();
+        List<Gene> list = new ArrayList<>();
 
         char[] chars = {
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
             'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' '};
 
-        for (int i = 0; i < chars.length; i++) {
-            Gene gene = new Gene(new Character(chars[i]));
+        for (char aChar : chars) {
+            Gene gene = new Gene(aChar);
             list.add(gene);
         }
+
         return list;
     }
 

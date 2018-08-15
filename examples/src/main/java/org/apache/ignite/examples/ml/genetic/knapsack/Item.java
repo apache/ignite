@@ -26,7 +26,7 @@ public class Item implements Serializable {
     /** weight of item in lbs. */
     private double weight;
     /** value of item */
-    private double value;
+    private double val;
     /** name of item */
     private String name;
 
@@ -53,15 +53,15 @@ public class Item implements Serializable {
      *
      * @return Value
      */
-    public double getValue() {
-        return value;
+    public double getVal() {
+        return val;
     }
 
     /**
-     * @param value Value
+     * @param val Value
      */
-    public void setValue(double value) {
-        this.value = value;
+    public void setVal(double val) {
+        this.val = val;
     }
 
     /**
@@ -84,7 +84,7 @@ public class Item implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Item [weight=" + weight + ", value=" + value + ", name=" + name + "]";
+        return "Item [weight=" + weight + ", value=" + val + ", name=" + name + "]";
     }
 
 }

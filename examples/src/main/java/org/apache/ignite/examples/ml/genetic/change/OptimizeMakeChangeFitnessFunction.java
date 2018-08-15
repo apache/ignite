@@ -32,7 +32,7 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  */
 public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
     /** target amount */
-    int targetAmount = 0;
+    private int targetAmount;
 
     /**
      * @param targetAmount Amount of change
@@ -48,19 +48,16 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
      * @return Fitness value
      */
     public double evaluate(List<Gene> genes) {
-
         int changeAmount = getAmountOfChange(genes);
         int totalCoins = getTotalNumberOfCoins(genes);
         int changeDifference = Math.abs(targetAmount - changeAmount);
 
         double fitness = (99 - changeDifference);
 
-        if (changeAmount == targetAmount) {
+        if (changeAmount == targetAmount)
             fitness += 100 - (10 * totalCoins);
-        }
 
         return fitness;
-
     }
 
     /**
@@ -70,15 +67,15 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
      * @return Amount of change
      */
     private int getAmountOfChange(List<Gene> genes) {
-        Gene quarterGene = (Gene)genes.get(0);
-        Gene dimeGene = (Gene)genes.get(1);
-        Gene nickelGene = (Gene)genes.get(2);
-        Gene pennyGene = (Gene)genes.get(3);
+        Gene quarterGene = genes.get(0);
+        Gene dimeGene = genes.get(1);
+        Gene nickelGene = genes.get(2);
+        Gene pennyGene = genes.get(3);
 
-        int numQuarters = ((Coin)quarterGene.getVal()).getNumberOfCoins();
-        int numDimes = ((Coin)dimeGene.getVal()).getNumberOfCoins();
-        int numNickels = ((Coin)nickelGene.getVal()).getNumberOfCoins();
-        int numPennies = ((Coin)pennyGene.getVal()).getNumberOfCoins();
+        int numQuarters = ((Coin)quarterGene.getVal()).getNumOfCoins();
+        int numDimes = ((Coin)dimeGene.getVal()).getNumOfCoins();
+        int numNickels = ((Coin)nickelGene.getVal()).getNumOfCoins();
+        int numPennies = ((Coin)pennyGene.getVal()).getNumOfCoins();
 
         return (numQuarters * 25) + (numDimes * 10) + (numNickels * 5) + numPennies;
     }
@@ -90,15 +87,14 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
      * @return Number of coins
      */
     private int getTotalNumberOfCoins(List<Gene> genes) {
-
-        int totalNumberOfCoins = 0;
+        int totalNumOfCoins = 0;
 
         for (Gene gene : genes) {
-            int numberOfCoins = ((Coin)gene.getVal()).getNumberOfCoins();
-            totalNumberOfCoins = totalNumberOfCoins + numberOfCoins;
-
+            int numOfCoins = ((Coin)gene.getVal()).getNumOfCoins();
+            totalNumOfCoins = totalNumOfCoins + numOfCoins;
         }
-        return totalNumberOfCoins;
+
+        return totalNumOfCoins;
 
     }
 }
