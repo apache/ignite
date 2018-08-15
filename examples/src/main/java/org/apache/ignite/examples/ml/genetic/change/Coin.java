@@ -20,10 +20,10 @@ package org.apache.ignite.examples.ml.genetic.change;
 import java.io.Serializable;
 
 /**
- * POJO to model a coin
+ * POJO to model a coin.
  */
 public class Coin implements Serializable {
-    /** Define Coin Type */
+    /** Define Coin Type. */
     public enum CoinType {
         /** */
         PENNY,
@@ -35,15 +35,17 @@ public class Coin implements Serializable {
         DIME
     }
 
-    /** number of coins */
+    /** Number of coins. */
     private int numOfCoins;
 
-    /** CoinType */
+    /** Coin type. */
     private CoinType coinType;
 
     /**
-     * @param coinType Type of coin
-     * @param numOfCoins Number of coins
+     * Create instance.
+     *
+     * @param coinType Type of coin.
+     * @param numOfCoins Number of coins.
      */
     Coin(CoinType coinType, int numOfCoins) {
         this.coinType = coinType;
@@ -51,36 +53,36 @@ public class Coin implements Serializable {
     }
 
     /**
-     * Retrieve the number of coins
+     * Retrieve the number of coins.
      *
-     * @return Number of coins
+     * @return Number of coins.
      */
     public int getNumOfCoins() {
         return numOfCoins;
     }
 
     /**
-     * Set the number of coins
+     * Set the number of coins.
      *
-     * @param numOfCoins Number of coins
+     * @param numOfCoins Number of coins.
      */
     public void setNumOfCoins(int numOfCoins) {
         this.numOfCoins = numOfCoins;
     }
 
     /**
-     * Retrieve Coin type
+     * Retrieve Coin type.
      *
-     * @return Coin type
+     * @return Coin type.
      */
     public CoinType getCoinType() {
         return coinType;
     }
 
     /**
-     * Set Coin type
+     * Set Coin type.
      *
-     * @param coinType Coin Type
+     * @param coinType Coin type.
      */
     public void setCoinType(CoinType coinType) {
         this.coinType = coinType;
@@ -90,5 +92,4 @@ public class Coin implements Serializable {
     @Override public String toString() {
         return "Coin [numOfCoins=" + numOfCoins + ", coinType=" + coinType + "]";
     }
-
 }

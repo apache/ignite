@@ -26,19 +26,21 @@ import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
- * Represents the terminate condition for Knapsack Genetic algorithm
- *
- * Class terminates Genetic algorithm when once GA Grid has performed 30 generations.
+ * Represents the terminate condition for {@link KnapsackGAExample}.
+ * <p>
+ * Class terminates Genetic algorithm when once GA Grid has performed 30 generations.</p>
  */
 public class KnapsackTerminateCriteria implements ITerminateCriteria {
-    /** Ignite instance */
+    /** Ignite instance. */
     private Ignite ignite;
 
-    /** Ignite logger */
+    /** Ignite logger. */
     private IgniteLogger igniteLog;
 
     /**
-     * @param ignite Ignite
+     * Create class instance.
+     *
+     * @param ignite Ignite instance.
      */
     public KnapsackTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;
@@ -46,10 +48,12 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     * @param fittestChromosome Most fit chromosome at for the nth generation
-     * @param averageFitnessScore Average fitness score as of the nth generation
-     * @param currGeneration Current generation
-     * @return Boolean value
+     * Check whether termination condition is met.
+     *
+     * @param fittestChromosome Most fit chromosome at for the nth generation.
+     * @param averageFitnessScore Average fitness score as of the nth generation.
+     * @param currGeneration Current generation.
+     * @return Status whether condition is met or not.
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currGeneration) {
@@ -72,8 +76,10 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     * @param genes List of Genes
-     * @return double value
+     * Calculate total weight.
+     *
+     * @param genes List of Genes.
+     * @return Calculated value.
      */
     private double calculateTotalWeight(List<Gene> genes) {
         double totalWeight = 0;
@@ -84,9 +90,9 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     * Helper to print items in knapsack
+     * Helper to print items in knapsack.
      *
-     * @param genes List of Genes
+     * @param genes List of Genes.
      */
     private void printItems(List<Gene> genes) {
         for (Gene gene : genes) {

@@ -22,30 +22,27 @@ import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.IFitnessFunction;
 
 /**
- * This example demonstrates how to create a IFitnessFunction <br/>
- *
- * Your IFitness function will vary depending on your particular use case. <br/>
- *
- * For this fitness function, we simply want to calculate the value of  <br/>
- *
- * an individual solution relative to other solutions. <br/>
+ * This example demonstrates how to create a {@link IFitnessFunction}.
+ * <p>
+ * Your fitness function will vary depending on your particular use case. For this fitness function, we simply want
+ * to calculate the value of an individual solution relative to other solutions.</p>
  */
 public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
-    /** target amount */
+    /** Target amount. */
     private int targetAmount;
 
     /**
-     * @param targetAmount Amount of change
+     * @param targetAmount Amount of change.
      */
     public OptimizeMakeChangeFitnessFunction(int targetAmount) {
         this.targetAmount = targetAmount;
     }
 
     /**
-     * Calculate fitness
+     * Calculate fitness.
      *
-     * @param genes Genes
-     * @return Fitness value
+     * @param genes List of genes.
+     * @return Fitness value.
      */
     public double evaluate(List<Gene> genes) {
         int changeAmount = getAmountOfChange(genes);
@@ -61,10 +58,10 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
     }
 
     /**
-     * Calculate amount of change
+     * Calculate amount of change.
      *
-     * @param genes Genes
-     * @return Amount of change
+     * @param genes List of genes.
+     * @return Amount of change.
      */
     private int getAmountOfChange(List<Gene> genes) {
         Gene quarterGene = genes.get(0);
@@ -81,10 +78,10 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
     }
 
     /**
-     * Return the total number of coins
+     * Return the total number of coins.
      *
-     * @param genes Genes
-     * @return Number of coins
+     * @param genes List of genes.
+     * @return Number of coins.
      */
     private int getTotalNumberOfCoins(List<Gene> genes) {
         int totalNumOfCoins = 0;

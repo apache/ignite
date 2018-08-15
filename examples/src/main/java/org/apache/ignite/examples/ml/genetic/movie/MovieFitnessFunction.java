@@ -23,41 +23,34 @@ import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.IFitnessFunction;
 
 /**
- * This example demonstrates how to create a IFitnessFunction
- *
- * Your IFitness function will vary depending on your particular use case.
- *
- * For this fitness function, we simply want to calculate the value of
- *
- * an individual solution relative to other solutions.
- *
- *
- * To do this, we simply increase fitness score by number of times
- *
- * genre is found in list of movies.
- *
- * In addition, we increase score by fictional IMDB rating.
- *
- * If there are duplicate movies in selection, we automatically apply a '0'
- *
- * fitness score.
+ * This example demonstrates how to create a {@link IFitnessFunction}.
+ * <p>
+ * Your fitness function will vary depending on your particular use case. For this fitness function, we want
+ * to calculate the value of an individual solution relative to other solutions.</p>
+ * <p>
+ * To do this, we increase fitness score by number of times genre is found in list of movies. In addition,
+ * we increase score by fictional IMDB rating.</p>
+ * <p>
+ * If there are duplicate movies in selection, we automatically apply a '0' fitness score.</p>
  */
 public class MovieFitnessFunction implements IFitnessFunction {
-    /** genres */
+    /** Genres. */
     private List<String> genres;
 
     /**
-     * @param genres List of genres
+     * Create instance.
+     *
+     * @param genres List of genres.
      */
     public MovieFitnessFunction(List<String> genres) {
         this.genres = genres;
     }
 
     /**
-     * Calculate fitness score
+     * Calculate fitness score.
      *
-     * @param genes List of Genes
-     * @return Fitness score
+     * @param genes List of Genes.
+     * @return Fitness score.
      */
     public double evaluate(List<Gene> genes) {
         double score = 0;
@@ -81,10 +74,10 @@ public class MovieFitnessFunction implements IFitnessFunction {
     }
 
     /**
-     * helper to calculate genre score
+     * Helper to calculate genre score.
      *
-     * @param movie Move
-     * @return Genre score
+     * @param movie Movie.
+     * @return Genre score.
      */
     private double getGenreScore(Movie movie) {
         double genreScore = 0;

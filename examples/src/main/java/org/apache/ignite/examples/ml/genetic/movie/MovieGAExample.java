@@ -22,36 +22,45 @@ import java.util.List;
 import java.util.StringTokenizer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
- * This example demonstrates how to use the GAGrid framework.
- *
- * In this example, we utilize GA Grid to calculate an optimal set of movies based on our interests in various genres
- * (ie: Action, Comedy, and Romance)
- *
- *
- * How To Run:
- *
- * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.movie.MovieGAExample" -DGENRES=Action,Comedy
- *
- * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
- * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup in
- * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
+ * In this example, we utilize {@link GAGrid} framework to calculate an optimal set of movies based on our interests
+ * in various genres (ie: Action, Comedy, and Romance).
+ * <p>
+ * Code in this example launches Ignite grid, prepares simple test data (gene pool) and configures GA grid.</p>
+ * <p>
+ * After that it launches the process of evolution on GA grid and outputs the progress and results.</p>
+ * <p>
+ * You can change the test data and parameters of GA grid used in this example and re-run it to explore
+ * this functionality further.</p>
+ * <p>
+ * How to run from command line:</p>
+ * <p>
+ * {@code mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.movie.MovieGAExample"
+ * -DGENRES=Action,Comedy}</p>
+ * <p>
+ * Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
+ * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
+ * <p>
+ * Alternatively you can run ExampleNodeStartup in another JVM which will start node with
+ * {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class MovieGAExample {
     /**
      * Executes example.
      *
-     * Specify value for -DGENRES JVM system variable
+     * Specify value for {@code -DGENRES} JVM system variable.
      *
      * @param args Command line arguments, none required.
      */
-
     public static void main(String args[]) {
+        System.out.println(">>> Movie GA grid example started.");
+
         System.setProperty("IGNITE_QUIET", "false");
 
         List<String> genres = new ArrayList<>();
@@ -76,13 +85,13 @@ public class MovieGAExample {
             genres.add(genre);
         }
 
-        // Create GAConfiguration
+        // Create GAConfiguration.
         GAConfiguration gaCfg = new GAConfiguration();
 
-        // set Gene Pool
+        // Set Gene Pool.
         List<Gene> genes = getGenePool();
 
-        // Define Chromosome
+        // Define Chromosome.
         gaCfg.setChromosomeLen(3);
         gaCfg.setPopulationSize(100);
         gaCfg.setGenePool(genes);
@@ -91,14 +100,14 @@ public class MovieGAExample {
         gaCfg.setMutationRate(.50);
         gaCfg.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_TRUNCATION);
 
-        //Create fitness function
+        // Create fitness function.
         MovieFitnessFunction function = new MovieFitnessFunction(genres);
 
-        //set fitness function
+        // Set fitness function.
         gaCfg.setFitnessFunction(function);
 
         try {
-            //Create an Ignite instance as you would in any other use case.
+            // Create an Ignite instance as you would in any other use case.
             Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
 
             MovieTerminateCriteria termCriteria = new MovieTerminateCriteria(ignite);
@@ -108,9 +117,14 @@ public class MovieGAExample {
             GAGrid gaGrid = new GAGrid(gaCfg, ignite);
 
             ignite.log();
-            gaGrid.evolve();
+
+            Chromosome chromosome = gaGrid.evolve();
+
+            System.out.println(">>> Evolution result: " + chromosome);
 
             Ignition.stop(true);
+
+            System.out.println(">>> Movie GA grid example completed.");
         }
         catch (Exception e) {
             System.out.println(e.getMessage());

@@ -26,17 +26,19 @@ import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
- * Represents the terminate condition for Movie Genetic algorithm  <br/>
- *
- * Class terminates Genetic algorithm when fitnessScore > 32  <br/>
+ * Represents the terminate condition for {@link MovieGAExample}.
+ * <p>
+ * Class terminates Genetic algorithm when fitness score is more than 32.</p>
  */
 public class MovieTerminateCriteria implements ITerminateCriteria {
-    /** Ignite logger */
+    /** Ignite logger. */
     private IgniteLogger igniteLog;
-    /** Ignite instance */
+    /** Ignite instance. */
     private Ignite ignite;
 
     /**
+     * Create class instance.
+     *
      * @param ignite Ignite instance.
      */
     public MovieTerminateCriteria(Ignite ignite) {
@@ -46,10 +48,12 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     * @param fittestChromosome Most fit chromosome at for the nth generation
-     * @param averageFitnessScore Average fitness score as of the nth generation
-     * @param currGeneration Current generation
-     * @return Boolean value
+     * Check whether termination condition is met.
+     *
+     * @param fittestChromosome Most fit chromosome at for the nth generation.
+     * @param averageFitnessScore Average fitness score as of the nth generation.
+     * @param currGeneration Current generation.
+     * @return Status whether condition is met or not.
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currGeneration) {
@@ -69,9 +73,9 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     * Helper to print change detail
+     * Helper to print change details.
      *
-     * @param genes List of Genes
+     * @param genes List of Genes.
      */
     private void printMovies(List<Gene> genes) {
         for (Gene gene : genes) {

@@ -23,23 +23,19 @@ import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.IFitnessFunction;
 
 /**
- * This example demonstrates how to create a IFitnessFunction
- *
- * Your IFitnessFunction will vary depending on your particular use case.
- *
- * For this fitness function, we simply want to calculate the weight and value of
- *
- * an individual solution relative to other solutions.
- *
- *
- * To do this, we total the weights and values of all the genes within a chromosome.
+ * This example demonstrates how to create a {@link IFitnessFunction}.
+ * <p>
+ * Your fitness function will vary depending on your particular use case. For this fitness function, we simply want
+ * to calculate the weight and value of an individual solution relative to other solutions.</p>
+ * <p>
+ * To do this, we total the weights and values of all the genes within a chromosome.</p>
  */
 public class KnapsackFitnessFunction implements IFitnessFunction {
     /**
-     * Calculate fitness
+     * Calculate fitness.
      *
-     * @param genes List of Genes
-     * @return Fitness value
+     * @param genes List of Genes.
+     * @return Fitness value.
      */
     public double evaluate(List<Gene> genes) {
         double val = 0;

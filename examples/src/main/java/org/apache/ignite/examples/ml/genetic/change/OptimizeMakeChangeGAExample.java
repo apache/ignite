@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ChromosomeCriteria;
@@ -29,43 +30,52 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
- * This example demonstrates how to use the GAGrid framework. <br/>
- *
- * This example is inspired by JGAP's "Minimize Make Change" example. <br/>
- *
+ * This example demonstrates how to use the {@link GAGrid} framework. It is inspired by
+ * <a href="https://github.com/martin-steghoefer/jgap/blob/master/examples/src/examples/MinimizingMakeChange.java">
+ * JGAP's "Minimize Make Change"</a> example.
+ * <p>
  * In this example, the objective is to calculate the minimum number of coins that equal user specified amount of
- * change
- *
- * ie: -DAMOUNTCHANGE
- *
- * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.change.OptimizeMakeChangeGAExample"
- * -DAMOUNTCHANGE=75
- *
- * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
- * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup in
- * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
+ * change ie: {@code -DAMOUNTCHANGE}.</p>
+ * <p>
+ * {@code mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.change.OptimizeMakeChangeGAExample"
+ * -DAMOUNTCHANGE=75}</p>
+ * <p>
+ * Code in this example launches Ignite grid, prepares simple test data (gene pool) and configures GA grid.</p>
+ * <p>
+ * After that it launches the process of evolution on GA grid and outputs the progress and results.</p>
+ * <p>
+ * You can change the test data and parameters of GA grid used in this example and re-run it to explore
+ * this functionality further.</p>
+ * <p>
+ * Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
+ * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
+ * <p>
+ *  Alternatively you can run ExampleNodeStartup in another JVM which will start node with
+ *  {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class OptimizeMakeChangeGAExample {
     /**
      * Executes example.
      *
-     * Specify value for -DAMOUNTCHANGE JVM system variable
+     * Specify value for {@code -DAMOUNTCHANGE} JVM system variable.
      *
      * @param args Command line arguments, none required.
      */
     public static void main(String args[]) {
+        System.out.println(">>> OptimizeMakeChange GA grid example started.");
+
         System.setProperty("IGNITE_QUIET", "false");
 
         String sAmountChange = "75";
 
-        StringBuffer sbErrorMsg = new StringBuffer();
+        StringBuilder sbErrorMsg = new StringBuilder();
         sbErrorMsg.append("AMOUNTCHANGE System property not set. Please provide a valid value between 1 and 99. ");
         sbErrorMsg.append(" ");
         sbErrorMsg.append("IE: -DAMOUNTCHANGE=75");
         sbErrorMsg.append("\n");
         sbErrorMsg.append("Using default value: 75");
 
-        //Check if -DAMOUNTCHANGE JVM system variable is provided
+        //Check if -DAMOUNTCHANGE JVM system variable is provided.
         if (System.getProperty("AMOUNTCHANGE") == null)
             System.out.println(sbErrorMsg);
         else
@@ -77,39 +87,39 @@ public class OptimizeMakeChangeGAExample {
 
             IgniteLogger log = ignite.log();
 
-            // Create GAConfiguration
+            // Create GAConfiguration.
             GAConfiguration gaCfg = new GAConfiguration();
 
-            // set Gene Pool
+            // Set Gene Pool.
             List<Gene> genes = getGenePool();
 
-            // set selection method
+            // Set selection method.
             gaCfg.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTON_METHOD_ELETISM);
             gaCfg.setElitismCnt(10);
 
-            // set the Chromosome Length to '4' since we have 4 coins.
+            // Set the Chromosome Length to '4' since we have 4 coins.
             gaCfg.setChromosomeLen(4);
 
-            // set population size
+            // Set population size.
             gaCfg.setPopulationSize(500);
 
-            // initialize gene pool
+            // Initialize gene pool.
             gaCfg.setGenePool(genes);
 
-            // set Truncate Rate
+            // Set Truncate Rate.
             gaCfg.setTruncateRate(.10);
 
-            // set Cross Over Rate
+            // Set Cross Over Rate.
             gaCfg.setCrossOverRate(.50);
 
-            // set Mutation Rate
+            // Set Mutation Rate.
             gaCfg.setMutationRate(.50);
 
-            // create and set Fitness function
+            // Create and set Fitness function.
             OptimizeMakeChangeFitnessFunction function = new OptimizeMakeChangeFitnessFunction(new Integer(sAmountChange));
             gaCfg.setFitnessFunction(function);
 
-            // create and set TerminateCriteria
+            // Create and set TerminateCriteria.
             OptimizeMakeChangeTerminateCriteria termCriteria = new OptimizeMakeChangeTerminateCriteria(ignite);
 
             ChromosomeCriteria chromosomeCriteria = new ChromosomeCriteria();
@@ -126,7 +136,7 @@ public class OptimizeMakeChangeGAExample {
             gaCfg.setChromosomeCriteria(chromosomeCriteria);
             gaCfg.setTerminateCriteria(termCriteria);
 
-            // initialize GAGrid
+            // Initialize GAGrid.
             GAGrid gaGrid = new GAGrid(gaCfg, ignite);
 
             log.info("##########################################################################################");
@@ -135,9 +145,13 @@ public class OptimizeMakeChangeGAExample {
 
             log.info("##########################################################################################");
 
-            gaGrid.evolve();
+            Chromosome chromosome = gaGrid.evolve();
+
+            System.out.println(">>> Evolution result: " + chromosome);
 
             Ignition.stop(true);
+
+            System.out.println(">>> OptimizeMakeChange GA grid example completed.");
         }
         catch (Exception e) {
             System.out.println(e.getMessage());
@@ -146,11 +160,11 @@ public class OptimizeMakeChangeGAExample {
     }
 
     /**
-     * Helper routine to initialize Gene pool
+     * Helper routine to initialize Gene pool.
      *
      * In typical use case genes may be stored in database.
      *
-     * @return List of Genes
+     * @return List of Genes.
      */
     private static List<Gene> getGenePool() {
         List<Gene> list = new ArrayList<>();

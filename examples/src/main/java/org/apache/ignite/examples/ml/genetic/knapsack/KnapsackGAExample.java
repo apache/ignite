@@ -21,63 +21,78 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 
 /**
- * This example demonstrates how to use the GAGrid framework.
- *
- * Example demonstrates Knapsack Problem:  Given a set of 30 items, each with a weight and a value, pack 10 items in
- * knapsack so that the total weight is less <= 20 lbs. and the total value is maximized.
- *
- *
- * How To Run:
- *
- * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.knapsack.KnapsackGAExample"
- *
- * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
- * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup in
- * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
+ * This example demonstrates how to use the {@link GAGrid} framework. It shows working with Knapsack Problem:
+ * Given a set of 30 items, each with a weight and a value, pack 10 items in knapsack so that the total weight
+ * is less or equal 20 lbs, and the total value is maximized.
+ * <p>
+ * Code in this example launches Ignite grid, prepares simple test data (gene pool) and configures GA grid.</p>
+ * <p>
+ * After that it launches the process of evolution on GA grid and outputs the progress and results.</p>
+ * <p>
+ * You can change the test data and parameters of GA grid used in this example and re-run it to explore
+ * this functionality further.</p>
+ * <p>
+ * How to run from command line:</p>
+ * <p>
+ * {@code mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.knapsack.KnapsackGAExample"}</p>
+ * <p>
+ * Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
+ * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
+ * <p>
+ * Alternatively you can run ExampleNodeStartup in another JVM which will start node with
+ * {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class KnapsackGAExample {
     /**
      * @param args Command line arguments, none required.
      */
     public static void main(String args[]) {
+        System.out.println(">>> Knapsack GA grid example started.");
+
         System.setProperty("IGNITE_QUIET", "false");
 
         try {
             // Create an Ignite instance as you would in any other use case.
             Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
 
-            // Create GAConfiguration
+            // Create GAConfiguration.
             GAConfiguration gaCfg = new GAConfiguration();
 
-            // set Gene Pool
+            // Set Gene Pool.
             List<Gene> genes = getGenePool();
 
-            // set the Chromosome Length to '10' since our knapsack may contain a total of 10 items.
+            // Set the Chromosome Length to '10' since our knapsack may contain a total of 10 items.
             gaCfg.setChromosomeLen(10);
 
-            // initialize gene pool
+            // Initialize gene pool.
             gaCfg.setGenePool(genes);
 
-            // create and set Fitness function
+            // Create and set Fitness function.
             KnapsackFitnessFunction function = new KnapsackFitnessFunction();
             gaCfg.setFitnessFunction(function);
 
-            // create and set TerminateCriteria
+            // Create and set TerminateCriteria.
             KnapsackTerminateCriteria termCriteria = new KnapsackTerminateCriteria(ignite);
             gaCfg.setTerminateCriteria(termCriteria);
 
             ignite.log();
 
             GAGrid gaGrid = new GAGrid(gaCfg, ignite);
-            // evolve the population
-            gaGrid.evolve();
+
+            // Evolve the population.
+            Chromosome chromosome = gaGrid.evolve();
+
+            System.out.println(">>> Evolution result: " + chromosome);
 
             Ignition.stop(true);
+
+            System.out.println(">>> Knapsack GA grid example completed.");
         }
         catch (Exception e) {
             System.out.println(e.getMessage());
@@ -86,11 +101,11 @@ public class KnapsackGAExample {
     }
 
     /**
-     * Helper routine to initialize Gene pool
+     * Helper routine to initialize Gene pool.
      *
      * In typical use case genes may be stored in database.
      *
-     * @return List<Gene>
+     * @return List of Gene objects.
      */
     private static List<Gene> getGenePool() {
         List<Gene> list = new ArrayList<>();

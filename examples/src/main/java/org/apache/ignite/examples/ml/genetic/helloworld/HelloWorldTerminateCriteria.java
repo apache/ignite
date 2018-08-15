@@ -26,18 +26,20 @@ import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
- * Represents the terminate condition for HelloWorld Genetic algorithm
- *
- * Class terminates Genetic algorithm when fitnessScore > 10
+ * Represents the terminate condition for {@link HelloWorldGAExample}.
+ * <p>
+ * Class terminates Genetic algorithm when fitness score is more than 10.</p>
  */
 public class HelloWorldTerminateCriteria implements ITerminateCriteria {
-    /** Ignite logger */
+    /** Ignite logger. */
     private IgniteLogger igniteLog;
-    /** Ignite instance */
+    /** Ignite instance. */
     private Ignite ignite;
 
     /**
-     * @param ignite Ignite
+     * Create class instance.
+     *
+     * @param ignite Ignite instance.
      */
     public HelloWorldTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;
@@ -45,10 +47,12 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     * @param fittestChromosome Most fit chromosome at for the nth generation
-     * @param averageFitnessScore Average fitness score as of the nth generation
-     * @param currGeneration Current generation
-     * @return Boolean value
+     * Check whether termination condition is met.
+     *
+     * @param fittestChromosome Most fit chromosome at for the nth generation.
+     * @param averageFitnessScore Average fitness score as of the nth generation.
+     * @param currGeneration Current generation.
+     * @return Status whether condition is met or not.
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currGeneration) {
@@ -69,7 +73,7 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     * Helper to print Phrase.
+     * Helper to print phrase.
      *
      * @param genes List of Genes.
      */
