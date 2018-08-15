@@ -70,7 +70,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             metaPageId,
             reuseList,
             grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS,
-            grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS);
+            grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS,
+            grp.shared().kernalContext().failure());
 
         assert rowStore != null;
 

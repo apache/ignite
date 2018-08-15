@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -58,6 +59,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
     /** */
     protected static final int DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK = 0x20;
+
+    /** Flag indicating transformation operation was performed. */
+    protected static final int DHT_ATOMIC_TRANSFORM_OP_FLAG_MASK = 0x40;
 
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
@@ -225,6 +229,13 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
+     * @return {@code True} if transformation operation was performed.
+     */
+    public final boolean transformOperation() {
+        return isFlag(DHT_ATOMIC_TRANSFORM_OP_FLAG_MASK);
+    }
+
+    /**
      * @return {@code True} if on response flag changed.
      */
     public boolean onResponse() {
@@ -268,6 +279,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      * @param addPrevVal If {@code true} adds previous value.
      * @param prevVal Previous value.
      * @param updateCntr Update counter.
+     * @param cacheOp Corresponding cache operation.
      */
     public abstract void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
@@ -277,8 +289,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
-        long updateCntr
-    );
+        long updateCntr,
+        GridCacheOperation cacheOp);
 
     /**
      * @param key Key to add.

@@ -65,6 +65,11 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean onheapCacheEnabled() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
@@ -189,6 +194,8 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
                 assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
+                cache.get(key);
+
                 assertNotNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
                 checkNoValue(aff, key);
@@ -239,7 +246,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         for (int g = 0; g < gridCount(); g++) {
             IgniteEx ig = grid(g);
 
-            GridCacheAdapter cache0 = internalCache(ig, null);
+            GridCacheAdapter cache0 = internalCache(ig, DEFAULT_CACHE_NAME);
 
             GridCacheEntryEx e = cache0.peekEx(key);
 
@@ -354,6 +361,8 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
                 assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
+                cache.get(key);
+
                 assertNotNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
                 checkHasValue(aff, key);
@@ -369,7 +378,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         for (int g = 0; g < gridCount(); g++) {
             IgniteEx ig = grid(g);
 
-            GridCacheAdapter cache0 = internalCache(ig, null);
+            GridCacheAdapter cache0 = internalCache(ig, DEFAULT_CACHE_NAME);
 
             GridCacheEntryEx e = cache0.peekEx(key);
 

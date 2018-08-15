@@ -89,7 +89,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                             +checkbox('Use processors', '$item.Adaptive.loadProbe.CPU.useProcessors', '"loadBalancingAdaptiveCPUUseProcessors"', "divide each node's CPU load by the number of processors on that node")
                                         .details-row
                                             +number-min-max-step('Processor coefficient:', '$item.Adaptive.loadProbe.CPU.processorCoefficient',
-                                                '"loadBalancingAdaptiveCPUProcessorCoefficient"', 'true', '1', '0.001', '1', '0.05', 'Coefficient of every CPU')
+                                                '"loadBalancingAdaptiveCPUProcessorCoefficient"', 'true', '1', '0.001', '1', '0.001', 'Coefficient of every CPU')
                                     .panel-details(ng-show='$item.Adaptive.loadProbe.kind === "ProcessingTime"')
                                         .details-row
                                             +checkbox('Use average', '$item.Adaptive.loadProbe.ProcessingTime.useAverage', '"loadBalancingAdaptiveJobUseAverage"', 'Use average execution time vs. current')

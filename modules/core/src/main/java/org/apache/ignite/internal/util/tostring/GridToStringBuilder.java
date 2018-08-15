@@ -985,6 +985,7 @@ public class GridToStringBuilder {
             if (newStr)
                 return s;
 
+            // Called from another GTSB.toString(), so this string is already in the buffer and shouldn't be returned.
             return "";
         }
         finally {
@@ -1052,7 +1053,6 @@ public class GridToStringBuilder {
         }
         // Specifically catching all exceptions.
         catch (Exception e) {
-
             // Remove entry from cache to avoid potential memory leak
             // in case new class loader got loaded under the same identity hash.
             classCache.remove(cls.getName() + System.identityHashCode(cls.getClassLoader()));
@@ -1605,7 +1605,7 @@ public class GridToStringBuilder {
     private static String toStringImpl(String str, SBLimitedLength buf, Object[] propNames, Object[] propVals,
         boolean[] propSens, int propCnt) {
 
-        buf.setLength(0);
+        boolean newStr = buf.length() == 0;
 
         if (str != null)
             buf.a(str).a(" ");
@@ -1616,7 +1616,11 @@ public class GridToStringBuilder {
 
         buf.a(']');
 
-        return buf.toString();
+        if (newStr)
+            return buf.toString();
+
+        // Called from another GTSB.toString(), so this string is already in the buffer and shouldn't be returned.
+        return "";
     }
 
     /**

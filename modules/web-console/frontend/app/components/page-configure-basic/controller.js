@@ -81,8 +81,11 @@ export default class PageConfigureBasicController {
     }
 
     _uiCanExit($transition$) {
-        if ($transition$.options().custom.justIDUpdate) return true;
+        if ($transition$.options().custom.justIDUpdate)
+            return true;
+
         $transition$.onSuccess({}, () => this.reset());
+
         return Observable.forkJoin(
             this.ConfigureState.state$.pluck('edit', 'changes').take(1),
             this.clusterID$.switchMap((id) => this.ConfigureState.state$.let(this.ConfigSelectors.selectClusterShortCaches(id))).take(1),
@@ -178,7 +181,9 @@ export default class PageConfigureBasicController {
     }
 
     save(download = false) {
-        if (this.form.$invalid) return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
+        if (this.form.$invalid)
+            return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
+
         this.ConfigureState.dispatchAction((download ? basicSaveAndDownload : basicSave)(cloneDeep(this.clonedCluster)));
     }
 
@@ -189,7 +194,7 @@ export default class PageConfigureBasicController {
 
     confirmAndReset() {
         return this.Confirm.confirm('Are you sure you want to undo all changes for current cluster?')
-        .then(() => this.reset())
-        .catch(() => {});
+            .then(() => this.reset())
+            .catch(() => {});
     }
 }

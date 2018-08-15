@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import base2 from 'views/base2.pug';
 import pageConfigureAdvancedClusterComponent from '../page-configure-advanced/components/page-configure-advanced-cluster/component';
 import pageConfigureAdvancedModelsComponent from '../page-configure-advanced/components/page-configure-advanced-models/component';
 import pageConfigureAdvancedCachesComponent from '../page-configure-advanced/components/page-configure-advanced-caches/component';
@@ -26,13 +25,15 @@ import {Observable} from 'rxjs/Observable';
 const idRegex = `new|[a-z0-9]+`;
 
 const shortCachesResolve = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
-    if ($transition$.params().clusterID === 'new') return Promise.resolve();
+    if ($transition$.params().clusterID === 'new')
+        return Promise.resolve();
+
     return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
-    .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
-    .switchMap((cluster) => {
-        return etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id});
-    })
-    .toPromise();
+        .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
+        .switchMap((cluster) => {
+            return etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id});
+        })
+        .toPromise();
 }];
 
 function registerStates($stateProvider) {
@@ -43,11 +44,6 @@ function registerStates($stateProvider) {
         permission: 'configuration',
         url: '/configuration',
         onEnter: ['ConfigureState', (ConfigureState) => ConfigureState.dispatchAction({type: 'PRELOAD_STATE', state: {}})],
-        views: {
-            '@': {
-                template: base2
-            }
-        },
         resolve: {
             _shortClusters: ['ConfigEffects', ({etp}) => {
                 return etp('LOAD_USER_CLUSTERS');
@@ -140,17 +136,19 @@ function registerStates($stateProvider) {
         component: pageConfigureAdvancedCachesComponent.name,
         resolve: {
             _shortCachesAndModels: ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
-                if ($transition$.params().clusterID === 'new') return Promise.resolve();
+                if ($transition$.params().clusterID === 'new')
+                    return Promise.resolve();
+
                 return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
-                .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
-                .map((cluster) => {
-                    return Promise.all([
-                        etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id}),
-                        etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster._id}),
-                        etp('LOAD_SHORT_IGFSS', {ids: cluster.igfss, clusterID: cluster._id})
-                    ]);
-                })
-                .toPromise();
+                    .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
+                    .map((cluster) => {
+                        return Promise.all([
+                            etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id}),
+                            etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster._id}),
+                            etp('LOAD_SHORT_IGFSS', {ids: cluster.igfss, clusterID: cluster._id})
+                        ]);
+                    })
+                    .toPromise();
             }]
         },
         resolvePolicy: {
@@ -166,7 +164,9 @@ function registerStates($stateProvider) {
         resolve: {
             _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
                 const {clusterID, cacheID} = $transition$.params();
-                if (cacheID === 'new') return Promise.resolve();
+                if (cacheID === 'new')
+                    return Promise.resolve();
+
                 return etp('LOAD_CACHE', {cacheID});
             }]
         },
@@ -186,16 +186,18 @@ function registerStates($stateProvider) {
         permission: 'configuration',
         resolve: {
             _shortCachesAndModels: ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
-                if ($transition$.params().clusterID === 'new') return Promise.resolve();
+                if ($transition$.params().clusterID === 'new')
+                    return Promise.resolve();
+
                 return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
-                .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
-                .map((cluster) => {
-                    return Promise.all([
-                        etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id}),
-                        etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster._id})
-                    ]);
-                })
-                .toPromise();
+                    .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
+                    .map((cluster) => {
+                        return Promise.all([
+                            etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id}),
+                            etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster._id})
+                        ]);
+                    })
+                    .toPromise();
             }]
         },
         resolvePolicy: {
@@ -210,7 +212,10 @@ function registerStates($stateProvider) {
         resolve: {
             _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
                 const {clusterID, modelID} = $transition$.params();
-                if (modelID === 'new') return Promise.resolve();
+
+                if (modelID === 'new')
+                    return Promise.resolve();
+
                 return etp('LOAD_MODEL', {modelID});
             }]
         },
@@ -228,15 +233,17 @@ function registerStates($stateProvider) {
         permission: 'configuration',
         resolve: {
             _shortIGFSs: ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
-                if ($transition$.params().clusterID === 'new') return Promise.resolve();
+                if ($transition$.params().clusterID === 'new')
+                    return Promise.resolve();
+
                 return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
-                .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
-                .map((cluster) => {
-                    return Promise.all([
-                        etp('LOAD_SHORT_IGFSS', {ids: cluster.igfss, clusterID: cluster._id})
-                    ]);
-                })
-                .toPromise();
+                    .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
+                    .map((cluster) => {
+                        return Promise.all([
+                            etp('LOAD_SHORT_IGFSS', {ids: cluster.igfss, clusterID: cluster._id})
+                        ]);
+                    })
+                    .toPromise();
             }]
         },
         resolvePolicy: {
@@ -252,7 +259,10 @@ function registerStates($stateProvider) {
         resolve: {
             _igfs: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
                 const {clusterID, igfsID} = $transition$.params();
-                if (igfsID === 'new') return Promise.resolve();
+
+                if (igfsID === 'new')
+                    return Promise.resolve();
+
                 return etp('LOAD_IGFS', {igfsID});
             }]
         },
