@@ -23,7 +23,7 @@ import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModelFormat;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNModelFormat;
-import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.HammingDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
@@ -83,8 +83,8 @@ public class CollectionsTest {
         test(new KMeansModel(new Vector[] {}, new ManhattanDistance()),
             new KMeansModel(new Vector[] {}, new HammingDistance()));
 
-        test(new KNNModelFormat(1, new ManhattanDistance(), KNNStrategy.SIMPLE),
-            new KNNModelFormat(2, new ManhattanDistance(), KNNStrategy.SIMPLE));
+        test(new KNNModelFormat(1, new ManhattanDistance(), NNStrategy.SIMPLE),
+            new KNNModelFormat(2, new ManhattanDistance(), NNStrategy.SIMPLE));
 
         test(new KNNClassificationModel(null).withK(1), new KNNClassificationModel(null).withK(2));
 

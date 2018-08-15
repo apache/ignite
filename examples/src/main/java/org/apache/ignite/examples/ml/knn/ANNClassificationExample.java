@@ -28,41 +28,52 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.knn.NNClassificationModel;
+import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run kNN multi-class classification trainer over distributed dataset.
+ * Run ANN multi-class classification trainer over distributed dataset.
  *
  * @see KNNClassificationTrainer
  */
-public class KNNClassificationExample {
+public class ANNClassificationExample {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         System.out.println();
-        System.out.println(">>> kNN multi-class classification algorithm over cached dataset usage example started.");
+        System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                KNNClassificationExample.class.getSimpleName(), () -> {
+                ANNClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                KNNClassificationTrainer trainer = new KNNClassificationTrainer();
+                ANNClassificationTrainer trainer = new ANNClassificationTrainer()
+                    .withDistance(new ManhattanDistance())
+                    .withK(50)
+                    .withMaxIterations(1000)
+                    .withSeed(1234L)
+                    .withEpsilon(1e-2);
+
+                long startTrainingTime = System.currentTimeMillis();
 
                 NNClassificationModel knnMdl = trainer.fit(
                     ignite,
                     dataCache,
                     (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
-                ).withK(3)
+                ).withK(5)
                     .withDistanceMeasure(new EuclideanDistance())
                     .withStrategy(NNStrategy.WEIGHTED);
+
+                long endTrainingTime = System.currentTimeMillis();
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> | Prediction\t| Ground Truth\t|");
@@ -71,13 +82,19 @@ public class KNNClassificationExample {
                 int amountOfErrors = 0;
                 int totalAmount = 0;
 
+                long totalPredictionTime = 0L;
+
                 try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
                     for (Cache.Entry<Integer, double[]> observation : observations) {
                         double[] val = observation.getValue();
                         double[] inputs = Arrays.copyOfRange(val, 1, val.length);
                         double groundTruth = val[0];
 
+                        long startPredictionTime = System.currentTimeMillis();
                         double prediction = knnMdl.apply(new DenseVector(inputs));
+                        long endPredictionTime = System.currentTimeMillis();
+
+                        totalPredictionTime += (endPredictionTime - startPredictionTime);
 
                         totalAmount++;
                         if (groundTruth != prediction)
@@ -88,8 +105,12 @@ public class KNNClassificationExample {
 
                     System.out.println(">>> ---------------------------------");
 
+                    System.out.println("Training costs = " + (endTrainingTime - startTrainingTime));
+                    System.out.println("Prediction costs = " + totalPredictionTime);
+
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
                     System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
+                    System.out.println(totalAmount);
                 }
             });
 
@@ -111,10 +132,23 @@ public class KNNClassificationExample {
 
         IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
 
-        for (int i = 0; i < data.length; i++)
-            cache.put(i, data[i]);
+        for (int k = 0; k < 10; k++) { // multiplies the Iris dataset k times.
+            for (int i = 0; i < data.length; i++)
+                cache.put(k * 10000 + i, mutate(data[i], k));
+        }
 
         return cache;
+    }
+
+    /**
+     * Tiny changing of data depending on k parameter.
+     * @param datum The vector data.
+     * @param k The passed parameter.
+     * @return The changed vector data.
+     */
+    private static double[] mutate(double[] datum, int k) {
+        for (int i = 0; i < datum.length; i++) datum[i] += k / 100000;
+        return datum;
     }
 
     /** The Iris dataset. */

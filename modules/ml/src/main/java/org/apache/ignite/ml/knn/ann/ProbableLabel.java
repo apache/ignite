@@ -15,15 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.classification;
+package org.apache.ignite.ml.knn.ann;
 
-/** This enum contains settings for kNN algorithm. */
-public enum KNNStrategy {
-    /** The default strategy. All k neighbors have the same weight which is independent
-     * on their distance to the query point.*/
-    SIMPLE,
+import java.util.TreeMap;
 
-    /** A refinement of the k-NN classification algorithm is to weigh the contribution of each of the k neighbors
-     * according to their distance to the query point, giving greater weight to closer neighbors. */
-    WEIGHTED
+/**
+ * The special class for fuzzy labels presenting the probability distribution
+ * over the class labels.
+ */
+public class ProbableLabel {
+    /** Key is label, value is probability to be this class */
+    TreeMap<Double, Double> clsLbls;
+
+    /**
+     * The key is class label,
+     * the value is the probability to be an item of this class.
+     *
+     * @param clsLbls Class labels.
+     */
+    public ProbableLabel(TreeMap<Double, Double> clsLbls) {
+        this.clsLbls = clsLbls;
+    }
 }
