@@ -22,9 +22,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
 import org.jetbrains.annotations.NotNull;
 
@@ -43,7 +42,7 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
     private final IgniteBiPredicate<K, V> filter;
 
     /** Feature extractor. */
-    private final IgniteBiFunction<K, V, double[]> featureExtractor;
+    private final IgniteBiFunction<K, V, Vector> featureExtractor;
 
     /** Label extractor. */
     private final IgniteBiFunction<K, V, L> lbExtractor;
@@ -61,7 +60,7 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
      * @param mdl Model for inference.
      */
     public LocalLabelPairCursor(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter,
-                                IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
+                                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
                                 Model<Vector, L> mdl) {
         this.upstreamMap = upstreamMap;
         this.filter = filter;
@@ -114,12 +113,12 @@ public class LocalLabelPairCursor<L, K, V, T> implements LabelPairCursor<L> {
             K key = nextEntry.getKey();
             V val = nextEntry.getValue();
 
-            double[] features = featureExtractor.apply(key, val);
+            Vector features = featureExtractor.apply(key, val);
             L lb = lbExtractor.apply(key, val);
 
             nextEntry = null;
 
-            return new LabelPair<>(lb, mdl.apply(new DenseLocalOnHeapVector(features)));
+            return new LabelPair<>(lb, mdl.apply(features));
         }
 
         /**

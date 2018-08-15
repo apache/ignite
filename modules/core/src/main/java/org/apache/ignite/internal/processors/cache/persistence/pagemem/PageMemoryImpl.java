@@ -177,6 +177,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Number of random pages that will be picked for eviction. */
     public static final int RANDOM_PAGES_EVICT_NUM = 5;
 
+    /** Try again tag. */
+    public static final int TRY_AGAIN_TAG = -1;
+
     /** Tracking io. */
     private static final TrackingPageIO trackingIO = TrackingPageIO.VERSIONS.latest();
 
@@ -377,9 +380,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
             writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker, log);
         else if (throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
-            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker, false);
+            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker, false, log);
         else if (throttlingPlc == ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY)
-            writeThrottle = new PagesWriteThrottle(this, null, stateChecker, true);
+            writeThrottle = new PagesWriteThrottle(this, null, stateChecker, true, log);
     }
 
     /** {@inheritDoc} */
@@ -1118,7 +1121,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             }
         }
         else
-            return copyPageForCheckpoint(absPtr, fullId, outBuf, pageSingleAcquire, tracker) ? tag : null;
+            return copyPageForCheckpoint(absPtr, fullId, outBuf, pageSingleAcquire, tracker) ? tag : TRY_AGAIN_TAG;
     }
 
     /**
@@ -1128,6 +1131,8 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param pageSingleAcquire Page is acquired only once. We don't pin the page second time (until page will not be
      * copied) in case checkpoint temporary buffer is used.
      * @param tracker Checkpoint statistics tracker.
+     *
+     * @return False if someone else holds lock on page.
      */
     private boolean copyPageForCheckpoint(
         long absPtr,
@@ -1139,7 +1144,16 @@ public class PageMemoryImpl implements PageMemoryEx {
         assert absPtr != 0;
         assert PageHeader.isAcquired(absPtr);
 
-        rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+        boolean locked = rwLock.tryWriteLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+        if (!locked) {
+            // We release the page only once here because this page will be copied sometime later and
+            // will be released properly then.
+            if (!pageSingleAcquire)
+                PageHeader.releasePage(absPtr);
+
+            return false;
+        }
 
         try {
             long tmpRelPtr = PageHeader.tempBufferPointer(absPtr);
@@ -2345,6 +2359,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert getReadHoldCount() > 0 || getWriteHoldCount() > 0;
 
             Integer tag = partGenerationMap.get(new GroupPartitionId(grpId, partId));
+
+            assert tag == null || tag >= 0 : "Negative tag=" + tag;
 
             return tag == null ? INIT_PART_GENERATION : tag;
         }

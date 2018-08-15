@@ -22,8 +22,8 @@ import java.util.Map;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
@@ -36,7 +36,8 @@ import static org.junit.Assert.assertTrue;
 /** */
 public class GDBTrainerTest {
     /** */
-    @Test public void testFitRegression() {
+    @Test
+    public void testFitRegression() {
         int size = 100;
         double[] xs = new double[size];
         double[] ys = new double[size];
@@ -51,10 +52,12 @@ public class GDBTrainerTest {
             learningSample.put(i, new double[] {xs[i], ys[i]});
         }
 
-        DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0);
-        Model<Vector, Double> model = trainer.fit(
+        DatasetTrainer<Model<Vector, Double>, Double> trainer
+            = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0).withUseIndex(true);
+
+        Model<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
-            (k, v) -> new double[] {v[0]},
+            (k, v) -> VectorUtils.of(v[0]),
             (k, v) -> v[1]
         );
 
@@ -62,15 +65,19 @@ public class GDBTrainerTest {
         for (int j = 0; j < size; j++) {
             double x = xs[j];
             double y = ys[j];
-            double p = model.apply(VectorUtils.of(x));
+            double p = mdl.apply(VectorUtils.of(x));
             mse += Math.pow(y - p, 2);
         }
         mse /= size;
 
         assertEquals(0.0, mse, 0.0001);
 
-        assertTrue(model instanceof ModelsComposition);
-        ModelsComposition composition = (ModelsComposition) model;
+        assertTrue(mdl instanceof ModelsComposition);
+        ModelsComposition composition = (ModelsComposition)mdl;
+        assertTrue(composition.toString().length() > 0);
+        assertTrue(composition.toString(true).length() > 0);
+        assertTrue(composition.toString(false).length() > 0);
+
         composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
 
         assertEquals(2000, composition.getModels().size());
@@ -78,7 +85,8 @@ public class GDBTrainerTest {
     }
 
     /** */
-    @Test public void testFitClassifier() {
+    @Test
+    public void testFitClassifier() {
         int sampleSize = 100;
         double[] xs = new double[sampleSize];
         double[] ys = new double[sampleSize];
@@ -92,26 +100,28 @@ public class GDBTrainerTest {
         for (int i = 0; i < sampleSize; i++)
             learningSample.put(i, new double[] {xs[i], ys[i]});
 
-        DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0);
-        Model<Vector, Double> model = trainer.fit(
+        DatasetTrainer<Model<Vector, Double>, Double> trainer
+            = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0).withUseIndex(true);
+
+        Model<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
-            (k, v) -> new double[] {v[0]},
+            (k, v) -> VectorUtils.of(v[0]),
             (k, v) -> v[1]
         );
 
-        int errorsCount = 0;
+        int errorsCnt = 0;
         for (int j = 0; j < sampleSize; j++) {
             double x = xs[j];
             double y = ys[j];
-            double p = model.apply(VectorUtils.of(x));
+            double p = mdl.apply(VectorUtils.of(x));
             if(p != y)
-                errorsCount++;
+                errorsCnt++;
         }
 
-        assertEquals(0, errorsCount);
+        assertEquals(0, errorsCnt);
 
-        assertTrue(model instanceof ModelsComposition);
-        ModelsComposition composition = (ModelsComposition) model;
+        assertTrue(mdl instanceof ModelsComposition);
+        ModelsComposition composition = (ModelsComposition)mdl;
         composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
 
         assertEquals(500, composition.getModels().size());

@@ -25,7 +25,9 @@ import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
+import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
@@ -52,7 +54,8 @@ public class Step_6_KNN {
 
                     IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    IgniteBiFunction<Integer, Object[], double[]> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                        .withEncoderType(EncoderType.STRING_ENCODER)
                         .encodeFeature(1)
                         .encodeFeature(6) // <--- Changed index here
                         .fit(ignite,
@@ -60,21 +63,21 @@ public class Step_6_KNN {
                             featureExtractor
                     );
 
-                    IgniteBiFunction<Integer, Object[], double[]> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
                         .fit(ignite,
                             dataCache,
                             strEncoderPreprocessor
                         );
 
 
-                    IgniteBiFunction<Integer, Object[], double[]> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
                         .fit(
                         ignite,
                         dataCache,
                         imputingPreprocessor
                     );
 
-                    IgniteBiFunction<Integer, Object[], double[]> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
                         .withP(1)
                         .fit(
                         ignite,

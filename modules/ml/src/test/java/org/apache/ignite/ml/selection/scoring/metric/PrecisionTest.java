@@ -31,7 +31,7 @@ public class PrecisionTest {
     /** */
     @Test
     public void testScore() {
-        Metric<Integer> scoreCalculator = new Precision<>(0);
+        Precision<Integer> scoreCalculator = new Precision<>(0);
 
         LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
             Arrays.asList(1, 0, 1, 0, 1, 0),
