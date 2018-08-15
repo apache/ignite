@@ -77,11 +77,6 @@ public class ExchangeDiscoveryEvents {
      * @param fut Current exchange future.
      */
     public void processEvents(GridDhtPartitionsExchangeFuture fut) {
-        for (DiscoveryEvent evt : evts) {
-            if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
-                fut.sharedContext().mvcc().removeExplicitNodeLocks(evt.eventNode().id(), fut.initialVersion());
-        }
-
         if (hasServerLeft())
             warnNoAffinityNodes(fut.sharedContext());
     }

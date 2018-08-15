@@ -261,6 +261,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Processing node left [nodeId=" + discoEvt.eventNode().id() + "]");
 
+            removeExplicitNodeLocks(discoEvt.eventNode().id());
+
             for (GridCacheFuture<?> fut : activeFutures())
                 fut.onNodeLeft(discoEvt.eventNode().id());
 
@@ -352,21 +354,25 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @param leftNodeId Left node ID.
-     * @param topVer Topology version.
      */
-    public void removeExplicitNodeLocks(UUID leftNodeId, AffinityTopologyVersion topVer) {
-        for (GridDistributedCacheEntry entry : locked()) {
-            try {
-                entry.removeExplicitNodeLocks(leftNodeId);
+    public void removeExplicitNodeLocks(UUID leftNodeId) {
+        cctx.kernalContext().closure().runLocalSafe(
+            new Runnable() {
+                @Override public void run() {
+                    for (GridDistributedCacheEntry entry : locked()) {
+                        try {
+                            entry.removeExplicitNodeLocks(leftNodeId);
 
-                entry.touch();
-            }
-            catch (GridCacheEntryRemovedException ignore) {
-                if (log.isDebugEnabled())
-                    log.debug("Attempted to remove node locks from removed entry in mvcc manager " +
-                        "disco callback (will ignore): " + entry);
-            }
-        }
+                            entry.touch();
+                        }
+                        catch (GridCacheEntryRemovedException ignore) {
+                            if (log.isDebugEnabled())
+                                log.debug("Attempted to remove node locks from removed entry in mvcc manager " +
+                                    "disco callback (will ignore): " + entry);
+                        }
+                    }
+                }
+            }, true);
     }
 
     /**
