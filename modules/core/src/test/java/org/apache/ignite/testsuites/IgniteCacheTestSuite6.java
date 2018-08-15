@@ -109,6 +109,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(IgniteExchangeLatchManagerCoordinatorFailTest.class);
 
+        suite.addTestSuite(CacheTryLockMultithreadedTest.class);
+
         //suite.addTestSuite(CacheClientsConcurrentStartTest.class);
         //suite.addTestSuite(CacheTryLockMultithreadedTest.class);
         //suite.addTestSuite(GridCacheRebalancingOrderingTest.class);
