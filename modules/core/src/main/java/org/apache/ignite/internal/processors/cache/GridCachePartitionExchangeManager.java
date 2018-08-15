@@ -1998,7 +1998,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         ", mergedFut=" + fut.initialVersion() +
                         ", evt=" + IgniteUtils.gridEventName(fut.firstEvent().type()) +
                         ", evtNode=" + fut.firstEvent().eventNode().id()+
-                        ", evtNodeClient=" + CU.clientNode(fut.firstEvent().eventNode())+ ']');
+                        ", evtNodeClient=" + fut.firstEvent().eventNode().isClient() + ']');
                 }
 
                 DiscoveryEvent evt = fut.firstEvent();
@@ -2089,7 +2089,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             ", mergedFut=" + fut.initialVersion() +
                             ", evt=" + IgniteUtils.gridEventName(fut.firstEvent().type()) +
                             ", evtNode=" + fut.firstEvent().eventNode().id() +
-                            ", evtNodeClient=" + CU.clientNode(fut.firstEvent().eventNode())+ ']');
+                            ", evtNodeClient=" + fut.firstEvent().eventNode().isClient() + ']');
                     }
 
                     addDiscoEvtForTest(fut.firstEvent());
@@ -2371,7 +2371,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         // because only current exchange future can have multiple discovery events (exchange merge).
                         ClusterNode triggeredBy = ((GridDhtPartitionsExchangeFuture) task).firstEvent().eventNode();
 
-                        if (!CU.clientNode(triggeredBy))
+                        if (!triggeredBy.isClient())
                             return true;
                     }
                 }
