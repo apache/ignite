@@ -2271,30 +2271,31 @@ public class ZookeeperDiscoveryImpl {
 
         List<String> batch = new LinkedList<>();
 
-        List<String> evtChildren = rtState.zkClient.getChildren(zkPaths.evtsPath);
+        List<String> evtChildren = client.getChildren(zkPaths.evtsPath);
 
         for (String evtPath : evtChildren) {
             String evtDir = zkPaths.evtsPath + "/" + evtPath;
 
-            batch.addAll(ZkIgnitePaths.addParentPath(evtDir, rtState.zkClient.getChildren(evtDir)));
+            batch.addAll(ZkIgnitePaths.addParentPath(evtDir, client.getChildren(evtDir)));
         }
 
         batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.evtsPath, evtChildren));
 
-        batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.customEvtsDir, client.getChildren(zkPaths.customEvtsDir)));
+        batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.customEvtsDir,
+            client.getChildren(zkPaths.customEvtsDir)));
 
         batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.customEvtsPartsDir,
-            rtState.zkClient.getChildren(zkPaths.customEvtsPartsDir)));
+            client.getChildren(zkPaths.customEvtsPartsDir)));
 
         batch.addAll(ZkIgnitePaths.addParentPath(zkPaths.customEvtsAcksDir,
-            rtState.zkClient.getChildren(zkPaths.customEvtsAcksDir)));
+            client.getChildren(zkPaths.customEvtsAcksDir)));
 
-        rtState.zkClient.deleteAll(batch, -1);
+        client.deleteAll(batch, -1);
 
         if (startInternalOrder > 0) {
-            for (String alive : rtState.zkClient.getChildren(zkPaths.aliveNodesDir)) {
+            for (String alive : client.getChildren(zkPaths.aliveNodesDir)) {
                 if (ZkIgnitePaths.aliveInternalId(alive) < startInternalOrder)
-                    rtState.zkClient.deleteIfExists(zkPaths.aliveNodesDir + "/" + alive, -1);
+                    client.deleteIfExists(zkPaths.aliveNodesDir + "/" + alive, -1);
             }
         }
 
