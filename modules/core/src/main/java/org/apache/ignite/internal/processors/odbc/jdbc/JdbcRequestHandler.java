@@ -769,7 +769,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             List<JdbcTableMeta> meta = new ArrayList<>();
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (String cacheName : ctx.cache().publicCacheNames(true)) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
                     if (!matches(table.schemaName(), req.schemaName()))
                         continue;
@@ -806,7 +806,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             Collection<JdbcColumnMeta> meta = new LinkedHashSet<>();
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (String cacheName : ctx.cache().publicCacheNames(true)) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
                     if (!matches(table.schemaName(), req.schemaName()))
                         continue;
@@ -879,7 +879,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             Collection<JdbcIndexMeta> meta = new HashSet<>();
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (String cacheName : ctx.cache().publicCacheNames(true)) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
                     if (!matches(table.schemaName(), req.schemaName()))
                         continue;
@@ -936,7 +936,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             Collection<JdbcPrimaryKeyMeta> meta = new HashSet<>();
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (String cacheName : ctx.cache().publicCacheNames(true)) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
                     if (!matches(table.schemaName(), req.schemaName()))
                         continue;
@@ -984,7 +984,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             Set<String> schemas = new HashSet<>();
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (String cacheName : ctx.cache().publicCacheNames(true)) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
                     if (matches(table.schemaName(), schemaPtrn))
                         schemas.add(table.schemaName());
