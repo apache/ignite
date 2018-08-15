@@ -201,7 +201,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
 
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
-        client.deleteAll(Collections.singletonList("/apacheIgnite1"), -1);
+        client.deleteAll(Collections.singletonList("/apacheIgnite/1"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
