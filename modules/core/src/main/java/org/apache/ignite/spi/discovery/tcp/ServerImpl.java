@@ -6676,7 +6676,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryNode node = msg.node();
 
                 // Check that joining node can accept incoming connections.
-                if (!node.isClient()) {
+                if (node.clientRouterNodeId() == null) {
                     if (!pingJoiningNode(node)) {
                         spi.writeToSocket(msg, sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
 
