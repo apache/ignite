@@ -226,7 +226,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     @Deprecated
     private EvictionFilter<?, ?> evictFilter;
 
-    /** Eviction filter factory */
+    /** Eviction filter factory. */
     private Factory evictFilterFactory;
 
     /** Eager ttl flag. */
@@ -357,7 +357,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private CachePluginConfiguration[] pluginCfgs;
 
     /** Cache topology validator. */
+    @Deprecated
     private TopologyValidator topValidator;
+
+    /** Cache topology validator factory. */
+    private Factory topValidatorFactory;
 
     /** Cache store session listeners. */
     private Factory<? extends CacheStoreSessionListener>[] storeSesLsnrs;
@@ -460,6 +464,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
+        topValidatorFactory = cc.getTopologyValidatorFactory();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindCoalescing = cc.getWriteBehindCoalescing();
         writeBehindEnabled = cc.isWriteBehindEnabled();
@@ -482,7 +487,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * Since underlying cache is shared, the following configuration properties should be the same within group:
      * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
-     * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
+     * {@link #setTopologyValidatorFactory(Factory)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
      * {@link #setDataRegionName(String)}.
      *
      * Grouping caches reduces overall overhead, since internal data structures are shared.
@@ -501,7 +506,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * Since underlying cache is shared, the following configuration properties should be the same within group:
      * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
-     * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
+     * {@link #setTopologyValidatorFactory(Factory)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
      * {@link #setDataRegionName(String)}.
      *
      * Grouping caches reduces overall overhead, since internal data structures are shared.
@@ -626,31 +631,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public CacheConfiguration<K, V> setEvictionPolicyFactory(
         @Nullable Factory<? extends EvictionPolicy<? super K, ? super V>> evictPlcFactory) {
         this.evictPlcFactory = evictPlcFactory;
-
-        return this;
-    }
-
-    /**
-     * Gets eviction filter factory. By default, returns {@code null}
-     * which means that filter are disabled for eviction policy.
-     *
-     * @return Eviction filter factory or {@code null}
-     * or if {@link #getEvictionFilter()} should be used instead.
-     */
-    @Nullable public Factory<EvictionFilter<? super K, ? super V>> getEvictionFilterFactory() {
-        return evictFilterFactory;
-    }
-
-    /**
-     * Sets eviction filter factory.
-     * Note: Eviction filter factory should be {@link Serializable}.
-     *
-     * @param evictFilterFactory Eviction filter factory.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictionFilterFactory(
-        @Nullable Factory<? extends EvictionFilter<? super K, ? super V>> evictFilterFactory) {
-        this.evictFilterFactory = evictFilterFactory;
 
         return this;
     }
@@ -814,7 +794,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return (EvictionFilter<K, V>)evictFilter;
     }
 
-
     /**
      * Sets eviction filter.
      *
@@ -828,6 +807,32 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         return this;
     }
+
+    /**
+     * Gets eviction filter factory. By default, returns {@code null}
+     * which means that filter are disabled for eviction policy.
+     *
+     * @return Eviction filter factory or {@code null}
+     * or if {@link #getEvictionFilter()} should be used instead.
+     */
+    @Nullable public Factory<EvictionFilter<? super K, ? super V>> getEvictionFilterFactory() {
+        return evictFilterFactory;
+    }
+
+    /**
+     * Sets eviction filter factory.
+     * Note: Eviction filter factory should be {@link Serializable}.
+     *
+     * @param evictFilterFactory Eviction filter factory.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEvictionFilterFactory(
+        @Nullable Factory<? extends EvictionFilter<? super K, ? super V>> evictFilterFactory) {
+        this.evictFilterFactory = evictFilterFactory;
+
+        return this;
+    }
+
 
     /**
      * Gets flag indicating whether expired cache entries will be eagerly removed from cache.
@@ -2102,6 +2107,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * See {@link TopologyValidator} for details.
      *
      * @return validator.
+     *
+     * @deprecated Use {@link #getTopologyValidatorFactory()} instead.
      */
     public TopologyValidator getTopologyValidator() {
         return topValidator;
@@ -2114,9 +2121,36 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param topValidator validator.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link #setTopologyValidatorFactory(Factory)} instead.     *
      */
     public CacheConfiguration<K, V> setTopologyValidator(TopologyValidator topValidator) {
         this.topValidator = topValidator;
+
+        return this;
+    }
+
+    /**
+     * Gets topology validator factory. By default, returns {@code null}
+     * which means that the cluster topology is always considered to be valid.
+     *
+     * @return Topology validator factory or {@code null}
+     * or if {@link #getTopologyValidator()} should be used instead.
+     */
+    @Nullable public Factory<TopologyValidator> getTopologyValidatorFactory() {
+        return topValidatorFactory;
+    }
+
+    /**
+     * Sets topology validator factory.
+     * Note: Topology validator factory should be {@link Serializable}.
+     *
+     * @param topValidatorFactory Topology validator factory.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setTopologyValidatorFactory(
+        @Nullable Factory<? extends TopologyValidator> topValidatorFactory) {
+        this.topValidatorFactory = topValidatorFactory;
 
         return this;
     }
