@@ -129,6 +129,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public long lastArchivedSegment();
 
     /**
+     * @return Last compacted segment index.
+     */
+    public long lastCompactedSegment();
+
+    /**
      * Checks if WAL segment is under lock or reserved
      *
      * @param ptr Pointer to check.
