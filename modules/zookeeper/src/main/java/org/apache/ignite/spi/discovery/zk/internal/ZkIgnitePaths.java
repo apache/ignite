@@ -313,7 +313,7 @@ class ZkIgnitePaths {
      *
      * @param parent Parent path to add.
      * @param paths List of paths.
-     * @return Flags.
+     * @return List of paths.
      */
     static List<String> addParentPath(@Nullable String parent, List<String> paths) {
         List<String> data = new LinkedList<>();
