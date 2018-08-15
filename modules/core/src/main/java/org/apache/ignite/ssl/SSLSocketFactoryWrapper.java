@@ -34,8 +34,7 @@ class SSLSocketFactoryWrapper extends SSLSocketFactory {
     private final SSLParameters parameters;
 
     /** */
-    SSLSocketFactoryWrapper(SSLSocketFactory delegate,
-        SSLParameters parameters) {
+    SSLSocketFactoryWrapper(SSLSocketFactory delegate, SSLParameters parameters) {
         this.delegate = delegate;
         this.parameters = parameters;
     }
@@ -61,8 +60,7 @@ class SSLSocketFactoryWrapper extends SSLSocketFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public Socket createSocket(Socket sock, String host, int port,
-        boolean autoClose) throws IOException {
+    @Override public Socket createSocket(Socket sock, String host, int port, boolean autoClose) throws IOException {
         SSLSocket sslSock = (SSLSocket)delegate.createSocket(sock, host, port, autoClose);
 
         if (parameters != null)
