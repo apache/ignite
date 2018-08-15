@@ -3901,7 +3901,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (err != null) {
             U.error(log, "Failed to reconnect, will stop node", err);
 
-            close();
+            if (!(err instanceof NodeStoppingException))
+                close();
         }
     }
 
