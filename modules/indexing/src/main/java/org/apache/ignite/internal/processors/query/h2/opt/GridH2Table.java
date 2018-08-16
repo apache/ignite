@@ -484,10 +484,10 @@ public class GridH2Table extends TableBase {
 
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
+        unlock(exclusive);
+
         if (qctx != null)
             qctx.lockedTables().remove(this);
-
-        unlock(exclusive);
     }
 
     /**
