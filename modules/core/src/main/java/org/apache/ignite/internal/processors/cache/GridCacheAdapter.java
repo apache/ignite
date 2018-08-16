@@ -3629,7 +3629,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     col.add(new DataStreamerEntry(key, ctx.toCacheObject(val)));
 
                     if (col.size() == ldr.perNodeBufferSize()) {
-                        ldr.addDataInternal(col);
+                        ldr.addDataInternal(col, false);
 
                         col.clear();
                     }
@@ -5911,7 +5911,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             col.add(e);
 
             if (col.size() == ldr.perNodeBufferSize()) {
-                ldr.addDataInternal(col);
+                ldr.addDataInternal(col, false);
 
                 col.clear();
             }
@@ -5922,7 +5922,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          */
         void onDone() {
             if (!col.isEmpty())
-                ldr.addDataInternal(col);
+                ldr.addDataInternal(col, false);
         }
     }
 
