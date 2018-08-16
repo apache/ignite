@@ -36,6 +36,13 @@ public class SqlDefaultSchemaSelfTest extends SqlSchemaSelfTest {
         super.beforeTestsStarted();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_DEFAULT_SQL_SCHEMA);
+    }
+
     /**
      * Test simple query.
      *
@@ -70,12 +77,5 @@ public class SqlDefaultSchemaSelfTest extends SqlSchemaSelfTest {
         assertEquals(1, cache.query(
             new SqlFieldsQuery("SELECT id, name, orgId FROM \"SOME_USER_SCHEMA\".Person").setSchema(CACHE_PERSON_2)
         ).getAll().size());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_DEFAULT_SQL_SCHEMA);
     }
 }

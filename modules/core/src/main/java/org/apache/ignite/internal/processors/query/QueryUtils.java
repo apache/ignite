@@ -78,7 +78,7 @@ public class QueryUtils {
     public static final String DFLT_H2_SCHEMA = "PUBLIC";
 
     /** Default schema. */
-    public static final String DFLT_SCHEMA = normalizeObjectName(getString(IGNITE_DEFAULT_SQL_SCHEMA, DFLT_H2_SCHEMA),false);
+    public static final String DFLT_SCHEMA = normalizeSchemaName(null, getString(IGNITE_DEFAULT_SQL_SCHEMA, DFLT_H2_SCHEMA));
 
     /** Schema for system view. */
     public static final String SCHEMA_SYS = "IGNITE";
