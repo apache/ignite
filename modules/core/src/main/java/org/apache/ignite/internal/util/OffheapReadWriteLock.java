@@ -408,7 +408,7 @@ public class OffheapReadWriteLock {
         boolean interrupted = false;
 
         try {
-            while (!interrupted) {
+            while (true) {
                 try {
                     long state = GridUnsafe.getLongVolatile(null, lock);
 
@@ -443,8 +443,6 @@ public class OffheapReadWriteLock {
             if (interrupted)
                 Thread.currentThread().interrupt();
         }
-
-        return false;
     }
 
     /**
@@ -464,7 +462,7 @@ public class OffheapReadWriteLock {
         boolean interrupted = false;
 
         try {
-            while (!interrupted) {
+            while (true) {
                 try {
                     long state = GridUnsafe.getLongVolatile(null, lock);
 
@@ -499,8 +497,6 @@ public class OffheapReadWriteLock {
             if (interrupted)
                 Thread.currentThread().interrupt();
         }
-
-        return false;
     }
 
     /**

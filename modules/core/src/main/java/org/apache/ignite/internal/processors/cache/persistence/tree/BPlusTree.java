@@ -2572,7 +2572,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @throws IgniteCheckedException If the operation can not be retried.
          */
-        final void checkLockRetry() throws IgniteCheckedException {
+        void checkLockRetry() throws IgniteCheckedException {
             if (lockRetriesCnt == 0) {
                 IgniteCheckedException e = new IgniteCheckedException("Maximum number of retries " +
                     getLockRetries() + " reached for " + getClass().getSimpleName() + " operation " +
@@ -2989,6 +2989,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.fwdId = fwdId;
 
             return write(pageId, page, replace, this, lvl, RETRY);
+        }
+
+        /** {@inheritDoc} */
+        @Override void checkLockRetry() throws IgniteCheckedException {
+            //non null tailId means lock on tail page still hold and we can't fail with exception.
+            if (tailId == 0L)
+                super.checkLockRetry();
         }
     }
 
