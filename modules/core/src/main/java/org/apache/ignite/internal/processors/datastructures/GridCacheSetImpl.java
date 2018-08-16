@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -158,12 +157,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 return cache.sizeAsync(new CachePeekMode[] {}).get() - 1;
             }
 
-            if (ctx.isLocal() || ctx.isReplicated()) {
-                GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
-
-                return set != null ? set.size() : 0;
-            }
-
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
                 new GridSetQueryPredicate<>(id, collocated), null, false, false);
 
@@ -192,9 +185,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public boolean isEmpty() {
         onAccess();
 
-        GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
-
-        return (set == null || set.isEmpty()) && size() == 0;
+        return size() == 0;
     }
 
     /** {@inheritDoc} */
@@ -436,18 +427,25 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     @SuppressWarnings("unchecked")
     private WeakReferenceCloseableIterator<T> sharedCacheIterator() throws IgniteCheckedException {
-        CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-            new GridSetQueryPredicate<>(id, collocated), null, false, false);
+        GridCloseableIterator<Map.Entry<T, ?>> itr = ((GridCacheContext<SetItemKey, Boolean>)ctx).queries()
+            .createScanQuery(
+                new IgniteBiPredicate() {
+                    @Override public boolean apply(Object k, Object v) {
+                        if (k instanceof SetItemKey) {
+                            SetItemKey key = (SetItemKey)k;
 
-        Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
+                            return id().equals(key.setId());
+                        }
+                        return false;
+                    }
+                },
+                collocated ? hdrPart : null,
+                ctx.keepBinary())
+            .executeScanQuery();
 
-        qry.projection(ctx.grid().cluster().forNodes(nodes));
-
-        CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
-
-        return ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
+        return ctx.itHolder().iterator(itr, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
             @Override protected T convert(Map.Entry<T, ?> e) {
-                return e.getKey();
+                return (T)((SetItemKey)e.getKey()).item();
             }
 
             @Override protected void remove(T item) {

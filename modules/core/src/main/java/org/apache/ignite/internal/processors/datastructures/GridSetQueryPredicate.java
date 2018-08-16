@@ -31,7 +31,10 @@ import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Predicate for query over {@link IgniteSet} items.
+ *
+ * @deprecated Left for backward compatibility and should be removed in major release 3.0.
  */
+@Deprecated
 public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
