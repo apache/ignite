@@ -46,7 +46,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  * <p>
  * The common idea behind using algorithm specific datasets is to write a simple local version algorithm at first, then
- * find operations which involves data manipulations, and finally define algorithm specific version of the dataset
+ * find operations which involve data manipulations, and finally define algorithm specific version of the dataset
  * extended by introducing these new operations. As a result your algorithm will work with extended dataset (based on
  * {@link DatasetWrapper}) in a sequential manner.</p>
  * <p>
