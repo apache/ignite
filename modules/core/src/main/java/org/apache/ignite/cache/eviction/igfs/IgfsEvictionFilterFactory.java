@@ -25,6 +25,9 @@ import javax.cache.configuration.Factory;
  * IGFS eviction filter which will not evict blocks of particular files.
  */
 public class IgfsEvictionFilterFactory implements Factory<IgfsEvictionFilter> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override public IgfsEvictionFilter create() {
         return new IgfsEvictionFilter();
