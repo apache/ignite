@@ -214,7 +214,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 FileWALPointer prevRecPtr = (FileWALPointer)curRec.get1();
 
                 // Fast stop condition, after high bound reached.
-                if (prevRecPtr.compareTo(highBound) > 0)
+                if (prevRecPtr != null && prevRecPtr.compareTo(highBound) > 0)
                     return null;
             }
 
