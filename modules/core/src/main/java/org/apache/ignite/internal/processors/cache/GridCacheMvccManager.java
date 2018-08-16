@@ -266,6 +266,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
             for (GridCacheAtomicFuture<?> cacheFut : atomicFuts.values())
                 cacheFut.onNodeLeft(discoEvt.eventNode().id());
+
+            removeExplicitNodeLocks(discoEvt.eventNode().id());
         }
     };
 

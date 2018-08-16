@@ -732,12 +732,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     else {
                         if (firstDiscoEvt.eventNode().isClient())
                             exchange = onClientNodeEvent(crdNode);
-                        else
+                        else {
                             exchange = cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
-                    }
 
-                    if (exchId.isLeft())
-                        onLeft();
+                            if (exchId.isLeft())
+                                onLeft();
+                        }
+                    }
                 }
                 else {
                     exchange = firstDiscoEvt.eventNode().isClient() ? onClientNodeEvent(crdNode) :
@@ -1340,8 +1341,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // Assign to class variable so it will be included into toString() method.
         this.partReleaseFut = partReleaseFut;
 
-        if (exchId.isLeft())
-            cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId());
+//        if (exchId.isLeft() && /* Skip on 2-nd phase. */ doRollback)
+//            cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId());
 
         if (log.isDebugEnabled())
             log.debug("Before waiting for partition release future: " + this);
@@ -1481,8 +1482,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             grp.preloader().unwindUndeploys();
         }
-
-        cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId());
     }
 
     /**
@@ -3770,7 +3769,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isDone() || !enterBusy())
             return;
 
-        cctx.mvcc().removeExplicitNodeLocks(node.id());
+//        cctx.mvcc().removeExplicitNodeLocks(node.id());
 
         try {
             onDiscoveryEvent(new IgniteRunnable() {
