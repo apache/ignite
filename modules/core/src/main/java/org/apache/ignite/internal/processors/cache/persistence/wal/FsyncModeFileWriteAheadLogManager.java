@@ -852,7 +852,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** {@inheritDoc} */
     @Override public void notchLastCheckpointPtr(WALPointer ptr) {
         if (compressor != null)
-            compressor.keepUncompressedIdxFrom(((FileWALPointer)ptr).index() - 1);
+            compressor.keepUncompressedIdxFrom(((FileWALPointer)ptr).index());
     }
 
     /** {@inheritDoc} */
