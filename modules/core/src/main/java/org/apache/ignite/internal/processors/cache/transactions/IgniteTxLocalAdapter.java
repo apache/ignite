@@ -549,7 +549,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         }
 
                         if (cached.detached()) {
-
                             entriesCommitFuture.add(new GridFinishedFuture<>());
 
                             continue;
@@ -878,12 +877,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 try {
                     entriesCommitFuture.get();
 
-                    assert commitEntries.size() == entriesCommitFuture.futures().size();
+                    List<IgniteInternalFuture<GridCacheUpdateTxResult>> futures = entriesCommitFuture.futures();
+
+                    assert commitEntries.size() == futures.size();
 
                     int txEntryIdx = 0;
 
                     for (IgniteTxEntry txEntry : commitEntries) {
-                        GridCacheUpdateTxResult txResult = entriesCommitFuture.future(txEntryIdx).get();
+                        GridCacheUpdateTxResult txResult = futures.get(txEntryIdx).get();
 
                         if (txResult != null && txResult.success()) {
                             if (txResult.updatePartitionCounter() != -1)

@@ -161,7 +161,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @return Collection of futures.
      */
     @SuppressWarnings("unchecked")
-    public final synchronized Collection<IgniteInternalFuture<T>> futures() {
+    public final synchronized List<IgniteInternalFuture<T>> futures() {
         if (futs == null)
             return Collections.emptyList();
 
@@ -323,7 +323,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    public final IgniteInternalFuture<T> future(int idx) {
+    protected final IgniteInternalFuture<T> future(int idx) {
         assert Thread.holdsLock(this);
         assert futs != null && idx >= 0 && idx < futuresCountNoLock();
 
