@@ -291,43 +291,58 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testArchiveCompletedEventFired() throws Exception {
+        assertTrue(checkWhetherWALRelatedEventFired(EVT_WAL_SEGMENT_ARCHIVED));
+    }
+
+    /**
+     * Tests archive completed event is fired.
+     *
+     * @throws Exception if failed.
+     */
+    public void testArchiveCompactedEventFired() throws Exception {
         boolean oldEnableWalCompaction = enableWalCompaction;
 
         try {
             enableWalCompaction = true;
 
-            Ignite ignite = startGrid();
-
-            ignite.cluster().active(true);
-
-            final IgniteEvents evts = ignite.events();
-
-            assertTrue(evts.isEnabled(EVT_WAL_SEGMENT_ARCHIVED) && evts.isEnabled(EVT_WAL_SEGMENT_COMPACTED));
-
-            Vector<Integer> evtsRecorded = new Vector<>();
-
-            evts.localListen(e -> {
-                WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
-
-                long idx = archComplEvt.getAbsWalSegmentIdx();
-
-                log.info("WAL archive event [segment=" + idx + ", file=" + archComplEvt.getArchiveFile() +
-                    ", evt=" + e + ']');
-
-                evtsRecorded.add(e.type());
-
-                return true;
-            }, EVT_WAL_SEGMENT_ARCHIVED, EVT_WAL_SEGMENT_COMPACTED);
-
-            putDummyRecords(ignite, 500);
-
-            stopGrid();
-
-            assertEqualsCollections(Arrays.asList(EVT_WAL_SEGMENT_ARCHIVED, EVT_WAL_SEGMENT_COMPACTED), evtsRecorded);
+            assertTrue(checkWhetherWALRelatedEventFired(EVT_WAL_SEGMENT_COMPACTED));
         }
         finally {
             enableWalCompaction = oldEnableWalCompaction;
         }
+    }
+
+    /** */
+    private boolean checkWhetherWALRelatedEventFired(int evtType) throws Exception {
+        AtomicBoolean evtRecorded = new AtomicBoolean();
+
+        Ignite ignite = startGrid();
+
+        ignite.cluster().active(true);
+
+        final IgniteEvents evts = ignite.events();
+
+        if (!evts.isEnabled(evtType))
+            fail("nothing to test");
+
+        evts.localListen(e -> {
+            WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
+
+            long idx = archComplEvt.getAbsWalSegmentIdx();
+
+            log.info("Finished for segment [" +
+                idx + ", " + archComplEvt.getArchiveFile() + "]: [" + e + "]");
+
+            evtRecorded.set(true);
+
+            return true;
+        }, evtType);
+
+        putDummyRecords(ignite, 500);
+
+        stopGrid();
+
+        return evtRecorded.get();
     }
 
     /**
