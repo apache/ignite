@@ -72,4 +72,10 @@ public class CacheEntryExecutor {
 
         return future;
     }
+
+    static class ExecutionContext {
+
+        private GridCacheEntryEx entry;
+
+    }
 }

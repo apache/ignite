@@ -34,7 +34,7 @@ public class GridCacheUpdateTxResult {
     private final CacheObject oldVal;
 
     /** Partition idx. */
-    private long updateCntr;
+    private long updateCntr = -1;
 
     /** */
     private WALPointer logPtr;
@@ -46,7 +46,7 @@ public class GridCacheUpdateTxResult {
      * @param oldVal Old value (if any),
      * @param logPtr Logger WAL pointer for the update.
      */
-    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, WALPointer logPtr) {
+    public GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, WALPointer logPtr) {
         this.success = success;
         this.oldVal = oldVal;
         this.logPtr = logPtr;
