@@ -881,7 +881,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1)
-            .setName("cacheIV"));
+            .setName(DEFAULT_CACHE_NAME));
 
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
@@ -894,7 +894,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         HashSet<Integer> clearKeys = new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6));
 
-        ((IgniteEx)ignite).context().cache().cache("cacheIV").clearLocallyAll(clearKeys, true, true, true);
+        ((IgniteEx)ignite).context().cache().cache(DEFAULT_CACHE_NAME).clearLocallyAll(clearKeys, true, true, true);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
@@ -1124,7 +1124,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 .setAffinity(new RendezvousAffinityFunction(false, 32))
                 .setAtomicityMode(TRANSACTIONAL)
                 .setBackups(1)
-                .setName("cacheCont"));
+                .setName(DEFAULT_CACHE_NAME));
 
             final CountDownLatch l = new CountDownLatch(1);
 
@@ -1212,23 +1212,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        IgniteCache<Object, Object> cache1 = ignite.createCache(new CacheConfiguration<>()
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1)
             .setGroupName("G100")
-            .setName("cacheG1"));
+            .setName(DEFAULT_CACHE_NAME));
 
-        IgniteCache<Object, Object> cache2 = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1)
-            .setGroupName("G100")
-            .setName("cacheG2"));
-
-        for (int i = 0; i < 100; i++) {
-            cache1.put(i, i);
-
-            cache2.put(i, i);
-        }
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
 
         injectTestSystemOut();
 
@@ -1248,7 +1239,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache1 = ignite.createCache(new CacheConfiguration<>()
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1)
-            .setName("cacheAf"));
+            .setName(DEFAULT_CACHE_NAME));
 
         for (int i = 0; i < 100; i++)
             cache1.put(i, i);
@@ -1257,7 +1248,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*"));
 
-        assertTrue(testOut.toString().contains("cacheName=cacheAf"));
+        assertTrue(testOut.toString().contains("cacheName=" + DEFAULT_CACHE_NAME));
         assertTrue(testOut.toString().contains("prim=32"));
         assertTrue(testOut.toString().contains("mapped=32"));
         assertTrue(testOut.toString().contains("affCls=RendezvousAffinityFunction"));
