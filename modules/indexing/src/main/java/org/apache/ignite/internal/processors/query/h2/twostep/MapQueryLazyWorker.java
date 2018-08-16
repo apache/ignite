@@ -104,11 +104,11 @@ public class MapQueryLazyWorker extends GridWorker {
 
         ACTIVE_CNT.increment();
 
-        GridH2QueryContext.set(qctx);
-
-        GridH2Table.attachReadLocksToCurrentThread(H2Utils.session(detached.object().connection()));
-
         try {
+            GridH2QueryContext.set(qctx);
+
+            GridH2Table.attachReadLocksToCurrentThread(H2Utils.session(detached.object().connection()));
+
             while (!isCancelled()) {
                 Runnable task = tasks.take();
 

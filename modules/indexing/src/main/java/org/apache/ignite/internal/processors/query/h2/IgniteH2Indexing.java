@@ -467,7 +467,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Recycled connection.
      */
     private void recycleConnection(H2ConnectionWrapper conn) {
-        conns.get(conn.initialThread()).put(conn, false);
+        ConcurrentMap<H2ConnectionWrapper, Boolean> perThreadConns = conns.get(conn.initialThread());
+
+        // Mau be null when node is stopping.
+        if (perThreadConns != null)
+            perThreadConns.put(conn, false);
     }
 
     /**
