@@ -17,6 +17,9 @@
 
 package org.apache.ignite.examples.ml.knn;
 
+import java.util.Arrays;
+import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -24,16 +27,13 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
+import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.thread.IgniteThread;
-
-import javax.cache.Cache;
-import java.util.Arrays;
-import java.util.UUID;
 
 /**
  * Run kNN multi-class classification trainer over distributed dataset.
@@ -55,14 +55,14 @@ public class KNNClassificationExample {
 
                 KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-                KNNClassificationModel knnMdl = trainer.fit(
+                NNClassificationModel knnMdl = trainer.fit(
                     ignite,
                     dataCache,
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+                    (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
                 ).withK(3)
                     .withDistanceMeasure(new EuclideanDistance())
-                    .withStrategy(KNNStrategy.WEIGHTED);
+                    .withStrategy(NNStrategy.WEIGHTED);
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> | Prediction\t| Ground Truth\t|");
@@ -77,7 +77,7 @@ public class KNNClassificationExample {
                         double[] inputs = Arrays.copyOfRange(val, 1, val.length);
                         double groundTruth = val[0];
 
-                        double prediction = knnMdl.apply(new DenseLocalOnHeapVector(inputs));
+                        double prediction = knnMdl.apply(new DenseVector(inputs));
 
                         totalAmount++;
                         if (groundTruth != prediction)

@@ -49,6 +49,7 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(200L * 1024 * 1024)
                 .setPersistenceEnabled(true)));
 
         return cfg;

@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQuery
 import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
 import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
+import org.apache.ignite.internal.processors.cache.CacheQueryAfterDynamicCacheStartFailureTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryFilterExpiredTest;
 import org.apache.ignite.internal.processors.cache.CacheRandomOperationsMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
@@ -40,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLoca
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
 import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelperTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
  * Cache tests using indexing.
@@ -51,6 +52,8 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+        
         TestSuite suite = new TestSuite("Ignite Cache With Indexing Test Suite");
 
         suite.addTestSuite(InlineIndexHelperTest.class);
@@ -79,11 +82,11 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
 
         suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
 
+        suite.addTestSuite(CacheQueryAfterDynamicCacheStartFailureTest.class);
+
         suite.addTestSuite(IgniteCacheGroupsSqlTest.class);
 
         suite.addTestSuite(IgniteDataStreamerTest.class);
-
-        suite.addTestSuite(GridCommandHandlerIndexingTest.class);
 
         suite.addTestSuite(BinaryTypeMismatchLoggingTest.class);
 
