@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -71,15 +72,23 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
             for (CacheConfiguration cCfg : cfg.getCacheConfiguration()) {
                 if (cCfg.getName().equals(CACHE_NAME_1))
-                    cCfg.setTopologyValidator(new TopologyValidator() {
-                        @Override public boolean validate(Collection<ClusterNode> nodes) {
-                            return servers(nodes) == 2;
+                    cCfg.setTopologyValidatorFactory(new Factory<TopologyValidator>() {
+                        @Override public TopologyValidator create() {
+                            return new TopologyValidator() {
+                                @Override public boolean validate(Collection<ClusterNode> nodes) {
+                                    return servers(nodes) == 2;
+                                }
+                            };
                         }
                     });
                 else if (cCfg.getName().equals(CACHE_NAME_2))
-                    cCfg.setTopologyValidator(new TopologyValidator() {
-                        @Override public boolean validate(Collection<ClusterNode> nodes) {
-                            return servers(nodes) >= 2;
+                    cCfg.setTopologyValidatorFactory(new Factory<TopologyValidator>() {
+                        @Override public TopologyValidator create() {
+                            return new TopologyValidator() {
+                                @Override public boolean validate(Collection<ClusterNode> nodes) {
+                                    return servers(nodes) >= 2;
+                                }
+                            };
                         }
                     });
             }

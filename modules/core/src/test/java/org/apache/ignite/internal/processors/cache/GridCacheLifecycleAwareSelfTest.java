@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.Cache;
+import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheInterceptor;
@@ -135,7 +136,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     public static class TestAffinityFunction extends TestLifecycleAware implements AffinityFunction {
         /**
          */
-        public TestAffinityFunction() {
+        TestAffinityFunction() {
             super(CACHE_NAME);
         }
 
@@ -174,18 +175,43 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
     }
 
+    public static class TestEvictionPolicyFactory extends TestLifecycleAware implements Factory<EvictionPolicy> {
+        /**
+         */
+        TestEvictionPolicyFactory() {
+            super(CACHE_NAME);
+        }
+
+        @Override public EvictionPolicy create() {
+            return new TestEvictionPolicy();
+        }
+    }
+
     /**
      */
     public static class TestEvictionPolicy extends TestLifecycleAware implements EvictionPolicy, Serializable {
         /**
          */
-        public TestEvictionPolicy() {
+        TestEvictionPolicy() {
             super(CACHE_NAME);
         }
 
         /** {@inheritDoc} */
         @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             // No-op.
+        }
+    }
+
+    /**
+     */
+    private static class TestEvictionFilterFactory extends TestLifecycleAware implements Factory<EvictionFilter> {
+        /**
+         */
+        TestEvictionFilterFactory() { super(CACHE_NAME); }
+
+        /** {@inheritDoc} */
+        @Override public EvictionFilter create() {
+            return new TestEvictionFilter();
         }
     }
 
@@ -229,7 +255,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     private static class TestInterceptor extends TestLifecycleAware implements CacheInterceptor {
         /**
          */
-        private TestInterceptor() {
+        TestInterceptor() {
             super(CACHE_NAME);
         }
 
@@ -261,13 +287,29 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
+    private static class TestTopologyValidatorFactory extends TestLifecycleAware implements Factory<TopologyValidator>{
+        /**
+         */
+        TestTopologyValidatorFactory() {
+            super(CACHE_NAME);
+        }
+
+        /** {@inheritDoc} */
+        @Override public TopologyValidator create() {
+            return new TestTopologyValidator();
+        }
+
+    }
+
+    /**
+     */
     private static class TestTopologyValidator extends TestLifecycleAware implements TopologyValidator {
         @IgniteInstanceResource
         private Ignite ignite;
 
         /**
          */
-        public TestTopologyValidator() {
+        TestTopologyValidator() {
             super(CACHE_NAME);
         }
 
@@ -276,6 +318,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public void start() {
             super.start();
 
@@ -315,30 +358,30 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         lifecycleAwares.add(affinity);
 
-        TestEvictionPolicy evictionPlc = new TestEvictionPolicy();
+        TestEvictionPolicyFactory evictionPlcFactory = new TestEvictionPolicyFactory();
 
-        ccfg.setEvictionPolicy(evictionPlc);
+        ccfg.setEvictionPolicyFactory(evictionPlcFactory);
         ccfg.setOnheapCacheEnabled(true);
 
-        lifecycleAwares.add(evictionPlc);
+        lifecycleAwares.add(evictionPlcFactory);
 
         if (near) {
-            TestEvictionPolicy nearEvictionPlc = new TestEvictionPolicy();
+            TestEvictionPolicyFactory nearEvictionPlcFactory = new TestEvictionPolicyFactory();
 
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-            nearCfg.setNearEvictionPolicy(nearEvictionPlc);
+            nearCfg.setNearEvictionPolicyFactory(nearEvictionPlcFactory);
 
             ccfg.setNearConfiguration(nearCfg);
 
-            lifecycleAwares.add(nearEvictionPlc);
+            lifecycleAwares.add(nearEvictionPlcFactory);
         }
 
-        TestEvictionFilter evictionFilter = new TestEvictionFilter();
+        TestEvictionFilterFactory evictionFilterFactory = new TestEvictionFilterFactory();
 
-        ccfg.setEvictionFilter(evictionFilter);
+        ccfg.setEvictionFilterFactory(evictionFilterFactory);
 
-        lifecycleAwares.add(evictionFilter);
+        lifecycleAwares.add(evictionFilterFactory);
 
         TestAffinityKeyMapper mapper = new TestAffinityKeyMapper();
 
@@ -352,11 +395,11 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         ccfg.setInterceptor(interceptor);
 
-        TestTopologyValidator topValidator = new TestTopologyValidator();
+        TestTopologyValidatorFactory topValidatorFactory = new TestTopologyValidatorFactory();
 
-        lifecycleAwares.add(topValidator);
+        lifecycleAwares.add(topValidatorFactory);
 
-        ccfg.setTopologyValidator(topValidator);
+        ccfg.setTopologyValidatorFactory(topValidatorFactory);
 
         cfg.setCacheConfiguration(ccfg);
 
