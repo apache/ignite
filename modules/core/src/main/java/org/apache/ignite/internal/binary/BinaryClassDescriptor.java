@@ -40,6 +40,8 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -773,7 +775,7 @@ public class BinaryClassDescriptor {
                                     BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
                                         affKeyFieldName, Collections.singleton(newSchema), false, null);
 
-                                    ctx.updateMetadata(typeId, meta);
+                                    ctx.updateMetadata(typeId, meta, writer.failIfUnregistered());
 
                                     schemaReg.addSchema(newSchema.schemaId(), newSchema);
                                 }
@@ -794,7 +796,7 @@ public class BinaryClassDescriptor {
                         BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
                             affKeyFieldName, Collections.singleton(stableSchema), false, null);
 
-                        ctx.updateMetadata(typeId, meta);
+                        ctx.updateMetadata(typeId, meta, writer.failIfUnregistered());
 
                         schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
 
@@ -823,6 +825,9 @@ public class BinaryClassDescriptor {
             }
         }
         catch (Exception e) {
+            if (e instanceof UnregisteredBinaryTypeException || e instanceof UnregisteredClassException)
+                throw e;
+
             String msg;
 
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))

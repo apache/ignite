@@ -30,6 +30,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -1644,6 +1646,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         return;
                 }
             }
+        }
+        catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+            throw e;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
