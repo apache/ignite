@@ -19,7 +19,6 @@ package org.apache.ignite.sqltests;
 
 import java.util.Arrays;
 import java.util.List;
-import org.apache.ignite.internal.util.GridDebug;
 
 /**
  * Includes all base sql test plus tests that make sense in partitioned mode.
@@ -31,13 +30,6 @@ public class PartitionedSqlTest extends BaseSqlTest {
 
         fillCommonData();
     }
-
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        GridDebug.dumpHeap("nolazy-release.hprof", true);
-    }
-
 
     /**
      * Check distributed INNER JOIN.

@@ -537,8 +537,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             cache.put(key, stmt);
 
-            assert stmt.getConnection() == c;
-
             return stmt;
         }
         else

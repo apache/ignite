@@ -113,7 +113,7 @@ public class H2ConnectionWrapper implements AutoCloseable {
         return S.toString(H2ConnectionWrapper.class, this);
     }
 
-    /** Closes wrapped connection */
+    /** Closes wrapped connection. */
     @Override
     public void close() {
         U.closeQuiet(conn);

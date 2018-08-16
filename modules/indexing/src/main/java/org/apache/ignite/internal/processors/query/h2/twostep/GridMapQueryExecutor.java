@@ -825,7 +825,7 @@ public class GridMapQueryExecutor {
         }
     }
 
-     /**
+    /**
      * @param node Node.
      * @param req DML request.
      */
