@@ -33,11 +33,8 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.Config;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -49,7 +46,7 @@ public class IgniteBinaryQueryTest {
     /**
      * Test queries in Ignite binary.
      */
-    @Test
+    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
     public void testBinaryQueries() throws Exception {
         try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
