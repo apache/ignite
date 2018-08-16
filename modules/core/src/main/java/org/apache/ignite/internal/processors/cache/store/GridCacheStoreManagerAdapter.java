@@ -1482,7 +1482,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         /** {@inheritDoc} */
         @Override public void savepoint(String name) {
-            throw new UnsupportedOperationException();
+            savepoint(name, false);
         }
 
         /** {@inheritDoc} */

@@ -178,6 +178,26 @@ public class TransactionEventProxyImpl implements TransactionProxy, Externalizab
     }
 
     /** {@inheritDoc} */
+    @Override public void savepoint(String name) throws IllegalArgumentException {
+        savepoint(name, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void savepoint(String name, boolean overwrite) throws IllegalArgumentException {
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rollbackToSavepoint(String name) {
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releaseSavepoint(String name) {
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MESSAGE);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteAsyncSupport withAsync() {
         throw new UnsupportedOperationException("Operation deprecated.");
     }

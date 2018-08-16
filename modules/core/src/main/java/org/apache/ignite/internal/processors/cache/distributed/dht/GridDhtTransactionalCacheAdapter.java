@@ -1627,7 +1627,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         // Remove mapped versions.
         GridCacheVersion dhtVer = unmap ? ctx.mvcc().unmapVersion(ver) : ver;
 
-        ctx.mvcc().addRemoved(ctx, ver);
+        if (!forSavepoint)
+            ctx.mvcc().addRemoved(ctx, ver);
 
         Map<ClusterNode, List<KeyCacheObject>> dhtMap = new HashMap<>();
         Map<ClusterNode, List<KeyCacheObject>> nearMap = new HashMap<>();
@@ -1659,7 +1660,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 log.debug("Failed to locate lock candidate based on dht or near versions [nodeId=" +
                                     nodeId + ", ver=" + ver + ", unmap=" + unmap + ", keys=" + keys + ']');
 
-                            entry.removeLock(ver);
+                            entry.removeLock(ver, !forSavepoint);
 
                             if (created) {
                                 if (obsoleteVer == null)
