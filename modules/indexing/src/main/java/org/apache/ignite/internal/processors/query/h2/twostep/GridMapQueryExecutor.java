@@ -203,6 +203,16 @@ public class GridMapQueryExecutor {
     }
 
     /**
+     * Stop query map executor, cleanup resources.
+     */
+    public void stop() {
+        cancelLazyWorkers();
+
+        for (MapNodeResults res : qryRess.values())
+            res.cancelAll();
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param msg Message.
      */

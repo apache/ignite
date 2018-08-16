@@ -337,8 +337,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = pool.borrow();
 
-            ConcurrentHashMap<H2ConnectionWrapper, Boolean> perThreadConns =
-                conns.getOrDefault(Thread.currentThread(), new ConcurrentHashMap<>());
+            ConcurrentHashMap<H2ConnectionWrapper, Boolean> perThreadConns = conns.get(Thread.currentThread());
+
+            ConcurrentHashMap<H2ConnectionWrapper, Boolean> newMap = new ConcurrentHashMap<>();
+
+            perThreadConns = conns.putIfAbsent(Thread.currentThread(), newMap);
+
+            if (perThreadConns == null)
+                perThreadConns = newMap;
 
             perThreadConns.put(reusableConnection.object(), false);
 
@@ -426,7 +432,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private H2ConnectionWrapper newConnectionWrapper() {
         try {
             Connection c = DriverManager.getConnection(dbUrl);
-            log.info("+++ new " + c);
             return new H2ConnectionWrapper(c);
         } catch (SQLException e) {
             throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
@@ -437,7 +442,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection wrapper to close.
      */
     private void closePooledConnectionWrapper(H2ConnectionWrapper conn) {
-        log.info("+++ closePooledConnectionWrapper " + conn);
+        // TODO: remove from conns collection or not?
         U.closeQuiet(conn);
     }
 
@@ -697,12 +702,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Handles SQL exception.
      */
     private void onSqlException() {
-        Connection conn = connCache.get().object().connection();
+        H2ConnectionWrapper conn = connCache.get().object();
 
         connCache.set(null);
 
         if (conn != null) {
-            conns.remove(Thread.currentThread());
+            conns.get(Thread.currentThread()).remove(conn);
 
             // Reset connection to receive new one at next call.
             U.close(conn, log);
@@ -2488,11 +2493,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Connection associated with current thread.
      */
     public ObjectPool.Reusable<H2ConnectionWrapper> detach() {
-        Thread key = Thread.currentThread();
-
         ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
-
-//        conns.get(key).remove(reusableConnection.object());
 
         connCache.remove();
 
@@ -2843,12 +2844,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
-        mapQryExec.cancelLazyWorkers();
+        mapQryExec.stop();
 
         for (ConcurrentMap<H2ConnectionWrapper, Boolean> perThreadConns : conns.values()) {
             for (H2ConnectionWrapper c : perThreadConns.keySet())
                 U.close(c, log);
         }
+
+        connectionPool.remove();
+        connCache.remove();
 
         conns.clear();
         schemas.clear();

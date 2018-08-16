@@ -53,26 +53,17 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
-    private static  int cnt = 0;
-
-    private static boolean lazy = false;
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
-
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
 
     /**
      * Test local query execution.
      *
      * @throws Exception If failed.
      */
-    public void _testSingleNode() throws Exception {
+    public void testSingleNode() throws Exception {
         checkSingleNode(1);
     }
 
@@ -81,7 +72,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testSingleNodeWithParallelism() throws Exception {
+    public void testSingleNodeWithParallelism() throws Exception {
         checkSingleNode(4);
     }
 
@@ -90,7 +81,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testMultipleNodes() throws Exception {
+    public void testMultipleNodes() throws Exception {
         checkMultipleNodes(1);
     }
 
@@ -99,34 +90,8 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testMultipleNodesWithParallelism() throws Exception {
+    public void testMultipleNodesWithParallelism() throws Exception {
         checkMultipleNodes(4);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDbg() throws Exception {
-//        while(true) {
-            Ignite srv3 = startGrid(3);
-
-            srv3.createCache(cacheConfiguration(4));
-
-            populateBaseQueryData(srv3);
-
-            FieldsQueryCursor<List<?>> cursor = execute(srv3, baseQuery().setPageSize(PAGE_SIZE_SMALL));
-
-            Iterator<List<?>> iter = cursor.iterator();
-
-            for (int i = 0; i < 30; i++)
-                iter.next();
-
-            stopGrid(3);
-
-            assertNoWorkers();
-
-            GridDebug.dumpHeap(String.format("lazy-" + lazy + "-%03d.hprof", cnt++), true);
-//        }
     }
 
     /**
@@ -411,7 +376,7 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private static FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
-        return cache(node).query(qry.setLazy(lazy));
+        return cache(node).query(qry.setLazy(true));
     }
 
     /**
