@@ -28,6 +28,7 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -144,7 +145,8 @@ public class CacheGroupAffinityMessage implements Message {
         GridCacheSharedContext cctx,
         AffinityTopologyVersion topVer,
         Collection<Integer> affReq,
-        @Nullable Map<Integer, CacheGroupAffinityMessage> cachesAff) {
+        @Nullable Map<Integer, CacheGroupAffinityMessage> cachesAff
+    ) {
         assert !F.isEmpty(affReq) : affReq;
 
         if (cachesAff == null)
@@ -152,7 +154,18 @@ public class CacheGroupAffinityMessage implements Message {
 
         for (Integer grpId : affReq) {
             if (!cachesAff.containsKey(grpId)) {
-                GridAffinityAssignmentCache aff = cctx.affinity().affinity(grpId);
+                GridAffinityAssignmentCache aff = cctx.affinity().groupAffinity(grpId);
+
+                // If no coordinator group holder on the node, try fetch affinity from existing cache group.
+                if (aff == null) {
+                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                    assert grp != null : "No cache group holder or cache group to create AffinityMessage"
+                        + ". Requested group id: " + grpId
+                        + ". Topology version: " + topVer;
+
+                    aff = grp.affinity();
+                }
 
                 List<List<ClusterNode>> assign = aff.readyAssignments(topVer);
 
