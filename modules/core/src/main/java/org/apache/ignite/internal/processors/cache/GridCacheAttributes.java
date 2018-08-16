@@ -147,9 +147,18 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Eviction filter class name.
+     *
+     * @deprecated Use {@link #evictionFilterFactoryClassName()} instead.
      */
     public String evictionFilterClassName() {
         return className(ccfg.getEvictionFilter());
+    }
+
+    /**
+     * @return Eviction filter factory class name.
+     */
+    public String evictionFilterFactoryClassName() {
+        return className(ccfg.getEvictionFilterFactory());
     }
 
     /**
@@ -342,9 +351,18 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Topology validator class name.
+     *
+     * @deprecated Use {@link #topologyValidatorFactoryClassName()} instead.
      */
     String topologyValidatorClassName() {
         return className(ccfg.getTopologyValidator());
+    }
+
+    /**
+     * @return Topology validator factory class name.
+     */
+    String topologyValidatorFactoryClassName() {
+        return className(ccfg.getTopologyValidatorFactory());
     }
 
     /**
