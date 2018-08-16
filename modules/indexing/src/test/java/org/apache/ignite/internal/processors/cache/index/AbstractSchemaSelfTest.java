@@ -526,52 +526,27 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Key class.
+     * Value class.
      */
     public static class ValueClass {
         /** Field 1. */
         @QuerySqlField
-        private String field1;
+        private long field1;
 
         /**
          * Constructor.
          *
          * @param field1 Field 1.
          */
-        public ValueClass(String field1) {
+        public ValueClass(long field1) {
             this.field1 = field1;
         }
 
         /**
          * @return Field 1
          */
-        public String field1() {
+        public long field1() {
             return field1;
-        }
-    }
-
-    /**
-     * Key class.
-     */
-    public static class ValueClass2 {
-        /** Field 1. */
-        @QuerySqlField(name = "field1")
-        private String field;
-
-        /**
-         * Constructor.
-         *
-         * @param field Field 1.
-         */
-        public ValueClass2(String field) {
-            this.field = field;
-        }
-
-        /**
-         * @return Field 1
-         */
-        public String field() {
-            return field;
         }
     }
 
