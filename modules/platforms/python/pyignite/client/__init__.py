@@ -219,6 +219,16 @@ class Client:
         # exception chaining gives a misleading traceback here
         raise ReconnectError('Can not reconnect: out of nodes') from None
 
+    def _transfer_params(self, to: 'Client'):
+        """
+        Transfer non-SSL parameters to target client object.
+
+        :param target: client object to transfer parameters to.
+        """
+        to.username = self.username
+        to.password = self.password
+        to.nodes = self.nodes
+
     def clone(self) -> 'Client':
         """
         Clones this client in its current state.
@@ -226,9 +236,7 @@ class Client:
         :return: `Client` object.
         """
         clone = Client(**self.init_kwargs)
-        clone.username = self.username
-        clone.password = self.password
-        clone.nodes = self.nodes
+        self._transfer_params(to=clone)
         if self.port and self.host:
             clone._connect(self.host, self.port)
         return clone
@@ -242,9 +250,7 @@ class Client:
         :return: `MockClient` object.
         """
         client = MockClient(buffer, **self.init_kwargs)
-        client.username = self.username
-        client.password = self.password
-        client.nodes = self.nodes
+        self._transfer_params(to=client)
         if self.port and self.host:
             client._connect(self.host, self.port)
         return client

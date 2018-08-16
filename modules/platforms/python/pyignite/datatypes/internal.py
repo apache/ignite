@@ -17,6 +17,7 @@ from collections import OrderedDict
 import ctypes
 import decimal
 from datetime import date, datetime, timedelta
+from typing import Any, Tuple
 import uuid
 
 import attr
@@ -173,7 +174,7 @@ class Struct:
     fields = attr.ib(type=list)
     dict_type = attr.ib(default=OrderedDict)
 
-    def parse(self, client: Client):
+    def parse(self, client: Client) -> Tuple[type, bytes]:
         buffer = b''
         fields = []
 
@@ -194,13 +195,13 @@ class Struct:
 
         return data_class, buffer
 
-    def to_python(self, ctype_object):
+    def to_python(self, ctype_object) -> Any:
         result = self.dict_type()
         for name, c_type in self.fields:
             result[name] = c_type.to_python(getattr(ctype_object, name))
         return result
 
-    def from_python(self, value):
+    def from_python(self, value) -> bytes:
         buffer = b''
 
         for name, el_class in self.fields:

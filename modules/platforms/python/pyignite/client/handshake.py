@@ -23,73 +23,55 @@ OP_HANDSHAKE = 1
 
 
 class HandshakeRequest:
-    """
-    Handshake request have dynamic fields, so unfortunately it can not be
-    a ctypes.Structure descendant.
-    """
-    c_type = None
+    """ Handshake request. """
+    handshake_struct = None
     username = None
     password = None
-    fields = [
-        ('length', ctypes.c_int),
-        ('op_code', ctypes.c_byte),
-        ('version_major', ctypes.c_short),
-        ('version_minor', ctypes.c_short),
-        ('version_patch', ctypes.c_short),
-        ('client_code', ctypes.c_byte),
-    ]
 
     def __init__(
         self, username: Optional[str]=None, password: Optional[str]=None
     ):
-        fields = self.fields.copy()
-        if username and password:
-            from pyignite.datatypes import String
+        from pyignite.datatypes.standard import String
+        from pyignite.datatypes.internal import Struct
+        from pyignite.datatypes.primitive import Byte, Int, Short
 
-            username_class = String.build_c_type(len(username))
-            password_class = String.build_c_type(len(password))
+        fields = [
+            ('length', Int),
+            ('op_code', Byte),
+            ('version_major', Short),
+            ('version_minor', Short),
+            ('version_patch', Short),
+            ('client_code', Byte),
+        ]
+        if username and password:
             self.username = username
             self.password = password
             fields.extend([
-                ('username', username_class),
-                ('password', password_class),
+                ('username', String),
+                ('password', String),
             ])
-        self.c_type = type(
-            self.__class__.__name__,
-            (ctypes.LittleEndianStructure,),
-            {
-                '_pack_': 1,
-                '_fields_': fields,
-            }
-        )
+        self.handshake_struct = Struct(fields)
 
-    def __bytes__(self):
-        from pyignite.datatypes import String
-
-        request = self.c_type()
-        request.length = (
-            ctypes.sizeof(self.c_type) - ctypes.sizeof(ctypes.c_int)
-        )
-        request.op_code = OP_HANDSHAKE
-        request.version_major = PROTOCOL_VERSION_MAJOR
-        request.version_minor = PROTOCOL_VERSION_MINOR
-        request.version_patch = PROTOCOL_VERSION_PATCH
-        request.client_code = 2
-        if hasattr(request, 'username') and hasattr(request, 'password'):
-            type_code = int.from_bytes(
-                String.type_code,
-                byteorder=PROTOCOL_BYTE_ORDER
-            )
-            request.username.type_code = request.password.type_code = type_code
-            request.username.length = len(self.username)
-            request.username.data = bytes(
-                self.username, encoding=PROTOCOL_STRING_ENCODING
-            )
-            request.password.length = len(self.password)
-            request.password.data = bytes(
-                self.password, encoding=PROTOCOL_STRING_ENCODING
-            )
-        return bytes(request)
+    def __bytes__(self) -> bytes:
+        handshake_data = {
+            'length': 8,
+            'op_code': OP_HANDSHAKE,
+            'version_major': PROTOCOL_VERSION_MAJOR,
+            'version_minor': PROTOCOL_VERSION_MINOR,
+            'version_patch': PROTOCOL_VERSION_PATCH,
+            'client_code': 2,
+        }
+        if self.username and self.password:
+            handshake_data.update({
+                'username': self.username,
+                'password': self.password,
+            })
+            handshake_data['length'] += sum([
+                10,
+                len(self.username),
+                len(self.password),
+            ])
+        return self.handshake_struct.from_python(handshake_data)
 
 
 def read_response(client):
