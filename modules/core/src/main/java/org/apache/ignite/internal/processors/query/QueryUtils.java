@@ -430,11 +430,6 @@ public class QueryUtils {
         if (keyCls == null)
             keyCls = Object.class;
 
-        ensureClassMetadata(ctx, keyCls);
-
-        if (valCls != null)
-            ensureClassMetadata(ctx, valCls);
-
         String simpleValType = ((valCls == null) ? typeName(qryEntity.findValueType()) : typeName(valCls));
 
         desc.name(simpleValType);
@@ -480,6 +475,13 @@ public class QueryUtils {
         QueryTypeIdKey altTypeId = null;
 
         int valTypeId = ctx.cacheObjects().typeId(qryEntity.findValueType());
+
+        if (binaryEnabled) {
+            ensureClassMetadata(ctx, keyCls);
+
+            if (valCls != null)
+                ensureClassMetadata(ctx, valCls);
+        }
 
         if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
             processBinaryMeta(ctx, qryEntity, desc);

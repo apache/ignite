@@ -68,7 +68,6 @@ public class CacheAffinityKeyQueryTest extends GridCommonAbstractTest {
     public void testAffinityKeyRegisteredStaticCache() throws Exception {
         Ignite ignite = startGrid();
 
-
         assertEquals("affKey", getAffinityKey(ignite, StaticKey.class));
         assertEquals("affKey", getAffinityKey(ignite, StaticValue.class));
     }
