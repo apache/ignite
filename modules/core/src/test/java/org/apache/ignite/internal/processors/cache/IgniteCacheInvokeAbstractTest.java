@@ -62,8 +62,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private Integer lastKey = 0;
-    /** */
-    private IgniteEx client;
 
     /**
      * @throws Exception If failed.
