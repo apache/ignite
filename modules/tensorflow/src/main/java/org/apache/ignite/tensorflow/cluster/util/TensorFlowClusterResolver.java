@@ -77,8 +77,10 @@ public class TensorFlowClusterResolver {
      */
     public void releasePorts(TensorFlowClusterSpec spec) {
         for (String jobName : spec.getJobs().keySet())
-            for (TensorFlowServerAddressSpec address : spec.getJobs().get(jobName))
+            for (TensorFlowServerAddressSpec address : spec.getJobs().get(jobName)) {
                 portMgr.releasePort(address.getNodeId(), address.getPort());
+                System.out.println("RELEASE PORT (TFCR) " + address.getNodeId() + ":" + address.getPort());
+            }
     }
 
     /** Destroys TensorFlow cluster resolver. */
