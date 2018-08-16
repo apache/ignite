@@ -139,8 +139,11 @@ public class CacheInvokeDirectResult implements Message {
             }
         }
 
-        if (unprepareRes != null)
+        if (unprepareRes != null) {
             res = ctx.toCacheObject(unprepareRes);
+
+            unprepareRes = null;
+        }
 
         if (res != null)
             res.prepareMarshal(ctx.cacheObjectContext());
