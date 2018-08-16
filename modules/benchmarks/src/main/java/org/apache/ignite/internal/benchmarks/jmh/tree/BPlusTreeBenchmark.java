@@ -176,7 +176,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         TestTree(ReuseList reuseList, int cacheId, PageMemory pageMem, long metaPageId)
             throws IgniteCheckedException {
             super("test", cacheId, pageMem, null, new AtomicLong(), metaPageId, reuseList,
-                new IOVersions<>(new LongInnerIO()), new IOVersions<>(new LongLeafIO()));
+                new IOVersions<>(new LongInnerIO()), new IOVersions<>(new LongLeafIO()), null);
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
 

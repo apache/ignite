@@ -544,7 +544,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param routineInfo Routine info.
      */
     private void startDiscoveryDataRoutine(ContinuousRoutineInfo routineInfo) {
-        IgnitePredicate<ClusterNode> nodeFilter = null;
+        IgnitePredicate<ClusterNode> nodeFilter;
 
         try {
             if (routineInfo.nodeFilter != null) {
@@ -552,6 +552,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 ctx.resource().injectGeneric(nodeFilter);
             }
+            else
+                nodeFilter = null;
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to unmarshal continuous routine filter, ignore routine [" +
@@ -561,45 +563,47 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             return;
         }
 
-        if (nodeFilter == null || nodeFilter.apply(ctx.discovery().localNode())) {
-            GridContinuousHandler hnd;
+        ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe(() -> {
+            if (nodeFilter == null || nodeFilter.apply(ctx.discovery().localNode())) {
+                GridContinuousHandler hnd;
 
-            try {
-                hnd = U.unmarshal(marsh, routineInfo.hnd, U.resolveClassLoader(ctx.config()));
+                try {
+                    hnd = U.unmarshal(marsh, routineInfo.hnd, U.resolveClassLoader(ctx.config()));
 
-                if (ctx.config().isPeerClassLoadingEnabled())
-                    hnd.p2pUnmarshal(routineInfo.srcNodeId, ctx);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to unmarshal continuous routine handler, ignore routine [" +
-                    "routineId=" + routineInfo.routineId +
-                    ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
+                    if (ctx.config().isPeerClassLoadingEnabled())
+                        hnd.p2pUnmarshal(routineInfo.srcNodeId, ctx);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to unmarshal continuous routine handler, ignore routine [" +
+                        "routineId=" + routineInfo.routineId +
+                        ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
 
-                return;
-            }
+                    return;
+                }
 
-            try {
-                registerHandler(routineInfo.srcNodeId,
-                    routineInfo.routineId,
-                    hnd,
-                    routineInfo.bufSize,
-                    routineInfo.interval,
-                    routineInfo.autoUnsubscribe,
-                    false);
+                try {
+                    registerHandler(routineInfo.srcNodeId,
+                        routineInfo.routineId,
+                        hnd,
+                        routineInfo.bufSize,
+                        routineInfo.interval,
+                        routineInfo.autoUnsubscribe,
+                        false);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to register continuous routine handler, ignore routine [" +
+                        "routineId=" + routineInfo.routineId +
+                        ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
+                }
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to register continuous routine handler, ignore routine [" +
-                    "routineId=" + routineInfo.routineId +
-                    ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
+            else {
+                if (log.isDebugEnabled()) {
+                    log.debug("Do not register continuous routine, rejected by node filter [" +
+                        "routineId=" + routineInfo.routineId +
+                        ", srcNodeId=" + routineInfo.srcNodeId + ']');
+                }
             }
-        }
-        else {
-            if (log.isDebugEnabled()) {
-                log.debug("Do not register continuous routine, rejected by node filter [" +
-                    "routineId=" + routineInfo.routineId +
-                    ", srcNodeId=" + routineInfo.srcNodeId + ']');
-            }
-        }
+        }));
     }
 
     /**

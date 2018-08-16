@@ -25,7 +25,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
-import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Example that shows how to create dataset based on an existing local storage and then use it to calculate {@code mean}

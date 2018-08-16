@@ -164,7 +164,7 @@
             <![CDATA[The Apache Ignite Kafka module + dependencies. This module installs the Scala 2.11 library bundle.]]>
         </details>
         <feature prerequisite="true">wrap</feature>
-        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala211.library.version}</bundle>
+        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala.library.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.yammer.metrics/metrics-core/${yammer.metrics.core.version}$Bundle-SymbolicName=yammer-metrics-core&amp;Bundle-Version=2.2.0&amp;Export-Package=*;-noimport:=true;version=${yammer.metrics.core.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.yammer.metrics/metrics-annotation/${yammer.metrics.annotation.version}$Bundle-SymbolicName=yammer-metrics-annotation&amp;Bundle-Version=2.2.0&amp;Export-Package=*;-noimport:=true;version=${yammer.metrics.annotation.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/connect-api/${kafka.version}$Bundle-SymbolicName=connect-api&amp;Bundle-Version=${kafka.version}</bundle>
@@ -208,9 +208,9 @@
             install -s mvn:xom/xom/1.2.5]]>
         </details>
         <feature dependency="true">http</feature>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson2.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson2.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson2.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-lang/commons-lang/${commons.lang.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-collections/commons-collections/${commons.collections.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-rest-http/${project.version}</bundle>
@@ -228,7 +228,7 @@
         <details>
             <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.11 library bundle.]]>
         </details>
-        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala211.library.version}</bundle>
+        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala.library.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-scalar/${project.version}</bundle>
     </feature>
 
@@ -324,8 +324,8 @@
         </details>
         <bundle start="true" dependency="true">mvn:org.apache.zookeeper/zookeeper/${zookeeper.version}</bundle>
         <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava16.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.codehaus.jackson/jackson-core-asl/${jackson.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.codehaus.jackson/jackson-mapper-asl/${jackson.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-client/${curator.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-framework/${curator.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.curator/curator-recipes/${curator.version}</bundle>
