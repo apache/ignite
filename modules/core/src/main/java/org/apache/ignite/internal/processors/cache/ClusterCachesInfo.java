@@ -258,7 +258,12 @@ class ClusterCachesInfo {
                 "Cache preload mode", locAttr.cacheRebalanceMode(), rmtAttr.cacheRebalanceMode(), true);
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidator",
-                "Cache topology validator", locAttr.topologyValidatorClassName(), rmtAttr.topologyValidatorClassName(), true);
+                "Cache topology validator", locAttr.topologyValidatorClassName(),
+                rmtAttr.topologyValidatorClassName(), true);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidatorFactory",
+                "Cache topology validator factory", locAttr.topologyValidatorFactoryClassName(),
+                rmtAttr.topologyValidatorFactoryClassName(), true);
 
             ClusterNode rmtNode = ctx.discovery().node(rmt);
 
@@ -282,11 +287,16 @@ class ClusterCachesInfo {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionFilter", "Eviction filter",
                 locAttr.evictionFilterClassName(), rmtAttr.evictionFilterClassName(), true);
 
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionFilterFactory",
+                "Eviction filter factory", locAttr.evictionFilterFactoryClassName(),
+                rmtAttr.evictionFilterFactoryClassName(), true);
+
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
                 locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
 
-            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicyFactory", "Eviction policy factory",
-                locAttr.evictionPolicyFactoryClassName(), rmtAttr.evictionPolicyFactoryClassName(), true);
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicyFactory",
+                "Eviction policy factory", locAttr.evictionPolicyFactoryClassName(),
+                rmtAttr.evictionPolicyFactoryClassName(), true);
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
                 "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
@@ -1903,8 +1913,12 @@ class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "dataRegionName", "Data region",
             cfg.getDataRegionName(), startCfg.getDataRegionName(), true);
 
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator", "Topology validator",
-            attr1.topologyValidatorClassName(), attr2.topologyValidatorClassName(), true);
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator",
+            "Topology validator", attr1.topologyValidatorClassName(), attr2.topologyValidatorClassName(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidatorFactory",
+            "Topology validator factory", attr1.topologyValidatorFactoryClassName(),
+            attr2.topologyValidatorFactoryClassName(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "partitionLossPolicy", "Partition Loss Policy",
             cfg.getPartitionLossPolicy(), startCfg.getPartitionLossPolicy(), true);
