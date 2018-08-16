@@ -303,7 +303,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new ObjectPool<>(
                 IgniteH2Indexing.this::newConnectionWrapper,
                 50,
-                IgniteH2Indexing.this::closePooledConnectionWrapper);
+                IgniteH2Indexing.this::closePooledConnectionWrapper,
+                IgniteH2Indexing.this::recycleConnection);
         }
     };
 
@@ -442,8 +443,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection wrapper to close.
      */
     private void closePooledConnectionWrapper(H2ConnectionWrapper conn) {
-        // TODO: remove from conns collection or not?
+        conns.get(conn.initialThread()).remove(conn);
+
         U.closeQuiet(conn);
+    }
+
+    /**
+     * Removes from threadlocal cache and returns associated with current thread connection.
+     * @return Connection associated with current thread.
+     */
+    public ObjectPool.Reusable<H2ConnectionWrapper> detachConnection() {
+        ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
+
+        connCache.remove();
+
+        conns.get(Thread.currentThread()).remove(reusableConnection.object());
+
+        return reusableConnection;
+    }
+
+    /**
+     * Return connection to the glob all connection collection.
+     * @param conn Recycled connection.
+     */
+    private void recycleConnection(H2ConnectionWrapper conn) {
+        conns.get(conn.initialThread()).put(conn, false);
     }
 
     /**
@@ -1177,7 +1201,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private ResultSet executeSqlQuery(final Connection conn, final PreparedStatement stmt,
         int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
-        final MapQueryLazyWorker lazyWorker = MapQueryLazyWorker.currentWorker();
+        final MapQueryLazyWorker lazyWorker = GridH2QueryContext.get() == null ?
+            null : GridH2QueryContext.get().lazyWorker();
 
         if (cancel != null) {
             cancel.set(new Runnable() {
@@ -2486,18 +2511,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 it.remove();
             }
         }
-    }
-
-    /**
-     * Removes from cache and returns associated with current thread connection.
-     * @return Connection associated with current thread.
-     */
-    public ObjectPool.Reusable<H2ConnectionWrapper> detach() {
-        ObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
-
-        connCache.remove();
-
-        return reusableConnection;
     }
 
     /**

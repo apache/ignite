@@ -100,6 +100,7 @@ class MapQueryResult {
     private final MapQueryLazyWorker lazyWorker;
 
     /**
+     * @param h2 H2 indexing.
      * @param rs Result set.
      * @param cctx Cache context.
      * @param qrySrcNodeId Query source node.
@@ -174,6 +175,8 @@ class MapQueryResult {
      * @return {@code true} If there are no more rows available.
      */
     synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
+        assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker() || !lazyWorker.isStarted();
+
         if (closed)
             return true;
 

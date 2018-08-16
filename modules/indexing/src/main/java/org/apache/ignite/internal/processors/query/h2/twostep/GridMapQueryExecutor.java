@@ -753,7 +753,7 @@ public class GridMapQueryExecutor {
                 if (!lazy)
                     releaseReservations();
                 else if (!qr.isAllClosed()) {
-                    ObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.detach();
+                    ObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
 
                     worker.detachedConnection(detachedConn);
 

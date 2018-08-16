@@ -361,11 +361,9 @@ public class GridH2Table extends TableBase {
     private void attachReadLockToCurrentThread(Session ses) {
         assert sessions.containsKey(ses) : "Attached session have not locked the table: " + getName();
 
-        readLockCnt.incrementAndGet();
+        lock(false);
 
         readLockCnt.decrementAndGet();
-
-        lock(false);
     }
 
     /**
@@ -482,9 +480,9 @@ public class GridH2Table extends TableBase {
         if (exclusive == null)
             return;
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
         unlock(exclusive);
+
+        GridH2QueryContext qctx = GridH2QueryContext.get();
 
         if (qctx != null)
             qctx.lockedTables().remove(this);
