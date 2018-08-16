@@ -219,6 +219,17 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(true, metrics.IsWriteThrough);
                 Assert.AreEqual(true, metrics.IsValidForReading);
                 Assert.AreEqual(true, metrics.IsValidForWriting);
+                Assert.AreEqual(68, metrics.EntryProcessorPuts);
+                Assert.AreEqual(69, metrics.EntryProcessorReadOnlyInvocations);
+                Assert.AreEqual(70, metrics.EntryProcessorInvocations);
+                Assert.AreEqual(71, metrics.EntryProcessorHits);
+                Assert.AreEqual(72, metrics.EntryProcessorHitPercentage);
+                Assert.AreEqual(73, metrics.EntryProcessorMissPercentage);
+                Assert.AreEqual(74, metrics.EntryProcessorMisses);
+                Assert.AreEqual(75, metrics.EntryProcessorAverageInvocationTime);
+                Assert.AreEqual(76, metrics.EntryProcessorMinInvocationTime);
+                Assert.AreEqual(77, metrics.EntryProcessorMaxInvocationTime);
+                Assert.AreEqual(78, metrics.EntryProcessorRemovals);
             }
         }
 

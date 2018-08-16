@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.spi.communication.tcp.GridCacheDhtLockBackupSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConfigSelfTest;
@@ -86,6 +87,8 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpCommunicationSpiHalfOpenedConnectionTest.class));
 
         suite.addTest(new TestSuite(TcpCommunicationStatisticsTest.class));
+
+        //suite.addTest(new TestSuite(GridCacheDhtLockBackupSelfTest.class));
 
         return suite;
     }

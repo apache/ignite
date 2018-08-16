@@ -1052,6 +1052,21 @@ public interface EventType {
     };
 
     /**
+     * All Transaction events. This array can be directly passed into
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
+     * subscribe to all transaction events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int[] EVTS_TX = {
+        EVT_TX_STARTED,
+        EVT_TX_COMMITTED,
+        EVT_TX_ROLLED_BACK,
+        EVT_TX_SUSPENDED,
+        EVT_TX_RESUMED
+    };
+
+    /**
      * All Ignite events (<b>including</b> metric update event).
      */
     public static final int[] EVTS_ALL = U.gridEvents();

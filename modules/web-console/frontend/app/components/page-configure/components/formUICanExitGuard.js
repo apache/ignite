@@ -19,6 +19,7 @@ import {default as ConfigChangesGuard} from '../services/ConfigChangesGuard';
 
 class FormUICanExitGuardController {
     static $inject = ['$element', ConfigChangesGuard.name];
+
     /**
      * @param {JQLite} $element
      * @param {ConfigChangesGuard} ConfigChangesGuard
@@ -27,23 +28,30 @@ class FormUICanExitGuardController {
         this.$element = $element;
         this.ConfigChangesGuard = ConfigChangesGuard;
     }
+
     $onDestroy() {
         this.$element = null;
     }
+
     $onInit() {
         const data = this.$element.data();
         const controller = Object.keys(data)
             .map((key) => data[key])
             .find(this._itQuacks);
 
-        if (!controller) return;
+        if (!controller)
+            return;
 
         controller.uiCanExit = ($transition$) => {
-            if ($transition$.options().custom.justIDUpdate) return true;
+            if ($transition$.options().custom.justIDUpdate)
+                return true;
+
             $transition$.onSuccess({}, controller.reset);
+
             return this.ConfigChangesGuard.guard(...controller.getValuesToCompare());
         };
     }
+
     _itQuacks(controller) {
         return controller.reset instanceof Function &&
             controller.getValuesToCompare instanceof Function &&
