@@ -28,6 +28,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -48,7 +49,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTai
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,6 +80,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
     private boolean keepBinary;
 
+    /** Replay from bound include. */
+    private final FileWALPointer lowBound;
+
+    /** Replay to bound include */
+    private final FileWALPointer highBound;
+
     /**
      * Creates iterator in file-by-file iteration mode. Directory
      * @param log Logger.
@@ -93,6 +102,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull FileIOFactory ioFactory,
         @NotNull List<FileDescriptor> walFiles,
         IgniteBiPredicate<RecordType, WALPointer> readTypeFilter,
+        FileWALPointer lowBound,
+        FileWALPointer highBound,
         boolean keepBinary,
         int initialReadBufferSize
     ) throws IgniteCheckedException {
@@ -103,6 +114,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             ioFactory,
             initialReadBufferSize
         );
+
+        this.lowBound = lowBound;
+        this.highBound = highBound;
 
         this.keepBinary = keepBinary;
 
@@ -156,12 +170,15 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (curWalSegment != null)
             curWalSegment.close();
 
-        curWalSegmIdx++;
+        do {
+            curWalSegmIdx++;
 
-        curIdx++;
+            curIdx++;
 
-        if (curIdx >= walFileDescriptors.size())
-            return null;
+            if (curIdx >= walFileDescriptors.size())
+                return null;
+        }
+        while (!checkBounds(curIdx));
 
         FileDescriptor fd = walFileDescriptors.get(curIdx);
 
@@ -181,6 +198,50 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             return null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
+        @Nullable AbstractReadFileHandle hnd
+    ) throws IgniteCheckedException {
+        IgniteBiTuple<WALPointer, WALRecord> tup = super.advanceRecord(hnd);
+
+        if (tup == null)
+            return tup;
+
+        if (!checkBounds(tup.get1())) {
+            if (curRec != null) {
+                FileWALPointer prevRecPtr = (FileWALPointer)curRec.get1();
+
+                // Fast stop condition, after high bound reached.
+                if (prevRecPtr.compareTo(highBound) > 0)
+                    return null;
+            }
+
+            return new T2<>(tup.get1(), FilteredRecord.INSTANCE); // FilteredRecord for mark as filtered.
+        }
+
+        return tup;
+    }
+
+    /**
+     *
+     * @param ptr WAL pointer.
+     * @return {@code True} If pointer between low and high bounds. {@code False} if not.
+     */
+    private boolean checkBounds(WALPointer ptr) {
+        FileWALPointer ptr0 = (FileWALPointer)ptr;
+
+        return ptr0.compareTo(lowBound) >= 0 && ptr0.compareTo(highBound) <= 0;
+    }
+
+    /**
+     *
+     * @param idx WAL segment index.
+     * @return {@code True} If pointer between low and high bounds. {@code False} if not.
+     */
+    private boolean checkBounds(int idx) {
+        return idx >= lowBound.index() && idx <= highBound.index();
     }
 
     /** {@inheritDoc} */
