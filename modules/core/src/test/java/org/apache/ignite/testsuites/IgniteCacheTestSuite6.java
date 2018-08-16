@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationProces
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalOptimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalPessimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.PartitionsExchangeCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.ReplicatedAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
@@ -96,6 +97,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(PartitionedAtomicCacheGetsDistributionTest.class);
         suite.addTestSuite(PartitionedTransactionalOptimisticCacheGetsDistributionTest.class);
         suite.addTestSuite(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
+
+        suite.addTestSuite(PartitionsExchangeCoordinatorFailoverTest.class);
 
         return suite;
     }
