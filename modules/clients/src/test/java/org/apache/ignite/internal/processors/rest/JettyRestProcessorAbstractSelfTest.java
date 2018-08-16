@@ -850,8 +850,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     public void testDeactivateActivate() throws Exception {
         assertClusterState(true);
 
-        changeClusterState(false);
-        changeClusterState(true);
+        changeClusterState(GridRestCommand.CLUSTER_DEACTIVATE);
+        changeClusterState(GridRestCommand.CLUSTER_ACTIVATE);
+
+        // same for deprecated.
+        changeClusterState(GridRestCommand.CLUSTER_INACTIVE);
+        changeClusterState(GridRestCommand.CLUSTER_ACTIVE);
 
         initCache();
     }
@@ -2991,12 +2995,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     /**
      * Change cluster state and test new state.
      *
-     * @param state Desired state.
+     * @param cmd Command.
      * @throws Exception If failed.
      */
-    private void changeClusterState(boolean state) throws Exception {
-        GridRestCommand cmd = state ? GridRestCommand.CLUSTER_ACTIVATE : GridRestCommand.CLUSTER_DEACTIVATE;
-
+    private void changeClusterState(GridRestCommand cmd) throws Exception {
         String ret = content(null, cmd);
 
         JsonNode res = jsonResponse(ret);
@@ -3004,6 +3006,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertFalse(res.isNull());
         assertTrue(res.asText().startsWith(cmd.key()));
 
-        assertClusterState(state);
+        assertClusterState(cmd == GridRestCommand.CLUSTER_ACTIVATE || cmd == GridRestCommand.CLUSTER_ACTIVE);
     }
 }

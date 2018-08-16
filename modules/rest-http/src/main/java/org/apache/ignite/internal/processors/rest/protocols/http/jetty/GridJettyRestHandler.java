@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -39,7 +41,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -61,11 +62,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES_MASK;
@@ -73,9 +71,10 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_C
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_QUERY;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_QUERY;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 
 /**
@@ -86,13 +85,13 @@ public class GridJettyRestHandler extends AbstractHandler {
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
     /** */
-    private static final String  USER_PARAM = "user";
+    private static final String USER_PARAM = "user";
 
     /** */
-    private static final String  PWD_PARAM = "password";
+    private static final String PWD_PARAM = "password";
 
     /** */
-    private static final String  CACHE_NAME_PARAM = "cacheName";
+    private static final String CACHE_NAME_PARAM = "cacheName";
 
     /** */
     private static final String BACKUPS_PARAM = "backups";
@@ -106,14 +105,14 @@ public class GridJettyRestHandler extends AbstractHandler {
     /** */
     private static final String WRITE_SYNCHRONIZATION_MODE_PARAM = "writeSynchronizationMode";
 
-    /**@deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
+    /** @deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
     private static final String IGNITE_LOGIN = "ignite.login";
 
-    /**@deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
+    /** @deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
     private static final String IGNITE_PASSWORD = "ignite.password";
 
     /** */
-    private static final String  TEMPLATE_NAME_PARAM = "templateName";
+    private static final String TEMPLATE_NAME_PARAM = "templateName";
 
     /** */
     private static final NullOutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
@@ -409,7 +408,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             cmdRes = new GridRestResponse(STATUS_FAILED, e.getMessage());
         }
 
-        try(ServletOutputStream os = res.getOutputStream()) {
+        try (ServletOutputStream os = res.getOutputStream()) {
             try {
                 // Try serialize.
                 jsonMapper.writeValue(NULL_OUTPUT_STREAM, cmdRes);
@@ -722,6 +721,8 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
             case CLUSTER_ACTIVATE:
             case CLUSTER_DEACTIVATE:
             case CLUSTER_CURRENT_STATE: {
@@ -729,8 +730,10 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 if (cmd == CLUSTER_CURRENT_STATE)
                     restReq0.reqCurrentState();
+                else if (cmd == CLUSTER_ACTIVE || cmd == CLUSTER_ACTIVATE)
+                    restReq0.active(true);
                 else
-                    restReq0.active(cmd == CLUSTER_ACTIVATE);
+                    restReq0.active(false);
 
                 restReq = restReq0;
 
@@ -895,14 +898,14 @@ public class GridJettyRestHandler extends AbstractHandler {
     }
 
     /**
-     *
      * @param params Parameters.
      * @param userParam Parameter name to take user name.
      * @param pwdParam Parameter name to take password.
      * @param restReq Request to add credentials if any.
      * @return {@code true} If params contains credentials.
      */
-    private boolean credentials(Map<String, Object> params, String userParam, String pwdParam, GridRestRequest restReq) {
+    private boolean credentials(Map<String, Object> params, String userParam, String pwdParam,
+        GridRestRequest restReq) {
         boolean hasCreds = params.containsKey(userParam) || params.containsKey(pwdParam);
 
         if (hasCreds) {
@@ -923,7 +926,8 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param params Parameters map.
      * @return Values.
      */
-    protected List<Object> values(String type, String keyPrefix, Map<String, Object> params) throws IgniteCheckedException {
+    protected List<Object> values(String type, String keyPrefix,
+        Map<String, Object> params) throws IgniteCheckedException {
         assert keyPrefix != null;
 
         List<Object> vals = new LinkedList<>();
