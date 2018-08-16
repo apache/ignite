@@ -33,6 +33,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
@@ -53,8 +54,8 @@ import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
 public class ConfigVariations {
     /** */
     private static final ConfigParameter<Object> EVICTION_PARAM = Parameters.complexParameter(
-        Parameters.parameter("setEvictionPolicy", Parameters.factory(FifoEvictionPolicy.class)),
-        Parameters.parameter("setEvictionFilter", Parameters.factory(NoopEvictionFilter.class))
+        Parameters.parameter("setEvictionPolicyFactory", Parameters.factory(FifoEvictionPolicyFactory.class)),
+        Parameters.parameter("setEvictionFilterFactory", Parameters.factory(NoopEvictionFilterFactory.class))
     );
 
     /** */
@@ -117,7 +118,7 @@ public class ConfigVariations {
                 CACHE_STORE_PARAM,
                 REBALANCING_PARAM,
                 Parameters.parameter("setInterceptor", Parameters.factory(NoopInterceptor.class)),
-                Parameters.parameter("setTopologyValidator", Parameters.factory(NoopTopologyValidator.class)),
+                Parameters.parameter("setTopologyValidatorFactory", Parameters.factory(NoopTopologyValidatorFactory.class)),
                 Parameters.parameter("addCacheEntryListenerConfiguration", Parameters.factory(EmptyCacheEntryListenerConfiguration.class))
             )
         ),
@@ -194,6 +195,17 @@ public class ConfigVariations {
     /**
      *
      */
+    public static class NoopEvictionFilterFactory implements Factory<EvictionFilter> {
+
+        /** {@inheritDoc} */
+        @Override public EvictionFilter create() {
+            return new NoopEvictionFilter();
+        }
+    }
+
+    /**
+     *
+     */
     public static class NoopEvictionFilter implements EvictionFilter {
         /** */
         private static final long serialVersionUID = 0;
@@ -239,6 +251,16 @@ public class ConfigVariations {
         /** {@inheritDoc} */
         @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
             // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    public static class NoopTopologyValidatorFactory implements Factory<TopologyValidator> {
+        /** {@inheritDoc} */
+        @Override public TopologyValidator create() {
+            return new NoopTopologyValidator();
         }
     }
 
