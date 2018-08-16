@@ -1208,7 +1208,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel.set(new Runnable() {
                 @Override public void run() {
                     if (lazyWorker != null) {
-                        lazyWorker.submit(new Runnable() {
+                        lazyWorker.runStatementCancelTask(new Runnable() {
                             @Override public void run() {
                                 cancelStatement(stmt);
                             }

@@ -147,6 +147,16 @@ public class MapQueryLazyWorker extends GridWorker {
     }
 
     /**
+     * @param task Statement cancel task.
+     */
+    public void runStatementCancelTask(Runnable task) {
+        if (isStarted())
+            submit(task);
+        else
+            task.run();
+    }
+
+    /**
      * @return Worker key.
      */
     public MapQueryLazyWorkerKey key() {
