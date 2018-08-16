@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * File WAL pointer.
  */
-public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
+public class FileWALPointer implements WALPointer {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -112,7 +112,9 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull FileWALPointer o) {
+    @Override public int compareTo(@NotNull WALPointer oo) {
+        FileWALPointer o = (FileWALPointer) oo;
+
         int res = Long.compare(idx, o.idx);
 
         return res == 0 ? Integer.compare(fileOff, o.fileOff) : res;

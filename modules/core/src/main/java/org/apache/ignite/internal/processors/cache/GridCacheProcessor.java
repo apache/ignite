@@ -59,6 +59,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -128,6 +129,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -144,6 +146,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -175,6 +178,7 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
@@ -204,6 +208,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> sharedCtx;
+
+    private CacheEntryExecutor executor;
 
     /** */
     private final ConcurrentMap<Integer, CacheGroupContext> cacheGrps = new ConcurrentHashMap<>();
@@ -701,6 +707,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.state().cacheProcessorStarted();
         ctx.authentication().cacheProcessorStarted();
+
+        if (!ctx.clientNode() && !ctx.isDaemon()) {
+            executor = new CacheEntryExecutor(new StripedExecutor(
+                ctx.config().getStripedPoolSize(),
+                ctx.config().getIgniteInstanceName(),
+                "partition-worker",
+                log,
+                new IgniteInClosure<Throwable>() {
+                    @Override public void apply(Throwable t) {
+                        ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
+                },
+                ctx.workersRegistry()
+            ));
+        }
     }
 
     /**
@@ -921,6 +942,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        if (executor != null)
+            executor.stop(cancel);
+
         stopCaches(cancel);
 
         List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
@@ -4192,6 +4216,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K, V> GridCacheSharedContext<K, V> context() {
         return (GridCacheSharedContext<K, V>)sharedCtx;
+    }
+
+    public CacheEntryExecutor executor() {
+        return executor;
     }
 
     /**

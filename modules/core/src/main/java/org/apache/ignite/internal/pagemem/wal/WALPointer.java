@@ -22,7 +22,7 @@ import java.io.Serializable;
 /**
  *
  */
-public interface WALPointer extends Serializable {
+public interface WALPointer extends Serializable, Comparable<WALPointer> {
     /**
      * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
      */
