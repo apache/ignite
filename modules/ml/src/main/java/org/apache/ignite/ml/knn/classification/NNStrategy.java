@@ -15,20 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn;
+package org.apache.ignite.ml.knn.classification;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+/** This enum contains settings for kNN algorithm. */
+public enum NNStrategy {
+    /** The default strategy. All k neighbors have the same weight which is independent
+     * on their distance to the query point.*/
+    SIMPLE,
 
-/**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    ANNClassificationTest.class,
-    KNNClassificationTest.class,
-    KNNRegressionTest.class,
-    LabeledVectorSetTest.class
-})
-public class KNNTestSuite {
+    /** A refinement of the k-NN classification algorithm is to weigh the contribution of each of the k neighbors
+     * according to their distance to the query point, giving greater weight to closer neighbors. */
+    WEIGHTED
 }
