@@ -47,7 +47,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     private static final String CACHE2_NAME = "cache2";
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+    protected static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
     /** Grid count. */
     private static final int GRID_CNT = 2;

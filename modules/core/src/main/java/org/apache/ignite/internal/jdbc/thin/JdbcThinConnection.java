@@ -825,7 +825,7 @@ public class JdbcThinConnection implements Connection {
      * @return Normalized schema name.
      */
     private static String normalizeSchema(String schemaName) {
-        if (F.isEmpty(schemaName))
+        if (F.isEmpty(schemaName) || /* Nothing to do. */ schemaName.equals(QueryUtils.DFLT_SCHEMA))
             return QueryUtils.DFLT_SCHEMA;
 
         String res;
