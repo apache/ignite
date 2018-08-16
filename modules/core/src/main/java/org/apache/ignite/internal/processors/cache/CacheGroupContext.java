@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -650,14 +651,16 @@ public class CacheGroupContext {
      * @return Configured user objects which should be initialized/stopped on group start/stop.
      */
     Collection<?> configuredUserObjects() {
-        return Arrays.asList(ccfg.getAffinity(), ccfg.getNodeFilter(), ccfg.getTopologyValidator());
+        return Arrays.asList(ccfg.getAffinity(), ccfg.getNodeFilter(), ccfg.getTopologyValidatorFactory() != null ?
+            ccfg.getTopologyValidatorFactory() : ccfg.getTopologyValidator());
     }
 
     /**
      * @return Configured topology validator.
      */
     @Nullable public TopologyValidator topologyValidator() {
-        return ccfg.getTopologyValidator();
+        return ccfg.getTopologyValidatorFactory() != null ?
+            ccfg.getTopologyValidatorFactory().create() : ccfg.getTopologyValidator();
     }
 
     /**
