@@ -32,6 +32,15 @@ class SocketWriteError(SocketError):
     pass
 
 
+class HandshakeError(SocketError):
+    """
+    This exception is raised on Ignite binary protocol handshake failure,
+    as defined in
+    https://apacheignite.readme.io/docs/binary-client-protocol#section-handshake
+    """
+    pass
+
+
 class ReconnectError(Exception):
     """
     This exception is raised by `Client.reconnect` method, when no more

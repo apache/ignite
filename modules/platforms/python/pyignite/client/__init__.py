@@ -40,8 +40,8 @@ from typing import Iterable, Union
 
 from pyignite.constants import *
 from pyignite.exceptions import (
-    BinaryTypeError, CacheError, ParameterError, ReconnectError,
-    SocketError, SocketWriteError, SQLError,
+    BinaryTypeError, CacheError, HandshakeError, ParameterError,
+    ReconnectError, SocketError, SocketWriteError, SQLError,
 )
 from pyignite.utils import is_iterable, status_to_exception
 from .handshake import HandshakeRequest, read_response
@@ -162,20 +162,13 @@ class Client:
         hs_request = HandshakeRequest(self.username, self.password)
         self.send(hs_request)
         hs_response = self.read_response()
-        if hs_response.op_code == 0:
+        if hs_response['op_code'] == 0:
             self.close()
-            raise SocketError(
+            raise HandshakeError(
                 (
-                    'Ignite protocol version mismatch: '
-                    'requested {}.{}.{}, received {}.{}.{}.'
-                ).format(
-                    PROTOCOL_VERSION_MAJOR,
-                    PROTOCOL_VERSION_MINOR,
-                    PROTOCOL_VERSION_PATCH,
-                    hs_response.version_major,
-                    hs_response.version_minor,
-                    hs_response.version_patch,
-                )
+                    'Handshake error: {message}. Expected protocol version: '
+                    '{version_major}.{version_minor}.{version_patch}.'
+                ).format(**hs_response)
             )
         self.host, self.port = host, port
 

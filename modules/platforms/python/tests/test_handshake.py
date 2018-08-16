@@ -43,7 +43,7 @@ def test_handshake(
     hs_request = HandshakeRequest(username, password)
     client.send(hs_request)
     hs_response = read_response(client)
-    assert hs_response.op_code != 0
+    assert hs_response['op_code'] != 0
 
     client.close()
 
@@ -58,6 +58,6 @@ def test_handshake(
     hs_request = HandshakeRequest(username, password)
     client.send(hs_request)
     hs_response = read_response(client)
-    assert hs_response.op_code == 0
+    assert hs_response['op_code'] == 0
 
     client.close()
