@@ -240,7 +240,7 @@ class MapQueryResult {
             rows.add(res.currentRow());
         }
 
-        return false;
+        return !res.hasNext();
     }
 
     /**
