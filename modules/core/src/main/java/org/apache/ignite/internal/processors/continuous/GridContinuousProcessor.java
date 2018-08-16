@@ -1192,11 +1192,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         }
 
                         LT.warn(log, "Failed to wait for ack message. [node=" + nodeId +
-                            "routine=" + routineId + "]");
+                            ", routine=" + routineId + "]");
                     }
                 }
 
-                assert fut.isDone();
+                assert fut.isDone() : "Future in not finished [fut= " + fut + "]";
             }
             else {
                 final GridContinuousBatch batch = info.add(obj);
