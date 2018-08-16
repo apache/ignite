@@ -184,7 +184,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
 
         done.set(true);
 
-        restartThread.join();
+        restartThread.join(getMaxAwaitTimeout());
 
         for (int k = 0; k < RANGE; k++) {
             Integer val = null;

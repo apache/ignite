@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -118,7 +119,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
             });
         }
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assert timeObjs.size() == max;
 
@@ -192,7 +193,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
             }
         }, threads, "timeout-test-worker");
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assert timeObjs.size() == max * threads;
 
@@ -252,7 +253,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
             }
         }, threads, "timeout-test-worker");
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assert timeObjs.size() == max * threads;
 
@@ -507,7 +508,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
         rmv.get();
         called.get();
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assert callCnt.get() == 0;
     }
@@ -650,6 +651,6 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        onTimeoutCalled.await();
+        onTimeoutCalled.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
     }
 }

@@ -563,7 +563,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 th.start();
 
             for (Thread th : threads)
-                th.join();
+                th.join(getMaxAwaitTimeout());
 
             printCounter();
         }
@@ -601,7 +601,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 th.start();
 
             for (Thread th : threads)
-                th.join();
+                th.join(getMaxAwaitTimeout());
 
             printCounter();
 
@@ -774,7 +774,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 th.start();
 
             for (Thread th : threads)
-                th.join();
+                th.join(getMaxAwaitTimeout());
 
             for (int i = 0; i < GRID_CNT * RETRIES; i++)
                 for (int ii = 0; ii < GRID_CNT; ii++)

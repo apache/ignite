@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
@@ -126,7 +128,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
 
                     txStartLatch.countDown();
 
-                    txCommitLatch.await();
+                    txCommitLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     tx.commit();
                 }
@@ -135,7 +137,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
             }
         });
 
-        txStartLatch.await();
+        txStartLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         // 3. Start async operation to drain semaphore permits.
         final IgniteInternalFuture putFut = dataCache(victim).putAsync(DATA_KEY, 1);
@@ -189,7 +191,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
                 IgniteFileSystem igfs = attacker.fileSystem(IGFS_NAME);
 
                 try (IgfsOutputStream out = igfs.create(path, true)) {
-                    writeStartLatch.await();
+                    writeStartLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     out.write(new byte[1024]);
 

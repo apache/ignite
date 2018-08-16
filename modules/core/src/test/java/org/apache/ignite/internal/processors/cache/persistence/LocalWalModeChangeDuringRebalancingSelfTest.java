@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -109,7 +110,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
                         if (latch0 != null)
                             try {
-                                latch0.await();
+                                latch0.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                             }
                             catch (InterruptedException ex) {
                                 throw new IgniteException(ex);
@@ -130,7 +131,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
                         if (latch0 != null)
                             try {
-                                latch0.await();
+                                latch0.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                             }
                             catch (InterruptedException ex) {
                                 throw new IgniteException(ex);

@@ -19,6 +19,8 @@ package org.apache.ignite.cache;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -216,7 +218,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
         multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException e) {
                     fail();

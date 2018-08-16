@@ -94,7 +94,9 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
             @Override public Object call() throws Exception {
                 Lock lock = cache.lock(1);
 
-                assert lock.tryLock(1000L, TimeUnit.MILLISECONDS);
+                boolean locked = lock.tryLock(1000L, TimeUnit.MILLISECONDS);
+
+                assertTrue(locked);
 
                 info("Locked key from thread: " + thread());
 
@@ -183,21 +185,24 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
-                assert !cache.isLocalLocked(1, false);
+                assertFalse(cache.isLocalLocked(1, false));
 
                 lock.lock();
 
-                assert cache.isLocalLocked(1, true);
-                assert cache.isLocalLocked(1, false);
+                try {
+                    assertTrue(cache.isLocalLocked(1, true));
+                    assertTrue(cache.isLocalLocked(1, false));
 
-                l1.countDown();
+                    l1.countDown();
 
-                l2.await();
+                    l2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
+                }
+                finally {
+                    lock.unlock();
+                }
 
-                lock.unlock();
-
-                assert !cache.isLocalLocked(1, true);
-                assert !cache.isLocalLocked(1, false);
+                assertFalse(cache.isLocalLocked(1, true));
+                assertFalse(cache.isLocalLocked(1, false));
 
                 return null;
             }
@@ -206,15 +211,15 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
         GridTestThread t2 = new GridTestThread(new Callable<Object>() {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
-                l1.await();
+                l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
-                assert cache.isLocalLocked(1, false);
-                assert !cache.isLocalLocked(1, true);
+                assertTrue(cache.isLocalLocked(1, false));
+                assertFalse(cache.isLocalLocked(1, true));
 
-                assert !lock.tryLock(100L, TimeUnit.MILLISECONDS);
+                assertFalse(lock.tryLock(100L, TimeUnit.MILLISECONDS));
 
-                assert cache.isLocalLocked(1, false);
-                assert !cache.isLocalLocked(1, true);
+                assertTrue(cache.isLocalLocked(1, false));
+                assertFalse(cache.isLocalLocked(1, true));
 
                 l2.countDown();
 
@@ -227,14 +232,14 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
         t1.start();
         t2.start();
 
-        t1.join();
-        t2.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
 
         t1.checkError();
         t2.checkError();
 
-        assert !cache.isLocalLocked(1, false);
-        assert !cache.isLocalLocked(1, true);
+        assertFalse(cache.isLocalLocked(1, false));
+        assertFalse(cache.isLocalLocked(1, true));
     }
 
     /**
@@ -255,7 +260,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
             @Override public Object call() throws Exception {
                 int idx = cnt.incrementAndGet();
 
-                assert !cache.isLocalLocked(1, false);
+                assertFalse(cache.isLocalLocked(1, false));
 
                 Collections.addAll(keys1, idx, idx + 1, idx + 2, idx + 3);
 
@@ -264,19 +269,19 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                 lock.lock();
 
                 for (Integer key : keys1) {
-                    assert cache.isLocalLocked(key, false) : "Failed to acquire lock for key: " + key;
-                    assert cache.isLocalLocked(key, true) : "Failed to acquire lock for key: " + key;
+                    assertTrue("Failed to acquire lock for key: " + key, cache.isLocalLocked(key, false));
+                    assertTrue("Failed to acquire lock for key: " + key, cache.isLocalLocked(key, true));
                 }
 
                 l1.countDown();
 
-                l2.await();
+                l2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 lock.unlock();
 
                 for (Integer key : keys1) {
-                    assert !cache.isLocalLocked(key, false);
-                    assert !cache.isLocalLocked(key, true);
+                    assertFalse(cache.isLocalLocked(key, false));
+                    assertFalse(cache.isLocalLocked(key, true));
                 }
 
                 l3.countDown();
@@ -292,32 +297,31 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 Collections.addAll(keys2, idx, idx + 1, idx + 2, idx + 3);
 
-                l1.await();
+                l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 for (Integer key : keys1) {
-                    assert cache.isLocalLocked(key, false);
-                    assert !cache.isLocalLocked(key, true);
+                    assertTrue(cache.isLocalLocked(key, false));
+                    assertFalse(cache.isLocalLocked(key, true));
                 }
 
                 // Lock won't be acquired due to timeout.
-                assert !cache.lockAll(keys2).tryLock(100, TimeUnit.MILLISECONDS);
+                assertFalse(cache.lockAll(keys2).tryLock(100, TimeUnit.MILLISECONDS));
 
                 for (Integer key : keys2) {
                     boolean locked = cache.isLocalLocked(key, false);
 
-                    assert locked == keys1.contains(key) : "Lock failure for key [key=" + key +
-                        ", locked=" + locked + ", keys1=" + keys1 + ']';
-
-                    assert !cache.isLocalLocked(key, true);
+                    assertTrue( "Lock failure for key [key=" + key + ", locked=" + locked + ", keys1=" + keys1 + ']',
+                            locked == keys1.contains(key));
+                    assertFalse(cache.isLocalLocked(key, true));
                 }
 
                 l2.countDown();
 
-                l3.await();
+                l3.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 for (Integer key : keys2) {
-                    assert !cache.isLocalLocked(key, false);
-                    assert !cache.isLocalLocked(key, true);
+                    assertFalse(cache.isLocalLocked(key, false));
+                    assertFalse(cache.isLocalLocked(key, true));
                 }
 
                 return null;
@@ -327,20 +331,20 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
         t1.start();
         t2.start();
 
-        t1.join();
-        t2.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
 
         t1.checkError();
         t2.checkError();
 
         for (Integer key : keys1) {
-            assert !cache.isLocalLocked(key, false);
-            assert !cache.isLocalLocked(key, true);
+            assertFalse(cache.isLocalLocked(key, false));
+            assertFalse(cache.isLocalLocked(key, true));
         }
 
         for (Integer key : keys2) {
-            assert !cache.isLocalLocked(key, false);
-            assert !cache.isLocalLocked(key, true);
+            assertFalse(cache.isLocalLocked(key, false));
+            assertFalse(cache.isLocalLocked(key, true));
         }
     }
 

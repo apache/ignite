@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -104,7 +105,7 @@ public class IgniteDynamicCacheMultinodeTest extends GridCommonAbstractTest {
                 @Override public Void call() throws Exception {
                     Ignite node = ignite(idx.incrementAndGet() % NODES);
 
-                    b.await();
+                    b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     boolean sleep = iter % 2 == 0;
 

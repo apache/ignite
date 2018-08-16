@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
@@ -164,11 +165,11 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
                 new CacheFiller(cache, smallDuration, barrier, keysRangeGen, cnt),
                 threadCnt, "");
 
-            barrier.await();
+            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             Thread.sleep(1_000); // Cleaner should see at least one entry.
 
-            barrier.await();
+            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             assertEquals(2 * threadCnt * cnt, cache.size());
 
@@ -224,11 +225,11 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
                     "put-small-duration");
             }
 
-            barrier.await();
+            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             Thread.sleep(1_000);
 
-            barrier.await();
+            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             for (int i = 0; i < cacheCnt; i++)
                 assertEquals("Unexpected size of " + CACHE_PREFIX + i, 2 * threadCnt * cnt, caches.get(i).size());

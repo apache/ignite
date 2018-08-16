@@ -344,7 +344,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
                     }
 
                     for (Thread t0 : threadsList)
-                        t0.join();
+                        t0.join(getMaxAwaitTimeout());
 
                     assertTrue(latch.await(10, TimeUnit.SECONDS));
 

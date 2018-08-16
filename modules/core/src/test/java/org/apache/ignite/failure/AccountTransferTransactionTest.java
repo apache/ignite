@@ -177,7 +177,7 @@ public class AccountTransferTransactionTest extends GridCommonAbstractTest {
         );
 
         for (Thread thread : transferThreads) {
-            thread.join();
+            thread.join(getMaxAwaitTimeout());
         }
 
         long[] resultAmount = new long[THREADS_CNT];

@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -200,7 +201,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         IgniteInternalFuture clStartFut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    clientStartLatch.await();
+                    clientStartLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     Thread.sleep(10);
 

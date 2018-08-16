@@ -177,7 +177,7 @@ public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstrac
             run = false;
 
             for (Thread thread : threads)
-                thread.join();
+                thread.join(getMaxAwaitTimeout());
         }
         catch (Exception e) {
             U.error(log(), "Couldn't stop threads.", e);

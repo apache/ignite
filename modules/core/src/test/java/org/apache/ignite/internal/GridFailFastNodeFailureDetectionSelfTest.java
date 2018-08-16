@@ -19,6 +19,8 @@ package org.apache.ignite.internal;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -107,7 +109,7 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
 
         ignite1.message(ignite1.cluster().forRemotes()).send(null, "Message");
 
-        evtLatch.await(); // Wait when connection is established.
+        evtLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS); // Wait when connection is established.
 
         log.info("Fail node: " + ignite1.cluster().localNode());
 

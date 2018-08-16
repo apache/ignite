@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -119,7 +120,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
 
         multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 cache.get(1);
 

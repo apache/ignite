@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -207,7 +208,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
 
                         Thread.currentThread().setName("update-thread-" + ignite.name());
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         for (int i = 0; i < 100; i++) {
                             ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -246,7 +247,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
 
                         Thread.currentThread().setName("get-thread-" + ignite.name());
 
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         while (!updateFut.isDone())
                             cache.get(key);

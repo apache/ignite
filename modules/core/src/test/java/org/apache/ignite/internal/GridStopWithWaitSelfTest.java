@@ -95,7 +95,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
                 GridWaitTask.class.getName(),
                 ignite1.cluster().localNode().id());
 
-            jobStarted.await();
+            jobStarted.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
             // Do not cancel but wait.

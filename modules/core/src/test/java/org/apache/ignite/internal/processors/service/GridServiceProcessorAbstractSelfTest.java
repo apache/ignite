@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -337,7 +338,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -365,7 +366,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -397,7 +398,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, 1, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -425,7 +426,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, 1, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -511,7 +512,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, nodeCount() * 2, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -539,7 +540,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, nodeCount() * 2, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -573,7 +574,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, cnt, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -603,7 +604,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Finished waiting for service future: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, cnt, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -627,7 +628,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Deployed service: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, 1, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -640,7 +641,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Cancelled service: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, 1, DummyService.started(name));
         assertEquals(name, 1, DummyService.cancelled(name));
@@ -662,7 +663,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Deployed service: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, 1, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -675,7 +676,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Cancelled service: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, 1, DummyService.started(name));
         assertEquals(name, 1, DummyService.cancelled(name));
@@ -697,7 +698,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Deployed service: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -710,7 +711,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Cancelled service: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, nodeCount(), DummyService.cancelled(name));
@@ -732,7 +733,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Deployed service: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
@@ -745,7 +746,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Cancelled service: " + name);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, nodeCount(), DummyService.cancelled(name));

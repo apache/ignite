@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -331,7 +332,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
             r.run();
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             for (int i = 0; i < CNT; i++) {
                 Object val = cache.get(i);

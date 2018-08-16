@@ -2167,6 +2167,13 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @return Test case timeout.
+     */
+    protected long getMaxAwaitTimeout() {
+        return getTestTimeout() <= 0 ? DFLT_TEST_TIMEOUT : getTestTimeout();
+    }
+
+    /**
      * @return Default test case timeout.
      */
     private long getDefaultTestTimeout() {

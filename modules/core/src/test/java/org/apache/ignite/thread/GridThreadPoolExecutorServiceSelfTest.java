@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -146,7 +147,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
 
         assert exec.prestartAllCoreThreads() == THREAD_CNT;
 
-        startLatch.await();
+        startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assert curPoolSize.get() == THREAD_CNT;
 
@@ -154,7 +155,7 @@ public class GridThreadPoolExecutorServiceSelfTest extends GridCommonAbstractTes
 
         assert exec.awaitTermination(30, SECONDS);
 
-        stopLatch.await();
+        stopLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assert curPoolSize.get() == 0;
     }

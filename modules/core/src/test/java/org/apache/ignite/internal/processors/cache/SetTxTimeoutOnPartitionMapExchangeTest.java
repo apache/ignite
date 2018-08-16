@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.management.MBeanServer;
@@ -228,7 +229,7 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
                 try (Transaction tx = ig.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 0)) {
                     cache.put(thNum, 1);
 
-                    barrier.await();
+                    barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     cache.put(thNum % 2 + 1, 1);
 

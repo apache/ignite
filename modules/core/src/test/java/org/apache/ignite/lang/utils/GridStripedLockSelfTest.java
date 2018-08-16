@@ -20,6 +20,7 @@ package org.apache.ignite.lang.utils;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -58,7 +59,7 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 try {
-                    barrier.await();
+                    barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 }
                 catch (Exception e) {
                     fail("Failed to await other threads: " + e.getMessage());
@@ -91,7 +92,7 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 try {
-                    barrier.await();
+                    barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 }
                 catch (Exception e) {
                     fail("Failed to await other threads: " + e.getMessage());
@@ -124,7 +125,7 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 try {
-                    barrier.await();
+                    barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                 }
                 catch (Exception e) {
                     fail("Failed to await other threads: " + e.getMessage());

@@ -28,6 +28,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
@@ -401,7 +402,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         updateFut.get();
 
-        finishLatch.await();
+        finishLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         // Make sure new column is there.
         checkTableState(srv1, QueryUtils.DFLT_SCHEMA, TBL_NAME, c("AGE", Integer.class.getName()),
@@ -603,7 +604,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         final IgniteInternalFuture<?> idxFut = addOrRemove ?
             addCols(srv1, QueryUtils.DFLT_SCHEMA, c) : dropCols(srv1, QueryUtils.DFLT_SCHEMA, "NAME");
 
-        idxLatch.await();
+        idxLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         // Destroy cache (drop table).
         run(cli, DROP_SQL);

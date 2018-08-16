@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.collect.Lists;
 import org.apache.ignite.internal.IgniteEx;
@@ -45,13 +46,13 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
     private final IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean> beforeCreate = (mgr, syncLatch) -> {
         try {
             syncLatch.countDown();
-            syncLatch.await();
+            syncLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             Latch distributedLatch = mgr.getOrCreate(LATCH_NAME, latchTopVer);
 
             distributedLatch.countDown();
 
-            distributedLatch.await();
+            distributedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             log.error("Unexpected exception", e);
 
@@ -67,11 +68,11 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
             Latch distributedLatch = mgr.getOrCreate(LATCH_NAME, latchTopVer);
 
             syncLatch.countDown();
-            syncLatch.await();
+            syncLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             distributedLatch.countDown();
 
-            distributedLatch.await();
+            distributedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             log.error("Unexpected exception ", e);
 
@@ -90,9 +91,9 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
 
             syncLatch.countDown();
 
-            distributedLatch.await();
+            distributedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
-            syncLatch.await();
+            syncLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             log.error("Unexpected exception ", e);
 

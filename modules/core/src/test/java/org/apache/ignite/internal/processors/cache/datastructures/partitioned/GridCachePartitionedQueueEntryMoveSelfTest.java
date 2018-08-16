@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteQueue;
@@ -121,7 +123,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
             }
         });
 
-        latch1.await();
+        latch1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         startAdditionalNodes(BACKUP_CNT + 2, queueName);
 

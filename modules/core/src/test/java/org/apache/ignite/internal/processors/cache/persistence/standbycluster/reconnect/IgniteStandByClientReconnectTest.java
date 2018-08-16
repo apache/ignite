@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.reconnect;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.internal.IgniteEx;
 
 /**
@@ -75,7 +77,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         stopGrid(node2);
 
-        disconnectedLatch.await();
+        disconnectedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         ig2 = startGrid(getConfiguration(node2));
 
@@ -90,7 +92,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         info(">>>> reconnect client");
 
-        reconnectedLatch.await();
+        reconnectedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         info(">>>> client reconnected");
 
@@ -156,7 +158,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         stopGrid(node2);
 
-        disconnectedLatch.await();
+        disconnectedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         ig1.cluster().active(false);
 
@@ -166,7 +168,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         ig2 = startGrid(getConfiguration(node2));
 
-        reconnectedLatch.await();
+        reconnectedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertTrue(!ig1.cluster().active());
         assertTrue(!ig2.cluster().active());
@@ -208,7 +210,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         stopGrid(node2);
 
-        disconnectedLatch.await();
+        disconnectedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         ig2 = startGrid(getConfiguration(node2));
 
@@ -222,7 +224,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         activateLatch.countDown();
 
-        reconnectedLatch.await();
+        reconnectedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertTrue(ig1.cluster().active());
         assertTrue(ig2.cluster().active());
@@ -263,11 +265,11 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         stopGrid(node2);
 
-        disconnectedLatch.await();
+        disconnectedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         ig2 = startGrid(getConfiguration(node2));
 
-        reconnectedLatch.await();
+        reconnectedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assertTrue(!ig1.cluster().active());
         assertTrue(!ig2.cluster().active());

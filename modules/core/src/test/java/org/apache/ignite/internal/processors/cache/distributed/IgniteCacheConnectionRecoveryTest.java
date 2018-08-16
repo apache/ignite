@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -169,7 +170,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
                 barrierRef.set(b);
 
-                b.await();
+                b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
             }
 
             U.sleep(50);

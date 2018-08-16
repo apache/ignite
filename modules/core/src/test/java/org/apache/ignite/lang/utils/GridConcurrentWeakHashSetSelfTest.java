@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.internal.util.GridConcurrentWeakHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -211,7 +213,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
         Runnable r = new Runnable() {
             @Override public void run() {
                 try {
-                    start.await();
+                    start.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     for (int i = 0; i < cnt; i++) {
                         for (int j = 0; j < cnt; j++)
@@ -231,7 +233,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
 
         start.countDown();
 
-        stop.await();
+        stop.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         assert set.size() == cnt;
 
@@ -254,7 +256,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
         new Thread() {
             @Override public void run() {
                 try {
-                    start.await();
+                    start.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     for (int i = 0; i < cnt; i++) {
                         for (int j = 0; j < cnt; j++)
@@ -272,7 +274,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
         new Thread() {
             @Override public void run() {
                 try {
-                    start.await();
+                    start.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     for (int i = 0; i < cnt; i++) {
                         for (int j = 0; j < cnt; j++)
@@ -291,7 +293,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
             @SuppressWarnings({"UnusedDeclaration"})
             @Override public void run() {
                 try {
-                    start.await();
+                    start.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     while (stop.getCount() > 1) {
                         for (SampleBean b : set) {
@@ -309,7 +311,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
 
         start.countDown();
 
-        stop.await();
+        stop.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         gc();
 

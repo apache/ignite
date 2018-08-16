@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
@@ -132,7 +134,7 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
         boolean err = false;
 
         try {
-            stopStartLatch.await();
+            stopStartLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             IgniteCacheMessageRecoveryAbstractTest.closeSessions(srv);
 

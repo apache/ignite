@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -176,7 +177,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
             }
         }, threadNum, "TEST-THREAD");
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
     }
 
     /**

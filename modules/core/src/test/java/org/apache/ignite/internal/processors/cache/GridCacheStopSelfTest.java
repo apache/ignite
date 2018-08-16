@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -279,7 +280,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
                                     readyLatch.countDown();
 
-                                    stopLatch.await();
+                                    stopLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                                     tx.commit();
                                 }
@@ -287,7 +288,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                             else {
                                 readyLatch.countDown();
 
-                                stopLatch.await();
+                                stopLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                                 cache.put(key, key);
                             }
@@ -301,7 +302,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                 }, "cache-thread"));
             }
 
-            readyLatch.await();
+            readyLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             stopLatch.countDown();
 

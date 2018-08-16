@@ -186,7 +186,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
             run = false;
 
             for (Thread thread : threads)
-                thread.join();
+                thread.join(getMaxAwaitTimeout());
         }
         catch (Exception e) {
             U.error(log(), "Couldn't stop threads.", e);

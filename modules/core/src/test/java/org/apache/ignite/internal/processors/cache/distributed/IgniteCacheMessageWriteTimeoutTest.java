@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -102,7 +104,7 @@ public class IgniteCacheMessageWriteTimeoutTest extends GridCommonAbstractTest {
 
         return GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                int idx = b.await();
+                int idx = b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 Ignite node = ignite(idx % 3);
 

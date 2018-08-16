@@ -275,7 +275,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
             worker.start();
 
         for (Worker worker : workers)
-            worker.join();
+            worker.join(getMaxAwaitTimeout());
 
         for (int i = 0; i < QRY_DETAIL_METRICS_SIZE; i++)
             checkMetrics(cache, QRY_DETAIL_METRICS_SIZE, i, repeat, repeat, 0, false);

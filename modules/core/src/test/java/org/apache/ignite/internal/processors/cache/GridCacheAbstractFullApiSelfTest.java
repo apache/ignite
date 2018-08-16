@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -3916,7 +3917,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             lock.lock();
 
             try {
-                lockCnt.await();
+                lockCnt.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 assert cache.isLocalLocked(key, false);
             }
@@ -3924,7 +3925,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 lock.unlock();
             }
 
-            unlockCnt.await();
+            unlockCnt.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             for (int i = 0; i < 100; i++)
                 if (cache.isLocalLocked(key, false))

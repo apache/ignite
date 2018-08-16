@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -153,7 +155,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         g.compute().executeAsync(new TestTask(1), null);
 
-        jobLatch.await();
+        jobLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         // Count down the latch in a separate thread.
         new Thread(new Runnable() {
@@ -191,7 +193,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate()))
             .executeAsync(new TestTask(GRID_CNT - 1), null);
 
-        jobLatch.await();
+        jobLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         stopGrid(lastGridIdx, true);
 
@@ -216,7 +218,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate()))
             .executeAsync(new TestTask(GRID_CNT - 1), null);
 
-        jobLatch.await();
+        jobLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         ((CommunicationSpi)grid(lastGridIdx).configuration().getCommunicationSpi()).blockMessages();
 
@@ -245,7 +247,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate()))
             .executeAsync(new TestTask(GRID_CNT - 1), null);
 
-        jobLatch.await();
+        jobLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         for (int i = 0; i < lastGridIdx; i++)
             ((CommunicationSpi)grid(i).configuration().getCommunicationSpi()).waitLatch();
@@ -479,7 +481,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         IgniteFuture<?> fut = taskStarter.apply(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate()));
 
-        jobLatch.await();
+        jobLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         stopGrid(lastGridIdx, true);
 

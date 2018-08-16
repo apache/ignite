@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
@@ -246,7 +247,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 }
             }, threads);
 
-            l1.await();
+            l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             // This will wait until data streamer finishes loading.
             stopGrid(getTestIgniteInstanceName(1), false);
@@ -284,7 +285,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 }
             }, threads);
 
-            l2.await();
+            l2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             rmvLdr.close(false);
 

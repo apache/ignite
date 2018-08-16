@@ -274,7 +274,7 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
                         }
                     });
 
-                latch.await();
+                latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 cache.put(i, "v");
 

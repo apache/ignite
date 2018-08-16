@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -315,7 +316,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             lock2_1.unlock();
         }
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         checkUnlocked(cache1, 1);
         checkUnlocked(cache2, 1);
@@ -389,8 +390,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             lock1_.unlock();
         }
 
-        latch1.await();
-        latch2.await();
+        latch1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
+        latch2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         checkUnlocked(cache1, keys1);
         checkUnlocked(cache2, keys1);
@@ -476,7 +477,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
                     checkUnlocked(cache, 2);
 
-                    l2.await();
+                    l2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     info("Waited for latch 2");
                 }
@@ -498,7 +499,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             @Nullable @Override public Object call() throws Exception {
                 info("Waiting for latch1...");
 
-                l1.await();
+                l1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 info("Latch1 released.");
 
@@ -534,8 +535,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         t1.start();
         t2.start();
 
-        t1.join();
-        t2.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
 
         t1.checkError();
         t2.checkError();

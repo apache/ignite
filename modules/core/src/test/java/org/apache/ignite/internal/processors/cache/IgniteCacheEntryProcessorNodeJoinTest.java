@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
@@ -171,7 +172,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
                 IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        latch.await();
+                        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         stopGrid(RESTART_IDX);
 

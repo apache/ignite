@@ -34,6 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -363,7 +364,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             final IgniteInternalFuture<Object> updFut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     for (int i = 0; i < KEYS && !err.get(); i++)
                         cache.put(i, i + 1);
@@ -374,7 +375,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             final IgniteInternalFuture<Object> rebFut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    latch.await();
+                    latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     for (int i = 2; i <= 5 && !err.get(); i++)
                         startGrid(i);
@@ -750,7 +751,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             t.start();
 
         for (Thread t : stopThreads)
-            t.join();
+            t.join(getMaxAwaitTimeout());
 
         assert GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {

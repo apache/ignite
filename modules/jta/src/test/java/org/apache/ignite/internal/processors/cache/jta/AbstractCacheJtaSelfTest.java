@@ -30,6 +30,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.objectweb.jotm.Jotm;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -235,7 +236,7 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
 
             task.start();
 
-            latch.await();
+            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             while (task.getState() != Thread.State.WAITING)
                 factory.checkError();

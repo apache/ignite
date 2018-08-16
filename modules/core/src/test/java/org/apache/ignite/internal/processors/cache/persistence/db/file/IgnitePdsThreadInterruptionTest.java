@@ -158,7 +158,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         stop = true;
 
         for (Thread worker : workers)
-            worker.join();
+            worker.join(getMaxAwaitTimeout());
 
         Throwable t = fail.get();
 
@@ -233,7 +233,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         stop = true;
 
         for (Thread worker : workers)
-            worker.join();
+            worker.join(getMaxAwaitTimeout());
 
         Throwable t = fail.get();
 

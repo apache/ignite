@@ -1324,7 +1324,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
 
                 for (int i = 0; i < loopCnt && !stop.get(); ++i) {
-                    putRmvOpBarrier.await();
+                    putRmvOpBarrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     Long putVal = curPutKey.getAndIncrement();
 
@@ -1348,7 +1348,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     if (stop.get())
                         break;
 
-                    sizeOpBarrier.await();
+                    sizeOpBarrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     long correctSize = curPutKey.get() - curRmvKey.get();
 
@@ -1469,7 +1469,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 for (int i = 0; i < loopCnt && !stop.get(); ++i) {
                     int order;
                     try {
-                        order = putRmvOpBarrier.await();
+                        order = putRmvOpBarrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     } catch (BrokenBarrierException e) {
                         break;
                     }
@@ -1512,7 +1512,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     int order = 0;
 
                     try {
-                        order = putRmvOpBarrier.await();
+                        order = putRmvOpBarrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     } catch (BrokenBarrierException e) {
                         break;
                     }
@@ -1623,7 +1623,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 for (int i = 0; i < loopCnt && !stop.get(); ++i) {
                     int order;
                     try {
-                        order = putRmvOpBarrier.await();
+                        order = putRmvOpBarrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     } catch (BrokenBarrierException e) {
                         // barrier reset() has been called: terminate
                         break;
@@ -2122,8 +2122,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             start.set(true);
 
-            first.join();
-            second.join();
+            first.join(getMaxAwaitTimeout());
+            second.join(getMaxAwaitTimeout());
 
             assertNull(failed.get());
         }

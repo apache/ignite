@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -292,7 +293,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
                 }
             }, "tx-thread");
 
-            commitLatch.await();
+            commitLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             Thread.sleep(1000);
 

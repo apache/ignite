@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -182,7 +183,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
                     if (wait) {
                         latch.countDown();
 
-                        latch.await();
+                        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
 
                     // If output presents, test passes with greater probability.

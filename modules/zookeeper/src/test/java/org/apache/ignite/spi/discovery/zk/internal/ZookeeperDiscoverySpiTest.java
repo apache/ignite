@@ -1712,7 +1712,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             GridTestUtils.runMultiThreaded(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    b.await();
+                    b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     int threadIdx = idx.getAndIncrement();
 
@@ -1790,7 +1790,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
                 @Override public void apply(Integer idx) {
                     try {
-                        b.await();
+                        b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         stopGrid(initNodes + idx);
                     }
@@ -3140,7 +3140,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
             @Override public void apply(Integer threadIdx) {
                 try {
-                    b.await();
+                    b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     int nodeIdx = breakNodes[threadIdx];
 
@@ -3366,7 +3366,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         fut.add((IgniteInternalFuture)GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                b.await();
+                b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -3385,7 +3385,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         fut.add((IgniteInternalFuture)GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                b.await();
+                b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -3405,7 +3405,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         fut.add((IgniteInternalFuture)GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                b.await();
+                b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -3431,7 +3431,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         fut.add((IgniteInternalFuture)GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try {
-                    b.await();
+                    b.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

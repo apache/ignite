@@ -19,6 +19,8 @@ package org.apache.ignite.stream.zeromq;
 
 import java.io.UnsupportedEncodingException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -136,7 +138,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
         CountDownLatch latch = listener.getLatch();
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         unsubscribeToPutEvents(listener);
 

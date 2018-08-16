@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -3922,7 +3923,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             lock.lock();
 
             try {
-                lockCnt.await();
+                lockCnt.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 assert cache.isLocalLocked(key, false);
             }
@@ -3930,7 +3931,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 lock.unlock();
             }
 
-            unlockCnt.await();
+            unlockCnt.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             for (int i = 0; i < 100; i++)
                 if (cache.isLocalLocked(key, false))

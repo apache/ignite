@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -103,7 +104,7 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
 
         IgniteInternalFuture<?> oneMoreGrid = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                allowJoin.await();
+                allowJoin.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 startGrid("oneMoreGrid");
 
@@ -118,7 +119,7 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
 
             allowJoin.countDown();
 
-            joined.await();
+            joined.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
             assertNotNull(cache.get(1));
 

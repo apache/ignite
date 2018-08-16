@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -291,7 +293,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                         try {
                             Thread.currentThread().setName("test thread-" + idx);
 
-                            barrier.await();
+                            barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             Ignite ignite = singleGrid ? ignite(0) : ignite(idx % gridCount());
 

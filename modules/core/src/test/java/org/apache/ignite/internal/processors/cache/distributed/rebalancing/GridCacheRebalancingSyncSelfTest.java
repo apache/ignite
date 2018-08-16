@@ -329,8 +329,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         checkSupplyContextMapIsEmpty();
 
-        t1.join();
-        t2.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
 
         long spend = (System.currentTimeMillis() - start) / 1000;
 
@@ -535,9 +535,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         t2.start();// Should cancel t1 rebalancing.
         t3.start();
 
-        t1.join();
-        t2.join();
-        t3.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
+        t3.join(getMaxAwaitTimeout());
 
         awaitPartitionMapExchange(true, true, null);
 
@@ -578,7 +578,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         checkSupplyContextMapIsEmpty();
 
-        t4.join();
+        t4.join(getMaxAwaitTimeout());
 
         stopGrid(3);
 

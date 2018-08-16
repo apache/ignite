@@ -186,7 +186,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
                         try {
                             ThreadLocalRandom locRandom = ThreadLocalRandom.current();
 
-                            cyclicBarrier.await();
+                            cyclicBarrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             while (!interrupt.get()) {
                                 long randomKey = locRandom.nextLong(MAX_KEY_COUNT);

@@ -200,7 +200,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
 
         igniteThread.start();
 
-        igniteThread.join();
+        igniteThread.join(getMaxAwaitTimeout());
 
         assertResults(res.get(), actualScores, actualAccuracy.get(), actualAccuracy2.get());
     }

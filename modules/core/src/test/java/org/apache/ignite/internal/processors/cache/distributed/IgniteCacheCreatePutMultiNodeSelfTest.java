@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -88,7 +89,7 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
 
                         try {
                             for (int k = 0; k < 50; k++) {
-                                barrier.await();
+                                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                                 String cacheName = "cache-" + k;
 
@@ -97,7 +98,7 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
                                 for (int i = 0; i < 100; i++)
                                     cache.getAndPut(i, i);
 
-                                barrier.await();
+                                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                                 ignite.destroyCache(cacheName);
                             }

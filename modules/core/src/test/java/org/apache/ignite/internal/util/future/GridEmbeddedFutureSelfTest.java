@@ -113,7 +113,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
             };
 
             t.start();
-            t.join();
+            t.join(getMaxAwaitTimeout());
 
             assertTrue("Expect original future is complete.", origFut.isDone());
             assertTrue("Expect embedded future is complete.", embFut.isDone());

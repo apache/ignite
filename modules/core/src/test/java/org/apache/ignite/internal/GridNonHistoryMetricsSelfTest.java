@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.GridTestJob;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
@@ -84,7 +86,7 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
             }
         }, EVT_NODE_METRICS_UPDATED);
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

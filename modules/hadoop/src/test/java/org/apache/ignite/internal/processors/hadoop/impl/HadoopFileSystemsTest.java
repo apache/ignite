@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -100,21 +101,21 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
                         FileSystem.get(uri, cfg).setWorkingDirectory(new Path("file:///user/user" + curThreadNum));
 
                     changeUserPhase.countDown();
-                    changeUserPhase.await();
+                    changeUserPhase.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     newUserInitWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
 
                     FileSystem.get(uri, cfg).setWorkingDirectory(new Path("folder" + curThreadNum));
 
                     changeDirPhase.countDown();
-                    changeDirPhase.await();
+                    changeDirPhase.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     newWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
 
                     FileSystem.get(uri, cfg).setWorkingDirectory(new Path("/folder" + curThreadNum));
 
                     changeAbsDirPhase.countDown();
-                    changeAbsDirPhase.await();
+                    changeAbsDirPhase.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     newAbsWorkDir[curThreadNum] = FileSystem.get(uri, cfg).getWorkingDirectory();
 
@@ -130,7 +131,7 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
             }
         }, THREAD_COUNT, "filesystems-test");
 
-        finishPhase.await();
+        finishPhase.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         for (int i = 0; i < THREAD_COUNT; i ++) {
             cfg.set(MRJobConfig.USER_NAME, "user" + i);

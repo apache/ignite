@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -174,7 +175,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         }, threadsNum, "JobStealingThread");
 
         //Wait for first job begin execution.
-        jobExecutedLatch.await();
+        jobExecutedLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         startGrid(2);
 

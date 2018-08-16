@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -681,7 +682,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
         IgniteInternalFuture<?> itFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    startLatch.await();
+                    startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     while (run.get()) {
                         GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> it = map.iterator();
@@ -706,7 +707,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
         IgniteInternalFuture<?> putFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    startLatch.await();
+                    startLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     Random rnd = new Random();
 

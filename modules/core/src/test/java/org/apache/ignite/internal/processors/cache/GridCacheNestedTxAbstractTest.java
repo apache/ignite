@@ -197,7 +197,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
             t.start();
 
         for (Thread t : threads)
-            t.join();
+            t.join(getMaxAwaitTimeout());
 
         int cntr = c.get(CNTR_KEY);
 
@@ -272,7 +272,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
             t.start();
 
         for (Thread t : threads)
-            t.join();
+            t.join(getMaxAwaitTimeout());
 
         int cntr = c.get(CNTR_KEY);
 

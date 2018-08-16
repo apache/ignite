@@ -299,7 +299,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
     /**
      * @param mode Mode.
      */
-    private void doTestNoOverflowMultiThreaded(SegmentedRingByteBuffer.BufferMode mode) throws org.apache.ignite.IgniteCheckedException, BrokenBarrierException, InterruptedException {
+    private void doTestNoOverflowMultiThreaded(SegmentedRingByteBuffer.BufferMode mode) throws org.apache.ignite.IgniteCheckedException, BrokenBarrierException, InterruptedException, TimeoutException {
         int producerCnt = 16;
 
         final int cap = 256 * 1024;
@@ -322,7 +322,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
             fut = GridTestUtils.runMultiThreadedAsync(() -> {
                 try {
                     try {
-                        startBarrier.await();
+                        startBarrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
                     catch (InterruptedException | BrokenBarrierException e) {
                         e.printStackTrace();
@@ -388,7 +388,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
 
                 totalWritten.set(0);
 
-                restartBarrier.await();
+                restartBarrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
             }
         }
         finally {
@@ -425,7 +425,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
             fut = GridTestUtils.runMultiThreadedAsync(() -> {
                 try {
                     try {
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
                     catch (InterruptedException | BrokenBarrierException e) {
                         e.printStackTrace();
@@ -528,7 +528,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
             fut = GridTestUtils.runMultiThreadedAsync(() -> {
                 try {
                     try {
-                        barrier.await();
+                        barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
                     catch (InterruptedException | BrokenBarrierException e) {
                         e.printStackTrace();

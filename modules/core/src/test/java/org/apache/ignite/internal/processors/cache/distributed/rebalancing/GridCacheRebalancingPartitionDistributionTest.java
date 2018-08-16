@@ -63,7 +63,7 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
     public void testRollingRestart() throws InterruptedException {
         awaitPartitionMapExchange();
 
-        rollingRestartThread.join();
+        rollingRestartThread.join(getMaxAwaitTimeout());
 
         assertEquals(getMaxRestarts(), rollingRestartThread.getRestartTotal());
     }

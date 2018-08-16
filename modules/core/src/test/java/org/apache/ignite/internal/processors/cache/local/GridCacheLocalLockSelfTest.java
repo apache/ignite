@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -155,7 +156,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                     info("Put 1='1' key pair into cache.");
 
-                    latch2.await();
+                    latch2.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                     info("Waited for latch 2");
                 }
@@ -176,7 +177,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Waiting for latch1...");
 
-                latch1.await();
+                latch1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 info("Latch1 released.");
 
@@ -191,7 +192,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                 info("Released latch2");
 
-                latch3.await();
+                latch3.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 assert lock.tryLock();
 
@@ -230,8 +231,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         t1.start();
         t2.start();
 
-        t1.join();
-        t2.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
 
         t1.checkError();
         t2.checkError();
@@ -289,7 +290,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Beginning to await on latch 1");
 
-                latch1.await();
+                latch1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 info("Finished awaiting on latch 1");
 
@@ -312,8 +313,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         t1.start();
         t2.start();
 
-        t1.join();
-        t2.join();
+        t1.join(getMaxAwaitTimeout());
+        t2.join(getMaxAwaitTimeout());
 
         t1.checkError();
         t2.checkError();

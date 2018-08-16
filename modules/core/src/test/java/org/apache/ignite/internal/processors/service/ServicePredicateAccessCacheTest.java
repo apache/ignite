@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
@@ -119,7 +120,7 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
             }
         }, "deploy-thread");
 
-        latch.await();
+        latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         startGrid(1);
 

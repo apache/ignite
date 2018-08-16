@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -182,7 +183,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
             }
         }, N_THREADS);
 
-        finishLatch.await();
+        finishLatch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         //Grid will be stopped automatically on tearDown().
     }

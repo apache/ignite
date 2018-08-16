@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.database;
 
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -163,7 +165,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         checkDynamicSchemaChanges(node, STATIC_CACHE_NAME);
 
-        cnt.await();
+        cnt.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         stopGrid(0);
 
@@ -200,7 +202,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         checkDynamicSchemaChanges(node, SQL_CACHE_NAME);
 
-        cnt.await();
+        cnt.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
         stopGrid(0);
 

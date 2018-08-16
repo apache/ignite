@@ -215,7 +215,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Void> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 grid(1).compute().withNoFailover().broadcast(new IgniteRunnable() {
                     @Override public void run() {
@@ -229,7 +229,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Void> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 grid(3).compute().withNoFailover().broadcast(new IgniteRunnable() {
                     @Override public void run() {

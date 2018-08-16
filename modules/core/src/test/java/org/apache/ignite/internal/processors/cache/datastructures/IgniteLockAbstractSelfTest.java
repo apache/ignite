@@ -719,7 +719,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                         cond2.signal();
 
-                        cond1.await();
+                        cond1.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
                     finally {
                         lock.unlock();
@@ -907,7 +907,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                             latch.countDown();
 
-                            latch.await();
+                            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             thread.get().interrupt();
 
@@ -1324,7 +1324,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     IgniteCondition cond = lock0.getOrCreateCondition("cond");
 
                     try {
-                        cond.await();
+                        cond.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
                     }
                     catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
@@ -1481,7 +1481,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                     // Wait until every thread tries to lock.
                     do {
-                        cond.await();
+                        cond.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                         Thread.sleep(1000);
                     }
@@ -1602,7 +1602,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                             latch.countDown();
 
-                            latch.await();
+                            latch.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                             while(true){
                                 l.lock();

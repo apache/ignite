@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -132,7 +133,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         IgniteInternalFuture<Void> f1 = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ig1B.active(true);
 
@@ -142,7 +143,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         IgniteInternalFuture<?> f2 = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ig2B.active(true);
 
@@ -152,7 +153,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         IgniteInternalFuture<?> f3 = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ig3B.active(true);
 
@@ -162,7 +163,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         IgniteInternalFuture<?> f4 = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ig1C.active(true);
 
@@ -172,7 +173,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         IgniteInternalFuture<?> f5 = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ig2C.active(true);
 
@@ -182,7 +183,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         IgniteInternalFuture<?> f6 = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ig3C.active(true);
 
@@ -225,7 +226,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         IgniteInternalFuture<?> act1 = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ig1B.active(true);
 
@@ -235,7 +236,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         IgniteInternalFuture<?> act2 = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ig2B.active(true);
 
@@ -245,7 +246,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
 
         IgniteInternalFuture<?> act3 = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                barrier.await();
+                barrier.await(getMaxAwaitTimeout(), TimeUnit.MILLISECONDS);
 
                 ig3B.active(true);
 
