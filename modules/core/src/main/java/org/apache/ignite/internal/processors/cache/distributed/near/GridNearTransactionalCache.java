@@ -636,8 +636,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     entry.removeLock(ver, false);
 
                     map.removeEntry(entry);
-
-                    break;
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     if (log.isDebugEnabled())
@@ -660,8 +658,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     entry.removeLock(ver, false);
 
                     map.removeEntry(entry);
-
-                    break;
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     if (log.isDebugEnabled())
