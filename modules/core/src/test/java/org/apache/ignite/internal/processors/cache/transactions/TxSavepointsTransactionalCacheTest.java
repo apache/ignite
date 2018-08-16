@@ -668,8 +668,8 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                     throws IgniteCheckedException {
                     for (CacheConfiguration<Integer, Integer> cfg2 : cacheConfigurations()) {
                         // TODO https://issues.apache.org/jira/browse/IGNITE-9110
-                        if (cfg1.getCacheMode() == LOCAL && cfg2.getCacheMode() == LOCAL ||
-                            cfg1.getCacheMode() != LOCAL && cfg2.getCacheMode() != LOCAL)
+                        if (!(cfg1.getCacheMode() == LOCAL && cfg2.getCacheMode() == LOCAL ||
+                            cfg1.getCacheMode() != LOCAL && cfg2.getCacheMode() != LOCAL))
                             continue;
 
                         if (cfg1.getName().equals(cfg2.getName()))
@@ -679,7 +679,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                         IgniteCache<Integer, Integer> cache2 = nodes.txOwner().getOrCreateCache(cfg2);
 
                         int key1 = generateKey(cfg1, nodes.primaryForKey());
-                        int key2 = generateKey(cfg2, nodes.primaryForKey());
+                        int key2 = generateKey(cfg2, nodes.primaryForAnotherKey());
 
                         for (TxType txType : txTypes) {
                             info("Transaction type " + txType);
@@ -730,8 +730,8 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                     throws IgniteCheckedException {
                     for (CacheConfiguration<Integer, Integer> cfg2 : cacheConfigurations()) {
                         // TODO https://issues.apache.org/jira/browse/IGNITE-9110
-                        if (cfg1.getCacheMode() == LOCAL && cfg2.getCacheMode() == LOCAL ||
-                            cfg1.getCacheMode() != LOCAL && cfg2.getCacheMode() != LOCAL)
+                        if (!(cfg1.getCacheMode() == LOCAL && cfg2.getCacheMode() == LOCAL ||
+                            cfg1.getCacheMode() != LOCAL && cfg2.getCacheMode() != LOCAL))
                             continue;
 
                         if (cfg1.getName().equals(cfg2.getName()))
@@ -741,7 +741,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                         IgniteCache<Integer, Integer> cache2 = nodes.txOwner().getOrCreateCache(cfg2);
 
                         int key1 = generateKey(cfg1, nodes.primaryForKey());
-                        int key2 = generateKey(cfg2, nodes.primaryForKey());
+                        int key2 = generateKey(cfg2, nodes.primaryForAnotherKey());
 
                         for (TxType txType : txTypes) {
                             info("Transaction type " + txType);
@@ -758,9 +758,9 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                                 IgniteInternalFuture fut2 = GridTestUtils.runAsync(() -> assertTrue(cache2.putIfAbsent(key2, 1)),
                                     "_putMultiCaches2");
 
-                                waitForSecondCandidate(txType.concurrency, nodes.primaryForKey(), cache1, cache2, key1);
+                                waitForSecondCandidate(txType.concurrency, nodes.primaryForKey(), cache1, cache1Async, key1);
                                 waitForSecondCandidate(txType.concurrency, nodes.primaryForAnotherKey(),
-                                    cache1, cache2, key2);
+                                    cache2, cache2, key2);
 
                                 tx.rollbackToSavepoint("sp");
 
@@ -798,8 +798,8 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                     throws IgniteCheckedException {
                     for (CacheConfiguration<Integer, Integer> cfg2 : cacheConfigurations()) {
                         // TODO https://issues.apache.org/jira/browse/IGNITE-9110
-                        if (cfg1.getCacheMode() == LOCAL && cfg2.getCacheMode() == LOCAL ||
-                            cfg1.getCacheMode() != LOCAL && cfg2.getCacheMode() != LOCAL)
+                        if (!(cfg1.getCacheMode() == LOCAL && cfg2.getCacheMode() == LOCAL ||
+                            cfg1.getCacheMode() != LOCAL && cfg2.getCacheMode() != LOCAL))
                             continue;
 
                         if (cfg1.getName().equals(cfg2.getName()))
