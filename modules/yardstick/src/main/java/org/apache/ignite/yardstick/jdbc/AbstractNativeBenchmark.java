@@ -21,6 +21,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
+import org.yardstickframework.BenchmarkUtils;
 
 import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 
@@ -33,5 +34,7 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
         super.setUp(cfg);
 
         fillData(cfg, (IgniteEx)ignite(), args.range());
+
+        BenchmarkUtils.println("Lazy mode: " + args.isLazy());
     }
 }
