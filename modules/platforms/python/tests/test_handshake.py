@@ -20,8 +20,10 @@ from pyignite.client.handshake import HandshakeRequest, read_response
 
 
 def test_handshake(
+    monkeypatch,
     ignite_host, ignite_port, use_ssl, ssl_keyfile, ssl_certfile,
-    ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version
+    ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version,
+    username, password,
 ):
     client = Client(
         use_ssl=use_ssl,
@@ -30,11 +32,15 @@ def test_handshake(
         ssl_ca_certfile=ssl_ca_certfile,
         ssl_cert_reqs=ssl_cert_reqs,
         ssl_ciphers=ssl_ciphers,
-        ssl_version=ssl_version
+        ssl_version=ssl_version,
+        username=username,
+        password=password,
     )
-    client.socket = client._wrap(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+    client.socket = client._wrap(
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    )
     client.socket.connect((ignite_host, ignite_port))
-    hs_request = HandshakeRequest()
+    hs_request = HandshakeRequest(username, password)
     client.send(hs_request)
     hs_response = read_response(client)
     assert hs_response.op_code != 0
@@ -42,10 +48,14 @@ def test_handshake(
     client.close()
 
     # intentionally pass wrong protocol version
-    client.socket = client._wrap(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+    from pyignite.client import handshake
+    monkeypatch.setattr(handshake, 'PROTOCOL_VERSION_MAJOR', 10)
+
+    client.socket = client._wrap(
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    )
     client.socket.connect((ignite_host, ignite_port))
-    hs_request = HandshakeRequest()
-    hs_request.version_major = 10
+    hs_request = HandshakeRequest(username, password)
     client.send(hs_request)
     hs_response = read_response(client)
     assert hs_response.op_code == 0

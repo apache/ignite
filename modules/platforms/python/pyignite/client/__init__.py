@@ -71,9 +71,11 @@ class Client:
     port = None
     timeout = None
     prefetch = None
+    username = None
+    password = None
 
     @staticmethod
-    def check_kwargs(kwargs):
+    def _check_kwargs(kwargs):
         expected_args = [
             'timeout',
             'use_ssl',
@@ -83,6 +85,8 @@ class Client:
             'ssl_keyfile',
             'ssl_certfile',
             'ssl_ca_certfile',
+            'username',
+            'password',
         ]
         for kw in kwargs:
             if kw not in expected_args:
@@ -103,7 +107,8 @@ class Client:
          operation including `connect`. 0 means non-blocking mode. Can accept
          integer or float value. Default is None (blocking mode),
         :param use_ssl: (optional) set to True if Ignite server uses SSL
-         on its binary connector. Defaults to not use SSL,
+         on its binary connector. Defaults to not use SSL, except when
+         username and password has been supplied,
         :param ssl_version: (optional) SSL version constant from standard
          `ssl` module. Defaults to TLS v1.1, as in Ignite 2.5,
         :param ssl_ciphers: (optional) ciphers to use. If not provided,
@@ -122,11 +127,18 @@ class Client:
          to identify local (client) party,
         :param ssl_ca_certfile: (optional) a path to a trusted certificate
          or a certificate chain. Required to check the validity of the remote
-         (server-side) certificate.
+         (server-side) certificate,
+        :param username: (optional) user name to authenticate to Ignite
+         cluster,
+        :param password: (optional) password to authenticate to Ignite cluster.
         """
         self.prefetch = prefetch
-        self.check_kwargs(kwargs)
+        self._check_kwargs(kwargs)
         self.timeout = kwargs.pop('timeout', None)
+        self.username = kwargs.pop('username', None)
+        self.password = kwargs.pop('password', None)
+        if self.username and self.password:
+            kwargs['use_ssl'] = True
         self.init_kwargs = kwargs
 
     read_response = read_response
@@ -147,7 +159,7 @@ class Client:
         self.socket = self._wrap(self.socket)
         self.socket.connect((host, port))
 
-        hs_request = HandshakeRequest()
+        hs_request = HandshakeRequest(self.username, self.password)
         self.send(hs_request)
         hs_response = self.read_response()
         if hs_response.op_code == 0:
@@ -214,6 +226,8 @@ class Client:
         :return: `Client` object.
         """
         clone = Client(**self.init_kwargs)
+        clone.username = self.username
+        clone.password = self.password
         clone.nodes = self.nodes
         if self.port and self.host:
             clone._connect(self.host, self.port)
@@ -228,6 +242,8 @@ class Client:
         :return: `MockClient` object.
         """
         client = MockClient(buffer, **self.init_kwargs)
+        client.username = self.username
+        client.password = self.password
         client.nodes = self.nodes
         if self.port and self.host:
             client._connect(self.host, self.port)

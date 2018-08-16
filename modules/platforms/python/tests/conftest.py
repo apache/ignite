@@ -59,7 +59,8 @@ class SSLVersionParser(argparse.Action):
 @pytest.fixture(scope='module')
 def client(
     ignite_host, ignite_port, use_ssl, ssl_keyfile, ssl_certfile,
-    ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version
+    ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version,
+    username, password,
 ):
     client = Client(
         use_ssl=use_ssl,
@@ -68,7 +69,9 @@ def client(
         ssl_ca_certfile=ssl_ca_certfile,
         ssl_cert_reqs=ssl_cert_reqs,
         ssl_ciphers=ssl_ciphers,
-        ssl_version=ssl_version
+        ssl_version=ssl_version,
+        username=username,
+        password=password,
     )
     client.connect(ignite_host, ignite_port)
     yield client
@@ -150,6 +153,18 @@ def pytest_addoption(parser):
         default=SSL_DEFAULT_VERSION,
         help='SSL version: TLSV1_1 or TLSV1_2'
     )
+    parser.addoption(
+        '--username',
+        action='store',
+        type=str,
+        help='user name'
+    )
+    parser.addoption(
+        '--password',
+        action='store',
+        type=str,
+        help='password'
+    )
 
 
 def pytest_generate_tests(metafunc):
@@ -163,6 +178,8 @@ def pytest_generate_tests(metafunc):
         'ssl_cert_reqs': ssl.CERT_NONE,
         'ssl_ciphers': SSL_DEFAULT_CIPHERS,
         'ssl_version': SSL_DEFAULT_VERSION,
+        'username': None,
+        'password': None,
     }
 
     for param_name in session_parameters:

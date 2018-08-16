@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import ctypes
+from typing import Optional
 
 from pyignite.constants import *
 
@@ -21,9 +22,15 @@ from pyignite.constants import *
 OP_HANDSHAKE = 1
 
 
-class HandshakeRequest(ctypes.LittleEndianStructure):
-    _pack_ = 1
-    _fields_ = [
+class HandshakeRequest:
+    """
+    Handshake request have dynamic fields, so unfortunately it can not be
+    a ctypes.Structure descendant.
+    """
+    c_type = None
+    username = None
+    password = None
+    fields = [
         ('length', ctypes.c_int),
         ('op_code', ctypes.c_byte),
         ('version_major', ctypes.c_short),
@@ -32,14 +39,57 @@ class HandshakeRequest(ctypes.LittleEndianStructure):
         ('client_code', ctypes.c_byte),
     ]
 
-    def __init__(self):
-        super().__init__()
-        self.length = 8
-        self.op_code = OP_HANDSHAKE
-        self.version_major = PROTOCOL_VERSION_MAJOR
-        self.version_minor = PROTOCOL_VERSION_MINOR
-        self.version_patch = PROTOCOL_VERSION_PATCH
-        self.client_code = 2
+    def __init__(
+        self, username: Optional[str]=None, password: Optional[str]=None
+    ):
+        fields = self.fields.copy()
+        if username and password:
+            from pyignite.datatypes import String
+
+            username_class = String.build_c_type(len(username))
+            password_class = String.build_c_type(len(password))
+            self.username = username
+            self.password = password
+            fields.extend([
+                ('username', username_class),
+                ('password', password_class),
+            ])
+        self.c_type = type(
+            self.__class__.__name__,
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': fields,
+            }
+        )
+
+    def __bytes__(self):
+        from pyignite.datatypes import String
+
+        request = self.c_type()
+        request.length = (
+            ctypes.sizeof(self.c_type) - ctypes.sizeof(ctypes.c_int)
+        )
+        request.op_code = OP_HANDSHAKE
+        request.version_major = PROTOCOL_VERSION_MAJOR
+        request.version_minor = PROTOCOL_VERSION_MINOR
+        request.version_patch = PROTOCOL_VERSION_PATCH
+        request.client_code = 2
+        if hasattr(request, 'username') and hasattr(request, 'password'):
+            type_code = int.from_bytes(
+                String.type_code,
+                byteorder=PROTOCOL_BYTE_ORDER
+            )
+            request.username.type_code = request.password.type_code = type_code
+            request.username.length = len(self.username)
+            request.username.data = bytes(
+                self.username, encoding=PROTOCOL_STRING_ENCODING
+            )
+            request.password.length = len(self.password)
+            request.password.data = bytes(
+                self.password, encoding=PROTOCOL_STRING_ENCODING
+            )
+        return bytes(request)
 
 
 def read_response(client):

@@ -19,7 +19,7 @@ from decimal import Decimal
 from pyignite.api import (
     sql_fields, cache_create, scan, cache_create_with_config,
     cache_get_configuration, put_binary_type, get_binary_type,
-    cache_get, cache_put, cache_destroy,
+    cache_get, cache_get_or_create, cache_put, cache_destroy,
 )
 from pyignite.datatypes import (
     BinaryObject, BoolObject, IntObject, DecimalObject, LongObject, String,
@@ -63,12 +63,13 @@ select_query = '''
 SELECT (test_pk, test_bool, test_int, test_decimal, test_str) FROM {}
 '''.format(table_sql_name)
 
-drop_query = 'DROP TABLE {}'.format(table_sql_name)
+drop_query = 'DROP TABLE {} IF EXISTS'.format(table_sql_name)
 
 
 def test_sql_read_as_binary(client):
 
-    cache_create(client, scheme_name)
+    cache_get_or_create(client, scheme_name)
+    sql_fields(client, scheme_name, drop_query, page_size)
 
     # create table
     result = sql_fields(
