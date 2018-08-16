@@ -95,7 +95,6 @@ import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccTracker;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.requestSnapshot;
@@ -1495,6 +1494,11 @@ public class DmlStatementsProcessor {
             first = false;
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDirect() {
+            return true;
         }
     }
 }

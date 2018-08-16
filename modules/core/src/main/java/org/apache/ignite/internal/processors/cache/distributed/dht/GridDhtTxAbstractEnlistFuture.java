@@ -195,7 +195,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     protected GridLongList nearUpdCntrs;
 
     /**
-     *  @param nearNodeId Near node ID.
+     * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
@@ -398,7 +398,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         topVer,
                                         null,
                                         mvccSnapshot,
-                                        isMoving(key.partition()));
+                                        isMoving(key.partition()),
+                                        it.isDirect());
 
                                     break;
 
@@ -413,7 +414,8 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         null,
                                         mvccSnapshot,
                                         op,
-                                        isMoving(key.partition()));
+                                        isMoving(key.partition()),
+                                        op == UPDATE && it.isDirect());
 
                                     break;
 
@@ -574,6 +576,9 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
         if (ptr0 != null)
             walPtr = ptr0;
+
+        if (!updRes.success())
+            return;
 
         cnt++;
 
