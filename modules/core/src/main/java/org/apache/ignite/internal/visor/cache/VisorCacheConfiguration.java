@@ -134,7 +134,11 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     private boolean cpOnRead;
 
     /** Eviction filter. */
+    @Deprecated
     private String evictFilter;
+
+    /** Eviction filter factory. */
+    private String evictFilterFactory;
 
     /** Listener configurations. */
     private String lsnrConfigurations;
@@ -161,7 +165,11 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     private String tmLookupClsName;
 
     /** Cache topology validator. */
+    @Deprecated
     private String topValidator;
+
+    /** Cache topology validator factory. */
+    private String topValidatorFactory;
 
     /** Dynamic deployment ID. */
     private IgniteUuid dynamicDeploymentId;
@@ -217,6 +225,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
 
         cpOnRead = ccfg.isCopyOnRead();
         evictFilter = compactClass(ccfg.getEvictionFilter());
+        evictFilterFactory = compactClass(ccfg.getEvictionFilterFactory());
         lsnrConfigurations = compactIterable(ccfg.getCacheEntryListenerConfigurations());
         loadPrevVal = ccfg.isLoadPreviousValue();
         dataRegName = ccfg.getDataRegionName();
@@ -226,6 +235,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         readFromBackup = ccfg.isReadFromBackup();
         tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
         topValidator = compactClass(ccfg.getTopologyValidator());
+        topValidatorFactory = compactClass(ccfg.getTopologyValidatorFactory());
     }
 
     /**
@@ -440,9 +450,18 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
 
     /**
      * @return Eviction filter or {@code null}.
+     *
+     * @deprecated Use {@link #getEvictionFilterFactory()} instead.
      */
     public String getEvictionFilter() {
         return evictFilter;
+    }
+
+    /**
+     * @return Eviction filter factory or {@code null}.
+     */
+    public String getEvictionFilterFactory() {
+        return evictFilterFactory;
     }
 
     /**
@@ -506,9 +525,18 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
 
     /**
      * @return Topology validator.
+     *
+     * @deprecated Use {@link #getTopologyValidatorFactory()} instead.
      */
     public String getTopologyValidator() {
         return topValidator;
+    }
+
+    /**
+     * @return Topology validator factory.
+     */
+    public String getTopologyValidatorFactory() {
+        return topValidatorFactory;
     }
 
     /**
@@ -550,6 +578,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         out.writeInt(qryParallelism);
         out.writeBoolean(cpOnRead);
         U.writeString(out, evictFilter);
+        U.writeString(out, evictFilterFactory);
         U.writeString(out, lsnrConfigurations);
         out.writeBoolean(loadPrevVal);
         U.writeString(out, dataRegName);
@@ -559,6 +588,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         out.writeBoolean(readFromBackup);
         U.writeString(out, tmLookupClsName);
         U.writeString(out, topValidator);
+        U.writeString(out, topValidatorFactory);
         U.writeGridUuid(out, dynamicDeploymentId);
     }
 
@@ -594,6 +624,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         qryParallelism = in.readInt();
         cpOnRead = in.readBoolean();
         evictFilter = U.readString(in);
+        evictFilterFactory = U.readString(in);
         lsnrConfigurations = U.readString(in);
         loadPrevVal = in.readBoolean();
         dataRegName = U.readString(in);
@@ -603,6 +634,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         readFromBackup = in.readBoolean();
         tmLookupClsName = U.readString(in);
         topValidator = U.readString(in);
+        topValidatorFactory = U.readString(in);
         dynamicDeploymentId = U.readGridUuid(in);
     }
 
