@@ -35,9 +35,22 @@ fi
 
 # form a consistent ID from the ECS host's name and the cluster name
 if [ -z "$IGNITE_CONSISTENT_ID" ]; then
-    if [ ! -z "$IGNITE_CLUSTER_NAME" ]  && [ ! -z "$IGNITE_PERSISTENT_STORE" ]  &&  [ -f "$IGNITE_PERSISTENT_STORE/hostname" ]; then
-        HOST_NAME=`cat $IGNITE_PERSISTENT_STORE/hostname`
-        export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}-${HOST_NAME}
+    if [ -z $IGNITE_CONSISTENT_ID_PREFIX ]; then
+         IGNITE_CONSISTENT_ID_PREFIX=${IGNITE_CLUSTER_NAME}
+    fi
+    if [ ! -z "$IGNITE_CONSISTENT_ID_PREFIX" ] ; then
+        EXIST=()
+        if [ ! -z "$IGNITE_PERSISTENT_STORE" ] ; then
+            EXIST=( `cd ${IGNITE_PERSISTENT_STORE}/store; ls -d ${IGNITE_CONSISTENT_ID_PREFIX}_* 2>/dev/null` )
+        fi
+
+        if [ ${#EXIST[@]} -eq 1 ] ; then
+            export IGNITE_CONSISTENT_ID=$EXIST
+        elif [ ${#EXIST[@]} -eq 0 ]; then
+            export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}_`uuidgen -t`
+        else
+            echo "Cannnot select  IGNITE_CONSISTENT_ID from ${EXIST[@]}, leaving unset"         
+        fi
     fi
 fi
 
