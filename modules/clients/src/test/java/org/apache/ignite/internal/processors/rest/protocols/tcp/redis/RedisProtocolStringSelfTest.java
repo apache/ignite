@@ -447,8 +447,6 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
     }
 
     private void testExpire(Expiration exp) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311 (TTL doesn't work for MVCC)");
-
         try (Jedis jedis = pool.getResource()) {
             jedis.set("k1", "v1");
 

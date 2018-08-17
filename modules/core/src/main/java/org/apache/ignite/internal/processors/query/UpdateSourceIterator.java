@@ -38,6 +38,13 @@ public interface UpdateSourceIterator<T> extends GridCloseableIterator<T> {
         // No-op.
     }
 
+    /**
+     * @return True if contains entries without querying.
+     */
+    public default boolean isDirect() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override default void close() throws IgniteCheckedException {
         // No-op.

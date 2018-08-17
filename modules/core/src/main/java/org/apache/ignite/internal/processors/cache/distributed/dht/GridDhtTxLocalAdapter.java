@@ -876,12 +876,15 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param cond Clear lock condition.
      */
     public void clearLockFuture(@Nullable IgniteInternalFuture cond) {
-        IgniteInternalFuture f = lockFut;
+        while (true) {
+            IgniteInternalFuture f = lockFut;
 
-        if (cond != null && f != cond)
-            return;
-
-        lockFut = null;
+            if (f == null
+                || f == ROLLBACK_FUT
+                || (cond != null && f != cond)
+                || updateLockFuture(f, null))
+                return;
+        }
     }
 
     /**
@@ -905,16 +908,13 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return Current lock future or null if it's safe to roll back.
      */
     public @Nullable IgniteInternalFuture<?> tryRollbackAsync() {
-        IgniteInternalFuture<?> fut;
-
         while (true) {
-            fut = lockFut;
+            final IgniteInternalFuture fut = lockFut;
 
-            if (fut != null)
-                return fut == ROLLBACK_FUT ? null : fut;
-
-            if (updateLockFuture(null, ROLLBACK_FUT))
+            if (fut == ROLLBACK_FUT)
                 return null;
+            else if (updateLockFuture(fut, ROLLBACK_FUT))
+                return fut;
         }
     }
 

@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
@@ -94,7 +95,6 @@ import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccTracker;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.requestSnapshot;
@@ -413,10 +413,6 @@ public class DmlStatementsProcessor {
         final UpdatePlan plan = getPlanForStatement(schemaName, null, p, null, true, null);
 
         assert plan.isLocalSubquery();
-
-        if (plan.cacheContext().mvccEnabled())
-            throw new IgniteSQLException("Streaming to cache with enabled MVCC is unsupported at the moment.",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         final GridCacheContext cctx = plan.cacheContext();
 
@@ -739,6 +735,8 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
         boolean loc, @Nullable Integer errKeysPos) throws IgniteCheckedException {
+        isDmlOnSchemaSupported(schema);
+
         H2CachedStatementKey planKey = H2CachedStatementKey.forDmlStatement(schema, p.getSQL(), fieldsQry, loc);
 
         UpdatePlan res = (errKeysPos == null ? planCache.get(planKey) : null);
@@ -1348,6 +1346,17 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * Check if schema supports DDL statement.
+     *
+     * @param schemaName Schema name.
+     */
+    private static void isDmlOnSchemaSupported(String schemaName) {
+        if (F.eq(QueryUtils.SCHEMA_SYS, schemaName))
+            throw new IgniteSQLException("DML statements are not supported on " + schemaName + " schema",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
      * @param mode Update mode.
      * @return Cache operation.
      */
@@ -1485,6 +1494,11 @@ public class DmlStatementsProcessor {
             first = false;
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDirect() {
+            return true;
         }
     }
 }

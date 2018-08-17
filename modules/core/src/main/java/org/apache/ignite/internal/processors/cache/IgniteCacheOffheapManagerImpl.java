@@ -507,44 +507,50 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public MvccUpdateResult mvccUpdate(
-        boolean primary,
         GridCacheMapEntry entry,
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
         MvccSnapshot mvccSnapshot,
-        boolean needHistory) throws IgniteCheckedException {
+        boolean primary,
+        boolean needHistory,
+        boolean fastUpdate,
+        boolean noCreate) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
 
         assert entry.lockedByCurrentThread();
 
         return dataStore(entry.localPartition()).mvccUpdate(entry.context(),
-            primary,
             entry.key(),
             val,
             ver,
             expireTime,
             mvccSnapshot,
-            needHistory);
+            primary,
+            needHistory,
+            fastUpdate,
+            noCreate);
     }
 
     /** {@inheritDoc} */
     @Override public MvccUpdateResult mvccRemove(
-        boolean primary,
         GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot,
-        boolean needHistory) throws IgniteCheckedException {
+        boolean primary,
+        boolean needHistory,
+        boolean fastUpdate) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
 
         assert entry.lockedByCurrentThread();
 
         return dataStore(entry.localPartition()).mvccRemove(entry.context(),
-            primary,
             entry.key(),
             mvccSnapshot,
-            needHistory);
+            primary,
+            needHistory,
+            fastUpdate);
     }
 
     /** {@inheritDoc} */
@@ -591,17 +597,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MvccUpdateResult mvccLock(boolean primary, GridCacheMapEntry entry,
+    @Nullable @Override public MvccUpdateResult mvccLock(GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
 
         assert entry.lockedByCurrentThread();
 
-        return dataStore(entry.localPartition()).mvccLock(entry.context(),
-            primary,
-            entry.key(),
-            mvccSnapshot);
+        return dataStore(entry.localPartition()).mvccLock(entry.context(), entry.key(), mvccSnapshot);
     }
 
     /** {@inheritDoc} */
@@ -1841,14 +1844,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public MvccUpdateResult mvccUpdate(
             GridCacheContext cctx,
-            boolean primary,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
             MvccSnapshot mvccSnapshot,
-            boolean needHistory) throws IgniteCheckedException {
+            boolean primary,
+            boolean needHistory,
+            boolean fastUpdate,
+            boolean noCreate) throws IgniteCheckedException {
             assert mvccSnapshot != null;
+            assert primary || (!needHistory && !fastUpdate);
 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
@@ -1863,17 +1869,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 val.valueBytes(coCtx);
 
                 MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
+                    cctx,
                     key,
                     val,
                     ver,
+                    partId,
                     expireTime,
                     mvccSnapshot,
                     null,
-                    partId,
                     primary,
                     false,
                     needHistory,
-                    cctx);
+                    fastUpdate);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -1886,6 +1893,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return updateRow;
                 else if (res == ResultType.VERSION_FOUND) {
                     // Do nothing, except cleaning up not needed versions
+                    cleanup(cctx, updateRow.cleanupRows());
+
+                    return updateRow;
+                }
+                else if (res == ResultType.PREV_NULL && noCreate) {
                     cleanup(cctx, updateRow.cleanupRows());
 
                     return updateRow;
@@ -1948,12 +1960,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public MvccUpdateResult mvccRemove(GridCacheContext cctx,
-            boolean primary,
             KeyCacheObject key,
             MvccSnapshot mvccSnapshot,
-            boolean needHistory) throws IgniteCheckedException {
+            boolean primary,
+            boolean needHistory,
+            boolean fastUpdate) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || mvccSnapshot.activeTransactions().size() == 0 : mvccSnapshot;
+            assert primary || (!needHistory && !fastUpdate);
 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
@@ -1967,17 +1981,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 key.valueBytes(coCtx);
 
                 MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
+                    cctx,
                     key,
                     null,
                     null,
+                    partId,
                     0,
                     mvccSnapshot,
                     null,
-                    partId,
                     primary,
                     false,
                     needHistory,
-                    cctx);
+                    fastUpdate);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -2014,9 +2029,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public MvccUpdateResult mvccLock(GridCacheContext cctx, boolean primary, KeyCacheObject key,
+        @Override public MvccUpdateResult mvccLock(GridCacheContext cctx, KeyCacheObject key,
             MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
-            assert primary && mvccSnapshot != null;
+            assert mvccSnapshot != null;
 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
@@ -2030,17 +2045,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 key.valueBytes(coCtx);
 
                 MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
+                    cctx,
                     key,
                     null,
                     null,
+                    partId,
                     0,
                     mvccSnapshot,
                     null,
-                    partId,
                     true,
                     true,
                     false,
-                    cctx);
+                    false);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -2330,6 +2346,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
                 assert oldRow == null || oldRow.cacheId() == cacheId : oldRow;
+
+                if (key.partition() == -1)
+                    key.partition(partId);
 
                 DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
 

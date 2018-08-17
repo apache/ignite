@@ -859,6 +859,28 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param regionCfg Region config.
+     */
+    private void validateDataRegion(DataRegionConfiguration regionCfg) {
+        if (regionCfg.isPersistenceEnabled() && regionCfg.getMaxSize() == DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE)
+            throw new AssertionError("Max size of data region should be set explicitly to avoid memory over usage");
+    }
+
+    /**
+     * @param cfg Config.
+     */
+    private void validateConfiguration(IgniteConfiguration cfg) {
+        if (cfg.getDataStorageConfiguration() != null) {
+            validateDataRegion(cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration());
+
+            if (cfg.getDataStorageConfiguration().getDataRegionConfigurations() != null) {
+                for (DataRegionConfiguration reg : cfg.getDataStorageConfiguration().getDataRegionConfigurations())
+                    validateDataRegion(reg);
+            }
+        }
+    }
+
+    /**
      * Starts new grid with given name.
      *
      * @param igniteInstanceName Ignite instance name.
@@ -1326,6 +1348,8 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected Ignite startGrid(String igniteInstanceName, String springCfgPath) throws Exception {
         IgniteConfiguration cfg = loadConfiguration(springCfgPath);
+
+        cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
 
         cfg.setGridLogger(getTestResources().getLogger());
 

@@ -82,6 +82,16 @@ public class H2ConnectionWrapper implements AutoCloseable {
         initStatementCache();
     }
 
+    /**
+     * @return Statement cache size.
+     */
+    public int statementCacheSize() {
+        return statementCache == null ? 0 : statementCache.size();
+    }
+
+    /**
+     * Initializes statement cache.
+     */
     private void initStatementCache() {
         statementCache = new H2StatementCache(STATEMENT_CACHE_SIZE);
     }

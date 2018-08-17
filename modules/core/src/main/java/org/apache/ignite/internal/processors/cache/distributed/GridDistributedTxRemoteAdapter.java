@@ -206,6 +206,18 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
+        throw new UnsupportedOperationException("Remote tx doesn't support deployment.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+        assert !recovery;
+
+        txState.addActiveCache(cacheCtx, recovery, this);
+    }
+
     /**
      * @return Checks if transaction has no entries.
      */
@@ -791,12 +803,16 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 cctx.wal().flush(ptr, false);
                         }
                         catch (StorageException e) {
+                            err = e;
+
                             throw new IgniteCheckedException("Failed to log transaction record " +
                                 "(transaction will be rolled back): " + this, e);
                         }
                     }
                     finally {
                         cctx.database().checkpointReadUnlock();
+
+                        notifyDrManager(state() == COMMITTING && err == null);
 
                         if (wrapper != null)
                             wrapper.initialize(ret);
@@ -933,6 +949,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public final void rollbackRemoteTx() {
         try {
+            notifyDrManager(false);
+
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {

@@ -97,43 +97,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * @throws Exception if failed.
-     */
-    public void testBeginWithMvccDisabledThrows() throws Exception {
-        checkMvccDisabledBehavior("BEGIN");
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testCommitWithMvccDisabledThrows() throws Exception {
-        checkMvccDisabledBehavior("COMMIT");
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testRollbackWithMvccDisabledThrows() throws Exception {
-        checkMvccDisabledBehavior("rollback");
-    }
-
-    /**
-     * @param sql Operation to test.
-     * @throws Exception if failed.
-     */
-    private void checkMvccDisabledBehavior(String sql) throws Exception {
-        try (IgniteEx node = startGrid(commonConfiguration(1))) {
-            GridTestUtils.assertThrows(null, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    execute(node, sql);
-
-                    return null;
-                }
-            }, IgniteSQLException.class, "MVCC must be enabled in order to invoke transactional operation: " + sql);
-        }
-    }
-
-    /**
      * Test that COMMIT without a transaction yields nothing.
      */
     public void testCommitNoTransaction() {

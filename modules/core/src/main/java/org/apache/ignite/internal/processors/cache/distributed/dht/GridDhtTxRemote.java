@@ -401,6 +401,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
         GridDhtCacheAdapter dht = ctx.dht();
 
+        addActiveCache(ctx, false);
+
         for (int i = 0; i < keys.size(); i++) {
             KeyCacheObject key = keys.get(i);
 
@@ -440,6 +442,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         topologyVersion(),
                                         updCntrs.get(i),
                                         snapshot,
+                                        false,
                                         false);
 
                                     break;
@@ -454,6 +457,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         updCntrs.get(i),
                                         snapshot,
                                         op,
+                                        false,
                                         false);
 
                                     break;

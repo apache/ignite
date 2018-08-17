@@ -113,7 +113,9 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.INVOKE_NO_OP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.REMOVE_NO_VAL;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 
 /**
  * Adapter for cache entry.
@@ -1035,7 +1037,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable Long updateCntr,
         MvccSnapshot mvccVer,
         GridCacheOperation op,
-        boolean needHistory) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean needHistory,
+        boolean fastUpdate) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert tx != null;
 
         final boolean valid = valid(tx.topologyVersion());
@@ -1075,7 +1078,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert val != null;
 
-            res = cctx.offheap().mvccUpdate(tx.local(), this, val, newVer, expireTime, mvccVer, needHistory);
+            res = cctx.offheap().mvccUpdate(
+                this, val, newVer, expireTime, mvccVer, tx.local(), needHistory, fastUpdate, op == UPDATE);
 
             assert res != null;
 
@@ -1088,6 +1092,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
                 throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
+            else if (op == UPDATE && res.resultType() == ResultType.PREV_NULL)
+                return new GridCacheUpdateTxResult(false);
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
 
@@ -1098,7 +1104,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
 
                 lockFut.listen(new MvccUpdateLockListener(tx, this, affNodeId, topVer, val, ttl0, updateCntr, mvccVer,
-                    op, needHistory, resFut));
+                    op, needHistory, fastUpdate, op == UPDATE, resFut));
 
                 return new GridCacheUpdateTxResult(false, resFut);
             }
@@ -1132,6 +1138,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             update(val, expireTime, ttl, newVer, true);
 
+            mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, val, newVer, topVer, mvccVer);
+
             recordNodeId(affNodeId, topVer);
         }
         finally {
@@ -1159,7 +1167,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         AffinityTopologyVersion topVer,
         @Nullable Long updateCntr,
         MvccSnapshot mvccVer,
-        boolean needHistory) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean needHistory,
+        boolean fastUpdate) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert tx != null;
         assert mvccVer != null;
 
@@ -1180,12 +1189,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert newVer != null : "Failed to get write version for tx: " + tx;
 
-            res = cctx.offheap().mvccRemove(tx.local(), this, mvccVer, needHistory);
+            res = cctx.offheap().mvccRemove(this, mvccVer, tx.local(), needHistory, fastUpdate);
 
             assert res != null;
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
                 throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
+            else if (res.resultType() == ResultType.PREV_NULL)
+                return new GridCacheUpdateTxResult(false);
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
 
@@ -1196,7 +1207,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 IgniteInternalFuture<?> lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
 
                 lockFut.listen(new MvccRemoveLockListener(tx, this, affNodeId, topVer, updateCntr, mvccVer, needHistory,
-                    resFut));
+                    fastUpdate, resFut));
 
                 return new GridCacheUpdateTxResult(false, resFut);
             }
@@ -1217,6 +1228,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 logPtr = logTxUpdate(tx, null, 0, updateCntr);
 
             update(null, 0, 0, newVer, true);
+
+            mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, null, newVer, topVer, mvccVer);
 
             recordNodeId(affNodeId, topVer);
         }
@@ -1259,7 +1272,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert newVer != null : "Failed to get write version for tx: " + tx;
 
-            MvccUpdateResult res = cctx.offheap().mvccLock(tx.local(), this, mvccVer);
+            assert tx.local();
+
+            MvccUpdateResult res = cctx.offheap().mvccLock(this, mvccVer);
 
             assert res != null;
 
@@ -1290,6 +1305,24 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         onUpdateFinished(0L);
 
         return new GridCacheUpdateTxResult(valid, logPtr);
+    }
+
+    /**
+     * Enlist for DR if needed.
+     *
+     * @param drType DR type.
+     * @param val Value.
+     * @param ver Version.
+     * @param topVer Topology version.
+     * @param mvccVer MVCC snapshot.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    private void mvccDrReplicate(GridDrType drType, CacheObject val, GridCacheVersion ver,
+        AffinityTopologyVersion topVer,
+        MvccSnapshot mvccVer) throws IgniteCheckedException {
+
+        if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
+            cctx.dr().mvccReplicate(key, val, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType, topVer, mvccVer);
     }
 
     /** {@inheritDoc} */
@@ -2280,7 +2313,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     key,
                     evtNodeId,
                     null,
-                    newVer,
+                    updateVer,
                     EVT_CACHE_OBJECT_READ,
                     evtOld, evtOld != null,
                     evtOld, evtOld != null,
@@ -2307,7 +2340,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         key,
                         evtNodeId,
                         null,
-                        newVer,
+                        updateVer,
                         EVT_CACHE_OBJECT_PUT,
                         updateVal,
                         true,
@@ -2324,7 +2357,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 clearReaders();
 
-                drReplicate(drType, null, newVer, topVer);
+                drReplicate(drType, null, updateVer, topVer);
 
                 recordNodeId(affNodeId, topVer);
 
@@ -2335,7 +2368,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     cctx.events().addEvent(partition(),
                         key,
                         evtNodeId,
-                        null, newVer,
+                        null,
+                        updateVer,
                         EVT_CACHE_OBJECT_REMOVED,
                         null, false,
                         evtOld, evtOld != null,
@@ -4863,6 +4897,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private GridCacheMapEntry entry;
 
         /** */
+        private final boolean fastUpdate;
+
+        /** */
         MvccRemoveLockListener(IgniteInternalTx tx,
             GridCacheMapEntry entry,
             UUID affNodeId,
@@ -4870,6 +4907,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             Long updateCntr,
             MvccSnapshot mvccVer,
             boolean needHistory,
+            boolean fastUpdate,
             GridFutureAdapter<GridCacheUpdateTxResult> resFut) {
             this.tx = tx;
             this.entry = entry;
@@ -4879,6 +4917,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.updateCntr = updateCntr;
             this.needHistory = needHistory;
             this.resFut = resFut;
+            this.fastUpdate = fastUpdate;
         }
 
         /** {@inheritDoc} */
@@ -4911,7 +4950,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.shared().database().checkpointReadLock();
 
                 try {
-                    res = cctx.offheap().mvccRemove(tx.local(), entry, mvccVer, needHistory);
+                    res = cctx.offheap().mvccRemove(entry, mvccVer, tx.local(), needHistory, fastUpdate);
                 } finally {
                     cctx.shared().database().checkpointReadUnlock();
                 }
@@ -4920,6 +4959,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (res.resultType() == ResultType.VERSION_MISMATCH) {
                     resFut.onDone(new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE));
+
+                    return;
+                }
+                else if (res.resultType() == ResultType.PREV_NULL) {
+                    resFut.onDone(new GridCacheUpdateTxResult(false));
 
                     return;
                 }
@@ -4956,6 +5000,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             updateCntr0)));
 
                 entry.update(null, 0, 0, newVer, true);
+
+                entry.mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, null, newVer, topVer, mvccVer);
 
                 entry.recordNodeId(affNodeId, topVer);
             }
@@ -5040,7 +5086,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 MvccUpdateResult res;
 
                 try {
-                    res = cctx.offheap().mvccLock(tx.local(), entry, mvccVer);
+                    res = cctx.offheap().mvccLock(entry, mvccVer);
                 }
                 finally {
                     cctx.shared().database().checkpointReadUnlock();
@@ -5119,6 +5165,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final boolean needHistory;
 
         /** */
+        private final boolean fastUpdate;
+
+        /** */
+        private final boolean noCreate;
+
+        /** */
         MvccUpdateLockListener(IgniteInternalTx tx,
             GridCacheMapEntry entry,
             UUID affNodeId,
@@ -5129,6 +5181,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             MvccSnapshot mvccVer,
             GridCacheOperation op,
             boolean needHistory,
+            boolean fastUpdate,
+            boolean noCreate,
             GridFutureAdapter<GridCacheUpdateTxResult> resFut) {
             this.tx = tx;
             this.entry = entry;
@@ -5140,6 +5194,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.mvccVer = mvccVer;
             this.op = op;
             this.needHistory = needHistory;
+            this.fastUpdate = fastUpdate;
+            this.noCreate = noCreate;
             this.resFut = resFut;
         }
 
@@ -5188,7 +5244,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.shared().database().checkpointReadLock();
 
                 try {
-                    res = cctx.offheap().mvccUpdate(tx.local(), entry, val, newVer, expireTime, mvccVer, needHistory);
+                    res = cctx.offheap().mvccUpdate(
+                        entry, val, newVer, expireTime, mvccVer, tx.local(), needHistory, fastUpdate, noCreate);
                 } finally {
                     cctx.shared().database().checkpointReadUnlock();
                 }
@@ -5235,6 +5292,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             updateCntr0)));
 
                 entry.update(val, expireTime, ttl, newVer, true);
+
+                entry.mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, val, newVer, topVer, mvccVer);
 
                 entry.recordNodeId(affNodeId, topVer);
             }
@@ -5952,7 +6011,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
             else {
-                newSysTtl = newTtl = conflictCtx.ttl();
+               newSysTtl = newTtl = conflictCtx.ttl();
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
             }
 
@@ -6387,6 +6446,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long expireTime = CU.EXPIRE_TIME_ETERNAL;
             long ttl = CU.TTL_ETERNAL;
 
+            GridCacheVersion ver = tx.writeVersion();
+
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
                     cctx.cacheId(),
@@ -6394,12 +6455,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     val,
                     op,
                     tx.nearXidVersion(),
-                    tx.writeVersion(),
+                    ver,
                     CU.EXPIRE_TIME_ETERNAL,
                     key.partition(),
                     updateCntr)));
 
-            update(val, expireTime, ttl, tx.writeVersion(), true);
+            update(val, expireTime, ttl, ver, true);
+
+            mvccDrReplicate(DR_BACKUP, val, ver, topVer, mvccVer);
 
             recordNodeId(affNodeId, topVer);
         }

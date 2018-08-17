@@ -139,7 +139,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             PageIdAllocator.FLAG_IDX,
             reuseList,
             metastoreRoot.pageId().pageId(),
-            metastoreRoot.isAllocated());
+            metastoreRoot.isAllocated(),
+            ctx.kernalContext().failure());
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
     }
@@ -1747,39 +1748,42 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public MvccUpdateResult mvccUpdate(
             GridCacheContext cctx,
-            boolean primary,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
             MvccSnapshot mvccVer,
-            boolean needHistory) throws IgniteCheckedException {
+            boolean primary,
+            boolean needHistory,
+            boolean fastUpdate,
+            boolean noCreate) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccUpdate(cctx, primary, key, val, ver, expireTime, mvccVer, needHistory);
+            return delegate.mvccUpdate(
+                cctx, key, val, ver, expireTime, mvccVer, primary, needHistory, fastUpdate, noCreate);
         }
 
         /** {@inheritDoc} */
         @Override public MvccUpdateResult mvccRemove(
             GridCacheContext cctx,
-            boolean primary,
             KeyCacheObject key,
             MvccSnapshot mvccVer,
-            boolean needHistory) throws IgniteCheckedException {
+            boolean primary,
+            boolean needHistory,
+            boolean fastUpdate) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccRemove(cctx, primary, key, mvccVer, needHistory);
+            return delegate.mvccRemove(cctx, key, mvccVer, primary, needHistory, fastUpdate);
         }
 
         /** {@inheritDoc} */
         @Override public MvccUpdateResult mvccLock(
             GridCacheContext cctx,
-            boolean primary,
             KeyCacheObject key,
             MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccLock(cctx, primary, key, mvccSnapshot);
+            return delegate.mvccLock(cctx, key, mvccSnapshot);
         }
 
         /** {@inheritDoc} */

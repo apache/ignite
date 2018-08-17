@@ -48,7 +48,7 @@ public class PythonProcessManager extends ProcessManagerWrapper<NativeProcess, P
     /** {@inheritDoc} */
     @Override protected NativeProcess transformSpecification(PythonProcess spec) {
         return new NativeProcess(
-            new PythonProcessBuilderSupplier(true),
+            new PythonProcessBuilderSupplier(true, spec.getMeta()),
             spec.getStdin(),
             spec.getNodeId()
         );

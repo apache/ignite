@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
@@ -1253,6 +1254,99 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         assertNotNull("Exception has not been thrown.", ex0);
         assertEquals("Mvcc version mismatch.", ex0.getMessage());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInsertAndFastDeleteWithoutVersionConflict() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(2);
+
+        IgniteCache<?, ?> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        try (Transaction tx1 = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            // obtain tx version
+            cache0.query(new SqlFieldsQuery("select * from Integer where _key = 1"));
+
+            runAsync(() -> {
+                cache0.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(1, 1));
+            }).get();
+
+            cache0.query(new SqlFieldsQuery("delete from Integer where _key = ?").setArgs(1));
+
+            tx1.commit();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+
+            fail("Exception is not expected here");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInsertAndFastUpdateWithoutVersionConflict() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(2);
+
+        IgniteCache<?, ?> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        try (Transaction tx1 = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            // obtain tx version
+            cache0.query(new SqlFieldsQuery("select * from Integer where _key = 1"));
+
+            runAsync(() -> {
+                cache0.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(1, 1));
+            }).get();
+
+            cache0.query(new SqlFieldsQuery("update Integer set _val = ? where _key = ?").setArgs(1, 1));
+
+            tx1.commit();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+
+            fail("Exception is not expected here");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInsertFastUpdateConcurrent() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9292");
+
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(2);
+
+        IgniteCache<?, ?> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        try {
+            for (int i = 0; i < 100; i++) {
+                int key = i;
+                CompletableFuture.allOf(
+                    CompletableFuture.runAsync(() -> {
+                        cache0.query(new SqlFieldsQuery("insert into Integer(_key, _val) values(?, ?)").setArgs(key, key));
+                    }),
+                    CompletableFuture.runAsync(() -> {
+                        cache0.query(new SqlFieldsQuery("update Integer set _val = ? where _key = ?").setArgs(key, key));
+                    })
+                ).get();
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+
+            fail("Exception is not expected here");
+        }
     }
 
     /**

@@ -18,6 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccBulkLoadTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccFastUpdateTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccLocalEntriesWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedBackupsTest;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlTx
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurrentJdbcTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccStreamingInsertTest;
 
 /**
  *
@@ -62,6 +65,9 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
         suite.addTestSuite(CacheMvccReplicatedBackupsTest.class);
         suite.addTestSuite(CacheMvccPartitionedSqlCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheMvccReplicatedSqlCoordinatorFailoverTest.class);
+        suite.addTestSuite(CacheMvccBulkLoadTest.class);
+        suite.addTestSuite(CacheMvccStreamingInsertTest.class);
+        suite.addTestSuite(CacheMvccFastUpdateTest.class);
         suite.addTestSuite(CacheMvccSizeTest.class);
 
         return suite;

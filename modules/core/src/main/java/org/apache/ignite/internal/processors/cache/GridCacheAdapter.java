@@ -888,8 +888,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     e = modes.offheap ? ctx0.cache().entryEx(key) : ctx0.cache().peekEx(key);
                 }
 
-                ctx.shared().database().checkpointReadLock();
-
                 if (e != null) {
                     ctx.shared().database().checkpointReadLock();
 

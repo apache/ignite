@@ -2259,8 +2259,7 @@ public class IgnitionEx {
                         "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
                         "Switching to standard JDK marshalling - " +
-                        "object serialization performance will be significantly slower.",
-                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
+                        "object serialization performance will be significantly slower.");
 
                     marsh = new JdkMarshaller();
                 }

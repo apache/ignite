@@ -37,16 +37,26 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /**
  * Tests for dynamic index creation.
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
 public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
+    /** IP finder. */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Attribute to filter node out of cache data nodes. */
     protected static final String ATTR_FILTERED = "FILTERED";
 
@@ -117,6 +127,30 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      */
     protected IgniteConfiguration clientConfiguration(int idx) throws Exception {
         return commonConfiguration(idx).setClientMode(true);
+    }
+
+    /**
+     * Create common node configuration.
+     *
+     * @param idx Index.
+     * @return Configuration.
+     * @throws Exception If failed.
+     */
+    protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
+
+        cfg.setFailureHandler(new StopNodeFailureHandler());
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+
+        cfg.setMarshaller(new BinaryMarshaller());
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(128L * 1024 * 1024));
+
+        cfg.setDataStorageConfiguration(memCfg);
+
+        return optimize(cfg);
     }
 
     /**

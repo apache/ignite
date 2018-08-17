@@ -2798,6 +2798,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkReadWriteTransactionsNoDeadlock(final boolean multiNode) throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9226");
+
         final Ignite ignite0 = ignite(0);
 
         for (final CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
