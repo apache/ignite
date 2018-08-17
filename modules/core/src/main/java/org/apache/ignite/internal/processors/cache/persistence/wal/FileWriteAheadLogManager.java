@@ -3440,7 +3440,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             LockSupport.unpark(walWriter.runner());
 
-            while (true) {
+            while (!walWriter.isCancelled()) {
                 Long val = waiters.get(t);
 
                 assert val != null : "Only this thread can remove thread from waiters";
