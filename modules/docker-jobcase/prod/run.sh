@@ -66,8 +66,12 @@ if [ -z "$IGNITE_CONSISTENT_ID" ]; then
 
         if [ ${#EXIST[@]} -eq 1 ] ; then
             export IGNITE_CONSISTENT_ID=$EXIST
+            
+            # Ugly hack:   Ignite seems to convert all "-" to "_" when creating directories.
+            #   Assume that all "_" should be "-"
+            export IGNITE_CONSISTENT_ID=`echo $IGNITE_CONSISTENT_ID | tr '_' '-'`
         elif [ ${#EXIST[@]} -eq 0 ]; then
-            export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}_`cat /proc/sys/kernel/random/uuid`
+            export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}-`cat /proc/sys/kernel/random/uuid`
         else
             echo "Cannnot select  IGNITE_CONSISTENT_ID from ${EXIST[@]}, leaving unset"         
         fi
