@@ -28,7 +28,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
@@ -63,7 +63,7 @@ public class KNNRegressionExample {
                     (k, v) -> v[0]
                 ).withK(5)
                     .withDistanceMeasure(new ManhattanDistance())
-                    .withStrategy(KNNStrategy.WEIGHTED);
+                    .withStrategy(NNStrategy.WEIGHTED);
 
                 int totalAmount = 0;
                 // Calculate mean squared error (MSE)
