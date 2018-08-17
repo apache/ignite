@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.Vector;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,7 +53,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -83,6 +84,7 @@ import org.junit.Assert;
 
 import static java.util.Arrays.fill;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
+import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -124,6 +126,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Set WAL and Archive path to same value. */
     private boolean setWalAndArchiveToSameValue;
 
+    /** Whether to enable WAL archive compaction. */
+    private boolean enableWalCompaction;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -139,7 +144,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setIncludeEventTypes(EventType.EVT_WAL_SEGMENT_ARCHIVED);
+        cfg.setIncludeEventTypes(EVT_WAL_SEGMENT_ARCHIVED, EVT_WAL_SEGMENT_COMPACTED);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -149,7 +154,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             .setWalHistorySize(1)
             .setWalSegmentSize(1024 * 1024)
             .setWalSegments(WAL_SEGMENTS)
-            .setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND);
+            .setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND)
+            .setWalCompactionEnabled(enableWalCompaction);
 
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             dsCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
@@ -285,6 +291,29 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testArchiveCompletedEventFired() throws Exception {
+        assertTrue(checkWhetherWALRelatedEventFired(EVT_WAL_SEGMENT_ARCHIVED));
+    }
+
+    /**
+     * Tests archive completed event is fired.
+     *
+     * @throws Exception if failed.
+     */
+    public void testArchiveCompactedEventFired() throws Exception {
+        boolean oldEnableWalCompaction = enableWalCompaction;
+
+        try {
+            enableWalCompaction = true;
+
+            assertTrue(checkWhetherWALRelatedEventFired(EVT_WAL_SEGMENT_COMPACTED));
+        }
+        finally {
+            enableWalCompaction = oldEnableWalCompaction;
+        }
+    }
+
+    /** */
+    private boolean checkWhetherWALRelatedEventFired(int evtType) throws Exception {
         AtomicBoolean evtRecorded = new AtomicBoolean();
 
         Ignite ignite = startGrid();
@@ -293,7 +322,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final IgniteEvents evts = ignite.events();
 
-        if (!evts.isEnabled(EVT_WAL_SEGMENT_ARCHIVED))
+        if (!evts.isEnabled(evtType))
             fail("nothing to test");
 
         evts.localListen(e -> {
@@ -301,19 +330,19 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
             long idx = archComplEvt.getAbsWalSegmentIdx();
 
-            log.info("Finished archive for segment [" +
+            log.info("Finished for segment [" +
                 idx + ", " + archComplEvt.getArchiveFile() + "]: [" + e + "]");
 
             evtRecorded.set(true);
 
             return true;
-        }, EVT_WAL_SEGMENT_ARCHIVED);
+        }, evtType);
 
         putDummyRecords(ignite, 500);
 
         stopGrid();
 
-        assertTrue(evtRecorded.get());
+        return evtRecorded.get();
     }
 
     /**
