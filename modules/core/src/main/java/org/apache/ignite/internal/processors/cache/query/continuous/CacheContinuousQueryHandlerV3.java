@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteClosure;
@@ -114,11 +115,11 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEntryEventFilter<K, V> getEventFilter() {
+    @Override protected CacheEntryEventFilter getEventFilter0() {
         if (rmtFilterFactory == null)
             return null;
 
-        return super.getEventFilter();
+        return super.getEventFilter0();
     }
 
     /** {@inheritDoc} */
@@ -148,10 +149,16 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
 
     /** {@inheritDoc} */
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
-        super.p2pUnmarshal(nodeId, ctx);
-
         if (rmtTransFactoryDep != null)
-            rmtTransFactory = rmtTransFactoryDep.unmarshal(nodeId, ctx);
+            rmtTransFactory = p2pUnmarshal(rmtTransFactoryDep, nodeId, ctx);
+
+        super.p2pUnmarshal(nodeId, ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMarshalled() {
+        return super.isMarshalled() &&
+            (rmtTransFactory == null || rmtTransFactoryDep != null);
     }
 
     /** {@inheritDoc} */
@@ -174,9 +181,12 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
 
         boolean b = in.readBoolean();
 
-        if (b)
+        if (b) {
             rmtTransFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
-        else
+
+            if (p2pUnmarshalFut == null)
+                p2pUnmarshalFut = new GridFutureAdapter();
+        } else
             rmtTransFactory = (Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>>)in.readObject();
     }
 }
