@@ -33,25 +33,11 @@ if [ ! -z "$EXTERNAL_LIBS" ]; then
   done
 fi
 
-# HOSTNAME of the docker host
-# The information is useful for any kind of communication between container and docker host.
-export DOCKER_HOST_NAME=`cat $IGNITE_PERSISTENT_STORE/hostname`
-
-if [ -e ${IGNITE_PERSISTENT_STORE}/host_ip_address ]; then
-  export DOCKER_HOST_IP=$(cat ${IGNITE_PERSISTENT_STORE}/host_ip_address)
-fi
-
-if [ -e ${IGNITE_PERSISTENT_STORE}/lvm_volume_group ]; then
-  export DOCKER_HOST_LVG=$(cat ${IGNITE_PERSISTENT_STORE}/lvm_volume_group)
-fi
-
-if [ -e ${IGNITE_PERSISTENT_STORE}/lvm_volume_name ]; then
-  export DOCKER_HOST_LV=$(cat ${IGNITE_PERSISTENT_STORE}/lvm_volume_name)
-fi
-
-if [ -e ${IGNITE_PERSISTENT_STORE}/mount_point ]; then
-  export DOCKER_HOST_MOUNT_POINT=$(cat ${IGNITE_PERSISTENT_STORE}/mount_point)
-fi
+# Load docker host information
+# automatically export all variables in host.info
+set -a
+source $IGNITE_PERSISTENT_STORE/host.info
+set +a
 
 # form a consistent ID from the ECS host's name and the cluster name
 if [ -z "$IGNITE_CONSISTENT_ID" ]; then
