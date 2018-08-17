@@ -144,6 +144,8 @@ public class ClusterPortManager {
 
                 if (ports.isEmpty())
                     cache.remove(hostId);
+                else
+                    cache.put(hostId, ports);
             }
         }
         finally {
