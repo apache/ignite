@@ -90,11 +90,7 @@ fi
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
 if [ -z "$JVM_OPTS" ] ; then
-    if [[ `"$JAVA" -version 2>&1 | egrep "1\.[7]\."` ]]; then
-        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
-    else
-        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
-    fi
+    JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
 fi
 
 #
@@ -149,16 +145,18 @@ fi
 # JVM_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 ${JVM_OPTS}"
 
 #
-# Final JVM_OPTS for Java 9 compatibility
+# Final JVM_OPTS for Java 9+ compatibility
 #
-${JAVA_HOME}/bin/java -version 2>&1 | grep -qE 'java version "9.*"' && {
-JVM_OPTS="--add-exports java.base/jdk.internal.misc=ALL-UNNAMED \
+javaMajorVersion "${JAVA_HOME}/bin/java"
+
+if [ $version -gt 8 ]; then
+    JVM_OPTS="--add-exports java.base/jdk.internal.misc=ALL-UNNAMED \
           --add-exports java.base/sun.nio.ch=ALL-UNNAMED \
           --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
           --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
           --add-modules java.xml.bind \
       ${JVM_OPTS}"
-} || true
+fi
 
 ERRORCODE="-1"
 

@@ -27,6 +27,28 @@
 #   source "${IGNITE_HOME_TMP}"/bin/include/functions.sh
 #
 
+# Extract java version to `version` variable.
+javaVersion() {
+    version=$("$1" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+}
+
+# Extract only major version of java to `version` variable.
+javaMajorVersion() {
+    javaVersion "$1"
+    version="${version%%.*}"
+
+    if [ ${version} -eq 1 ]; then
+        # Version seems starts from 1, we need second number.
+        javaVersion "$1"
+        backIFS=$IFS
+
+        IFS=. ver=(${version##*-})
+        version=${ver[1]}
+
+        IFS=$backIFS
+    fi
+}
+
 #
 # Discovers path to Java executable and checks it's version.
 # The function exports JAVA variable with path to Java executable.
@@ -40,7 +62,7 @@ checkJava() {
         if [ $RETCODE -ne 0 ]; then
             echo $0", ERROR:"
             echo "JAVA_HOME environment variable is not found."
-            echo "Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8."
+            echo "Please point JAVA_HOME variable to location of JDK 1.8 or JDK 9."
             echo "You can also download latest JDK at http://java.com/download"
 
             exit 1
@@ -54,22 +76,20 @@ checkJava() {
     #
     # Check JDK.
     #
-    if [ ! -e "$JAVA" ]; then
-        echo $0", ERROR:"
-        echo "JAVA is not found in JAVA_HOME=$JAVA_HOME."
-        echo "Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9"
-        echo "You can also download latest JDK at http://java.com/download"
+    javaMajorVersion "$JAVA"
 
-        exit 1
-    fi
-
-    "$JAVA" -version 2>&1 | grep -qE 'version "(1.8.*|9.*)"' || {
+    if [ $version -lt 8 ]; then
         echo "$0, ERROR:"
-        echo "The version of JAVA installed in JAVA_HOME=$JAVA_HOME is incorrect."
+        echo "The $version version of JAVA installed in JAVA_HOME=$JAVA_HOME is incompatible."
         echo "Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9."
         echo "You can also download latest JDK at http://java.com/download"
         exit 1
-    }
+    elif [ $version -gt 9 ]; then
+        echo "$0, WARNING:"
+        echo "The $version version of JAVA installed in JAVA_HOME=$JAVA_HOME was not tested with Apache Ignite."
+        echo "Run it on your own risk or point JAVA_HOME variable to installation of JDK 1.8 or JDK 9."
+        echo "You can also download JDK at http://java.com/download"
+    fi
 }
 
 #
