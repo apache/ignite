@@ -296,6 +296,7 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
         personDataFrame.createOrReplaceTempView("person")
 
         createEmployeeCache(client, "employeeCache1")
+
         spark.read
             .format(FORMAT_IGNITE)
             .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
@@ -305,7 +306,9 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
             .createOrReplaceTempView("employeeWithSchema")
 
         createEmployeeCache(client, "employeeCache2")
+
         client.cache("employeeCache2").remove("key1")
+        
         spark.read
             .format(FORMAT_IGNITE)
             .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)

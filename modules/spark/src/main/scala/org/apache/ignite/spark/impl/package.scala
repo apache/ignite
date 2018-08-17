@@ -89,7 +89,7 @@ package object impl {
     /**
       * @param ignite Ignite instance.
       * @param tabName Table name.
-      * @param schemaName Optional schema name
+      * @param schemaName Optional schema name.
       * @return True if table exists false otherwise.
       */
     def sqlTableExists(ignite: Ignite, tabName: String, schemaName: Option[String]): Boolean =
@@ -98,7 +98,7 @@ package object impl {
     /**
       * @param ignite Ignite instance.
       * @param tabName Table name.
-      * @param schemaName Optional schema name
+      * @param schemaName Optional schema name.
       * @return QueryEntity for a given table.
       */
     def igniteSQLTable(ignite: Ignite, tabName: String, schemaName: Option[String]): Option[QueryEntity] =
@@ -107,7 +107,7 @@ package object impl {
     /**
       * @param ignite Ignite instance.
       * @param tabName Table name.
-      * @param schemaName Optional schema name
+      * @param schemaName Optional schema name.
       * @return Cache name for given table.
       */
     def sqlCacheName(ignite: Ignite, tabName: String, schemaName: Option[String]): Option[String] =
@@ -116,7 +116,7 @@ package object impl {
     /**
       * @param ignite Ignite instance.
       * @param tabName Table name.
-      * @param schemaName Optional schema name
+      * @param schemaName Optional schema name.
       * @tparam K Key class.
       * @tparam V Value class.
       * @return CacheConfiguration and QueryEntity for a given table.
@@ -126,13 +126,10 @@ package object impl {
         ignite.cacheNames()
             .map(cacheName => ignite.cache[K, V](cacheName).getConfiguration(classOf[CacheConfiguration[K, V]]))
             .filter(
-                ccfg => schemaName.isEmpty || schemaName.get.equalsIgnoreCase(normalizeSchemaName(ccfg.getName, ccfg.getSqlSchema)))
+                ccfg => schemaName.isEmpty
+                    || schemaName.get.equalsIgnoreCase(normalizeSchemaName(ccfg.getName, ccfg.getSqlSchema)))
             .map { ccfg ⇒
-                val cacheSchema = normalizeSchemaName(ccfg.getName, ccfg.getSqlSchema)
-
-                val queryEntities = ccfg.getQueryEntities
-
-                queryEntities.find(_.getTableName.equalsIgnoreCase(tabName)).map(qe ⇒ (ccfg, qe))
+                ccfg.getQueryEntities.find(_.getTableName.equalsIgnoreCase(tabName)).map(qe ⇒ (ccfg, qe))
             }.find(_.isDefined).flatten
 
     /**
