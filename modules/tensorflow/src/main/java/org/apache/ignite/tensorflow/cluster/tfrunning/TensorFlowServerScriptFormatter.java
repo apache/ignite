@@ -34,12 +34,42 @@ public class TensorFlowServerScriptFormatter {
     public String format(TensorFlowServer srv, boolean join, Ignite ignite) {
         StringBuilder builder = new StringBuilder();
 
+        builder.append("from threading import Thread").append("\n");
+        builder.append("from time import sleep").append("\n");
+        builder.append("import os, signal").append("\n");
+        builder.append("\n");
+        builder.append("def check_pid(pid):").append("\n");
+        builder.append("    try:").append("\n");
+        builder.append("        os.kill(pid, 0)").append("\n");
+        builder.append("    except OSError:").append("\n");
+        builder.append("        return False").append("\n");
+        builder.append("    else:").append("\n");
+        builder.append("        return True").append("\n");
+        builder.append("\n");
+        builder.append("def threaded_function(pid):").append("\n");
+        builder.append("    while check_pid(pid):").append("\n");
+        builder.append("        sleep(1)").append("\n");
+        builder.append("    os.kill(os.getpid(), signal.SIGUSR1)").append("\n");
+        builder.append("\n");
+        builder.append("Thread(target = threaded_function, args = (int(os.environ['PPID']), )).start()")
+            .append("\n");
+        builder.append("\n");
+
         builder.append("import tensorflow as tf").append('\n');
         builder.append("from tensorflow.contrib.ignite import IgniteDataset").append("\n");
+        builder.append("\n");
         builder.append("cluster = tf.train.ClusterSpec(")
             .append(srv.getClusterSpec().format(ignite))
             .append(')')
             .append('\n');
+        builder.append("");
+
+        builder.append("print('job:%s task:%d' % ('")
+            .append(srv.getJobName())
+            .append("', ")
+            .append(srv.getTaskIdx())
+            .append("))")
+            .append("\n");
 
         builder.append("server = tf.train.Server(cluster");
 

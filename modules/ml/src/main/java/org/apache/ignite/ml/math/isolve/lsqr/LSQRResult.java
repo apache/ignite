@@ -34,7 +34,7 @@ public class LSQRResult extends IterativeSolverResult {
     private final int isstop;
 
     /** Represents norm(r), where r = b - Ax. */
-    private final double r1norn;
+    private final double r1norm;
 
     /**Represents sqrt( norm(r)^2  +  damp^2 * norm(x)^2 ). Equal to r1norm if damp == 0. */
     private final double r2norm;
@@ -63,7 +63,7 @@ public class LSQRResult extends IterativeSolverResult {
      * @param x X value.
      * @param iterations Number of performed iterations.
      * @param isstop Stop reason.
-     * @param r1norn R1 norm value.
+     * @param r1norm R1 norm value.
      * @param r2norm R2 norm value.
      * @param anorm A norm value.
      * @param acond A cond value.
@@ -71,11 +71,11 @@ public class LSQRResult extends IterativeSolverResult {
      * @param xnorm X norm value.
      * @param var Var value.
      */
-    public LSQRResult(double[] x, int iterations, int isstop, double r1norn, double r2norm, double anorm, double acond,
+    public LSQRResult(double[] x, int iterations, int isstop, double r1norm, double r2norm, double anorm, double acond,
         double arnorm, double xnorm, double[] var) {
         super(x, iterations);
         this.isstop = isstop;
-        this.r1norn = r1norn;
+        this.r1norm = r1norm;
         this.r2norm = r2norm;
         this.anorm = anorm;
         this.acond = acond;
@@ -90,8 +90,8 @@ public class LSQRResult extends IterativeSolverResult {
     }
 
     /** */
-    public double getR1norn() {
-        return r1norn;
+    public double getR1norm() {
+        return r1norm;
     }
 
     /** */
@@ -128,7 +128,7 @@ public class LSQRResult extends IterativeSolverResult {
     @Override public String toString() {
         return "LSQRResult{" +
             "isstop=" + isstop +
-            ", r1norn=" + r1norn +
+            ", r1norm=" + r1norm +
             ", r2norm=" + r2norm +
             ", anorm=" + anorm +
             ", acond=" + acond +

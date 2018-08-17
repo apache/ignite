@@ -1429,6 +1429,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 log.debug("Removing left node from full map update [grp=" + grp.cacheOrGroupName() +
                                     ", nodeId=" + nodeId + ", partMap=" + partMap + ']');
 
+                            if (node2part.containsKey(nodeId)) {
+                                GridDhtPartitionMap map = partMap.get(nodeId);
+
+                                if (map != null)
+                                    leftNode2Part.put(nodeId, map);
+                            }
+
                             it.remove();
                         }
                     }
