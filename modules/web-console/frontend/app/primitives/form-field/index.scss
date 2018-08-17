@@ -413,22 +413,26 @@
         [ignite-icon] {
             display: none;
         }
-
-        // &:before {
-        //     content: attr(message);
-
-        //     position: relative;
-        //     right: initial;
-        //     width: auto;
-        // }
-
-        // > * {
-        //     display: none;
-        // }
     }
 
     .form-field__error + .form-field__error {
         margin-top: 10px;
+    }
+
+    .form-field__checkbox {
+        flex-wrap: wrap;
+
+        .form-field__errors {
+            margin-left: -10px;
+
+            .form-field__error {
+                width: auto;
+
+                div {
+                    width: auto;
+                }
+            }
+        }
     }
 }
 
