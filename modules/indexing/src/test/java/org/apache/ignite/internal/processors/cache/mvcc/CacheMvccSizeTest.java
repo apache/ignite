@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.Random;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -72,28 +70,6 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
         personTbl.query(q("commit"));
 
         assertEquals(0, personTbl.size());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInsertUpdateConcurrent() throws Exception {
-        IgniteEx ignite = startGrid(0);
-        IgniteCache<?, ?> personTbl = createTable(ignite);
-
-        CompletableFuture.allOf(
-            CompletableFuture.runAsync(() -> {
-                for (int i = 0; i < 100; i++)
-                    personTbl.query(q("insert into person values(%d, 'a')", i));
-            }),
-            CompletableFuture.runAsync(() -> {
-                Random random = new Random();
-                for (int i = 0; i < 1000; i++)
-                    personTbl.query(q("update person set name = 'b' where id = %d", random.nextInt(100)));
-            })
-        ).join();
-
-        assertEquals(100, personTbl.size());
     }
 
     /**
