@@ -22,50 +22,25 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Event indicates the completion of WAL segment file transition to archive.
+ * Event indicates the completion of WAL segment compaction.
+ * <p>
+ * {@link #getArchiveFile()} corresponds to compacted file.
  */
-public class WalSegmentArchivedEvent extends EventAdapter {
+public class WalSegmentCompactedEvent extends WalSegmentArchivedEvent {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Absolute WAL segment file index. */
-    private long absWalSegmentIdx;
-
-    /** Destination archive file. This file is completed and closed archive segment */
-    private final File archiveFile;
-
     /**
-     * Creates WAL segment event
+     * Creates WAL segment compaction event.
      *
      * @param node Node.
      * @param absWalSegmentIdx Absolute wal segment index.
-     * @param archiveFile Archive file.
+     * @param archiveFile Compacted archive file.
      */
-    public WalSegmentArchivedEvent(
+    public WalSegmentCompactedEvent(
         @NotNull final ClusterNode node,
         final long absWalSegmentIdx,
         final File archiveFile) {
-        this(node, absWalSegmentIdx, archiveFile, EventType.EVT_WAL_SEGMENT_ARCHIVED);
-    }
-
-    /** */
-    protected WalSegmentArchivedEvent(
-        @NotNull final ClusterNode node,
-        final long absWalSegmentIdx,
-        final File archiveFile,
-        int evtType) {
-        super(node, "", evtType);
-        this.absWalSegmentIdx = absWalSegmentIdx;
-        this.archiveFile = archiveFile;
-    }
-
-    /** @return {@link #archiveFile} */
-    public File getArchiveFile() {
-        return archiveFile;
-    }
-
-    /** @return {@link #absWalSegmentIdx} */
-    public long getAbsWalSegmentIdx() {
-        return absWalSegmentIdx;
+        super(node, absWalSegmentIdx, archiveFile, EventType.EVT_WAL_SEGMENT_COMPACTED);
     }
 }

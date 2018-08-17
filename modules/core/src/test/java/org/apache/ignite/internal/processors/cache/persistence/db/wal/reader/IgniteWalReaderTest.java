@@ -51,7 +51,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -83,6 +82,7 @@ import org.junit.Assert;
 
 import static java.util.Arrays.fill;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
+import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -119,10 +119,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private WALMode customWalMode;
 
     /** Clear properties in afterTest() method. */
-    private boolean clearProperties;
+    private boolean clearProps;
 
     /** Set WAL and Archive path to same value. */
-    private boolean setWalAndArchiveToSameValue;
+    private boolean setWalAndArchiveToSameVal;
+
+    /** Whether to enable WAL archive compaction. */
+    private boolean enableWalCompaction;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -139,7 +142,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setIncludeEventTypes(EventType.EVT_WAL_SEGMENT_ARCHIVED);
+        cfg.setIncludeEventTypes(EVT_WAL_SEGMENT_ARCHIVED, EVT_WAL_SEGMENT_COMPACTED);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
@@ -149,7 +152,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             .setWalHistorySize(1)
             .setWalSegmentSize(1024 * 1024)
             .setWalSegments(WAL_SEGMENTS)
-            .setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND);
+            .setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND)
+            .setWalCompactionEnabled(enableWalCompaction);
 
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             dsCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
@@ -158,7 +162,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         File wal = new File(db, "wal");
 
-        if(setWalAndArchiveToSameValue) {
+        if(setWalAndArchiveToSameVal) {
             String walAbsPath = wal.getAbsolutePath();
 
             dsCfg.setWalPath(walAbsPath);
@@ -186,7 +190,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        if (clearProperties)
+        if (clearProps)
             System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
     }
 
@@ -194,7 +198,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFillWalAndReadRecords() throws Exception {
-        setWalAndArchiveToSameValue = false;
+        setWalAndArchiveToSameVal = false;
 
         Ignite ignite0 = startGrid();
 
@@ -285,6 +289,29 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testArchiveCompletedEventFired() throws Exception {
+        assertTrue(checkWhetherWALRelatedEventFired(EVT_WAL_SEGMENT_ARCHIVED));
+    }
+
+    /**
+     * Tests archive completed event is fired.
+     *
+     * @throws Exception if failed.
+     */
+    public void testArchiveCompactedEventFired() throws Exception {
+        boolean oldEnableWalCompaction = enableWalCompaction;
+
+        try {
+            enableWalCompaction = true;
+
+            assertTrue(checkWhetherWALRelatedEventFired(EVT_WAL_SEGMENT_COMPACTED));
+        }
+        finally {
+            enableWalCompaction = oldEnableWalCompaction;
+        }
+    }
+
+    /** */
+    private boolean checkWhetherWALRelatedEventFired(int evtType) throws Exception {
         AtomicBoolean evtRecorded = new AtomicBoolean();
 
         Ignite ignite = startGrid();
@@ -293,7 +320,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final IgniteEvents evts = ignite.events();
 
-        if (!evts.isEnabled(EVT_WAL_SEGMENT_ARCHIVED))
+        if (!evts.isEnabled(evtType))
             fail("nothing to test");
 
         evts.localListen(e -> {
@@ -301,19 +328,19 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
             long idx = archComplEvt.getAbsWalSegmentIdx();
 
-            log.info("Finished archive for segment [" +
+            log.info("Finished for segment [" +
                 idx + ", " + archComplEvt.getArchiveFile() + "]: [" + e + "]");
 
             evtRecorded.set(true);
 
             return true;
-        }, EVT_WAL_SEGMENT_ARCHIVED);
+        }, evtType);
 
         putDummyRecords(ignite, 500);
 
         stopGrid();
 
-        assertTrue(evtRecorded.get());
+        return evtRecorded.get();
     }
 
     /**
@@ -340,7 +367,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             long idx = archComplEvt.getAbsWalSegmentIdx();
 
             log.info("Finished archive for segment [" + idx + ", " +
-                archComplEvt.getArchiveFile() + "]: [" + e + "]");
+                archComplEvt.getArchiveFile() + "]: [" + e + ']');
 
             if (waitingForEvt.get())
                 archiveSegmentForInactivity.countDown();
@@ -415,13 +442,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        IteratorParametersBuilder iteratorParametersBuilder = createIteratorParametersBuilder(workDir, subfolderName);
+        IteratorParametersBuilder iterParametersBuilder = createIteratorParametersBuilder(workDir, subfolderName);
 
-        iteratorParametersBuilder.filesOrDirs(workDir);
+        iterParametersBuilder.filesOrDirs(workDir);
 
         scanIterateAndCount(
             factory,
-            iteratorParametersBuilder,
+            iterParametersBuilder,
             totalEntries,
             0,
             null,
@@ -763,13 +790,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        IteratorParametersBuilder iteratorParametersBuilder =
+        IteratorParametersBuilder iterParametersBuilder =
             createIteratorParametersBuilder(workDir, subfolderName)
             .filesOrDirs(workDir);
 
         scanIterateAndCount(
             factory,
-            iteratorParametersBuilder,
+            iterParametersBuilder,
             0,
             0,
             null,
@@ -1001,7 +1028,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             createsFound != null && createsFound > 0);
 
         assertTrue("Create operations count should be at least " + cntEntries + " in log: " + operationsFound,
-            createsFound != null && createsFound >= cntEntries);
+            createsFound >= cntEntries);
     }
 
     /**
@@ -1010,7 +1037,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testTxRecordsReadWoBinaryMeta() throws Exception {
-        clearProperties = true;
+        clearProps = true;
 
         System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 
@@ -1281,7 +1308,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
          *
          * @param iVal I value.
          */
-        public TestExternalizable(int iVal) {
+        TestExternalizable(int iVal) {
             this.iVal = iVal;
         }
 
