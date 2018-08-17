@@ -85,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -1614,6 +1615,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 Object procRes = null;
                 Exception err = null;
 
+                IgniteThread.onEntryProcessorEntered(true);
+
                 try {
                     EntryProcessor<Object, Object, Object> processor = t.get1();
 
@@ -1625,6 +1628,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
                 catch (Exception e) {
                     err = e;
+                }
+                finally {
+                    IgniteThread.onEntryProcessorLeft();
                 }
 
                 if (ret != null) {
