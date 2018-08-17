@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -53,11 +54,15 @@ public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements
         CacheConfiguration cCfg2 = new CacheConfiguration()
             .setName(CACHE_NAME_2)
             .setCacheMode(CacheMode.REPLICATED)
-            .setTopologyValidator(new TopologyValidator() {
-            @Override public boolean validate(Collection<ClusterNode> nodes) {
-                return nodes.size() == 2;
-            }
-        });
+            .setTopologyValidatorFactory(new Factory<TopologyValidator>() {
+                @Override public TopologyValidator create() {
+                    return new TopologyValidator() {
+                        @Override public boolean validate(Collection<ClusterNode> nodes) {
+                            return nodes.size() == 2;
+                        }
+                    };
+                }
+            });
 
         cfg.setCacheConfiguration(cCfg1, cCfg2);
 
