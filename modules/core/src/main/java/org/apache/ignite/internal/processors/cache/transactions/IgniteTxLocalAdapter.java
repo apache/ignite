@@ -1660,18 +1660,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         Map<Integer, DeferredPartitionUpdates> res = new HashMap<>();
 
-        for (Map.Entry<Integer, ? extends Map<Integer, Long>> entry : updCntrs.entrySet()) {
+        for (Map.Entry<Integer, ConcurrentMap<Integer, Long>> entry : updCntrs.entrySet()) {
             Integer cacheId = entry.getKey();
+
             Map<Integer, Long> partsCntrs = entry.getValue();
 
             assert !F.isEmpty(partsCntrs);
 
             GridCacheAffinityManager affinity = cctx.cacheContext(cacheId).affinity();
 
-            DeferredPartitionUpdates resBackupUpdates = res.get(cacheId);
-
-            if (resBackupUpdates == null)
-                res.put(cacheId, resBackupUpdates = new DeferredPartitionUpdates());
+            DeferredPartitionUpdates resBackupUpdates = new DeferredPartitionUpdates();
 
             for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
                 Integer p = e.getKey();
@@ -1684,9 +1682,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     resBackupUpdates.updateCounters().put(p, cntr);
                 }
             }
+
+            if (!resBackupUpdates.updateCounters().isEmpty())
+                res.put(cacheId, resBackupUpdates);
         }
 
-        for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
+        for (Map.Entry<Integer, ConcurrentMap<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
             Integer cacheId = entry.getKey();
 
             Map<Integer, AtomicLong> partDeltas = entry.getValue();
@@ -1759,7 +1760,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         if (F.isEmpty(updCntrs))
             return;
 
-        for (Map.Entry<Integer, ? extends Map<Integer, Long>> entry : updCntrs.entrySet()) {
+        for (Map.Entry<Integer, ConcurrentMap<Integer, Long>> entry : updCntrs.entrySet()) {
             Map<Integer, Long> partsCntrs = entry.getValue();
 
             assert !F.isEmpty(partsCntrs);
@@ -1787,7 +1788,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         if (F.isEmpty(sizeDeltas))
             return;
 
-        for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
+        for (Map.Entry<Integer, ConcurrentMap<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
             Integer cacheId = entry.getKey();
             Map<Integer, AtomicLong> partDeltas = entry.getValue();
 
