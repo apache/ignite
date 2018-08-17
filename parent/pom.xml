@@ -834,6 +834,7 @@
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
+                                        <exclude>idea/ignite_inspections.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>
                                         <exclude>**/LICENSE*</exclude>
