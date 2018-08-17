@@ -140,8 +140,8 @@ mixin td-ellipses-lbl(w, lbl)
                                 ng-change='$ctrl.onCacheSelect(importCommon.cacheOrTemplate)'
                             )
                         .pc-form-grid-col-60.pc-form-grid__text-only-item
-                            | Defaults to be applied for filtered tables
-                            +form-field__tooltip({ title: 'Select and apply options for caches generation' })
+                            +form-field__label({ label: 'Defaults to be applied for filtered tables' })
+                                +form-field__tooltip({ title: 'Select and apply options for caches generation' })
                             button.btn-ignite.btn-ignite--success(
                                 type='button'
                                 ng-click='applyDefaults()'
