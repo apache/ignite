@@ -201,6 +201,9 @@
         }
 
         [ignite-icon='info'] {
+            position: relative;
+            top: 1px;
+
             color: $ignite-brand-success;
         }
     }
