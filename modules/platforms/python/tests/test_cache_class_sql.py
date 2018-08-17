@@ -89,7 +89,7 @@ def test_sql(client, page_size):
         assert next(result)[0] == 1
 
     student = client.get_or_create_cache('SQL_PUBLIC_STUDENT')
-    result = student.sql('TRUE', page_size)
+    result = student.select_row('TRUE', page_size)
     for k, v in result:
         assert k in range(1, 6)
         assert v['fields']['FIRST_NAME'] in [

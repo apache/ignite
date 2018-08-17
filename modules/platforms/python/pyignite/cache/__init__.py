@@ -528,7 +528,7 @@ class Cache:
                 v = self._process_binary(v)
                 yield k, v
 
-    def sql(
+    def select_row(
         self, query_str: str, page_size: int=1,
         query_args: Optional[list]=None, distributed_joins: bool=False,
         replicated_only: bool=False, local: bool=False, timeout: int=0
