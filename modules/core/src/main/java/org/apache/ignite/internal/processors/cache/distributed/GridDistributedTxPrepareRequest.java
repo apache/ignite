@@ -157,10 +157,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @GridToStringExclude
     private byte flags;
 
-    /** Transaction label. */
-    @GridToStringInclude
-    @Nullable private String label;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -198,7 +194,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         isolation = tx.isolation();
         txSize = tx.size();
         plc = tx.ioPolicy();
-        label = tx.label();
 
         this.timeout = timeout;
         this.reads = reads;
@@ -373,13 +368,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public boolean last() {
         return isFlag(LAST_REQ_FLAG_MASK);
-    }
-
-    /**
-     * @return Transaction label.
-     */
-    @Nullable public String label() {
-        return label;
     }
 
     /** {@inheritDoc} */
@@ -573,12 +561,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 writer.incrementState();
 
-            case 20:
-                if (!writer.writeString("label", label))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -707,13 +689,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 20:
-                label = reader.readString("label");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDistributedTxPrepareRequest.class);
@@ -726,7 +701,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 21;
+        return 20;
     }
 
     /** {@inheritDoc} */

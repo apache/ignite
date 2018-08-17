@@ -99,9 +99,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** Additional flags. */
     private byte flags;
 
-    /** Transaction label. */
-    private String label;
-
     /**
      * Empty constructor.
      */
@@ -125,7 +122,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param txSize Expected transaction size.
      * @param skipStore Skip store flag.
      * @param addDepInfo Deployment info flag.
-     * @param label Transaction label.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -143,8 +139,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int txSize,
         boolean skipStore,
         boolean keepBinary,
-        boolean addDepInfo,
-        @Nullable String label
+        boolean addDepInfo
     ) {
         super(lockVer, keyCnt, addDepInfo);
 
@@ -163,7 +158,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         this.isInvalidate = isInvalidate;
         this.timeout = timeout;
         this.txSize = txSize;
-        this.label = label;
 
         retVals = new boolean[keyCnt];
 
@@ -321,13 +315,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return keys;
     }
 
-    /**
-     * @return transaction label.
-     */
-    @Nullable public String label() {
-        return label;
-    }
-
     /** {@inheritDoc} */
     @Override public int partition() {
         return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
@@ -457,12 +444,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 writer.incrementState();
 
-            case 20:
-                if(!writer.writeString("label", label))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -587,14 +568,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 20:
-                label = reader.readString("label");
-
-                if(!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridDistributedLockRequest.class);
@@ -607,7 +580,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 21;
+        return 20;
     }
 
     /** {@inheritDoc} */
