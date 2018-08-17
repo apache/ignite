@@ -164,6 +164,7 @@ COPY ./multicast.discovery.node.config.xml ${JOBCASE_CONFIG}/
 
 # Copy sh files and set permission
 COPY ./run.sh ${IGNITE_HOME}/
+COPY ./visor.sh ${IGNITE_HOME}/
 COPY ./autobaseline.sh ${IGNITE_HOME}/
 
 RUN chmod +x ${IGNITE_HOME}/run.sh
