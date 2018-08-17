@@ -17,15 +17,6 @@
 
 package org.apache.ignite.tensorflow.cluster.util;
 
-import java.io.Serializable;
-import java.net.NetworkInterface;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
@@ -34,6 +25,11 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.configuration.CacheConfiguration;
+
+import java.io.Serializable;
+import java.net.NetworkInterface;
+import java.util.*;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Cluster port manager that allows to reliably {@link #acquirePort(UUID)} and {@link #releasePort(UUID, int)} on the
@@ -144,6 +140,8 @@ public class ClusterPortManager {
 
                 if (ports.isEmpty())
                     cache.remove(hostId);
+                else
+                    cache.put(hostId, ports);
             }
         }
         finally {
