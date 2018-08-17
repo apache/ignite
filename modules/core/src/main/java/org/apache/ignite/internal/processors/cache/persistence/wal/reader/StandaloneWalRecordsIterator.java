@@ -190,7 +190,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         curRec = null;
 
         try {
-            return initReadHandle(fd, null);
+            FileWALPointer initPtr = null;
+
+            if (lowBound.index() == fd.idx())
+                initPtr = lowBound;
+
+            return initReadHandle(fd, initPtr);
         }
         catch (FileNotFoundException e) {
             if (log.isInfoEnabled())
