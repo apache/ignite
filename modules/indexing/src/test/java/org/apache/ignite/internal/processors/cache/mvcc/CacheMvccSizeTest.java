@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -165,6 +167,36 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
 
         assertEquals(1, cache.size());
         assertEquals(1, cache.size(BACKUP));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSizeIsConsistentAfterRebalance() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache<?, ?> tbl = createTable(ignite);
+
+        Future<?> f = null;
+
+        for (int i = 0; i < 100; i++) {
+            if (i == 50)
+                f = ForkJoinPool.commonPool().submit(() -> startGrid(1));
+
+            tbl.query(q("insert into person values(?, ?)").setArgs(i, i));
+        }
+
+        f.get();
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<?, ?> tbl0 = grid(0).cache("person");
+        IgniteCache<?, ?> tbl1 = grid(1).cache("person");
+
+        assert tbl0.localSize() != 0 && tbl1.localSize() != 0;
+
+        assertEquals(100, tbl0.size());
+        assertEquals(100, tbl0.size(BACKUP));
     }
 
     /** */
