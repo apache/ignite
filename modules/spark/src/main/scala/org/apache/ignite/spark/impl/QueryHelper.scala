@@ -91,7 +91,7 @@ private[apache] object QueryHelper {
       *
       * @param data Data.
       * @param tblName Table name.
-      * @param schemaName Optional schema name
+      * @param schemaName Optional schema name.
       * @param ctx Ignite context.
       * @param streamerAllowOverwrite Flag enabling overwriting existing values in cache.
       * @param streamerFlushFrequency Insert query streamer automatic flush frequency.
@@ -134,7 +134,7 @@ private[apache] object QueryHelper {
       * @param iterator Data iterator.
       * @param insertQry Insert query.
       * @param tblName Table name.
-      * @param schemaName Optional schema name
+      * @param schemaName Optional schema name.
       * @param ctx Ignite context.
       * @param streamerAllowOverwrite Flag enabling overwriting existing values in cache.
       * @param streamerFlushFrequency Insert query streamer automatic flush frequency.

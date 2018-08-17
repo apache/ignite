@@ -180,20 +180,21 @@ class IgniteRelationProvider extends RelationProvider
     /**
       * @param igniteCtx Ignite context.
       * @param tblName Table name.
-      * @param schema Optional schema name
+      * @param schema Optional schema name.
       * @param sqlCtx SQL context.
       * @return Ignite SQL relation.
       */
-    private def createRelation(igniteCtx: IgniteContext, tblName: String, schema: Option[String], sqlCtx: SQLContext): BaseRelation = {
+    private def createRelation(igniteCtx: IgniteContext, tblName: String, schema: Option[String], sqlCtx: SQLContext):
+    BaseRelation = {
         val optimizationDisabled =
             sqlCtx.sparkSession.conf.get(OPTION_DISABLE_SPARK_SQL_OPTIMIZATION, "false").toBoolean
 
         val experimentalMethods = sqlCtx.sparkSession.sessionState.experimentalMethods
 
         if (optimizationDisabled) {
-            experimentalMethods.extraOptimizations = 
+            experimentalMethods.extraOptimizations =
                 experimentalMethods.extraOptimizations.filter(_ != IgniteOptimization)
-        } 
+        }
         else {
             val optimizationExists = experimentalMethods.extraOptimizations.contains(IgniteOptimization)
 

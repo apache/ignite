@@ -308,7 +308,7 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
         createEmployeeCache(client, "employeeCache2")
 
         client.cache("employeeCache2").remove("key1")
-        
+
         spark.read
             .format(FORMAT_IGNITE)
             .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
