@@ -341,7 +341,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             return true;
         }, evtType);
 
-        putDummyRecords(ignite, 500);
+        putDummyRecords(ignite, 5_000);
 
         stopGrid();
 
