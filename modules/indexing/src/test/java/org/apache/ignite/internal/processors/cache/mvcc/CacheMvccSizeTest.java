@@ -32,119 +32,147 @@ import org.apache.ignite.internal.IgniteEx;
 
 import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 
+/**
+ *
+ */
 public class CacheMvccSizeTest extends CacheMvccAbstractTest {
+    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.PARTITIONED;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testInsert() throws Exception {
         IgniteEx ignite = startGrid(0);
-        IgniteCache<?, ?> personTable = createTable(ignite);
+        IgniteCache<?, ?> personTbl = createTable(ignite);
 
-        personTable.query(q("begin"));
-        personTable.query(q("insert into person values(1, 'a')"));
+        personTbl.query(q("begin"));
+        personTbl.query(q("insert into person values(1, 'a')"));
 
-        assertEquals(0, personTable.size());
-        personTable.query(q("commit"));
+        assertEquals(0, personTbl.size());
+        personTbl.query(q("commit"));
 
-        assertEquals(1, personTable.size());
+        assertEquals(1, personTbl.size());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testDelete() throws Exception {
         IgniteEx ignite = startGrid(0);
-        IgniteCache<?, ?> personTable = createTable(ignite);
-        personTable.query(q("insert into person values(1, 'a')"));
+        IgniteCache<?, ?> personTbl = createTable(ignite);
+        personTbl.query(q("insert into person values(1, 'a')"));
 
-        personTable.query(q("begin"));
-        personTable.query(q("delete from person"));
+        personTbl.query(q("begin"));
+        personTbl.query(q("delete from person"));
 
-        assertEquals(1, personTable.size());
-        personTable.query(q("commit"));
+        assertEquals(1, personTbl.size());
+        personTbl.query(q("commit"));
 
-        assertEquals(0, personTable.size());
+        assertEquals(0, personTbl.size());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testInsertUpdateConcurrent() throws Exception {
         IgniteEx ignite = startGrid(0);
-        IgniteCache<?, ?> personTable = createTable(ignite);
+        IgniteCache<?, ?> personTbl = createTable(ignite);
 
         CompletableFuture.allOf(
             CompletableFuture.runAsync(() -> {
                 for (int i = 0; i < 100; i++)
-                    personTable.query(q("insert into person values(%d, 'a')", i));
+                    personTbl.query(q("insert into person values(%d, 'a')", i));
             }),
             CompletableFuture.runAsync(() -> {
                 Random random = new Random();
                 for (int i = 0; i < 1000; i++)
-                    personTable.query(q("update person set name = 'b' where id = %d", random.nextInt(100)));
+                    personTbl.query(q("update person set name = 'b' where id = %d", random.nextInt(100)));
             })
         ).join();
 
-        assertEquals(100, personTable.size());
+        assertEquals(100, personTbl.size());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testInsertMultipleKeys() throws Exception {
         IgniteEx ignite = startGrid(0);
-        IgniteCache<?, ?> personTable = createTable(ignite);
+        IgniteCache<?, ?> personTbl = createTable(ignite);
 
-        personTable.query(q("begin"));
-        personTable.query(q("insert into person values(1, 'a')"));
-        personTable.query(q("insert into person values(%d, 'b')", keyInSamePartition(ignite, 1)));
-        personTable.query(q("insert into person values(%d, 'c')", keyInDifferentPartition(ignite, 1)));
+        personTbl.query(q("begin"));
+        personTbl.query(q("insert into person values(1, 'a')"));
+        personTbl.query(q("insert into person values(%d, 'b')", keyInSamePartition(ignite, 1)));
+        personTbl.query(q("insert into person values(%d, 'c')", keyInDifferentPartition(ignite, 1)));
 
-        assertEquals(0, personTable.size());
-        personTable.query(q("commit"));
+        assertEquals(0, personTbl.size());
+        personTbl.query(q("commit"));
 
-        assertEquals(3, personTable.size());
+        assertEquals(3, personTbl.size());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testInsertWithBackups() throws Exception {
         startGridsMultiThreaded(2);
         IgniteEx ignite = grid(0);
-        IgniteCache<?, ?> personTable = createTable(ignite);
+        IgniteCache<?, ?> personTbl = createTable(ignite);
 
-        personTable.query(q("begin"));
-        personTable.query(q("insert into person values(1, 'a')"));
+        personTbl.query(q("begin"));
+        personTbl.query(q("insert into person values(1, 'a')"));
 
-        assertEquals(0, personTable.size(BACKUP));
-        personTable.query(q("commit"));
+        assertEquals(0, personTbl.size(BACKUP));
+        personTbl.query(q("commit"));
 
-        assertEquals(1, personTable.size(BACKUP));
+        assertEquals(1, personTbl.size(BACKUP));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testDeleteWithBackups() throws Exception {
         startGridsMultiThreaded(2);
         IgniteEx ignite = grid(0);
-        IgniteCache<?, ?> personTable = createTable(ignite);
-        personTable.query(q("insert into person values(1, 'a')"));
+        IgniteCache<?, ?> personTbl = createTable(ignite);
+        personTbl.query(q("insert into person values(1, 'a')"));
 
-        personTable.query(q("begin"));
-        personTable.query(q("delete from person where id = 1"));
+        personTbl.query(q("begin"));
+        personTbl.query(q("delete from person where id = 1"));
 
-        assertEquals(1, personTable.size(BACKUP));
-        personTable.query(q("commit"));
+        assertEquals(1, personTbl.size(BACKUP));
+        personTbl.query(q("commit"));
 
-        assertEquals(0, personTable.size(BACKUP));
+        assertEquals(0, personTbl.size(BACKUP));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testInsertAndDeleteWithBackups() throws Exception {
         startGridsMultiThreaded(2);
         IgniteEx ignite = grid(0);
-        IgniteCache<?, ?> personTable = createTable(ignite);
-        personTable.query(q("insert into person values(1, 'a')"));
+        IgniteCache<?, ?> personTbl = createTable(ignite);
+        personTbl.query(q("insert into person values(1, 'a')"));
 
-        personTable.query(q("begin"));
-        personTable.query(q("insert into person values(2, 'b')"));
-        personTable.query(q("delete from person where id = 1"));
+        personTbl.query(q("begin"));
+        personTbl.query(q("insert into person values(2, 'b')"));
+        personTbl.query(q("delete from person where id = 1"));
 
-        assertEquals(1, personTable.size());
-        assertEquals(1, personTable.size(BACKUP));
-        personTable.query(q("commit"));
+        assertEquals(1, personTbl.size());
+        assertEquals(1, personTbl.size(BACKUP));
+        personTbl.query(q("commit"));
 
-        assertEquals(1, personTable.size());
-        assertEquals(1, personTable.size(BACKUP));
+        assertEquals(1, personTbl.size());
+        assertEquals(1, personTbl.size(BACKUP));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testInitialValueWithBackups() throws Exception {
         startGridsMultiThreaded(2);
         IgniteEx ignite = grid(0);
@@ -163,6 +191,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
         assertEquals(1, cache.size(BACKUP));
     }
 
+    /** */
     private static IgniteCache<?, ?> createTable(IgniteEx ignite) {
         IgniteCache<?, ?> sqlNexus = ignite.getOrCreateCache(new CacheConfiguration<>("sqlNexus").setSqlSchema("PUBLIC"));
         sqlNexus.query(q("" +
@@ -175,14 +204,12 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
         return ignite.cache("person");
     }
 
-    private static SqlFieldsQuery q(String sql) {
-        return new SqlFieldsQuery(sql);
-    }
-
+    /** */
     private static SqlFieldsQuery q(String fSql, Object... args) {
         return new SqlFieldsQuery(String.format(fSql, args));
     }
 
+    /** */
     private static int keyInSamePartition(Ignite ignite, int key) {
         Affinity<Object> affinity = ignite.affinity("person");
         return IntStream.iterate(key + 1, i -> i + 1)
@@ -190,6 +217,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
             .findFirst().getAsInt();
     }
 
+    /** */
     private static int keyInDifferentPartition(Ignite ignite, int key) {
         Affinity<Object> affinity = ignite.affinity("person");
         return IntStream.iterate(key + 1, i -> i + 1)
