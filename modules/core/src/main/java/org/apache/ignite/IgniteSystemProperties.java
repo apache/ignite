@@ -906,6 +906,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
     /**
+     * When set to {@code true} Scan Query will be using Optimized Marshaller to return results (legacy).
+     * <p>
+     * @deprecated Should be removed in Apache Ignite 3.0.
+     */
+    public static final String IGNITE_SCAN_QUERY_USE_OPTIMIZED_MARSHALLER = "IGNITE_SCAN_QUERY_USE_OPTIMIZED_MARSHALLER";
+
+    /**
      * Sets timeout for TCP client recovery descriptor reservation.
      */
     public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =

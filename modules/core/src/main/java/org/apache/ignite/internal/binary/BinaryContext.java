@@ -48,6 +48,7 @@ import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponseEntry;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -198,7 +199,8 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C4MLA.class.getName());
 
         // Scan query classes.
-        sysClss.add(GridCacheQueryResponseEntry.class.getName());
+        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SCAN_QUERY_USE_OPTIMIZED_MARSHALLER))
+            sysClss.add(GridCacheQueryResponseEntry.class.getName());
 
         sysClss.add(IgniteUuid.class.getName());
 
