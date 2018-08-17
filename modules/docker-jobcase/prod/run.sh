@@ -67,7 +67,7 @@ if [ -z "$IGNITE_CONSISTENT_ID" ]; then
         if [ ${#EXIST[@]} -eq 1 ] ; then
             export IGNITE_CONSISTENT_ID=$EXIST
         elif [ ${#EXIST[@]} -eq 0 ]; then
-            export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}_`uuidgen -t`
+            export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}_`cat /proc/sys/kernel/random/uuid`
         else
             echo "Cannnot select  IGNITE_CONSISTENT_ID from ${EXIST[@]}, leaving unset"         
         fi
