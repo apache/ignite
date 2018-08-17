@@ -65,15 +65,20 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_SQL_SCHEMA;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.IgniteSystemProperties.getString;
 
 /**
  * Utility methods for queries.
  */
 public class QueryUtils {
+    /** Default schema used by H2. */
+    public static final String DFLT_H2_SCHEMA = "PUBLIC";
+
     /** Default schema. */
-    public static final String DFLT_SCHEMA = "PUBLIC";
+    public static String DFLT_SCHEMA = normalizeSchemaName(null, getString(IGNITE_DEFAULT_SQL_SCHEMA, DFLT_H2_SCHEMA));
 
     /** Schema for system view. */
     public static final String SCHEMA_SYS = "IGNITE";

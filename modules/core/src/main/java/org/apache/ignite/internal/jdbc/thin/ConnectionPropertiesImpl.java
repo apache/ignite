@@ -26,6 +26,7 @@ import java.util.StringTokenizer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -53,7 +54,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Schema name. Hidden property. Is used to set default schema name part of the URL. */
     private StringProperty schema = new StringProperty(PROP_SCHEMA,
-        "Schema name of the connection", "PUBLIC", null, false, null);
+        "Schema name of the connection", QueryUtils.DFLT_SCHEMA, null, false, null);
 
     /** Distributed joins property. */
     private BooleanProperty distributedJoins = new BooleanProperty(
