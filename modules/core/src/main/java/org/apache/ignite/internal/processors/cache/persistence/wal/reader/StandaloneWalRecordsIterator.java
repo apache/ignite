@@ -170,6 +170,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (curWalSegment != null)
             curWalSegment.close();
 
+        FileDescriptor fd;
+
         do {
             curWalSegmIdx++;
 
@@ -177,10 +179,10 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             if (curIdx >= walFileDescriptors.size())
                 return null;
-        }
-        while (!checkBounds(curIdx));
 
-        FileDescriptor fd = walFileDescriptors.get(curIdx);
+            fd = walFileDescriptors.get(curIdx);
+        }
+        while (!checkBounds(fd.idx()));
 
         if (log.isDebugEnabled())
             log.debug("Reading next file [absIdx=" + curWalSegmIdx + ", file=" + fd.file().getAbsolutePath() + ']');
@@ -245,7 +247,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param idx WAL segment index.
      * @return {@code True} If pointer between low and high bounds. {@code False} if not.
      */
-    private boolean checkBounds(int idx) {
+    private boolean checkBounds(long idx) {
         return idx >= lowBound.index() && idx <= highBound.index();
     }
 
