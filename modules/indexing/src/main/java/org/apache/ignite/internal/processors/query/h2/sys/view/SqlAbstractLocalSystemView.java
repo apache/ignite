@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
+import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -27,7 +28,7 @@ import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 
 /**
- * Local meta view base class (which uses only local node data).
+ * Local system view base class (which uses only local node data).
  */
 public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     /**
@@ -42,7 +43,6 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
         super(tblName, desc, ctx, cols, indexes);
 
         assert tblName != null;
-        assert ctx != null;
         assert cols != null;
         assert indexes != null;
     }
@@ -100,5 +100,19 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
      */
     protected SqlSystemViewColumnCondition conditionForColumn(String colName, SearchRow first, SearchRow last) {
         return SqlSystemViewColumnCondition.forColumn(getColumnIndex(colName), first, last);
+    }
+
+    /**
+     * Converts value to UUID safe (suppressing exceptions).
+     *
+     * @param val UUID.
+     */
+    protected static UUID uuidFromValue(Value val) {
+        try {
+            return UUID.fromString(val.getString());
+        }
+        catch (RuntimeException e) {
+            return null;
+        }
     }
 }
