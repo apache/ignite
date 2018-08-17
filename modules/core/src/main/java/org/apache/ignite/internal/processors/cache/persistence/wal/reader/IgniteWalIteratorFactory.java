@@ -120,7 +120,7 @@ public class IgniteWalIteratorFactory {
         @NotNull FileWALPointer replayFrom,
         @NotNull File... filesOrDirs
     ) throws IgniteCheckedException, IllegalArgumentException {
-        return iterator(new IteratorParametersBuilder().filesOrDirs(filesOrDirs));
+        return iterator(new IteratorParametersBuilder().from(replayFrom).filesOrDirs(filesOrDirs));
     }
 
     /**
