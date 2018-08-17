@@ -1039,7 +1039,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             hld.cctx.events().addEvent(cached.partition(),
                                 cached.key(),
                                 ctx.localNodeId(),
-                                (IgniteUuid)null,
+                                null,
                                 null,
                                 EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
                                 null,

@@ -223,6 +223,7 @@ public class ExchangeDiscoveryEvents {
                         null,
                         null,
                         null,
+                        null,
                         false,
                         null,
                         false,

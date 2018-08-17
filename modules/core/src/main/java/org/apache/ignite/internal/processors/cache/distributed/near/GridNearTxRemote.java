@@ -90,6 +90,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param label Transaction label.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public GridNearTxRemote(
@@ -109,22 +110,24 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         Collection<IgniteTxEntry> writeEntries,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        String label
     ) throws IgniteCheckedException {
         super(
-            ctx, 
-            nodeId, 
+            ctx,
+            nodeId,
             xidVer,
             commitVer,
-            sys, 
-            plc, 
-            concurrency, 
-            isolation, 
-            invalidate, 
+            sys,
+            plc,
+            concurrency,
+            isolation,
+            invalidate,
             timeout,
             txSize,
-            subjId, 
-            taskNameHash
+            subjId,
+            taskNameHash,
+            label
         );
 
         assert nearNodeId != null;
@@ -168,6 +171,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param label Transaction label.
      */
     public GridNearTxRemote(
         GridCacheSharedContext ctx,
@@ -185,22 +189,24 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         long timeout,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        String label
     ) {
         super(
-            ctx, 
-            nodeId, 
+            ctx,
+            nodeId,
             xidVer,
             commitVer,
             sys,
             plc,
-            concurrency, 
-            isolation, 
-            invalidate, 
+            concurrency,
+            isolation,
+            invalidate,
             timeout,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            label
         );
 
         assert nearNodeId != null;

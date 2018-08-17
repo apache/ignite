@@ -259,7 +259,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.txSize(),
                                     req.subjectId(),
                                     req.taskNameHash(),
-                                    !req.skipStore() && req.storeUsed());
+                                    !req.skipStore() && req.storeUsed(),
+                                    req.label());
 
                                 tx = ctx.tm().onCreated(null, tx);
 
@@ -971,7 +972,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.txSize(),
                             null,
                             req.subjectId(),
-                            req.taskNameHash());
+                            req.taskNameHash(),
+                            req.label());
 
                         if (req.syncCommit())
                             tx.syncMode(FULL_SYNC);

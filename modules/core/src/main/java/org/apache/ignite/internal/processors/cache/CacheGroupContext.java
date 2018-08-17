@@ -489,7 +489,7 @@ public class CacheGroupContext {
                 cctx.events().addEvent(part,
                     key,
                     evtNodeId,
-                    (IgniteUuid)null,
+                    null,
                     null,
                     type,
                     newVal,
