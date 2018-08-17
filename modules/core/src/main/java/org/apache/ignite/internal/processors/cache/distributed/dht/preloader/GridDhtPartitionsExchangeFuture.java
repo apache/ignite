@@ -2115,6 +2115,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     done = awaitMergedMsgs == 0;
                 }
             }
+            fullMsgs.clear();
+            singleMsgs.clear();
         }
 
         if (finishState0 != null) {
