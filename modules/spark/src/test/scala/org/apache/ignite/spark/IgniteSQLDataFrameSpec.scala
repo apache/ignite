@@ -305,7 +305,7 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
             .load()
             .createOrReplaceTempView("employeeWithSchema")
 
-        createEmployeeCache(client, "employeeCache2")
+        createEmployeeCache(client, "employeeCache2", Some("employeeSchema"))
 
         client.cache("employeeCache2").remove("key1")
 
@@ -313,7 +313,7 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
             .format(FORMAT_IGNITE)
             .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
             .option(OPTION_TABLE, "employee")
-            .option(OPTION_SCHEMA, "employeeCache2")
+            .option(OPTION_SCHEMA, "employeeSchema")
             .load()
             .createOrReplaceTempView("employeeWithSchema2")
     }
