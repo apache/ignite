@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
@@ -56,7 +58,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         dbCfg.setWalMode(walMode());
         dbCfg.setWalSegmentSize(512 * 1024);
-        dbCfg.setCheckpointFrequency(60 * 1000);
+        dbCfg.setCheckpointFrequency(60 * 1000);//too high value for turn off frequency checkpoint.
         dbCfg.setPageSize(4 * 1024);
         dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setMaxSize(100 * 1024 * 1024)
@@ -79,7 +81,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         cleanPersistenceDir();
 
-        System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "100");//reset to default.
+        System.clearProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -182,9 +184,17 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
             cache.put(i, i);
 
         //then: checkpoint triggered by size limit of wall without checkpoint
-        String reason = U.field((Object)U.field(dbMgr.getCheckpointer(), "scheduledCp"), "reason");
+        GridCacheDatabaseSharedManager.Checkpointer checkpointer = dbMgr.getCheckpointer();
 
-        assertThat(reason, is("too big size of WAL without checkpoint"));
+        final AtomicReference<String> reason = new AtomicReference<>();
+
+        GridTestUtils.waitForCondition(() -> {
+            reason.set(U.field((Object)U.field(checkpointer, "scheduledCp"), "reason"));
+
+            return reason.get() != null;
+        }, 2000);
+
+        assertEquals("too big size of WAL without checkpoint", reason.get());
     }
 
     /**
