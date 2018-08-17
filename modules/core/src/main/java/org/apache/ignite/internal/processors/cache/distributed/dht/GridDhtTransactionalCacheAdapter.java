@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -77,7 +76,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -920,7 +918,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             GridDhtPartitionTopology top = null;
 
             if (req.firstClientRequest()) {
-                assert CU.clientNode(nearNode);
+                assert nearNode.isClient();
 
                 top = topology();
 
@@ -1528,15 +1526,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param readers Readers for this entry.
      * @param dhtMap DHT map.
      * @param nearMap Near map.
-     * @throws IgniteCheckedException If failed.
      */
     private void map(UUID nodeId,
         AffinityTopologyVersion topVer,
         GridCacheEntryEx cached,
         Collection<UUID> readers,
         Map<ClusterNode, List<KeyCacheObject>> dhtMap,
-        Map<ClusterNode, List<KeyCacheObject>> nearMap)
-        throws IgniteCheckedException {
+        Map<ClusterNode, List<KeyCacheObject>> nearMap
+    ) {
         List<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
 
         ClusterNode primary = dhtNodes.get(0);
@@ -1608,6 +1605,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         // Remove mapped versions.
         GridCacheVersion dhtVer = unmap ? ctx.mvcc().unmapVersion(ver) : ver;
+
+        ctx.mvcc().addRemoved(ctx, ver);
 
         Map<ClusterNode, List<KeyCacheObject>> dhtMap = new HashMap<>();
         Map<ClusterNode, List<KeyCacheObject>> nearMap = new HashMap<>();
@@ -1689,9 +1688,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 catch (GridCacheEntryRemovedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Received remove lock request for removed entry (will retry): " + entry);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to remove locks for keys: " + keys, e);
                 }
             }
         }

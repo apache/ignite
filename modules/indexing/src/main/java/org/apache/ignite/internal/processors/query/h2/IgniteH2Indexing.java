@@ -114,6 +114,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
@@ -2641,6 +2642,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Collection<SqlSystemView> views = new ArrayList<>();
 
         views.add(new SqlSystemViewNodes(ctx));
+        views.add(new SqlSystemViewNodeAttributes(ctx));
 
         return views;
     }
@@ -2982,7 +2984,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         AffinityTopologyVersion initVer = fut.initialVersion();
 
-        return initVer.compareTo(readyVer) > 0 && !CU.clientNode(fut.firstEvent().node());
+        return initVer.compareTo(readyVer) > 0 && !fut.firstEvent().node().isClient();
     }
 
     /**
