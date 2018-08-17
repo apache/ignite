@@ -440,6 +440,37 @@ You can also provide such parameters as the set of ciphers (`ssl_ciphers`) and
 the SSL version (`ssl_version`), if the defaults
 (:py:obj:`ssl._DEFAULT_CIPHERS` and TLS 1.1) do not suit you.
 
+Password authentication
+-----------------------
+
+Ignite binary protocol has no support for sending credentials over the open
+channel. Supplying credentials automatically turns SSL on from the client side.
+So it is necessary to secure the connection to the Ignite server, as described
+in `SSL/TLS`_ example, in order to use password authentication.
+
+Plus, you must set `authenticationEnabled` property to `true` and enable
+persistance in Ignite XML configuration file, as described in
+`Authentication`_ section of Ignite documentation.
+
+Then just supply `username` and `password` parameters to
+:class:`~pyignite.client.Client` constructor.
+
+.. code-block:: python3
+
+    from pyignite import Client
+
+    client = Client(username='ignite', password='ignite')
+    client.connect('ignite-example.com', 10800)
+
+Note, that it is not possible for Ignite thin client to obtain the cluster's
+authentication settings through the binary protocol. Unexpected credentials
+are simply ignored by the server. In the opposite case, the user is greeted
+with the following message:
+
+.. code-block:: python3
+
+    # pyignite.exceptions.HandshakeError: Handshake error: Unauthenticated sessions are prohibited. Expected protocol version: 0.0.0.
+
 .. _Getting Started: https://apacheignite-sql.readme.io/docs/getting-started
 .. _Ignite GitHub repository: https://github.com/apache/ignite/blob/master/examples/sql/world.sql
 .. _Complex object: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-complex-object
@@ -447,3 +478,4 @@ the SSL version (`ssl_version`), if the defaults
 .. _Securing Connection Between Nodes: https://apacheignite.readme.io/docs/ssltls#section-securing-connection-between-nodes
 .. _ClientConnectorConfiguration: https://ignite.apache.org/releases/latest/javadoc/org/apache/ignite/configuration/ClientConnectorConfiguration.html
 .. _openssl: https://www.openssl.org/docs/manmaster/man1/openssl.html
+.. _Authentication: https://apacheignite.readme.io/docs/advanced-security#section-authentication

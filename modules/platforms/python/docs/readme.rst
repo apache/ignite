@@ -117,7 +117,11 @@ SSL-related `pytest` parameters are:
 ``--ssl-version`` − SSL version:
 
 - ``TLSV1_1`` (default),
-- ``TLSV1_2``.
+- ``TLSV1_2``,
+
+``--username`` and ``--password`` − credentials to authenticate to Ignite
+cluster. Used in conjunction with `authenticationEnabled` property in cluster
+configuration.
 
 Documentation
 -------------

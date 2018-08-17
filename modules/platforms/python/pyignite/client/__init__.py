@@ -166,7 +166,7 @@ class Client:
             self.close()
             raise HandshakeError(
                 (
-                    'Handshake error: {message}. Expected protocol version: '
+                    'Handshake error: {message} Expected protocol version: '
                     '{version_major}.{version_minor}.{version_patch}.'
                 ).format(**hs_response)
             )
