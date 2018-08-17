@@ -17,6 +17,7 @@
 
 package org.apache.ignite.yardstick.jdbc;
 
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -34,22 +35,37 @@ public class JdbcUtils {
      * @param range Data key range.
      */
     static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range) {
-        println(cfg, "Create table...");
+        IgniteSemaphore sem = ignite.semaphore("jdbc-setup", 1, true, true);
 
-        ignite.context().query().querySqlFields(
-            new SqlFieldsQuery("CREATE TABLE test_long (id long primary key, val long)"), true);
+        try {
+            if (sem.tryAcquire()) {
+                println(cfg, "Create table...");
 
-        println(cfg, "Populate data...");
+                ignite.context().query().querySqlFields(
+                    new SqlFieldsQuery("CREATE TABLE test_long (id long primary key, val long)"), true);
 
-        for (long l = 1; l <= range; ++l) {
-            ignite.context().query().querySqlFields(
-                new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
-                    .setArgs(l, l + 1), true);
+                println(cfg, "Populate data...");
 
-            if (l % 10000 == 0)
-                println(cfg, "Populate " + l);
+                for (long l = 1; l <= range; ++l) {
+                    ignite.context().query().querySqlFields(
+                        new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
+                            .setArgs(l, l + 1), true);
+
+                    if (l % 10000 == 0)
+                        println(cfg, "Populate " + l);
+                }
+
+                println(cfg, "Finished populating data");
+            }
+            else {
+                // Acquire (wait setup by other client) and immediately release/
+                println(cfg, "Waits for setup...");
+                
+                sem.acquire();
+            }
         }
-
-        println(cfg, "Finished populating data");
+        finally {
+            sem.release();
+        }
     }
 }
