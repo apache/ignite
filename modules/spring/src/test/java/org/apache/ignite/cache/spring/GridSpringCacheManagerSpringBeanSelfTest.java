@@ -17,8 +17,9 @@
 
 package org.apache.ignite.cache.spring;
 
-import org.springframework.beans.factory.BeanFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.support.GenericXmlApplicationContext;
 
 /**
  * Spring cache test.
@@ -27,10 +28,15 @@ public class GridSpringCacheManagerSpringBeanSelfTest extends GridSpringCacheMan
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        BeanFactory factory = new ClassPathXmlApplicationContext("org/apache/ignite/cache/spring/spring-caching-ignite-spring-bean.xml");
+        ApplicationContext appCtx = new ClassPathXmlApplicationContext("org/apache/ignite/cache/spring/spring-caching-ignite-spring-bean.xml");
 
-        svc = (GridSpringCacheTestService)factory.getBean("testService");
-        dynamicSvc = (GridSpringDynamicCacheTestService)factory.getBean("dynamicTestService");
+        // To produce multiple calls of ApplicationListener::onApplicationEvent
+        GenericXmlApplicationContext child = new GenericXmlApplicationContext();
+        child.setParent(appCtx);
+        child.refresh();
+
+        svc = (GridSpringCacheTestService)appCtx.getBean("testService");
+        dynamicSvc = (GridSpringDynamicCacheTestService)appCtx.getBean("dynamicTestService");
     }
 
     /** {@inheritDoc} */
