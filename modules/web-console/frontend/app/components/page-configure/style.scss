@@ -133,6 +133,12 @@ page-configure {
     &+.pc-form-group {
         padding-top: 10px;
     }
+
+    .form-field__checkbox {
+        background-color: white;
+        padding: 0 5px;
+        margin: 0 -5px;
+    }
 }
 
 .pc-form-grid-row > .pc-form-group__text-title[class*='pc-form-grid-col-'] {
