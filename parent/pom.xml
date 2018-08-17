@@ -66,7 +66,7 @@
         <ezmorph.version>1.0.6</ezmorph.version>
         <flume.ng.version>1.7.0</flume.ng.version>
         <guava.retrying.version>2.0.0</guava.retrying.version>
-        <guava.version>18.0</guava.version>
+        <guava.version>25.1-jre</guava.version>
         <guava14.version>14.0.1</guava14.version>
         <guava16.version>16.0.1</guava16.version>
         <h2.version>1.4.195</h2.version>
@@ -102,11 +102,10 @@
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
         <postgres.connector.version>9.4.1208.jre7</postgres.connector.version>
-        <rocketmq.version>4.2.0</rocketmq.version>
-        <scala210.jline.version>2.10.4</scala210.jline.version>
-        <scala210.library.version>2.10.6</scala210.library.version>
-        <scala211.library.version>2.11.8</scala211.library.version>
-        <scala.library.version>2.11.8</scala.library.version>
+        <rocketmq.version>4.3.0</rocketmq.version>
+        <scala210.jline.version>2.10.7</scala210.jline.version>
+        <scala210.library.version>2.10.7</scala210.library.version>
+        <scala.library.version>2.11.12</scala.library.version>
         <slf4j.version>1.7.7</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
@@ -835,6 +834,7 @@
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
+                                        <exclude>idea/ignite_inspections.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>
                                         <exclude>**/LICENSE*</exclude>
@@ -982,7 +982,7 @@
             <properties>
                 <maven.compiler.source>9</maven.compiler.source>
                 <maven.compiler.target>9</maven.compiler.target>
-                <scala.library.version>2.12.4</scala.library.version>
+                <scala.library.version>2.12.6</scala.library.version>
             </properties>
             <dependencies/>
             <build>

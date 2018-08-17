@@ -165,7 +165,7 @@ public class FilePageStore implements PageStore {
         try {
             ByteBuffer hdr = header(type, dbCfg.getPageSize());
 
-        fileIO.writeFully(hdr);
+            fileIO.writeFully(hdr);
 
             //there is 'super' page in every file
             return headerSize() + dbCfg.getPageSize();
