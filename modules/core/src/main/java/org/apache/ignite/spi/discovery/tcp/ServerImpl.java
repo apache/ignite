@@ -79,6 +79,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMe
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -183,6 +184,8 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  *
  */
 class ServerImpl extends TcpDiscoveryImpl {
+    /** Time tracker map. */
+    protected final GridBoundedLinkedHashMap<IgniteUuid, Long> timeTrackerMap = new GridBoundedLinkedHashMap<IgniteUuid, Long>(100, 1_000);
     /** */
     private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
 
@@ -2653,10 +2656,31 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
+            long startQueuedTime = timeTrackerMap.getOrDefault(msg.id(), Long.MAX_VALUE);
+
+            if (startQueuedTime == Long.MAX_VALUE) {
+                startQueuedTime = System.currentTimeMillis();
+
+                timeTrackerMap.put(msg.id(), startQueuedTime);
+
+                this.log.info("New message created type = " + msg.getClass().getSimpleName()
+                    + " id = " + msg.id()
+                    + "\n msg = " + msg);
+            }
+
+
+            this.log.info("Queueing message type = " + msg.getClass().getSimpleName()
+                + " id = " + msg.id()
+                + " time = " + (System.currentTimeMillis() - startQueuedTime));
+
             if (msg.highPriority())
                 queue.addFirst(msg);
             else
                 queue.add(msg);
+
+            this.log.info("Queued message type = " + msg.getClass().getSimpleName()
+                + " id = " + msg.id()
+                + " time = " + (System.currentTimeMillis() - startQueuedTime));
 
             if (log.isDebugEnabled())
                 log.debug("Message has been added to queue: " + msg);
@@ -6065,8 +6089,32 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         CountingInputStream cis = new CountingInputStream(in);
 
+                        long start = System.currentTimeMillis();
+
                         TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), cis,
                             U.resolveClassLoader(spi.ignite().configuration()));
+
+                        long startMessageRidding = timeTrackerMap.getOrDefault(msg.id(), Long.MAX_VALUE);
+
+                        if (startMessageRidding == Long.MAX_VALUE) {
+                            startMessageRidding = System.currentTimeMillis();
+
+                            timeTrackerMap.put(msg.id(), startMessageRidding);
+
+                            log.info("New message unmarshalled type = " + msg.getClass().getSimpleName()
+                                + " id = " + msg.id()
+                                + " size = " + FileUtils.byteCountToDisplaySize(cis.getCount())
+                                + " unmarshal = " + (System.currentTimeMillis() - start)
+                                + "\n msg = " + msg);
+                        }
+                        else {
+                            log.info("Unmarshalled message type = " + msg.getClass().getSimpleName()
+                                + " id = " + msg.id()
+                                + " size = " + FileUtils.byteCountToDisplaySize(cis.getCount())
+                                + " unmarshal = " + (System.currentTimeMillis() - start)
+                                + " time = " + (System.currentTimeMillis() - startMessageRidding)
+                                + "\n msg = " + msg);
+                        }
 
                         msg.senderNodeId(nodeId);
 
@@ -6083,12 +6131,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
+                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                                + " id = " + msg.id()
+                                + " time = " + (System.currentTimeMillis() - startMessageRidding));
+
                             continue;
                         }
                         else if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                             TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
 
-                            log.info("Receiving join request msg=" + msg + " size=" + FileUtils.byteCountToDisplaySize(cis.getCount()));
+//                            log.info("Receiving join request msg=" + msg + " size=" + FileUtils.byteCountToDisplaySize(cis.getCount()));
 
                             if (!req.responded()) {
                                 boolean ok = processJoinRequestMessage(req, clientMsgWrk);
@@ -6106,6 +6158,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (state == CONNECTED) {
                                 spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
+                                log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                                    + " id = " + msg.id()
+                                    + " time = " + (System.currentTimeMillis() - startMessageRidding));
+
                                 if (clientMsgWrk != null && clientMsgWrk.runner() == null && !clientMsgWrk.isDone())
                                     new MessageWorkerThreadWithCleanup<>(clientMsgWrk, log).start();
 
@@ -6116,12 +6172,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                             else {
                                 spi.writeToSocket(msg, sock, RES_CONTINUE_JOIN, sockTimeout);
 
+                                log.info("Acknowledged message (RES_CONTINUE_JOIN) type = " + msg.getClass().getSimpleName()
+                                    + " id = " + msg.id()
+                                    + " time = " + (System.currentTimeMillis() - startMessageRidding));
+
                                 break;
                             }
                         }
                         else if (msg instanceof TcpDiscoveryDuplicateIdMessage) {
                             // Send receipt back.
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                                + " id = " + msg.id()
+                                + " time = " + (System.currentTimeMillis() - startMessageRidding));
 
                             boolean ignored = false;
 
@@ -6152,6 +6216,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Send receipt back.
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
+                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                                + " id = " + msg.id()
+                                + " time = " + (System.currentTimeMillis() - startMessageRidding));
+
                             boolean ignored = false;
 
                             TcpDiscoverySpiState state = null;
@@ -6180,6 +6248,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else if (msg instanceof TcpDiscoveryCheckFailedMessage) {
                             // Send receipt back.
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                                + " id = " + msg.id()
+                                + " time = " + (System.currentTimeMillis() - startMessageRidding));
 
                             boolean ignored = false;
 
@@ -6223,6 +6295,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else if (msg instanceof TcpDiscoveryLoopbackProblemMessage) {
                             // Send receipt back.
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                                + " id = " + msg.id()
+                                + " time = " + (System.currentTimeMillis() - startMessageRidding));
 
                             boolean ignored = false;
 
@@ -6285,8 +6361,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             clientMsgWrk.addMessage(ack);
                         }
-                        else
+                        else {
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                                + " id = " + msg.id()
+                                + " time = " + (System.currentTimeMillis() - startMessageRidding));
+                        }
 
                         if (metricsUpdateMsg != null)
                             processClientMetricsUpdateMessage(metricsUpdateMsg);
@@ -6933,8 +7014,27 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (msg == null)
                     noMessageLoop();
-                else
+                else {
+                    TcpDiscoveryAbstractMessage discoMsg;
+
+                    if (msg instanceof TcpDiscoveryAbstractMessage) {
+                        discoMsg = (TcpDiscoveryAbstractMessage) msg;
+                    } else {
+                        discoMsg = ((T2<TcpDiscoveryAbstractMessage, byte[]>) msg).get1();
+                    }
+
+                    long start = timeTrackerMap.getOrDefault((discoMsg).id(), Long.MAX_VALUE);
+
+                    log.info("Enqueued message type = " + discoMsg.getClass().getSimpleName()
+                            + " id = " + discoMsg.id()
+                            + " time = " + (System.currentTimeMillis() - start));
+
                     processMessage(msg);
+
+                    log.info("Processed message type = " + discoMsg.getClass().getSimpleName()
+                            + " id = " + discoMsg.id()
+                            + " time = " + (System.currentTimeMillis() - start));
+                }
             }
         }
 
