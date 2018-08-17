@@ -76,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -1241,6 +1242,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         Object key0 = null;
         Object val0 = null;
 
+        IgniteThread.onEntryProcessorEntered(true);
+
         try {
             Object res = null;
 
@@ -1267,6 +1270,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
         catch (Exception e) {
             ret.addEntryProcessResult(ctx, txEntry.key(), key0, null, e, txEntry.keepBinary());
+        }
+        finally {
+            IgniteThread.onEntryProcessorLeft();
         }
     }
 

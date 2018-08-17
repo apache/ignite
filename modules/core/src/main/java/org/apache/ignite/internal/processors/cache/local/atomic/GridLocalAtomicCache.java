@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -1108,6 +1109,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
                         boolean validation = false;
 
+                        IgniteThread.onEntryProcessorEntered(false);
+
                         try {
                             Object computed = entryProcessor.process(invokeEntry, invokeArgs);
 
@@ -1135,6 +1138,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
                                 continue;
                             }
+                        }
+                        finally {
+                            IgniteThread.onEntryProcessorLeft();
                         }
 
                         if (invokeRes != null)

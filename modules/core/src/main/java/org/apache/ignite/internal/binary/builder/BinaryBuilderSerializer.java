@@ -126,7 +126,7 @@ class BinaryBuilderSerializer {
 
             BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true, enumMap);
 
-            writer.context().updateMetadata(typeId, meta);
+            writer.context().updateMetadata(typeId, meta, writer.failIfUnregistered());
 
             // Need register class for marshaller to be able to deserialize enum value.
             writer.context().descriptorForClass(((Enum)val).getDeclaringClass(), false, false);
