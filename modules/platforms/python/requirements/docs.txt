@@ -3,3 +3,4 @@
 
 -r install.txt
 Sphinx==1.7.5
+sphinxcontrib-fulltoc==1.2.0
