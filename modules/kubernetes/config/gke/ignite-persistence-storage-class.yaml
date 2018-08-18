@@ -1,0 +1,11 @@
+#Google Compute Engine configuration
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: ignite-persistence-storage-class  #StorageClass Name
+  namespace: ignite         #Ignite namespace
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-standard #Type pd-standard or pd-ssd. Default: pd-standard
+  zones: europe-west1-b	
+  replication-type: none
