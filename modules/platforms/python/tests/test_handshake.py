@@ -36,7 +36,7 @@ def test_handshake(
         username=username,
         password=password,
     )
-    client.socket = client._wrap(
+    client._socket = client._wrap(
         socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     )
     client.socket.connect((ignite_host, ignite_port))
@@ -51,7 +51,7 @@ def test_handshake(
     from pyignite.client import handshake
     monkeypatch.setattr(handshake, 'PROTOCOL_VERSION_MAJOR', 10)
 
-    client.socket = client._wrap(
+    client._socket = client._wrap(
         socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     )
     client.socket.connect((ignite_host, ignite_port))

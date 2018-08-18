@@ -351,8 +351,8 @@ Failover
 
 When connection to the server is broken or timed out,
 :class:`~pyignite.client.Client` object raises an appropriate
-exception, but keeps its constructor's parameters intact, so user can
-reconnect, and the connection object remains valid.
+exception, but keeps its constructor's parameters intact and tries
+to reconnect on the next data operation.
 
 The following example features a simple round-robin failover mechanism.
 Launch 3 Ignite nodes on `localhost` and run:
@@ -372,6 +372,9 @@ one node should remain active.
     # Error: Socket connection broken.
     # Error: [Errno 111] Client refused
     # Connected to node 0
+
+In this example, the automatic reconnection happens after the second
+`client.get_or_create_cache()` call.
 
 SSL/TLS
 -------

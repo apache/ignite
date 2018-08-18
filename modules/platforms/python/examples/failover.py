@@ -25,16 +25,16 @@ nodes = [
 
 client = Client(timeout=4.0)
 client.connect(nodes)
+my_cache = client.get_or_create_cache('my_cache')
 print('Connected to {}'.format(client))
 
 while True:
     try:
-        my_cache = client.get_or_create_cache('my_cache')
         test_value = my_cache.get('test_key')
         my_cache.put('test_key', test_value + 1 if test_value else 1)
     except (OSError, SocketError) as e:
         print('Error: {}'.format(e))
-        client.reconnect()
+        my_cache = client.get_or_create_cache('my_cache')
         print('Reconnected to {}'.format(client))
 
 # pyignite.exceptions.ReconnectError: Can not reconnect: out of nodes
