@@ -42,6 +42,8 @@ import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
+import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
@@ -126,6 +128,40 @@ public class LocalModelsTest {
             mdl.saveModel(exporter, mdlFilePath);
 
             SVMLinearMultiClassClassificationModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", mdl, load);
+
+            return null;
+        });
+    }
+
+    /** */
+    @Test
+    public void importExportLogisticRegressionModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            LogisticRegressionModel mdl = new LogisticRegressionModel(new DenseVector(new double[]{1, 2}), 3);
+            Exporter<LogisticRegressionModel, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            LogisticRegressionModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", mdl, load);
+
+            return null;
+        });
+    }
+
+    /** */
+    @Test
+    public void importExportLogRegressionMultiClassModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            LogRegressionMultiClassModel mdl = new LogRegressionMultiClassModel();
+            Exporter<LogRegressionMultiClassModel, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            LogRegressionMultiClassModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
             Assert.assertEquals("", mdl, load);

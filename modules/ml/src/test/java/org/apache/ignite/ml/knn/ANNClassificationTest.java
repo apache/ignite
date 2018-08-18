@@ -28,6 +28,7 @@ import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -104,5 +105,9 @@ public class ANNClassificationTest {
 
         TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(550, 550)), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(-550, -550)), PRECISION);
+
+        Assert.assertTrue(mdl.toString().contains(NNStrategy.SIMPLE.name()));
+        Assert.assertTrue(mdl.toString(true).contains(NNStrategy.SIMPLE.name()));
+        Assert.assertTrue(mdl.toString(false).contains(NNStrategy.SIMPLE.name()));
     }
 }
