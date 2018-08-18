@@ -446,14 +446,15 @@ the SSL version (`ssl_version`), if the defaults
 Password authentication
 -----------------------
 
-Ignite binary protocol has no support for sending credentials over the open
-channel. Supplying credentials automatically turns SSL on from the client side.
-So it is necessary to secure the connection to the Ignite server, as described
-in `SSL/TLS`_ example, in order to use password authentication.
-
-Plus, you must set `authenticationEnabled` property to `true` and enable
-persistance in Ignite XML configuration file, as described in
+To authenticate you must set `authenticationEnabled` property to `true` and
+enable persistance in Ignite XML configuration file, as described in
 `Authentication`_ section of Ignite documentation.
+
+Be advised that sending credentials over the open channel is greatly
+discouraged, since they can be easily intercepted. Supplying credentials
+automatically turns SSL on from the client side. It is highly recommended
+to secure the connection to the Ignite server, as described
+in `SSL/TLS`_ example, in order to use password authentication.
 
 Then just supply `username` and `password` parameters to
 :class:`~pyignite.client.Client` constructor.
@@ -464,6 +465,13 @@ Then just supply `username` and `password` parameters to
 
     client = Client(username='ignite', password='ignite')
     client.connect('ignite-example.com', 10800)
+
+If you still do not wish to secure the connection is spite of the warning,
+then disable SSL explicitly on creating the client object:
+
+.. code-block:: python3
+
+    client = Client(username='ignite', password='ignite', use_ssl=False)
 
 Note, that it is not possible for Ignite thin client to obtain the cluster's
 authentication settings through the binary protocol. Unexpected credentials

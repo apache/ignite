@@ -107,8 +107,8 @@ class Client:
          operation including `connect`. 0 means non-blocking mode. Can accept
          integer or float value. Default is None (blocking mode),
         :param use_ssl: (optional) set to True if Ignite server uses SSL
-         on its binary connector. Defaults to not use SSL, except when
-         username and password has been supplied,
+         on its binary connector. Defaults to use SSL when username
+         and password has been supplied, not to use SSL otherwise,
         :param ssl_version: (optional) SSL version constant from standard
          `ssl` module. Defaults to TLS v1.1, as in Ignite 2.5,
         :param ssl_ciphers: (optional) ciphers to use. If not provided,
@@ -137,7 +137,7 @@ class Client:
         self.timeout = kwargs.pop('timeout', None)
         self.username = kwargs.pop('username', None)
         self.password = kwargs.pop('password', None)
-        if self.username and self.password:
+        if all([self.username, self.password, 'use_ssl' not in kwargs]):
             kwargs['use_ssl'] = True
         self.init_kwargs = kwargs
 

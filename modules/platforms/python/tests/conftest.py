@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import argparse
+from distutils.util import strtobool
 import ssl
 
 import pytest
@@ -21,6 +22,13 @@ import pytest
 from pyignite import Client
 from pyignite.constants import *
 from pyignite.api import cache_create, cache_get_names, cache_destroy
+
+
+class UseSSLParser(argparse.Action):
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        values = True if values is None else bool(strtobool(values))
+        setattr(namespace, self.dest, values)
 
 
 class CertReqsParser(argparse.Action):
@@ -104,8 +112,9 @@ def pytest_addoption(parser):
     )
     parser.addoption(
         '--use-ssl',
-        action='store_true',
-        default=False,
+        action=UseSSLParser,
+        nargs='?',
+        default=True,
         help='Use SSL encryption'
     )
     parser.addoption(
