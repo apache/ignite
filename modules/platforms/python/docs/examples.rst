@@ -177,6 +177,8 @@ Finally, delete the tables used in this example with the following queries:
 Complex objects
 ---------------
 
+.. _sql_cache_read:
+
 Read
 ====
 
@@ -236,6 +238,8 @@ functions.
 .. literalinclude:: ../examples/binary_types.py
   :language: python
   :lines: 302-326
+
+.. _sql_cache_create:
 
 Create
 ======

@@ -364,8 +364,11 @@ class Client:
         Creates Ignite cache by name. Raises `CacheError` if such a cache is
         already exists.
 
-        :param settings: cache name or cache properties,
-        :return: Cache object.
+        :param settings: cache name or dict of cache properties' codes
+         and values. All cache properties are documented here:
+         :ref:`cache_props`. See also the
+         :ref:`cache creation example <sql_cache_create>`,
+        :return: :class:`~pyignite.cache.Cache` object.
         """
         from pyignite.cache import Cache
 
@@ -375,8 +378,11 @@ class Client:
         """
         Creates Ignite cache, if not exist.
 
-        :param settings: cache name or cache properties,
-        :return: Cache object.
+        :param settings: cache name or dict of cache properties' codes
+         and values. All cache properties are documented here:
+         :ref:`cache_props`. See also the
+         :ref:`cache creation example <sql_cache_create>`,
+        :return: :class:`~pyignite.cache.Cache` object.
         """
         from pyignite.cache import Cache
 
@@ -390,7 +396,7 @@ class Client:
 
         :param settings: cache name or cache properties (but only `PROP_NAME`
          property is allowed),
-        :return: Cache object.
+        :return: :class:`~pyignite.cache.Cache` object.
         """
         from pyignite.cache import Cache
 

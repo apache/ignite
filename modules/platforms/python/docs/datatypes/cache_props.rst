@@ -1,3 +1,5 @@
+.. _cache_props:
+
 ================
 Cache Properties
 ================

@@ -125,7 +125,10 @@ class Cache:
     @property
     def settings(self) -> Optional[dict]:
         """
-        Lazy Cache settings.
+        Lazy Cache settings. See the :ref:`example <sql_cache_read>`
+        of reading this property.
+
+        All cache properties are documented here: :ref:`cache_props`.
 
         :return: dict of cache properties and their values.
         """
@@ -153,7 +156,7 @@ class Cache:
     @property
     def client(self) -> Client:
         """
-        Ignite Client object.
+        Ignite :class:`~pyignite.client.Client` object.
 
         :return: Client object, through which the cache is accessed.
         """
