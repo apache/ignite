@@ -49,6 +49,15 @@ Type hints usage
   :language: python
   :lines: 24-48
 
+As a rule of thumb:
+
+- when a `pyignite` method or function deals with a single value or key, it
+  has an additional parameter, like `value_hint` or `key_hint`, which accepts
+  a parser/constructor class,
+
+- nearly any structure element (inside dict or list) can be replaced with
+  a two-tuple of (said element, type hint).
+
 Refer the :ref:`data_types` section for the full list
 of parser/constructor classes you can use as type hints.
 
