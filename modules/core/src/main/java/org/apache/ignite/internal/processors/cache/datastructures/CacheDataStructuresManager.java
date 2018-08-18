@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import java.io.EOFException;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
@@ -49,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
@@ -62,6 +66,8 @@ import org.apache.ignite.internal.processors.datastructures.GridTransactionalCac
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -422,7 +428,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void removeSetData(IgniteUuid setId, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    private void removeSetData(IgniteUuid setId, AffinityTopologyVersion topVer, int part) throws IgniteCheckedException {
         boolean loc = cctx.isLocal();
 
         GridCacheAffinityManager aff = cctx.affinity();
@@ -435,6 +441,35 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         IgniteInternalCache<Object, Object> cache = cctx.cache();
 
+        if (part >= 0) {
+            final int BATCH_SIZE = 100;
+
+            Collection<SetItemKey> keys = new ArrayList<>(BATCH_SIZE);
+
+            assert !cctx.config().isOnheapCacheEnabled();
+
+            try (GridCloseableIterator<KeyCacheObject> iter = cctx.offheap().cacheKeysIterator(cctx.cacheId(), part)) {
+                for (KeyCacheObject k : iter) {
+                    Object obj = cctx.unwrapBinaryIfNeeded(k, false);
+
+                    if (obj instanceof SetItemKey && setId.equals(((SetItemKey)obj).setId())) {
+                        keys.add((SetItemKey)obj);
+
+                        if (keys.size() == BATCH_SIZE) {
+                            retryRemoveAll(cache, keys);
+
+                            keys.clear();
+                        }
+                    }
+                }
+
+                if (!keys.isEmpty())
+                    retryRemoveAll(cache, keys);
+            }
+
+            return;
+        }
+
         for (Cache.Entry<Object, Object> e : cache.localEntries(new CachePeekMode[] {})) {
             if (e.getKey() instanceof SetItemKey) {
                 SetItemKey key = (SetItemKey)e.getKey();
@@ -446,28 +481,39 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param id Set ID.
-     * @param separated Separated cache flag.
+     * @param name Set name.
+     * @param hdr Set header.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void removeSetData(IgniteUuid id, boolean separated) throws IgniteCheckedException {
-        assert id != null;
+    public void removeSetData(String name, GridCacheSetHeader hdr) throws IgniteCheckedException {
+        IgniteUuid id = hdr.id();
+
+        int hdrPart = hdr.collocated() ? cctx.affinity().partition(new GridCacheSetHeaderKey(name)) : -1;
 
         if (!cctx.isLocal()) {
             while (true) {
                 AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
 
-                Collection<ClusterNode> nodes = CU.affinityNodes(cctx, topVer);
+                Collection<ClusterNode> nodes;
+
+                if (hdr.collocated()) {
+                    Collection<ClusterNode> nodes0 = cctx.affinity().nodesByPartition(hdrPart, topVer);
+
+                    nodes =
+                        Collections.singleton(nodes0.contains(cctx.localNode()) ? cctx.localNode() : F.first(nodes0));
+                }
+                else
+                    nodes = CU.affinityNodes(cctx, topVer);
 
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
                         new BlockSetCallable(cctx.name(), id),
-                        nodes,
+                        cctx.kernalContext().discovery().allNodes(),
                         true,
                         0, false).get();
 
-                    if (separated)
+                    if (hdr.separated())
                         break;
                 }
                 catch (IgniteCheckedException e) {
@@ -489,7 +535,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
-                        new RemoveSetDataCallable(cctx.name(), id, topVer),
+                        new RemoveSetDataCallable(cctx.name(), id, topVer, hdrPart),
                         nodes,
                         true,
                         0, false).get();
@@ -518,8 +564,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         else {
             blockSet(id);
 
-            if (!separated)
-                cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO);
+            if (!hdr.separated())
+                cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO, hdrPart);
         }
     }
 
@@ -682,6 +728,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         /** */
         private AffinityTopologyVersion topVer;
 
+        /** */
+        private int part;
+
         /**
          * Required by {@link Externalizable}.
          */
@@ -694,10 +743,11 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
          * @param setId Set ID.
          * @param topVer Topology version.
          */
-        private RemoveSetDataCallable(String cacheName, IgniteUuid setId, @NotNull AffinityTopologyVersion topVer) {
+        private RemoveSetDataCallable(String cacheName, IgniteUuid setId, @NotNull AffinityTopologyVersion topVer, int part) {
             this.cacheName = cacheName;
             this.setId = setId;
             this.topVer = topVer;
+            this.part = part;
         }
 
         /** {@inheritDoc} */
@@ -713,7 +763,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             gate.enter();
 
             try {
-                cache.context().dataStructures().removeSetData(setId, topVer);
+                cache.context().dataStructures().removeSetData(setId, topVer, part);
             }
             finally {
                 gate.leave();
@@ -727,6 +777,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             U.writeString(out, cacheName);
             U.writeGridUuid(out, setId);
             out.writeObject(topVer);
+            out.writeInt(part);
         }
 
         /** {@inheritDoc} */
@@ -734,6 +785,12 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             cacheName = U.readString(in);
             setId = U.readGridUuid(in);
             topVer = (AffinityTopologyVersion)in.readObject();
+
+            try {
+                part = in.readInt();
+            } catch (EOFException ignore) {
+                part = -1;
+            }
         }
 
         /** {@inheritDoc} */

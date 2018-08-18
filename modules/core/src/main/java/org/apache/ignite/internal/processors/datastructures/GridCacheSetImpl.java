@@ -35,13 +35,16 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
 import org.apache.ignite.internal.processors.cache.CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
@@ -155,6 +158,40 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             if (separated) {
                 // Non collocated IgniteSet uses a separate cache which contains additional header element.
                 return cache.sizeAsync(new CachePeekMode[] {}).get() - 1;
+            }
+
+            if (collocated) {
+                int keyTypeId = ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).binaryContext()
+                    .descriptorForClass(CollocatedSetItemKey.class, false, false).typeId();
+
+                return affinityCall(new IgniteCallable<Integer>() {
+                    @Override public Integer call() throws Exception {
+                        int cnt = 0;
+
+                        try (GridCloseableIterator iter = ctx.queries().createScanQuery(
+                            new IgniteBiPredicate() {
+                                @Override public boolean apply(Object k, Object v) {
+                                    if (k instanceof BinaryObjectImpl) {
+                                        BinaryObjectImpl obj = (BinaryObjectImpl)k;
+
+                                        return obj.typeId() == keyTypeId &&
+                                            id.equals(((BinaryObject)obj.field("setId")).deserialize());
+                                    }
+
+                                    return false;
+                                }
+                            },
+                            hdrPart,
+                            true)
+                            .executeScanQuery()) {
+
+                            for (; iter.hasNext(); iter.next())
+                                ++cnt;
+                        }
+
+                        return cnt;
+                    }
+                });
             }
 
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
@@ -427,7 +464,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     @SuppressWarnings("unchecked")
     private WeakReferenceCloseableIterator<T> sharedCacheIterator() throws IgniteCheckedException {
-        GridCloseableIterator<Map.Entry<T, ?>> itr = ((GridCacheContext<SetItemKey, Boolean>)ctx).queries()
+        GridCloseableIterator<Map.Entry<T, ?>> iter = ((GridCacheContext<SetItemKey, Boolean>)ctx).queries()
             .createScanQuery(
                 new IgniteBiPredicate() {
                     @Override public boolean apply(Object k, Object v) {
@@ -440,10 +477,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                     }
                 },
                 collocated ? hdrPart : null,
-                ctx.keepBinary())
+                false)
             .executeScanQuery();
 
-        return ctx.itHolder().iterator(itr, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
+        return ctx.itHolder().iterator(iter, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
             @Override protected T convert(Map.Entry<T, ?> e) {
                 return (T)((SetItemKey)e.getKey()).item();
             }
