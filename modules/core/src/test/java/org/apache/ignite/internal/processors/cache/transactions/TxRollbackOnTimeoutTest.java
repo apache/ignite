@@ -599,49 +599,53 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      */
     public void testRollbackOnTimeoutTxRemapOptimisticReadCommitted() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, READ_COMMITTED);
+        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, READ_COMMITTED, true);
     }
 
     /**
      *
      */
     public void testRollbackOnTimeoutTxRemapOptimisticRepeatableRead() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, REPEATABLE_READ);
+        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, REPEATABLE_READ, true);
     }
 
     /**
      *
      */
     public void testRollbackOnTimeoutTxRemapOptimisticSerializable() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, SERIALIZABLE);
+        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, SERIALIZABLE, true);
     }
 
     /**
      *
      */
     public void testRollbackOnTimeoutTxRemapPessimisticReadCommitted() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, READ_COMMITTED);
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, READ_COMMITTED, true);
     }
 
     /**
      *
      */
     public void testRollbackOnTimeoutTxRemapPessimisticRepeatableRead() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, REPEATABLE_READ);
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, REPEATABLE_READ, true);
     }
 
     /**
      *
      */
     public void testRollbackOnTimeoutTxRemapPessimisticSerializable() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, SERIALIZABLE);
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, SERIALIZABLE, true);
     }
 
+
     /**
-     *
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @param remap {@code True} to force remap on unfinished topology version.
      */
-    private void doTestRollbackOnTimeoutTxRemap(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
-        Ignite client = startClient();
+    private void doTestRollbackOnTimeoutTxRemap(TransactionConcurrency concurrency, TransactionIsolation isolation,
+        boolean remap) throws Exception {
+        IgniteEx client = (IgniteEx)startClient();
 
         Ignite crd = grid(0);
 
@@ -649,12 +653,9 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         List<Integer> keys = movingKeysAfterJoin(grid(1), CACHE_NAME, 1);
 
-        // Delay exchange finish on client node.
-        TestRecordingCommunicationSpi.spi(crd).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                return node.order() < 5 && msg instanceof GridDhtPartitionsFullMessage;
-            }
-        });
+        // Delay exchange finish on server nodes if remap=true, or on all nodes otherwise (excluding joining node).
+        TestRecordingCommunicationSpi.spi(crd).blockMessages((node,
+            msg) -> node.order() < 5 && msg instanceof GridDhtPartitionsFullMessage);
 
         // Delay prepare until exchange is finished.
         TestRecordingCommunicationSpi.spi(client).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
@@ -679,6 +680,10 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                 return block;
             }
         });
+
+        // Start tx and map on topver=GRID_CNT + 1
+        // Delay map until exchange.
+        // Start new node.
 
         IgniteInternalFuture fut0 = runAsync(new Runnable() {
             @Override public void run() {
@@ -727,7 +732,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         fut1.get(30_000);
         fut2.get(30_000);
 
-        TestRecordingCommunicationSpi.spi(crd).stopBlock();
+        //TestRecordingCommunicationSpi.spi(crd).stopBlock();
 
         // FIXME: If using awaitPartitionMapExchange for waiting it some times fail while waiting for owners.
         IgniteInternalFuture<?> topFut = ((IgniteEx)client).context().cache().context().exchange().
