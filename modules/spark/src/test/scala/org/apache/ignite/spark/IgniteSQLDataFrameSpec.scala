@@ -272,6 +272,32 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
         }
 
         it("should use the schema name where one is specified") {
+            // `employeeCache1` is created in the schema matching the name of the cache, ie. `employeeCache1`
+            createEmployeeCache(client, "employeeCache1")
+
+            spark.read
+                .format(FORMAT_IGNITE)
+                .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                .option(OPTION_TABLE, "employee")
+                .option(OPTION_SCHEMA, "employeeCache1")
+                .load()
+                .createOrReplaceTempView("employeeWithSchema")
+
+            // `employeeCache2` is created with a custom schema of `employeeSchema`
+            createEmployeeCache(client, "employeeCache2", Some("employeeSchema"))
+
+            // remove a value from `employeeCache2` so that we know whether the select statement picks up the
+            // correct cache, ie. it should now have 2 values compared to 3 in `employeeCache1`
+            client.cache("employeeCache2").remove("key1")
+
+            spark.read
+                .format(FORMAT_IGNITE)
+                .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                .option(OPTION_TABLE, "employee")
+                .option(OPTION_SCHEMA, "employeeSchema")
+                .load()
+                .createOrReplaceTempView("employeeWithSchema2")
+
             val res = spark.sqlContext.sql("SELECT id FROM employeeWithSchema").rdd
 
             res.count should equal(3)
@@ -294,27 +320,5 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
             .load()
 
         personDataFrame.createOrReplaceTempView("person")
-
-        createEmployeeCache(client, "employeeCache1")
-
-        spark.read
-            .format(FORMAT_IGNITE)
-            .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-            .option(OPTION_TABLE, "employee")
-            .option(OPTION_SCHEMA, "employeeCache1")
-            .load()
-            .createOrReplaceTempView("employeeWithSchema")
-
-        createEmployeeCache(client, "employeeCache2", Some("employeeSchema"))
-
-        client.cache("employeeCache2").remove("key1")
-
-        spark.read
-            .format(FORMAT_IGNITE)
-            .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-            .option(OPTION_TABLE, "employee")
-            .option(OPTION_SCHEMA, "employeeSchema")
-            .load()
-            .createOrReplaceTempView("employeeWithSchema2")
     }
 }
