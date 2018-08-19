@@ -539,7 +539,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                 final int idx0 = idx.getAndIncrement();
 
                 if (idx0 == 0) {
-                    try(final Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                    try (final Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
                         client.cache(CACHE_NAME).put(0, 0); // Lock is owned.
 
                         readStartLatch.countDown();
@@ -620,7 +620,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      */
     public void testRollbackOnTimeoutTxRemapPessimisticReadCommitted() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, READ_COMMITTED, false);
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, READ_COMMITTED, true);
     }
 
     /**
@@ -637,11 +637,53 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, SERIALIZABLE, true);
     }
 
+    /**
+     *
+     */
+    public void testRollbackOnTimeoutTxServerRemapOptimisticReadCommitted() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, READ_COMMITTED, false);
+    }
+
+    /**
+     *
+     */
+    public void testRollbackOnTimeoutTxServerRemapOptimisticRepeatableRead() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, REPEATABLE_READ, false);
+    }
+
+    /**
+     *
+     */
+    public void testRollbackOnTimeoutTxServerRemapOptimisticSerializable() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, SERIALIZABLE, false);
+    }
+
+    /**
+     *
+     */
+    public void testRollbackOnTimeoutTxServerRemapPessimisticReadCommitted() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, READ_COMMITTED, false);
+    }
+
+    /**
+     *
+     */
+    public void testRollbackOnTimeoutTxServerRemapPessimisticRepeatableRead() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, REPEATABLE_READ, false);
+    }
+
+    /**
+     *
+     */
+    public void testRollbackOnTimeoutTxServerRemapPessimisticSerializable() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, SERIALIZABLE, false);
+    }
+
 
     /**
      * @param concurrency Concurrency.
      * @param isolation Isolation.
-     * @param clientWait {@code True} to wait client remap, otherwise wait server remap.
+     * @param clientWait {@code True} to wait remap on client, otherwise wait remap on server.
      */
     private void doTestRollbackOnTimeoutTxRemap(TransactionConcurrency concurrency, TransactionIsolation isolation,
         boolean clientWait) throws Exception {
@@ -659,27 +701,25 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             (!clientWait || node.order() != grid(1).cluster().localNode().order()));
 
         // Delay prepare until exchange is finished.
-        TestRecordingCommunicationSpi.spi(client).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                boolean block = false;
+        TestRecordingCommunicationSpi.spi(client).blockMessages((node, msg) -> {
+            boolean block = false;
 
-                if (concurrency == PESSIMISTIC) {
-                    if (msg instanceof GridNearLockRequest) {
-                        block = true;
+            if (concurrency == PESSIMISTIC) {
+                if (msg instanceof GridNearLockRequest) {
+                    block = true;
 
-                        assertEquals(GRID_CNT + 1, ((GridNearLockRequest)msg).topologyVersion().topologyVersion());
-                    }
+                    assertEquals(GRID_CNT + 1, ((GridNearLockRequest)msg).topologyVersion().topologyVersion());
                 }
-                else {
-                    if (msg instanceof GridNearTxPrepareRequest) {
-                        block = true;
-
-                        assertEquals(GRID_CNT + 1, ((GridNearTxPrepareRequest)msg).topologyVersion().topologyVersion());
-                    }
-                }
-
-                return block;
             }
+            else {
+                if (msg instanceof GridNearTxPrepareRequest) {
+                    block = true;
+
+                    assertEquals(GRID_CNT + 1, ((GridNearTxPrepareRequest)msg).topologyVersion().topologyVersion());
+                }
+            }
+
+            return block;
         });
 
         // Start tx and map on topver=GRID_CNT + 1

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosureX;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -182,14 +181,15 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
                 c.run();
         }
         else {
-            applyWhenReady(topFut, new GridAbsClosureX() {
-                @Override public void applyx() throws IgniteCheckedException {
-                    try {
-                        prepareOnTopology(remap, c);
-                    }
-                    finally {
-                        cctx.txContextReset();
-                    }
+            cctx.time().waitAsync(topFut, tx.remainingTime(), (e, timedOut) -> {
+                if (errorOrTimeoutOnTopologyVersion(e, timedOut))
+                    return;
+
+                try {
+                    prepareOnTopology(remap, c);
+                }
+                finally {
+                    cctx.txContextReset();
                 }
             });
         }
@@ -200,6 +200,25 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * @param topLocked {@code True} if thread already acquired lock preventing topology change.
      */
     protected abstract void prepare0(boolean remap, boolean topLocked);
+
+    /**
+     * @param e Exception.
+     * @param timedOut {@code True} if timed out.
+     */
+    protected boolean errorOrTimeoutOnTopologyVersion(IgniteCheckedException e, boolean timedOut) {
+        if (e != null || timedOut) {
+            if (timedOut)
+                e = tx.timeoutException();
+
+            ERR_UPD.compareAndSet(this, null, e);
+
+            onDone(e);
+
+            return true;
+        }
+
+        return false;
+    }
 
     /**
      * @param fut Future.
