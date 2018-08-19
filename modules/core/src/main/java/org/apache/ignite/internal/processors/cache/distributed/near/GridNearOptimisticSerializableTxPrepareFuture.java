@@ -42,11 +42,10 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -910,18 +909,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                                 parent.remapFut = null;
                                             }
 
-                                            affFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                                                @Override public void apply(IgniteInternalFuture<?> affFut) {
-                                                    try {
-                                                        affFut.get();
-
-                                                        remap(res);
-                                                    }
-                                                    catch (IgniteCheckedException e) {
-                                                        ERR_UPD.compareAndSet(parent, null, e);
-
-                                                        onDone(e);
-                                                    }
+                                            parent.applyWhenReady(affFut, new GridAbsClosureX() {
+                                                @Override public void applyx() throws IgniteCheckedException {
+                                                    remap(res);
                                                 }
                                             });
                                         }
