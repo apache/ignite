@@ -620,7 +620,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      *
      */
     public void testRollbackOnTimeoutTxRemapPessimisticReadCommitted() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, READ_COMMITTED, true);
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, READ_COMMITTED, false);
     }
 
     /**
@@ -641,10 +641,10 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      * @param concurrency Concurrency.
      * @param isolation Isolation.
-     * @param remap {@code True} to force remap on unfinished topology version.
+     * @param clientWait {@code True} to wait client remap, otherwise wait server remap.
      */
     private void doTestRollbackOnTimeoutTxRemap(TransactionConcurrency concurrency, TransactionIsolation isolation,
-        boolean remap) throws Exception {
+        boolean clientWait) throws Exception {
         IgniteEx client = (IgniteEx)startClient();
 
         Ignite crd = grid(0);
@@ -653,9 +653,10 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         List<Integer> keys = movingKeysAfterJoin(grid(1), CACHE_NAME, 1);
 
-        // Delay exchange finish on server nodes if remap=true, or on all nodes otherwise (excluding joining node).
+        // Delay exchange finish on server nodes if clientWait=true, or on all nodes otherwise (excluding joining node).
         TestRecordingCommunicationSpi.spi(crd).blockMessages((node,
-            msg) -> node.order() < 5 && msg instanceof GridDhtPartitionsFullMessage);
+            msg) -> node.order() < 5 && msg instanceof GridDhtPartitionsFullMessage &&
+            (!clientWait || node.order() != grid(1).cluster().localNode().order()));
 
         // Delay prepare until exchange is finished.
         TestRecordingCommunicationSpi.spi(client).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
@@ -717,7 +718,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try {
                     // Wait for all full messages to be ready.
-                    TestRecordingCommunicationSpi.spi(crd).waitForBlocked(GRID_CNT + 1);
+                    TestRecordingCommunicationSpi.spi(crd).waitForBlocked(GRID_CNT + (clientWait ? 0 : 1));
 
                     // Trigger remap.
                     TestRecordingCommunicationSpi.spi(client).stopBlock();
@@ -732,7 +733,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         fut1.get(30_000);
         fut2.get(30_000);
 
-        //TestRecordingCommunicationSpi.spi(crd).stopBlock();
+        TestRecordingCommunicationSpi.spi(crd).stopBlock();
 
         // FIXME: If using awaitPartitionMapExchange for waiting it some times fail while waiting for owners.
         IgniteInternalFuture<?> topFut = ((IgniteEx)client).context().cache().context().exchange().
