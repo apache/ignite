@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -836,15 +838,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 markInitialized();
             }
             else {
-                fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                applyWhenReady(fut, new GridAbsClosureX() {
+                    @Override public void applyx() throws IgniteCheckedException {
                         try {
-                            fut.get();
-
                             mapOnTopology(remap, c);
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
                         }
                         finally {
                             cctx.shared().txContextReset();
@@ -1428,6 +1425,62 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
+     * @param fut Future.
+     * @param clo Closure.
+     */
+    protected void applyWhenReady(final IgniteInternalFuture<?> fut, GridAbsClosureX clo) {
+        long remaining = tx.remainingTime();
+
+        if (remaining == -1) {
+            onDone(tx.timeoutException());
+
+            return;
+        }
+
+        if (fut == null || fut.isDone()) {
+            try {
+                clo.applyx();
+            }
+            catch (IgniteCheckedException e) {
+                onDone(e);
+            }
+        }
+        else {
+            RemapTimeoutObject timeoutObj = null;
+
+            AtomicBoolean state = new AtomicBoolean();
+
+            if (remaining > 0) {
+                timeoutObj = new RemapTimeoutObject(remaining, fut, state);
+
+                cctx.time().addTimeoutObject(timeoutObj);
+            }
+
+            final RemapTimeoutObject finalTimeoutObj = timeoutObj;
+
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    if (!state.compareAndSet(false, true))
+                        return;
+
+                    try {
+                        fut.get();
+
+                        clo.applyx();
+                    }
+                    catch (IgniteCheckedException e) {
+                        onDone(e);
+                    }
+                    finally {
+                        if (finalTimeoutObj != null)
+                            cctx.time().removeTimeoutObject(finalTimeoutObj);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
@@ -1625,25 +1678,16 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 IgniteInternalFuture<?> affFut =
                     cctx.shared().exchange().affinityReadyFuture(res.clientRemapVersion());
 
-                if (affFut != null && !affFut.isDone()) {
-                    affFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> fut) {
-                            try {
-                                fut.get();
-
-                                remap();
-                            }
-                            catch (IgniteCheckedException e) {
-                                onDone(e);
-                            }
-                            finally {
-                                cctx.shared().txContextReset();
-                            }
+                applyWhenReady(affFut, new GridAbsClosureX() {
+                    @Override public void applyx() throws IgniteCheckedException {
+                        try {
+                            remap();
                         }
-                    });
-                }
-                else
-                    remap();
+                        finally {
+                            cctx.shared().txContextReset();
+                        }
+                    }
+                });
             }
             else {
                 int i = 0;
@@ -1739,6 +1783,41 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MiniFuture.class, this, "node", node.id(), "super", super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    private class RemapTimeoutObject extends GridTimeoutObjectAdapter {
+        /** */
+        private final IgniteInternalFuture<?> fut;
+
+        /** */
+        private final AtomicBoolean state;
+
+        /**
+         * @param timeout Timeout.
+         * @param fut Future.
+         * @param state State.
+         */
+        RemapTimeoutObject(long timeout, IgniteInternalFuture<?> fut, AtomicBoolean state) {
+            super(timeout);
+
+            this.fut = fut;
+
+            this.state = state;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            if (!fut.isDone() && state.compareAndSet(false, true))
+                onDone(tx.timeoutException());
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RemapTimeoutObject.class, this);
         }
     }
 }

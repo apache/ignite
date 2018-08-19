@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -77,6 +79,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -548,12 +551,45 @@ public class IgniteTxHandler {
     /**
      * @param node Sender node.
      * @param req Request.
-     * @return {@code True} if update will be retried from future listener.
+     * @return {@code True} if update will be retried from future listener or topology version future is timed out.
      */
     private boolean waitForExchangeFuture(final ClusterNode node, final GridNearTxPrepareRequest req) {
         assert req.firstClientRequest() : req;
 
         GridDhtTopologyFuture topFut = ctx.exchange().lastTopologyFuture();
+
+        final IgniteInClosure<IgniteCheckedException> waitTopVerClo = e -> {
+            if (e == null)
+                e = new IgniteTxTimeoutCheckedException("Failed to wait topology version for near prepare " +
+                    "[txId=" + req.version() +
+                    ", topVer=" + topFut.initialVersion() +
+                    ", node=" + node.id() +
+                    ", req=" + req + ']');
+
+            GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+                req.partition(),
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                req.version(),
+                req.version(),
+                null,
+                e,
+                null,
+                req.onePhaseCommit(),
+                req.deployInfo() != null);
+
+            try {
+                ctx.io().send(node.id(), res, req.policy());
+            }
+            catch (IgniteCheckedException e0) {
+                U.error(txPrepareMsgLog, "Failed to send wait topology version response for near prepare " +
+                    "[txId=" + req.version() +
+                    ", topVer=" + topFut.initialVersion() +
+                    ", node=" + node.id() +
+                    ", req=" + req + ']', e0);
+            }
+        };
 
         if (!topFut.isDone()) {
             Thread curThread = Thread.currentThread();
@@ -562,27 +598,37 @@ public class IgniteTxHandler {
                 final IgniteThread thread = (IgniteThread)curThread;
 
                 if (thread.cachePoolThread()) {
-                    topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                            ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, new Runnable() {
-                                @Override public void run() {
-                                    try {
-                                        processNearTxPrepareRequest0(node, req);
-                                    }
-                                    finally {
-                                        ctx.io().onMessageProcessed(req);
-                                    }
+                    ctx.time().waitAsync(topFut, req.timeout(), (e, timedOut) -> {
+                            if (e != null || timedOut) {
+                                waitTopVerClo.apply(e);
+
+                                return;
+                            }
+                            ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, () -> {
+                                try {
+                                    processNearTxPrepareRequest0(node, req);
+                                }
+                                finally {
+                                    ctx.io().onMessageProcessed(req);
                                 }
                             });
                         }
-                    });
+                    );
 
                     return true;
                 }
             }
 
             try {
-                topFut.get();
+                if (req.timeout() > 0)
+                    topFut.get(req.timeout());
+                else
+                    topFut.get();
+            }
+            catch (IgniteFutureTimeoutCheckedException e) {
+                waitTopVerClo.apply(e);
+
+                return true;
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Topology future failed: " + e, e);

@@ -32,7 +32,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -43,9 +42,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.util.typedef.F;
@@ -599,28 +598,49 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testRollbackOnTimeoutTxRemapReadCommitted() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(READ_COMMITTED);
+    public void testRollbackOnTimeoutTxRemapOptimisticReadCommitted() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, READ_COMMITTED);
     }
 
     /**
      *
      */
-    public void testRollbackOnTimeoutTxRemapRepeatableRead() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(REPEATABLE_READ);
+    public void testRollbackOnTimeoutTxRemapOptimisticRepeatableRead() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, REPEATABLE_READ);
     }
 
     /**
      *
      */
-    public void testRollbackOnTimeoutTxRemapSerializable() throws Exception {
-        doTestRollbackOnTimeoutTxRemap(SERIALIZABLE);
+    public void testRollbackOnTimeoutTxRemapOptimisticSerializable() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(OPTIMISTIC, SERIALIZABLE);
     }
 
     /**
      *
      */
-    private void doTestRollbackOnTimeoutTxRemap(TransactionIsolation isolation) throws Exception {
+    public void testRollbackOnTimeoutTxRemapPessimisticReadCommitted() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     *
+     */
+    public void testRollbackOnTimeoutTxRemapPessimisticRepeatableRead() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     *
+     */
+    public void testRollbackOnTimeoutTxRemapPessimisticSerializable() throws Exception {
+        doTestRollbackOnTimeoutTxRemap(PESSIMISTIC, SERIALIZABLE);
+    }
+
+    /**
+     *
+     */
+    private void doTestRollbackOnTimeoutTxRemap(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         Ignite client = startClient();
 
         Ignite crd = grid(0);
@@ -632,20 +652,37 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         // Delay exchange finish on client node.
         TestRecordingCommunicationSpi.spi(crd).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                return node.equals(client.cluster().localNode()) && msg instanceof GridDhtPartitionsFullMessage;
+                return node.order() < 5 && msg instanceof GridDhtPartitionsFullMessage;
             }
         });
 
         // Delay prepare until exchange is finished.
         TestRecordingCommunicationSpi.spi(client).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                return msg instanceof GridNearTxPrepareRequest;
+                boolean block = false;
+
+                if (concurrency == PESSIMISTIC) {
+                    if (msg instanceof GridNearLockRequest) {
+                        block = true;
+
+                        assertEquals(GRID_CNT + 1, ((GridNearLockRequest)msg).topologyVersion().topologyVersion());
+                    }
+                }
+                else {
+                    if (msg instanceof GridNearTxPrepareRequest) {
+                        block = true;
+
+                        assertEquals(GRID_CNT + 1, ((GridNearTxPrepareRequest)msg).topologyVersion().topologyVersion());
+                    }
+                }
+
+                return block;
             }
         });
 
         IgniteInternalFuture fut0 = runAsync(new Runnable() {
             @Override public void run() {
-                try (Transaction tx = client.transactions().txStart(OPTIMISTIC, isolation, 5000, 1)) {
+                try (Transaction tx = client.transactions().txStart(concurrency, isolation, 5000, 1)) {
                     client.cache(CACHE_NAME).put(keys.get(0), 0);
 
                     tx.commit();
@@ -658,16 +695,26 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             }
         });
 
-        IgniteInternalFuture fut = runAsync(new Runnable() {
+        IgniteInternalFuture fut1 = runAsync(new Runnable() {
             @Override public void run() {
                 try {
+                    TestRecordingCommunicationSpi.spi(client).waitForBlocked(); // TX is trying to prepare on prev top ver.
+
                     startGrid(GRID_CNT);
+                }
+                catch (Exception e) {
+                    fail(e.getMessage());
+                }
+            }
+        });
 
-                    TestRecordingCommunicationSpi.spi(crd).waitForBlocked();
+        IgniteInternalFuture fut2 = runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    // Wait for all full messages to be ready.
+                    TestRecordingCommunicationSpi.spi(crd).waitForBlocked(GRID_CNT + 1);
 
-                    TestRecordingCommunicationSpi.spi(client).waitForBlocked();
-
-                    // Delivered prepare message will trigger remap.
+                    // Trigger remap.
                     TestRecordingCommunicationSpi.spi(client).stopBlock();
                 }
                 catch (Exception e) {
@@ -676,24 +723,13 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             }
         });
 
-        // Allow timeout on future wait.
-        try {
-            fut.get(10_000);
-        }
-        catch (IgniteFutureTimeoutCheckedException e) {
-            // Ignored.
-        }
-
-        try {
-            fut0.get(10_000);
-        }
-        catch (IgniteFutureTimeoutCheckedException e) {
-            // Ignored.
-        }
+        fut0.get(30_000);
+        fut1.get(30_000);
+        fut2.get(30_000);
 
         TestRecordingCommunicationSpi.spi(crd).stopBlock();
 
-        // If using awaitPartitionMapExchange for waiting it some times fail while waiting for owners.
+        // FIXME: If using awaitPartitionMapExchange for waiting it some times fail while waiting for owners.
         IgniteInternalFuture<?> topFut = ((IgniteEx)client).context().cache().context().exchange().
             affinityReadyFuture(new AffinityTopologyVersion(GRID_CNT + 2, 1));
 
