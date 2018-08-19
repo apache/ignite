@@ -49,6 +49,7 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
@@ -132,6 +133,17 @@ public class CommandHandler {
     static final String DFLT_PORT = "11211";
 
     /** */
+    static final String DFLT_SSL_PROTOCOL = "TLS";
+     
+    static final String DFLT_SSL_KEY_ALGORITHM = "SunX509";
+     
+    /** */
+    static final String DFLT_KEYSTORE_TYPE = "jks";
+    
+    /** */
+    static final String DFLT_TRUSTSTORE_TYPE = "jks";
+
+    /** */
     private static final String CMD_HELP = "--help";
 
     /** */
@@ -146,6 +158,33 @@ public class CommandHandler {
     /** */
     private static final String CMD_USER = "--user";
 
+    /** */
+    private static final String CMD_SSL = "--ssl";
+       
+    /** */
+    private static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
+     
+    /** */
+    private static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
+     
+    /** */
+    private static final String CMD_KEYSTORE = "--keystore";
+     
+    /** */
+    private static final String CMD_KEYSTORE_PASSWORD = "--keystore-password";
+      
+    /** */
+    private static final String CMD_KEYSTORE_TYPE = "--keystore-type";
+       
+    /** */
+    private static final String CMD_TRUSTSTORE = "--truststore";
+     
+    /** */
+    private static final String CMD_TRUSTSTORE_PASSWORD = "--truststore-password";
+     
+    /** */
+    private static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
+     
     /** Option is used for auto confirmation. */
     private static final String CMD_AUTO_CONFIRMATION = "--yes";
 
@@ -170,6 +209,15 @@ public class CommandHandler {
         AUX_COMMANDS.add(CMD_PORT);
         AUX_COMMANDS.add(CMD_PASSWORD);
         AUX_COMMANDS.add(CMD_USER);
+        AUX_COMMANDS.add(CMD_SSL);
+        AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
+        AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
+        AUX_COMMANDS.add(CMD_KEYSTORE);
+        AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
+        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
         AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
@@ -1262,6 +1310,9 @@ public class CommandHandler {
     private void usage(String desc, Command cmd, String... args) {
         log(desc);
         log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " +
+            " [--ssl] [--ssl-protocol SSL_PROTOCOL] [--ssl-key-algorithm SSL_KEY_LGORITHM] [--keystore KEYSTORE] " + 
+            " [--keystore-password KEYSTORE_PASSWORD] [--keystore-type KEYSTORE_TYPE] [--truststore TRUSTSTORE] " + 
+            " [--truststore-password TRUSTSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] " + 
             " [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] " + cmd.text() + String.join("", args));
         nl();
     }
@@ -1314,6 +1365,24 @@ public class CommandHandler {
         String user = null;
 
         String pwd = null;
+        
+        boolean ssl = false;
+
+        String sslProtocol = DFLT_SSL_PROTOCOL;
+
+        String sslKeyAlgorithm = DFLT_SSL_KEY_ALGORITHM;
+
+        String keystore = null;
+
+        String keystorePassword = null;
+
+        String keystoreType = DFLT_KEYSTORE_TYPE;
+
+        String truststore = null;
+
+        String truststorePassword = null;
+
+        String truststoreType = DFLT_TRUSTSTORE_TYPE;
 
         String baselineAct = "";
 
@@ -1449,6 +1518,51 @@ public class CommandHandler {
 
                         break;
 
+                    case CMD_SSL:
+                        ssl = true;
+
+                        break;
+
+                    case CMD_SSL_PROTOCOL:
+                        sslProtocol = nextArg("Expected SSL protocol");
+
+                        break;
+
+                    case CMD_SSL_KEY_ALGORITHM:
+                        sslKeyAlgorithm = nextArg("Expected SSL key algorithm");
+
+                        break;
+
+                    case CMD_KEYSTORE:
+                        keystore = nextArg("Expected keystore");
+
+                        break;
+
+                    case CMD_KEYSTORE_PASSWORD:
+                        keystorePassword = nextArg("Expected keystore password");
+
+                        break;
+
+                    case CMD_KEYSTORE_TYPE:
+                        keystoreType = nextArg("Expected keystore type");
+
+                        break;
+
+                    case CMD_TRUSTSTORE:
+                        truststore = nextArg("Expected truststore");
+
+                        break;
+
+                    case CMD_TRUSTSTORE_PASSWORD:
+                        truststorePassword = nextArg("Expected truststore password");
+
+                        break;
+
+                    case CMD_TRUSTSTORE_TYPE:
+                        truststoreType = nextArg("Expected truststore type");
+
+                        break;
+
                     case CMD_AUTO_CONFIRMATION:
                         autoConfirmation = true;
 
@@ -1476,8 +1590,10 @@ public class CommandHandler {
         if (hasUsr != hasPwd)
             throw new IllegalArgumentException("Both user and password should be specified");
 
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
-            pingTimeout, pingInterval, autoConfirmation);
+        return new Arguments(cmd, host, port, user, pwd, ssl, sslProtocol, sslKeyAlgorithm, keystore, keystorePassword, 
+                    keystoreType, truststore, truststorePassword, truststoreType, baselineAct, baselineArgs,
+                    txArgs, cacheArgs, walAct, walArgs, pingTimeout, pingInterval, autoConfirmation);
+
     }
 
     /**
@@ -1850,6 +1966,10 @@ public class CommandHandler {
                 log("    PORT=" + DFLT_PORT);
                 log("    PING_INTERVAL=" + DFLT_PING_INTERVAL);
                 log("    PING_TIMEOUT=" + DFLT_PING_TIMEOUT);
+                log("    SSL_PROTOCOL=" + DFLT_SSL_PROTOCOL);
+                log("    SSL_KEY_ALGORITHM=" + DFLT_SSL_KEY_ALGORITHM);
+                log("    KEYSTORE_TYPE=" + DFLT_KEYSTORE_TYPE);
+                log("    TRUSTSTORE_TYPE=" + DFLT_TRUSTSTORE_TYPE);
                 nl();
 
                 log("Exit codes:");
@@ -1882,6 +2002,39 @@ public class CommandHandler {
                 clientCfg.setSecurityCredentialsProvider(
                     new SecurityCredentialsBasicProvider(new SecurityCredentials(args.user(), args.password())));
             }
+            
+            if (args.ssl()) {
+
+                 
+				GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
+
+                factory.setProtocol(F.isEmpty(args.sslProtocol()) ? DFLT_SSL_PROTOCOL : args.sslProtocol());
+                factory.setKeyAlgorithm(F.isEmpty(args.sslKeyAlgorithm()) ? DFLT_SSL_KEY_ALGORITHM : args.sslKeyAlgorithm());
+
+                if (F.isEmpty(args.keystore()))
+                    throw new IllegalArgumentException("SSL key store location is not specified.");
+
+                factory.setKeyStoreFilePath(args.keystore());
+
+                if (args.keystorePassword() != null)
+                    factory.setKeyStorePassword(args.keystorePassword().toCharArray());
+
+                factory.setKeyStoreType(F.isEmpty(args.keystoreType()) ? DFLT_KEYSTORE_TYPE : args.keystoreType());
+
+                if (F.isEmpty(args.truststore()))
+                     factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+                else {
+                     factory.setTrustStoreFilePath(args.truststore());
+
+                 if (args.truststorePassword() != null)
+                     factory.setTrustStorePassword(args.truststorePassword().toCharArray());
+
+                     factory.setTrustStoreType(F.isEmpty(args.truststoreType()) ? DFLT_TRUSTSTORE_TYPE : args.truststoreType());
+                }
+
+             clientCfg.setSslContextFactory(factory);
+
+             }            
 
             try (GridClient client = GridClientFactory.start(clientCfg)) {
                 switch (args.command()) {

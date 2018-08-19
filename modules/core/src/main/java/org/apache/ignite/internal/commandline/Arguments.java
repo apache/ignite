@@ -21,8 +21,6 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
-
-
 /**
  * Bean with all parsed and validated arguments.
  */
@@ -41,6 +39,33 @@ public class Arguments {
 
     /** Password. */
     private String pwd;
+
+    /** Use SSL. */
+    private boolean ssl;
+
+    /** SSL Protocol. */
+    private String sslProtocol;
+
+    /** SSL Key Algorithm. */
+    private String sslKeyAlgorithm;
+
+    /** Keystore. */
+    private String keystore;
+
+    /** Keystore Password. */
+    private String keystorePassword;
+
+    /** Keystore Type. */
+    private String keystoreType;
+
+    /** Truststore. */
+    private String truststore;
+
+    /** Truststore Password. */
+    private String truststorePassword;
+    
+    /** Truststore Type. */
+    private String truststoreType;
 
     /** Force option is used for auto confirmation. */
     private boolean autoConfirmation;
@@ -76,7 +101,6 @@ public class Arguments {
     /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
     private long pingTimeout;
 
-    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
     private long pingInterval;
 
     /**
@@ -85,6 +109,15 @@ public class Arguments {
      * @param port Port.
      * @param user User.
      * @param pwd Password.
+     * @param ssl Use SSL.
+     * @param sslProtocol SSL Protocol.
+     * @param sslKeyAlgorithm SSL Key Algorithm.
+     * @param keystore Keystore.
+     * @param keystorePassword Keystore Password.
+     * @param keystoreType Keystore Type.
+     * @param truststore Truststore.
+     * @param truststorePassword Truststore Password.
+     * @param truststoreType Truststore Type.
      * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
      * @param txArg TX arg.
@@ -95,14 +128,25 @@ public class Arguments {
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
      * @param autoConfirmation Auto confirmation flag.
      */
-    public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
-                     String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-                     Long pingTimeout, Long pingInterval, boolean autoConfirmation) {
+    public Arguments(Command cmd, String host, String port, String user, String pwd,
+    	             boolean ssl, String sslProtocol, String sslKeyAlgorithm, String keystore, 
+                     String keystorePassword, String keystoreType, String truststore, String truststorePassword, 
+                     String truststoreType, String baselineAct, String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs,
+                     String walAct, String walArgs, Long pingTimeout, Long pingInterval, boolean autoConfirmation) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
         this.user = user;
         this.pwd = pwd;
+        this.ssl = ssl;
+        this.sslProtocol = sslProtocol;
+        this.sslKeyAlgorithm = sslKeyAlgorithm;
+        this.keystore = keystore;
+        this.keystorePassword = keystorePassword;
+        this.keystoreType = keystoreType;
+        this.truststore = truststore;
+        this.truststorePassword = truststorePassword;
+        this.truststoreType = truststoreType;
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
         this.txArg = txArg;
@@ -134,6 +178,69 @@ public class Arguments {
     public String port() {
         return port;
     }
+
+    /**
+     * @return ssl
+     */
+    public boolean ssl() {
+        return ssl;
+    }   
+    
+    /**
+     * @return SSL protocol
+     */
+    public String sslProtocol() {
+        return sslProtocol;
+    }   
+    
+    /**
+     * @return SSL Key Algorithm
+     */
+    public String sslKeyAlgorithm() {
+        return sslKeyAlgorithm;
+    }   
+    
+    /**
+     * @return Keystore
+     */
+    public String keystore() {
+        return keystore;
+    }   
+    
+    /**
+     * @return Keystore password
+     */
+    public String keystorePassword() {
+        return keystorePassword;
+    }   
+    
+    /**
+     * @return Keystore type
+     */
+    public String keystoreType() {
+        return keystoreType;
+    }   
+    
+    /**
+     * @return Truststore
+     */
+    public String truststore() {
+        return truststore;
+    }   
+    
+    /**
+     * @return Truststore password
+     */
+    public String truststorePassword() {
+        return truststorePassword;
+    }   
+    
+    /**
+     * @return Truststore type
+     */
+    public String truststoreType() {
+        return truststoreType;
+    }   
 
     /**
      * @return user name
