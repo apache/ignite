@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,6 +37,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -42,12 +46,23 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.tx.VisorTxInfo;
+import org.apache.ignite.internal.visor.tx.VisorTxOperation;
+import org.apache.ignite.internal.visor.tx.VisorTxTask;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -62,6 +77,7 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import static java.lang.Thread.sleep;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -87,6 +103,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setConsistentId(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -298,7 +316,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         final CountDownLatch l = new CountDownLatch(2);
 
-        IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Runnable() {
+        IgniteInternalFuture<?> fut1 = runAsync(new Runnable() {
             @Override public void run() {
                 try {
                     try (Transaction tx = node1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 5000, 2)) {
@@ -322,7 +340,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             }
         }, "First");
 
-        IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Runnable() {
+        IgniteInternalFuture<?> fut2 = runAsync(new Runnable() {
             @Override public void run() {
                 try (Transaction tx = node2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 2)) {
                     node2.cache(CACHE_NAME).put(2, 2);
@@ -587,6 +605,115 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
+    public void testRollbackOnTopologyLockPessimistic() throws Exception {
+        final Ignite client = startClient();
+
+        Ignite crd = grid(0);
+
+        List<Integer> keys = primaryKeys(grid(1).cache(CACHE_NAME), 1);
+
+        assertTrue(crd.cluster().localNode().order() == 1);
+
+        CountDownLatch txLatch = new CountDownLatch(1);
+        CountDownLatch stopLatch = new CountDownLatch(1);
+        CountDownLatch commitLatch = new CountDownLatch(1);
+
+        // Start tx holding topology.
+        IgniteInternalFuture txFut = runAsync(new Runnable() {
+            @Override public void run() {
+                List<Integer> keys = primaryKeys(grid(0).cache(CACHE_NAME), 1);
+
+                try (Transaction tx = client.transactions().txStart()) {
+                    client.cache(CACHE_NAME).put(keys.get(0), 0);
+
+                    txLatch.countDown();
+
+                    U.awaitQuiet(commitLatch);
+
+                    tx.commit();
+
+                    fail();
+                }
+                catch (Exception e) {
+                    // Expected.
+                }
+            }
+        });
+
+        U.awaitQuiet(txLatch);
+
+        crd.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                runAsync(new Runnable() {
+                    @Override public void run() {
+                        try(Transaction tx = crd.transactions().withLabel("testLbl").txStart()) {
+                            stopLatch.countDown();
+
+                            crd.cache(CACHE_NAME).put(keys.get(0), 0);
+
+                            tx.commit();
+
+                            fail();
+                        }
+                        catch (Exception e) {
+                            // Expected.
+                        }
+                    }
+                });
+
+                return false;
+            }
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+
+        IgniteInternalFuture restartFut = runAsync(new Runnable() {
+            @Override public void run() {
+                stopGrid(2);
+
+                try {
+                    startGrid(2);
+                }
+                catch (Exception e) {
+                    fail();
+                }
+            }
+        });
+
+        U.awaitQuiet(stopLatch);
+
+        doSleep(500);
+
+        VisorTxTaskArg arg =
+            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null);
+
+        Map<ClusterNode, VisorTxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
+            execute(new VisorTxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false));
+
+        int expCnt = 0;
+
+        for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+            if (entry.getValue().getInfos().isEmpty())
+                continue;
+
+            for (VisorTxInfo info : entry.getValue().getInfos()) {
+                log.info(info.toUserString());
+
+                expCnt++;
+            }
+        }
+
+        assertEquals("Expecting 2 transactions", 2, expCnt);
+
+        commitLatch.countDown();
+
+        txFut.get();
+        restartFut.get();
+
+        checkFutures();
+    }
+
+    /**
+     *
+     */
     private void testEnlistMany(boolean write) throws Exception {
         final Ignite client = startClient();
 
@@ -812,7 +939,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         final int recordsCnt = 5;
 
-        IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Runnable() {
+        IgniteInternalFuture<?> fut1 = runAsync(new Runnable() {
             @Override public void run() {
                 try (Transaction tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 0)) {
                     try {
@@ -860,7 +987,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             }
         }, "First");
 
-        IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Runnable() {
+        IgniteInternalFuture<?> fut2 = runAsync(new Runnable() {
             @Override public void run() {
                 U.awaitQuiet(blocked);
 
