@@ -124,13 +124,10 @@ package object impl {
     def sqlTableInfo[K, V](ignite: Ignite, tabName: String,
         schemaName: Option[String]): Option[(CacheConfiguration[K, V], QueryEntity)] =
         ignite.cacheNames()
-            .map(cacheName => ignite.cache[K, V](cacheName).getConfiguration(classOf[CacheConfiguration[K, V]]))
-            .filter(
-                ccfg => schemaName.isEmpty
-                    || schemaName.get.equalsIgnoreCase(normalizeSchemaName(ccfg.getName, ccfg.getSqlSchema)))
-            .map { ccfg ⇒
-                ccfg.getQueryEntities.find(_.getTableName.equalsIgnoreCase(tabName)).map(qe ⇒ (ccfg, qe))
-            }.find(_.isDefined).flatten
+            .map(ignite.cache[K, V](_).getConfiguration(classOf[CacheConfiguration[K, V]]))
+            .filter(ccfg ⇒ schemaName.forall(_.equalsIgnoreCase(normalizeSchemaName(ccfg.getName, ccfg.getSqlSchema))))
+            .map(ccfg ⇒ ccfg.getQueryEntities.find(_.getTableName.equalsIgnoreCase(tabName)).map(qe ⇒ (ccfg, qe)))
+            .find(_.isDefined).flatten
 
     /**
       * @param table Table.

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spark
 
+import com.google.common.collect.Iterators
 import org.apache.ignite.spark.AbstractDataFrameSpec.TEST_CONFIG_FILE
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.spark.sql.DataFrame
@@ -272,7 +273,7 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
         }
 
         it("should use the schema name where one is specified") {
-            // `employeeCache1` is created in the schema matching the name of the cache, ie. `employeeCache1`
+            // `employeeCache1` is created in the schema matching the name of the cache, ie. `employeeCache1`.
             createEmployeeCache(client, "employeeCache1")
 
             spark.read
@@ -283,12 +284,14 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
                 .load()
                 .createOrReplaceTempView("employeeWithSchema")
 
-            // `employeeCache2` is created with a custom schema of `employeeSchema`
+            // `employeeCache2` is created with a custom schema of `employeeSchema`.
             createEmployeeCache(client, "employeeCache2", Some("employeeSchema"))
 
-            // remove a value from `employeeCache2` so that we know whether the select statement picks up the
-            // correct cache, ie. it should now have 2 values compared to 3 in `employeeCache1`
-            client.cache("employeeCache2").remove("key1")
+            // Remove a value from `employeeCache2` so that we know whether the select statement picks up the
+            // correct cache, ie. it should now have 2 values compared to 3 in `employeeCache1`.
+            Iterators.size(client.cache("employeeCache2").iterator()) should equal(3)
+            val removed = client.cache("employeeCache2").remove("key1")
+            removed shouldBe true
 
             spark.read
                 .format(FORMAT_IGNITE)

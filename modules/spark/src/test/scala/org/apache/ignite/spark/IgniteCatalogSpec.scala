@@ -41,8 +41,8 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
 
             tables.length should equal(6)
 
-            // each table is accessible both with and without schema; tables which were created via CREATE TABLE
-            // expressions reside in the PUBLIC schema whereas cache-created tables reside in their own schema
+            // Each table is accessible both with and without schema; tables which were created via CREATE TABLE
+            // expressions reside in the PUBLIC schema whereas cache-created tables reside in their own schema.
             tables.map(_.name).sorted should equal(
                 Array("CITY", "EMPLOYEE", "PERSON", "PUBLIC.CITY", "PUBLIC.PERSON", "cache3.EMPLOYEE"))
         }
