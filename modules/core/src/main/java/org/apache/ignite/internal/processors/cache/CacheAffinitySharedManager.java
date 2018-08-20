@@ -2250,11 +2250,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         newNodes0 = new ArrayList<>(curNodes.size());
 
                         for (ClusterNode node : curNodes) {
-                            if (fut.firstEventCache().alive(node.id()))
+                            if (aliveNodes.contains(node))
                                 newNodes0.add(node);
                         }
                     }
-                    else if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
+                    else if (curPrimary != null && !curPrimary.equals(newPrimary)) {
                         GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
                         if (aliveNodes.contains(curPrimary)) {
