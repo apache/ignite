@@ -3031,7 +3031,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                                 val = entry.peek(true, true, topVer, expiryPlc);
 
-                                cctx.evicts().touch(entry, topVer);
+                                entry.touch(topVer);
 
                                 break;
                             }
