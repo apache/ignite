@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.eviction;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -101,22 +102,26 @@ public class DhtAndNearEvictionTest extends GridCommonAbstractTest {
 
         grid(0).createCache(ccfg);
 
-        IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(() -> {
-            IgniteCache<Integer, Integer> cache = grid(0).cache("mycache");
+        IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                IgniteCache<Integer, Integer> cache = DhtAndNearEvictionTest.this.grid(0).cache("mycache");
 
-            for (int i = 0; i < 1000; i++)
-                cache.put(i, i);
+                for (int i = 0; i < 1000; i++)
+                    cache.put(i, i);
 
-            return null;
+                return null;
+            }
         });
 
-        IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(() -> {
-            IgniteCache<Integer, Integer> cache = grid(1).cache("mycache");
+        IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                IgniteCache<Integer, Integer> cache = DhtAndNearEvictionTest.this.grid(1).cache("mycache");
 
-            for (int i = 0; i < 1000; i++)
-                cache.get(i);
+                for (int i = 0; i < 1000; i++)
+                    cache.get(i);
 
-            return null;
+                return null;
+            }
         });
 
         // AssertionError may leave the node hanging.
