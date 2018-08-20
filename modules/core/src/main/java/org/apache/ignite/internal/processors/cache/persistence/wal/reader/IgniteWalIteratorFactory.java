@@ -108,6 +108,26 @@ public class IgniteWalIteratorFactory {
      * This method may be used for work folder, file indexes are scanned from the file context.
      * In this mode only provided WAL segments will be scanned. New WAL files created during iteration will be ignored.
      *
+     * @param replayFrom File WAL pointer for start replay.
+     * @param filesOrDirs files to scan. A file can be the path to '.wal' file, or directory with '.wal' files.
+     * Order is not important, but it is significant to provide all segments without omissions.
+     * Path should not contain special symbols. Special symbols should be already masked.
+     * @return closable WAL records iterator, should be closed when non needed.
+     * @throws IgniteCheckedException if failed to read files
+     * @throws IllegalArgumentException If parameter validation failed.
+     */
+    public WALIterator iterator(
+        @NotNull FileWALPointer replayFrom,
+        @NotNull File... filesOrDirs
+    ) throws IgniteCheckedException, IllegalArgumentException {
+        return iterator(new IteratorParametersBuilder().from(replayFrom).filesOrDirs(filesOrDirs));
+    }
+
+    /**
+     * Creates iterator for file by file scan mode.
+     * This method may be used for work folder, file indexes are scanned from the file context.
+     * In this mode only provided WAL segments will be scanned. New WAL files created during iteration will be ignored.
+     *
      * @param filesOrDirs paths to scan. A path can be direct to '.wal' file, or directory with '.wal' files.
      * Order is not important, but it is significant to provide all segments without omissions.
      * Path should not contain special symbols. Special symbols should be already masked.
@@ -119,6 +139,26 @@ public class IgniteWalIteratorFactory {
         @NotNull String... filesOrDirs
     ) throws IgniteCheckedException, IllegalArgumentException {
         return iterator(new IteratorParametersBuilder().filesOrDirs(filesOrDirs));
+    }
+
+    /**
+     * Creates iterator for file by file scan mode.
+     * This method may be used for work folder, file indexes are scanned from the file context.
+     * In this mode only provided WAL segments will be scanned. New WAL files created during iteration will be ignored.
+     *
+     * @param replayFrom File WAL pointer for start replay.
+     * @param filesOrDirs paths to scan. A path can be direct to '.wal' file, or directory with '.wal' files.
+     * Order is not important, but it is significant to provide all segments without omissions.
+     * Path should not contain special symbols. Special symbols should be already masked.
+     * @return closable WAL records iterator, should be closed when non needed.
+     * @throws IgniteCheckedException If failed to read files.
+     * @throws IllegalArgumentException If parameter validation failed.
+     */
+    public WALIterator iterator(
+        @NotNull FileWALPointer replayFrom,
+        @NotNull String... filesOrDirs
+    ) throws IgniteCheckedException, IllegalArgumentException {
+        return iterator(new IteratorParametersBuilder().from(replayFrom).filesOrDirs(filesOrDirs));
     }
 
     /**
@@ -135,6 +175,8 @@ public class IgniteWalIteratorFactory {
             iteratorParametersBuilder.ioFactory,
             resolveWalFiles(iteratorParametersBuilder),
             iteratorParametersBuilder.filter,
+            iteratorParametersBuilder.lowBound,
+            iteratorParametersBuilder.highBound,
             iteratorParametersBuilder.keepBinary,
             iteratorParametersBuilder.bufferSize
         );
@@ -361,6 +403,12 @@ public class IgniteWalIteratorFactory {
         /** */
         @Nullable private IgniteBiPredicate<RecordType, WALPointer> filter;
 
+        /** */
+        private FileWALPointer lowBound = new FileWALPointer(Long.MIN_VALUE, 0, 0);
+
+        /** */
+        private FileWALPointer highBound = new FileWALPointer(Long.MAX_VALUE, Integer.MAX_VALUE, 0);
+
         /**
          * @param filesOrDirs Paths to files or directories.
          * @return IteratorParametersBuilder Self reference.
@@ -458,6 +506,26 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
+         * @param lowBound WAL pointer to start from.
+         * @return IteratorParametersBuilder Self reference.
+         */
+        public IteratorParametersBuilder from(FileWALPointer lowBound) {
+            this.lowBound = lowBound;
+
+            return this;
+        }
+
+        /**
+         * @param highBound WAL pointer to end of.
+         * @return IteratorParametersBuilder Self reference.
+         */
+        public IteratorParametersBuilder to(FileWALPointer highBound) {
+            this.highBound = highBound;
+
+            return this;
+        }
+
+        /**
          * Copy current state of builder to new instance.
          *
          * @return IteratorParametersBuilder Self reference.
@@ -471,6 +539,8 @@ public class IgniteWalIteratorFactory {
                 .ioFactory(ioFactory)
                 .binaryMetadataFileStoreDir(binaryMetadataFileStoreDir)
                 .marshallerMappingFileStoreDir(marshallerMappingFileStoreDir)
+                .from(lowBound)
+                .to(highBound)
                 .filter(filter);
         }
 
