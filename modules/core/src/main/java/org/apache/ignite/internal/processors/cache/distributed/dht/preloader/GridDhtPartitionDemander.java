@@ -772,7 +772,7 @@ public class GridDhtPartitionDemander {
                         cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
                         false
                     )) {
-                        cctx.evicts().touch(cached, topVer); // Start tracking.
+                        cached.context().evicts().touch(cached, topVer); // Start tracking.
 
                         if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                             cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
@@ -781,7 +781,7 @@ public class GridDhtPartitionDemander {
                     }
                     else {
                         if (cctx.isSwapOrOffheapEnabled())
-                            cctx.evicts().touch(cached, topVer); // Start tracking.
+                            cached.context().evicts().touch(cached, topVer); // Start tracking.
 
                         if (log.isDebugEnabled())
                             log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
