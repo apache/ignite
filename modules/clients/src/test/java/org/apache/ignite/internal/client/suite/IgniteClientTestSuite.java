@@ -122,6 +122,7 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTestSuite(ClientTcpDirectSelfTest.class);
         suite.addTestSuite(ClientTcpSslSelfTest.class);
         suite.addTestSuite(ClientTcpSslDirectSelfTest.class);
+        suite.addTestSuite(ClientFailedInitSelfTest.class);
 
         // Test client with many nodes.
         suite.addTestSuite(ClientTcpMultiNodeSelfTest.class);
