@@ -7,9 +7,10 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -24,14 +25,19 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
-
+import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.JOIN_SQL;
+import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.Organization;
+import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTestHelper.Person;
 /**
  * Test for 6 retry cases
  */
@@ -41,16 +47,6 @@ public class RetryCauseMessageTest extends GridCommonAbstractTest {
 
     /** */
     private static final int NODES_COUNT = 2;
-
-    /** */
-    private static final int ORG_COUNT = NODES_COUNT;
-
-    /** */
-    private static final int PERSON_PER_ORG_COUNT = 50;
-    /** */
-    private static final String JOIN_SQL = "select * from Person, \"org\".Organization as org " +
-        "where Person.orgId = org.id " +
-        "and lower(org.name) = lower(?)";
     /** */
     private static final String ORG_SQL = "select * from Organization";
     /** */
@@ -70,7 +66,7 @@ public class RetryCauseMessageTest extends GridCommonAbstractTest {
     /**
      * Failed to reserve partitions for query (cache is not found on local node)
      */
-    public void testCacheWasNotFoundMessage() {
+    public void testSynthCacheWasNotFoundMessage() {
         GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
         GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
             new MockGridMapQueryExecutor(null) {
@@ -81,9 +77,9 @@ public class RetryCauseMessageTest extends GridCommonAbstractTest {
                         startedExecutor.onMessage(nodeId, msg);
                         qryReq.caches().remove(qryReq.caches().size() - 1);
                     }
-                    else 
+                    else
                         startedExecutor.onMessage(nodeId, msg);
-                    
+
                 }
             }.insertRealExecutor(mapQryExec));
 
@@ -93,7 +89,7 @@ public class RetryCauseMessageTest extends GridCommonAbstractTest {
             personCache.query(qry).getAll();
         }
         catch (CacheException e) {
-            assertTrue(e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["));
+            assertTrue(e.getMessage(), e.getMessage().contains("Failed to reserve partitions for query (cache is not found on local node) ["));
             return;
         }
         finally {
@@ -339,35 +335,39 @@ public class RetryCauseMessageTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPeerClassLoadingEnabled(false);
+        cfg.setCommunicationSpi(new TcpCommunicationSpi(){
+            /** {@inheritDoc} */
+            @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+                assert msg != null;
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setForceServerMode(true);
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
+                super.sendMessage(node, msg, ackC);
+            }
+        });
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        System.setProperty(IGNITE_SQL_RETRY_TIMEOUT, "5000");
         Ignite ignite = startGridsMultiThreaded(NODES_COUNT, false);
         GridQueryProcessor qryProc = grid(ignite.name()).context().query();
 
         h2Idx = GridTestUtils.getFieldValue(qryProc, GridQueryProcessor.class, "idx");
 
         personCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Person>("pers")
-            .setIndexedTypes(String.class, Person.class));
+            .setIndexedTypes(String.class, Person.class)
+        );
         orgCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
             .setCacheMode(CacheMode.REPLICATED)
             .setIndexedTypes(String.class, Organization.class)
+ //           .setNodeFilter( node -> node.order()<2L )
         );
 
         awaitPartitionMapExchange();
 
-        populateDataIntoOrg(orgCache);
-        populateDataIntoPerson(personCache);
+        JoinSqlTestHelper.populateDataIntoOrg(orgCache);
+        JoinSqlTestHelper.populateDataIntoPerson(personCache);
     }
 
     /** {@inheritDoc} */
@@ -375,122 +375,6 @@ public class RetryCauseMessageTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /**
-     * Populate organization cache with test data
-     * @param cache @{IgniteCache}
-     */
-    private void populateDataIntoOrg(IgniteCache<String, Organization> cache) {
-        for (int i = 0; i < ORG_COUNT; i++) {
-            Organization org = new Organization();
-            org.setId("org" + i);
-            org.setName("Organization #" + i);
-            cache.put(org.getId(), org);
-        }
-    }
-
-    /**
-     * Populate person cache with test data
-     * @param cache @{IgniteCache}
-     */
-    private void populateDataIntoPerson(IgniteCache<String, Person> cache) {
-        int personId = 0;
-        for (int i = 0; i < ORG_COUNT; i++) {
-            Organization org = new Organization();
-            org.setId("org" + i);
-            org.setName("Organization #" + i);
-
-            for (int j = 0; j < PERSON_PER_ORG_COUNT; j++) {
-                Person prsn = new Person();
-                prsn.setId("pers" + personId);
-                prsn.setOrgId(org.getId());
-                prsn.setName("Person name #" + personId);
-
-                cache.put(prsn.getId(), prsn);
-
-                personId++;
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Person {
-        /** */
-        @QuerySqlField(index = true)
-        private String id;
-
-        /** */
-        @QuerySqlField(index = true)
-        private String orgId;
-
-        /** */
-        @QuerySqlField(index = true)
-        private String name;
-
-        /** */
-        public String getId() {
-            return id;
-        }
-
-        /** */
-        public void setId(String id) {
-            this.id = id;
-        }
-
-        /** */
-        public String getOrgId() {
-            return orgId;
-        }
-
-        /** */
-        public void setOrgId(String orgId) {
-            this.orgId = orgId;
-        }
-
-        /** */
-        public String getName() {
-            return name;
-        }
-
-        /** */
-        public void setName(String name) {
-            this.name = name;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Organization {
-        /** */
-        @QuerySqlField(index = true)
-        private String id;
-
-        /** */
-        @QuerySqlField(index = true)
-        private String name;
-
-        /** */
-        public void setId(String id) {
-            this.id = id;
-        }
-
-        /** */
-        public String getId() {
-            return id;
-        }
-
-        /** */
-        public String getName() {
-            return name;
-        }
-
-        /** */
-        public void setName(String name) {
-            this.name = name;
-        }
-    }
 
     /**
      * Wrapper around @{GridMapQueryExecutor}
