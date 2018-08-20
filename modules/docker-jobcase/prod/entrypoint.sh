@@ -17,6 +17,7 @@
 #
 
 # Startup controller script for Jobcase Apache Ignite containers
+cd $(dirname $(realpath $0))	
 
 source ./util.sh
 
