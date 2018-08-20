@@ -15,19 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.environment;
+package org.apache.ignite.ml.common;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.ml.Model;
+import org.junit.Test;
+
+import static org.junit.Assert.assertNotNull;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * Tests for {@link Model} functionality.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LearningEnvironmentBuilderTest.class,
-    LearningEnvironmentTest.class,
-    PromiseTest.class
-})
-public class EnvironmentTestSuite {
+public class ModelTest {
+    /** */
+    @Test
+    public void testCombine() {
+        Model<Object, Object> mdl = new TestModel<>().combine(new TestModel<>(), (x, y) -> x);
+
+        assertNotNull(mdl.toString(true));
+        assertNotNull(mdl.toString(false));
+    }
+
+    /** */
+    private static class TestModel<T, V> implements Model<T, V> {
+        /** {@inheritDoc} */
+        @Override public V apply(T t) {
+            return null;
+        }
+    }
 }

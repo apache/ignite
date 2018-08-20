@@ -24,10 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -64,7 +66,7 @@ public class ANNClassificationTest {
 
     /** */
     @Test
-    public void testBinaryClassificationTest() {
+    public void testBinaryClassification() {
         Map<Integer, double[]> data = new HashMap<>();
 
         ThreadLocalRandom rndX = ThreadLocalRandom.current();
@@ -91,7 +93,17 @@ public class ANNClassificationTest {
         }
 
         ANNClassificationTrainer trainer = new ANNClassificationTrainer()
-            .withK(10);
+            .withK(10)
+            .withMaxIterations(10)
+            .withEpsilon(1e-4)
+            .withDistance(new EuclideanDistance())
+            .withSeed(0);
+
+        Assert.assertEquals(10, trainer.getK());
+        Assert.assertEquals(10, trainer.getMaxIterations());
+        TestUtils.assertEquals(1e-4, trainer.getEpsilon(), PRECISION);
+        Assert.assertEquals(new EuclideanDistance(), trainer.getDistance());
+        Assert.assertEquals(0, trainer.getSeed());
 
         NNClassificationModel mdl = trainer.fit(
             data,
@@ -104,5 +116,11 @@ public class ANNClassificationTest {
 
         TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(550, 550)), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(-550, -550)), PRECISION);
+
+        Assert.assertNotNull(((ANNClassificationModel)mdl).getCandidates());
+
+        Assert.assertTrue(mdl.toString().contains(NNStrategy.SIMPLE.name()));
+        Assert.assertTrue(mdl.toString(true).contains(NNStrategy.SIMPLE.name()));
+        Assert.assertTrue(mdl.toString(false).contains(NNStrategy.SIMPLE.name()));
     }
 }

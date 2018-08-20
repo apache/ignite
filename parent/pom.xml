@@ -943,6 +943,8 @@
                                         <exclude>**/web-console/frontend/**/*.svg</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
+                                        <!--Kubernetes -->
+                                        <exclude>config/gce/*.yaml</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>

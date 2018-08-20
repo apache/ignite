@@ -21,6 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,6 +30,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -60,10 +62,38 @@ public class DatasetWrapperTest {
         doReturn(42).when(dataset).computeWithCtx(any(IgniteTriFunction.class), any(), any());
 
         Integer res = wrapper.computeWithCtx(mock(IgniteTriFunction.class), mock(IgniteBinaryOperator.class),
-            (Integer) null);
+            null);
 
         assertEquals(42, res.intValue());
+
         verify(dataset, times(1)).computeWithCtx(any(IgniteTriFunction.class), any(), any());
+    }
+
+    /** Tests {@code computeWithCtx()} method. */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testComputeWithCtx2() {
+        doReturn(42).when(dataset).computeWithCtx(any(IgniteTriFunction.class), any(), any());
+
+        Integer res = wrapper.computeWithCtx(mock(IgniteBiFunction.class), mock(IgniteBinaryOperator.class),
+            null);
+
+        assertEquals(42, res.intValue());
+
+        verify(dataset, times(1)).computeWithCtx(any(IgniteTriFunction.class), any(), any());
+    }
+
+    /** Tests {@code computeWithCtx()} method. */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testComputeWithCtx3() {
+        wrapper.computeWithCtx((ctx, data) -> {
+            assertNotNull(ctx);
+            assertNotNull(data);
+        });
+
+        verify(dataset, times(1)).computeWithCtx(any(IgniteTriFunction.class),
+            any(IgniteBinaryOperator.class), any());
     }
 
     /** Tests {@code compute()} method. */
@@ -72,10 +102,24 @@ public class DatasetWrapperTest {
     public void testCompute() {
         doReturn(42).when(dataset).compute(any(IgniteBiFunction.class), any(), any());
 
-        Integer res = wrapper.compute(mock(IgniteBiFunction.class), mock(IgniteBinaryOperator.class), (Integer) null);
+        Integer res = wrapper.compute(mock(IgniteBiFunction.class), mock(IgniteBinaryOperator.class), null);
 
         assertEquals(42, res.intValue());
+
         verify(dataset, times(1)).compute(any(IgniteBiFunction.class), any(), any());
+    }
+
+    /** Tests {@code compute()} method. */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testCompute2() {
+        doReturn(42).when(dataset).compute(any(IgniteBiFunction.class), any(IgniteBinaryOperator.class), any());
+
+        Integer res = wrapper.compute(mock(IgniteFunction.class), mock(IgniteBinaryOperator.class), null);
+
+        assertEquals(42, res.intValue());
+
+        verify(dataset, times(1)).compute(any(IgniteBiFunction.class), any(IgniteBinaryOperator.class), any());
     }
 
     /** Tests {@code close()} method. */

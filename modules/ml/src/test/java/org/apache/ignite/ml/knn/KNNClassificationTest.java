@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
@@ -54,6 +55,12 @@ public class KNNClassificationTest {
             res.add(new Integer[] {part});
 
         return res;
+    }
+
+    /** */
+    @Test(expected = IllegalStateException.class)
+    public void testNullDataset() {
+        new KNNClassificationModel(null).apply(null);
     }
 
     /** */

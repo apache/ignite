@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.common;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import org.apache.ignite.ml.Exporter;
+import org.apache.ignite.ml.FileExporter;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModelFormat;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
@@ -40,6 +42,8 @@ import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
+import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
@@ -67,7 +71,7 @@ public class LocalModelsTest {
 
             KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
 
-            Assert.assertTrue("", mdl.equals(importedMdl));
+            Assert.assertEquals("", mdl, importedMdl);
 
             return null;
         });
@@ -109,7 +113,7 @@ public class LocalModelsTest {
 
     /** */
     @Test
-    public void importExportSVMMulticlassClassificationModelTest() throws IOException {
+    public void importExportSVMMultiClassClassificationModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
             SVMLinearBinaryClassificationModel binaryMdl1 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{1, 2}), 3);
             SVMLinearBinaryClassificationModel binaryMdl2 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{2, 3}), 4);
@@ -124,6 +128,40 @@ public class LocalModelsTest {
             mdl.saveModel(exporter, mdlFilePath);
 
             SVMLinearMultiClassClassificationModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", mdl, load);
+
+            return null;
+        });
+    }
+
+    /** */
+    @Test
+    public void importExportLogisticRegressionModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            LogisticRegressionModel mdl = new LogisticRegressionModel(new DenseVector(new double[]{1, 2}), 3);
+            Exporter<LogisticRegressionModel, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            LogisticRegressionModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", mdl, load);
+
+            return null;
+        });
+    }
+
+    /** */
+    @Test
+    public void importExportLogRegressionMultiClassModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            LogRegressionMultiClassModel mdl = new LogRegressionMultiClassModel();
+            Exporter<LogRegressionMultiClassModel, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            LogRegressionMultiClassModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
             Assert.assertEquals("", mdl, load);
@@ -159,13 +197,11 @@ public class LocalModelsTest {
         KMeansTrainer trainer = new KMeansTrainer()
             .withK(1);
 
-        KMeansModel knnMdl = trainer.fit(
+        return trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
-
-        return knnMdl;
     }
 
     /** */
@@ -189,7 +225,7 @@ public class LocalModelsTest {
                 .withDistanceMeasure(load.getDistanceMeasure())
                 .withStrategy(load.getStgy());
 
-            Assert.assertTrue("", mdl.equals(importedMdl));
+            Assert.assertEquals("", mdl, importedMdl);
 
             return null;
         });
@@ -219,7 +255,7 @@ public class LocalModelsTest {
                 .withDistanceMeasure(load.getDistanceMeasure())
                 .withStrategy(load.getStgy());
 
-            Assert.assertTrue("", mdl.equals(importedMdl));
+            Assert.assertEquals("", mdl, importedMdl);
 
             return null;
         });
