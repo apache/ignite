@@ -1102,30 +1102,6 @@ public class GridCacheUtils {
             return 1;
     }
 
-//    /**
-//     * @param cfg Grid configuration.
-//     * @param cacheName Cache name.
-//     * @return {@code True} in this is Mongo data or meta cache.
-//     */
-//    public static boolean isMongoCache(GridConfiguration cfg, @Nullable String cacheName) {
-//        GridMongoConfiguration mongoCfg = cfg.getMongoConfiguration();
-//
-//        if (mongoCfg != null) {
-//            if (F.eq(cacheName, mongoCfg.getDefaultDataCacheName()) || F.eq(cacheName, mongoCfg.getMetaCacheName()))
-//                return true;
-//
-//            // Mongo config probably has not been validated yet => possible NPE, so we check for null.
-//            if (mongoCfg.getDataCacheNames() != null) {
-//                for (String mongoCacheName : mongoCfg.getDataCacheNames().values()) {
-//                    if (F.eq(cacheName, mongoCacheName))
-//                        return true;
-//                }
-//            }
-//        }
-//
-//        return false;
-//    }
-
     /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
