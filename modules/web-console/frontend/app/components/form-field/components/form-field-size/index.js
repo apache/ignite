@@ -15,9 +15,26 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
+import template from './template.pug';
+import controller from './controller';
 
-export default angular
-    .module('ignite-console.form-field.form-field-size', [])
-    .component('formFieldSize', component);
+export default {
+    controller,
+    template,
+    transclude: true,
+    require: {
+        ngModel: 'ngModel'
+    },
+    bindings: {
+        label: '@',
+        placeholder: '@',
+        min: '@?',
+        max: '@?',
+        tip: '@',
+        required: '<?',
+        sizeType: '@?',
+        sizeScaleLabel: '@?',
+        onScaleChange: '&?',
+        ngDisabled: '<?'
+    }
+};

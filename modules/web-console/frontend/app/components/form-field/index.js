@@ -23,8 +23,7 @@ import {directive as copyInputValue} from './copyInputValueButton.directive';
 import { default as formFieldSize } from './components/form-field-size';
 
 export default angular
-    .module('ignite-console.form-field', [
-        formFieldSize.name
-    ])
+    .module('ignite-console.form-field', [])
+    .component('formFieldSize', formFieldSize)
     .directive('ngModel', showValidationError)
     .directive('copyInputValueButton', copyInputValue);
