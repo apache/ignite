@@ -105,6 +105,10 @@ class ReduceQueryRun {
         state(State.getStateBuilder().atv(msg.retry()).rootCause(msg.retryCause()).nodeId(nodeId).build());
     }
 
+    /**
+     *
+     * @param state state
+     */
     private void state(State state){
         if (!this.state.compareAndSet(null, state))
             return;
@@ -144,20 +148,24 @@ class ReduceQueryRun {
         return conn;
     }
 
+    /** */
     boolean hasError(){
         return state.get()!=null;
     }
 
+    /** */
     CacheException cacheEx() {
         State st = state.get();
         return st!=null ? st.ex : null;
     }
 
+    /** */
     AffinityTopologyVersion atv(){
         State st = state.get();
         return st!=null ? st.atv : null;
     }
 
+    /** */
     String rootCause(){
         State st = state.get();
         return st!=null ? st.rootCause : null;
