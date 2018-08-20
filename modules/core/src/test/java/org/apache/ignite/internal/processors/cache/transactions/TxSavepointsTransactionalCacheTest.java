@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -81,14 +82,14 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
      * 2 can be client, so we don't use it for primaries.
      */
     private NodeCombination[] nodeCombinations = new NodeCombination[] {
-            new NodeCombination(2, 3, 1, 0),
-            new NodeCombination(2, 3, 1, 1),
-            new NodeCombination(2, 2, 1, 0),
-            new NodeCombination(2, 2, 1, 1),
-            new NodeCombination(1, 3, 1, 0),
-            new NodeCombination(1, 3, 1, 1),
-            new NodeCombination(1, 1, 1, 0),
-            new NodeCombination(1, 1, 1, 1)
+        new NodeCombination(2, 3, 1, 0),
+        new NodeCombination(2, 3, 1, 1),
+        new NodeCombination(2, 2, 1, 0),
+        new NodeCombination(2, 2, 1, 1),
+        new NodeCombination(1, 3, 1, 0),
+        new NodeCombination(1, 3, 1, 1),
+        new NodeCombination(1, 1, 1, 0),
+        new NodeCombination(1, 1, 1, 1)
     };
 
     /**
@@ -420,24 +421,24 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                     }
         }});
     }
-/*
-    *//**
+
+    /**
      * @throws Exception If failed.
-     *//*
+     */
     public void testPutAllSuspendResumeInSameThread() throws Exception {
         checkPutAllSuspendResume(true);
     }
 
-    *//**
+    /**
      * @throws Exception If failed.
-     *//*
+     */
     public void testPutAllSuspendResumeInDifferentThread() throws Exception {
         checkPutAllSuspendResume(false);
     }
 
-    *//**
+    /**
      * @throws Exception If failed.
-     *//*
+     */
     private void checkPutAllSuspendResume(boolean sameThread) throws Exception {
         executeTestForAllCaches(
             new CIX3<NodeCombination, IgniteCache<Integer, Integer>, CacheConfiguration<Integer, Integer>>() {
@@ -481,7 +482,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                         }, "_putAll");
 
                         Callable<Void> c = () -> {
-                            waitForSecondCandidate(txType.concurrency, cache, key1);
+                            waitForSecondCandidate(txType.concurrency, nodes.primaryForKey(), cache, cacheAsync, key1);
 
                             tx.resume();
 
@@ -509,8 +510,14 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                             return null;
                         };
 
-                        if (sameThread)
-                            c.call();
+                        if (sameThread) {
+                            try {
+                                c.call();
+                            }
+                            catch (Exception e) {
+                                throw new IgniteCheckedException(e);
+                            }
+                        }
                         else
                             GridTestUtils.runAsync(c).get();
                     }
@@ -521,7 +528,7 @@ public class TxSavepointsTransactionalCacheTest extends GridCacheAbstractSelfTes
                     }
                 }
         }});
-    }*/
+    }
 
     /**
      *
