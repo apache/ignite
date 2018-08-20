@@ -68,7 +68,6 @@ export default class PCFormFieldSizeController {
         if (!this.min) this.min = 0;
         if (!this.sizesMenu) this.setDefaultSizeType();
         this.$element.addClass('form-field');
-        this.$element.addClass('ignite-form-field');
         this.ngModel.$render = () => this.assignValue(this.ngModel.$viewValue);
     }
 
