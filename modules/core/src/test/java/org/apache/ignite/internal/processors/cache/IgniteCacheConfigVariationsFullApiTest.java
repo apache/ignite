@@ -6219,7 +6219,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                     size++;
 
-                    ctx.evicts().touch(e, null);
+                    e.touch(null);
                 }
             }
 

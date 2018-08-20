@@ -1648,7 +1648,7 @@ public class GridCacheUtils {
      * <p>
      * Useful only when store with readThrough is used. In situation when
      * get() on backup node returns successful result, it's expected that
-     * localPeek() will be successful as well. But it doesn't true when
+     * localPeek() will be successful as well. But it isn't true when
      * primary node loaded value from local store, in this case backups
      * will remain non-initialized.
      * <br>
@@ -1714,7 +1714,7 @@ public class GridCacheUtils {
                     }
                     finally {
                         if (entry != null)
-                            cctx.evicts().touch(entry, topVer);
+                            entry.touch(topVer);
 
                         cctx.shared().database().checkpointReadUnlock();
                     }
