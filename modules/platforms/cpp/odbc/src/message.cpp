@@ -343,7 +343,7 @@ namespace ignite
         {
             queryId = reader.ReadInt64();
 
-            meta::ReadColumnMetaVector(reader, meta);
+            meta::ReadColumnMetaVector(reader, meta, ver);
 
             ReadAffectedRows(reader, ver, affectedRows);
         }
@@ -409,7 +409,7 @@ namespace ignite
 
         void QueryGetColumnsMetaResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
         {
-            meta::ReadColumnMetaVector(reader, meta);
+            meta::ReadColumnMetaVector(reader, meta, ver);
         }
 
         QueryGetTablesMetaResponse::QueryGetTablesMetaResponse()
