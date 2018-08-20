@@ -173,7 +173,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                     entry.updateIndex(clo, link);
                 }
                 finally {
-                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+                    entry.touch(AffinityTopologyVersion.NONE);
                 }
 
                 break;

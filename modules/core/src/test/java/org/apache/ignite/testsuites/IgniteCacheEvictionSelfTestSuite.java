@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictableEn
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionLockUnlockSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionTouchSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.DhtAndNearEvictionTest;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolicyFactorySelfTest;
@@ -87,6 +88,8 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(PageEvictionTouchOrderTest.class));
         suite.addTest(new TestSuite(PageEvictionReadThroughTest.class));
         suite.addTest(new TestSuite(PageEvictionDataStreamerTest.class));
+
+        suite.addTest(new TestSuite(DhtAndNearEvictionTest.class));
 
         return suite;
     }
