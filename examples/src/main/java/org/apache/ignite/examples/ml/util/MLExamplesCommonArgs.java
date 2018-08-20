@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.classification;
+package org.apache.ignite.examples.ml.util;
 
-/** This enum contains settings for kNN algorithm. */
-public enum KNNStrategy {
-    /** The default strategy. All k neighbors have the same weight which is independent
-     * on their distance to the query point.*/
-    SIMPLE,
+/**
+ * Some common arguments for examples in ML module.
+ */
+public class MLExamplesCommonArgs {
+    /**
+     * Unattended argument.
+     */
+    public static String UNATTENDED = "unattended";
 
-    /** A refinement of the k-NN classification algorithm is to weigh the contribution of each of the k neighbors
-     * according to their distance to the query point, giving greater weight to closer neighbors. */
-    WEIGHTED
+    /** Empty args for ML examples. */
+    public static final String[] EMPTY_ARGS_ML = new String[] {"--" + UNATTENDED};
 }

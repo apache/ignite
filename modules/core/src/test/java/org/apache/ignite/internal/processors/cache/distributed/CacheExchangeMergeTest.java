@@ -634,8 +634,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartCacheOnJoinAndCoordinatorFailed1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9227");
-
         cfgCache = false;
 
         final Ignite srv0 = startGrids(2);
