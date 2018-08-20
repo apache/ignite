@@ -102,6 +102,7 @@ public class TensorFlowClusterMaintainer implements Service {
             if (completed)
                 break;
 
+            // Check affinity mapping.
             boolean restartRequired = hasAffinityChanged();
 
             if (restartRequired)
@@ -113,6 +114,7 @@ public class TensorFlowClusterMaintainer implements Service {
                     Map<UUID, List<LongRunningProcessStatus>> statuses = clusterMgr.getSrvProcMgr()
                         .ping(cluster.getProcesses());
 
+                    // Check worker process states.
                     for (UUID nodeId : statuses.keySet()) {
                         for (LongRunningProcessStatus status : statuses.get(nodeId)) {
                             if (status.getState().equals(LongRunningProcessState.DONE)) {
@@ -122,6 +124,11 @@ public class TensorFlowClusterMaintainer implements Service {
                         }
                     }
 
+                    // Check chief process state.
+                    restartRequired |= clusterMgr.getChiefException(clusterId) != null;
+
+                    // Check user script process state.
+                    restartRequired |= clusterMgr.getUserScriptException(clusterId) != null;
                 }
                 catch (Exception e) {
                     log.error("Failed to check process statuses", e);
