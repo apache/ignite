@@ -115,11 +115,12 @@ public class TensorFlowClusterMaintainer implements Service {
                         .ping(cluster.getProcesses());
 
                     // Check worker process states.
+                    check:
                     for (UUID nodeId : statuses.keySet()) {
                         for (LongRunningProcessStatus status : statuses.get(nodeId)) {
                             if (status.getState().equals(LongRunningProcessState.DONE)) {
                                 restartRequired = true;
-                                break;
+                                break check;
                             }
                         }
                     }
