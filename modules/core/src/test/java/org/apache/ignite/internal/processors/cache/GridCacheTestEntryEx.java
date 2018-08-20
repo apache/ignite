@@ -888,4 +888,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Override public boolean lockedByCurrentThread() {
         return false;
     }
+
+    /** {@inheritDoc} */
+    @Override public void touch(AffinityTopologyVersion topVer) {
+        context().evicts().touch(this, topVer);
+    }
 }
