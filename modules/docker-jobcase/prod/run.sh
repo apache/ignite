@@ -41,8 +41,26 @@ set +a
 
 # form a consistent ID from the ECS host's name and the cluster name
 if [ -z "$IGNITE_CONSISTENT_ID" ]; then
-    if [ ! -z "$IGNITE_CLUSTER_NAME" ]  && [ ! -z "$IGNITE_PERSISTENT_STORE" ]  &&  [ -f "$IGNITE_PERSISTENT_STORE/hostname" ]; then
-        export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}-${DOCKER_HOST_NAME}
+    if [ -z $IGNITE_CONSISTENT_ID_PREFIX ]; then
+         IGNITE_CONSISTENT_ID_PREFIX=${IGNITE_CLUSTER_NAME}
+    fi
+    if [ ! -z "$IGNITE_CONSISTENT_ID_PREFIX" ] ; then
+        EXIST=()
+        if [ ! -z "$IGNITE_PERSISTENT_STORE" ] ; then
+            EXIST=( `cd ${IGNITE_PERSISTENT_STORE}/store; ls -d ${IGNITE_CONSISTENT_ID_PREFIX}_* 2>/dev/null` )
+        fi
+
+        if [ ${#EXIST[@]} -eq 1 ] ; then
+            export IGNITE_CONSISTENT_ID=$EXIST
+            
+            # Ugly hack:   Ignite seems to convert all "-" to "_" when creating directories.
+            #   Assume that all "_" should be "-"
+            export IGNITE_CONSISTENT_ID=`echo $IGNITE_CONSISTENT_ID | tr '_' '-'`
+        elif [ ${#EXIST[@]} -eq 0 ]; then
+            export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}-`cat /proc/sys/kernel/random/uuid`
+        else
+            echo "Cannnot select  IGNITE_CONSISTENT_ID from ${EXIST[@]}, leaving unset"         
+        fi
     fi
 fi
 

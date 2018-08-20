@@ -283,11 +283,23 @@ The persistence storage folder is located under `/opt/jobcase/data`. A data regi
 As default, our grid configuration creates a unique id for the node by generating a UUID. And it is using the UUID to create a subdirectory under `/opt/jobcase/data`. In the subdirectory Apache Ignite persist the data for the node.
 
 ~~~~
-        <!-- As default, it creates a unique id for the node by generating a UUID. 
+        <!-- As a default, IGNITE creates a unique id for the node by generating a UUID. 
              It is used part of the persistent storage folder path. 
              E. g. persistent storage folder /opt/jobcase/db/node00-49755452-fa53-41d4-82d3-cfff0b830a57.
              
-             It is recommended that the consistent id is set from the outside instead using generated value.
+             It is recommended that the consistent id is set from outside IGNITE instead using generated value.
+             
+             If IGNITE_CONSISTENT_ID is not set, the custom version of  run.sh included within will force 
+             it to a value of the form <prefix>_<uuid>, if a prefix can be determined.   The prefix will set to
+             to the value of IGNITE_CONSISTENT_ID_PREFIX or if null to IGNITE_CLUSTER_NAME.
+             
+             If a prefix can be determined, if there is one directory in $IGNITE_PERSISTENT_STORE/store 
+             which matches prefix_*, then directory name will be used as IGNITE_CONSISTENT_ID.   If no directories, 
+             a new uuid will be generated.  If more than one match, that would be an error.
+             
+             The above allows different clusters with different names to co-exist on the same nodes, and allows 
+             one cluster to be restored from a snapshot of a cluster of a different name.  Two clusters using the
+             same prefix cannot exist on the same set of nodes.   
          -->
         <property name="consistentId" value="#{systemEnvironment['IGNITE_CONSISTENT_ID']}"/>
 ~~~~
