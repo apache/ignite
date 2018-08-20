@@ -19,9 +19,11 @@ package org.apache.ignite.ml.composition.boosting;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -87,6 +89,26 @@ public class GDBTrainerTest {
     /** */
     @Test
     public void testFitClassifier() {
+        testClassifier((trainer, learningSample) -> trainer.fit(
+            learningSample, 1,
+            (k, v) -> VectorUtils.of(v[0]),
+            (k, v) -> v[1]
+        ));
+    }
+
+    /** */
+    @Test
+    public void testFitClassifierWithLearningStrategy() {
+        testClassifier((trainer, learningSample) -> trainer.fit(
+            new LocalDatasetBuilder<>(learningSample, 1),
+            (k, v) -> VectorUtils.of(v[0]),
+            (k, v) -> v[1]
+        ));
+    }
+
+    /** */
+    private void testClassifier(BiFunction<GDBBinaryClassifierOnTreesTrainer, Map<Integer, double[]>,
+        Model<Vector, Double>> fitter) {
         int sampleSize = 100;
         double[] xs = new double[sampleSize];
         double[] ys = new double[sampleSize];
@@ -100,14 +122,10 @@ public class GDBTrainerTest {
         for (int i = 0; i < sampleSize; i++)
             learningSample.put(i, new double[] {xs[i], ys[i]});
 
-        DatasetTrainer<Model<Vector, Double>, Double> trainer
+        GDBBinaryClassifierOnTreesTrainer trainer
             = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0).withUseIndex(true);
 
-        Model<Vector, Double> mdl = trainer.fit(
-            learningSample, 1,
-            (k, v) -> VectorUtils.of(v[0]),
-            (k, v) -> v[1]
-        );
+        Model<Vector, Double> mdl = fitter.apply(trainer, learningSample);
 
         int errorsCnt = 0;
         for (int j = 0; j < sampleSize; j++) {

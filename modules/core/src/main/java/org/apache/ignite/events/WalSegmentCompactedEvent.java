@@ -15,43 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.loadtests.mapper;
+package org.apache.ignite.events;
 
-import java.io.Serializable;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import java.io.File;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Test object.
+ * Event indicates the completion of WAL segment compaction.
+ * <p>
+ * {@link #getArchiveFile()} corresponds to compacted file.
  */
-public class TestObject implements Serializable {
-    /** ID. */
-    @QuerySqlField(index = true)
-    private int id;
-
-    /** Text. */
-    @QuerySqlField
-    private String txt;
+public class WalSegmentCompactedEvent extends WalSegmentArchivedEvent {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * @param id ID.
-     * @param txt Text.
+     * Creates WAL segment compaction event.
+     *
+     * @param node Node.
+     * @param absWalSegmentIdx Absolute wal segment index.
+     * @param archiveFile Compacted archive file.
      */
-    public TestObject(int id, String txt) {
-        this.id = id;
-        this.txt = txt;
-    }
-
-    /**
-     * @return ID.
-     */
-    public int getId() {
-        return id;
-    }
-
-    /**
-     * @return Text.
-     */
-    public String getText() {
-        return txt;
+    public WalSegmentCompactedEvent(
+        @NotNull final ClusterNode node,
+        final long absWalSegmentIdx,
+        final File archiveFile) {
+        super(node, absWalSegmentIdx, archiveFile, EventType.EVT_WAL_SEGMENT_COMPACTED);
     }
 }
