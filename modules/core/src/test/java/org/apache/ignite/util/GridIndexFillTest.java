@@ -121,13 +121,13 @@ public class GridIndexFillTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                int i = ThreadLocalRandom.current().nextInt(100);
 
                 while (!stop.get()) {
-                    int k = rnd.nextInt(100);
-                    long v = rnd.nextLong(10);
+                    int k = i++ % 100;
+                    long v = i++ % 10;
 
-                    if (rnd.nextBoolean())
+                    if (i++ % 2 == 0)
                         put(k, v);
                     else
                         remove(k);

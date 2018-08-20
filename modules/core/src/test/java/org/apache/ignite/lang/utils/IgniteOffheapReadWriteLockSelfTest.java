@@ -38,6 +38,9 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int TAG_0 = 1;
 
+    /** Number of 1-second iterations in every test. */
+    public static final int ROUNDS_PER_TEST = 5;
+
     /**
      * @throws Exception if failed.
      */
@@ -120,7 +123,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
             }
         }, 32, "tester");
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < ROUNDS_PER_TEST; i++) {
             Thread.sleep(1_000);
 
             info("Reads: " + reads.getAndSet(0) + ", writes=" + writes.getAndSet(0));
@@ -206,7 +209,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
             }
         }, 32, "tester");
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < ROUNDS_PER_TEST; i++) {
             Thread.sleep(1_000);
 
             info("Reads: " + reads.getAndSet(0) + ", writes=" + writes.getAndSet(0));
@@ -293,7 +296,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
             }
         }, 32, "tester");
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < ROUNDS_PER_TEST; i++) {
             Thread.sleep(1_000);
 
             info("Reads=" + reads.getAndSet(0) + ", writes=" + writes.getAndSet(0) + ", upgrades=" + successfulUpgrades.getAndSet(0));
@@ -317,6 +320,8 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testTagIdUpdateContinuous() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9335");
+
         checkTagIdUpdate(false);
     }
 
@@ -451,7 +456,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
             }
         }, threadCnt, "tester");
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < ROUNDS_PER_TEST; i++) {
             Thread.sleep(1_000);
 
             info("Reads: " + reads.getAndSet(0) + ", writes=" + writes.getAndSet(0));

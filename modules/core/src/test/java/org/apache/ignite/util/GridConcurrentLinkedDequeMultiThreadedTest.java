@@ -89,8 +89,7 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
             "queue-prod"
         );
 
-        Thread.sleep(2 * 60 * 1000);
-
+        Thread.sleep(20 * 1000);
 
         done.set(true);
 

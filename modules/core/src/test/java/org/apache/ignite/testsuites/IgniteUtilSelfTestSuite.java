@@ -98,25 +98,25 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridMBeanDisableSelfTest.class);
         suite.addTestSuite(GridMBeanExoticNamesSelfTest.class);
         suite.addTestSuite(GridLongListSelfTest.class);
-        //suite.addTestSuite(GridThreadTest.class);
+        suite.addTestSuite(GridThreadTest.class);
         suite.addTestSuite(GridIntListSelfTest.class);
         suite.addTestSuite(GridArraysSelfTest.class);
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
         suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
         suite.addTestSuite(GridMessageCollectionTest.class);
         suite.addTestSuite(WorkersControlMXBeanTest.class);
-        //suite.addTestSuite(GridConcurrentLinkedDequeMultiThreadedTest.class);
-        //suite.addTestSuite(GridIndexFillTest.class);
-        //suite.addTestSuite(GridLogThrottleTest.class);
-        //suite.addTestSuite(GridRandomSelfTest.class);
-        //suite.addTestSuite(GridSnapshotLockSelfTest.class);
-        //suite.addTestSuite(GridTopologyHeapSizeSelfTest.class);
-        //suite.addTestSuite(GridTransientTest.class);
-        //suite.addTestSuite(IgniteDevOnlyLogTest.class);
+        suite.addTestSuite(GridConcurrentLinkedDequeMultiThreadedTest.class);
+        suite.addTestSuite(GridIndexFillTest.class);
+        suite.addTestSuite(GridLogThrottleTest.class);
+        suite.addTestSuite(GridRandomSelfTest.class);
+        suite.addTestSuite(GridSnapshotLockSelfTest.class);
+        suite.addTestSuite(GridTopologyHeapSizeSelfTest.class);
+        suite.addTestSuite(GridTransientTest.class);
+        suite.addTestSuite(IgniteDevOnlyLogTest.class);
 
         // Sensitive toString.
-        //suite.addTestSuite(IncludeSensitiveAtomicTest.class);
-        //suite.addTestSuite(IncludeSensitiveTransactionalTest.class);
+        suite.addTestSuite(IncludeSensitiveAtomicTest.class);
+        suite.addTestSuite(IncludeSensitiveTransactionalTest.class);
 
         // Metrics.
         suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);
