@@ -98,8 +98,7 @@ public class TensorFlowClusterMaintainer implements Service {
         while (!ctx.isCancelled()) {
             LockSupport.parkNanos(1_000_000);
 
-            boolean completed = clusterMgr.isUserScriptCompleted(clusterId);
-            if (completed)
+            if (clusterMgr.isUserScriptCompleted(clusterId) && clusterMgr.getUserScriptException(clusterId) == null)
                 break;
 
             // Check affinity mapping.
