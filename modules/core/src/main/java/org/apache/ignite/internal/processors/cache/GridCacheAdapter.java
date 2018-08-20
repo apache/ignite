@@ -2226,7 +2226,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (misses != null) {
                     for (KeyCacheObject key0 : misses.keySet()) {
                         GridCacheEntryEx entry = peekEx(key0);
-                        entry.touch(topVer);
+                        if (entry != null)
+                            entry.touch(topVer);
                     }
                 }
 
