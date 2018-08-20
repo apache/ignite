@@ -29,7 +29,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
@@ -38,9 +37,17 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run ANN multi-class classification trainer over distributed dataset.
- *
- * @see KNNClassificationTrainer
+ * Run ANN multi-class classification trainer ({@link ANNClassificationTrainer}) over distributed dataset.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (based on the
+ * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
+ * <p>
+ * After that it trains the model based on the specified data using kNN algorithm.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
+ * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class ANNClassificationExample {
     /** Run example. */
@@ -111,6 +118,8 @@ public class ANNClassificationExample {
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
                     System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
                     System.out.println(totalAmount);
+
+                    System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example completed.");
                 }
             });
 

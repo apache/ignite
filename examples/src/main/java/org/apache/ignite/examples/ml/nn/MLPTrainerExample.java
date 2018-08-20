@@ -39,6 +39,16 @@ import org.apache.ignite.thread.IgniteThread;
 /**
  * Example of using distributed {@link MultilayerPerceptron}.
  * <p>
+ * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
+ * <p>
+ * After that it defines a layered architecture and a neural network trainer, trains neural network
+ * and obtains multilayer perceptron model.</p>
+ * <p>
+ * Finally, this example loops over the test set, applies the trained model to predict the value and
+ * compares prediction to expected outcome.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this functionality further.</p>
+ * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
  * <p>
@@ -112,7 +122,11 @@ public class MLPTrainerExample {
                 for (int i = 0; i < 4; i++) {
                     LabeledPoint pnt = trainingSet.get(i);
                     Matrix predicted = mlp.apply(new DenseMatrix(new double[][] {{pnt.x, pnt.y}}));
-                    failCnt += Math.abs(predicted.get(0, 0) - pnt.lb) < 0.5 ? 0 : 1;
+
+                    double predictedVal = predicted.get(0, 0);
+                    double lbl = pnt.lb;
+                    System.out.printf(">>> key: %d\t\t predicted: %.4f\t\tlabel: %.4f\n", i, predictedVal, lbl);
+                    failCnt += Math.abs(predictedVal - lbl) < 0.5 ? 0 : 1;
                 }
 
                 double failRatio = (double)failCnt / totalCnt;

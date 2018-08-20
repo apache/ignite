@@ -18,15 +18,13 @@
 package org.apache.ignite.examples.ml.svm.multiclass;
 
 import java.util.Arrays;
-import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.util.TestCache;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -37,10 +35,20 @@ import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run SVM multi-class classification trainer over distributed dataset to build two models:
- * one with minmaxscaling and one without minmaxscaling.
- *
- * @see SVMLinearMultiClassClassificationModel
+ * Run SVM multi-class classification trainer ({@link SVMLinearMultiClassClassificationModel}) over distributed dataset
+ * to build two models: one with minmaxscaling and one without minmaxscaling.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (preprocessed
+ * <a href="https://archive.ics.uci.edu/ml/datasets/Glass+Identification">Glass dataset</a>).</p>
+ * <p>
+ * After that it trains two SVM multi-class models based on the specified data - one model is with minmaxscaling
+ * and one without minmaxscaling.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained models to predict what cluster
+ * does this point belong to, compares prediction to expected outcome (ground truth), and builds
+ * <a href="https://en.wikipedia.org/wiki/Confusion_matrix">confusion matrix</a>.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class SVMMultiClassClassificationExample {
     /** Run example. */
@@ -53,7 +61,7 @@ public class SVMMultiClassClassificationExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 SVMMultiClassClassificationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, Vector> dataCache = getTestCache(ignite);
+                IgniteCache<Integer, Vector> dataCache = new TestCache(ignite).getVectors(data);
 
                 SVMLinearMultiClassClassificationTrainer trainer = new SVMLinearMultiClassClassificationTrainer();
 
@@ -144,31 +152,14 @@ public class SVMMultiClassClassificationExample {
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrorsWithNormalization);
                     System.out.println("\n>>> Accuracy " + (1 - amountOfErrorsWithNormalization / (double)totalAmount));
                     System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtxWithNormalization));
+
+                    System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
                 }
             });
 
             igniteThread.start();
             igniteThread.join();
         }
-    }
-
-    /**
-     * Fills cache with data and returns it.
-     *
-     * @param ignite Ignite instance.
-     * @return Filled Ignite Cache.
-     */
-    private static IgniteCache<Integer, Vector> getTestCache(Ignite ignite) {
-        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-        IgniteCache<Integer, Vector> cache = ignite.createCache(cacheConfiguration);
-
-        for (int i = 0; i < data.length; i++)
-            cache.put(i, VectorUtils.of(data[i]));
-
-        return cache;
     }
 
     /** The preprocessed Glass dataset from the Machine Learning Repository https://archive.ics.uci.edu/ml/datasets/Glass+Identification

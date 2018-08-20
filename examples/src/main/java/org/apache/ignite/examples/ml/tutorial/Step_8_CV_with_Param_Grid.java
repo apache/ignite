@@ -41,22 +41,35 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * To choose the best hyperparameters the cross-validation will be used in this example.
- *
- * The purpose of cross-validation is model checking, not model building.
- *
- * We train k different models.
- *
- * They differ in that 1/(k-1)th of the training data is exchanged against other cases.
- *
+ * To choose the best hyperparameters the cross-validation with {@link ParamGrid} will be used in this example.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * <p>
+ * After that it defines how to split the data to train and test sets and configures preprocessors that extract
+ * features from an upstream data and perform other desired changes over the extracted data.</p>
+ * <p>
+ * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on
+ * the processed data using decision tree classification and the obtained hyperparams.</p>
+ * <p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
+ * <p>
+ * The purpose of cross-validation is model checking, not model building.</p>
+ * <p>
+ * We train {@code k} different models.</p>
+ * <p>
+ * They differ in that {@code 1/(k-1)}th of the training data is exchanged against other cases.</p>
+ * <p>
  * These models are sometimes called surrogate models because the (average) performance measured for these models
- * is taken as a surrogate of the performance of the model trained on all cases.
- *
- * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html
+ * is taken as a surrogate of the performance of the model trained on all cases.</p>
+ * <p>
+ * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html</p>
  */
 public class Step_8_CV_with_Param_Grid {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
+        System.out.println();
+        System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 Step_8_CV_with_Param_Grid.class.getSimpleName(), () -> {
@@ -64,7 +77,7 @@ public class Step_8_CV_with_Param_Grid {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
                     // Defines first preprocessor that extracts features from an upstream data.
-                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
+                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare" .
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
                         = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
@@ -76,7 +89,7 @@ public class Step_8_CV_with_Param_Grid {
                     IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
                         .withEncoderType(EncoderType.STRING_ENCODER)
                         .encodeFeature(1)
-                        .encodeFeature(6) // <--- Changed index here
+                        .encodeFeature(6) // <--- Changed index here.
                         .fit(ignite,
                             dataCache,
                             featureExtractor
@@ -103,7 +116,7 @@ public class Step_8_CV_with_Param_Grid {
                             minMaxScalerPreprocessor
                         );
 
-                    // Tune hyperparams with K-fold Cross-Validation on the splitted training set.
+                    // Tune hyperparams with K-fold Cross-Validation on the split training set.
 
                     DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
 
@@ -126,7 +139,8 @@ public class Step_8_CV_with_Param_Grid {
                         paramGrid
                     );
 
-                    System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep") + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
+                    System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep")
+                        + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
 
                     DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer()
                         .withMaxDeep(crossValidationRes.getBest("maxDeep"))
@@ -138,9 +152,8 @@ public class Step_8_CV_with_Param_Grid {
                     System.out.println("Best hyper params: " + crossValidationRes.getBestHyperParams());
                     System.out.println("Best average score: " + crossValidationRes.getBestAvgScore());
 
-                    crossValidationRes.getScoringBoard().forEach((hyperParams, score) -> {
-                        System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams);
-                    });
+                    crossValidationRes.getScoringBoard().forEach((hyperParams, score)
+                        -> System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams));
 
                     // Train decision tree model.
                     DecisionTreeNode bestMdl = trainer.fit(
@@ -150,6 +163,8 @@ public class Step_8_CV_with_Param_Grid {
                         normalizationPreprocessor,
                         lbExtractor
                     );
+
+                    System.out.println("\n>>> Trained model: " + bestMdl);
 
                     double accuracy = Evaluator.evaluate(
                         dataCache,
@@ -162,6 +177,8 @@ public class Step_8_CV_with_Param_Grid {
 
                     System.out.println("\n>>> Accuracy " + accuracy);
                     System.out.println("\n>>> Test Error " + (1 - accuracy));
+
+                    System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }

@@ -33,9 +33,11 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run decision tree classification with cross validation.
- *
- * @see CrossValidation
+ * Run decision tree classification with cross validation ({@link CrossValidation}).
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with pseudo random training data points.</p>
+ * <p>
+ * After that it creates classification trainer and computes cross-validated metrics based on the training set.</p>
  */
 public class CrossValidationExample {
     /**

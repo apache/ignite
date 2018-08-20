@@ -26,61 +26,62 @@ import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
- * Represents the terminate condition for Movie Genetic algorithm  <br/>
- *
- * Class terminates Genetic algorithm when fitnessScore > 32  <br/>
+ * Represents the terminate condition for {@link MovieGAExample}.
+ * <p>
+ * Class terminates Genetic algorithm when fitness score is more than 32.</p>
  */
 public class MovieTerminateCriteria implements ITerminateCriteria {
-    /** Ignite logger */
-    private IgniteLogger igniteLogger = null;
-    /** Ignite instance */
-    private Ignite ignite = null;
+    /** Ignite logger. */
+    private IgniteLogger igniteLog;
+    /** Ignite instance. */
+    private Ignite ignite;
 
     /**
-     * @param ignite
+     * Create class instance.
+     *
+     * @param ignite Ignite instance.
      */
     public MovieTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;
-        this.igniteLogger = ignite.log();
+        this.igniteLog = ignite.log();
 
     }
 
     /**
-     * @param fittestChromosome Most fit chromosome at for the nth generation
-     * @param averageFitnessScore Average fitness score as of the nth generation
-     * @param currentGeneration Current generation
-     * @return Boolean value
+     * Check whether termination condition is met.
+     *
+     * @param fittestChromosome Most fit chromosome at for the nth generation.
+     * @param averageFitnessScore Average fitness score as of the nth generation.
+     * @param currGeneration Current generation.
+     * @return Status whether condition is met or not.
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
-        int currentGeneration) {
+        int currGeneration) {
         boolean isTerminate = true;
 
-        igniteLogger.info("##########################################################################################");
-        igniteLogger.info("Generation: " + currentGeneration);
-        igniteLogger.info("Fittest is Chromosome Key: " + fittestChromosome);
-        igniteLogger.info("Chromsome: " + fittestChromosome);
+        igniteLog.info("##########################################################################################");
+        igniteLog.info("Generation: " + currGeneration);
+        igniteLog.info("Fittest is Chromosome Key: " + fittestChromosome);
+        igniteLog.info("Chromosome: " + fittestChromosome);
         printMovies(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
-        igniteLogger.info("##########################################################################################");
+        igniteLog.info("##########################################################################################");
 
-        if (!(fittestChromosome.getFitnessScore() > 32)) {
+        if (!(fittestChromosome.getFitnessScore() > 32))
             isTerminate = false;
-        }
 
         return isTerminate;
     }
 
     /**
-     * Helper to print change detail
+     * Helper to print change details.
      *
-     * @param genes List of Genes
+     * @param genes List of Genes.
      */
     private void printMovies(List<Gene> genes) {
         for (Gene gene : genes) {
-            igniteLogger.info("Name: " + ((Movie)gene.getVal()).getName().toString());
-            igniteLogger.info("Genres: " + ((Movie)gene.getVal()).getGenre().toString());
-            igniteLogger.info("IMDB Rating: " + ((Movie)gene.getVal()).getImdbRating());
+            igniteLog.info("Name: " + ((Movie)gene.getVal()).getName());
+            igniteLog.info("Genres: " + ((Movie)gene.getVal()).getGenre().toString());
+            igniteLog.info("IMDB Rating: " + ((Movie)gene.getVal()).getImdbRating());
         }
-
     }
-
 }

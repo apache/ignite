@@ -95,7 +95,7 @@ public class KNNRegressionModel extends KNNClassificationModel {
 
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
-        return ModelTrace.builder("KNNClassificationModel", pretty)
+        return ModelTrace.builder("KNNRegressionModel", pretty)
             .addField("k", String.valueOf(k))
             .addField("measure", distanceMeasure.getClass().getSimpleName())
             .addField("strategy", stgy.name())

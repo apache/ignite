@@ -15,25 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.tutorial;
-
 /**
- * Run all the tutorial examples step by step with primary purpose to provide
- * automatic execution from {@code IgniteExamplesMLTestSuite}.
+ * <!-- Package description. -->
+ * Utilities for machine learning examples.
  */
-public class TutorialStepByStepExample {
-    /** Run examples with default settings. */
-    public static void main(String[] args) throws InterruptedException {
-        Step_1_Read_and_Learn.main(args);
-        Step_2_Imputing.main(args);
-        Step_3_Categorial.main(args);
-        Step_3_Categorial_with_One_Hot_Encoder.main(args);
-        Step_4_Add_age_fare.main(args);
-        Step_5_Scaling.main(args);
-        Step_6_KNN.main(args);
-        Step_7_Split_train_test.main(args);
-        Step_8_CV.main(args);
-        Step_8_CV_with_Param_Grid.main(args);
-        Step_9_Go_to_LogReg.main(args);
-    }
-}
+package org.apache.ignite.examples.ml.util;
