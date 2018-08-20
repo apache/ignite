@@ -17,38 +17,20 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.histogram;
 
-public class BucketMeta {
-    private final FeatureMeta featureMeta;
-    private double bucketSize;
-    private double minValue;
+import java.util.Set;
+import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
 
-    public BucketMeta(FeatureMeta featureMeta) {
-        this.featureMeta = featureMeta;
+import static org.junit.Assert.assertArrayEquals;
+
+public class ImpurityHistogramTest {
+    protected void checkBucketIds(Set<Integer> bucketIdsSet, Integer[] expected) {
+        Integer[] bucketIds = new Integer[bucketIdsSet.size()];
+        bucketIdsSet.toArray(bucketIds);
+        assertArrayEquals(expected, bucketIds);
     }
 
-    public int getBucketId(Double value) {
-        if(featureMeta.isCategoricalFeature())
-            return (int) Math.rint(value);
-
-        return (int) Math.rint((value - minValue) / bucketSize);
-    }
-
-    public double bucketIdToValue(int bucketId) {
-        if(featureMeta.isCategoricalFeature())
-            return (double) bucketId;
-
-        return minValue + (bucketId + 0.5) * bucketSize;
-    }
-
-    public void setMinValue(double minValue) {
-        this.minValue = minValue;
-    }
-
-    public void setBucketSize(double bucketSize) {
-        this.bucketSize = bucketSize;
-    }
-
-    public FeatureMeta getFeatureMeta() {
-        return featureMeta;
+    protected void checkCounters(FeatureHistogram<BaggedVector> hist, double[] expected) {
+        double[] counters = hist.buckets().stream().mapToDouble(x -> hist.get(x).get()).toArray();
+        assertArrayEquals(expected, counters, 0.01);
     }
 }

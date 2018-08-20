@@ -34,9 +34,9 @@ public class MSEHistogram implements ImpurityComputer<BaggedVector, MSEHistogram
     private final FeatureHistogram<BaggedVector> ys;
     private final FeatureHistogram<BaggedVector> y2s;
 
-    public MSEHistogram(BucketMeta bucketMeta, int featureId, int sampleId) {
+    public MSEHistogram(int sampleId, BucketMeta bucketMeta) {
         this.bucketMeta = bucketMeta;
-        this.featureId = featureId;
+        this.featureId = bucketMeta.getFeatureMeta().getFeatureId();
         this.sampleId = sampleId;
 
         counters = new FeatureHistogram<>(this::bucketMap, this::counterMap);

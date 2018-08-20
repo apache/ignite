@@ -2,17 +2,15 @@ package org.apache.ignite.ml.tree.randomforest.data.histogram;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class GiniFeatureHistogramTest {
+public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
     private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta(0, true));
     private BucketMeta feature2Meta = new BucketMeta(new FeatureMeta(1, false));
 
@@ -29,11 +27,11 @@ public class GiniFeatureHistogramTest {
         lblMapping.put(2.0, 1);
         lblMapping.put(3.0, 2);
 
-        GiniHistogram catFeatureSmpl1 = new GiniHistogram(lblMapping, 0, 0, feature1Meta);
-        GiniHistogram catFeatureSmpl2 = new GiniHistogram(lblMapping, 0, 1, feature1Meta);
+        GiniHistogram catFeatureSmpl1 = new GiniHistogram(0, lblMapping, feature1Meta);
+        GiniHistogram catFeatureSmpl2 = new GiniHistogram(1, lblMapping, feature1Meta);
 
-        GiniHistogram contFeatureSmpl1 = new GiniHistogram(lblMapping, 1, 0, feature2Meta);
-        GiniHistogram contFeatureSmpl2 = new GiniHistogram(lblMapping, 1, 1, feature2Meta);
+        GiniHistogram contFeatureSmpl1 = new GiniHistogram(0, lblMapping, feature2Meta);
+        GiniHistogram contFeatureSmpl2 = new GiniHistogram(1, lblMapping, feature2Meta);
 
         for (BaggedVector vec : dataset) {
             catFeatureSmpl1.addElement(vec);
@@ -78,25 +76,14 @@ public class GiniFeatureHistogramTest {
         checkBucketIds(contFeatureSmpl2.getHistForLabel(3.0).buckets(), new Integer[] {8});
     }
 
-    private void checkBucketIds(Set<Integer> bucketIdsSet, Integer[] expected) {
-        Integer[] bucketIds = new Integer[bucketIdsSet.size()];
-        bucketIdsSet.toArray(bucketIds);
-        assertArrayEquals(expected, bucketIds);
-    }
-
-    private void checkCounters(FeatureHistogram<BaggedVector> hist, double[] expected) {
-        double[] counters = hist.buckets().stream().mapToDouble(x -> hist.get(x).get()).toArray();
-        assertArrayEquals(expected, counters, 0.01);
-    }
-
     @Test
     public void testSplit() {
         Map<Double, Integer> lblMapping = new HashMap<>();
         lblMapping.put(1.0, 0);
         lblMapping.put(2.0, 1);
 
-        GiniHistogram catFeatureSmpl1 = new GiniHistogram(lblMapping, 0, 0, feature1Meta);
-        GiniHistogram contFeatureSmpl1 = new GiniHistogram(lblMapping, 1, 0, feature2Meta);
+        GiniHistogram catFeatureSmpl1 = new GiniHistogram(0, lblMapping, feature1Meta);
+        GiniHistogram contFeatureSmpl1 = new GiniHistogram(0, lblMapping, feature2Meta);
 
         feature2Meta.setMinValue(-5);
         feature2Meta.setBucketSize(1);
@@ -119,11 +106,11 @@ public class GiniFeatureHistogramTest {
         lblMapping.put(2.0, 1);
         lblMapping.put(3.0, 2);
 
-        GiniHistogram catFeatureSmpl1 = new GiniHistogram(lblMapping, 0, 0, feature1Meta);
-        GiniHistogram catFeatureSmpl2 = new GiniHistogram(lblMapping, 0, 0, feature1Meta);
+        GiniHistogram catFeatureSmpl1 = new GiniHistogram(0, lblMapping, feature1Meta);
+        GiniHistogram catFeatureSmpl2 = new GiniHistogram(0, lblMapping, feature1Meta);
 
-        GiniHistogram contFeatureSmpl1 = new GiniHistogram(lblMapping, 1, 0, feature2Meta);
-        GiniHistogram contFeatureSmpl2 = new GiniHistogram(lblMapping, 1, 0, feature2Meta);
+        GiniHistogram contFeatureSmpl1 = new GiniHistogram(0, lblMapping, feature2Meta);
+        GiniHistogram contFeatureSmpl2 = new GiniHistogram(0, lblMapping, feature2Meta);
 
         for (BaggedVector vec : dataset) {
             catFeatureSmpl1.addElement(vec);

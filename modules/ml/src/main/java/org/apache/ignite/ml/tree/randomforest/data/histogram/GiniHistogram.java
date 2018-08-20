@@ -38,9 +38,10 @@ public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogr
     private final Map<Double, Integer> lblMapping;
     private final Set<Integer> bucketIds;
 
-    public GiniHistogram(Map<Double, Integer> lblMapping, int featureId, int sampleId, BucketMeta bucketMeta) {
+    public GiniHistogram(int sampleId, Map<Double, Integer> lblMapping, BucketMeta bucketMeta) {
+
         this.hists = new ArrayList<>(lblMapping.size());
-        this.featureId = featureId;
+        this.featureId = bucketMeta.getFeatureMeta().getFeatureId();
         this.sampleId = sampleId;
         this.bucketMeta = bucketMeta;
         this.lblMapping = lblMapping;
