@@ -1188,7 +1188,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             }
                         }
                         catch (ClusterTopologyCheckedException e) {
-                            entry.context().evicts().touch(entry, topologyVersion());
+                            entry.touch(topologyVersion());
 
                             throw e;
                         }
@@ -1246,7 +1246,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (readCommitted())
-                            cacheCtx.evicts().touch(entry, topologyVersion());
+                            entry.touch(topologyVersion());
 
                         break; // While.
                     }
@@ -2245,7 +2245,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 }
                             }
                             else
-                                entry.context().evicts().touch(entry, topVer);
+                                entry.touch(topVer);
                         }
                     }
                 }
@@ -2434,7 +2434,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             GridCacheEntryEx cached0 = txEntry.cached();
 
             if (cached0 != null)
-                txEntry.context().evicts().touch(cached0, topologyVersion());
+                cached0.touch(topologyVersion());
         }
     }
 
@@ -3939,7 +3939,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         GridCacheEntryEx e = txEntry == null ? entryEx(cacheCtx, txKey, topVer) : txEntry.cached();
 
                         if (readCommitted() || skipVals) {
-                            cacheCtx.evicts().touch(e, topologyVersion());
+                            e.touch(topologyVersion());
 
                             if (visibleVal != null) {
                                 cacheCtx.addResult(map,
