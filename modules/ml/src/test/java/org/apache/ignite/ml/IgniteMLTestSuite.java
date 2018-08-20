@@ -47,7 +47,6 @@ import org.junit.runners.Suite;
     ClusteringTestSuite.class,
     DecisionTreeTestSuite.class,
     KNNTestSuite.class,
-    LocalModelsTest.class,
     MLPTestSuite.class,
     DatasetTestSuite.class,
     PreprocessingTestSuite.class,
