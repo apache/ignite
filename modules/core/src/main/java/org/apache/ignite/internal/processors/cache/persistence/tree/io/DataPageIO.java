@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -98,6 +99,7 @@ public class DataPageIO extends PageIO {
         super.initNewPage(pageAddr, pageId, pageSize);
 
         setEmptyPage(pageAddr, pageSize);
+
         setFreeListPageId(pageAddr, 0L);
     }
 
@@ -106,9 +108,14 @@ public class DataPageIO extends PageIO {
      * @param pageSize Page size.
      */
     private void setEmptyPage(long pageAddr, int pageSize) {
-        setDirectCount(pageAddr, 0);
-        setIndirectCount(pageAddr, 0);
-        setFirstEntryOffset(pageAddr, pageSize, pageSize);
+        if (!Ignition.isAepEnabled()) {
+            setDirectCount(pageAddr, 0);
+            setIndirectCount(pageAddr, 0);
+        }
+
+        if (getFirstEntryOffset(pageAddr) == 0)
+            setFirstEntryOffset(pageAddr, pageSize, pageSize);
+
         setRealFreeSpace(pageAddr, pageSize - ITEMS_OFF, pageSize);
     }
 
@@ -791,6 +798,7 @@ public class DataPageIO extends PageIO {
     ) throws IgniteCheckedException {
         assert rowSize <= getFreeSpace(pageAddr): "can't call addRow if not enough space for the whole row";
 
+
         int fullEntrySize = getPageEntrySize(rowSize, SHOW_PAYLOAD_LEN | SHOW_ITEM);
 
         int directCnt = getDirectCount(pageAddr);
@@ -803,6 +811,8 @@ public class DataPageIO extends PageIO {
         int itemId = addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
 
         setLinkByPageId(row, pageId, itemId);
+
+        // Ignition.print("pageId = " + pageId + ", itemId = " + itemId + ", directCnt = " + directCnt + ", indirectCnt = " + indirectCnt + ", row = " + row.toString());
     }
 
     /**
@@ -876,6 +886,7 @@ public class DataPageIO extends PageIO {
         final int dataOff,
         final int pageSize)
     {
+
         setFirstEntryOffset(pageAddr, dataOff, pageSize);
 
         int itemId = insertItem(pageAddr, dataOff, directCnt, indirectCnt, pageSize);

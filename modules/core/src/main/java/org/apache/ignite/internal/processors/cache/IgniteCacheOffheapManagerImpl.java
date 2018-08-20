@@ -28,9 +28,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
+
+import lib.llpl.Transaction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -341,7 +344,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridDhtLocalPartition part,
         OffheapInvokeClosure c)
         throws IgniteCheckedException {
-        dataStore(part).invoke(cctx, key, c);
+        if (!Ignition.isAepEnabled())
+            dataStore(part).invoke(cctx, key, c);
+        else
+            Transaction.run(Ignition.getAepHeap(), () -> {
+                try {
+                    dataStore(part).invoke(cctx, key, c);
+                } catch (IgniteCheckedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -356,7 +368,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     ) throws IgniteCheckedException {
         assert expireTime >= 0;
 
-        dataStore(part).update(cctx, key, val, ver, expireTime, oldRow);
+        if (!Ignition.isAepEnabled())
+            dataStore(part).update(cctx, key, val, ver, expireTime, oldRow);
+        else
+            Transaction.run(Ignition.getAepHeap(), () -> {
+                try {
+                    dataStore(part).update(cctx, key, val, ver, expireTime, oldRow);
+                } catch (IgniteCheckedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -366,7 +387,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         int partId,
         GridDhtLocalPartition part
     ) throws IgniteCheckedException {
-        dataStore(part).remove(cctx, key, partId);
+        if (!Ignition.isAepEnabled())
+            dataStore(part).remove(cctx, key, partId);
+        else
+            Transaction.run(Ignition.getAepHeap(), () -> {
+                try {
+                    dataStore(part).remove(cctx, key, partId);
+                } catch (IgniteCheckedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
     /** {@inheritDoc} */

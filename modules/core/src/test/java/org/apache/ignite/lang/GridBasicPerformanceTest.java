@@ -38,6 +38,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridTimer;
@@ -950,11 +952,11 @@ public class GridBasicPerformanceTest {
         int mem = 1024;
 
         for (int i = 0; i < MAX; i++) {
-            addrs[i] = GridUnsafe.allocateMemory(mem);
+            addrs[i] = Ignition.UNSAFE.allocateMemory(mem);
 
-            GridUnsafe.putByte(addrs[i] + RAND.nextInt(mem), (byte)RAND.nextInt(mem));
+            Ignition.UNSAFE.putByte(addrs[i] + RAND.nextInt(mem), (byte)RAND.nextInt(mem));
 
-            v = GridUnsafe.getByte(addrs[i] + RAND.nextInt(mem));
+            v = Ignition.UNSAFE.getByte(addrs[i] + RAND.nextInt(mem));
         }
 
         X.println("Unsafe [time=" + t.stop() + "ms, v=" + v + ']');
@@ -962,7 +964,7 @@ public class GridBasicPerformanceTest {
         Thread.sleep(5000L);
 
         for (long l : addrs)
-            GridUnsafe.freeMemory(l);
+            Ignition.UNSAFE.freeMemory(l);
     }
 
 

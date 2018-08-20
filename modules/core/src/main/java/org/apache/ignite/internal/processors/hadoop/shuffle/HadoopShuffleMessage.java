@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -169,11 +170,11 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
     private void add(byte marker, long ptr, int size) {
         buf[off++] = marker;
 
-        GridUnsafe.putInt(buf, GridUnsafe.BYTE_ARR_OFF + off, size);
+        Ignition.UNSAFE.putInt(buf, GridUnsafe.BYTE_ARR_OFF + off, size);
 
         off += 4;
 
-        GridUnsafe.copyOffheapHeap(ptr, buf, GridUnsafe.BYTE_ARR_OFF + off, size);
+        Ignition.UNSAFE.copyOffheapHeap(ptr, buf, GridUnsafe.BYTE_ARR_OFF + off, size);
 
         off += size;
     }
@@ -185,7 +186,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
         for (int i = 0; i < off;) {
             byte marker = buf[i++];
 
-            int size = GridUnsafe.getInt(buf, GridUnsafe.BYTE_ARR_OFF + i);
+            int size = Ignition.UNSAFE.getInt(buf, GridUnsafe.BYTE_ARR_OFF + i);
 
             i += 4;
 

@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
@@ -62,7 +63,9 @@ public class PagePartitionCountersIO extends PageIO {
     @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
         super.initNewPage(pageAddr, pageId, pageSize);
 
-        setCount(pageAddr, 0);
+        if (!Ignition.isAepEnabled())
+            setCount(pageAddr, 0);
+
         setNextCountersPageId(pageAddr, 0);
     }
 

@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import lib.llpl.Transaction;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -66,7 +68,16 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
 
         assert !grp.dataRegion().config().isPersistenceEnabled()  || grp.shared().database().checkpointLockIsHeldByThread();
 
-        initTree(initNew);
+        if (!Ignition.isAepEnabled())
+            initTree(initNew);
+        else
+            Transaction.run(Ignition.getAepHeap(), () -> {
+                try {
+                    initTree(initNew);
+                } catch (IgniteCheckedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
     /** {@inheritDoc} */

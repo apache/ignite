@@ -155,15 +155,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteClientDisconnectedException;
-import org.apache.ignite.IgniteDeploymentException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
+
+import org.apache.ignite.*;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
@@ -261,10 +254,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
-import static org.apache.ignite.internal.util.GridUnsafe.objectFieldOffset;
-import static org.apache.ignite.internal.util.GridUnsafe.putObjectVolatile;
-import static org.apache.ignite.internal.util.GridUnsafe.staticFieldBase;
-import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 
 /**
  * Collection of utility methods used throughout the system.
@@ -742,8 +731,8 @@ public abstract class IgniteUtils {
 
                 // We use unsafe operations to update static fields on interface because
                 // they are treated as static final and cannot be updated via standard reflection.
-                putObjectVolatile(staticFieldBase(f1), staticFieldOffset(f1), gridEvents());
-                putObjectVolatile(staticFieldBase(f2), staticFieldOffset(f2), gridEvents(EVT_NODE_METRICS_UPDATED));
+                Ignition.UNSAFE.putObjectVolatile(Ignition.UNSAFE.staticFieldBase(f1), Ignition.UNSAFE.staticFieldOffset(f1), gridEvents());
+                Ignition.UNSAFE.putObjectVolatile(Ignition.UNSAFE.staticFieldBase(f2), Ignition.UNSAFE.staticFieldOffset(f2), gridEvents(EVT_NODE_METRICS_UPDATED));
 
                 assert EVTS_ALL != null;
                 assert EVTS_ALL.length == GRID_EVTS.length;
@@ -7976,7 +7965,7 @@ public abstract class IgniteUtils {
      */
     public static long fieldOffset(Class<?> cls, String fieldName) {
         try {
-            return objectFieldOffset(cls.getDeclaredField(fieldName));
+            return Ignition.UNSAFE.objectFieldOffset(cls.getDeclaredField(fieldName));
         }
         catch (NoSuchFieldException e) {
             throw new IllegalStateException(e);
@@ -8639,7 +8628,7 @@ public abstract class IgniteUtils {
         assert resBuf.length >= resOff + len;
 
         if (UNSAFE_BYTE_ARR_CP)
-            GridUnsafe.copyMemory(src, GridUnsafe.BYTE_ARR_OFF + off, resBuf, GridUnsafe.BYTE_ARR_OFF + resOff, len);
+            Ignition.UNSAFE.copyMemory(src, Ignition.UNSAFE.BYTE_ARR_OFF + off, resBuf, Ignition.UNSAFE.BYTE_ARR_OFF + resOff, len);
         else
             System.arraycopy(src, off, resBuf, resOff, len);
 
@@ -9279,7 +9268,7 @@ public abstract class IgniteUtils {
     public static byte[] copyMemory(long ptr, int size) {
         byte[] res = new byte[size];
 
-        GridUnsafe.copyMemory(null, ptr, res, GridUnsafe.BYTE_ARR_OFF, size);
+        Ignition.UNSAFE.copyMemory(null, ptr, res, Ignition.UNSAFE.BYTE_ARR_OFF, size);
 
         return res;
     }

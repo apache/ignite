@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -184,7 +185,7 @@ public class TrackingPageIO extends PageIO {
      * @param addr Address.
      */
     long getLastSnapshotTag(long addr) {
-        return GridUnsafe.getLong(addr + LAST_SNAPSHOT_TAG_OFFSET);
+        return Ignition.UNSAFE.getLong(addr + LAST_SNAPSHOT_TAG_OFFSET);
     }
 
     /**
@@ -350,18 +351,18 @@ public class TrackingPageIO extends PageIO {
     @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("TrackingPage [\n\tlastSnapshotTag=").a(getLastSnapshotTag(addr))
             .a(",\n\tleftHalf={")
-            .a("\n\t\tsize=").a(GridUnsafe.getShort(addr + SIZE_FIELD_OFFSET))
+            .a("\n\t\tsize=").a(Ignition.UNSAFE.getShort(addr + SIZE_FIELD_OFFSET))
             .a("\n\t\tdata={");
 
         for (int i = 0; i < (countOfPageToTrack(pageSize) >> 3); i += 2)
-            sb.appendHex(GridUnsafe.getShort(addr + BITMAP_OFFSET + i));
+            sb.appendHex(Ignition.UNSAFE.getShort(addr + BITMAP_OFFSET + i));
 
         sb.a("}\n\t},\n\trightHalf={")
-            .a("\n\t\tsize=").a(GridUnsafe.getShort(addr + BITMAP_OFFSET + (countOfPageToTrack(pageSize) >> 3)))
+            .a("\n\t\tsize=").a(Ignition.UNSAFE.getShort(addr + BITMAP_OFFSET + (countOfPageToTrack(pageSize) >> 3)))
             .a("\n\t\tdata={");
 
         for (int i = 0; i < (countOfPageToTrack(pageSize) >> 3); i += 2)
-            sb.appendHex(GridUnsafe.getShort(addr + BITMAP_OFFSET + (countOfPageToTrack(pageSize) >> 3)
+            sb.appendHex(Ignition.UNSAFE.getShort(addr + BITMAP_OFFSET + (countOfPageToTrack(pageSize) >> 3)
                  + SIZE_FIELD_SIZE + i));
 
         sb.a("}\n\t}\n]");

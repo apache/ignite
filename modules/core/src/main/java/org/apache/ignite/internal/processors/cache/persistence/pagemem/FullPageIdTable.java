@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -106,7 +107,7 @@ public class FullPageIdTable {
      * @return Current number of entries in the map.
      */
     public final int size() {
-        return GridUnsafe.getInt(valPtr);
+        return Ignition.UNSAFE.getInt(valPtr);
     }
 
     /**
@@ -204,10 +205,10 @@ public class FullPageIdTable {
             if (isValuePresentAt(idx2)) {
                 long base = entryBase(idx2);
 
-                int cacheId = GridUnsafe.getInt(base);
-                int tag = GridUnsafe.getInt(base + 4);
-                long pageId = GridUnsafe.getLong(base + 8);
-                long val = GridUnsafe.getLong(base + 16);
+                int cacheId = Ignition.UNSAFE.getInt(base);
+                int tag = Ignition.UNSAFE.getInt(base + 4);
+                long pageId = Ignition.UNSAFE.getLong(base + 8);
+                long val = Ignition.UNSAFE.getLong(base + 16);
 
                 return new EvictCandidate(tag, val, new FullPageId(pageId, cacheId));
             }
@@ -225,9 +226,9 @@ public class FullPageIdTable {
     public long clearAt(int idx, GridPredicate3<Integer, Long, Integer> pred, long absent) {
         long base = entryBase(idx);
 
-        int grpId = GridUnsafe.getInt(base);
-        int tag = GridUnsafe.getInt(base + 4);
-        long pageId = GridUnsafe.getLong(base + 8);
+        int grpId = Ignition.UNSAFE.getInt(base);
+        int tag = Ignition.UNSAFE.getInt(base + 4);
+        long pageId = Ignition.UNSAFE.getLong(base + 8);
 
         if ((pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID)
             || (pageId == EMPTY_PAGE_ID && grpId == EMPTY_CACHE_GRP_ID))
@@ -382,9 +383,9 @@ public class FullPageIdTable {
     private int testKeyAt(int index, int testCacheId, long testPageId, int testTag) {
         long base = entryBase(index);
 
-        int grpId = GridUnsafe.getInt(base);
-        int tag = GridUnsafe.getInt(base + 4);
-        long pageId = GridUnsafe.getLong(base + 8);
+        int grpId = Ignition.UNSAFE.getInt(base);
+        int tag = Ignition.UNSAFE.getInt(base + 4);
+        long pageId = Ignition.UNSAFE.getLong(base + 8);
 
         if (pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID)
             return REMOVED;
@@ -405,8 +406,8 @@ public class FullPageIdTable {
     private boolean isValuePresentAt(final int idx) {
         long base = entryBase(idx);
 
-        int grpId = GridUnsafe.getInt(base);
-        long pageId = GridUnsafe.getLong(base + 8);
+        int grpId = Ignition.UNSAFE.getInt(base);
+        long pageId = Ignition.UNSAFE.getLong(base + 8);
 
         return !((pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID)
             || (pageId == EMPTY_PAGE_ID && grpId == EMPTY_CACHE_GRP_ID));
@@ -432,8 +433,8 @@ public class FullPageIdTable {
     private void setKeyAt(int index, int grpId, long pageId) {
         long base = entryBase(index);
 
-        GridUnsafe.putInt(base, grpId);
-        GridUnsafe.putLong(base + 8, pageId);
+        Ignition.UNSAFE.putInt(base, grpId);
+        Ignition.UNSAFE.putLong(base + 8, pageId);
     }
 
     /**
@@ -488,9 +489,9 @@ public class FullPageIdTable {
             if (isValuePresentAt(i)) {
                 long base = entryBase(i);
 
-                int cacheId = GridUnsafe.getInt(base);
-                long pageId = GridUnsafe.getLong(base + 8);
-                long val = GridUnsafe.getLong(base + 16);
+                int cacheId = Ignition.UNSAFE.getInt(base);
+                long pageId = Ignition.UNSAFE.getLong(base + 8);
+                long val = Ignition.UNSAFE.getLong(base + 16);
 
                 visitor.apply(new FullPageId(pageId, cacheId), val);
             }
@@ -502,7 +503,7 @@ public class FullPageIdTable {
      * @return Value.
      */
     private long valueAt(int index) {
-        return GridUnsafe.getLong(entryBase(index) + 16);
+        return Ignition.UNSAFE.getLong(entryBase(index) + 16);
     }
 
     /**
@@ -510,7 +511,7 @@ public class FullPageIdTable {
      * @param value Value.
      */
     private void setValueAt(int index, long value) {
-        GridUnsafe.putLong(entryBase(index) + 16, value);
+        Ignition.UNSAFE.putLong(entryBase(index) + 16, value);
     }
 
     private long entryBase(int index) {
@@ -522,7 +523,7 @@ public class FullPageIdTable {
      * @return Tag at the given index.
      */
     private int tagAt(int index) {
-        return GridUnsafe.getInt(entryBase(index) + 4);
+        return Ignition.UNSAFE.getInt(entryBase(index) + 4);
     }
 
     /**
@@ -530,27 +531,27 @@ public class FullPageIdTable {
      * @param tag Tag to set at the given index.
      */
     private void setTagAt(int index, int tag) {
-        GridUnsafe.putInt(entryBase(index) + 4, tag);
+        Ignition.UNSAFE.putInt(entryBase(index) + 4, tag);
     }
 
     /**
      *
      */
     public void clear() {
-        GridUnsafe.setMemory(valPtr, (long)capacity * BYTES_PER_ENTRY + 8, (byte)0);
+        Ignition.UNSAFE.setMemory(valPtr, (long)capacity * BYTES_PER_ENTRY + 8, (byte)0);
     }
 
     /**
      *
      */
     private void incrementSize() {
-        GridUnsafe.putInt(valPtr, GridUnsafe.getInt(valPtr) + 1);
+        Ignition.UNSAFE.putInt(valPtr, Ignition.UNSAFE.getInt(valPtr) + 1);
     }
 
     /**
      *
      */
     private void decrementSize() {
-        GridUnsafe.putInt(valPtr, GridUnsafe.getInt(valPtr) - 1);
+        Ignition.UNSAFE.putInt(valPtr, Ignition.UNSAFE.getInt(valPtr) - 1);
     }
 }

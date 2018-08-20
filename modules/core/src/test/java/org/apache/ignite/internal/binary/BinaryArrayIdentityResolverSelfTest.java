@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -61,7 +62,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (Long ptr : ptrs)
-            GridUnsafe.freeMemory(ptr);
+            Ignition.UNSAFE.freeMemory(ptr);
 
         super.afterTest();
     }
@@ -252,11 +253,11 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
         if (offheap) {
             byte[] arr = obj0.array();
 
-            long ptr = GridUnsafe.allocateMemory(arr.length);
+            long ptr = Ignition.UNSAFE.allocateMemory(arr.length);
 
             ptrs.add(ptr);
 
-            GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
+            Ignition.UNSAFE.copyMemory(arr, Ignition.UNSAFE.BYTE_ARR_OFF, null, ptr, arr.length);
 
             obj0 = new BinaryObjectOffheapImpl(obj0.context(), ptr, 0, obj0.array().length);
         }

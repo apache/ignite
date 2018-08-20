@@ -31,13 +31,21 @@ public class UnsafeChunk implements DirectMemoryRegion {
     /** */
     private long len;
 
+
+    private String name;
+
+    public UnsafeChunk(String name, long ptr, long len) {
+        this.name = name;
+        this.ptr = ptr;
+        this.len = len;
+    }
+
     /**
      * @param ptr Pointer to the memory start.
      * @param len Memory length.
      */
     public UnsafeChunk(long ptr, long len) {
-        this.ptr = ptr;
-        this.len = len;
+        this("", ptr, len);
     }
 
     /** {@inheritDoc} */
@@ -62,5 +70,10 @@ public class UnsafeChunk implements DirectMemoryRegion {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(UnsafeChunk.class, this);
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 }

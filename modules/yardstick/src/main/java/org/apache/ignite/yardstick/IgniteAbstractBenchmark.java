@@ -19,6 +19,8 @@ package org.apache.ignite.yardstick;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+
+import org.apache.commons.codec.binary.StringUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteState;
@@ -53,13 +55,12 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
         jcommander(cfg.commandLineArguments(), args, "<ignite-driver>");
 
         if (Ignition.state() != IgniteState.STARTED) {
-            node = new IgniteNode(args.isClientOnly() && !args.isNearCache());
-
+            node = new IgniteNode(args.isClientOnly() && !args.isNearCache(), true);
             node.start(cfg);
         }
         else
             // Support for mixed benchmarks mode.
-            node = new IgniteNode(args.isClientOnly() && !args.isNearCache(), Ignition.ignite());
+            node = new IgniteNode(args.isClientOnly() && !args.isNearCache(), Ignition.ignite(), true);
 
         waitForNodes();
 

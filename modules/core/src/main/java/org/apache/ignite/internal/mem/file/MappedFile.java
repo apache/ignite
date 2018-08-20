@@ -149,4 +149,14 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
             throw new IllegalStateException(e.getTargetException());
         }
     }
+
+    /**
+     * Added to support AEP.
+     * @return
+     */
+    @Override
+    public String getName() {
+        /* no-op */
+        return "";
+    }
 }

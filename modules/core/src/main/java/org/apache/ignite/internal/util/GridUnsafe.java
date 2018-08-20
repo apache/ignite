@@ -14,8 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.util;
+
+import lib.llpl.MemoryBlock;
+import lib.llpl.Transactional;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import sun.misc.JavaNioAccess;
+import sun.misc.SharedSecrets;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
@@ -23,46 +32,25 @@ import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import org.apache.ignite.IgniteSystemProperties;
-import sun.misc.JavaNioAccess;
-import sun.misc.SharedSecrets;
-import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
-/**
- * <p>Wrapper for {@link sun.misc.Unsafe} class.</p>
- *
- * <p>
- * The following statements for memory access operations  are true:
- * <ul>
- * <li>All {@code putXxx(long addr, xxx val)}, {@code getXxx(long addr)}, {@code putXxx(byte[] arr, long off, xxx val)},
- * {@code getXxx(byte[] arr, long off)} and corresponding methods with {@code LE} suffix are alignment aware
- * and can be safely used with unaligned pointers.</li>
- * <li>All {@code putXxxField(Object obj, long fieldOff, xxx val)} and {@code getXxxField(Object obj, long fieldOff)}
- * methods are not alignment aware and can't be safely used with unaligned pointers. This methods can be safely used
- * for object field values access because all object fields addresses are aligned.</li>
- * <li>All {@code putXxxLE(...)} and {@code getXxxLE(...)} methods assumes that byte order is fixed as little-endian
- * while native byte order is big-endian. So it is client code responsibility to check native byte order before
- * invoking of this methods.</li>
- * </ul>
- * </p>
- */
-public abstract class GridUnsafe {
+public class GridUnsafe {
+
     /** */
     public static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
 
     /** Direct byte buffer factory. */
-    private static final JavaNioAccess nioAccess = SharedSecrets.getJavaNioAccess();
+    protected static final JavaNioAccess nioAccess = SharedSecrets.getJavaNioAccess();
 
     /** Unsafe. */
-    private static final Unsafe UNSAFE = unsafe();
+    public static final Unsafe UNSAFE = unsafe();
 
     /** Unaligned flag. */
-    private static final boolean UNALIGNED = unaligned();
+    public static final boolean UNALIGNED = unaligned();
 
     /** Per-byte copy threshold. */
-    private static final long PER_BYTE_THRESHOLD =
-        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, 0L);
+    protected static final long PER_BYTE_THRESHOLD =
+            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, 0L);
 
     /** Big endian. */
     public static final boolean BIG_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
@@ -98,18 +86,11 @@ public abstract class GridUnsafe {
     public static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
 
     /**
-     * Ensure singleton.
-     */
-    private GridUnsafe() {
-        // No-op.
-    }
-
-    /**
      * @param ptr Pointer to wrap.
      * @param len Memory location length.
      * @return Byte buffer wrapping the given memory.
      */
-    public static ByteBuffer wrapPointer(long ptr, int len) {
+    public ByteBuffer wrapPointer(long ptr, int len) {
         ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
 
         assert buf instanceof DirectBuffer;
@@ -123,7 +104,7 @@ public abstract class GridUnsafe {
      * @param len Length.
      * @return Allocated direct buffer.
      */
-    public static ByteBuffer allocateBuffer(int len) {
+    public ByteBuffer allocateBuffer(int len) {
         long ptr = allocateMemory(len);
 
         return wrapPointer(ptr, len);
@@ -132,26 +113,21 @@ public abstract class GridUnsafe {
     /**
      * @param buf Direct buffer allocated by {@link #allocateBuffer(int)}.
      */
-    public static void freeBuffer(ByteBuffer buf) {
+    public void freeBuffer(ByteBuffer buf) {
         long ptr = bufferAddress(buf);
 
         freeMemory(ptr);
     }
 
-    /**
-     *
-     * @param buf Buffer.
-     * @param len New length.
-     * @return Reallocated direct buffer.
-     */
-    public static ByteBuffer reallocateBuffer(ByteBuffer buf, int len) {
-        long ptr = bufferAddress(buf);
-
-        long newPtr = reallocateMemory(ptr, len);
-
-        return wrapPointer(newPtr, len);
+    public MemoryBlock<MemoryBlock.Kind> getSchemaRegistryBlock() {
+        /* no-op */
+        return null;
     }
 
+    public PersistentLinkedList<Transactional, Long> getPersistentList() {
+        /* no-op */
+        return null;
+    }
     /**
      * Gets boolean value from object field.
      *
@@ -159,7 +135,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @return Boolean value from object field.
      */
-    public static boolean getBooleanField(Object obj, long fieldOff) {
+    public boolean getBooleanField(Object obj, long fieldOff) {
         return UNSAFE.getBoolean(obj, fieldOff);
     }
 
@@ -170,7 +146,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @param val Value.
      */
-    public static void putBooleanField(Object obj, long fieldOff, boolean val) {
+    public void putBooleanField(Object obj, long fieldOff, boolean val) {
         UNSAFE.putBoolean(obj, fieldOff, val);
     }
 
@@ -181,7 +157,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @return Byte value from object field.
      */
-    public static byte getByteField(Object obj, long fieldOff) {
+    public byte getByteField(Object obj, long fieldOff) {
         return UNSAFE.getByte(obj, fieldOff);
     }
 
@@ -192,7 +168,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @param val Value.
      */
-    public static void putByteField(Object obj, long fieldOff, byte val) {
+    public void putByteField(Object obj, long fieldOff, byte val) {
         UNSAFE.putByte(obj, fieldOff, val);
     }
 
@@ -203,7 +179,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @return Short value from object field.
      */
-    public static short getShortField(Object obj, long fieldOff) {
+    public short getShortField(Object obj, long fieldOff) {
         return UNSAFE.getShort(obj, fieldOff);
     }
 
@@ -214,7 +190,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @param val Value.
      */
-    public static void putShortField(Object obj, long fieldOff, short val) {
+    public void putShortField(Object obj, long fieldOff, short val) {
         UNSAFE.putShort(obj, fieldOff, val);
     }
 
@@ -225,7 +201,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @return Char value from object field.
      */
-    public static char getCharField(Object obj, long fieldOff) {
+    public char getCharField(Object obj, long fieldOff) {
         return UNSAFE.getChar(obj, fieldOff);
     }
 
@@ -236,7 +212,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @param val Value.
      */
-    public static void putCharField(Object obj, long fieldOff, char val) {
+    public void putCharField(Object obj, long fieldOff, char val) {
         UNSAFE.putChar(obj, fieldOff, val);
     }
 
@@ -247,7 +223,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @return Integer value from object field.
      */
-    public static int getIntField(Object obj, long fieldOff) {
+    public int getIntField(Object obj, long fieldOff) {
         return UNSAFE.getInt(obj, fieldOff);
     }
 
@@ -258,7 +234,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @param val Value.
      */
-    public static void putIntField(Object obj, long fieldOff, int val) {
+    public void putIntField(Object obj, long fieldOff, int val) {
         UNSAFE.putInt(obj, fieldOff, val);
     }
 
@@ -269,7 +245,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @return Long value from object field.
      */
-    public static long getLongField(Object obj, long fieldOff) {
+    public long getLongField(Object obj, long fieldOff) {
         return UNSAFE.getLong(obj, fieldOff);
     }
 
@@ -280,7 +256,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @param val Value.
      */
-    public static void putLongField(Object obj, long fieldOff, long val) {
+    public void putLongField(Object obj, long fieldOff, long val) {
         UNSAFE.putLong(obj, fieldOff, val);
     }
 
@@ -291,7 +267,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @return Float value from object field.
      */
-    public static float getFloatField(Object obj, long fieldOff) {
+    public float getFloatField(Object obj, long fieldOff) {
         return UNSAFE.getFloat(obj, fieldOff);
     }
 
@@ -302,7 +278,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @param val Value.
      */
-    public static void putFloatField(Object obj, long fieldOff, float val) {
+    public void putFloatField(Object obj, long fieldOff, float val) {
         UNSAFE.putFloat(obj, fieldOff, val);
     }
 
@@ -313,7 +289,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @return Double value from object field.
      */
-    public static double getDoubleField(Object obj, long fieldOff) {
+    public double getDoubleField(Object obj, long fieldOff) {
         return UNSAFE.getDouble(obj, fieldOff);
     }
 
@@ -324,7 +300,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @param val Value.
      */
-    public static void putDoubleField(Object obj, long fieldOff, double val) {
+    public void putDoubleField(Object obj, long fieldOff, double val) {
         UNSAFE.putDouble(obj, fieldOff, val);
     }
 
@@ -335,7 +311,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @return Reference from object field.
      */
-    public static Object getObjectField(Object obj, long fieldOff) {
+    public Object getObjectField(Object obj, long fieldOff) {
         return UNSAFE.getObject(obj, fieldOff);
     }
 
@@ -346,7 +322,7 @@ public abstract class GridUnsafe {
      * @param fieldOff Field offset.
      * @param val Value.
      */
-    public static void putObjectField(Object obj, long fieldOff, Object val) {
+    public void putObjectField(Object obj, long fieldOff, Object val) {
         UNSAFE.putObject(obj, fieldOff, val);
     }
 
@@ -357,7 +333,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Boolean value from byte array.
      */
-    public static boolean getBoolean(byte[] arr, long off) {
+    public boolean getBoolean(byte[] arr, long off) {
         return UNSAFE.getBoolean(arr, off);
     }
 
@@ -368,7 +344,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putBoolean(byte[] arr, long off, boolean val) {
+    public void putBoolean(byte[] arr, long off, boolean val) {
         UNSAFE.putBoolean(arr, off, val);
     }
 
@@ -379,7 +355,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Byte value from byte array.
      */
-    public static byte getByte(byte[] arr, long off) {
+    public byte getByte(byte[] arr, long off) {
         return UNSAFE.getByte(arr, off);
     }
 
@@ -390,7 +366,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putByte(byte[] arr, long off, byte val) {
+    public void putByte(byte[] arr, long off, byte val) {
         UNSAFE.putByte(arr, off, val);
     }
 
@@ -401,7 +377,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Short value from byte array.
      */
-    public static short getShort(byte[] arr, long off) {
+    public short getShort(byte[] arr, long off) {
         return UNALIGNED ? UNSAFE.getShort(arr, off) : getShortByByte(arr, off, BIG_ENDIAN);
     }
 
@@ -412,7 +388,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putShort(byte[] arr, long off, short val) {
+    public void putShort(byte[] arr, long off, short val) {
         if (UNALIGNED)
             UNSAFE.putShort(arr, off, val);
         else
@@ -426,7 +402,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Char value from byte array.
      */
-    public static char getChar(byte[] arr, long off) {
+    public char getChar(byte[] arr, long off) {
         return UNALIGNED ? UNSAFE.getChar(arr, off) : getCharByByte(arr, off, BIG_ENDIAN);
     }
 
@@ -437,7 +413,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putChar(byte[] arr, long off, char val) {
+    public void putChar(byte[] arr, long off, char val) {
         if (UNALIGNED)
             UNSAFE.putChar(arr, off, val);
         else
@@ -451,7 +427,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Integer value from byte array.
      */
-    public static int getInt(byte[] arr, long off) {
+    public int getInt(byte[] arr, long off) {
         return UNALIGNED ? UNSAFE.getInt(arr, off) : getIntByByte(arr, off, BIG_ENDIAN);
     }
 
@@ -462,7 +438,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putInt(byte[] arr, long off, int val) {
+    public void putInt(byte[] arr, long off, int val) {
         if (UNALIGNED)
             UNSAFE.putInt(arr, off, val);
         else
@@ -476,7 +452,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Long value from byte array.
      */
-    public static long getLong(byte[] arr, long off) {
+    public long getLong(byte[] arr, long off) {
         return UNALIGNED ? UNSAFE.getLong(arr, off) : getLongByByte(arr, off, BIG_ENDIAN);
     }
 
@@ -487,7 +463,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putLong(byte[] arr, long off, long val) {
+    public void putLong(byte[] arr, long off, long val) {
         if (UNALIGNED)
             UNSAFE.putLong(arr, off, val);
         else
@@ -501,7 +477,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Float value from byte array.
      */
-    public static float getFloat(byte[] arr, long off) {
+    public float getFloat(byte[] arr, long off) {
         return UNALIGNED ? UNSAFE.getFloat(arr, off) : Float.intBitsToFloat(getIntByByte(arr, off, BIG_ENDIAN));
     }
 
@@ -512,7 +488,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putFloat(byte[] arr, long off, float val) {
+    public void putFloat(byte[] arr, long off, float val) {
         if (UNALIGNED)
             UNSAFE.putFloat(arr, off, val);
         else
@@ -526,7 +502,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Double value from byte array. Alignment aware.
      */
-    public static double getDouble(byte[] arr, long off) {
+    public double getDouble(byte[] arr, long off) {
         return UNALIGNED ? UNSAFE.getDouble(arr, off) : Double.longBitsToDouble(getLongByByte(arr, off, BIG_ENDIAN));
     }
 
@@ -537,7 +513,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putDouble(byte[] arr, long off, double val) {
+    public void putDouble(byte[] arr, long off, double val) {
         if (UNALIGNED)
             UNSAFE.putDouble(arr, off, val);
         else
@@ -552,7 +528,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Short value from byte array.
      */
-    public static short getShortLE(byte[] arr, long off) {
+    public short getShortLE(byte[] arr, long off) {
         return UNALIGNED ? Short.reverseBytes(UNSAFE.getShort(arr, off)) : getShortByByte(arr, off, false);
     }
 
@@ -564,7 +540,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putShortLE(byte[] arr, long off, short val) {
+    public void putShortLE(byte[] arr, long off, short val) {
         if (UNALIGNED)
             UNSAFE.putShort(arr, off, Short.reverseBytes(val));
         else
@@ -579,7 +555,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Char value from byte array.
      */
-    public static char getCharLE(byte[] arr, long off) {
+    public char getCharLE(byte[] arr, long off) {
         return UNALIGNED ? Character.reverseBytes(UNSAFE.getChar(arr, off)) : getCharByByte(arr, off, false);
     }
 
@@ -591,7 +567,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putCharLE(byte[] arr, long off, char val) {
+    public void putCharLE(byte[] arr, long off, char val) {
         if (UNALIGNED)
             UNSAFE.putChar(arr, off, Character.reverseBytes(val));
         else
@@ -606,7 +582,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Integer value from byte array.
      */
-    public static int getIntLE(byte[] arr, long off) {
+    public int getIntLE(byte[] arr, long off) {
         return UNALIGNED ? Integer.reverseBytes(UNSAFE.getInt(arr, off)) : getIntByByte(arr, off, false);
     }
 
@@ -618,7 +594,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putIntLE(byte[] arr, long off, int val) {
+    public void putIntLE(byte[] arr, long off, int val) {
         if (UNALIGNED)
             UNSAFE.putInt(arr, off, Integer.reverseBytes(val));
         else
@@ -633,7 +609,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Long value from byte array.
      */
-    public static long getLongLE(byte[] arr, long off) {
+    public long getLongLE(byte[] arr, long off) {
         return UNALIGNED ? Long.reverseBytes(UNSAFE.getLong(arr, off)) : getLongByByte(arr, off, false);
     }
 
@@ -645,7 +621,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putLongLE(byte[] arr, long off, long val) {
+    public void putLongLE(byte[] arr, long off, long val) {
         if (UNALIGNED)
             UNSAFE.putLong(arr, off, Long.reverseBytes(val));
         else
@@ -660,9 +636,9 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Float value from byte array.
      */
-    public static float getFloatLE(byte[] arr, long off) {
+    public float getFloatLE(byte[] arr, long off) {
         return Float.intBitsToFloat(
-            UNALIGNED ? Integer.reverseBytes(UNSAFE.getInt(arr, off)) : getIntByByte(arr, off, false)
+                UNALIGNED ? Integer.reverseBytes(UNSAFE.getInt(arr, off)) : getIntByByte(arr, off, false)
         );
     }
 
@@ -674,7 +650,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putFloatLE(byte[] arr, long off, float val) {
+    public void putFloatLE(byte[] arr, long off, float val) {
         int intVal = Float.floatToIntBits(val);
 
         if (UNALIGNED)
@@ -691,9 +667,9 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Double value from byte array.
      */
-    public static double getDoubleLE(byte[] arr, long off) {
+    public double getDoubleLE(byte[] arr, long off) {
         return Double.longBitsToDouble(
-            UNALIGNED ? Long.reverseBytes(UNSAFE.getLong(arr, off)) : getLongByByte(arr, off, false)
+                UNALIGNED ? Long.reverseBytes(UNSAFE.getLong(arr, off)) : getLongByByte(arr, off, false)
         );
     }
 
@@ -705,7 +681,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putDoubleLE(byte[] arr, long off, double val) {
+    public void putDoubleLE(byte[] arr, long off, double val) {
         long longVal = Double.doubleToLongBits(val);
 
         if (UNALIGNED)
@@ -720,7 +696,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Byte value from given address.
      */
-    public static byte getByte(long addr) {
+    public byte getByte(long addr) {
         return UNSAFE.getByte(addr);
     }
 
@@ -730,7 +706,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putByte(long addr, byte val) {
+    public void putByte(long addr, byte val) {
         UNSAFE.putByte(addr, val);
     }
 
@@ -740,7 +716,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Short value from given address.
      */
-    public static short getShort(long addr) {
+    public short getShort(long addr) {
         return UNALIGNED ? UNSAFE.getShort(addr) : getShortByByte(addr, BIG_ENDIAN);
     }
 
@@ -750,7 +726,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putShort(long addr, short val) {
+    public void putShort(long addr, short val) {
         if (UNALIGNED)
             UNSAFE.putShort(addr, val);
         else
@@ -763,7 +739,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Char value from given address.
      */
-    public static char getChar(long addr) {
+    public char getChar(long addr) {
         return UNALIGNED ? UNSAFE.getChar(addr) : getCharByByte(addr, BIG_ENDIAN);
     }
 
@@ -773,7 +749,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putChar(long addr, char val) {
+    public void putChar(long addr, char val) {
         if (UNALIGNED)
             UNSAFE.putChar(addr, val);
         else
@@ -786,7 +762,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Integer value from given address.
      */
-    public static int getInt(long addr) {
+    public int getInt(long addr) {
         return UNALIGNED ? UNSAFE.getInt(addr) : getIntByByte(addr, BIG_ENDIAN);
     }
 
@@ -796,7 +772,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putInt(long addr, int val) {
+    public void putInt(long addr, int val) {
         if (UNALIGNED)
             UNSAFE.putInt(addr, val);
         else
@@ -809,7 +785,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Long value from given address.
      */
-    public static long getLong(long addr) {
+    public long getLong(long addr) {
         return UNALIGNED ? UNSAFE.getLong(addr) : getLongByByte(addr, BIG_ENDIAN);
     }
 
@@ -819,7 +795,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putLong(long addr, long val) {
+    public void putLong(long addr, long val) {
         if (UNALIGNED)
             UNSAFE.putLong(addr, val);
         else
@@ -832,7 +808,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Float value from given address.
      */
-    public static float getFloat(long addr) {
+    public float getFloat(long addr) {
         return UNALIGNED ? UNSAFE.getFloat(addr) : Float.intBitsToFloat(getIntByByte(addr, BIG_ENDIAN));
     }
 
@@ -842,7 +818,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putFloat(long addr, float val) {
+    public void putFloat(long addr, float val) {
         if (UNALIGNED)
             UNSAFE.putFloat(addr, val);
         else
@@ -855,7 +831,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Double value from given address.
      */
-    public static double getDouble(long addr) {
+    public double getDouble(long addr) {
         return UNALIGNED ? UNSAFE.getDouble(addr) : Double.longBitsToDouble(getLongByByte(addr, BIG_ENDIAN));
     }
 
@@ -865,7 +841,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putDouble(long addr, double val) {
+    public void putDouble(long addr, double val) {
         if (UNALIGNED)
             UNSAFE.putDouble(addr, val);
         else
@@ -879,7 +855,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Short value from given address.
      */
-    public static short getShortLE(long addr) {
+    public short getShortLE(long addr) {
         return UNALIGNED ? Short.reverseBytes(UNSAFE.getShort(addr)) : getShortByByte(addr, false);
     }
 
@@ -890,7 +866,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putShortLE(long addr, short val) {
+    public void putShortLE(long addr, short val) {
         if (UNALIGNED)
             UNSAFE.putShort(addr, Short.reverseBytes(val));
         else
@@ -904,7 +880,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Char value from given address.
      */
-    public static char getCharLE(long addr) {
+    public char getCharLE(long addr) {
         return UNALIGNED ? Character.reverseBytes(UNSAFE.getChar(addr)) : getCharByByte(addr, false);
     }
 
@@ -915,7 +891,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putCharLE(long addr, char val) {
+    public void putCharLE(long addr, char val) {
         if (UNALIGNED)
             UNSAFE.putChar(addr, Character.reverseBytes(val));
         else
@@ -929,7 +905,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Integer value from given address.
      */
-    public static int getIntLE(long addr) {
+    public int getIntLE(long addr) {
         return UNALIGNED ? Integer.reverseBytes(UNSAFE.getInt(addr)) : getIntByByte(addr, false);
     }
 
@@ -940,7 +916,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putIntLE(long addr, int val) {
+    public void putIntLE(long addr, int val) {
         if (UNALIGNED)
             UNSAFE.putInt(addr, Integer.reverseBytes(val));
         else
@@ -954,7 +930,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Long value from given address.
      */
-    public static long getLongLE(long addr) {
+    public long getLongLE(long addr) {
         return UNALIGNED ? Long.reverseBytes(UNSAFE.getLong(addr)) : getLongByByte(addr, false);
     }
 
@@ -965,7 +941,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putLongLE(long addr, long val) {
+    public void putLongLE(long addr, long val) {
         if (UNALIGNED)
             UNSAFE.putLong(addr, Long.reverseBytes(val));
         else
@@ -979,7 +955,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Float value from given address.
      */
-    public static float getFloatLE(long addr) {
+    public float getFloatLE(long addr) {
         return Float.intBitsToFloat(UNALIGNED ? Integer.reverseBytes(UNSAFE.getInt(addr)) : getIntByByte(addr, false));
     }
 
@@ -990,7 +966,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putFloatLE(long addr, float val) {
+    public void putFloatLE(long addr, float val) {
         int intVal = Float.floatToIntBits(val);
 
         if (UNALIGNED)
@@ -1006,9 +982,9 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @return Double value from given address.
      */
-    public static double getDoubleLE(long addr) {
+    public double getDoubleLE(long addr) {
         return Double.longBitsToDouble(
-            UNALIGNED ? Long.reverseBytes(UNSAFE.getLong(addr)) : getLongByByte(addr, false)
+                UNALIGNED ? Long.reverseBytes(UNSAFE.getLong(addr)) : getLongByByte(addr, false)
         );
     }
 
@@ -1019,7 +995,7 @@ public abstract class GridUnsafe {
      * @param addr Address.
      * @param val Value.
      */
-    public static void putDoubleLE(long addr, double val) {
+    public void putDoubleLE(long addr, double val) {
         long longVal = Double.doubleToLongBits(val);
 
         if (UNALIGNED)
@@ -1034,7 +1010,7 @@ public abstract class GridUnsafe {
      * @param field Field.
      * @return Static field offset.
      */
-    public static long staticFieldOffset(Field field) {
+    public long staticFieldOffset(Field field) {
         return UNSAFE.staticFieldOffset(field);
     }
 
@@ -1044,7 +1020,7 @@ public abstract class GridUnsafe {
      * @param field Field.
      * @return Object field offset.
      */
-    public static long objectFieldOffset(Field field) {
+    public long objectFieldOffset(Field field) {
         return UNSAFE.objectFieldOffset(field);
     }
 
@@ -1054,7 +1030,7 @@ public abstract class GridUnsafe {
      * @param field Field.
      * @return Static field base.
      */
-    public static Object staticFieldBase(Field field) {
+    public Object staticFieldBase(Field field) {
         return UNSAFE.staticFieldBase(field);
     }
 
@@ -1064,8 +1040,17 @@ public abstract class GridUnsafe {
      * @param size Size.
      * @return address.
      */
-    public static long allocateMemory(long size) {
+    public long allocateMemory(long size) {
         return UNSAFE.allocateMemory(size);
+    }
+
+    /**
+     *
+     * @param size
+     * @return
+     */
+    public long allocateUnsafeMemory(String regionName, int index, long size) {
+        return allocateMemory(size);
     }
 
     /**
@@ -1075,7 +1060,7 @@ public abstract class GridUnsafe {
      * @param len Length.
      * @return address.
      */
-    public static long reallocateMemory(long addr, long len) {
+    public long reallocateMemory(long addr, long len) {
         return UNSAFE.reallocateMemory(addr, len);
     }
 
@@ -1086,7 +1071,7 @@ public abstract class GridUnsafe {
      * @param len Length.
      * @param val Value.
      */
-    public static void setMemory(long addr, long len, byte val) {
+    public void setMemory(long addr, long len, byte val) {
         UNSAFE.setMemory(addr, len, val);
     }
 
@@ -1097,7 +1082,7 @@ public abstract class GridUnsafe {
      * @param dstAddr Destination address.
      * @param len Length.
      */
-    public static void copyOffheapOffheap(long srcAddr, long dstAddr, long len) {
+    public void copyOffheapOffheap(long srcAddr, long dstAddr, long len) {
         if (len <= PER_BYTE_THRESHOLD) {
             for (int i = 0; i < len; i++)
                 UNSAFE.putByte(dstAddr + i, UNSAFE.getByte(srcAddr + i));
@@ -1114,7 +1099,7 @@ public abstract class GridUnsafe {
      * @param dstOff Destination offset.
      * @param len Length.
      */
-    public static void copyOffheapHeap(long srcAddr, Object dstBase, long dstOff, long len) {
+    public void copyOffheapHeap(long srcAddr, Object dstBase, long dstOff, long len) {
         if (len <= PER_BYTE_THRESHOLD) {
             for (int i = 0; i < len; i++)
                 UNSAFE.putByte(dstBase, dstOff + i, UNSAFE.getByte(srcAddr + i));
@@ -1131,7 +1116,7 @@ public abstract class GridUnsafe {
      * @param dstAddr Destination address.
      * @param len Length.
      */
-    public static void copyHeapOffheap(Object srcBase, long srcOff, long dstAddr, long len) {
+    public void copyHeapOffheap(Object srcBase, long srcOff, long dstAddr, long len) {
         if (len <= PER_BYTE_THRESHOLD) {
             for (int i = 0; i < len; i++)
                 UNSAFE.putByte(dstAddr + i, UNSAFE.getByte(srcBase, srcOff + i));
@@ -1147,7 +1132,7 @@ public abstract class GridUnsafe {
      * @param dst Dst.
      * @param len Length.
      */
-    public static void copyMemory(long src, long dst, long len) {
+    public void copyMemory(long src, long dst, long len) {
         UNSAFE.copyMemory(src, dst, len);
     }
 
@@ -1160,7 +1145,7 @@ public abstract class GridUnsafe {
      * @param dstOff Dst offset.
      * @param len Length.
      */
-    public static void copyMemory(Object srcBase, long srcOff, Object dstBase, long dstOff, long len) {
+    public void copyMemory(Object srcBase, long srcOff, Object dstBase, long dstOff, long len) {
         if (len <= PER_BYTE_THRESHOLD && srcBase != null && dstBase != null) {
             for (int i = 0; i < len; i++)
                 UNSAFE.putByte(dstBase, dstOff + i, UNSAFE.getByte(srcBase, srcOff + i));
@@ -1170,12 +1155,24 @@ public abstract class GridUnsafe {
     }
 
     /**
-     * Frees memory.
+     * Frees off-heap memory.
      *
      * @param addr Address.
      */
-    public static void freeMemory(long addr) {
+    public void freeMemory(long addr) {
         UNSAFE.freeMemory(addr);
+    }
+
+    public void freeUnsafeMemory(long addr) {
+        /* do nothing */
+    }
+
+    public void freeMemoryBlocks() {
+        /* do nothing */
+    }
+
+    public void freeMemoryBlock(long addr) {
+        /* do nothing */
     }
 
     /**
@@ -1184,7 +1181,7 @@ public abstract class GridUnsafe {
      * @param cls Class.
      * @return the offset of the first element in the storage allocation of a given array class.
      */
-    public static int arrayBaseOffset(Class cls) {
+    public int arrayBaseOffset(Class cls) {
         return UNSAFE.arrayBaseOffset(cls);
     }
 
@@ -1194,7 +1191,7 @@ public abstract class GridUnsafe {
      * @param cls Class.
      * @return Allocated instance.
      */
-    public static Object allocateInstance(Class cls) throws InstantiationException {
+    public Object allocateInstance(Class cls) throws InstantiationException {
         return UNSAFE.allocateInstance(cls);
     }
 
@@ -1203,7 +1200,7 @@ public abstract class GridUnsafe {
      *
      * @param obj Object.
      */
-    public static void monitorEnter(Object obj) {
+    public void monitorEnter(Object obj) {
         UNSAFE.monitorEnter(obj);
     }
 
@@ -1212,7 +1209,7 @@ public abstract class GridUnsafe {
      *
      * @param obj Object.
      */
-    public static void monitorExit(Object obj) {
+    public void monitorExit(Object obj) {
         UNSAFE.monitorExit(obj);
     }
 
@@ -1225,7 +1222,7 @@ public abstract class GridUnsafe {
      * @param upd Upd.
      * @return {@code True} if operation completed successfully, {@code false} - otherwise.
      */
-    public static boolean compareAndSwapInt(Object obj, long off, int exp, int upd) {
+    public boolean compareAndSwapInt(Object obj, long off, int exp, int upd) {
         return UNSAFE.compareAndSwapInt(obj, off, exp, upd);
     }
 
@@ -1238,7 +1235,7 @@ public abstract class GridUnsafe {
      * @param upd Upd.
      * @return {@code True} if operation completed successfully, {@code false} - otherwise.
      */
-    public static boolean compareAndSwapLong(Object obj, long off, long exp, long upd) {
+    public boolean compareAndSwapLong(Object obj, long off, long exp, long upd) {
         return UNSAFE.compareAndSwapLong(obj, off, exp, upd);
     }
 
@@ -1249,7 +1246,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Byte value.
      */
-    public static byte getByteVolatile(Object obj, long off) {
+    public byte getByteVolatile(Object obj, long off) {
         return UNSAFE.getByteVolatile(obj, off);
     }
 
@@ -1260,7 +1257,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putByteVolatile(Object obj, long off, byte val) {
+    public void putByteVolatile(Object obj, long off, byte val) {
         UNSAFE.putByteVolatile(obj, off, val);
     }
 
@@ -1271,7 +1268,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Integer value.
      */
-    public static int getIntVolatile(Object obj, long off) {
+    public int getIntVolatile(Object obj, long off) {
         return UNSAFE.getIntVolatile(obj, off);
     }
 
@@ -1282,7 +1279,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putIntVolatile(Object obj, long off, int val) {
+    public void putIntVolatile(Object obj, long off, int val) {
         UNSAFE.putIntVolatile(obj, off, val);
     }
 
@@ -1293,7 +1290,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @return Long value.
      */
-    public static long getLongVolatile(Object obj, long off) {
+    public long getLongVolatile(Object obj, long off) {
         return UNSAFE.getLongVolatile(obj, off);
     }
 
@@ -1304,7 +1301,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putLongVolatile(Object obj, long off, long val) {
+    public void putLongVolatile(Object obj, long off, long val) {
         UNSAFE.putLongVolatile(obj, off, val);
     }
 
@@ -1315,7 +1312,7 @@ public abstract class GridUnsafe {
      * @param off Offset.
      * @param val Value.
      */
-    public static void putObjectVolatile(Object obj, long off, Object val) {
+    public void putObjectVolatile(Object obj, long off, Object val) {
         UNSAFE.putObjectVolatile(obj, off, val);
     }
 
@@ -1343,15 +1340,15 @@ public abstract class GridUnsafe {
         catch (SecurityException ignored) {
             try {
                 return AccessController.doPrivileged
-                    (new PrivilegedExceptionAction<Unsafe>() {
-                        @Override public Unsafe run() throws Exception {
-                            Field f = Unsafe.class.getDeclaredField("theUnsafe");
+                        (new PrivilegedExceptionAction<Unsafe>() {
+                            @Override public Unsafe run() throws Exception {
+                                Field f = Unsafe.class.getDeclaredField("theUnsafe");
 
-                            f.setAccessible(true);
+                                f.setAccessible(true);
 
-                            return (Unsafe)f.get(null);
-                        }
-                    });
+                                return (Unsafe)f.get(null);
+                            }
+                        });
             }
             catch (PrivilegedActionException e) {
                 throw new RuntimeException("Could not initialize intrinsics.", e.getCause());
@@ -1667,7 +1664,7 @@ public abstract class GridUnsafe {
      * @param buf Direct buffer.
      * @return Buffer memory address.
      */
-    public static long bufferAddress(ByteBuffer buf) {
+    public long bufferAddress(ByteBuffer buf) {
         return ((DirectBuffer)buf).address();
     }
 }

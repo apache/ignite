@@ -57,6 +57,7 @@ public class IgniteNode implements BenchmarkServer {
 
     /** Client mode. */
     private boolean clientMode;
+    private boolean driver;
 
     /** */
     public IgniteNode() {
@@ -74,11 +75,26 @@ public class IgniteNode implements BenchmarkServer {
         this.ignite = ignite;
     }
 
+    public IgniteNode(boolean clientMode, Ignite ignite, boolean driver) {
+        this.clientMode = clientMode;
+        this.ignite = ignite;
+        this.driver = driver;
+    }
+
+    public IgniteNode(boolean clientMode, boolean driver) {
+        this.clientMode = clientMode;
+        this.driver = driver;
+    }
+
     /** {@inheritDoc} */
     @Override public void start(BenchmarkConfiguration cfg) throws Exception {
         IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 
         BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
+
+        if (args.getAepPath() != null && args.getAepHeapSize() != 0) {
+            Ignition.setAepStore(args.getAepPath(), driver, args.getAepHeapSize());
+        }
 
         IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> tup = loadConfiguration(args.configuration());
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.shuffle;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
@@ -583,7 +584,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         /** */
         @Override public void copyTo(long ptr) {
-            GridUnsafe.copyHeapOffheap(buf, GridUnsafe.BYTE_ARR_OFF + off, ptr, size);
+            Ignition.UNSAFE.copyHeapOffheap(buf, GridUnsafe.BYTE_ARR_OFF + off, ptr, size);
         }
     }
 

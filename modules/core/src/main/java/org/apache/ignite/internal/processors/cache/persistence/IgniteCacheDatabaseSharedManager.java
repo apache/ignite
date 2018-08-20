@@ -25,10 +25,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.DataStorageMetrics;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
+
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -63,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
+import lib.llpl.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
@@ -940,6 +939,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
         assert memCfg != null;
+
+        if (!Ignition.isAepEnabled()) {
+            init(memCfg);
+        } else {
+            Transaction.run(Ignition.getAepHeap(), () -> {
+                try {
+                    init(memCfg);
+                } catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+        }
+    }
+
+    private void init(DataStorageConfiguration memCfg) throws IgniteCheckedException {
 
         initDataRegions(memCfg);
 

@@ -19,6 +19,7 @@ package org.apache.ignite.hadoop.io;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.io.OffheapRawMemory;
 import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
@@ -44,7 +45,7 @@ public class TextPartiallyRawComparator implements PartiallyRawComparator<Text>,
 
     /** {@inheritDoc} */
     @Override public int compare(Text val1, long val2Ptr, int val2Len) {
-        int len2 = WritableUtils.decodeVIntSize(GridUnsafe.getByte(val2Ptr));
+        int len2 = WritableUtils.decodeVIntSize(Ignition.UNSAFE.getByte(val2Ptr));
 
         return HadoopUtils.compareBytes(val1.getBytes(), val1.getLength(), val2Ptr + len2, val2Len - len2);
     }

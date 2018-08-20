@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.util;
 
 import java.util.concurrent.TimeUnit;
+
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -38,10 +40,10 @@ public class GridSpinReadWriteLock {
      */
     static {
         try {
-            STATE_OFFS = GridUnsafe.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("state"));
+            STATE_OFFS = Ignition.UNSAFE.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("state"));
 
             PENDING_WLOCKS_OFFS =
-                GridUnsafe.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("pendingWLocks"));
+                Ignition.UNSAFE.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("pendingWLocks"));
         }
         catch (NoSuchFieldException e) {
             throw new Error(e);
@@ -399,7 +401,7 @@ public class GridSpinReadWriteLock {
      * @return {@code True} on success.
      */
     private boolean compareAndSet(long offs, int expect, int update) {
-        return GridUnsafe.compareAndSwapInt(this, offs, expect, update);
+        return Ignition.UNSAFE.compareAndSwapInt(this, offs, expect, update);
     }
 
     /** {@inheritDoc} */

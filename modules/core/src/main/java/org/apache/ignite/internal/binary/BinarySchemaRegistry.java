@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
+import lib.llpl.Heap;
+import lib.llpl.MemoryBlock;
+import lib.llpl.Transactional;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.util.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -26,41 +31,120 @@ import java.util.HashMap;
  * <p>
  * We rely on the fact that usually object has only few different schemas. For this reason we inline several
  * of them with optional fallback to normal hash map lookup.
- *
  */
 public class BinarySchemaRegistry {
-    /** Empty schema ID. */
+    /**
+     * Empty schema ID.
+     */
     private static final int EMPTY = 0;
 
-    /** Whether registry still works in inline mode. */
+    /**
+     * Whether registry still works in inline mode.
+     */
     private volatile boolean inline = true;
 
-    /** First schema ID. */
+    /**
+     * First schema ID.
+     */
     private int schemaId1;
 
-    /** Second schema ID. */
+    /**
+     * Second schema ID.
+     */
     private int schemaId2;
 
-    /** Third schema ID. */
+    /**
+     * Third schema ID.
+     */
     private int schemaId3;
 
-    /** Fourth schema ID. */
+    /**
+     * Fourth schema ID.
+     */
     private int schemaId4;
 
-    /** First schema. */
+    /**
+     * First schema.
+     */
     private BinarySchema schema1;
 
-    /** Second schema. */
+    /**
+     * Second schema.
+     */
     private BinarySchema schema2;
 
-    /** Third schema. */
+    /**
+     * Third schema.
+     */
     private BinarySchema schema3;
 
-    /** Fourth schema. */
+    /**
+     * Fourth schema.
+     */
     private BinarySchema schema4;
 
-    /** Schemas with COW semantics. */
+    /**
+     * Schemas with COW semantics.
+     */
     private volatile HashMap<Integer, BinarySchema> schemas;
+
+    /**
+     * The type of the memory region
+     */
+    private static final Class kind = Transactional.class;
+
+    /**
+     * A persistent list to store multiple schemas created by this object.
+     */
+    private PersistentLinkedList<MemoryBlock.Kind, BinarySchemaWithId> schemaList;
+
+    /**
+     * A static persistent memory region to track the list of schemas created during runtime.
+     * <p>
+     * The size is specified by SCHEMA_REGISTRY_SIZE.
+     * <p>
+     * Format:
+     * <p>
+     * +--------------------------------------+------------------------------+
+     * | base address of registry 1 (8 bytes) | base address of registry 2  | etc.
+     * +--------------------------------------+------------------------------+
+     * <p>
+     * We can store (MAX_SCHEMA_COUNT)/8 unique schemas.
+     *
+     */
+    private static MemoryBlock<?> schemaRegistryBucket;
+
+    /**
+     * The size of the persistent schemaRegistryBucket.
+     */
+    public static final long SCHEMA_REGISTRY_SIZE = 8 * 1024;
+
+
+    static {
+        if (Ignition.isAepEnabled()) {
+
+            schemaRegistryBucket = Ignition.UNSAFE.getSchemaRegistryBlock();
+
+        } else if (Ignition.isAepClientModeEnabled()) {
+
+            Heap heap = Ignition.getAepHeap();
+            if (heap.getRoot() != 0) {
+                schemaRegistryBucket = heap.memoryBlockFromAddress(kind, heap.getRoot());
+            } else {
+                schemaRegistryBucket = heap.allocateMemoryBlock(kind, SCHEMA_REGISTRY_SIZE);
+                schemaRegistryBucket.setMemory((byte) 0, 0, SCHEMA_REGISTRY_SIZE);
+                heap.setRoot(schemaRegistryBucket.address());
+            }
+
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public BinarySchemaRegistry() {
+        if (Ignition.isAepEnabled() || Ignition.isAepClientModeEnabled()) {
+            schemaList = new PersistentLinkedList<>(kind, Ignition.getAepHeap());
+        }
+    }
 
     /**
      * Get schema for the given ID. We rely on very relaxed memory semantics here assuming that it is not critical
@@ -69,7 +153,9 @@ public class BinarySchemaRegistry {
      * @param schemaId Schema ID.
      * @return Schema or {@code null}.
      */
-    @Nullable public BinarySchema schema(int schemaId) {
+    @Nullable
+    @SuppressWarnings("unchecked")
+    public BinarySchema schema(int schemaId) {
         if (inline) {
             if (schemaId == schemaId1)
                 return schema1;
@@ -79,14 +165,34 @@ public class BinarySchemaRegistry {
                 return schema3;
             else if (schemaId == schemaId4)
                 return schema4;
-        }
-        else {
+        } else {
             HashMap<Integer, BinarySchema> schemas0 = schemas;
 
             // Null can be observed here due to either data race or race condition when switching to non-inlined mode.
             // Both of them are benign for us because they lead only to unnecessary schema re-calc.
             if (schemas0 != null)
                 return schemas0.get(schemaId);
+        }
+
+        if (Ignition.isAepEnabled() || Ignition.isAepClientModeEnabled()) {
+
+            for(int idx = 0; schemaRegistryBucket.getLong(idx * Long.BYTES) != 0; idx++) {
+
+                PersistentLinkedList<MemoryBlock.Kind, BinarySchemaWithId> pl =
+                        new PersistentLinkedList<>(kind, Ignition.getAepHeap());
+
+                pl.setRoot(schemaRegistryBucket.getLong(idx * Long.BYTES));
+
+                while (pl.hasNext()) {
+                    BinarySchemaWithId bs = pl.next();
+
+                    assert bs != null;
+
+                    if (schemaId == bs.getSchemaId())
+                        return bs.getSchema();
+                }
+            }
+
         }
 
         return null;
@@ -99,7 +205,29 @@ public class BinarySchemaRegistry {
      * @param schema Schema.
      */
     public void addSchema(int schemaId, BinarySchema schema) {
+
         synchronized (this) {
+
+            if (Ignition.isAepEnabled() || Ignition.isAepClientModeEnabled()) {
+
+                // Add schemaId and schema to the persistent schema list
+                schemaList.add(new BinarySchemaWithId(schemaId, schema));
+
+                // Check if the persistent schema list is already in the registry
+                long address;
+                int index = 0;
+                while ((address = schemaRegistryBucket.getLong(index * Long.BYTES)) != 0) {
+                    if (schemaList.getRoot() == address)
+                        break;
+                    index++;
+                }
+
+                // If persistent list has not been saved previously, save it now.
+                if (address == 0)
+                    schemaRegistryBucket.setLong(index * Long.BYTES, schemaList.getRoot());
+
+            }
+
             if (inline) {
                 // Check if this is already known schema.
                 if (schemaId == schemaId1 || schemaId == schemaId2 || schemaId == schemaId3 || schemaId == schemaId4)
@@ -159,14 +287,15 @@ public class BinarySchemaRegistry {
                 schemas = newSchemas;
 
                 inline = false;
-            }
-            else {
+            } else {
                 HashMap<Integer, BinarySchema> newSchemas = new HashMap<>(schemas);
 
                 newSchemas.put(schemaId, schema);
 
                 schemas = newSchemas;
             }
+
         }
     }
+
 }

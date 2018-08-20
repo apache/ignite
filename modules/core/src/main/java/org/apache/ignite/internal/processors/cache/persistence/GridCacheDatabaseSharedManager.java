@@ -57,11 +57,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.management.ObjectName;
-import org.apache.ignite.DataStorageMetrics;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
+
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
@@ -119,10 +116,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
@@ -2616,7 +2610,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         @Override public void run() {
             ByteBuffer tmpWriteBuf = threadBuf.get();
 
-            long writeAddr = GridUnsafe.bufferAddress(tmpWriteBuf);
+            long writeAddr = Ignition.UNSAFE.bufferAddress(tmpWriteBuf);
 
             snapshotMgr.beforeCheckpointPageWritten();
 

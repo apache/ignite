@@ -237,6 +237,14 @@ public class IgniteBenchmarkArguments {
     private boolean persistentStoreEnabled;
 
     /** */
+    @Parameter(names = {"-aepPath", "--aepPath"}, description = "AEP path URL")
+    private String aepPath;
+
+    /** */
+    @Parameter(names = {"-aepHeapSize", "--aepHeapSize"}, description = "AEP Heap Size")
+    private long aepHeapSize;
+
+    /** */
     @Parameter(names = {"-stcp", "--streamerCachesPrefix"}, description = "Cache name prefix for streamer benchmark")
     private String streamerCachesPrefix = "streamer";
 
@@ -259,6 +267,13 @@ public class IgniteBenchmarkArguments {
         return persistentStoreEnabled;
     }
 
+    public String getAepPath() {
+        return aepPath;
+    }
+
+    public long getAepHeapSize() {
+        return aepHeapSize;
+    }
     /**
      * @return List of enabled load test operations.
      */

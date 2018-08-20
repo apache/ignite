@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.freelist.io;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
@@ -58,7 +59,8 @@ public class PagesListNodeIO extends PageIO {
     @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
         super.initNewPage(pageAddr, pageId, pageSize);
 
-        setEmpty(pageAddr);
+        if (!Ignition.isAepEnabled())
+            setEmpty(pageAddr);
 
         setPreviousId(pageAddr, 0L);
         setNextId(pageAddr, 0L);

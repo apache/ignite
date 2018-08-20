@@ -37,4 +37,7 @@ public interface DirectMemoryProvider {
      * @return Next memory region.
      */
     public DirectMemoryRegion nextRegion();
+
+    public DirectMemoryRegion nextRegion(String regionName);
+
 }

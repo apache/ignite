@@ -105,8 +105,12 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider {
         }
     }
 
-    /** {@inheritDoc} */
     @Override public DirectMemoryRegion nextRegion() {
+        return nextRegion("");
+    }
+
+    /** {@inheritDoc} */
+    @Override public DirectMemoryRegion nextRegion(String regionName) {
         try {
             if (mappedFiles.size() == sizes.length)
                 return null;

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
+
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -94,7 +96,7 @@ public class CacheGroupData implements Serializable {
         this.deploymentId = deploymentId;
         this.caches = caches;
         this.flags = flags;
-        this.persistenceEnabled = persistenceEnabled;
+        this.persistenceEnabled = !Ignition.isAepEnabled() ? persistenceEnabled : false;
     }
 
     /**

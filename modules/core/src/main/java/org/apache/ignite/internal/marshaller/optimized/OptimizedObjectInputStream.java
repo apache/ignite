@@ -42,6 +42,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -575,7 +576,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         Object obj;
 
         try {
-            obj = GridUnsafe.allocateInstance(cls);
+            obj = Ignition.UNSAFE.allocateInstance(cls);
         }
         catch (InstantiationException e) {
             throw new IOException(e);
@@ -673,7 +674,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     @SuppressWarnings("unchecked")
     HashSet<?> readHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
-            HashSet<Object> set = (HashSet<Object>)GridUnsafe.allocateInstance(HashSet.class);
+            HashSet<Object> set = (HashSet<Object>) Ignition.UNSAFE.allocateInstance(HashSet.class);
 
             handles.assign(set);
 
@@ -745,7 +746,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     @SuppressWarnings("unchecked")
     LinkedHashSet<?> readLinkedHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
-            LinkedHashSet<Object> set = (LinkedHashSet<Object>)GridUnsafe.allocateInstance(LinkedHashSet.class);
+            LinkedHashSet<Object> set = (LinkedHashSet<Object>)Ignition.UNSAFE.allocateInstance(LinkedHashSet.class);
 
             handles.assign(set);
 

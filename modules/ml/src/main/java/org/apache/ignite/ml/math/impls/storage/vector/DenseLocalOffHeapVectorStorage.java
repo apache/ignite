@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.stream.IntStream;
+
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.ml.math.VectorStorage;
 
@@ -62,12 +64,12 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public double get(int i) {
-        return GridUnsafe.getDouble(pointerOffset(i));
+        return Ignition.UNSAFE.getDouble(pointerOffset(i));
     }
 
     /** {@inheritDoc} */
     @Override public void set(int i, double v) {
-        GridUnsafe.putDouble(pointerOffset(i), v);
+        Ignition.UNSAFE.putDouble(pointerOffset(i), v);
     }
 
     /** {@inheritDoc} */
@@ -123,7 +125,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void destroy() {
-        GridUnsafe.freeMemory(ptr);
+        Ignition.UNSAFE.freeMemory(ptr);
     }
 
     /** {@inheritDoc} */
@@ -165,7 +167,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** */
     private void allocateMemory(int size) {
-        ptr = GridUnsafe.allocateMemory(size * Double.BYTES);
+        ptr = Ignition.UNSAFE.allocateMemory(size * Double.BYTES);
 
         ptrInitHash = Long.hashCode(ptr);
     }

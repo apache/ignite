@@ -43,4 +43,6 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator, PageSupport
      * @return Total number of loaded pages in memory.
      */
     public long loadedPages();
+
+    public String getDataRegionName();
 }

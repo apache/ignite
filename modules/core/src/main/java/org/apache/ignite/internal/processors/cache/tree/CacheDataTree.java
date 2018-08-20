@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import lib.llpl.Transaction;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -79,7 +82,16 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         assert !grp.dataRegion().config().isPersistenceEnabled() || grp.shared().database().checkpointLockIsHeldByThread();
 
-        initTree(initNew);
+        if (!Ignition.isAepEnabled())
+            initTree(initNew);
+        else
+            Transaction.run(Ignition.getAepHeap(), () -> {
+                try {
+                    initTree(initNew);
+                } catch (IgniteCheckedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
     /**
@@ -191,7 +203,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                         int off = i * 8;
 
                         long b1 = PageUtils.getLong(addr, off);
-                        long b2 = GridUnsafe.getLong(bytes, GridUnsafe.BYTE_ARR_OFF + off);
+                        long b2 = Ignition.UNSAFE.getLong(bytes, Ignition.UNSAFE.BYTE_ARR_OFF + off);
 
                         int cmp = Long.compare(b1, b2);
 
@@ -234,10 +246,10 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         final int words = len / 8;
 
         for (int i = 0; i < words; i++) {
-            int off = GridUnsafe.BYTE_ARR_INT_OFF + i * 8;
+            int off = Ignition.UNSAFE.BYTE_ARR_INT_OFF + i * 8;
 
-            long b1 = GridUnsafe.getLong(bytes1, off);
-            long b2 = GridUnsafe.getLong(bytes2, off);
+            long b1 = Ignition.UNSAFE.getLong(bytes1, off);
+            long b2 = Ignition.UNSAFE.getLong(bytes2, off);
 
             int cmp = Long.compare(b1, b2);
 

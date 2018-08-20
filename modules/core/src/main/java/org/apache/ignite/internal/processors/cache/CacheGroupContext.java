@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -701,7 +702,8 @@ public class CacheGroupContext {
 
         preldr.onKernalStop();
 
-        offheapMgr.stop();
+        if (!Ignition.isAepEnabled() && !Ignition.isAepClientModeEnabled())
+            offheapMgr.stop();
 
         ctx.io().removeCacheGroupHandlers(grpId);
     }

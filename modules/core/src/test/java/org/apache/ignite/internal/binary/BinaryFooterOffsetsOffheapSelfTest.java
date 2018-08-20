@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 
@@ -33,7 +34,7 @@ public class BinaryFooterOffsetsOffheapSelfTest extends BinaryFooterOffsetsAbstr
 
         // Cleanup allocated objects.
         for (Long ptr : ptrs)
-            GridUnsafe.freeMemory(ptr);
+            Ignition.UNSAFE.freeMemory(ptr);
 
         ptrs.clear();
     }
@@ -42,11 +43,11 @@ public class BinaryFooterOffsetsOffheapSelfTest extends BinaryFooterOffsetsAbstr
     @Override protected BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception {
         byte[] arr = marsh.marshal(obj);
 
-        long ptr = GridUnsafe.allocateMemory(arr.length);
+        long ptr = Ignition.UNSAFE.allocateMemory(arr.length);
 
         ptrs.add(ptr);
 
-        GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr, arr.length);
+        Ignition.UNSAFE.copyHeapOffheap(arr, Ignition.UNSAFE.BYTE_ARR_OFF, ptr, arr.length);
 
         return new BinaryObjectOffheapImpl(ctx, ptr, 0, arr.length);
     }

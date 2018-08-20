@@ -38,6 +38,7 @@ import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -1192,7 +1193,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cache.stop();
 
-        ctx.kernalContext().query().onCacheStop(ctx, !cache.context().group().persistenceEnabled() || destroy);
+        ctx.kernalContext().query().onCacheStop(ctx, (!cache.context().group().persistenceEnabled() || destroy) && !Ignition.isAepEnabled() && !Ignition.isAepClientModeEnabled());
 
         if (isNearEnabled(ctx)) {
             GridDhtCacheAdapter dht = ctx.near().dht();
@@ -2858,11 +2859,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (checkThreadTx)
             checkEmptyTransactions();
 
-        DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, sql, true);
+        boolean destroy = !Ignition.isAepEnabled() && !Ignition.isAepClientModeEnabled();
+        DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, sql, destroy);
 
         req.stop(true);
-        req.destroy(true);
+
         req.restart(restart);
+
 
         return F.first(initiateCacheChanges(F.asList(req)));
     }
@@ -2875,7 +2878,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx,
         boolean restart) {
-        return dynamicDestroyCaches(cacheNames, checkThreadTx, restart, true);
+        return dynamicDestroyCaches(cacheNames, checkThreadTx, restart, !Ignition.isAepEnabled() && !Ignition.isAepClientModeEnabled());
     }
 
     /**
@@ -2910,7 +2913,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, false, true);
 
         req.stop(true);
-        req.destroy(destroy);
+
+        if (Ignition.isAepEnabled() || Ignition.isAepClientModeEnabled())
+            req.destroy(false);
+        else
+            req.destroy(destroy);
+
         req.restart(restart);
 
         return req;

@@ -22,6 +22,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.h2.result.SortOrder;
@@ -552,7 +554,7 @@ public class InlineIndexHelper {
 
         if (compareBinaryUnsigned) {
             for (int i = 0; i < len; i++) {
-                int b1 = GridUnsafe.getByte(addr + i) & 0xff;
+                int b1 = Ignition.UNSAFE.getByte(addr + i) & 0xff;
                 int b2 = bytes[i] & 0xff;
 
                 if (b1 != b2)
@@ -561,7 +563,7 @@ public class InlineIndexHelper {
         }
         else {
             for (int i = 0; i < len; i++) {
-                byte b1 = GridUnsafe.getByte(addr + i);
+                byte b1 = Ignition.UNSAFE.getByte(addr + i);
                 byte b2 = bytes[i];
 
                 if (b1 != b2)
@@ -603,7 +605,7 @@ public class InlineIndexHelper {
 
         // Try reading ASCII.
         while (cntr1 < len1 && cntr2 < len2) {
-            c = (int) GridUnsafe.getByte(addr) & 0xFF;
+            c = (int) Ignition.UNSAFE.getByte(addr) & 0xFF;
 
             if (c > 127)
                 break;
@@ -624,7 +626,7 @@ public class InlineIndexHelper {
 
         // read other
         while (cntr1 < len1 && cntr2 < len2) {
-            c = (int) GridUnsafe.getByte(addr++) & 0xFF;
+            c = (int) Ignition.UNSAFE.getByte(addr++) & 0xFF;
 
             switch (c >> 4) {
                 case 0:
@@ -650,7 +652,7 @@ public class InlineIndexHelper {
                     if (cntr1 > len1)
                         throw new IllegalStateException("Malformed input (partial character at the end).");
 
-                    c2 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c2 = (int) Ignition.UNSAFE.getByte(addr++) & 0xFF;
 
                     if ((c2 & 0xC0) != 0x80)
                         throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 2));
@@ -669,9 +671,9 @@ public class InlineIndexHelper {
                     if (cntr1 > len1)
                         throw new IllegalStateException("Malformed input (partial character at the end).");
 
-                    c2 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c2 = (int) Ignition.UNSAFE.getByte(addr++) & 0xFF;
 
-                    c3 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c3 = (int) Ignition.UNSAFE.getByte(addr++) & 0xFF;
 
                     if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
                         throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 3));
@@ -691,11 +693,11 @@ public class InlineIndexHelper {
                     if (cntr1 > len1)
                         throw new IllegalStateException("Malformed input (partial character at the end).");
 
-                    c2 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c2 = (int) Ignition.UNSAFE.getByte(addr++) & 0xFF;
 
-                    c3 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c3 = (int) Ignition.UNSAFE.getByte(addr++) & 0xFF;
 
-                    c4 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c4 = (int) Ignition.UNSAFE.getByte(addr++) & 0xFF;
 
                     if (((c & 0xF8) != 0xf0) || ((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80) || ((c4 & 0xC0) != 0x80))
                     throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 4));

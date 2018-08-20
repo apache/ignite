@@ -38,4 +38,10 @@ public interface DirectMemoryRegion {
      * @return Sub-region.
      */
     public DirectMemoryRegion slice(long offset);
+
+    /**
+     * Added for AEP support.
+     * @return
+     */
+    public String getName();
 }

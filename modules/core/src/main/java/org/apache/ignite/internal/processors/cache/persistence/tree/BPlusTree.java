@@ -25,8 +25,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import lib.llpl.Transaction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -792,7 +795,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     protected final void initTree(boolean initNew) throws IgniteCheckedException {
-        initTree(initNew, 0);
+        if (!Ignition.isAepEnabled())
+            initTree(initNew, 0);
+        else
+            Transaction.run(Ignition.getAepHeap(), () -> {
+                try {
+                    initTree(initNew, 0);
+                } catch (IgniteCheckedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
     /**
@@ -2460,7 +2472,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /**
-         * @param rootId Root page ID.
+         * @param rootId Root pageinit ID.
          * @param rootLvl Root level.
          * @param rmvId Remove ID to be afraid of.
          */

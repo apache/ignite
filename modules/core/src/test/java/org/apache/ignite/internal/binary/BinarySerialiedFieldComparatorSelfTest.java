@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -68,7 +69,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (Long ptr : ptrs)
-            GridUnsafe.freeMemory(ptr);
+            Ignition.UNSAFE.freeMemory(ptr);
 
         super.afterTest();
     }
@@ -498,11 +499,11 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
         if (offheap) {
             byte[] arr = obj.array();
 
-            long ptr = GridUnsafe.allocateMemory(arr.length);
+            long ptr = Ignition.UNSAFE.allocateMemory(arr.length);
 
             ptrs.add(ptr);
 
-            GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
+            Ignition.UNSAFE.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
 
             obj = new BinaryObjectOffheapImpl(obj.context(), ptr, 0, obj.array().length);
         }

@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.util;
 
 import java.nio.ByteBuffer;
+
+import lib.llpl.Transaction;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -423,7 +426,12 @@ public abstract class PageHandler<X, R> {
 
         assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
 
-        init.initNewPage(pageAddr, pageId, pageMem.pageSize());
+        if (!Ignition.isAepEnabled())
+            init.initNewPage(pageAddr, pageId, pageMem.pageSize());
+        else
+            Transaction.run(Ignition.getAepHeap(), () -> {
+                init.initNewPage(pageAddr, pageId, pageMem.pageSize());
+            });
 
         // Here we should never write full page, because it is known to be new.
         if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, FALSE))
@@ -463,13 +471,13 @@ public abstract class PageHandler<X, R> {
     public static void copyMemory(ByteBuffer src, long srcOff, ByteBuffer dst, long dstOff, long cnt) {
         byte[] srcArr = src.hasArray() ? src.array() : null;
         byte[] dstArr = dst.hasArray() ? dst.array() : null;
-        long srcArrOff = src.hasArray() ? src.arrayOffset() + GridUnsafe.BYTE_ARR_OFF : 0;
-        long dstArrOff = dst.hasArray() ? dst.arrayOffset() + GridUnsafe.BYTE_ARR_OFF : 0;
+        long srcArrOff = src.hasArray() ? src.arrayOffset() + Ignition.UNSAFE.BYTE_ARR_OFF : 0;
+        long dstArrOff = dst.hasArray() ? dst.arrayOffset() + Ignition.UNSAFE.BYTE_ARR_OFF : 0;
 
-        long srcPtr = src.isDirect() ? GridUnsafe.bufferAddress(src) : 0;
-        long dstPtr = dst.isDirect() ? GridUnsafe.bufferAddress(dst) : 0;
+        long srcPtr = src.isDirect() ? Ignition.UNSAFE.bufferAddress(src) : 0;
+        long dstPtr = dst.isDirect() ? Ignition.UNSAFE.bufferAddress(dst) : 0;
 
-        GridUnsafe.copyMemory(srcArr, srcPtr + srcArrOff + srcOff, dstArr, dstPtr + dstArrOff + dstOff, cnt);
+        Ignition.UNSAFE.copyMemory(srcArr, srcPtr + srcArrOff + srcOff, dstArr, dstPtr + dstArrOff + dstOff, cnt);
     }
 
     /**
@@ -480,7 +488,7 @@ public abstract class PageHandler<X, R> {
      */
     public static void zeroMemory(ByteBuffer buf, int off, int len) {
         if (buf.isDirect())
-            GridUnsafe.setMemory(GridUnsafe.bufferAddress(buf) + off, len, (byte)0);
+            Ignition.UNSAFE.setMemory(Ignition.UNSAFE.bufferAddress(buf) + off, len, (byte)0);
 
         else {
             for (int i = off; i < off + len; i++)
@@ -496,7 +504,7 @@ public abstract class PageHandler<X, R> {
      * @param cnt Bytes count to copy.
      */
     public static void copyMemory(long srcAddr, long srcOff, long dstAddr, long dstOff, long cnt) {
-        GridUnsafe.copyMemory(null, srcAddr + srcOff, null, dstAddr + dstOff, cnt);
+        Ignition.UNSAFE.copyMemory(null, srcAddr + srcOff, null, dstAddr + dstOff, cnt);
     }
 
     /**
@@ -505,6 +513,6 @@ public abstract class PageHandler<X, R> {
      * @param len Length.
      */
     public static void zeroMemory(long addr, int off, int len) {
-        GridUnsafe.setMemory(addr + off, len, (byte)0);
+        Ignition.UNSAFE.setMemory(addr + off, len, (byte)0);
     }
 }

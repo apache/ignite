@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist.io;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
@@ -59,8 +60,11 @@ public class PagesListMetaIO extends PageIO {
     @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
         super.initNewPage(pageAddr, pageId, pageSize);
 
-        setCount(pageAddr, 0);
-        setNextMetaPageId(pageAddr, 0L);
+        if (!Ignition.isAepEnabled()) {
+            setCount(pageAddr, 0);
+
+            setNextMetaPageId(pageAddr, 0L);
+        }
     }
 
     /**

@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -391,11 +392,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     private byte[] serializeCacheSizes(Map<Integer, Long> cacheSizes) {
         // Item size = 4 bytes (cache ID) + 8 bytes (cache size) = 12 bytes
         byte[] data = new byte[cacheSizes.size() * 12];
-        long off = GridUnsafe.BYTE_ARR_OFF;
+        long off = Ignition.UNSAFE.BYTE_ARR_OFF;
 
         for (Map.Entry<Integer, Long> entry : cacheSizes.entrySet()) {
-            GridUnsafe.putInt(data, off, entry.getKey()); off += 4;
-            GridUnsafe.putLong(data, off, entry.getValue()); off += 8;
+            Ignition.UNSAFE.putInt(data, off, entry.getKey()); off += 4;
+            Ignition.UNSAFE.putLong(data, off, entry.getValue()); off += 8;
         }
 
         return data;

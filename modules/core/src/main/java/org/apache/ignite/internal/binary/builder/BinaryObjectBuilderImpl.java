@@ -193,7 +193,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param serializer Serializer.
      */
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
+    public void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
 

@@ -29,6 +29,7 @@ import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
@@ -719,21 +720,21 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         byte[] arr = ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).marshal(po);
 
-        long ptr = GridUnsafe.allocateMemory(arr.length + 5);
+        long ptr = Ignition.UNSAFE.allocateMemory(arr.length + 5);
 
         try {
             long ptr0 = ptr;
 
-            GridUnsafe.putBoolean(null, ptr0++, false);
+            Ignition.UNSAFE.putBoolean(null, ptr0++, false);
 
             int len = arr.length;
 
             if (BIG_ENDIAN)
-                GridUnsafe.putIntLE(ptr0, len);
+                Ignition.UNSAFE.putIntLE(ptr0, len);
             else
-                GridUnsafe.putInt(ptr0, len);
+                Ignition.UNSAFE.putInt(ptr0, len);
 
-            GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr0 + 4, arr.length);
+            Ignition.UNSAFE.copyHeapOffheap(arr, Ignition.UNSAFE.BYTE_ARR_OFF, ptr0 + 4, arr.length);
 
             BinaryObject offheapObj = (BinaryObject)
                 ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).unmarshal(ptr, false);
@@ -759,7 +760,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
             assertEquals(offheapObj, po);
         }
         finally {
-            GridUnsafe.freeMemory(ptr);
+            Ignition.UNSAFE.freeMemory(ptr);
         }
     }
 

@@ -18,6 +18,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
@@ -339,7 +340,8 @@ public final class DataRegionConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataRegionConfiguration setPersistenceEnabled(boolean persistenceEnabled) {
-        this.persistenceEnabled = persistenceEnabled;
+        if (!Ignition.isAepEnabled())
+            this.persistenceEnabled = persistenceEnabled;
 
         return this;
     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.memory;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
@@ -55,14 +56,14 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     @Override public byte readByte() {
         ensureEnoughData(1);
 
-        return GridUnsafe.getByte(data + pos++);
+        return Ignition.UNSAFE.getByte(data + pos++);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] readByteArray(int cnt) {
         byte[] res = new byte[cnt];
 
-        copyAndShift(res, GridUnsafe.BYTE_ARR_OFF, cnt);
+        copyAndShift(res, Ignition.UNSAFE.BYTE_ARR_OFF, cnt);
 
         return res;
     }
@@ -76,7 +77,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     @Override public boolean[] readBooleanArray(int cnt) {
         boolean[] res = new boolean[cnt];
 
-        copyAndShift(res, GridUnsafe.BOOLEAN_ARR_OFF, cnt);
+        copyAndShift(res, Ignition.UNSAFE.BOOLEAN_ARR_OFF, cnt);
 
         return res;
     }
@@ -85,7 +86,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     @Override public short readShort() {
         ensureEnoughData(2);
 
-        short res = GridUnsafe.getShort(data + pos);
+        short res = Ignition.UNSAFE.getShort(data + pos);
 
         shift(2);
 
@@ -98,7 +99,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
 
         short[] res = new short[cnt];
 
-        copyAndShift(res, GridUnsafe.SHORT_ARR_OFF, len);
+        copyAndShift(res, Ignition.UNSAFE.SHORT_ARR_OFF, len);
 
         return res;
     }
@@ -107,7 +108,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     @Override public char readChar() {
         ensureEnoughData(2);
 
-        char res = GridUnsafe.getChar(data + pos);
+        char res = Ignition.UNSAFE.getChar(data + pos);
 
         shift(2);
 
@@ -120,7 +121,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
 
         char[] res = new char[cnt];
 
-        copyAndShift(res, GridUnsafe.CHAR_ARR_OFF, len);
+        copyAndShift(res, Ignition.UNSAFE.CHAR_ARR_OFF, len);
 
         return res;
     }
@@ -129,7 +130,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     @Override public int readInt() {
         ensureEnoughData(4);
 
-        int res = GridUnsafe.getInt(data + pos);
+        int res = Ignition.UNSAFE.getInt(data + pos);
 
         shift(4);
 
@@ -143,7 +144,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
         if (delta > 0)
             ensureEnoughData(delta);
 
-        return GridUnsafe.getByte(data + pos);
+        return Ignition.UNSAFE.getByte(data + pos);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +154,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
         if (delta > 0)
             ensureEnoughData(delta);
 
-        return GridUnsafe.getShort(data + pos);
+        return Ignition.UNSAFE.getShort(data + pos);
     }
 
     /** {@inheritDoc} */
@@ -163,7 +164,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
         if (delta > 0)
             ensureEnoughData(delta);
 
-        return GridUnsafe.getInt(data + pos);
+        return Ignition.UNSAFE.getInt(data + pos);
     }
 
     /** {@inheritDoc} */
@@ -172,7 +173,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
 
         int[] res = new int[cnt];
 
-        copyAndShift(res, GridUnsafe.INT_ARR_OFF, len);
+        copyAndShift(res, Ignition.UNSAFE.INT_ARR_OFF, len);
 
         return res;
     }
@@ -181,7 +182,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     @Override public float readFloat() {
         ensureEnoughData(4);
 
-        float res = GridUnsafe.getFloat(data + pos);
+        float res = Ignition.UNSAFE.getFloat(data + pos);
 
         shift(4);
 
@@ -194,7 +195,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
 
         float[] res = new float[cnt];
 
-        copyAndShift(res, GridUnsafe.FLOAT_ARR_OFF, len);
+        copyAndShift(res, Ignition.UNSAFE.FLOAT_ARR_OFF, len);
 
         return res;
     }
@@ -203,7 +204,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     @Override public long readLong() {
         ensureEnoughData(8);
 
-        long res = GridUnsafe.getLong(data + pos);
+        long res = Ignition.UNSAFE.getLong(data + pos);
 
         shift(8);
 
@@ -216,7 +217,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
 
         long[] res = new long[cnt];
 
-        copyAndShift(res, GridUnsafe.LONG_ARR_OFF, len);
+        copyAndShift(res, Ignition.UNSAFE.LONG_ARR_OFF, len);
 
         return res;
     }
@@ -225,7 +226,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     @Override public double readDouble() {
         ensureEnoughData(8);
 
-        double res = GridUnsafe.getDouble(data + pos);
+        double res = Ignition.UNSAFE.getDouble(data + pos);
 
         shift(8);
 
@@ -238,7 +239,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
 
         double[] res = new double[cnt];
 
-        copyAndShift(res, GridUnsafe.DOUBLE_ARR_OFF, len);
+        copyAndShift(res, Ignition.UNSAFE.DOUBLE_ARR_OFF, len);
 
         return res;
     }
@@ -248,7 +249,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
         if (len > remaining())
             len = remaining();
 
-        copyAndShift(arr, GridUnsafe.BYTE_ARR_OFF + off, len);
+        copyAndShift(arr, Ignition.UNSAFE.BYTE_ARR_OFF + off, len);
 
         return len;
     }
@@ -286,7 +287,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
         if (dataCopy == null) {
             dataCopy = new byte[len];
 
-            GridUnsafe.copyOffheapHeap(data, dataCopy, GridUnsafe.BYTE_ARR_OFF, dataCopy.length);
+            Ignition.UNSAFE.copyOffheapHeap(data, dataCopy, Ignition.UNSAFE.BYTE_ARR_OFF, dataCopy.length);
         }
 
         return dataCopy;
@@ -334,7 +335,7 @@ public class PlatformInputStreamImpl implements PlatformInputStream {
     private void copyAndShift(Object target, long off, int cnt) {
         ensureEnoughData(cnt);
 
-        GridUnsafe.copyOffheapHeap(data + pos, target, off, cnt);
+        Ignition.UNSAFE.copyOffheapHeap(data + pos, target, off, cnt);
 
         shift(cnt);
     }

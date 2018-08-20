@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -81,7 +82,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
             clearEntry(gridCacheEntryEx);
 
         if (!ctx.isNear()) {
-            if (id == 0)
+            if (id == 0 && ((!Ignition.isAepEnabled() && !Ignition.isClientMode()) || !Ignition.isAepClientModeEnabled()))
                 ctx.offheap().clearCache(ctx, readers);
         }
     }

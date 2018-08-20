@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
@@ -265,7 +266,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * @param persistenceEnabled Persistence enabled.
      */
     public void persistenceEnabled(boolean persistenceEnabled) {
-        this.persistenceEnabled = persistenceEnabled;
+        if (!Ignition.isAepEnabled())
+            this.persistenceEnabled = persistenceEnabled;
     }
 
     /**

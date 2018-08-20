@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
@@ -33,7 +35,7 @@ public class ByteBufferExpander implements AutoCloseable {
      * @param order Byte order.
      */
     public ByteBufferExpander(int initSize, ByteOrder order) {
-        ByteBuffer buffer = GridUnsafe.allocateBuffer(initSize);
+        ByteBuffer buffer = Ignition.UNSAFE.allocateBuffer(initSize);
         buffer.order(order);
 
         buf = buffer;
@@ -54,16 +56,13 @@ public class ByteBufferExpander implements AutoCloseable {
      * @return ByteBuffer with requested size.
      */
     public ByteBuffer expand(int size) {
-        assert buf.capacity() < size;
-
-        int pos = buf.position();
-        int lim = buf.limit();
-
-        ByteBuffer newBuf = GridUnsafe.reallocateBuffer(buf, size);
+        ByteBuffer newBuf = ByteBuffer.allocate(size);
 
         newBuf.order(buf.order());
-        newBuf.position(pos);
-        newBuf.limit(lim);
+
+        newBuf.put(buf);
+
+        newBuf.flip();
 
         buf = newBuf;
 
@@ -72,6 +71,6 @@ public class ByteBufferExpander implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        GridUnsafe.freeBuffer(buf);
+        Ignition.UNSAFE.freeBuffer(buf);
     }
 }

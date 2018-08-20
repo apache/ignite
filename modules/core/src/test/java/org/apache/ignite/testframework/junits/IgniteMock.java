@@ -60,6 +60,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -508,4 +509,13 @@ public class IgniteMock implements Ignite {
     public void setStaticCfg(IgniteConfiguration staticCfg) {
         this.staticCfg = staticCfg;
     }
+
+    /**
+     *
+     * @return
+     */
+    @Override public GridKernalContext context() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
 }

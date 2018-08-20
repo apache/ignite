@@ -20,6 +20,8 @@ package org.apache.ignite.ml.math.impls.storage.matrix;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
@@ -79,12 +81,12 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public double get(int x, int y) {
-        return GridUnsafe.getDouble(pointerOffset(x, y));
+        return Ignition.UNSAFE.getDouble(pointerOffset(x, y));
     }
 
     /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
-        GridUnsafe.putDouble(pointerOffset(x, y), v);
+        Ignition.UNSAFE.putDouble(pointerOffset(x, y), v);
     }
 
     /** {@inheritDoc} */
@@ -164,7 +166,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public void destroy() {
-        GridUnsafe.freeMemory(ptr);
+        Ignition.UNSAFE.freeMemory(ptr);
     }
 
     /** */
@@ -210,7 +212,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
     /** */
     private void allocateMemory(int rows, int cols) {
-        ptr = GridUnsafe.allocateMemory((long)rows * cols * Double.BYTES);
+        ptr = Ignition.UNSAFE.allocateMemory((long)rows * cols * Double.BYTES);
 
         ptrInitHash = Long.hashCode(ptr);
     }

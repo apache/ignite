@@ -34,6 +34,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -1429,12 +1430,12 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             for (int i = 0; i < locked.size(); i++) {
                 GridCacheEntryEx entry = locked.get(i);
 
-                GridUnsafe.monitorEnter(entry);
+                Ignition.UNSAFE.monitorEnter(entry);
 
                 if (entry.obsolete()) {
                     // Unlock all locked.
                     for (int j = 0; j <= i; j++)
-                        GridUnsafe.monitorExit(locked.get(j));
+                        Ignition.UNSAFE.monitorExit(locked.get(j));
 
                     // Clear entries.
                     locked.clear();
@@ -1465,7 +1466,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      */
     private void unlockEntries(Iterable<GridCacheEntryEx> locked) {
         for (GridCacheEntryEx entry : locked)
-            GridUnsafe.monitorExit(entry);
+            Ignition.UNSAFE.monitorExit(entry);
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 

@@ -19,10 +19,16 @@ package org.apache.ignite;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
+
+import lib.llpl.Heap;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.binary.BinarySchemaRegistry;
+import org.apache.ignite.internal.util.AepUnsafe;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -101,11 +107,26 @@ public class Ignition {
     public static final int KILL_EXIT_CODE = 130;
 
     /**
-     * Enforces singleton.
+     * A reference to our aepHeap
      */
-    protected Ignition() {
-        // No-op.
-    }
+    private static Heap aepHeap;
+
+    /**
+     *
+     */
+    private static boolean aepEnabled = false;
+
+    /**
+     *
+     */
+    private static boolean aepClientMode = false;
+
+    /**
+     * Default AEP heap size in DAX mode.
+     */
+    private static long aepHeapSize = 2 * 1024 * 1024 * 1024L;
+
+    public static GridUnsafe UNSAFE = new GridUnsafe();
 
     /**
      * Sets daemon flag.
@@ -570,4 +591,61 @@ public class Ignition {
     public static boolean removeListener(IgnitionListener lsnr) {
         return IgnitionEx.removeListener(lsnr);
     }
+
+    /**
+     * Sets AEP data store name.
+     * @param aepName
+     */
+    public static void setAepStore(String aepName, boolean isClient, long aepHeapSize) {
+
+        validatePath(aepName);
+
+        if (!isClient) {
+            Ignition.aepHeapSize = aepHeapSize;
+            aepHeap = Heap.getHeap(aepName, aepHeapSize);
+            aepEnabled = true;
+        } else {
+            aepHeap = Heap.getHeap(aepName + "_client", 8 * 1024 * BinarySchemaRegistry.SCHEMA_REGISTRY_SIZE);
+            aepClientMode = true;
+        }
+
+        UNSAFE = new AepUnsafe();
+    }
+
+    public static void setAepStore(String aepName, long aepHeapSize) {
+        setAepStore(aepName, false, aepHeapSize);
+    }
+
+    public static void setAepStore(String aepName, boolean isClient) {
+        setAepStore(aepName, isClient, aepHeapSize);
+    }
+
+    public static void setAepStore(String aepName) {
+        setAepStore(aepName, false, aepHeapSize);
+    }
+
+    private static void validatePath(String aepName) {
+        try {
+            Paths.get(aepName);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Heap getAepHeap() {
+        return aepHeap;
+    }
+
+    public static boolean isAepEnabled() {
+        return aepEnabled;
+    }
+    
+    public static boolean isAepClientModeEnabled() {
+        return aepClientMode;
+    }
+
+    public static void print(String msg) {
+        System.out.println("\033[0;34m" + msg + "\033[0m");
+    }
+
 }

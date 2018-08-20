@@ -17,9 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+
+import lib.llpl.Heap;
+import lib.llpl.MemoryBlock;
+import lib.llpl.Transactional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -41,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -85,6 +93,48 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /** Holds FreeListImpl buckets. Key: data region id, Value: buckets. */
+    public static final ConcurrentHashMap<Integer, AtomicReferenceArray<Stripe[]>> bucketsMap = new ConcurrentHashMap<>();
+
+    private static PersistentLinkedList<Transactional, Long> plist;
+
+    static {
+
+        if (Ignition.isAepEnabled()) {
+
+            plist = Ignition.UNSAFE.getPersistentList();
+
+            assert plist != null;
+
+            int size = plist.size();
+
+            // We skip index 0 (the schema registry region).
+            for (int i = 1; i < size; i++) {
+                Long base = plist.get(i);
+                assert base != null;
+
+                MemoryBlock<Transactional> block = Ignition.getAepHeap().memoryBlockFromAddress(Transactional.class, base);
+
+                assert block != null;
+
+                if (block.getInt(block.size() - 2 * Integer.BYTES) == AepUnsafe.BlockType.BUCKET.ordinal()) {
+                    PagesList.Stripe[] stripes;
+                    int id = block.getInt(block.size() - Integer.BYTES);
+                    bucketsMap.put(id, new AtomicReferenceArray<>(BUCKETS));
+
+                    for (int j = 0; j < BUCKETS; j++) {
+                        stripes = getPersistedStripes(id, j);
+                        AtomicReferenceArray<Stripe[]> ara = bucketsMap.get(id);
+
+                        assert ara != null;
+
+                        ara.set(j, stripes);
+                    }
+                }
+            }
+        }
+    }
 
     /**
      *
@@ -293,6 +343,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             int newFreeSpace = io.getFreeSpace(pageAddr);
 
+            // Ignition.print("OldFreeSpace = " + oldFreeSpace + ", " + newFreeSpace);
+
             if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
                 int newBucket = bucket(newFreeSpace, false);
 
@@ -368,6 +420,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         emptyDataPagesBucket = bucket(MIN_SIZE_FOR_DATA_PAGE, false);
 
         init(metaPageId, initNew);
+
+        if (Ignition.isAepEnabled())
+            addBuckets(memPlc.config().getName(), buckets);
     }
 
     /**
@@ -555,12 +610,22 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /** {@inheritDoc} */
     @Override protected Stripe[] getBucket(int bucket) {
-        return buckets.get(bucket);
+        Stripe[] stripes = buckets.get(bucket);
+
+        if (Ignition.isAepEnabled() && stripes == null)
+            stripes = getStripes(pageMem.getDataRegionName(), bucket);
+
+        return stripes;
     }
 
     /** {@inheritDoc} */
     @Override protected boolean casBucket(int bucket, Stripe[] exp, Stripe[] upd) {
-        return buckets.compareAndSet(bucket, exp, upd);
+        boolean updated = buckets.compareAndSet(bucket, exp, upd);
+
+        if (Ignition.isAepEnabled() && updated)
+            updateStripes(pageMem.getDataRegionName(), bucket, upd);
+
+        return updated;
     }
 
     /** {@inheritDoc} */
@@ -616,4 +681,98 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     @Override public String toString() {
         return "FreeList [name=" + name + ']';
     }
+
+
+    private static void addBuckets(String regionName, AtomicReferenceArray<PagesList.Stripe[]> buckets) {
+        int id = regionName.hashCode();
+        if (!bucketsMap.containsKey(id))
+            bucketsMap.put(id, buckets);
+    }
+
+    private static PagesList.Stripe[] getStripes(String regionName, int bucket) {
+        for (Map.Entry<Integer, AtomicReferenceArray<PagesList.Stripe[]>> e : bucketsMap.entrySet()) {
+            if (e.getKey() == regionName.hashCode())
+                return e.getValue().get(bucket);
+        }
+        return null;
+    }
+
+    private void updateStripes(String regionName, int bucket, PagesList.Stripe[] upd) {
+        for (Map.Entry<Integer, AtomicReferenceArray<PagesList.Stripe[]>> e : bucketsMap.entrySet()) {
+            if (e.getKey() == regionName.hashCode()) {
+                e.getValue().set(bucket, upd);
+                break;
+            }
+        }
+    }
+
+    private static MemoryBlock<Transactional> getPersistedStripesBlock(int id, int bucket) {
+        Heap heap = Ignition.getAepHeap();
+        MemoryBlock<Transactional> block = null;
+
+        // We skip index 0 (the schema registry region).
+        int i = 1;
+        int size = plist.size();
+        for (; i < size; i++) {
+            Long address = plist.get(i);
+            if (address == null)
+                continue;
+
+            block = heap.memoryBlockFromAddress(Transactional.class, address);
+            if (block == null)
+                continue;
+
+            if (block.getInt(block.size() - Integer.BYTES) == id &&
+                    block.getInt(block.size() - 2 * Integer.BYTES) == bucket &&
+                    block.getInt(block.size() - 3 * Integer.BYTES) == AepUnsafe.BlockType.BUCKET.ordinal())
+                break;
+        }
+
+        if (i == size)
+            return null;
+
+        return block;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static PagesList.Stripe[] getPersistedStripes(int id, int bucket) {
+        MemoryBlock<?> block = getPersistedStripesBlock(id, bucket);
+        if (block == null)
+            return null;
+
+        byte[] stripes = new byte[(int) block.size() - 3 * Integer.BYTES];
+        for (int j = 0; j < stripes.length; j++)
+            stripes[j] = block.getByte(j);
+
+        return (PagesList.Stripe[]) SerializationUtils.deserialize(stripes);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void persistStripes(int id, int bucket, PagesList.Stripe[] upd) {
+        if (upd == null)
+            return;
+
+        byte[] arr = SerializationUtils.serialize(upd);
+        int len = arr.length;
+
+        MemoryBlock<Transactional> block;
+        PagesList.Stripe[] stripes = getPersistedStripes(id, bucket);
+
+        if (stripes == null) {
+            block = Ignition.getAepHeap().allocateMemoryBlock(Transactional.class, len + 3 * Integer.BYTES);
+            block.setInt(len, AepUnsafe.BlockType.BUCKET.ordinal());
+            block.setInt(len + Integer.BYTES, bucket);
+            block.setInt(len + 2 * Integer.BYTES, id);
+        }
+        else
+            block = getPersistedStripesBlock(id, bucket);
+
+        assert block != null;
+
+        block.copyFromArray(arr, 0, 0, len);
+
+        if (stripes == null)
+            plist.add(block.address());
+    }
+
 }

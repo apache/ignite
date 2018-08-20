@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -76,7 +77,9 @@ public abstract class BPlusIO<L> extends PageIO {
     @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
         super.initNewPage(pageAddr, pageId, pageSize);
 
-        setCount(pageAddr, 0);
+        if (!Ignition.isAepEnabled())
+            setCount(pageAddr, 0);
+
         setForward(pageAddr, 0);
         setRemoveId(pageAddr, 0);
     }

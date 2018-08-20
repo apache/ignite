@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+
+import lib.llpl.Transaction;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -110,7 +113,17 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
         setIos(H2ExtrasInnerIO.getVersions(inlineSize), H2ExtrasLeafIO.getVersions(inlineSize));
 
-        initTree(initNew, inlineSize);
+        final int iSize = inlineSize;
+        if (!Ignition.isAepEnabled())
+            initTree(initNew, inlineSize);
+        else
+            Transaction.run(Ignition.getAepHeap(), () -> {
+                try {
+                    initTree(initNew, iSize);
+                } catch(IgniteCheckedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
     }
 
     /**

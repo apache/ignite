@@ -58,6 +58,7 @@ import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryCollectionFactory;
@@ -81,8 +82,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -2619,13 +2620,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             assertFalse(offheapObj2.equals(offheapObj));
         }
         finally {
-            GridUnsafe.freeMemory(ptr);
+            Ignition.UNSAFE.freeMemory(ptr);
 
             if (ptr1 > 0)
-                GridUnsafe.freeMemory(ptr1);
+                Ignition.UNSAFE.freeMemory(ptr1);
 
             if (ptr2 > 0)
-                GridUnsafe.freeMemory(ptr2);
+                Ignition.UNSAFE.freeMemory(ptr2);
         }
     }
 
@@ -3155,32 +3156,32 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         }
         finally {
             if (binObjOffheap0 != null) {
-                GridUnsafe.freeMemory(binObjOffheap0.offheapAddress());
+                Ignition.UNSAFE.freeMemory(binObjOffheap0.offheapAddress());
                 binObjOffheap0 = null;
             }
 
             if (binObjOffheap1 != null) {
-                GridUnsafe.freeMemory(binObjOffheap1.offheapAddress());
+                Ignition.UNSAFE.freeMemory(binObjOffheap1.offheapAddress());
                 binObjOffheap1 = null;
             }
 
             if (binObjWithRawOffheap0 != null) {
-                GridUnsafe.freeMemory(binObjWithRawOffheap0.offheapAddress());
+                Ignition.UNSAFE.freeMemory(binObjWithRawOffheap0.offheapAddress());
                 binObjOffheap1 = null;
             }
 
             if (binObjWithRawOffheap1 != null) {
-                GridUnsafe.freeMemory(binObjWithRawOffheap1.offheapAddress());
+                Ignition.UNSAFE.freeMemory(binObjWithRawOffheap1.offheapAddress());
                 binObjOffheap1 = null;
             }
 
             if (binObjRawOffheap0 != null) {
-                GridUnsafe.freeMemory(binObjRawOffheap0.offheapAddress());
+                Ignition.UNSAFE.freeMemory(binObjRawOffheap0.offheapAddress());
                 binObjOffheap1 = null;
             }
 
             if (binObjRawOffheap1 != null) {
-                GridUnsafe.freeMemory(binObjRawOffheap1.offheapAddress());
+                Ignition.UNSAFE.freeMemory(binObjRawOffheap1.offheapAddress());
                 binObjOffheap1 = null;
             }
         }
@@ -3552,9 +3553,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     private long copyOffheap(BinaryObjectImpl obj) {
         byte[] arr = obj.array();
 
-        long ptr = GridUnsafe.allocateMemory(arr.length);
+        long ptr = Ignition.UNSAFE.allocateMemory(arr.length);
 
-        GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr, arr.length);
+        Ignition.UNSAFE.copyHeapOffheap(arr, Ignition.UNSAFE.BYTE_ARR_OFF, ptr, arr.length);
 
         return ptr;
     }

@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
@@ -162,7 +163,7 @@ public class HadoopConcurrentHashMultimapSelftest extends HadoopAbstractMapTest 
             private void read(long ptr, int size, Writable w) {
                 assert size == 4 : size;
 
-                GridUnsafe.copyOffheapHeap(ptr, buf, GridUnsafe.BYTE_ARR_OFF, size);
+                Ignition.UNSAFE.copyOffheapHeap(ptr, buf, GridUnsafe.BYTE_ARR_OFF, size);
 
                 dataInput.bytes(buf, size);
 

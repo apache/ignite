@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.binary.streams;
 
 import java.util.Arrays;
+
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -122,57 +124,57 @@ public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object target, long off, int len) {
-        GridUnsafe.copyMemory(data, GridUnsafe.BYTE_ARR_OFF + pos, target, off, len);
+        Ignition.UNSAFE.copyMemory(data, Ignition.UNSAFE.BYTE_ARR_OFF + pos, target, off, len);
 
         shift(len);
     }
 
     /** {@inheritDoc} */
     @Override protected short readShortFast() {
-        long off = GridUnsafe.BYTE_ARR_OFF + pos;
+        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
 
-        return BIG_ENDIAN ? GridUnsafe.getShortLE(data, off) : GridUnsafe.getShort(data, off);
+        return BIG_ENDIAN ? Ignition.UNSAFE.getShortLE(data, off) : Ignition.UNSAFE.getShort(data, off);
 
     }
 
     /** {@inheritDoc} */
     @Override protected char readCharFast() {
-        long off = GridUnsafe.BYTE_ARR_OFF + pos;
+        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
 
-        return BIG_ENDIAN ? GridUnsafe.getCharLE(data, off) : GridUnsafe.getChar(data, off);
+        return BIG_ENDIAN ? Ignition.UNSAFE.getCharLE(data, off) : Ignition.UNSAFE.getChar(data, off);
     }
 
     /** {@inheritDoc} */
     @Override protected int readIntFast() {
-        long off = GridUnsafe.BYTE_ARR_OFF + pos;
+        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
 
-        return BIG_ENDIAN ? GridUnsafe.getIntLE(data, off) : GridUnsafe.getInt(data, off);
+        return BIG_ENDIAN ? Ignition.UNSAFE.getIntLE(data, off) : Ignition.UNSAFE.getInt(data, off);
     }
 
     /** {@inheritDoc} */
     @Override protected long readLongFast() {
-        long off = GridUnsafe.BYTE_ARR_OFF + pos;
+        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
 
-        return BIG_ENDIAN ? GridUnsafe.getLongLE(data, off) : GridUnsafe.getLong(data, off);
+        return BIG_ENDIAN ? Ignition.UNSAFE.getLongLE(data, off) : Ignition.UNSAFE.getLong(data, off);
     }
 
     /** {@inheritDoc} */
     @Override protected byte readBytePositioned0(int pos) {
-        return GridUnsafe.getByte(data, GridUnsafe.BYTE_ARR_OFF + pos);
+        return Ignition.UNSAFE.getByte(data, Ignition.UNSAFE.BYTE_ARR_OFF + pos);
     }
 
     /** {@inheritDoc} */
     @Override protected short readShortPositioned0(int pos) {
-        long off = GridUnsafe.BYTE_ARR_OFF + pos;
+        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
 
-        return BIG_ENDIAN ? GridUnsafe.getShortLE(data, off) : GridUnsafe.getShort(data, off);
+        return BIG_ENDIAN ? Ignition.UNSAFE.getShortLE(data, off) : Ignition.UNSAFE.getShort(data, off);
 
     }
 
     /** {@inheritDoc} */
     @Override protected int readIntPositioned0(int pos) {
-        long off = GridUnsafe.BYTE_ARR_OFF + pos;
+        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
 
-        return BIG_ENDIAN ? GridUnsafe.getIntLE(data, off) : GridUnsafe.getInt(data, off);
+        return BIG_ENDIAN ? Ignition.UNSAFE.getIntLE(data, off) : Ignition.UNSAFE.getInt(data, off);
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -1480,7 +1481,10 @@ public abstract class PagesList extends DataStructure {
     /**
      *
      */
-    public static final class Stripe {
+    public static final class Stripe implements Serializable {
+
+        private static final long serialVersionUID = 0L;
+
         /** */
         public volatile long tailId;
 

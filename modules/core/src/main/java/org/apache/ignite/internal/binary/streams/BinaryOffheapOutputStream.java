@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -77,7 +78,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
     @Override public byte[] arrayCopy() {
         byte[] res = new byte[pos];
 
-        GridUnsafe.copyOffheapHeap(ptr, res, GridUnsafe.BYTE_ARR_OFF, pos);
+        Ignition.UNSAFE.copyOffheapHeap(ptr, res, Ignition.UNSAFE.BYTE_ARR_OFF, pos);
 
         return res;
     }
@@ -96,12 +97,12 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override protected void writeByteAndShift(byte val) {
-        GridUnsafe.putByte(ptr + pos++, val);
+        Ignition.UNSAFE.putByte(ptr + pos++, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object src, long offset, int len) {
-        GridUnsafe.copyHeapOffheap(src, offset, ptr + pos, len);
+        Ignition.UNSAFE.copyHeapOffheap(src, offset, ptr + pos, len);
 
         shift(len);
     }
@@ -111,9 +112,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            GridUnsafe.putShortLE(addr, val);
+            Ignition.UNSAFE.putShortLE(addr, val);
         else
-            GridUnsafe.putShort(addr, val);
+            Ignition.UNSAFE.putShort(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -121,9 +122,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            GridUnsafe.putCharLE(addr, val);
+            Ignition.UNSAFE.putCharLE(addr, val);
         else
-            GridUnsafe.putChar(addr, val);
+            Ignition.UNSAFE.putChar(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -131,9 +132,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            GridUnsafe.putIntLE(addr, val);
+            Ignition.UNSAFE.putIntLE(addr, val);
         else
-            GridUnsafe.putInt(addr, val);
+            Ignition.UNSAFE.putInt(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -141,9 +142,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            GridUnsafe.putLongLE(addr, val);
+            Ignition.UNSAFE.putLongLE(addr, val);
         else
-            GridUnsafe.putLong(addr, val);
+            Ignition.UNSAFE.putLong(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +154,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteByte(byte val) {
-        GridUnsafe.putByte(ptr + pos++, val);
+        Ignition.UNSAFE.putByte(ptr + pos++, val);
     }
 
     /** {@inheritDoc} */
@@ -161,9 +162,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            GridUnsafe.putShortLE(addr, val);
+            Ignition.UNSAFE.putShortLE(addr, val);
         else
-            GridUnsafe.putShort(addr, val);
+            Ignition.UNSAFE.putShort(addr, val);
 
         shift(2);
     }
@@ -173,9 +174,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            GridUnsafe.putShortLE(addr, val);
+            Ignition.UNSAFE.putShortLE(addr, val);
         else
-            GridUnsafe.putShort(addr, val);
+            Ignition.UNSAFE.putShort(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -183,9 +184,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            GridUnsafe.putCharLE(addr, val);
+            Ignition.UNSAFE.putCharLE(addr, val);
         else
-            GridUnsafe.putChar(addr, val);
+            Ignition.UNSAFE.putChar(addr, val);
 
         shift(2);
     }
@@ -195,9 +196,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            GridUnsafe.putIntLE(addr, val);
+            Ignition.UNSAFE.putIntLE(addr, val);
         else
-            GridUnsafe.putInt(addr, val);
+            Ignition.UNSAFE.putInt(addr, val);
 
         shift(4);
     }
@@ -207,9 +208,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            GridUnsafe.putIntLE(addr, val);
+            Ignition.UNSAFE.putIntLE(addr, val);
         else
-            GridUnsafe.putInt(addr, val);
+            Ignition.UNSAFE.putInt(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -217,9 +218,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            GridUnsafe.putLongLE(addr, val);
+            Ignition.UNSAFE.putLongLE(addr, val);
         else
-            GridUnsafe.putLong(addr, val);
+            Ignition.UNSAFE.putLong(addr, val);
 
         shift(8);
     }
@@ -231,7 +232,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
      * @return Pointer.
      */
     protected long allocate(int cap) {
-        return GridUnsafe.allocateMemory(cap);
+        return Ignition.UNSAFE.allocateMemory(cap);
     }
 
     /**
@@ -242,7 +243,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
      * @return New pointer.
      */
     protected long reallocate(long ptr, int cap) {
-        return GridUnsafe.reallocateMemory(ptr, cap);
+        return Ignition.UNSAFE.reallocateMemory(ptr, cap);
     }
 
     /**
@@ -251,6 +252,6 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
      * @param ptr Pointer.
      */
     protected void release(long ptr) {
-        GridUnsafe.freeMemory(ptr);
+        Ignition.UNSAFE.freeMemory(ptr);
     }
 }

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -99,14 +100,14 @@ public class OffheapReadWriteLock {
 
         assert tag != 0;
 
-        GridUnsafe.putLong(lock, (long)tag << 16);
+        Ignition.UNSAFE.putLong(lock, (long)tag << 16);
     }
 
     /**
      * @param lock Lock address.
      */
     public boolean readLock(long lock, int tag) {
-        long state = GridUnsafe.getLongVolatile(null, lock);
+        long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
         assert state != 0;
 
@@ -119,14 +120,14 @@ public class OffheapReadWriteLock {
                     return false;
 
                 if (canReadLock(state)) {
-                    if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, 1, 0, 0)))
+                    if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updateState(state, 1, 0, 0)))
                         return true;
                     else
                         // Retry CAS, do not count as spin cycle.
                         i--;
                 }
 
-                state = GridUnsafe.getLongVolatile(null, lock);
+                state = Ignition.UNSAFE.getLongVolatile(null, lock);
             }
         }
 
@@ -151,7 +152,7 @@ public class OffheapReadWriteLock {
      */
     public void readUnlock(long lock) {
         while (true) {
-            long state = GridUnsafe.getLongVolatile(null, lock);
+            long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
             if (lockCount(state) <= 0)
                 throw new IllegalMonitorStateException("Attempted to release a read lock while not holding it " +
@@ -161,7 +162,7 @@ public class OffheapReadWriteLock {
 
             assert updated != 0;
 
-            if (GridUnsafe.compareAndSwapLong(null, lock, state, updated)) {
+            if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updated)) {
                 // Notify monitor if we were CASed to zero and there is a write waiter.
                 if (lockCount(updated) == 0 && writersWaitCount(updated) > 0) {
                     int idx = lockIndex(lock);
@@ -189,10 +190,10 @@ public class OffheapReadWriteLock {
      * @param lock Lock address.
      */
     public boolean tryWriteLock(long lock, int tag) {
-        long state = GridUnsafe.getLongVolatile(null, lock);
+        long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
         return checkTag(state, tag) && canWriteLock(state) &&
-            GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 0));
+            Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 0));
     }
 
     /**
@@ -202,7 +203,7 @@ public class OffheapReadWriteLock {
         assert tag != 0;
 
         for (int i = 0; i < SPIN_CNT; i++) {
-            long state = GridUnsafe.getLongVolatile(null, lock);
+            long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
             assert state != 0;
 
@@ -210,7 +211,7 @@ public class OffheapReadWriteLock {
                 return false;
 
             if (canWriteLock(state)) {
-                if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 0)))
+                if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 0)))
                     return true;
                 else
                     // Retry CAS, do not count as spin cycle.
@@ -239,7 +240,7 @@ public class OffheapReadWriteLock {
      * @return {@code True} if write lock is held by any thread for the given offheap RW lock.
      */
     public boolean isWriteLocked(long lock) {
-        return lockCount(GridUnsafe.getLongVolatile(null, lock)) == -1;
+        return lockCount(Ignition.UNSAFE.getLongVolatile(null, lock)) == -1;
     }
 
     /**
@@ -247,7 +248,7 @@ public class OffheapReadWriteLock {
      * @return {@code True} if at least one read lock is held by any thread for the given offheap RW lock.
      */
     public boolean isReadLocked(long lock) {
-        return lockCount(GridUnsafe.getLongVolatile(null, lock)) > 0;
+        return lockCount(Ignition.UNSAFE.getLongVolatile(null, lock)) > 0;
     }
 
     /**
@@ -259,7 +260,7 @@ public class OffheapReadWriteLock {
         assert tag != 0;
 
         while (true) {
-            long state = GridUnsafe.getLongVolatile(null, lock);
+            long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
             if (lockCount(state) != -1)
                 throw new IllegalMonitorStateException("Attempted to release write lock while not holding it " +
@@ -269,7 +270,7 @@ public class OffheapReadWriteLock {
 
             assert updated != 0;
 
-            if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
+            if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updated))
                 break;
         }
 
@@ -344,13 +345,13 @@ public class OffheapReadWriteLock {
      */
     public Boolean upgradeToWriteLock(long lock, int tag) {
         for (int i = 0; i < SPIN_CNT; i++) {
-            long state = GridUnsafe.getLongVolatile(null, lock);
+            long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
             if (!checkTag(state, tag))
                 return null;
 
             if (lockCount(state) == 1) {
-                if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -2, 0, 0)))
+                if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updateState(state, -2, 0, 0)))
                     return true;
                 else
                     // Retry CAS, do not count as spin cycle.
@@ -367,20 +368,20 @@ public class OffheapReadWriteLock {
         try {
             // First, add write waiter.
             while (true) {
-                long state = GridUnsafe.getLongVolatile(null, lock);
+                long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
                 if (!checkTag(state, tag))
                     return null;
 
                 if (lockCount(state) == 1) {
-                    if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -2, 0, 0)))
+                    if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updateState(state, -2, 0, 0)))
                         return true;
                     else
                         continue;
                 }
 
                 // Remove read lock and add write waiter simultaneously.
-                if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 1)))
+                if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 1)))
                     break;
             }
 
@@ -410,13 +411,13 @@ public class OffheapReadWriteLock {
         try {
             while (true) {
                 try {
-                    long state = GridUnsafe.getLongVolatile(null, lock);
+                    long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
                     if (!checkTag(state, tag)) {
                         // We cannot lock with this tag, release waiter.
                         long updated = updateState(state, 0, -1, 0);
 
-                        if (GridUnsafe.compareAndSwapLong(null, lock, state, updated)) {
+                        if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updated)) {
                             int writeWaitCnt = writersWaitCount(updated);
                             int readWaitCnt = readersWaitCount(updated);
 
@@ -428,7 +429,7 @@ public class OffheapReadWriteLock {
                     else if (canReadLock(state)) {
                         long updated = updateState(state, 1, -1, 0);
 
-                        if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
+                        if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updated))
                             return true;
                     }
                     else
@@ -464,13 +465,13 @@ public class OffheapReadWriteLock {
         try {
             while (true) {
                 try {
-                    long state = GridUnsafe.getLongVolatile(null, lock);
+                    long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
                     if (!checkTag(state, tag)) {
                         // We cannot lock with this tag, release waiter.
                         long updated = updateState(state, 0, 0, -1);
 
-                        if (GridUnsafe.compareAndSwapLong(null, lock, state, updated)) {
+                        if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updated)) {
                             int writeWaitCnt = writersWaitCount(updated);
                             int readWaitCnt = readersWaitCount(updated);
 
@@ -482,7 +483,7 @@ public class OffheapReadWriteLock {
                     else if (canWriteLock(state)) {
                         long updated = updateState(state, -1, 0, -1);
 
-                        if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
+                        if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updated))
                             return true;
                     }
                     else
@@ -641,11 +642,11 @@ public class OffheapReadWriteLock {
 
         while (true) {
             // Safe to do non-volatile read because of CAS below.
-            long state = GridUnsafe.getLongVolatile(null, lock);
+            long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
             long updated = updateState(state, 0, delta, 0);
 
-            if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
+            if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updated))
                 return;
         }
     }
@@ -660,11 +661,11 @@ public class OffheapReadWriteLock {
         assert lockObj.isHeldByCurrentThread();
 
         while (true) {
-            long state = GridUnsafe.getLongVolatile(null, lock);
+            long state = Ignition.UNSAFE.getLongVolatile(null, lock);
 
             long updated = updateState(state, 0, 0, delta);
 
-            if (GridUnsafe.compareAndSwapLong(null, lock, state, updated))
+            if (Ignition.UNSAFE.compareAndSwapLong(null, lock, state, updated))
                 return;
         }
     }

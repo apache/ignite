@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -56,7 +57,7 @@ public class PageSnapshot extends WALRecord {
 
         pageData = new byte[pageSize];
 
-        GridUnsafe.copyMemory(null, ptr, pageData, GridUnsafe.BYTE_ARR_OFF, pageSize);
+        Ignition.UNSAFE.copyMemory(null, ptr, pageData, GridUnsafe.BYTE_ARR_OFF, pageSize);
     }
 
     /** {@inheritDoc} */
@@ -84,7 +85,7 @@ public class PageSnapshot extends WALRecord {
         buf.order(ByteOrder.nativeOrder());
         buf.put(pageData);
 
-        long addr = GridUnsafe.bufferAddress(buf);
+        long addr = Ignition.UNSAFE.bufferAddress(buf);
 
         try {
             return "PageSnapshot [fullPageId = " + fullPageId() + ", page = [\n"

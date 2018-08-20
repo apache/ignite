@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -57,7 +58,7 @@ public class RowStore {
         coctx = grp.cacheObjectContext();
         pageMem = grp.dataRegion().pageMemory();
 
-        persistenceEnabled = grp.dataRegion().config().isPersistenceEnabled();
+        persistenceEnabled = !Ignition.isAepEnabled() ? grp.dataRegion().config().isPersistenceEnabled() : false;
     }
 
     /**

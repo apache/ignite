@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.UnsafeChunk;
@@ -60,15 +61,19 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
         for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
             DirectMemoryRegion chunk = it.next();
 
-            GridUnsafe.freeMemory(chunk.address());
+            Ignition.UNSAFE.freeUnsafeMemory(chunk.address());
 
             // Safety.
             it.remove();
         }
     }
 
-    /** {@inheritDoc} */
     @Override public DirectMemoryRegion nextRegion() {
+        return nextRegion("");
+    }
+
+    /** {@inheritDoc} */
+    @Override public DirectMemoryRegion nextRegion(String regionName) {
         if (regions.size() == sizes.length)
             return null;
 
@@ -77,7 +82,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
         long ptr;
 
         try {
-            ptr = GridUnsafe.allocateMemory(chunkSize);
+            ptr = Ignition.UNSAFE.allocateUnsafeMemory(regionName, regions.size(), chunkSize);
         }
         catch (IllegalArgumentException e) {
             String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
@@ -97,7 +102,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
             return null;
         }
 
-        DirectMemoryRegion region = new UnsafeChunk(ptr, chunkSize);
+        DirectMemoryRegion region = new UnsafeChunk(regionName, ptr, chunkSize);
 
         regions.add(region);
 

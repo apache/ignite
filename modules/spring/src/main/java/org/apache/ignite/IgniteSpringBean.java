@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -647,4 +648,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     @Override public String toString() {
         return S.toString(IgniteSpringBean.class, this);
     }
+
+    /**
+     *
+     * @return
+     */
+    @Override public GridKernalContext context() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
 }

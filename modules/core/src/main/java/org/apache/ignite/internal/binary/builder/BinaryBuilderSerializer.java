@@ -31,7 +31,7 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 /**
  *
  */
-class BinaryBuilderSerializer {
+public class BinaryBuilderSerializer {
     /** */
     private final Map<BinaryObjectBuilderImpl, Integer> objToPos = new IdentityHashMap<>();
 

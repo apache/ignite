@@ -21,6 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -71,14 +72,14 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 4);
+        trackingArrPtr = Ignition.UNSAFE.allocateMemory(trackingSize * 4);
 
-        GridUnsafe.setMemory(trackingArrPtr, trackingSize * 4, (byte)0);
+        Ignition.UNSAFE.setMemory(trackingArrPtr, trackingSize * 4, (byte)0);
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        GridUnsafe.freeMemory(trackingArrPtr);
+        Ignition.UNSAFE.freeMemory(trackingArrPtr);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +90,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         
         assert res >= 0 && res < Integer.MAX_VALUE;
         
-        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, (int)res);
+        Ignition.UNSAFE.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, (int)res);
     }
 
     /** {@inheritDoc} */
@@ -110,7 +111,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int sampleTrackingIdx = rnd.nextInt(trackingSize);
 
-                int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4);
+                int compactTs = Ignition.UNSAFE.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4);
 
                 if (compactTs != 0) {
                     // We chose data page with at least one touch.
@@ -145,7 +146,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected boolean checkTouch(long pageId) {
         int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
 
-        int ts = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4);
+        int ts = Ignition.UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 4);
 
         return ts != 0;
     }
@@ -154,6 +155,6 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override public void forgetPage(long pageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
-        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, 0);
+        Ignition.UNSAFE.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, 0);
     }
 }

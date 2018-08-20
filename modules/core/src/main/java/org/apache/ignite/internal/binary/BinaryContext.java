@@ -721,7 +721,7 @@ public class BinaryContext {
      * @param cls Class.
      * @return Class descriptor.
      */
-    private BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
+    public BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
         BinaryClassDescriptor desc;
 
         String clsName = cls.getName();
@@ -761,7 +761,7 @@ public class BinaryContext {
      * @param cls Class.
      * @return Class descriptor.
      */
-    private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
+    public BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
         boolean registered;
 
         final String clsName = cls.getName();
@@ -791,7 +791,7 @@ public class BinaryContext {
         );
 
         if (!deserialize)
-            metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null,
+            metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, /*Collections.singleton(desc.schema())*/ null,
                 desc.isEnum(), cls.isEnum() ? enumMap(cls) : null).wrap(this));
 
         descByCls.put(cls, desc);

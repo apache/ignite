@@ -24,9 +24,12 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import lib.llpl.Transaction;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
@@ -43,7 +46,6 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL;
-import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
  * Page header structure is described by the following diagram.
@@ -250,8 +252,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer pageBuffer(long pageAddr) {
-        return wrapPointer(pageAddr, pageSize());
+        return Ignition.UNSAFE.wrapPointer(pageAddr, pageSize());
     }
+
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int cacheId, int partId, byte flags) {
@@ -289,12 +292,14 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         if (relPtr == INVALID_REL_PTR)
-            throw new IgniteOutOfMemoryException("Not enough memory allocated " +
-                "[policyName=" + dataRegionCfg.getName() +
-                ", size=" + U.readableSize(dataRegionCfg.getMaxSize(), false) + ']' + U.nl() +
-                "Consider increasing memory policy size, enabling evictions, adding more nodes to the cluster, " +
-                "reducing number of backups or reducing model size."
-
+            throw new IgniteOutOfMemoryException("Out of memory in data region [" +
+                "name=" + dataRegionCfg.getName() +
+                ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
+                ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
+                ", persistenceEnabled=" + dataRegionCfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
+                "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
+                "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
+                "  ^-- Enable eviction or expiration policies"
             );
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
@@ -305,14 +310,20 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         writePageId(absPtr, pageId);
 
         // TODO pass an argument to decide whether the page should be cleaned.
-        GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
+        if (!Ignition.isAepEnabled())
+            Ignition.UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
 
         return pageId;
     }
 
     /** {@inheritDoc} */
     @Override public boolean freePage(int cacheId, long pageId) {
-        releaseFreePage(pageId);
+        if (!Ignition.isAepEnabled())
+            releaseFreePage(pageId);
+        else
+            Transaction.run(Ignition.getAepHeap(), () -> {
+                releaseFreePage(pageId);
+            });
 
         return true;
     }
@@ -326,6 +337,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public int systemPageSize() {
         return sysPageSize;
     }
+
 
     /**
      * @return Next index.
@@ -387,7 +399,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      * @param pageId Page ID to write.
      */
     private void writePageId(long absPtr, long pageId) {
-        GridUnsafe.putLong(absPtr + PAGE_ID_OFFSET, pageId);
+        Ignition.UNSAFE.putLong(absPtr + PAGE_ID_OFFSET, pageId);
     }
 
     /**
@@ -558,7 +570,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             long freePageRelPtr = freePageRelPtrMasked & RELATIVE_PTR_MASK;
 
-            GridUnsafe.putLong(absPtr, freePageRelPtr);
+            Ignition.UNSAFE.putLong(absPtr, freePageRelPtr);
 
             if (freePageListHead.compareAndSet(freePageRelPtrMasked, relPtr)) {
                 allocatedPages.decrementAndGet();
@@ -583,11 +595,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 Segment seg = segment(pageIdx);
 
                 long freePageAbsPtr = seg.absolute(pageIdx);
-                long nextFreePageRelPtr = GridUnsafe.getLong(freePageAbsPtr) & ADDRESS_MASK;
+                long nextFreePageRelPtr = Ignition.UNSAFE.getLong(freePageAbsPtr) & ADDRESS_MASK;
                 long cnt = ((freePageRelPtrMasked & COUNTER_MASK) + COUNTER_INC) & COUNTER_MASK;
 
                 if (freePageListHead.compareAndSet(freePageRelPtrMasked, nextFreePageRelPtr | cnt)) {
-                    GridUnsafe.putLong(freePageAbsPtr, PAGE_MARKER);
+                    Ignition.UNSAFE.putLong(freePageAbsPtr, PAGE_MARKER);
 
                     allocatedPages.incrementAndGet();
 
@@ -609,7 +621,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      */
     private synchronized Segment addSegment(Segment[] oldRef) {
         if (segments == oldRef) {
-            DirectMemoryRegion region = directMemoryProvider.nextRegion();
+            DirectMemoryRegion region = directMemoryProvider.nextRegion(dataRegionCfg.getName());
 
             // No more memory is available.
             if (region == null)
@@ -695,7 +707,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             // Align by 8 bytes.
             pagesBase = (base + 7) & ~0x7;
 
-            GridUnsafe.putLong(lastAllocatedIdxPtr, 0);
+            Ignition.UNSAFE.putLong(lastAllocatedIdxPtr, 0);
 
             long limit = region.address() + region.size();
 
@@ -768,13 +780,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             long limit = region.address() + region.size();
 
             while (true) {
-                long lastIdx = GridUnsafe.getLongVolatile(null, lastAllocatedIdxPtr);
+                long lastIdx = Ignition.UNSAFE.getLongVolatile(null, lastAllocatedIdxPtr);
 
                 // Check if we have enough space to allocate a page.
                 if (pagesBase + (lastIdx + 1) * sysPageSize > limit)
                     return INVALID_REL_PTR;
 
-                if (GridUnsafe.compareAndSwapLong(null, lastAllocatedIdxPtr, lastIdx, lastIdx + 1)) {
+                if (Ignition.UNSAFE.compareAndSwapLong(null, lastAllocatedIdxPtr, lastIdx, lastIdx + 1)) {
                     long absPtr = pagesBase + lastIdx * sysPageSize;
 
                     assert lastIdx <= PageIdUtils.MAX_PAGE_NUM : lastIdx;
@@ -783,11 +795,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                     assert pageIdx != INVALID_REL_PTR;
 
-                    writePageId(absPtr, pageIdx);
+                    if (!Ignition.isAepEnabled() || Ignition.UNSAFE.getLong(absPtr + PAGE_ID_OFFSET) == 0) {
+                        writePageId(absPtr, pageIdx);
 
-                    GridUnsafe.putLong(absPtr, PAGE_MARKER);
+                        Ignition.UNSAFE.putLong(absPtr, PAGE_MARKER);
 
-                    rwLock.init(absPtr + LOCK_OFFSET, tag);
+                        rwLock.init(absPtr + LOCK_OFFSET, tag);
+                    }
 
                     allocatedPages.incrementAndGet();
 
@@ -818,5 +832,15 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         public int pageIndex(int seqNo) {
             return PageIdUtils.pageIndex(fromSegmentIndex(idx, seqNo - pagesInPrevSegments));
         }
+    }
+
+    /** {@inheritDoc} */
+    public int checkpointBufferPagesCount() {
+        return 0;
+    }
+
+    @Override
+    public String getDataRegionName() {
+        return dataRegionCfg.getName();
     }
 }

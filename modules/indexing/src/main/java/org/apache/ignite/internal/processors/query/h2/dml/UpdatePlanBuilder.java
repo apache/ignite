@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -531,7 +532,7 @@ public final class UpdatePlanBuilder {
                     /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
                         try {
-                            return GridUnsafe.allocateInstance(cls);
+                            return Ignition.UNSAFE.allocateInstance(cls);
                         }
                         catch (InstantiationException e) {
                             if (S.INCLUDE_SENSITIVE)

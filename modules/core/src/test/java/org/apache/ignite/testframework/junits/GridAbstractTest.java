@@ -70,10 +70,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.internal.util.GridClassLoaderCache;
-import org.apache.ignite.internal.util.GridTestClockTimer;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -240,7 +237,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected <T> T allocateInstance(Class<T> cls) throws Exception {
-        return (T)GridUnsafe.allocateInstance(cls);
+        return (T)Ignition.UNSAFE.allocateInstance(cls);
     }
 
     /**
@@ -249,7 +246,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @Nullable protected <T> T allocateInstance0(Class<T> cls) {
         try {
-            return (T)GridUnsafe.allocateInstance(cls);
+            return (T) Ignition.UNSAFE.allocateInstance(cls);
         }
         catch (InstantiationException e) {
             e.printStackTrace();

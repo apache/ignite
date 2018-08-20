@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
@@ -24,6 +25,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
  */
 @SuppressWarnings("deprecation")
 public class PageUtils {
+
     /**
      * @param addr Start address. 
      * @param off Offset.
@@ -33,7 +35,7 @@ public class PageUtils {
         assert addr > 0 : addr;
         assert off >= 0;
 
-        return GridUnsafe.getByte(addr + off);
+        return Ignition.UNSAFE.getByte(addr + off);
     }
 
     /**
@@ -46,7 +48,7 @@ public class PageUtils {
         assert addr > 0 : addr;
         assert off >= 0;
 
-        return GridUnsafe.getByte(addr + off) & 0xFF;
+        return Ignition.UNSAFE.getByte(addr + off) & 0xFF;
     }
 
     /**
@@ -62,7 +64,7 @@ public class PageUtils {
 
         byte[] bytes = new byte[len];
 
-        GridUnsafe.copyMemory(null, addr + off, bytes, GridUnsafe.BYTE_ARR_OFF, len);
+        Ignition.UNSAFE.copyMemory(null, addr + off, bytes, GridUnsafe.BYTE_ARR_OFF, len);
 
         return bytes;
     }
@@ -81,7 +83,7 @@ public class PageUtils {
         assert dstOff >= 0;
         assert len >= 0;
 
-        GridUnsafe.copyMemory(null, srcAddr + srcOff, dst, GridUnsafe.BYTE_ARR_OFF + dstOff, len);
+        Ignition.UNSAFE.copyMemory(null, srcAddr + srcOff, dst, GridUnsafe.BYTE_ARR_OFF + dstOff, len);
     }
 
     /**
@@ -93,7 +95,7 @@ public class PageUtils {
         assert addr > 0 : addr;
         assert off >= 0;
 
-        return GridUnsafe.getShort(addr + off);
+        return Ignition.UNSAFE.getShort(addr + off);
     }
 
     /**
@@ -105,7 +107,7 @@ public class PageUtils {
         assert addr > 0 : addr;
         assert off >= 0;
 
-        return GridUnsafe.getInt(addr + off);
+        return Ignition.UNSAFE.getInt(addr + off);
     }
 
     /**
@@ -117,7 +119,7 @@ public class PageUtils {
         assert addr > 0 : addr;
         assert off >= 0;
 
-        return GridUnsafe.getLong(addr + off);
+        return Ignition.UNSAFE.getLong(addr + off);
     }
 
     /**
@@ -130,7 +132,7 @@ public class PageUtils {
         assert off >= 0;
         assert bytes != null;
 
-        GridUnsafe.copyMemory(bytes, GridUnsafe.BYTE_ARR_OFF, null, addr + off, bytes.length);
+        Ignition.UNSAFE.copyMemory(bytes, GridUnsafe.BYTE_ARR_OFF, null, addr + off, bytes.length);
     }
 
     /**
@@ -145,7 +147,7 @@ public class PageUtils {
         assert bytes != null;
         assert bytesOff >= 0 && (bytesOff < bytes.length || bytes.length == 0) : bytesOff;
 
-        GridUnsafe.copyMemory(bytes, GridUnsafe.BYTE_ARR_OFF + bytesOff, null, addr + off, bytes.length - bytesOff);
+        Ignition.UNSAFE.copyMemory(bytes, GridUnsafe.BYTE_ARR_OFF + bytesOff, null, addr + off, bytes.length - bytesOff);
     }
 
     /**
@@ -161,7 +163,7 @@ public class PageUtils {
         assert bytes != null;
         assert bytesOff >= 0 && (bytesOff < bytes.length || bytes.length == 0) : bytesOff;
 
-        GridUnsafe.copyMemory(bytes, GridUnsafe.BYTE_ARR_OFF + bytesOff, null, addr + off, len);
+        Ignition.UNSAFE.copyMemory(bytes, GridUnsafe.BYTE_ARR_OFF + bytesOff, null, addr + off, len);
     }
 
     /**
@@ -173,7 +175,8 @@ public class PageUtils {
         assert addr > 0 : addr;
         assert off >= 0;
 
-        GridUnsafe.putByte(addr + off, v);
+
+        Ignition.UNSAFE.putByte(addr + off, v);
     }
 
     /**
@@ -186,7 +189,7 @@ public class PageUtils {
         assert off >= 0;
         assert v >= 0 && v <= 255;
 
-        GridUnsafe.putByte(addr + off, (byte) v);
+        Ignition.UNSAFE.putByte(addr + off, (byte) v);
     }
 
     /**
@@ -198,7 +201,7 @@ public class PageUtils {
         assert addr > 0 : addr;
         assert off >= 0;
 
-        GridUnsafe.putShort(addr + off, v);
+        Ignition.UNSAFE.putShort(addr + off, v);
     }
 
     /**
@@ -210,7 +213,7 @@ public class PageUtils {
         assert addr > 0 : addr;
         assert off >= 0;
 
-        GridUnsafe.putInt(addr + off, v);
+        Ignition.UNSAFE.putInt(addr + off, v);
     }
 
     /**
@@ -222,6 +225,6 @@ public class PageUtils {
         assert addr > 0 : addr;
         assert off >= 0;
 
-        GridUnsafe.putLong(addr + off, v);
+        Ignition.UNSAFE.putLong(addr + off, v);
     }
 }

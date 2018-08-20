@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
@@ -389,7 +390,7 @@ public class BinaryClassDescriptor {
      * @param f Field.
      * @return {@code True} if must be serialized.
      */
-    private static boolean serializeField(Field f) {
+    public static boolean serializeField(Field f) {
         int mod = f.getModifiers();
 
         return !Modifier.isStatic(mod) && !Modifier.isTransient(mod);
@@ -921,7 +922,7 @@ public class BinaryClassDescriptor {
      */
     private Object newInstance() throws BinaryObjectException {
         try {
-            return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
+            return ctor != null ? ctor.newInstance() : Ignition.UNSAFE.allocateInstance(cls);
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);

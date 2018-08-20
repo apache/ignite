@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.io;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.hadoop.io.RawMemory;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,49 +46,49 @@ public class OffheapRawMemory implements RawMemory {
     @Override public byte get(int idx) {
         ensure(idx, 1);
 
-        return GridUnsafe.getByte(ptr + idx);
+        return Ignition.UNSAFE.getByte(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public short getShort(int idx) {
         ensure(idx, 2);
 
-        return GridUnsafe.getShort(ptr + idx);
+        return Ignition.UNSAFE.getShort(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public char getChar(int idx) {
         ensure(idx, 2);
 
-        return GridUnsafe.getChar(ptr + idx);
+        return Ignition.UNSAFE.getChar(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public int getInt(int idx) {
         ensure(idx, 4);
 
-        return GridUnsafe.getInt(ptr + idx);
+        return Ignition.UNSAFE.getInt(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public long getLong(int idx) {
         ensure(idx, 8);
 
-        return GridUnsafe.getLong(ptr + idx);
+        return Ignition.UNSAFE.getLong(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public float getFloat(int idx) {
         ensure(idx, 4);
 
-        return GridUnsafe.getFloat(ptr + idx);
+        return Ignition.UNSAFE.getFloat(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public double getDouble(int idx) {
         ensure(idx, 8);
 
-        return GridUnsafe.getDouble(ptr + idx);
+        return Ignition.UNSAFE.getDouble(ptr + idx);
     }
 
     /** {@inheritDoc} */

@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
@@ -339,4 +340,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         return false;
     }
 
+    /** {@inheritDoc}*/
+    public BinaryContext getBinaryCtx() {
+        return null;
+    }
 }

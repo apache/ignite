@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
@@ -93,7 +94,7 @@ public class TrackingPageIOTest extends TestCase {
 
         assert basePageId >= 0;
 
-        PageIO.setPageId(GridUnsafe.bufferAddress(buf), basePageId);
+        PageIO.setPageId(Ignition.UNSAFE.bufferAddress(buf), basePageId);
 
         Map<Long, Boolean> map = new HashMap<>();
 
@@ -154,7 +155,7 @@ public class TrackingPageIOTest extends TestCase {
 
         assert basePageId >= 0;
 
-        PageIO.setPageId(GridUnsafe.bufferAddress(buf), basePageId);
+        PageIO.setPageId(Ignition.UNSAFE.bufferAddress(buf), basePageId);
 
         try {
             TreeSet<Long> setIdx = new TreeSet<>();
@@ -199,7 +200,7 @@ public class TrackingPageIOTest extends TestCase {
 
         assert basePageId >= 0;
 
-        PageIO.setPageId(GridUnsafe.bufferAddress(buf), basePageId);
+        PageIO.setPageId(Ignition.UNSAFE.bufferAddress(buf), basePageId);
 
         TreeSet<Long> setIdx = new TreeSet<>();
 
@@ -238,7 +239,7 @@ public class TrackingPageIOTest extends TestCase {
 
         assert basePageId >= 0;
 
-        PageIO.setPageId(GridUnsafe.bufferAddress(buf), basePageId);
+        PageIO.setPageId(Ignition.UNSAFE.bufferAddress(buf), basePageId);
 
         TreeSet<Long> setIdx = new TreeSet<>();
 

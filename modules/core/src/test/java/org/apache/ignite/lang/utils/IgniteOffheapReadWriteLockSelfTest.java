@@ -17,9 +17,10 @@
 
 package org.apache.ignite.lang.utils;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -50,7 +51,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final OffheapReadWriteLock lock = new OffheapReadWriteLock(16);
 
-        final long ptr = GridUnsafe.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
+        final long ptr = Ignition.UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
 
         lock.init(ptr, TAG_0);
 
@@ -142,7 +143,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final OffheapReadWriteLock lock = new OffheapReadWriteLock(16);
 
-        final long ptr = GridUnsafe.allocateMemory(OffheapReadWriteLock.LOCK_SIZE * numPairs);
+        final long ptr = Ignition.UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE * numPairs);
 
         for (int i = 0; i < numPairs; i++) {
             data[i] = new Pair();
@@ -228,7 +229,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final OffheapReadWriteLock lock = new OffheapReadWriteLock(16);
 
-        final long ptr = GridUnsafe.allocateMemory(OffheapReadWriteLock.LOCK_SIZE * numPairs);
+        final long ptr = Ignition.UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE * numPairs);
 
         for (int i = 0; i < numPairs; i++) {
             data[i] = new Pair();
@@ -332,7 +333,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final OffheapReadWriteLock lock = new OffheapReadWriteLock(16);
 
-        final long ptr = GridUnsafe.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
+        final long ptr = Ignition.UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
 
         lock.init(ptr, TAG_0);
 

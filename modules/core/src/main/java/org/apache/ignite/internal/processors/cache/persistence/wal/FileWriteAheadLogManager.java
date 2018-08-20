@@ -52,6 +52,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -230,7 +231,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override protected ByteBuffer initialValue() {
             ByteBuffer buf = ByteBuffer.allocateDirect(tlbSize);
 
-            buf.order(GridUnsafe.NATIVE_BYTE_ORDER);
+            buf.order(Ignition.UNSAFE.NATIVE_BYTE_ORDER);
 
             return buf;
         }
@@ -2429,7 +2430,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 boolean tmpBuf = false;
 
                 if (expHead.chainSize() > tlbSize) {
-                    buf = GridUnsafe.allocateBuffer(expHead.chainSize());
+                    buf = Ignition.UNSAFE.allocateBuffer(expHead.chainSize());
 
                     tmpBuf = true; // We need to manually release this temporary direct buffer.
                 }
@@ -2443,7 +2444,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
                 finally {
                     if (tmpBuf)
-                        GridUnsafe.freeBuffer(buf);
+                        Ignition.UNSAFE.freeBuffer(buf);
                 }
 
                 return true;

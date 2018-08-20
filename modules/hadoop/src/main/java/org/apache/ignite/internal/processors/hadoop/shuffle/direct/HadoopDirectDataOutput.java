@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle.direct;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
 
@@ -99,42 +100,42 @@ public class HadoopDirectDataOutput extends OutputStream implements DataOutput {
     @Override public void writeShort(int val) throws IOException {
         int writePos = ensure(2);
 
-        GridUnsafe.putShort(buf, BYTE_ARR_OFF + writePos, (short)val);
+        Ignition.UNSAFE.putShort(buf, BYTE_ARR_OFF + writePos, (short)val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(int val) throws IOException {
         int writePos = ensure(2);
 
-        GridUnsafe.putChar(buf, BYTE_ARR_OFF + writePos, (char)val);
+        Ignition.UNSAFE.putChar(buf, BYTE_ARR_OFF + writePos, (char)val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(int val) throws IOException {
         int writePos = ensure(4);
 
-        GridUnsafe.putInt(buf, BYTE_ARR_OFF + writePos, val);
+        Ignition.UNSAFE.putInt(buf, BYTE_ARR_OFF + writePos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(long val) throws IOException {
         int writePos = ensure(8);
 
-        GridUnsafe.putLong(buf, BYTE_ARR_OFF + writePos, val);
+        Ignition.UNSAFE.putLong(buf, BYTE_ARR_OFF + writePos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeFloat(float val) throws IOException {
         int writePos = ensure(4);
 
-        GridUnsafe.putFloat(buf, BYTE_ARR_OFF + writePos, val);
+        Ignition.UNSAFE.putFloat(buf, BYTE_ARR_OFF + writePos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDouble(double val) throws IOException {
         int writePos = ensure(8);
 
-        GridUnsafe.putDouble(buf, BYTE_ARR_OFF + writePos, val);
+        Ignition.UNSAFE.putDouble(buf, BYTE_ARR_OFF + writePos, val);
     }
 
     /** {@inheritDoc} */
