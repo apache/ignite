@@ -117,7 +117,7 @@ public class TensorFlowClusterMaintainer implements Service {
                     // Check worker process states.
                     for (UUID nodeId : statuses.keySet()) {
                         for (LongRunningProcessStatus status : statuses.get(nodeId)) {
-                            if (status.getState().equals(LongRunningProcessState.DONE)) {
+                                        if (status.getState().equals(LongRunningProcessState.DONE)) {
                                 restartRequired = true;
                                 break;
                             }
@@ -125,10 +125,12 @@ public class TensorFlowClusterMaintainer implements Service {
                     }
 
                     // Check chief process state.
-                    restartRequired |= clusterMgr.getChiefException(clusterId) != null;
+                    if (clusterMgr.getChiefException(clusterId) != null)
+                        restartRequired = true;
 
                     // Check user script process state.
-                    restartRequired |= clusterMgr.getUserScriptException(clusterId) != null;
+                    if (clusterMgr.getUserScriptException(clusterId) != null)
+                        restartRequired = true;
                 }
                 catch (Exception e) {
                     log.error("Failed to check process statuses", e);
