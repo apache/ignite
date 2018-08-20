@@ -280,8 +280,8 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"--lazy"},
         arity = 1,
-        description = "Lazy mode for SQL query execution.")
-    private boolean lazy = false;
+        description = "Lazy mode for SQL query execution (default true).")
+    private boolean lazy = true;
 
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
