@@ -471,7 +471,7 @@ final class BinaryMetadataTransport {
                     return;
                 }
 
-                metadataFileStore.writeMetadata(holder.metadata());
+                metadataFileStore.mergeAndWriteMetadata(holder.metadata());
 
                 metaLocCache.put(typeId, new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), newAcceptedVer));
             }
