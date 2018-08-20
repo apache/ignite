@@ -110,6 +110,9 @@ public abstract class AsyncNativeProcessRunner {
      * @return Exception that happened during execution or {@code null} if there is no exception.
      */
     public Exception getException() {
+        if (!fut.isDone())
+            return null;
+
         try {
             fut.get();
         }
