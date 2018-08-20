@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.suite;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
 import org.apache.ignite.internal.client.ClientTcpMultiThreadedSelfTest;
@@ -48,15 +49,18 @@ import org.apache.ignite.internal.client.router.TcpSslRouterSelfTest;
 import org.apache.ignite.internal.client.util.ClientByteUtilsTest;
 import org.apache.ignite.internal.client.util.ClientConsistentHashSelfTest;
 import org.apache.ignite.internal.client.util.ClientJavaHasherSelfTest;
+import org.apache.ignite.internal.processors.rest.ChangeStateCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
+import org.apache.ignite.internal.processors.rest.MemcacheRestProcessorTest;
 import org.apache.ignite.internal.processors.rest.RestBinaryProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.RestMemcacheProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorMultiStartSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorStartSelfTest;
+import org.apache.ignite.internal.processors.rest.RestProcessorTest;
 import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.TcpRestUnmarshalVulnerabilityTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSelfTest;
@@ -82,6 +86,7 @@ public class IgniteClientTestSuite extends TestSuite {
 
         // Test memcache protocol with custom test client.
         suite.addTestSuite(RestMemcacheProtocolSelfTest.class);
+        //suite.addTestSuite(MemcacheRestProcessorTest.class);
 
         // Test custom binary protocol with test client.
         suite.addTestSuite(RestBinaryProtocolSelfTest.class);
@@ -101,6 +106,7 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTestSuite(RedisProtocolConnectSelfTest.class);
         suite.addTestSuite(RedisProtocolServerSelfTest.class);
 
+        //suite.addTestSuite(RestProcessorTest.class);
         suite.addTestSuite(RestProcessorStartSelfTest.class);
 
         // Test cache flag conversion.
@@ -137,6 +143,8 @@ public class IgniteClientTestSuite extends TestSuite {
 
         // Rest task command handler test.
         suite.addTestSuite(TaskCommandHandlerSelfTest.class);
+        //suite.addTestSuite(ChangeStateCommandHandlerTest.class);
+        //suite.addTestSuite(TaskEventSubjectIdSelfTest.class);
 
         // Default cache only test.
         suite.addTestSuite(ClientDefaultCacheSelfTest.class);

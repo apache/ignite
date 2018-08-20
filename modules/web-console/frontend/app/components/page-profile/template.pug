@@ -24,7 +24,7 @@ div
     -var form = '$ctrl.form'
     form.theme--ignite(name='$ctrl.form' novalidate)
         .row
-            .col-25
+            .col-50
                 +form-field__text({
                     label: 'First name:',
                     model: '$ctrl.ui.user.firstName',
@@ -35,7 +35,7 @@ div
                 ignite-auto-focus
                     ignite-on-enter-focus-move='lastNameInput'
                 )
-            .col-25
+            .col-50
                 +form-field__text({
                     label: 'Last name:',
                     model: '$ctrl.ui.user.lastName',
@@ -46,7 +46,7 @@ div
                     ignite-on-enter-focus-move='emailInput'
                 )
         .row
-            .col-50
+            .col-100
                 +form-field__email({
                     label: 'Email:',
                     model: '$ctrl.ui.user.email',
@@ -57,7 +57,7 @@ div
                     ignite-on-enter-focus-move='phoneInput'
                 )
         .row
-            .col-25
+            .col-50
                 +form-field__phone({
                     label: 'Phone:',
                     model: '$ctrl.ui.user.phone',
@@ -67,7 +67,7 @@ div
                 })(
                     ignite-on-enter-focus-move='companyInput'
                 )
-            .col-25
+            .col-50
                 +form-field__dropdown({
                     label: 'Country:',
                     model: '$ctrl.ui.user.country',
@@ -77,7 +77,7 @@ div
                     options: '$ctrl.ui.countries'
                 })
         .row
-            .col-50
+            .col-100
                 +form-field__text({
                     label: 'Company:',
                     model: '$ctrl.ui.user.company',
@@ -89,7 +89,7 @@ div
                 )
 
         .row#security-token-section
-            .col-50
+            .col-100
                 panel-collapsible(
                     opened='$ctrl.ui.expandedToken'
                     on-open='$ctrl.ui.expandedToken = true'
@@ -115,7 +115,7 @@ div
                                 a(ng-click='$ctrl.generateToken()') Generate Random Security Token?
 
         .row
-            .col-50
+            .col-100
                 panel-collapsible(
                     opened='$ctrl.ui.expandedPassword'
                     on-open='$ctrl.ui.expandedToken = false'

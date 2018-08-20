@@ -113,9 +113,13 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.h2.sys.SqlSystemTableEngine;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -194,7 +198,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  * {@link GridQueryTypeDescriptor#fields()}.
  * For each table it will create indexes declared in {@link GridQueryTypeDescriptor#indexes()}.
  */
-@SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
     /** A pattern for commands having internal implementation in Ignite. */
     public static final Pattern INTERNAL_CMD_RE = Pattern.compile(
@@ -239,6 +242,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final Long CLEANUP_STMT_CACHE_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
 
     /** The period of clean up the {@link #conns}. */
+    @SuppressWarnings("FieldCanBeLocal")
     private final Long CLEANUP_CONNECTIONS_PERIOD = 2000L;
 
     /** The timeout to remove entry from the {@link #stmtCache} if the thread doesn't perform any queries. */
@@ -296,7 +300,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private final ThreadLocal<H2ConnectionWrapper> connCache = new ThreadLocal<H2ConnectionWrapper>() {
-        @Nullable @Override public H2ConnectionWrapper get() {
+        @Override public H2ConnectionWrapper get() {
             H2ConnectionWrapper c = super.get();
 
             boolean reconnect = true;
@@ -320,7 +324,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return c;
         }
 
-        @Nullable @Override protected H2ConnectionWrapper initialValue() {
+        @Override protected H2ConnectionWrapper initialValue() {
             Connection c;
 
             try {
@@ -355,7 +359,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final ConcurrentHashMap<Thread, H2StatementCache> stmtCache = new ConcurrentHashMap<>();
 
     /** */
-    private final GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
+    private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
         new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
 
     /** */
@@ -1110,7 +1114,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private static List<Long> zeroBatchedStreamedUpdateResult(int size) {
         Long[] res = new Long[size];
 
-        Arrays.fill(res, 0);
+        Arrays.fill(res, 0L);
 
         return Arrays.asList(res);
     }
@@ -1255,19 +1259,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             long longQryExecTimeout = ctx.config().getLongQueryWarningTimeout();
 
             if (time > longQryExecTimeout) {
-                String msg = "Query execution is too long (" + time + " ms): " + sql;
-
                 ResultSet plan = executeSqlQuery(conn, preparedStatementWithParams(conn, "EXPLAIN " + sql,
                     params, false), 0, null);
 
                 plan.next();
 
                 // Add SQL explain result message into log.
-                String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
+                String msg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
                     ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" +
                     (params == null ? "[]" : Arrays.deepToString(params.toArray())) + "]";
 
-                LT.warn(log, longMsg, msg);
+                LT.warn(log, msg);
             }
 
             return rs;
@@ -1306,6 +1308,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
+            @SuppressWarnings("NullableProblems")
             @Override public Iterator<List<?>> iterator() {
                 try {
                     return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
@@ -1336,6 +1339,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             F.asList(params), type, filter, cancel);
 
         return new QueryCursorImpl<>(new Iterable<Cache.Entry<K, V>>() {
+            @SuppressWarnings("NullableProblems")
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
                 return new ClIter<Cache.Entry<K, V>>() {
                     @Override public void close() throws Exception {
@@ -1437,6 +1441,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final boolean lazy
     ) {
         return new Iterable<List<?>>() {
+            @SuppressWarnings("NullableProblems")
             @Override public Iterator<List<?>> iterator() {
                 return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params,
                     parts, lazy);
@@ -1732,6 +1737,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param keepBinary Whether binary objects must not be deserialized automatically.
      * @param cancel Query cancel state holder.    @return Query result.
      */
+    @SuppressWarnings("unchecked")
     private List<? extends FieldsQueryCursor<List<?>>> doRunPrepared(String schemaName, Prepared prepared,
         SqlFieldsQuery qry, GridCacheTwoStepQuery twoStepQry,
         List<GridQueryFieldMetadata> meta, boolean keepBinary, GridQueryCancel cancel) {
@@ -1753,6 +1759,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             dmlProc.updateSqlFieldsLocal(schemaName, conn, prepared, qry, filter, cancel);
 
                         return Collections.singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
+                            @SuppressWarnings("NullableProblems")
                             @Override public Iterator<List<?>> iterator() {
                                 try {
                                     return new GridQueryCacheObjectsIterator(updRes.iterator(), objectContext(),
@@ -1793,7 +1800,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return Collections.singletonList(resCur);
             }
 
-            throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName());
+            throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName(),
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
         if (twoStepQry != null) {
@@ -1983,6 +1991,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             qry.getArgs(), qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), this);
 
         List<Integer> cacheIds = collectCacheIds(null, res);
+
+        if (!F.isEmpty(cacheIds) && hasSystemViews(res)) {
+            throw new IgniteSQLException("Normal tables and system views cannot be used in the same query.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
 
         if (F.isEmpty(cacheIds))
             res.local(true);
@@ -2578,6 +2591,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             dmlProc.start(ctx, this);
             ddlProc.start(ctx, this);
+
+            boolean sysViewsEnabled =
+                !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
+
+            if (sysViewsEnabled) {
+                try {
+                    synchronized (schemaMux) {
+                        createSchema(QueryUtils.SCHEMA_SYS);
+                    }
+
+                    Connection c = connectionForSchema(QueryUtils.SCHEMA_SYS);
+
+                    for (SqlSystemView view : systemViews(ctx))
+                        SqlSystemTableEngine.registerView(c, view);
+                }
+                catch (SQLException e) {
+                    throw new IgniteCheckedException("Failed to register system view.", e);
+                }
+
+                // Caching this connection in ThreadLocal may lead to memory leaks.
+                connCache.set(null);
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("SQL system views will not be created because they are disabled (see " +
+                        IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
+            }
         }
 
         if (JdbcUtils.serializer != null)
@@ -2585,11 +2625,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         JdbcUtils.serializer = h2Serializer();
 
+        assert ctx != null;
+
         connCleanupTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
                 cleanupConnections();
             }
         }, CLEANUP_CONNECTIONS_PERIOD, CLEANUP_CONNECTIONS_PERIOD);
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Predefined system views.
+     */
+    public Collection<SqlSystemView> systemViews(GridKernalContext ctx) {
+        Collection<SqlSystemView> views = new ArrayList<>();
+
+        views.add(new SqlSystemViewNodes(ctx));
+        views.add(new SqlSystemViewNodeAttributes(ctx));
+
+        return views;
     }
 
     /**
@@ -2900,7 +2955,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Remove all cached queries from cached two-steps queries.
      */
     private void clearCachedQueries() {
-        twoStepCache.clear();
+        twoStepCache = new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -2929,7 +2984,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         AffinityTopologyVersion initVer = fut.initialVersion();
 
-        return initVer.compareTo(readyVer) > 0 && !CU.clientNode(fut.firstEvent().node());
+        return initVer.compareTo(readyVer) > 0 && !fut.firstEvent().node().isClient();
     }
 
     /**
@@ -3065,9 +3120,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (QueryTable tblKey : twoStepQry.tables()) {
                 GridH2Table tbl = dataTable(tblKey);
 
-                int cacheId = tbl.cacheId();
+                if (tbl != null) {
+                    int cacheId = tbl.cacheId();
 
-                caches0.add(cacheId);
+                    caches0.add(cacheId);
+                }
             }
         }
 
@@ -3081,6 +3138,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return cacheIds;
         }
+    }
+
+    /**
+     * @return {@code True} is system views exist.
+     */
+    private boolean hasSystemViews(GridCacheTwoStepQuery twoStepQry) {
+        if (twoStepQry.tablesCount() > 0) {
+            for (QueryTable tbl : twoStepQry.tables()) {
+                if (QueryUtils.SCHEMA_SYS.equals(tbl.schema()))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**

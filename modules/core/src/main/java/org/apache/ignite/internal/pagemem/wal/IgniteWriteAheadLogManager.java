@@ -109,12 +109,14 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public int truncate(WALPointer low, WALPointer high);
 
     /**
-     * Gives a hint to WAL manager to compact WAL until given pointer (exclusively).
-     * Compaction implies filtering out physical records and ZIP compression.
+     * Notifies {@code this} about latest checkpoint pointer.
+     * <p>
+     * Current implementations, in fact, react by keeping all WAL segments uncompacted starting from index prior to
+     * the index of {@code ptr}. Compaction implies filtering out physical records and ZIP compression.
      *
      * @param ptr Pointer for which it is safe to compact the log.
      */
-    public void allowCompressionUntil(WALPointer ptr);
+    public void notchLastCheckpointPtr(WALPointer ptr);
 
     /**
      * @return Total number of segments in the WAL archive.
@@ -125,6 +127,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @return Last archived segment index.
      */
     public long lastArchivedSegment();
+
+    /**
+     * @return Last compacted segment index.
+     */
+    public long lastCompactedSegment();
 
     /**
      * Checks if WAL segment is under lock or reserved

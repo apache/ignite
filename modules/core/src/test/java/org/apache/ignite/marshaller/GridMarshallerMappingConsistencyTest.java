@@ -55,7 +55,7 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         igniteCfg.setConsistentId(igniteInstanceName);
 
         DataRegionConfiguration drCfg = new DataRegionConfiguration();
-        drCfg.setPersistenceEnabled(true);
+        drCfg.setPersistenceEnabled(true).setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
@@ -120,7 +120,8 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         c1.put(k, new DummyObject(k));
 
         startGrid(2);
-        waitForRebalancing();
+
+        awaitPartitionMapExchange();
 
         stopAllGrids();
 

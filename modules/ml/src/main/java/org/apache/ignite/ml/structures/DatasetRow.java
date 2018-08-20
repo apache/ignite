@@ -58,7 +58,7 @@ public class DatasetRow<V extends Vector> implements Serializable, Externalizabl
 
         DatasetRow vector1 = (DatasetRow)o;
 
-        return vector != null ? !vector.equals(vector1.vector) : vector1.vector != null;
+        return vector != null ? vector.equals(vector1.vector) : vector1.vector == null;
     }
 
     /** {@inheritDoc} */
@@ -72,6 +72,7 @@ public class DatasetRow<V extends Vector> implements Serializable, Externalizabl
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vector = (V)in.readObject();
     }

@@ -66,6 +66,9 @@ public class ClusterListener implements AutoCloseable {
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(ClusterListener.class));
 
     /** */
+    private static final IgniteProductVersion IGNITE_2_0 = IgniteProductVersion.fromString("2.0.0");
+
+    /** */
     private static final IgniteProductVersion IGNITE_2_1 = IgniteProductVersion.fromString("2.1.0");
 
     /** */
@@ -418,6 +421,10 @@ public class ClusterListener implements AutoCloseable {
          * @throws IOException If failed to collect cluster active state.
          */
         public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
+            // 1.x clusters are always active.
+            if (ver.compareTo(IGNITE_2_0) < 0)
+                return true;
+
             Map<String, Object> params = U.newHashMap(10);
 
             boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;

@@ -27,7 +27,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -53,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongLi
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -65,6 +70,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BPLUS_TREE_LOCK_RETRIES;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Bool.DONE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Bool.FALSE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Bool.READY;
@@ -92,7 +98,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** */
     private static final int LOCK_RETRIES = IgniteSystemProperties.getInteger(
-        IgniteSystemProperties.IGNITE_BPLUS_TREE_LOCK_RETRIES, IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT);
+        IGNITE_BPLUS_TREE_LOCK_RETRIES, IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT);
 
     /** */
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
@@ -123,6 +129,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** */
     private volatile TreeMetaData treeMeta;
+
+    /** Failure processor. */
+    private final FailureProcessor failureProcessor;
 
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
@@ -720,6 +729,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param reuseList Reuse list.
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
+     * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
     protected BPlusTree(
@@ -731,9 +741,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long metaPageId,
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
-        IOVersions<? extends BPlusLeafIO<L>> leafIos
+        IOVersions<? extends BPlusLeafIO<L>> leafIos,
+        @Nullable FailureProcessor failureProcessor
     ) throws IgniteCheckedException {
-        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
         setIos(innerIos, leafIos);
     }
 
@@ -745,6 +756,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param globalRmvId Remove ID.
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
+     * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
     protected BPlusTree(
@@ -754,7 +766,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
         long metaPageId,
-        ReuseList reuseList
+        ReuseList reuseList,
+        @Nullable FailureProcessor failureProcessor
     ) throws IgniteCheckedException {
         super(cacheId, pageMem, wal);
 
@@ -770,6 +783,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         this.name = name;
         this.reuseList = reuseList;
         this.globalRmvId = globalRmvId;
+        this.failureProcessor = failureProcessor;
     }
 
     /**
@@ -1632,6 +1646,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         return;
                 }
             }
+        }
+        catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+            throw e;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
@@ -2560,9 +2577,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @throws IgniteCheckedException If the operation can not be retried.
          */
-        final void checkLockRetry() throws IgniteCheckedException {
-            if (lockRetriesCnt == 0)
-                throw new IgniteCheckedException("Maximum of retries " + getLockRetries() + " reached.");
+        void checkLockRetry() throws IgniteCheckedException {
+            if (lockRetriesCnt == 0) {
+                IgniteCheckedException e = new IgniteCheckedException("Maximum number of retries " +
+                    getLockRetries() + " reached for " + getClass().getSimpleName() + " operation " +
+                    "(the tree may be corrupted). Increase " + IGNITE_BPLUS_TREE_LOCK_RETRIES + " system property " +
+                    "if you regularly see this message (current value is " + getLockRetries() + ").");
+
+                if (failureProcessor != null)
+                    failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                throw e;
+            }
 
             lockRetriesCnt--;
         }
@@ -2640,6 +2666,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * Put operation.
      */
     private final class Put extends Get {
+        /** Mark of NULL value of page id. It means valid value can't be equal this value. */
+        private static final long NULL_PAGE_ID = 0L;
+        /** Mark of NULL value of page. */
+        private static final long NULL_PAGE = 0L;
+        /** Mark of NULL value of page address. */
+        private static final long NULL_PAGE_ADDRESS = 0L;
+
         /** Right child page ID for split row. */
         long rightId;
 
@@ -2647,9 +2680,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         T oldRow;
 
         /**
-         * This page is kept locked after split until insert to the upper level will not be finished.
-         * It is needed because split row will be "in flight" and if we'll release tail, remove on
-         * split row may fail.
+         * This page is kept locked after split until insert to the upper level will not be finished. It is needed
+         * because split row will be "in flight" and if we'll release tail, remove on split row may fail.
          */
         long tailId;
 
@@ -2710,10 +2742,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param tailPageAddr Tail page address
          */
         private void tail(long tailId, long tailPage, long tailPageAddr) {
-            assert (tailId == 0L) == (tailPage == 0L);
-            assert (tailPage == 0L) == (tailPageAddr == 0L);
+            assert (tailId == NULL_PAGE_ID) == (tailPage == NULL_PAGE);
+            assert (tailPage == NULL_PAGE) == (tailPageAddr == NULL_PAGE_ADDRESS);
 
-            if (this.tailPage != 0L)
+            if (this.tailPage != NULL_PAGE)
                 writeUnlockAndClose(this.tailId, this.tailPage, this.tailAddr, null);
 
             this.tailId = tailId;
@@ -2723,7 +2755,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** {@inheritDoc} */
         @Override boolean canRelease(long pageId, int lvl) {
-            return pageId != 0L && tailId != pageId;
+            return pageId != NULL_PAGE_ID && tailId != pageId;
         }
 
         /**
@@ -2733,7 +2765,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             row = null;
             rightId = 0;
 
-            tail(0L, 0L, 0L);
+            tail(NULL_PAGE_ID, NULL_PAGE, NULL_PAGE_ADDRESS);
         }
 
         /** {@inheritDoc} */
@@ -2804,7 +2836,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                 long fwdPageAddr = writeLock(fwdId, fwdPage); // Initial write, no need to check for concurrent modification.
 
-                assert fwdPageAddr != 0L;
+                assert fwdPageAddr != NULL_PAGE_ADDRESS;
 
                 // TODO GG-11640 log a correct forward page record.
                 final Boolean fwdPageWalPlc = Boolean.TRUE;
@@ -2852,7 +2884,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                             long newRootAddr = writeLock(newRootId, newRootPage); // Initial write.
 
-                            assert newRootAddr != 0L;
+                            assert newRootAddr != NULL_PAGE_ADDRESS;
 
                             // Never write full new root page, because it is known to be new.
                             final Boolean newRootPageWalPlc = Boolean.FALSE;
@@ -2968,6 +3000,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.fwdId = fwdId;
 
             return write(pageId, page, replace, this, lvl, RETRY);
+        }
+
+        /** {@inheritDoc} */
+        @Override void checkLockRetry() throws IgniteCheckedException {
+            //non null tailId means that lock on tail page still hold and we can't fail with exception.
+            if (tailId == NULL_PAGE_ID)
+                super.checkLockRetry();
         }
     }
 
