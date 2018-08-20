@@ -15,17 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml;
+package org.apache.ignite.ml.knn.ann;
+
+import java.util.TreeMap;
 
 /**
- * Some common arguments for examples in ML module.
+ * The special class for fuzzy labels presenting the probability distribution
+ * over the class labels.
  */
-public class MLExamplesCommonArgs {
-    /**
-     * Unattended argument.
-     */
-    public static String UNATTENDED = "unattended";
+public class ProbableLabel {
+    /** Key is label, value is probability to be this class */
+    TreeMap<Double, Double> clsLbls;
 
-    /** Empty args for ML examples. */
-    public static final String[] EMPTY_ARGS_ML = new String[] {"--" + UNATTENDED};
+    /**
+     * The key is class label,
+     * the value is the probability to be an item of this class.
+     *
+     * @param clsLbls Class labels.
+     */
+    public ProbableLabel(TreeMap<Double, Double> clsLbls) {
+        this.clsLbls = clsLbls;
+    }
 }

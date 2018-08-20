@@ -27,12 +27,12 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Class for splitting Labeled Dataset on train and test sets.
  */
-public class LabeledDatasetTestTrainPair implements Serializable {
+public class LabeledVectorSetTestTrainPair implements Serializable {
     /** Data to keep train set. */
-    private LabeledDataset train;
+    private LabeledVectorSet train;
 
     /** Data to keep test set. */
-    private LabeledDataset test;
+    private LabeledVectorSet test;
 
     /**
      * Creates two subsets of given dataset.
@@ -42,7 +42,7 @@ public class LabeledDatasetTestTrainPair implements Serializable {
      * @param dataset The dataset to split on train and test subsets.
      * @param testPercentage The percentage of the test subset.
      */
-    public LabeledDatasetTestTrainPair(LabeledDataset dataset, double testPercentage) {
+    public LabeledVectorSetTestTrainPair(LabeledVectorSet dataset, double testPercentage) {
         assert testPercentage > 0.0;
         assert testPercentage < 1.0;
         final int datasetSize = dataset.rowSize();
@@ -78,8 +78,8 @@ public class LabeledDatasetTestTrainPair implements Serializable {
             }
         }
 
-        test = new LabeledDataset(testVectors, dataset.colSize());
-        train = new LabeledDataset(trainVectors, dataset.colSize());
+        test = new LabeledVectorSet(testVectors, dataset.colSize());
+        train = new LabeledVectorSet(trainVectors, dataset.colSize());
     }
 
     /** This method generates "random double, integer" pairs, sort them, gets first "testSize" elements and returns appropriate indices */
@@ -100,7 +100,7 @@ public class LabeledDatasetTestTrainPair implements Serializable {
      * Train subset of the whole dataset.
      * @return Train subset.
      */
-    public LabeledDataset train() {
+    public LabeledVectorSet train() {
         return train;
     }
 
@@ -108,7 +108,7 @@ public class LabeledDatasetTestTrainPair implements Serializable {
      * Test subset of the whole dataset.
      * @return Test subset.
      */
-    public LabeledDataset test() {
+    public LabeledVectorSet test() {
         return test;
     }
 }
