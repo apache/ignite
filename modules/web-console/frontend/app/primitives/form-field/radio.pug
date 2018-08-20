@@ -15,7 +15,7 @@
     limitations under the License.
 
 mixin form-field__radio({ label, model, name, value, disabled, required, tip })
-    .form-field.form-field__radio(id=`{{ ${name} }}Field`)
+    .form-field.form-field__radio
         +form-field__label({ label, name, required, disabled, namePostfix: value })
             +form-field__tooltip({ title: tip, options: tipOpts })
 
