@@ -228,7 +228,7 @@ public abstract class AbstractWalRecordsIterator
      * @param hnd currently opened read handle.
      * @return next advanced record.
      */
-    private IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
+    protected IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
         @Nullable final AbstractReadFileHandle hnd
     ) throws IgniteCheckedException {
         if (hnd == null)
