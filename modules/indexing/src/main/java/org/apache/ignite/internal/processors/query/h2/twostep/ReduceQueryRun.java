@@ -54,12 +54,9 @@ class ReduceQueryRun {
     /** */
     private final int pageSize;
 
-    /** Can be either CacheException in case of error or AffinityTopologyVersion to retry if needed. */
-    private final AtomicReference<Object> state = new AtomicReference<>();
+    /** */
+    private final AtomicReference<State> state = new AtomicReference<>();
 
-    /** Holder of root cause description*/
-    // TODO: Single atmoic with (state, rootCause, nodeId)
-    private final AtomicReference<String> rootCause = new AtomicReference<>();
 
     /**
      * Constructor.
@@ -91,17 +88,11 @@ class ReduceQueryRun {
     void state(Object o, @Nullable UUID nodeId) {
         assert o != null;
         assert o instanceof CacheException || o instanceof AffinityTopologyVersion : o.getClass();
-
-        if (!state.compareAndSet(null, o))
-            return;
-
-        while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
-            latch.countDown();
-
-        CacheException e = o instanceof CacheException ? (CacheException) o : null;
-
-        for (GridMergeIndex idx : idxs) // Fail all merge indexes.
-            idx.fail(nodeId, e);
+        StateBuilder sb = State.getStateBuilder().nodeId(nodeId);
+        if ( o instanceof  CacheException )
+            sb.exception((CacheException)o);
+        else sb.atv( (AffinityTopologyVersion)o);
+        state(sb.build());
     }
 
     /**
@@ -110,8 +101,19 @@ class ReduceQueryRun {
      */
     void stateWithMsg(GridQueryNextPageResponse msg, @Nullable UUID nodeId) {
         assert msg != null;
-        rootCause.compareAndSet(null, msg.retryCause());
-        state(msg.retry(), nodeId);
+        assert msg.retry() != null;
+        state(State.getStateBuilder().atv(msg.retry()).rootCause(msg.retryCause()).nodeId(nodeId).build());
+    }
+
+    private void state(State state){
+        if (!this.state.compareAndSet(null, state))
+            return;
+
+        while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
+            latch.countDown();
+
+        for (GridMergeIndex idx : idxs) // Fail all merge indexes.
+            idx.fail(state.nodeId, state.ex);
     }
 
     /**
@@ -142,20 +144,24 @@ class ReduceQueryRun {
         return conn;
     }
 
-    /**
-     * @return State.
-     */
-    Object state() {
-        return state.get();
+    boolean hasError(){
+        return state.get()!=null;
     }
 
-    /**
-     * @return Root Cause.
-     */
-    String rootCause() {
-        return rootCause.get();
+    CacheException cacheEx() {
+        State st = state.get();
+        return st!=null ? st.ex : null;
     }
 
+    AffinityTopologyVersion atv(){
+        State st = state.get();
+        return st!=null ? st.atv : null;
+    }
+
+    String rootCause(){
+        State st = state.get();
+        return st!=null ? st.rootCause : null;
+    }
     /**
      * @return Indexes.
      */
@@ -175,5 +181,78 @@ class ReduceQueryRun {
      */
     void latch(CountDownLatch latch) {
         this.latch = latch;
+    }
+
+    /** */
+    private static class State{
+
+        /** */
+        private static StateBuilder getStateBuilder(){
+            return new StateBuilder();
+        }
+        /** */
+        private final CacheException ex;
+
+        /** */
+        private final String rootCause;
+
+        /** */
+        private final AffinityTopologyVersion atv;
+
+        /** */
+        private final UUID nodeId;
+
+        /** */
+        private State(CacheException ex, String rootCause, AffinityTopologyVersion atv, UUID nodeId){
+            this.ex=ex;
+            this.rootCause = rootCause;
+            this.atv = atv;
+            this.nodeId = nodeId;
+        }
+    }
+
+    /** */
+    private static class StateBuilder{
+        /** */
+        private CacheException ex = null;
+
+        /** */
+        private String rootCause = null;
+
+        /** */
+        private AffinityTopologyVersion atv = null;
+
+        /** */
+        private UUID nodeId = null;
+
+        /** */
+        private State build(){
+            return new State(ex, rootCause, atv, nodeId);
+        }
+
+        /** */
+        private StateBuilder exception(CacheException ex){
+            this.ex = ex;
+            return this;
+        }
+
+        /** */
+        private StateBuilder rootCause(String rootCause){
+            this.rootCause=rootCause;
+            return this;
+        }
+
+        /** */
+        private StateBuilder atv(AffinityTopologyVersion atv){
+            this.atv=atv;
+            return this;
+        }
+
+        /** */
+        private StateBuilder nodeId(UUID nodeId){
+            this.nodeId = nodeId;
+            return this;
+        }
+
     }
 }

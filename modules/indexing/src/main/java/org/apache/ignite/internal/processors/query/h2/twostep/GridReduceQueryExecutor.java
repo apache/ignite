@@ -309,10 +309,9 @@ public class GridReduceQueryExecutor {
         try {
             page = new GridResultPage(ctx, node.id(), msg) {
                 @Override public void fetchNextPage() {
-                    Object errState = r.state();
 
-                    if (errState != null) {
-                        CacheException err0 = errState instanceof CacheException ? (CacheException)errState : null;
+                    if (r.hasError()) {
+                        CacheException err0 = r.cacheEx();
 
                         if (err0 != null && err0.getCause() instanceof IgniteClientDisconnectedException)
                             throw err0;
@@ -371,6 +370,10 @@ public class GridReduceQueryExecutor {
      */
     private boolean isPreloadingActive(List<Integer> cacheIds) {
         for (Integer cacheId : cacheIds) {
+
+            if (null == cacheContext(cacheId))
+                throw new CacheException(String.format("Grid cache context is not registered for cache id=%s",cacheId));
+
             if (hasMovingPartitions(cacheContext(cacheId)))
                 return true;
         }
@@ -383,6 +386,7 @@ public class GridReduceQueryExecutor {
      * @return {@code True} If cache has partitions in {@link GridDhtPartitionState#MOVING} state.
      */
     private boolean hasMovingPartitions(GridCacheContext<?, ?> cctx) {
+        assert cctx!=null;
         return !cctx.isLocal() && cctx.topology().hasMovingPartitions();
     }
 
@@ -574,12 +578,11 @@ public class GridReduceQueryExecutor {
 
         final long startTime = U.currentTimeMillis();
 
-        // TODO: Use previous query run
-        final AtomicReference<String> rootCause = new AtomicReference<>();
+        ReduceQueryRun prevR = null;
 
         for (int attempt = 0;; attempt++) {
             if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout)) {
-                String rcValue = rootCause.get();
+                String rcValue = prevR.rootCause();
                 throw new CacheException((!F.isEmpty(rcValue))?rcValue:("Failed to map SQL query to topology."));
             }
             if (attempt != 0) {
@@ -783,11 +786,9 @@ public class GridReduceQueryExecutor {
                 if (send(nodes, req, parts == null ? null : new ExplicitPartitionsSpecializer(qryMap), false)) {
                     awaitAllReplies(r, nodes, cancel);
 
-                    Object state = r.state();
-
-                    if (state != null) {
-                        if (state instanceof CacheException) {
-                            CacheException err = (CacheException)state;
+                    if (r.hasError()) {
+                        if (r.cacheEx() != null) {
+                            CacheException err = r.cacheEx();
 
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
@@ -796,13 +797,11 @@ public class GridReduceQueryExecutor {
                                 throw new QueryCancelledException(); // Throw correct exception.
 
                             throw new CacheException("Failed to run map query remotely." + err.getMessage(), err);
-                        }
-
-                        if (state instanceof AffinityTopologyVersion) {
+                        } else {
                             retry = true;
 
                             // If remote node asks us to retry then we have outdated full partition map.
-                            h2.awaitForReadyTopologyVersion((AffinityTopologyVersion)state);
+                            h2.awaitForReadyTopologyVersion(r.atv());
                         }
                     }
                 }
@@ -850,9 +849,7 @@ public class GridReduceQueryExecutor {
 
                 if (retry) {
                     assert r != null;
-
-                    if (!F.isEmpty(r.rootCause()))
-                        rootCause.compareAndSet(null, r.rootCause());
+                    prevR=r;
 
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
