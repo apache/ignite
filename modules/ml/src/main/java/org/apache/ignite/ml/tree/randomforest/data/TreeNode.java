@@ -85,7 +85,7 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         }
     }
 
-    long predictNextNodeKey(Vector features) {
+    public long predictNextNodeKey(Vector features) {
         switch (type) {
             case UNKNOWN:
                 return id;

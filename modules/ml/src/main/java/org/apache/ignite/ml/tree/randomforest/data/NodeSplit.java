@@ -38,7 +38,7 @@ public class NodeSplit {
 
     public void createLeaf(TreeNode node) {
         node.setImpurity(impurity);
-        node.toLeaf(value);
+        node.toLeaf(0.0); //TODO: добавить определение значения в листе
     }
 
     public double getImpurity() {
