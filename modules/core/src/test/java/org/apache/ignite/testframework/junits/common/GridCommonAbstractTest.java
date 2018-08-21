@@ -19,6 +19,7 @@ package org.apache.ignite.testframework.junits.common;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -99,6 +101,8 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTask;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
@@ -122,6 +126,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -688,32 +693,34 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
                                     (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
-                                    LT.warn(log(), "Waiting for topology map update [" +
-                                        "igniteInstanceName=" + g.name() +
-                                        ", cache=" + cfg.getName() +
-                                        ", cacheId=" + dht.context().cacheId() +
-                                        ", topVer=" + top.readyTopologyVersion() +
-                                        ", p=" + p +
-                                        ", affNodesCnt=" + affNodesCnt +
-                                        ", ownersCnt=" + ownerNodesCnt +
-                                        ", affNodes=" + F.nodeIds(affNodes) +
-                                        ", owners=" + F.nodeIds(owners) +
-                                        ", topFut=" + topFut +
-                                        ", locNode=" + g.cluster().localNode() + ']');
+                                    if (i % 50 == 0)
+                                        LT.warn(log(), "Waiting for topology map update [" +
+                                            "igniteInstanceName=" + g.name() +
+                                            ", cache=" + cfg.getName() +
+                                            ", cacheId=" + dht.context().cacheId() +
+                                            ", topVer=" + top.readyTopologyVersion() +
+                                            ", p=" + p +
+                                            ", affNodesCnt=" + affNodesCnt +
+                                            ", ownersCnt=" + ownerNodesCnt +
+                                            ", affNodes=" + F.nodeIds(affNodes) +
+                                            ", owners=" + F.nodeIds(owners) +
+                                            ", topFut=" + topFut +
+                                            ", locNode=" + g.cluster().localNode() + ']');
                                 }
                                 else
                                     match = true;
                             }
                             else {
-                                LT.warn(log(), "Waiting for topology map update [" +
-                                    "igniteInstanceName=" + g.name() +
-                                    ", cache=" + cfg.getName() +
-                                    ", cacheId=" + dht.context().cacheId() +
-                                    ", topVer=" + top.readyTopologyVersion() +
-                                    ", started=" + dht.context().started() +
-                                    ", p=" + p +
-                                    ", readVer=" + readyVer +
-                                    ", locNode=" + g.cluster().localNode() + ']');
+                                if (i % 50 == 0)
+                                    LT.warn(log(), "Waiting for topology map update [" +
+                                        "igniteInstanceName=" + g.name() +
+                                        ", cache=" + cfg.getName() +
+                                        ", cacheId=" + dht.context().cacheId() +
+                                        ", topVer=" + top.readyTopologyVersion() +
+                                        ", started=" + dht.context().started() +
+                                        ", p=" + p +
+                                        ", readVer=" + readyVer +
+                                        ", locNode=" + g.cluster().localNode() + ']');
                             }
 
                             if (!match) {
@@ -998,81 +1005,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param id Node id.
-     * @param major Major ver.
-     * @param minor Minor ver.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing(int id, int major, int minor) throws IgniteCheckedException {
-        waitForRebalancing(grid(id), new AffinityTopologyVersion(major, minor));
-    }
-
-    /**
-     * @param id Node id.
-     * @param major Major ver.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing(int id, int major) throws IgniteCheckedException {
-        waitForRebalancing(grid(id), new AffinityTopologyVersion(major));
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing() throws IgniteCheckedException {
-        for (Ignite ignite : G.allGrids())
-            waitForRebalancing((IgniteEx)ignite, null);
-    }
-
-    /**
-     * @param ignite Node.
-     * @param top Topology version.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing(IgniteEx ignite, AffinityTopologyVersion top) throws IgniteCheckedException {
-        if (ignite.configuration().isClientMode())
-            return;
-
-        boolean finished = false;
-
-        long stopTime = System.currentTimeMillis() + 60_000;
-
-        while (!finished && (System.currentTimeMillis() < stopTime)) {
-            finished = true;
-
-            if (top == null)
-                top = ignite.context().discovery().topologyVersionEx();
-
-            for (GridCacheAdapter c : ignite.context().cache().internalCaches()) {
-                GridDhtPartitionDemander.RebalanceFuture fut =
-                    (GridDhtPartitionDemander.RebalanceFuture)c.preloader().rebalanceFuture();
-
-                if (fut.topologyVersion() == null || fut.topologyVersion().compareTo(top) < 0) {
-                    finished = false;
-
-                    log.info("Unexpected future version, will retry [futVer=" + fut.topologyVersion() +
-                        ", expVer=" + top + ']');
-
-                    U.sleep(100);
-
-                    break;
-                }
-                else if (!fut.get()) {
-                    finished = false;
-
-                    log.warning("Rebalancing finished with missed partitions.");
-
-                    U.sleep(100);
-
-                    break;
-                }
-            }
-        }
-
-        assertTrue(finished);
-    }
-
-    /**
      * @param ignite Node.
      */
     public void dumpCacheDebugInfo(Ignite ignite) {
@@ -1248,20 +1180,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected final List<Integer> movingKeysAfterJoin(Ignite ign, String cacheName, int size) {
         assertEquals("Expected consistentId is set to node name", ign.name(), ign.cluster().localNode().consistentId());
 
-        GridCacheContext<Object, Object> cctx = ((IgniteKernal)ign).context().cache().internalCache(cacheName).context();
-
         ArrayList<ClusterNode> nodes = new ArrayList<>(ign.cluster().nodes());
 
-        AffinityFunction func = cctx.config().getAffinity();
-
-        AffinityFunctionContext ctx = new GridAffinityFunctionContextImpl(
-            nodes,
-            null,
-            null,
-            AffinityTopologyVersion.NONE,
-            cctx.config().getBackups());
-
-        List<List<ClusterNode>> calcAff = func.assignPartitions(ctx);
+        List<List<ClusterNode>> calcAff = calcAffinity(ign.cache(cacheName), nodes);
 
         GridTestNode fakeNode = new GridTestNode(UUID.randomUUID(), null);
 
@@ -1269,14 +1190,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         nodes.add(fakeNode);
 
-        ctx = new GridAffinityFunctionContextImpl(
-            nodes,
-            null,
-            null,
-            AffinityTopologyVersion.NONE,
-            cctx.config().getBackups());
-
-        List<List<ClusterNode>> calcAff2 = func.assignPartitions(ctx);
+        List<List<ClusterNode>> calcAff2 = calcAffinity(ign.cache(cacheName), nodes);
 
         Set<Integer> movedParts = new HashSet<>();
 
@@ -1305,6 +1219,92 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertEquals("Failed to find moving keys [movedPats=" + movedParts + ", keys=" + keys + ']', size, keys.size());
 
         return keys;
+    }
+
+    /**
+     * Returns list of partitions what will be evicted after new node's join.
+     *
+     * @param ign Node to find evicting partitions.
+     * @param cache Cach.
+     * @param size Size.
+     * @return List of moving partition
+     */
+    protected List<Integer> evictingPartitionsAfterJoin(Ignite ign, IgniteCache<?, ?> cache, int size) {
+        ArrayList<ClusterNode> nodes = new ArrayList<>(ign.cluster().nodes());
+
+        List<List<ClusterNode>> ideal1 = calcAffinity(cache, nodes);
+
+        GridTestNode fakeNode = new GridTestNode(UUID.randomUUID(), null);
+
+        fakeNode.consistentId(getTestIgniteInstanceName(nodes.size()));
+
+        nodes.add(fakeNode);
+
+        List<List<ClusterNode>> ideal2 = calcAffinity(cache, nodes);
+
+        Map<ClusterNode, BitSet> m1 = U.newHashMap(nodes.size());
+        Map<ClusterNode, BitSet> m2 = U.newHashMap(nodes.size());
+
+        int parts = cache.getConfiguration(CacheConfiguration.class).getAffinity().partitions();
+
+        for (int p = 0; p < parts; p++) {
+            List<ClusterNode> assign1 = new ArrayList<>(ideal1.get(p));
+            List<ClusterNode> assign2 = new ArrayList<>(ideal2.get(p));
+
+            final int finalP = p;
+
+            IgniteBiInClosure<Map<ClusterNode, BitSet>, ClusterNode> updater = (map, node) -> {
+                BitSet set = map.get(node);
+
+                if (set == null)
+                    map.put(node, (set = new BitSet(parts)));
+
+                set.set(finalP);
+            };
+
+            for (ClusterNode node : assign1)
+                updater.apply(m1, node);
+
+            for (ClusterNode node : assign2)
+                updater.apply(m2, node);
+        }
+
+        List<Integer> partsToRet = new ArrayList<>(size);
+
+        BitSet before = m1.get(ign.cluster().localNode());
+        BitSet after = m2.get(ign.cluster().localNode());
+
+        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p+1)) {
+            if (!after.get(p)) {
+                partsToRet.add(p);
+
+                if (partsToRet.size() == size)
+                    break;
+            }
+        }
+
+        return partsToRet;
+    }
+
+    /**
+     * @param cache Cache.
+     * @param nodes Nodes.
+     */
+    private List<List<ClusterNode>> calcAffinity(IgniteCache<?, ?> cache, List<ClusterNode> nodes) {
+        IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
+
+        GridCacheContext<?, ?> cctx = proxy.context();
+
+        AffinityFunction func = cctx.config().getAffinity();
+
+        AffinityFunctionContext ctx = new GridAffinityFunctionContextImpl(
+            nodes,
+            null,
+            null,
+            AffinityTopologyVersion.NONE,
+            cctx.config().getBackups());
+
+        return func.assignPartitions(ctx);
     }
 
     /**
@@ -1712,6 +1712,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      */
     protected void cleanPersistenceDir() throws Exception {
+        assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
+
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));

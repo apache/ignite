@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -115,6 +116,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private final Marshaller marshaller = new JdkMarshaller();
 
     /** */
+    private final FailureProcessor failureProcessor;
+
+    /** */
     public MetaStorage(
         GridCacheSharedContext cctx,
         DataRegion dataRegion,
@@ -126,6 +130,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         this.regionMetrics = regionMetrics;
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
+        this.failureProcessor = cctx.kernalContext().failure();
     }
 
     /** */
@@ -145,7 +150,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
 
             tree = new MetastorageTree(METASTORAGE_CACHE_ID, dataRegion.pageMemory(), wal, rmvId,
-                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated());
+                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated(), failureProcessor);
 
             if (!readOnly)
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);

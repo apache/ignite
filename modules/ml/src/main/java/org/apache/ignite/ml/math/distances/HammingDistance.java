@@ -64,4 +64,9 @@ public class HammingDistance implements DistanceMeasure {
 
         return obj != null && getClass() == obj.getClass();
     }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return getClass().hashCode();
+    }
 }

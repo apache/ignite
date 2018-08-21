@@ -21,7 +21,6 @@ import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
-import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
@@ -87,6 +86,7 @@ import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.test.ConfigVariationsTestSuiteBuilderTest;
 import org.apache.ignite.testframework.test.ParametersTest;
 import org.apache.ignite.testframework.test.VariationsIteratorTest;
@@ -111,6 +111,8 @@ public class IgniteBasicTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite(@Nullable final Set<Class> ignoredTests) throws Exception {
+        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
+
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
         suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
@@ -209,7 +211,6 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(FailureHandlerTriggeredTest.class);
         suite.addTestSuite(StopNodeFailureHandlerTest.class);
         suite.addTestSuite(StopNodeOrHaltFailureHandlerTest.class);
-        suite.addTestSuite(IoomFailureHandlerTest.class);
         suite.addTestSuite(OomFailureHandlerTest.class);
         suite.addTestSuite(TransactionIntegrityWithSystemWorkerDeathTest.class);
         suite.addTestSuite(SystemWorkersTerminationTest.class);

@@ -470,14 +470,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!U.mkdirs(cpDir))
                 throw new IgniteCheckedException("Could not create directory for checkpoint metadata: " + cpDir);
 
-            cleanupTempCheckpointDirectory();
-
             final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
-                .resolveFolders()
-                .getLockedFileLockHolder();
+                    .resolveFolders()
+                    .getLockedFileLockHolder();
 
-            if (preLocked == null)
-                fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), kernalCtx, log);
+            fileLockHolder = preLocked == null ?
+                        new FileLockHolder(storeMgr.workDir().getPath(), kernalCtx, log) : preLocked;
+
+            if (log.isDebugEnabled())
+                log.debug("Try to capture file lock [nodeId=" +
+                        cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
+
+            if (!fileLockHolder.isLocked())
+                fileLockHolder.tryLock(lockWaitTime);
+
+            cleanupTempCheckpointDirectory();
 
             persStoreMetrics.wal(cctx.wal());
 
@@ -708,16 +715,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         onKernalStop0(false);
 
-        stop0(false);
+        super.onDeActivate(kctx);
 
         /* Must be here, because after deactivate we can invoke activate and file lock must be already configured */
         stopping = false;
-
-        if (!cctx.localNode().isClient()) {
-            //we replace lock with new instance (only if we're responsible for locking folders)
-            if (fileLockHolder != null)
-                fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
-        }
     }
 
     /**
@@ -956,28 +957,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void lock() throws IgniteCheckedException {
-        if (fileLockHolder != null) {
-            if (log.isDebugEnabled())
-                log.debug("Try to capture file lock [nodeId=" +
-                    cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
-
-            fileLockHolder.tryLock(lockWaitTime);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unLock() {
-        if (fileLockHolder != null) {
-            if (log.isDebugEnabled())
-                log.debug("Release file lock [nodeId=" +
-                    cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
-
-            fileLockHolder.release();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         checkpointLock.writeLock().lock();
 
@@ -994,14 +973,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         super.onKernalStop0(cancel);
 
-        if (!cctx.kernalContext().clientNode()) {
-            unLock();
-
-            if (fileLockHolder != null)
-                fileLockHolder.close();
-        }
-
         unRegistrateMetricsMBean();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        super.stop0(cancel);
+
+        if (!cctx.kernalContext().clientNode()) {
+            if (fileLockHolder != null) {
+                if (log.isDebugEnabled())
+                    log.debug("Release file lock [nodeId=" +
+                            cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
+
+                fileLockHolder.close();
+            }
+        }
     }
 
     /** */
@@ -1927,7 +1914,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx.pageStore().beginRecover();
         }
         else
-            cctx.wal().allowCompressionUntil(status.startPtr);
+            cctx.wal().notchLastCheckpointPtr(status.startPtr);
 
         long start = U.currentTimeMillis();
 
@@ -3057,10 +3044,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          */
         private void doCheckpoint() {
+            Checkpoint chp = null;
+
             try {
                 CheckpointMetricsTracker tracker = new CheckpointMetricsTracker();
-
-                Checkpoint chp;
 
                 try {
                     chp = markCheckpointBegin(tracker);
@@ -3131,16 +3118,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
 
                         // Wait and check for errors.
-                        try {
-                            doneWriteFut.get();
-                        } catch (IgniteCheckedException e) {
-                            chp.progress.cpFinishFut.onDone(e);
-
-                            // In case of checkpoint writing error node should be invalidated and stopped.
-                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-                            return;
-                        }
+                        doneWriteFut.get();
 
                         // Must re-check shutdown flag here because threads may have skipped some pages.
                         // If so, we should not put finish checkpoint mark.
@@ -3173,33 +3151,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     snapshotMgr.afterCheckpointPageWritten();
 
-                    try {
-                        destroyedPartitionsCnt = destroyEvictedPartitions();
-                    }
-                    catch (IgniteCheckedException e) {
-                        chp.progress.cpFinishFut.onDone(e);
-
-                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-                        return;
-                    }
+                    destroyedPartitionsCnt = destroyEvictedPartitions();
 
                     // Must mark successful checkpoint only if there are no exceptions or interrupts.
                     success = true;
                 }
                 finally {
-                    if (success) {
-                        try {
-                            markCheckpointEnd(chp);
-                        }
-                        catch (IgniteCheckedException e) {
-                            chp.progress.cpFinishFut.onDone(e);
-
-                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-                            return;
-                        }
-                    }
+                    if (success)
+                        markCheckpointEnd(chp);
                 }
 
                 tracker.onEnd();
@@ -3247,8 +3206,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
             catch (IgniteCheckedException e) {
-                // TODO-ignite-db how to handle exception?
-                U.error(log, "Failed to create checkpoint.", e);
+                if (chp != null)
+                    chp.progress.cpFinishFut.onDone(e);
+
+                cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
         }
 
@@ -3683,7 +3644,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.END);
 
-                cctx.wal().allowCompressionUntil(chp.cpEntry.checkpointMark());
+                cctx.wal().notchLastCheckpointPtr(chp.cpEntry.checkpointMark());
             }
 
             List<CheckpointEntry> removedFromHistory = cpHistory.onCheckpointFinished(chp, truncateWalOnCpFinish);
@@ -4134,7 +4095,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private RandomAccessFile lockFile;
 
         /** Lock. */
-        private FileLock lock;
+        private volatile FileLock lock;
 
         /** Kernal context to generate Id of locked node in file. */
         @NotNull private GridKernalContext ctx;
@@ -4207,6 +4168,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 for (int i = 0; i < lockWaitTimeMillis; i += 1000) {
                     try {
                         lock = ch.tryLock(0, 1, false);
+
                         if (lock != null && lock.isValid()) {
                             writeContent(sb.toString());
 
@@ -4277,13 +4239,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return content;
         }
 
+        /** Locked or not. */
+        public boolean isLocked() {
+            return lock != null && lock.isValid();
+        }
+
         /** Releases file lock */
         public void release() {
             U.releaseQuiet(lock);
         }
 
         /** Closes file channel */
-        public void close() {
+        @Override public void close() {
+            release();
+
             U.closeQuiet(lockFile);
         }
 
