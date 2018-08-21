@@ -49,7 +49,7 @@ class Time
     /**
      * Returns the time value as number of seconds elapsed since midnight, i.e. 00:00:00 UTC.
      * 
-     * @return int elapsed since midnight, i.e. 00:00:00 UTC.
+     * @return int number of seconds elapsed since midnight, i.e. 00:00:00 UTC.
      */
     public function getSeconds(): int
     {
