@@ -65,11 +65,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
             Properties p = new Properties();
 
-            p.setProperty("org.eclipse.jetty.LEVEL", "WARN");
-            p.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
-            p.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
+            System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+            System.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
+            System.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
 
-            StdErrLog.setProperties(p);
+            //todo StdErrLog.setProperties(p);
 
             try {
                 Class<?> logCls = Class.forName("org.apache.log4j.Logger");
