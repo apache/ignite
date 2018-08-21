@@ -19,7 +19,7 @@
 namespace Apache\Ignite\Exception;
 
 /**
- * Class representing Ignite client general exception.
+ * Ignite client general exception.
  */
 class ClientException extends \Exception
 {
