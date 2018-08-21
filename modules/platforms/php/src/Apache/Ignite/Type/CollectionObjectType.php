@@ -40,7 +40,7 @@ class CollectionObjectType extends ObjectType
     const USER_SET = -1;
     
     /**
-     * General collection type, which can not be mapped to any more specific collection type.
+     * General collection type, which can not be mapped to any specific collection type.
      */
     const USER_COL = 0;
     
@@ -77,14 +77,14 @@ class CollectionObjectType extends ObjectType
     /**
      * Public constructor.
      *
-     * Specifies a kind of collection and optionally specifies a type of elements in the collection.
+     * Specifies the collection subtype and optionally specifies Ignite type of elements in the collection.
      *
-     * If the type of elements is not specified then during operations the Ignite client
-     * will try to make automatic mapping between PHP types and Ignite object types -
+     * If Ignite type of elements is not specified then during operations the Ignite client
+     * tries to make automatic mapping between PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
      * @param int $subType collection subtype, one of @ref CollectionSubType constants.
-     * @param int|ObjectType|null $elementType type of elements in the collection:
+     * @param int|ObjectType|null $elementType Ignite type of elements in the collection:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
@@ -121,12 +121,12 @@ class CollectionObjectType extends ObjectType
     }
     
     /**
-     * Returns type of elements in the collection.
+     * Returns Ignite type of elements in the collection.
      * 
      * @return int|ObjectType|null type of elements in the collection:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
-     *   - or null (or not specified) that means the type is not specified
+     *   - or null that means the type is not specified
      */
     public function getElementType()
     {
