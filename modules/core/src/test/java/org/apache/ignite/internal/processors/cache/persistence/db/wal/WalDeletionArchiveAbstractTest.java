@@ -179,9 +179,12 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
 
-        //when: put to cache more than 1 MB
-        for (int i = 0; i < 5000; i++)
-            cache.put(i, i);
+        GridTestUtils.runAsync(() -> {
+                //when: put to cache more than 1 MB
+                for (int i = 0; i < 1000; i++)
+                    cache.put(i, i);
+            }
+        );
 
         //then: checkpoint triggered by size limit of wall without checkpoint
         GridCacheDatabaseSharedManager.Checkpointer checkpointer = dbMgr.getCheckpointer();
