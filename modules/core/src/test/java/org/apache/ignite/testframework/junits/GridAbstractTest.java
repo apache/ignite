@@ -160,6 +160,9 @@ public abstract class GridAbstractTest extends TestCase {
     }};
 
     /** */
+    public static final TcpDiscoveryIpFinder SHARED_IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
 
     /** */
@@ -1531,9 +1534,6 @@ public abstract class GridAbstractTest extends TestCase {
         if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi)
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(getTestTimeout());
 
-        if (isMultiJvm())
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
-
         return cfg;
     }
 
@@ -1674,16 +1674,12 @@ public abstract class GridAbstractTest extends TestCase {
         // Set metrics update interval to 1 second to speed up tests.
         cfg.setMetricsUpdateFrequency(1000);
 
-        String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
+        TcpDiscoveryIpFinder ipFinder;
 
-        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-
-        ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + TcpDiscoverySpi.DFLT_PORT));
-
-        if (!F.isEmpty(mcastAddr)) {
-            ipFinder.setMulticastGroup(mcastAddr);
-            ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
-        }
+        if (isMultiJvm())
+            ipFinder = LOCAL_IP_FINDER;
+        else
+            ipFinder = SHARED_IP_FINDER;
 
         discoSpi.setIpFinder(ipFinder);
 
