@@ -20,82 +20,69 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Result for {@link VisorCacheModifyTask}.
+ * Result for {@link VisorCacheNamesCollectorTask}.
  */
-public class VisorCacheModifyTaskResult extends VisorDataTransferObject {
+public class VisorCacheNamesCollectorTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Node ID where modified data contained. */
-    private UUID affinityNode;
+    /** Cache names and deployment IDs. */
+    private Map<String, IgniteUuid> caches;
 
-    /** Result type name. */
-    private String resType;
-
-    /** Value for specified key or number of modified rows. */
-    private Object res;
+    /** Cache groups. */
+    private Set<String> groups;
 
     /**
      * Default constructor.
      */
-    public VisorCacheModifyTaskResult() {
+    public VisorCacheNamesCollectorTaskResult() {
         // No-op.
     }
 
     /**
-     * @param affinityNode Node ID where modified data contained.
-     * @param resType Result type name.
-     * @param res Value for specified key or number of modified rows.
+     * @param caches Cache names and deployment IDs.
      */
-    public VisorCacheModifyTaskResult(UUID affinityNode, String resType, Object res) {
-        this.affinityNode = affinityNode;
-        this.resType = resType;
-        this.res = res;
+    public VisorCacheNamesCollectorTaskResult(Map<String, IgniteUuid> caches, Set<String> groups) {
+        this.caches = caches;
+        this.groups = groups;
     }
 
     /**
-     * @return Node ID where modified data contained.
+     * @return Value for specified key or number of modified rows..
      */
-    public UUID getAffinityNode() {
-        return affinityNode;
+    public Map<String, IgniteUuid> getCaches() {
+        return caches;
     }
 
     /**
-     * @return Result type name.
+     * @return Value for specified key or number of modified rows..
      */
-    public String getResultType() {
-        return resType;
-    }
-
-    /**
-     * @return Value for specified key or number of modified rows.
-     */
-    public Object getResult() {
-        return res;
+    public Set<String> getGroups() {
+        return groups;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, affinityNode);
-        U.writeString(out, resType);
-        out.writeObject(res);
+        U.writeMap(out, caches);
+        U.writeCollection(out, groups);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        affinityNode = U.readUuid(in);
-        resType = U.readString(in);
-        res = in.readObject();
+        caches = U.readMap(in);
+        groups = U.readSet(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheModifyTaskResult.class, this);
+        return S.toString(VisorCacheNamesCollectorTaskResult.class, this);
     }
 }

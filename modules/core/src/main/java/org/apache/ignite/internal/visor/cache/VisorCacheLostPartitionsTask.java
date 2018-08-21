@@ -66,8 +66,9 @@ public class VisorCacheLostPartitionsTask
                 IgniteInternalCache cache = ignite.cachex(cacheName);
 
                 if (cache != null) {
-                    GridDhtPartitionTopology topology = cache.context().topology();
-                    List<Integer> lostPartitions = new ArrayList<>(topology.lostPartitions());
+                    GridDhtPartitionTopology top = cache.context().topology();
+
+                    List<Integer> lostPartitions = new ArrayList<>(top.lostPartitions());
 
                     if (!lostPartitions.isEmpty())
                         res.put(cacheName, lostPartitions);
