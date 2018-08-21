@@ -18,7 +18,7 @@
 const MSG = 'You have unsaved changes.\n\nAre you sure you want to discard them?';
 
 // Service that show confirmation about unsaved changes on user change location.
-export default ['IgniteUnsavedChangesGuard', ['$rootScope', ($root) => {
+export default ['IgniteUnsavedChangesGuard', ['$rootScope', function($root) {
     return {
         install(scope, customDirtyCheck = () => scope.ui.inputForm.$dirty) {
             scope.$on('$destroy', () => window.onbeforeunload = null);

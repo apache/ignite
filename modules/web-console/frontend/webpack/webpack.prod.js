@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-import path from 'path';
-import merge from 'webpack-merge';
+const path = require('path');
+const merge = require('webpack-merge');
 
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-import UglifyJSPlugin from 'uglifyjs-webpack-plugin';
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
-import commonCfg from './webpack.common';
+const commonCfg = require('./webpack.common');
 
 const basedir = path.join(__dirname, '../');
 
-export default merge(commonCfg, {
+module.exports = merge(commonCfg, {
     bail: true, // Cancel build on error.
     mode: 'production',
     module: {
@@ -37,7 +37,7 @@ export default merge(commonCfg, {
             {
                 test: /\.scss$/,
                 use: [MiniCssExtractPlugin.loader, 'css-loader', {
-                    loader: 'sass',
+                    loader: 'sass-loader',
                     options: {
                         includePaths: [basedir]
                     }

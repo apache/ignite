@@ -1,4 +1,14 @@
 {
-  "presets": ["es2015", "stage-1"],
-  "plugins": ["add-module-exports", "transform-object-rest-spread"]
+    "presets": [
+        ["@babel/env", {
+            "targets": {
+                "browsers": [">1%", "not ie 11", "not op_mini all"]
+            }
+        }]
+    ],
+    "plugins": [
+        ["@babel/plugin-proposal-class-properties", { "loose" : true }],
+        "@babel/plugin-proposal-object-rest-spread",
+        "@babel/plugin-syntax-dynamic-import"
+    ]
 }

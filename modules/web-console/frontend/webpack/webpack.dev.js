@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-import merge from 'webpack-merge';
+const merge = require('webpack-merge');
 
-import path from 'path';
+const path = require('path');
 
-import commonCfg from './webpack.common';
+const commonCfg = require('./webpack.common');
 
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
@@ -27,7 +27,7 @@ const backendPort = process.env.BACKEND_PORT || 3000;
 const devServerPort = process.env.PORT || 9000;
 const devServerHost = process.env.HOST || '0.0.0.0';
 
-export default merge(commonCfg, {
+module.exports = merge(commonCfg, {
     mode: 'development',
     devtool: 'source-map',
     watch: true,
@@ -36,7 +36,7 @@ export default merge(commonCfg, {
         rules: [
             {
                 test: /\.css$/,
-                use: ['style', 'css']
+                use: ['style-loader', 'css-loader']
             },
             {
                 test: /\.scss$/,
