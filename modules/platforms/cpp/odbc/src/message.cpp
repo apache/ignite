@@ -390,7 +390,8 @@ namespace ignite
             // No-op.
         }
 
-        void QueryFetchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+        void QueryFetchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader,
+            const ProtocolVersion& ver)
         {
             queryId = reader.ReadInt64();
 
@@ -407,7 +408,8 @@ namespace ignite
             // No-op.
         }
 
-        void QueryGetColumnsMetaResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+        void QueryGetColumnsMetaResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader,
+            const ProtocolVersion& ver)
         {
             meta::ReadColumnMetaVector(reader, meta, ver);
         }
