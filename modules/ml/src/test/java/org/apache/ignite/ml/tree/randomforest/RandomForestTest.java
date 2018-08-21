@@ -36,7 +36,7 @@ public class RandomForestTest {
     );
 
     private RandomForest<GiniHistogram> rf = new RandomForest<GiniHistogram>(
-        meta, countOfTrees, 100, maxDepth, minImpDelta, featuresPerTree, seed
+        meta, countOfTrees, 100, maxDepth, minImpDelta, x -> featuresPerTree, seed
     ) {
         @Override protected ModelsComposition buildComposition(List models) {
             return null;
@@ -56,7 +56,7 @@ public class RandomForestTest {
     @Test(expected = AssertionError.class)
     public void testCreateFeaturesSubspaceFail() {
         new RandomForest<GiniHistogram>(
-            meta, countOfTrees, 100, 3, 0, meta.size() + 1, seed
+            meta, countOfTrees, 100, 3, 0, x -> meta.size() + 1, seed
         ) {
             @Override protected ModelsComposition buildComposition(List models) {
                 return null;

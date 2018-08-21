@@ -37,6 +37,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetBuilder;
@@ -44,8 +45,8 @@ import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.BucketMeta;
+import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.ImpurityComputer;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,14 +64,14 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>>
 
     public RandomForest(List<FeatureMeta> meta, int countOfTrees,
         double subsampleSize, int maxDepth, double minImpurityDelta,
-        int featuresPerTree, long seed) {
+        IgniteFunction<List<FeatureMeta>, Integer> featureCntSelectionStgy, long seed) {
 
         this.meta = meta;
         this.countOfTrees = countOfTrees;
         this.subsampleSize = subsampleSize;
         this.maxDepth = maxDepth;
         this.minImpurityDelta = minImpurityDelta;
-        this.featuresPerTree = featuresPerTree;
+        this.featuresPerTree = featureCntSelectionStgy.apply(meta);
         this.random = new Random(seed);
     }
 
@@ -82,6 +83,7 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>>
             new EmptyContextBuilder<>(),
             new BaggedDatasetBuilder<>(featureExtractor, lbExtractor, countOfTrees, subsampleSize))) {
 
+            init(dataset);
             models = fit(dataset);
         }
         catch (Exception e) {
@@ -90,6 +92,10 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>>
 
         assert models != null;
         return buildComposition(models);
+    }
+
+    protected void init(Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
+
     }
 
     private List<TreeRoot> fit(Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
@@ -375,7 +381,7 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>>
         }
     }
 
-    class TreeRoot implements Model<Vector, Double> {
+    public static class TreeRoot implements Model<Vector, Double> {
         private TreeNode node;
         private Set<Integer> usedFeatures;
 
