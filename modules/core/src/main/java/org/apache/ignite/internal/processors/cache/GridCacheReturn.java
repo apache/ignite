@@ -308,6 +308,18 @@ public class GridCacheReturn implements Externalizable, Message {
     }
 
     /**
+     * Converts entry processor invokation results to cache object instances.
+     *
+     * @param ctx Cache context.
+     */
+    public void marshalResult(GridCacheContext ctx) {
+        if (invokeRes) {
+            for (CacheInvokeDirectResult directRes : invokeResCol)
+                directRes.marshalResult(ctx);
+        }
+    }
+
+    /**
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
