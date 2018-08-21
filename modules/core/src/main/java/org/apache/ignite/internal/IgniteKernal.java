@@ -217,6 +217,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_MESSAGE_STATS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
@@ -1167,6 +1168,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         String intervalStr = IgniteSystemProperties.getString(IGNITE_STARVATION_CHECK_INTERVAL);
 
+        boolean enableStats = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_MESSAGE_STATS);
+
         // Start starvation checker if enabled.
         boolean starveCheck = !isDaemon() && !"0".equals(intervalStr);
 
@@ -1193,8 +1196,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         lastCompletedCntSys = checkPoolStarvation(exec, lastCompletedCntSys, "system");
                     }
 
-                    if (stripedExecSvc != null)
+                    if (stripedExecSvc != null) {
                         stripedExecSvc.checkStarvation();
+
+                        stripedExecSvc.checkContention();
+                    }
+
+                    if (enableStats)
+                        ctx.io().dumpProcessedMessagesStats();
                 }
 
                 /**

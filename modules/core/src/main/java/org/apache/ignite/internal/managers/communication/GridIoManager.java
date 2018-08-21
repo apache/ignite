@@ -25,10 +25,12 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,11 +51,16 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -67,10 +74,14 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -78,10 +89,13 @@ import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -123,6 +137,21 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    /** */
+    private static final long IGNITE_STAT_HOT_KEYS_MAX_SIZE =
+        IgniteSystemProperties.getInteger(
+            IgniteSystemProperties.IGNITE_STRIPE_HOT_KEYS_MAX_SIZE, 10_000);
+
+    /** */
+    private static final long IGNITE_STAT_JOBS_MAX_SIZE =
+        IgniteSystemProperties.getInteger(
+            IgniteSystemProperties.IGNITE_STAT_JOBS_MAX_SIZE, 1_000);
+
+    /** */
+    private static final long IGNITE_STAT_QUERY_MAX_SIZE =
+        IgniteSystemProperties.getInteger(
+            IgniteSystemProperties.IGNITE_STAT_QUERY_MAX_SIZE, 100);
+
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
@@ -864,6 +893,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 closedTopics.add(e.getKey());
             }
         }
+
+        // Set common stat handlers.
+        addStatHandler(GridNearSingleGetRequest.class, (stat, msg, duration) -> {
+            stat.addKey(msg.key(), msg.cacheId());
+        });
+        addStatHandler(GridJobExecuteRequest.class, (stat, msg, duration) -> {
+            stat.addJob(msg.getTaskClassName(), duration);
+        });
     }
 
     /** {@inheritDoc} */
@@ -1088,7 +1125,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 try {
                     threadProcessingMessage(true, msgC);
 
+                    long t1 = System.nanoTime();
+
                     processRegularMessage0(msg, nodeId);
+
+                    logMessageProcessingTime(msg, System.nanoTime() - t1);
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1163,6 +1204,172 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
             else if (log.isDebugEnabled())
                 log.debug("Failed to process regular message due to execution rejection: " + msg);
+        }
+    }
+
+    /** */
+    private ThreadLocal<Map<Class<? extends Message>, MessageStat>> locStatHolder = new ThreadLocal<>();
+
+    /** */
+    private Map<Thread, Map<Class<? extends Message>, MessageStat>> sharedStats = new HashMap<>();
+
+    /** Needed for correct rolling average calculation. */
+    private Map<Class<? extends Message>, Integer> avgCntMap = new HashMap<>();
+
+    /** */
+    private Map<Class<? extends Message>, MessageStat> mergeMap = new HashMap<>();
+
+    /** Initialized from single thread, accessed from many. */
+    private volatile Map<String, ProcessMessageStatsClosure<Message>> handlers = new HashMap<>();
+
+    /**
+     * @param msgCls Message class.
+     * @param clo Closure.
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Message> void addStatHandler(Class<T> msgCls, ProcessMessageStatsClosure<T> clo) {
+        handlers.put(msgCls.getSimpleName(), (ProcessMessageStatsClosure<Message>) clo);
+    }
+
+    /** */
+    public interface ProcessMessageStatsClosure<T extends Message> {
+        /** */
+        void apply(MessageStat stat, T msg, long duration);
+    }
+
+    /** Should be called from single thread. */
+    public Map<Class<? extends Message>, MessageStat> dumpProcessedMessagesStats() {
+        if (ctx.clientNode())
+            return null;
+
+        GridStringBuilder sb = new GridStringBuilder();
+
+        Set<Entry<Thread, Map<Class<? extends Message>, MessageStat>>> entries1 = sharedStats.entrySet();
+
+        for (Entry<Thread, Map<Class<? extends Message>, MessageStat>> entry0 : entries1) {
+            Map<Class<? extends Message>, MessageStat> statMap0 = entry0.getValue();
+
+            synchronized (statMap0) {
+                for (Map.Entry<Class<? extends Message>, MessageStat> entry : statMap0.entrySet()) {
+                    MessageStat res = mergeMap.get(entry.getKey());
+
+                    if (res == null) {
+                        mergeMap.put(entry.getKey(), (res = new MessageStat()));
+
+                        avgCntMap.put(entry.getKey(), 1);
+
+                        entry.getValue().merge(res, 1);
+                    }
+                    else {
+                        Integer cnt = avgCntMap.get(entry.getKey());
+
+                        cnt++;
+
+                        avgCntMap.put(entry.getKey(), cnt);
+
+                        entry.getValue().merge(res, cnt);
+                    }
+                }
+
+                statMap0.clear();
+            }
+        }
+
+        sb.a(">>><DBG> Processed messages statistics: ").a(U.nl());
+
+        List<Map.Entry<Class<? extends Message>, MessageStat>> top = mergeMap.entrySet().stream().sorted((o1,
+            o2) -> Long.compare(o2.getValue().total, o1.getValue().total)).collect(Collectors.toList());
+
+        long total = 0;
+
+        Iterator<Map.Entry<Class<? extends Message>, MessageStat>> it = top.iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<Class<? extends Message>, MessageStat> entry = it.next();
+
+            sb.a(">>><DBG> ").a(entry.getKey().getSimpleName())
+                .a(" [total=").a(entry.getValue().total)
+                .a(", average=").a(entry.getValue().rollingAvg / 1000/ 1000.);
+
+            sb.a(',').a(" buckets=[");
+
+            for (int i = 0; i < entry.getValue().buckets.length; i++) {
+                long t = entry.getValue().buckets[i];
+
+                sb.a(t);
+
+                if (i < entry.getValue().buckets.length - 1)
+                    sb.a(", ");
+            }
+
+            sb.a(']');
+
+            if (entry.getKey().getSimpleName().equals("GridNearSingleGetRequest")) {
+                sb.a(", hotKeys=").a(entry.getValue().hotKeys.entrySet().stream().sorted((o1,
+                    o2) -> o2.getValue().compareTo(o1.getValue())).limit(20).collect(Collectors.toList()));
+            }
+            else if (entry.getKey().getSimpleName().equals("GridJobExecuteRequest")) {
+                sb.a(", longestJobs=").a(entry.getValue().jobs.entrySet().stream().sorted((o1,
+                    o2) -> o2.getValue().compareTo(o1.getValue())).limit(20).map(entry1 -> "[cls=" + entry1.getKey() +
+                    ", dur=" + entry1.getValue() / 1000 / 1000. + ']').collect(Collectors.toList()));
+            }
+            else if (entry.getKey().getSimpleName().equals("GridH2QueryRequest")) {
+                sb.a(", longestQrys=").a(entry.getValue().qryExecs.entrySet().stream().sorted((o1,
+                    o2) -> o2.getValue().compareTo(o1.getValue())).limit(20).map(entry1 -> "[qry=" + entry1.getKey() +
+                    ", dur=" + entry1.getValue() / 1000 / 1000. + ']').collect(Collectors.toList()));
+            }
+
+            sb.a(']');
+
+            total += entry.getValue().total;
+
+            sb.a(U.nl());
+        }
+
+        sb.a(">>><DBG> totalMsgs=").a(total);
+
+        U.warn(log, sb.toString());
+
+        return mergeMap;
+    }
+
+    /**
+     * @param msg Message.
+     * @param duration Duration.
+     */
+    private void logMessageProcessingTime(GridIoMessage msg, long duration) {
+        if (ctx.clientNode())
+            return;
+
+        Map<Class<? extends Message>, MessageStat> statMap = locStatHolder.get();
+
+        if (statMap == null) {
+            locStatHolder.set(statMap = new HashMap<>());
+
+            sharedStats.put(Thread.currentThread(), statMap);
+        }
+
+        Message msg0 = msg.message();
+
+        Class<? extends Message> msgCls = msg0.getClass();
+
+        ProcessMessageStatsClosure<Message> clo = handlers.get(msg0.getClass().getSimpleName());
+
+        synchronized (statMap) {
+            MessageStat stat = statMap.get(msgCls);
+
+            if (stat == null)
+                statMap.put(msgCls, (stat = new MessageStat()));
+
+            stat.increment(duration);
+
+            if (clo != null)
+                try {
+                    clo.apply(stat, msg0, duration);
+                }
+                catch (Throwable e) {
+                    log.error("Failed to apply stat closure", e);
+                }
         }
     }
 
@@ -3143,6 +3350,171 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 throw new IllegalStateException();
 
             return latencyLimit / (1000 * (resLatency.length - 1));
+        }
+    }
+
+    /** */
+    public static class MessageStat {
+        /** */
+        private static final int[] BUCKET_THRESHOLDS = new int[] {1, 10, 30, 50, 100, 200, 400, 750, 1000, 0};
+
+        /** */
+        private static final long BILLION = 1_000_000;
+
+        /** */
+        final long[] buckets = new long[10];
+
+        /** */
+        final Map<T2<KeyCacheObject, Integer>, Long> hotKeys = new HashMap<>();
+
+        /** */
+        final Map<String, Long> jobs = new HashMap<>();
+
+        /** */
+        final public Map<String, Long> qryExecs = new HashMap<>();
+
+        /** */
+        long rollingAvg;
+
+        /** */
+        long total;
+
+        /**
+         * @param duration Duration.
+         */
+        public void increment(long duration) {
+            if (duration <= BUCKET_THRESHOLDS[0] * BILLION)
+                buckets[0]++;
+            else if (duration <= BUCKET_THRESHOLDS[1] * BILLION)
+                buckets[1]++;
+            else if (duration <= BUCKET_THRESHOLDS[2] * BILLION)
+                buckets[2]++;
+            else if (duration <= BUCKET_THRESHOLDS[3] * BILLION)
+                buckets[3]++;
+            else if (duration <= BUCKET_THRESHOLDS[4] * BILLION)
+                buckets[4]++;
+            else if (duration <= BUCKET_THRESHOLDS[5] * BILLION)
+                buckets[5]++;
+            else if (duration <= BUCKET_THRESHOLDS[6] * BILLION)
+                buckets[6]++;
+            else if (duration <= BUCKET_THRESHOLDS[7] * BILLION)
+                buckets[7]++;
+            else if (duration <= BUCKET_THRESHOLDS[8] * BILLION)
+                buckets[8]++;
+            else
+                buckets[9]++;
+
+            rollingAvg = (rollingAvg * total + duration)/(total + 1);
+
+            total++;
+        }
+
+        /** */
+        public void merge(MessageStat dst, int n) {
+            Arrays.setAll(dst.buckets, value -> dst.buckets[value] + buckets[value]);
+
+            dst.rollingAvg = (dst.rollingAvg * (n - 1) + rollingAvg) / n;
+
+            dst.total += total;
+
+            if (!hotKeys.isEmpty()) {
+                hotKeys.entrySet().stream().sorted((o1, o2) -> o2.getValue().compareTo(o1.getValue())).forEach(entry -> {
+                    Long cnt = dst.hotKeys.get(entry.getKey());
+
+                    if (cnt != null || dst.hotKeys.size() < IGNITE_STAT_HOT_KEYS_MAX_SIZE * 5)
+                        dst.hotKeys.put(entry.getKey(), cnt == null ? entry.getValue() : cnt + entry.getValue());
+                });
+            }
+
+            if (!jobs.isEmpty()) {
+                jobs.entrySet().stream().sorted((o1, o2) -> o2.getValue().compareTo(o1.getValue())).forEach(entry -> {
+                    Long cnt = dst.jobs.get(entry.getKey());
+
+                    if (cnt != null || dst.jobs.size() < IGNITE_STAT_JOBS_MAX_SIZE)
+                        dst.jobs.put(entry.getKey(), cnt == null ? entry.getValue() : cnt + entry.getValue());
+                });
+            }
+
+            if (!qryExecs.isEmpty()) {
+                qryExecs.entrySet().stream().sorted((o1, o2) -> o2.getValue().compareTo(o1.getValue())).forEach(entry -> {
+                    Long cnt = dst.qryExecs.get(entry.getKey());
+
+                    if (cnt != null || dst.qryExecs.size() < IGNITE_STAT_QUERY_MAX_SIZE)
+                        dst.qryExecs.put(entry.getKey(), cnt == null ? entry.getValue() : cnt + entry.getValue());
+                });
+            }
+        }
+
+        /**
+         * @param key Key.
+         */
+        public void addKey(KeyCacheObject key, int cacheId) {
+            if (hotKeys.size() >= IGNITE_STAT_HOT_KEYS_MAX_SIZE)
+                return;
+
+            T2<KeyCacheObject, Integer> k0 = new T2<>(key, cacheId);
+
+            Long cnt = hotKeys.get(k0);
+
+            hotKeys.put(k0, cnt == null ? 1 : cnt + 1);
+        }
+
+        /**
+         * @param jobCls Job class.
+         * @param duration Duration.
+         */
+        public void addJob(String jobCls, long duration) {
+            if (jobs.size() >= IGNITE_STAT_JOBS_MAX_SIZE)
+                return;
+
+            Long totalDuration = jobs.get(jobCls);
+
+            jobs.put(jobCls, totalDuration == null ? duration : totalDuration + duration);
+        }
+
+        /**
+         * @param qry String query.
+         * @param duration Duration.
+         */
+        public void addQuery(String qry, long duration) {
+            if (qryExecs.size() >= IGNITE_STAT_JOBS_MAX_SIZE)
+                return;
+
+            Long totalDuration = qryExecs.get(qry);
+
+            qryExecs.put(qry, totalDuration == null ? duration : totalDuration + duration);
+        }
+
+        public static void main(String[] args) {
+            MessageStat stat1 = new MessageStat();
+
+            for (int i = 0; i < 10; i++)
+                stat1.addKey(new KeyCacheObjectImpl("k" + i, new byte[0], 0), -100000);
+
+            stat1.increment(50);
+            stat1.increment(100);
+            stat1.increment(200);
+
+            MessageStat stat2 = new MessageStat();
+
+            stat2.increment(100);
+            stat2.increment(100);
+            stat2.increment(200);
+
+            System.out.println(stat1.rollingAvg);
+            System.out.println(stat1.total);
+            System.out.println(stat1.hotKeys);
+
+            System.out.println(stat2.rollingAvg);
+            System.out.println(stat2.total);
+
+            MessageStat merge = new MessageStat();
+
+            stat1.merge(merge, 1);
+            stat2.merge(merge, 2);
+
+            System.out.println(merge.rollingAvg);
+            System.out.println(merge.total);
         }
     }
 }

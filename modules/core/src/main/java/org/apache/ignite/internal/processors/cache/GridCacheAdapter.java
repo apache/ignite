@@ -25,6 +25,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,12 +37,14 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -93,6 +96,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -106,6 +110,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -138,7 +143,6 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -159,6 +163,53 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
  */
 @SuppressWarnings("unchecked")
 public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V>, Externalizable {
+    /** */
+    public static ThreadLocal<StatSnap> dhtAllAsyncStatistics = new ThreadLocal<>();
+
+    /** */
+    public static final long IGNITE_STRIPE_TASK_LONG_EXECUTION_THRESHOLD =
+            IgniteSystemProperties.getInteger(
+                    IgniteSystemProperties.IGNITE_STRIPE_TASK_LONG_EXECUTION_THRESHOLD, 1000) * 1_000_000L;
+
+    /**
+     *
+     */
+    public static class StatSnap {
+        public static int TOTAL_METRICS_CNT = 0;
+
+        public static final int TOTAL_READ_DURATION = TOTAL_METRICS_CNT++;
+        public static final int PART_INIT_DURATION = TOTAL_METRICS_CNT++;
+        public static final int TOTAL_PAGE_ACQUIRE_DURATION = TOTAL_METRICS_CNT++;
+        public static final int TOTAL_SEG_READ_LOCK_DURATION = TOTAL_METRICS_CNT++;
+        public static final int TOTAL_SEG_WRITE_LOCK_DURATION = TOTAL_METRICS_CNT++;
+        public static final int TOTAL_DISK_READ_DURATION = TOTAL_METRICS_CNT++;
+        public static final int TOTAL_MEM_TABLE_SEARCH_DURATION = TOTAL_METRICS_CNT++;
+        public static final int TOTAL_EVICT_PROCESS_DURATION = TOTAL_METRICS_CNT++;
+        public static final int TOTAL_PAGE_REPLACEMENT_DURATION = TOTAL_METRICS_CNT++;
+        public static final int TOTAL_PAGE_READ_DURATION = TOTAL_METRICS_CNT++;
+        public static final int TOTAL_MEM_TABLE_SEARCH_AGAIN_DURATION = TOTAL_METRICS_CNT++;
+
+        // Keep it last.
+        public static final int SEGMENT_UTILIZATION = TOTAL_METRICS_CNT++;
+
+        public KeyCacheObject currKey;
+
+        public Map<KeyCacheObject, long[]> stats = new HashMap<>();
+
+        public Map<KeyCacheObject, List<Integer>> pageTypes = new ConcurrentHashMap<>();
+
+        public void addPage(KeyCacheObject key, int pType) {
+            List<Integer> list = pageTypes.get(key);
+
+            if (list == null)
+                pageTypes.put(key, (list = new ArrayList<>(4)));
+
+            list.add(pType);
+        }
+
+        public Map<KeyCacheObject, List<PageMemoryImpl.SegmentWriteLockHolder>> segmentWriteLockHolders = new ConcurrentHashMap<>();
+    }
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1881,6 +1932,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             final AffinityTopologyVersion topVer = tx == null ? ctx.affinity().affinityTopologyVersion() :
                 tx.topologyVersion();
 
+            StatSnap snap = new StatSnap();
+
+            dhtAllAsyncStatistics.set(snap);
+
+            long start0 = System.nanoTime();
+
             try {
                 int keysSize = keys.size();
 
@@ -1912,7 +1969,19 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             boolean skipEntry = readNoEntry;
 
                             if (readNoEntry) {
+                                long[] arr = new long[StatSnap.TOTAL_METRICS_CNT];
+
+                                Arrays.fill(arr, -1);
+
+                                snap.stats.put(key, arr);
+
+                                snap.currKey = key;
+
+                                long start = System.nanoTime();
+
                                 CacheDataRow row = ctx.offheap().read(ctx, key);
+
+                                snap.stats.get(key)[StatSnap.TOTAL_READ_DURATION] = System.nanoTime() - start;
 
                                 if (row != null) {
                                     long expireTime = row.expireTime();
@@ -2182,6 +2251,90 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
+            }
+            finally {
+                long duration = System.nanoTime() - start0;
+
+                try {
+                    if (duration >= IGNITE_STRIPE_TASK_LONG_EXECUTION_THRESHOLD) {
+                        log.info("");
+
+                        GridStringBuilder sb = new GridStringBuilder();
+
+                        sb.a(">>> GetDhtAllAsync: [totalTime=" + TimeUnit.NANOSECONDS.toMillis(duration) + ", grp=" + ctx.groupId() + ", keys=[");
+
+                        List<Map.Entry<KeyCacheObject, long[]>> sorted = snap.stats.entrySet().stream().
+                                sorted((o1, o2) -> Long.compare(o2.getValue()[StatSnap.TOTAL_READ_DURATION],
+                                        o1.getValue()[StatSnap.TOTAL_READ_DURATION])).collect(Collectors.toList());
+
+                        Iterator<Map.Entry<KeyCacheObject, long[]>> it = sorted.iterator();
+
+                        while (it.hasNext()) {
+                            Map.Entry<KeyCacheObject, long[]> entry = it.next();
+
+                            sb.a('[').a(entry.getKey()).a(", times=[");
+
+                            for (int i = 0; i < entry.getValue().length - 1; i++) {
+                                long t = entry.getValue()[i];
+
+                                sb.a(t == -1 ? "NA" : t < 1_000_000 ? t + "ns" : TimeUnit.NANOSECONDS.toMillis(t) + "ms");
+
+                                if (i < entry.getValue().length - 2)
+                                    sb.a(", ");
+                            }
+
+                            sb.a(']');
+
+                            long segUtil = entry.getValue()[StatSnap.SEGMENT_UTILIZATION];
+
+                            sb.a(", segPages = ").a(segUtil == -1 ? "NA" : segUtil);
+
+                            sb.a(", slowPageTypes=").a(snap.pageTypes.get(entry.getKey()));
+
+                            sb.a(']');
+
+                            if (it.hasNext())
+                                sb.a(", ");
+                        }
+
+                        sb.a(']').a(U.nl());
+
+                        snap.segmentWriteLockHolders.forEach((key, holders) -> {
+                            sb.a(" >>> seglock holders key=").a(key).a(U.nl());
+
+                            holders.stream().sorted((h1, h2) -> Long.compare(h2.duration, h1.duration))
+                                    .limit(5).forEach(holder -> {
+                                sb.a("  >>> ").a(holder.threadName).a(" duration=").a(holder.duration < 1_000_000
+                                        ? holder.duration + "ns" : TimeUnit.NANOSECONDS.toMillis(holder.duration) + "ms");
+
+                                if (holder.ctx != null)
+                                    sb.a(" ctx=[groupId=").a(holder.ctx.groupId).a(", partId=").a(holder.ctx.partId)
+                                            .a(", segIdx=").a(holder.ctx.segIdx).a("]");
+
+                                sb.a(U.nl());
+
+                                StackTraceElement[] stackTrace = holder.stackTrace;
+
+                                for (int i = 0; i < stackTrace.length; i++) {
+                                    StackTraceElement e = stackTrace[i];
+
+                                    sb.a("        at ").a(e.toString());
+
+                                    sb.a(U.nl());
+                                }
+
+                                sb.a(U.nl());
+                            });
+                        });
+
+                        U.warn(log, sb.toString());
+                    }
+                }
+                catch (Throwable ignore) {
+                    // No-op.
+                }
+
+                dhtAllAsyncStatistics.set(null);
             }
         }
         else {
@@ -2893,14 +3046,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             @Override public V op(GridNearTxLocal tx) throws IgniteCheckedException {
                 K key0 = keepBinary ? (K)ctx.toCacheKeyObject(key) : key;
 
-                IgniteInternalFuture<GridCacheReturn> fut = tx.removeAllAsync(ctx,
-                        null,
-                        Collections.singletonList(key0),
-                        /*retval*/true,
-                        null,
-                        /*singleRmv*/false);
-
-                V ret = fut.get().value();
+                V ret = tx.removeAllAsync(ctx,
+                    null,
+                    Collections.singletonList(key0),
+                    /*retval*/true,
+                    null,
+                    /*singleRmv*/false).get().value();
 
                 if (ctx.config().getInterceptor() != null) {
                     K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
@@ -3945,6 +4096,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         final GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(p, null, keepBinary)
+            .keepAll(false)
             .executeScanQuery();
 
         return ctx.itHolder().iterator(iter, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {

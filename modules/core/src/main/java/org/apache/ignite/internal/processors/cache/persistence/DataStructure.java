@@ -25,6 +25,8 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -138,8 +140,26 @@ public abstract class DataStructure implements PageLockListener {
         assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
             PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID :
             U.hexLong(pageId) + " flag=" + PageIdUtils.flag(pageId) + " part=" + PageIdUtils.partId(pageId);
+        GridCacheAdapter.StatSnap snap = GridCacheAdapter.dhtAllAsyncStatistics.get();
 
-        return pageMem.acquirePage(grpId, pageId);
+        if (snap != null) {
+            long t1 = System.nanoTime();
+
+            long ptr = pageMem.acquirePage(grpId, pageId);
+
+            long t2 = System.nanoTime();
+
+            long duration = t2 - t1;
+
+            snap.stats.get(snap.currKey)[GridCacheAdapter.StatSnap.TOTAL_PAGE_ACQUIRE_DURATION] += duration;
+
+            if (duration > 1_000_000_000)
+                snap.addPage(snap.currKey, PageIO.getType(ptr + PageMemoryImpl.PAGE_OVERHEAD));
+
+            return ptr;
+        }
+        else
+            return pageMem.acquirePage(grpId, pageId);
     }
 
     /**

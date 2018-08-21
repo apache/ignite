@@ -395,7 +395,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         if (cctx.isLocal())
             row = locCacheDataStore.find(cctx, key);
         else {
+            long t0 = System.nanoTime();
+
             GridDhtLocalPartition part = cctx.topology().localPartition(cctx.affinity().partition(key), null, false);
+
+            GridCacheAdapter.StatSnap snap = GridCacheAdapter.dhtAllAsyncStatistics.get();
+
+            if (snap != null)
+                snap.stats.get(snap.currKey)[GridCacheAdapter.StatSnap.PART_INIT_DURATION] += System.nanoTime() - t0;
 
             row = part != null ? dataStore(part).find(cctx, key) : null;
         }
