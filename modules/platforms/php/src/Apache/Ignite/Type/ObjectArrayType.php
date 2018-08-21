@@ -33,13 +33,13 @@ class ObjectArrayType extends ObjectType
     /**
      * Public constructor.
      *
-     * Optionally specifies a type of elements in the array.
+     * Optionally specifies Ignite type of elements in the array.
      *
-     * If the type of elements is not specified then during operations the Ignite client
-     * will try to make automatic mapping between PHP types and Ignite object types -
+     * If Ignite type of elements is not specified then during operations the Ignite client
+     * tries to make automatic mapping between PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
-     * @param int|ObjectType|null $elementType type of the array element:
+     * @param int|ObjectType|null $elementType Ignite type of the array element:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
@@ -54,12 +54,12 @@ class ObjectArrayType extends ObjectType
     }
     
     /**
-     * Returns type of the array element.
+     * Returns Ignite type of the array element.
      * 
-     * @return int|ObjectType|null type of the array element:
+     * @return int|ObjectType|null Ignite type of the array element:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
-     *   - or null (or not specified) that means the type is not specified
+     *   - or null that means the type is not specified
      */
     public function getElementType()
     {
