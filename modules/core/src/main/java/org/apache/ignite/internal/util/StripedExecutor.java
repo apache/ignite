@@ -61,6 +61,9 @@ public class StripedExecutor implements ExecutorService {
     /** */
     private final IgniteLogger log;
 
+    /** */
+    private final int stripesCnt;
+
     /**
      * @param cnt Count.
      * @param igniteInstanceName Node name.
@@ -75,9 +78,10 @@ public class StripedExecutor implements ExecutorService {
         String poolName,
         final IgniteLogger log,
         IgniteInClosure<Throwable> errHnd,
-        GridWorkerListener gridWorkerLsnr
+        GridWorkerListener gridWorkerLsnr,
+        int dedicated
     ) {
-        this(cnt, igniteInstanceName, poolName, log, errHnd, false, gridWorkerLsnr);
+        this(cnt, igniteInstanceName, poolName, log, errHnd, false, gridWorkerLsnr, dedicated);
     }
 
     /**
@@ -96,15 +100,18 @@ public class StripedExecutor implements ExecutorService {
         final IgniteLogger log,
         IgniteInClosure<Throwable> errHnd,
         boolean stealTasks,
-        GridWorkerListener gridWorkerLsnr
+        GridWorkerListener gridWorkerLsnr,
+        int dedicated
     ) {
         A.ensure(cnt > 0, "cnt > 0");
 
+        stripesCnt = cnt;
+
         boolean success = false;
 
-        stripes = new Stripe[cnt];
+        stripes = new Stripe[cnt + dedicated];
 
-        completedCntrs = new long[cnt];
+        completedCntrs = new long[cnt + dedicated];
 
         Arrays.fill(completedCntrs, -1);
 
@@ -117,7 +124,10 @@ public class StripedExecutor implements ExecutorService {
                     : new StripeConcurrentQueue(igniteInstanceName, poolName, i, log, errHnd, gridWorkerLsnr);
             }
 
-            for (int i = 0; i < cnt; i++)
+            for (int i = cnt; i < cnt + dedicated; i++)
+                stripes[i] = new StripeConcurrentQueue(igniteInstanceName, poolName + "-dedicated", i, log, errHnd, gridWorkerLsnr);
+
+            for (int i = 0; i < cnt + dedicated; i++)
                 stripes[i].start();
 
             success = true;
@@ -181,7 +191,7 @@ public class StripedExecutor implements ExecutorService {
      * @return Stripes count.
      */
     public int stripes() {
-        return stripes.length;
+        return stripesCnt;
     }
 
     /**
@@ -196,8 +206,12 @@ public class StripedExecutor implements ExecutorService {
         else {
             assert idx >= 0 : idx;
 
-            stripes[idx % stripes.length].execute(cmd);
+            stripes[idx % stripesCnt].execute(cmd);
         }
+    }
+
+    public void executeDedicated(int dedicatedIdx, Runnable cmd) {
+        stripes[stripesCnt + dedicatedIdx].execute(cmd);
     }
 
     /** {@inheritDoc} */
@@ -207,7 +221,7 @@ public class StripedExecutor implements ExecutorService {
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable cmd) {
-        stripes[ThreadLocalRandom.current().nextInt(stripes.length)].execute(cmd);
+        stripes[ThreadLocalRandom.current().nextInt(stripesCnt)].execute(cmd);
     }
 
     /**
@@ -304,7 +318,7 @@ public class StripedExecutor implements ExecutorService {
      * @return Completed tasks per stripe count.
      */
     public long[] stripesCompletedTasks() {
-        long[] res = new long[stripes()];
+        long[] res = new long[stripesCnt];
 
         for (int i = 0; i < res.length; i++)
             res[i] = stripes[i].completedCnt;
@@ -316,7 +330,7 @@ public class StripedExecutor implements ExecutorService {
      * @return Number of active tasks per stripe.
      */
     public boolean[] stripesActiveStatuses() {
-        boolean[] res = new boolean[stripes()];
+        boolean[] res = new boolean[stripesCnt];
 
         for (int i = 0; i < res.length; i++)
             res[i] = stripes[i].active;
@@ -342,7 +356,7 @@ public class StripedExecutor implements ExecutorService {
      * @return Size of queue per stripe.
      */
     public int[] stripesQueueSizes() {
-        int[] res = new int[stripes()];
+        int[] res = new int[stripesCnt];
 
         for (int i = 0; i < res.length; i++)
             res[i] = stripes[i].queueSize();

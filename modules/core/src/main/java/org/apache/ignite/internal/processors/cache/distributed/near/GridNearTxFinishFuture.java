@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxCommitFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -56,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
@@ -318,7 +318,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         err = new TransactionRollbackException("Failed to commit transaction.", err);
 
                     try {
-                        tx.localFinish(err == null, true);
+                        IgniteTxCommitFuture commitFuture = tx.startLocalCommit(false, true);
+
+                        assert !commitFuture.async() : "Commit future should be synchronous in case of un-commit";
+
+                        if (commitFuture.started())
+                            tx.finishLocalCommit(commitFuture, false, true);
+                        else
+                            commitFuture.get(); // Check for errors.
                     }
                     catch (IgniteCheckedException e) {
                         if (err != null)
@@ -408,6 +415,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             // finish request to it, so we can mark future as initialized.
             markInitialized();
 
+            log.warning("One-phase commit -> " + tx);
+
             return;
         }
 
@@ -442,18 +451,16 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             }
         }
 
-        curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> fut) {
-                try {
-                    fut.get();
+        curFut.listen(f -> cctx.tm().finisher().execute(tx, () -> {
+            try {
+                curFut.get();
 
-                    tryRollbackAsync(onTimeout);
-                }
-                catch (IgniteCheckedException e) {
-                    doFinish(false, false);
-                }
+                tryRollbackAsync(onTimeout);
             }
-        });
+            catch (IgniteCheckedException e) {
+                doFinish(false, false);
+            }
+        }));
     }
 
     /**
@@ -463,8 +470,33 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param clearThreadMap Clear thread map.
      */
     private void doFinish(boolean commit, boolean clearThreadMap) {
+        IgniteTxCommitFuture commitFuture = tx.startLocalCommit(commit, clearThreadMap);
+
+        log.warning("Local commit started " + cctx.tm().finisher().order(tx) + " " + commitFuture + " " + commitFuture.started() + " " + commitFuture.async() + " " + commitFuture.commitEntriesFuture());
+
+        if (commitFuture.async())
+            commitFuture.listen(f -> cctx.tm().finisher().execute(tx, () -> doFinishAsync(commitFuture, commit, clearThreadMap)));
+        else
+            doFinishAsync(commitFuture, commit, clearThreadMap);
+    }
+
+    /**
+     * Finishes a transaction.
+     *
+     * @param commit Commit.
+     * @param clearThreadMap Clear thread map.
+     */
+    private void doFinishAsync(IgniteTxCommitFuture commitFuture, boolean commit, boolean clearThreadMap) {
         try {
-            if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
+            if (commitFuture.started()) {
+                tx.finishLocalCommit(commitFuture, commit, clearThreadMap);
+
+                log.warning("Local commit finished " + cctx.tm().finisher().order(tx) + " " + commitFuture + " " + commitFuture.started() + " " + commitFuture.async() + " " + commitFuture.commitEntriesFuture());
+            }
+            else
+                commitFuture.get(); // Check for errors.
+
+            if (commitFuture.started() || (!commit && tx.state() == UNKNOWN)) {
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();
@@ -494,6 +526,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             onDone(e);
         }
         finally {
+            cctx.tm().finisher().finishSend(tx);
+
             if (commit &&
                 tx.onePhaseCommit() &&
                 !tx.writeMap().isEmpty()) // Readonly operations require no ack.
@@ -636,34 +670,38 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                     else {
                         GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId(), false);
 
-                        try {
-                            cctx.io().send(backup, finishReq, tx.ioPolicy());
+                        cctx.tm().finisher().send(tx, () -> {
+                            try {
+                                cctx.io().send(backup, finishReq, tx.ioPolicy());
 
-                            if (msgLog.isDebugEnabled()) {
-                                msgLog.debug("Near finish fut, sent check committed request [" +
-                                    "txId=" + tx.nearXidVersion() +
-                                    ", node=" + backup.id() + ']');
+                                if (msgLog.isDebugEnabled()) {
+                                    msgLog.debug("Near finish fut, sent check committed request [" +
+                                        "txId=" + tx.nearXidVersion() +
+                                        ", node=" + backup.id() + ']');
+                                }
                             }
-                        }
-                        catch (ClusterTopologyCheckedException ignored) {
-                            mini.onNodeLeft(backupId, false);
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (msgLog.isDebugEnabled()) {
-                                msgLog.debug("Near finish fut, failed to send check committed request [" +
-                                    "txId=" + tx.nearXidVersion() +
-                                    ", node=" + backup.id() +
-                                    ", err=" + e + ']');
+                            catch (ClusterTopologyCheckedException ignored) {
+                                mini.onNodeLeft(backupId, false);
                             }
+                            catch (IgniteCheckedException e) {
+                                if (msgLog.isDebugEnabled()) {
+                                    msgLog.debug("Near finish fut, failed to send check committed request [" +
+                                        "txId=" + tx.nearXidVersion() +
+                                        ", node=" + backup.id() +
+                                        ", err=" + e + ']');
+                                }
 
-                            mini.onDone(e);
-                        }
+                                mini.onDone(e);
+                            }
+                        });
                     }
                 }
             }
             else
                 readyNearMappingFromBackup(mapping);
         }
+
+        cctx.tm().finisher().finishSend(tx);
     }
 
     /**
@@ -752,10 +790,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
         assert !m.empty() : m + " " + tx.state();
 
-        CacheWriteSynchronizationMode syncMode = tx.syncMode();
-
-        if (m.explicitLock())
-            syncMode = FULL_SYNC;
+        final CacheWriteSynchronizationMode syncMode = m.explicitLock() ? FULL_SYNC : tx.syncMode();
 
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
@@ -798,39 +833,44 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             if (tx.pessimistic() && !useCompletedVer)
                 cctx.tm().beforeFinishRemote(n.id(), tx.threadId());
 
-            try {
-                cctx.io().send(n, req, tx.ioPolicy());
+            cctx.tm().finisher().send(tx, () -> {
+                try {
+                    cctx.io().send(n, req, tx.ioPolicy());
 
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("Near finish fut, sent request [" +
-                        "txId=" + tx.nearXidVersion() +
-                        ", node=" + n.id() + ']');
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near finish fut, sent request [" +
+                            "txId=" + tx.nearXidVersion() +
+                            ", node=" + n.id() + ']');
+                    }
+
+                    boolean wait = syncMode != FULL_ASYNC;
+
+                    // If we don't wait for result, then mark future as done.
+                    if (!wait)
+                        fut.onDone();
                 }
+                catch (ClusterTopologyCheckedException ignored) {
+                    // Remove previous mapping.
+                    mappings.remove(m.primary().id());
 
-                boolean wait = syncMode != FULL_ASYNC;
-
-                // If we don't wait for result, then mark future as done.
-                if (!wait)
-                    fut.onDone();
-            }
-            catch (ClusterTopologyCheckedException ignored) {
-                // Remove previous mapping.
-                mappings.remove(m.primary().id());
-
-                fut.onNodeLeft(n.id(), false);
-            }
-            catch (IgniteCheckedException e) {
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("Near finish fut, failed to send request [" +
-                        "txId=" + tx.nearXidVersion() +
-                        ", node=" + n.id() +
-                        ", err=" + e + ']');
+                    fut.onNodeLeft(n.id(), false);
                 }
+                catch (IgniteCheckedException e) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near finish fut, failed to send request [" +
+                            "txId=" + tx.nearXidVersion() +
+                            ", node=" + n.id() +
+                            ", err=" + e + ']');
+                    }
 
-                // Fail the whole thing.
-                fut.onDone(e);
-            }
+                    // Fail the whole thing.
+                    fut.onDone(e);
+                }
+            });
         }
+
+        if (miniId == mappings.mappings().size())
+            cctx.tm().finisher().finishSend(tx);
     }
 
     /** {@inheritDoc} */

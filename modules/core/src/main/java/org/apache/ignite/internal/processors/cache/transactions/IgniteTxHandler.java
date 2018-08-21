@@ -188,7 +188,9 @@ public class IgniteTxHandler {
 
         ctx.io().addCacheHandler(0, GridNearTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processNearTxFinishRequest(nodeId, (GridNearTxFinishRequest)msg);
+                GridNearTxFinishRequest finishReqMsg = (GridNearTxFinishRequest) msg;
+
+                processNearTxFinishRequest(nodeId, finishReqMsg);
             }
         });
 
@@ -212,7 +214,9 @@ public class IgniteTxHandler {
 
         ctx.io().addCacheHandler(0, GridDhtTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processDhtTxFinishRequest(nodeId, (GridDhtTxFinishRequest)msg);
+                GridDhtTxFinishRequest finishReqMsg = (GridDhtTxFinishRequest) msg;
+
+                processDhtTxFinishRequest(nodeId, finishReqMsg);
             }
         });
 

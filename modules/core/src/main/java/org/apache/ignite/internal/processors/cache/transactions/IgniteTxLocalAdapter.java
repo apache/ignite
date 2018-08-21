@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.io.Externalizable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -50,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
-import org.apache.ignite.internal.processors.cache.GridCacheIndexUpdateException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -478,44 +476,43 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass"})
-    @Override public void userCommit() throws IgniteCheckedException {
+    @Override public IgniteTxCommitEntriesFuture startCommit() {
         TransactionState state = state();
 
-        if (state != COMMITTING) {
-            if (remainingTime() == -1)
-                throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
+        try {
+            if (state != COMMITTING) {
+                if (remainingTime() == -1)
+                    throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
-            setRollbackOnly();
+                setRollbackOnly();
 
-            throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
-        }
+                throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
+            }
 
-        checkValid();
+            checkValid();
 
-        Collection<IgniteTxEntry> commitEntries = (near() || cctx.snapshot().needTxReadLogging()) ? allEntries() : writeEntries();
+            Collection<IgniteTxEntry> commitEntries = commitEntries();
 
-        boolean empty = F.isEmpty(commitEntries);
+            boolean empty = F.isEmpty(commitEntries);
 
-        // Register this transaction as completed prior to write-phase to
-        // ensure proper lock ordering for removed entries.
-        // We add colocated transaction to committed set even if it is empty to correctly order
-        // locks on backup nodes.
-        if (!empty || colocated())
-            cctx.tm().addCommittedTx(this);
+            // Register this transaction as completed prior to write-phase to
+            // ensure proper lock ordering for removed entries.
+            // We add colocated transaction to committed set even if it is empty to correctly order
+            // locks on backup nodes.
+            if (!empty || colocated())
+                cctx.tm().addCommittedTx(this);
 
-        if (!empty) {
+            if (empty)
+                return IgniteTxCommitEntriesFuture.FINISHED;
+
             batchStoreCommit(writeEntries());
 
-            WALPointer ptr = null;
-
-            cctx.database().checkpointReadLock();
+            AffinityTopologyVersion topVer = topologyVersion();
 
             try {
                 cctx.tm().txContext(this);
 
-                AffinityTopologyVersion topVer = topologyVersion();
-
-                GridCompoundFuture<GridCacheUpdateTxResult, ?> entriesCommitFuture = new GridCompoundFuture<>();
+                IgniteTxCommitEntriesFuture commitEntriesFuture = new IgniteTxCommitEntriesFuture();
 
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
@@ -535,7 +532,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         // Must try to evict near entries before committing from
                         // transaction manager to make sure locks are held.
                         if (evictNearEntry(txEntry, false)) {
-                            entriesCommitFuture.add(new GridFinishedFuture<>());
+                            commitEntriesFuture.add(new GridFinishedFuture<>());
 
                             continue;
                         }
@@ -543,13 +540,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         if (cacheCtx.isNear() && cacheCtx.dr().receiveEnabled()) {
                             cached.markObsolete(xidVer);
 
-                            entriesCommitFuture.add(new GridFinishedFuture<>());
+                            commitEntriesFuture.add(new GridFinishedFuture<>());
 
                             continue;
                         }
 
                         if (cached.detached()) {
-                            entriesCommitFuture.add(new GridFinishedFuture<>());
+                            commitEntriesFuture.add(new GridFinishedFuture<>());
 
                             continue;
                         }
@@ -863,95 +860,117 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         assert operationFuture != null : "Entry operation must be submitted";
 
-                        entriesCommitFuture.add(operationFuture);
+                        commitEntriesFuture.add(operationFuture);
                     }
                     catch (Throwable ex) {
-                        entriesCommitFuture.onDone(ex);
+                        commitEntriesFuture.onDone(ex);
 
                         break;
                     }
                 }
 
-                entriesCommitFuture.markInitialized();
+                commitEntriesFuture.markInitialized();
 
-                try {
-                    entriesCommitFuture.get();
-
-                    List<IgniteInternalFuture<GridCacheUpdateTxResult>> futures = entriesCommitFuture.futures();
-
-                    assert commitEntries.size() == futures.size();
-
-                    int txEntryIdx = 0;
-
-                    for (IgniteTxEntry txEntry : commitEntries) {
-                        GridCacheUpdateTxResult txResult = futures.get(txEntryIdx).get();
-
-                        if (txResult != null && txResult.success()) {
-                            if (txResult.updatePartitionCounter() != -1)
-                                txEntry.updateCounter(txResult.updatePartitionCounter());
-
-                            WALPointer loggedPtr = txResult.loggedPointer();
-
-                            // Find latest logged WAL pointer.
-                            if (loggedPtr != null)
-                                if (ptr == null || loggedPtr.compareTo(ptr) > 0)
-                                    ptr = loggedPtr;
-                        }
-
-                        txEntryIdx++;
-                    }
-                }
-                catch (Throwable ex) {
-                    // We are about to initiate transaction rollback when tx has started to committing.
-                    // Need to remove version from committed list.
-                    cctx.tm().removeCommittedTx(this);
-
-                    boolean hasInvalidEnvironmentIssue = X.hasCause(ex, InvalidEnvironmentException.class);
-
-                    IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
-                        "(all transaction entries will be invalidated, however there was a window when " +
-                        "entries for this transaction were visible to others): " + this, ex);
-
-                    if (hasInvalidEnvironmentIssue) {
-                        U.warn(log, "Failed to commit transaction, node is stopping " +
-                            "[tx=" + this + ", err=" + ex + ']');
-                    }
-                    else
-                        U.error(log, "Heuristic transaction failure.", err);
-
-                    COMMIT_ERR_UPD.compareAndSet(this, null, err);
-
-                    state(UNKNOWN);
-
-                    try {
-                        // Courtesy to minimize damage.
-                        uncommit(hasInvalidEnvironmentIssue);
-                    }
-                    catch (Throwable ex1) {
-                        U.error(log, "Failed to uncommit transaction: " + this, ex1);
-
-                        if (ex1 instanceof Error)
-                            throw ex1;
-                    }
-
-                    if (ex instanceof Error)
-                        throw ex;
-
-                    throw err;
-                }
-
-                if (ptr != null && !cctx.tm().logTxRecords())
-                    cctx.wal().flush(ptr, false);
-            }
-            catch (StorageException e) {
-                throw new IgniteCheckedException("Failed to log transaction record " +
-                    "(transaction will be rolled back): " + this, e);
+                return commitEntriesFuture;
             }
             finally {
-                cctx.database().checkpointReadUnlock();
-
                 cctx.tm().resetContext();
             }
+        }
+        catch (Throwable t) {
+            return IgniteTxCommitEntriesFuture.finishedWithError(t);
+        }
+    }
+
+    private Collection<IgniteTxEntry> commitEntries() {
+        return (near() || cctx.snapshot().needTxReadLogging()) ? allEntries() : writeEntries();
+    }
+
+    public void finishCommit(IgniteTxCommitEntriesFuture commitEntriesFuture) throws IgniteCheckedException {
+        assert commitEntriesFuture.isDone() : "Entries commit future must be done before finish commit: " + commitEntriesFuture;
+
+        WALPointer latestPtr = null;
+
+        cctx.tm().txContext(this);
+
+        try {
+            try {
+                Collection<IgniteTxEntry> commitEntries = commitEntries();
+
+                commitEntriesFuture.get();
+
+                List<IgniteInternalFuture<GridCacheUpdateTxResult>> futures = commitEntriesFuture.futures();
+
+                assert commitEntries.size() == futures.size();
+
+                int txEntryIdx = 0;
+
+                for (IgniteTxEntry txEntry : commitEntries) {
+                    GridCacheUpdateTxResult txResult = futures.get(txEntryIdx).get();
+
+                    if (txResult != null && txResult.success()) {
+                        if (txResult.updatePartitionCounter() != -1)
+                            txEntry.updateCounter(txResult.updatePartitionCounter());
+
+                        WALPointer loggedPtr = txResult.loggedPointer();
+
+                        // Find latest logged WAL pointer.
+                        if (loggedPtr != null)
+                            if (latestPtr == null || loggedPtr.compareTo(latestPtr) > 0)
+                                latestPtr = loggedPtr;
+                    }
+
+                    txEntryIdx++;
+                }
+            }
+            catch (Throwable ex) {
+                // We are about to initiate transaction rollback when tx has started to committing.
+                // Need to remove version from committed list.
+                cctx.tm().removeCommittedTx(this);
+
+                boolean hasInvalidEnvironmentIssue = X.hasCause(ex, InvalidEnvironmentException.class);
+
+                IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
+                    "(all transaction entries will be invalidated, however there was a window when " +
+                    "entries for this transaction were visible to others): " + this, ex);
+
+                if (hasInvalidEnvironmentIssue) {
+                    U.warn(log, "Failed to commit transaction, node is stopping " +
+                        "[tx=" + this + ", err=" + ex + ']');
+                }
+                else
+                    U.error(log, "Heuristic transaction failure.", err);
+
+                COMMIT_ERR_UPD.compareAndSet(this, null, err);
+
+                state(UNKNOWN);
+
+                try {
+                    // Courtesy to minimize damage.
+                    uncommit(hasInvalidEnvironmentIssue);
+                }
+                catch (Throwable ex1) {
+                    U.error(log, "Failed to uncommit transaction: " + this, ex1);
+
+                    if (ex1 instanceof Error)
+                        throw ex1;
+                }
+
+                if (ex instanceof Error)
+                    throw ex;
+
+                throw err;
+            }
+
+            if (latestPtr != null && !cctx.tm().logTxRecords())
+                cctx.wal().flush(latestPtr, false);
+        }
+        catch (StorageException e) {
+            throw new IgniteCheckedException("Failed to log transaction record " +
+                "(transaction will be rolled back): " + this, e);
+        }
+        finally {
+            cctx.tm().resetContext();
         }
 
         // Do not unlock transaction entries if one-phase commit.
@@ -1067,39 +1086,46 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void userRollback(boolean clearThreadMap) throws IgniteCheckedException {
+    @Override public IgniteTxCommitEntriesFuture userRollback(boolean clearThreadMap) {
         TransactionState state = state();
 
-        if (state != ROLLING_BACK && state != ROLLED_BACK) {
-            setRollbackOnly();
+        try {
+            if (state != ROLLING_BACK && state != ROLLED_BACK) {
+                setRollbackOnly();
 
-            throw new IgniteCheckedException("Invalid transaction state for rollback [state=" + state +
-                ", tx=" + this + ']');
-        }
+                throw new IgniteCheckedException("Invalid transaction state for rollback [state=" + state +
+                    ", tx=" + this + ']');
+            }
 
-        if (near()) {
-            // Must evict near entries before rolling back from
-            // transaction manager, so they will be removed from cache.
-            for (IgniteTxEntry e : allEntries())
-                evictNearEntry(e, false);
-        }
+            if (near()) {
+                // Must evict near entries before rolling back from
+                // transaction manager, so they will be removed from cache.
+                for (IgniteTxEntry e : allEntries())
+                    evictNearEntry(e, false);
+            }
 
-        if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            cctx.tm().rollbackTx(this, clearThreadMap, false);
+            if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
+                cctx.tm().rollbackTx(this, clearThreadMap, false);
 
-            if (!internal()) {
-                Collection<CacheStoreManager> stores = txState.stores(cctx);
+                if (!internal()) {
+                    Collection<CacheStoreManager> stores = txState.stores(cctx);
 
-                if (stores != null && !stores.isEmpty()) {
-                    assert isWriteToStoreFromDhtValid(stores) :
-                        "isWriteToStoreFromDht can't be different within one transaction";
+                    if (stores != null && !stores.isEmpty()) {
+                        assert isWriteToStoreFromDhtValid(stores) :
+                            "isWriteToStoreFromDht can't be different within one transaction";
 
-                    boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
+                        boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
 
-                    if (!stores.isEmpty() && (near() || isWriteToStoreFromDht))
-                        sessionEnd(stores, false);
+                        if (!stores.isEmpty() && (near() || isWriteToStoreFromDht))
+                            sessionEnd(stores, false);
+                    }
                 }
             }
+
+            return IgniteTxCommitEntriesFuture.FINISHED;
+        }
+        catch (Throwable t) {
+            return IgniteTxCommitEntriesFuture.finishedWithError(t);
         }
     }
 

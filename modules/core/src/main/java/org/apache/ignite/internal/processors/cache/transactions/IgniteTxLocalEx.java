@@ -39,13 +39,13 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     /**
      * @throws IgniteCheckedException If commit failed.
      */
-    public void userCommit() throws IgniteCheckedException;
+    public IgniteTxCommitEntriesFuture startCommit() throws IgniteCheckedException;
 
     /**
      * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
      * @throws IgniteCheckedException If rollback failed.
      */
-    public void userRollback(boolean clearThreadMap) throws IgniteCheckedException;
+    public IgniteTxCommitEntriesFuture userRollback(boolean clearThreadMap) throws IgniteCheckedException;
 
     /**
      * Finishes transaction (either commit or rollback).
@@ -55,5 +55,5 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @return {@code True} if state has been changed.
      * @throws IgniteCheckedException If finish failed.
      */
-    public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException;
+    public IgniteTxCommitFuture startLocalCommit(boolean commit, boolean clearThreadMap) throws IgniteCheckedException;
 }

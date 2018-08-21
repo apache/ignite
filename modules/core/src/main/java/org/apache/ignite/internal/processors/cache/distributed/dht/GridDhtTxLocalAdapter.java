@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -39,6 +40,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxCommitEntriesFuture;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxCommitFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -59,7 +62,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -755,7 +757,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
-    @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
+    @Override public IgniteTxCommitFuture startLocalCommit(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Finishing dht local tx [tx=" + this + ", commit=" + commit + "]");
 
@@ -773,7 +775,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Invalid transaction state for commit (another thread is committing): " + this);
 
-                    return false;
+                    return new IgniteTxCommitFuture(false);
                 }
             }
         }
@@ -782,19 +784,48 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Invalid transaction state for rollback [state=" + state() + ", tx=" + this + ']');
 
-                return false;
+                return new IgniteTxCommitFuture(false);
             }
         }
+
+        log.warning("Finish thread id = " + Thread.currentThread().getName());
+
+        if (!Thread.currentThread().getName().contains("dedicated")) {
+            throw new AssertionError("Commit requested not from dedicated stipe");
+        }
+
+        if (commit && !isRollbackOnly()) {
+            IgniteTxCommitEntriesFuture fut = startCommit();
+
+            IgniteTxCommitFuture commitFuture = new IgniteTxCommitFuture(fut, true);
+
+            fut.listen(f -> commitFuture.onDone());
+
+            return commitFuture;
+        }
+        else
+            return new IgniteTxCommitFuture(userRollback(clearThreadMap), false);
+    }
+
+    public void finishLocalCommit(
+        IgniteTxCommitFuture commitFuture,
+        boolean commit,
+        boolean clearThreadMap
+    ) throws IgniteCheckedException {
+        assert commitFuture.isDone();
+
+        if (!commitFuture.started())
+            return;
 
         IgniteCheckedException err = null;
 
         // Commit to DB first. This way if there is a failure, transaction
         // won't be committed.
         try {
+            commitFuture.get(); // Check for errors.
+
             if (commit && !isRollbackOnly())
-                userCommit();
-            else
-                userRollback(clearThreadMap);
+                finishCommit(commitFuture.commitEntriesFuture());
         }
         catch (IgniteCheckedException e) {
             err = e;
@@ -834,8 +865,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 }
             }
         }
-
-        return true;
     }
 
     /**

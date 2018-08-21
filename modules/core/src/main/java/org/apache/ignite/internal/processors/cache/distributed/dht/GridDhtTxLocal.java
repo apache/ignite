@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxCommitFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -44,11 +45,9 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -433,11 +432,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                      */
                     final IgniteInternalFuture finalPrepFut = prepFut;
 
-                    lockFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> ignored) {
-                            finishTx(false, finalPrepFut, fut);
-                        }
-                    });
+                    lockFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
+                        finishTx(false, finalPrepFut, fut);
+                    }));
 
                     return;
                 }
@@ -461,11 +458,48 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             if (prepFut != null)
                 prepFut.get(); // Check for errors.
 
-            boolean finished = localFinish(commit, false);
+            IgniteTxCommitFuture commitFuture = startLocalCommit(commit, false);
 
-            if (!finished)
+            if (!commitFuture.started()) {
+                commitFuture.get(); // Check for errors.
+
                 err = new IgniteCheckedException("Failed to finish transaction [commit=" + commit +
                     ", tx=" + CU.txString(this) + ']');
+            }
+            else {
+                if (commitFuture.async())
+                    commitFuture.listen(f -> cctx.tm().finisher().execute(this, () -> finishAsync(fut, primarySync, commit, commitFuture)));
+                else
+                    finishAsync(fut, primarySync, commit, commitFuture);
+
+                return;
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to finish transaction [commit=" + commit + ", tx=" + this + ']', e);
+
+            err = e;
+        }
+        catch (Throwable t) {
+            fut.onDone(t);
+
+            throw t;
+        }
+
+        if (primarySync)
+            sendFinishReply(err);
+
+        if (err != null)
+            fut.rollbackOnError(err);
+        else
+            fut.finish(commit);
+    }
+
+    private void finishAsync(GridDhtTxFinishFuture fut, boolean primarySync, boolean commit, IgniteTxCommitFuture commitFuture) {
+        IgniteCheckedException err = null;
+
+        try {
+            finishLocalCommit(commitFuture, commit, false);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to finish transaction [commit=" + commit + ", tx=" + this + ']', e);
@@ -500,21 +534,12 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         GridDhtTxPrepareFuture prep = prepFut;
 
-        if (prep != null) {
-            if (prep.isDone())
-                finishTx(true, prep, fut);
-            else {
-                prep.listen(new CI1<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> f) {
-                        finishTx(true, f, fut);
-                    }
-                });
-            }
-        }
+        if (prep != null)
+            prep.listen(f -> cctx.tm().finisher().execute(this, () -> finishTx(true, prep, fut)));
         else {
             assert optimistic();
 
-            finishTx(true, null, fut);
+            cctx.tm().finisher().execute(this, () -> finishTx(true, null, fut));
         }
 
         return fut;
@@ -553,14 +578,10 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         if (prepFut != null) {
             prepFut.complete();
 
-            prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
-                    finishTx(false, f, fut);
-                }
-            });
+            prepFut.listen(f -> cctx.tm().finisher().execute(this, () -> finishTx(false, prepFut, fut)));
         }
         else
-            finishTx(false, null, fut);
+            cctx.tm().finisher().execute(this, () -> finishTx(false, null, fut));
 
         return fut;
     }
@@ -572,7 +593,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
-    @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
+    @Override public IgniteTxCommitFuture startLocalCommit(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
         assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate()
             || onePhaseCommit() || state() == PREPARED :
             "Invalid state [nearFinFutId=" + nearFinFutId + ", isInvalidate=" + isInvalidate() + ", commit=" + commit +
@@ -580,7 +601,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         assert nearMiniId != 0;
 
-        return super.localFinish(commit, clearThreadMap);
+        return super.startLocalCommit(commit, clearThreadMap);
     }
 
     /** {@inheritDoc} */

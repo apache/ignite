@@ -708,7 +708,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.state().cacheProcessorStarted();
         ctx.authentication().cacheProcessorStarted();
 
-        if (!ctx.clientNode() && !ctx.isDaemon()) {
+        if (!ctx.isDaemon()) {
             executor = new CacheEntryExecutor(new StripedExecutor(
                 ctx.config().getStripedPoolSize(),
                 ctx.config().getIgniteInstanceName(),
@@ -719,8 +719,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                     }
                 },
-                ctx.workersRegistry()
-            ));
+                ctx.workersRegistry(),
+                0
+            ), sharedCtx);
         }
     }
 

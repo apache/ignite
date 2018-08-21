@@ -8,8 +8,12 @@ public class CacheEntryExecutor {
 
     private final StripedExecutor executor;
 
-    public CacheEntryExecutor(StripedExecutor executor) {
+    private final GridCacheSharedContext cctx;
+
+
+    public CacheEntryExecutor(StripedExecutor executor, GridCacheSharedContext cctx) {
         this.executor = executor;
+        this.cctx = cctx;
     }
 
     public void stop(boolean cancel) {
@@ -33,6 +37,8 @@ public class CacheEntryExecutor {
             R result;
 
             for (;;) {
+                cctx.database().checkpointReadLock();
+
                 try {
                     result = operationClojure.invoke(entry0);
 
@@ -66,6 +72,9 @@ public class CacheEntryExecutor {
                     future.onDone(e);
 
                     break;
+                }
+                finally {
+                    cctx.database().checkpointReadUnlock();
                 }
             }
         });

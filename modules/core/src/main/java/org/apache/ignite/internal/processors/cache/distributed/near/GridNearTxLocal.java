@@ -47,10 +47,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
@@ -62,6 +62,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxCommitEntriesFuture;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxCommitFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy;
@@ -116,7 +118,6 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
-import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
  * Replicated user transaction.
@@ -3147,86 +3148,57 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
-    @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
+    @Override public IgniteTxCommitFuture startLocalCommit(boolean commit, boolean clearThreadMap) {
         if (log.isDebugEnabled())
             log.debug("Finishing near local tx [tx=" + this + ", commit=" + commit + "]");
 
-        if (commit) {
-            if (!state(COMMITTING)) {
-                TransactionState state = state();
-
-                if (state != COMMITTING && state != COMMITTED)
-                    throw isRollbackOnly() ? timedOut() ? timeoutException() : rollbackException() :
-                        new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
-                        ", tx=" + this + ']');
-                else {
-                    if (log.isDebugEnabled())
-                        log.debug("Invalid transaction state for commit (another thread is committing): " + this);
-
-                    return false;
-                }
-            }
-        }
-        else {
-            if (!state(ROLLING_BACK)) {
-                if (log.isDebugEnabled())
-                    log.debug("Invalid transaction state for rollback [state=" + state() + ", tx=" + this + ']');
-
-                return false;
-            }
-        }
-
-        IgniteCheckedException err = null;
-
-        // Commit to DB first. This way if there is a failure, transaction
-        // won't be committed.
         try {
-            if (commit && !isRollbackOnly())
-                userCommit();
-            else
-                userRollback(clearThreadMap);
-        }
-        catch (IgniteCheckedException e) {
-            err = e;
-
-            commit = false;
-
-            // If heuristic error.
-            if (!isRollbackOnly()) {
-                invalidate = true;
-
-                systemInvalidate(true);
-
-                U.warn(log, "Set transaction invalidation flag to true due to error [tx=" + this + ", err=" + err + ']');
-            }
-        }
-
-        if (err != null) {
-            state(UNKNOWN);
-
-            throw err;
-        }
-        else {
-            // Committed state will be set in finish future onDone callback.
             if (commit) {
-                if (!onePhaseCommit()) {
-                    if (!state(COMMITTED)) {
-                        state(UNKNOWN);
+                if (!state(COMMITTING)) {
+                    TransactionState state = state();
 
-                        throw new IgniteCheckedException("Invalid transaction state for commit: " + this);
+                    if (state != COMMITTING && state != COMMITTED)
+                        throw isRollbackOnly() ? timedOut() ? timeoutException() : rollbackException() :
+                            new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
+                                ", tx=" + this + ']');
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Invalid transaction state for commit (another thread is committing): " + this);
+
+                        return new IgniteTxCommitFuture(false);
                     }
                 }
             }
             else {
-                if (!state(ROLLED_BACK)) {
-                    state(UNKNOWN);
+                if (!state(ROLLING_BACK)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Invalid transaction state for rollback [state=" + state() + ", tx=" + this + ']');
 
-                    throw new IgniteCheckedException("Invalid transaction state for rollback: " + this);
+                    return new IgniteTxCommitFuture(false);
                 }
             }
         }
+        catch (Throwable t) {
+            return new IgniteTxCommitFuture(t);
+        }
 
-        return true;
+        log.warning("Finish thread id = " + Thread.currentThread().getName());
+
+        if (!Thread.currentThread().getName().contains("dedicated")) {
+            throw new AssertionError("Commit requested not from dedicated stipe");
+        }
+
+        if (commit && !isRollbackOnly()) {
+            IgniteTxCommitEntriesFuture fut = startCommit();
+
+            IgniteTxCommitFuture commitFuture = new IgniteTxCommitFuture(fut, true);
+
+            fut.listen(f -> commitFuture.onDone());
+
+            return commitFuture;
+        }
+        else
+            return new IgniteTxCommitFuture(userRollback(clearThreadMap), false);
     }
 
     /**
@@ -3332,29 +3304,27 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
 
-        prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> f) {
-                try {
-                    // Make sure that here are no exceptions.
-                    prepareFut.get();
+        prepareFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
+            try {
+                // Make sure that here are no exceptions.
+                prepareFut.get();
 
-                    fut0.finish(true, true, false);
-                }
-                catch (Error | RuntimeException e) {
-                    COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
-
-                    fut0.finish(false, true, false);
-
-                    throw e;
-                }
-                catch (IgniteCheckedException e) {
-                    COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
-
-                    if (!(e instanceof NodeStoppingException))
-                        fut0.finish(false, true, true);
-                }
+                fut0.finish(true, true, false);
             }
-        });
+            catch (Error | RuntimeException e) {
+                COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
+
+                fut0.finish(false, true, false);
+
+                throw e;
+            }
+            catch (IgniteCheckedException e) {
+                COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
+
+                if (!(e instanceof NodeStoppingException))
+                    fut0.finish(false, true, true);
+            }
+        }));
 
         return fut0;
     }
@@ -3424,35 +3394,19 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         cctx.mvcc().addFuture(fut0, fut0.futureId());
 
-        if (prepFut == null || prepFut.isDone()) {
+        final IgniteInternalFuture<?> prepareFuture = prepFut == null ? new GridFinishedFuture<>() : prepFut;
+
+        prepareFuture.listen(f -> cctx.tm().finisher().execute(this, () -> {
             try {
                 // Check for errors in prepare future.
-                if (prepFut != null)
-                    prepFut.get();
-            }
-            catch (IgniteCheckedException e) {
+                prepareFuture.get();
+            } catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
             }
 
             fut0.finish(false, clearThreadMap, onTimeout);
-        }
-        else {
-            prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
-                    try {
-                        // Check for errors in prepare future.
-                        f.get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
-                    }
-
-                    fut0.finish(false, clearThreadMap, onTimeout);
-                }
-            });
-        }
+        }));
 
         return fut0;
     }

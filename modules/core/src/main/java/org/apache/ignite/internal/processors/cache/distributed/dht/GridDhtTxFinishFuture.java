@@ -291,6 +291,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             // No backup or near nodes to send commit message to (just complete then).
             sync = false;
 
+        cctx.tm().finisher().finishSend(tx);
+
         markInitialized();
 
         if (!sync)
@@ -304,15 +306,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     private boolean rollbackLockTransactions(Collection<ClusterNode> nodes) {
         assert !F.isEmpty(nodes);
 
-        if (tx.onePhaseCommit())
+        if (tx.onePhaseCommit()) {
+
             return false;
+        }
 
-        boolean sync = tx.syncMode() == FULL_SYNC;
-
-        if (tx.explicitLock())
-            sync = true;
-
-        boolean res = false;
+        final boolean sync = tx.explicitLock() || tx.syncMode() == FULL_SYNC;
 
         int miniId = 0;
 
@@ -349,38 +348,40 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 false,
                 false);
 
-            try {
-                cctx.io().send(n, req, tx.ioPolicy());
+            cctx.tm().finisher().send(tx, () -> {
+                try {
+                    cctx.io().send(n, req, tx.ioPolicy());
 
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("DHT finish fut, sent request lock tx [txId=" + tx.nearXidVersion() +
-                        ", dhtTxId=" + tx.xidVersion() +
-                        ", node=" + n.id() + ']');
-                }
-
-                if (sync)
-                    res = true;
-                else
-                    fut.onDone();
-            }
-            catch (IgniteCheckedException e) {
-                // Fail the whole thing.
-                if (e instanceof ClusterTopologyCheckedException)
-                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
-                else {
                     if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("DHT finish fut, failed to send request lock tx [txId=" + tx.nearXidVersion() +
+                        msgLog.debug("DHT finish fut, sent request lock tx [txId=" + tx.nearXidVersion() +
                             ", dhtTxId=" + tx.xidVersion() +
-                            ", node=" + n.id() +
-                            ", err=" + e + ']');
+                            ", node=" + n.id() + ']');
                     }
 
-                    fut.onResult(e);
+                    if (!sync)
+                        fut.onDone();
                 }
-            }
+                catch (IgniteCheckedException e) {
+                    // Fail the whole thing.
+                    if (e instanceof ClusterTopologyCheckedException)
+                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                    else {
+                        if (msgLog.isDebugEnabled()) {
+                            msgLog.debug("DHT finish fut, failed to send request lock tx [txId=" + tx.nearXidVersion() +
+                                ", dhtTxId=" + tx.xidVersion() +
+                                ", node=" + n.id() +
+                                ", err=" + e + ']');
+                        }
+
+                        fut.onResult(e);
+                    }
+                }
+            });
         }
 
-        return res;
+        cctx.tm().finisher().finishSend(tx);
+
+        return sync && miniId > 0;
     }
 
     /**
@@ -389,20 +390,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      * @param nearMap Near map.
      * @return {@code True} in case there is at least one synchronous {@code MiniFuture} to wait for.
      */
-    private boolean finish(boolean commit,
+    private boolean finish(
+        boolean commit,
         Map<UUID, GridDistributedTxMapping> dhtMap,
-        Map<UUID, GridDistributedTxMapping> nearMap) {
-        if (tx.onePhaseCommit())
+        Map<UUID, GridDistributedTxMapping> nearMap
+    ) {
+        if (tx.onePhaseCommit()) {
             return false;
+        }
 
-        boolean sync = tx.syncMode() == FULL_SYNC;
-
-        if (tx.explicitLock())
-            sync = true;
-
-        boolean res = false;
+        final boolean sync = tx.explicitLock() || (tx.syncMode() == FULL_SYNC);
 
         int miniId = 0;
+
+        boolean hasMini = false;
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
@@ -454,35 +455,38 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
-            try {
-                cctx.io().send(n, req, tx.ioPolicy());
+            cctx.tm().finisher().send(tx, () -> {
+                try {
+                    cctx.io().send(n, req, tx.ioPolicy());
 
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +
-                        ", dhtTxId=" + tx.xidVersion() +
-                        ", node=" + n.id() + ']');
-                }
-
-                if (sync)
-                    res = true;
-                else
-                    fut.onDone();
-            }
-            catch (IgniteCheckedException e) {
-                // Fail the whole thing.
-                if (e instanceof ClusterTopologyCheckedException)
-                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
-                else {
                     if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("DHT finish fut, failed to send request dht [txId=" + tx.nearXidVersion() +
+                        msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +
                             ", dhtTxId=" + tx.xidVersion() +
-                            ", node=" + n.id() +
-                            ", err=" + e + ']');
+                            ", node=" + n.id() + ']');
                     }
 
-                    fut.onResult(e);
+                    if (!sync)
+                        fut.onDone();
                 }
-            }
+                catch (IgniteCheckedException e) {
+                    // Fail the whole thing.
+                    if (e instanceof ClusterTopologyCheckedException)
+                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                    else {
+                        if (msgLog.isDebugEnabled()) {
+                            msgLog.debug("DHT finish fut, failed to send request dht [txId=" + tx.nearXidVersion() +
+                                ", dhtTxId=" + tx.xidVersion() +
+                                ", node=" + n.id() +
+                                ", err=" + e + ']');
+                        }
+
+                        fut.onResult(e);
+                    }
+                }
+            });
+
+            if (sync)
+                hasMini = true;
         }
 
         for (GridDistributedTxMapping nearMapping : nearMap.values()) {
@@ -523,39 +527,42 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
                 req.writeVersion(tx.writeVersion());
 
-                try {
-                    cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());
+                cctx.tm().finisher().send(tx, () -> {
+                    try {
+                        cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());
 
-                    if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("DHT finish fut, sent request near [txId=" + tx.nearXidVersion() +
-                            ", dhtTxId=" + tx.xidVersion() +
-                            ", node=" + nearMapping.primary().id() + ']');
-                    }
-
-                    if (sync)
-                        res = true;
-                    else
-                        fut.onDone();
-                }
-                catch (IgniteCheckedException e) {
-                    // Fail the whole thing.
-                    if (e instanceof ClusterTopologyCheckedException)
-                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
-                    else {
                         if (msgLog.isDebugEnabled()) {
-                            msgLog.debug("DHT finish fut, failed to send request near [txId=" + tx.nearXidVersion() +
+                            msgLog.debug("DHT finish fut, sent request near [txId=" + tx.nearXidVersion() +
                                 ", dhtTxId=" + tx.xidVersion() +
-                                ", node=" + nearMapping.primary().id() +
-                                ", err=" + e + ']');
+                                ", node=" + nearMapping.primary().id() + ']');
                         }
 
-                        fut.onResult(e);
+                        if (!sync)
+                            fut.onDone();
                     }
-                }
+                    catch (IgniteCheckedException e) {
+                        // Fail the whole thing.
+                        if (e instanceof ClusterTopologyCheckedException)
+                            fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                        else {
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("DHT finish fut, failed to send request near [txId=" + tx.nearXidVersion() +
+                                    ", dhtTxId=" + tx.xidVersion() +
+                                    ", node=" + nearMapping.primary().id() +
+                                    ", err=" + e + ']');
+                            }
+
+                            fut.onResult(e);
+                        }
+                    }
+                });
+
+                if (sync)
+                    hasMini = true;
             }
         }
 
-        return res;
+        return hasMini;
     }
 
     /** {@inheritDoc} */
