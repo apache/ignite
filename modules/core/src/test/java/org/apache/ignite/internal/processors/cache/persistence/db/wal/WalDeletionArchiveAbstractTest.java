@@ -180,7 +180,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
 
         //when: put to cache more than 1 MB
-        for (int i = 0; i < 400; i++)
+        for (int i = 0; i < 5000; i++)
             cache.put(i, i);
 
         //then: checkpoint triggered by size limit of wall without checkpoint
@@ -192,7 +192,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
             reason.set(U.field((Object)U.field(checkpointer, "scheduledCp"), "reason"));
 
             return reason.get() != null;
-        }, 2000);
+        }, 5000);
 
         assertEquals("too big size of WAL without checkpoint", reason.get());
     }
