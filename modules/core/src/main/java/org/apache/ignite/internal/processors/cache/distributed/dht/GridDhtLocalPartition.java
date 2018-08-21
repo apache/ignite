@@ -517,7 +517,30 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param stateToRestore State to restore.
      */
     public void restoreState(GridDhtPartitionState stateToRestore) {
-        state.set(setPartState(state.get(),stateToRestore));
+        state.set(setPartState(state.get(), stateToRestore));
+    }
+
+    /**
+     * For testing purposes only.
+     * @param toState State to set.
+     */
+    public void setState(GridDhtPartitionState toState) {
+        if (grp.persistenceEnabled() && grp.walEnabled()) {
+            synchronized (this) {
+                long state0 = state.get();
+
+                this.state.compareAndSet(state0, setPartState(state0, toState));
+
+                try {
+                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Error while writing to log", e);
+                }
+            }
+        }
+        else
+            restoreState(toState);
     }
 
     /**
@@ -688,11 +711,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Initiates single clear process if partition is in MOVING state.
+     * Initiates single clear process if partition is in MOVING state or continues cleaning for RENTING state.
      * Method does nothing if clear process is already running.
      */
     public void clearAsync() {
-        if (state() != MOVING)
+        GridDhtPartitionState state0 = state();
+
+        if (state0 != MOVING && state0 != RENTING)
             return;
 
         clear = true;
@@ -730,10 +755,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (cnt != 0)
                 return false;
 
-            if (evictGuard.compareAndSet(cnt, cnt + 1)) {
-
+            if (evictGuard.compareAndSet(cnt, cnt + 1))
                 return true;
-            }
         }
     }
 
