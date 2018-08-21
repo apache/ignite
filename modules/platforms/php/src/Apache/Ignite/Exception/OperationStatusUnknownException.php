@@ -19,7 +19,7 @@
 namespace Apache\Ignite\Exception;
 
 /**
- *
+ * Status of the requested operation is unknown (eg. due to a connection problem during the operation). 
  */
 class OperationStatusUnknownException extends ClientException
 {
