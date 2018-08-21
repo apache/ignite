@@ -41,7 +41,7 @@ public class ANNClassificationTest {
     private static final int[] partsToBeTested = new int[]{1, 2, 3, 4, 5, 7, 100};
 
     /** Fixed size of Dataset. */
-    private static final int AMOUNT_OF_OBSERVATIONS = 1000;
+    private static final int AMOUNT_OF_OBSERVATIONS = 100;
 
     /** Fixed size of columns in Dataset. */
     private static final int AMOUNT_OF_FEATURES = 2;
@@ -76,6 +76,7 @@ public class ANNClassificationTest {
             double x = rndX.nextDouble(500, 600);
             double y = rndY.nextDouble(500, 600);
             double[] vec = new double[AMOUNT_OF_FEATURES + 1];
+            System.out.println("{0, " + x + "," + y + "},");
             vec[0] = 0; // assign label.
             vec[1] = x;
             vec[2] = y;
@@ -89,6 +90,7 @@ public class ANNClassificationTest {
             vec[0] = 1; // assign label.
             vec[1] = x;
             vec[2] = y;
+            System.out.println("{1, " + x + "," + y + "},");
             data.put(i, vec);
         }
 
