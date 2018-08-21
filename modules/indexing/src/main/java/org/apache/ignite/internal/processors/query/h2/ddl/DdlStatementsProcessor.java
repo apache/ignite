@@ -325,10 +325,6 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
-                    throw new SchemaOperationException("CREATE TABLE can only be executed on " +
-                        QueryUtils.DFLT_SCHEMA + " schema.");
-
                 GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
 
                 if (tbl != null) {
@@ -361,10 +357,6 @@ public class DdlStatementsProcessor {
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
-
-                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
-                    throw new SchemaOperationException("DROP TABLE can only be executed on " +
-                        QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
 
