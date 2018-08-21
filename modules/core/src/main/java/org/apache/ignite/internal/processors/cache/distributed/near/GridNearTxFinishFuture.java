@@ -237,37 +237,39 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      */
     public void onResult(UUID nodeId, GridDhtTxFinishResponse res) {
         if (!isDone()) {
-            boolean found = false;
+            cctx.tm().finisher().execute(tx, () -> {
+                boolean found = false;
 
-            for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
-                if (fut.getClass() == CheckBackupMiniFuture.class) {
-                    CheckBackupMiniFuture f = (CheckBackupMiniFuture)fut;
+                for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
+                    if (fut.getClass() == CheckBackupMiniFuture.class) {
+                        CheckBackupMiniFuture f = (CheckBackupMiniFuture)fut;
 
-                    if (f.futureId() == res.miniId()) {
-                        found = true;
+                        if (f.futureId() == res.miniId()) {
+                            found = true;
 
-                        assert f.node().id().equals(nodeId);
+                            assert f.node().id().equals(nodeId);
 
-                        if (res.returnValue() != null)
-                            tx.implicitSingleResult(res.returnValue());
+                            if (res.returnValue() != null)
+                                tx.implicitSingleResult(res.returnValue());
 
-                        f.onDhtFinishResponse(res);
+                            f.onDhtFinishResponse(res);
+                        }
+                    }
+                    else if (fut.getClass() == CheckRemoteTxMiniFuture.class) {
+                        CheckRemoteTxMiniFuture f = (CheckRemoteTxMiniFuture)fut;
+
+                        if (f.futureId() == res.miniId())
+                            f.onDhtFinishResponse(nodeId, false);
                     }
                 }
-                else if (fut.getClass() == CheckRemoteTxMiniFuture.class) {
-                    CheckRemoteTxMiniFuture f = (CheckRemoteTxMiniFuture)fut;
 
-                    if (f.futureId() == res.miniId())
-                        f.onDhtFinishResponse(nodeId, false);
+                if (!found && msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near finish fut, failed to find mini future [txId=" + tx.nearXidVersion() +
+                        ", node=" + nodeId +
+                        ", res=" + res +
+                        ", fut=" + this + ']');
                 }
-            }
-
-            if (!found && msgLog.isDebugEnabled()) {
-                msgLog.debug("Near finish fut, failed to find mini future [txId=" + tx.nearXidVersion() +
-                    ", node=" + nodeId +
-                    ", res=" + res +
-                    ", fut=" + this + ']');
-            }
+            });
         }
         else {
             if (msgLog.isDebugEnabled()) {
@@ -409,13 +411,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
+            log.warning("One-phase commit -> " + cctx.tm().finisher().order(tx) + " " + tx);
+
             checkBackup();
+
+            cctx.tm().finisher().finishSend(tx);
 
             // If checkBackup is set, it means that primary node has crashed and we will not need to send
             // finish request to it, so we can mark future as initialized.
             markInitialized();
-
-            log.warning("One-phase commit -> " + tx);
 
             return;
         }
@@ -635,11 +639,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                                     IgniteInternalFuture<?> fut = cctx.tm().remoteTxFinishFuture(nearXidVer);
 
-                                    fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                                        @Override public void apply(IgniteInternalFuture<?> fut) {
-                                            mini.onDone(tx);
-                                        }
-                                    });
+                                    fut.listen(f -> cctx.tm().finisher().execute(tx, () -> {
+                                        mini.onDone(tx);
+                                    }));
 
                                     return;
                                 }
@@ -700,8 +702,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             else
                 readyNearMappingFromBackup(mapping);
         }
-
-        cctx.tm().finisher().finishSend(tx);
     }
 
     /**
@@ -868,9 +868,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 }
             });
         }
-
-        if (miniId == mappings.mappings().size())
-            cctx.tm().finisher().finishSend(tx);
     }
 
     /** {@inheritDoc} */

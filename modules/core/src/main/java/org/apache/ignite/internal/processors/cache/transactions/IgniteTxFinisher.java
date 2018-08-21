@@ -49,8 +49,8 @@ public class IgniteTxFinisher {
                     ordered++;
                 }
 
-                //if (isNew)
-                    //log.warning("New tx = " + (ordered - 1) + " " + tx);
+                if (isNew)
+                    log.warning("New tx = " + (ordered - 1) + " " + tx);
             }
 
             transactionOp.run();
@@ -61,6 +61,8 @@ public class IgniteTxFinisher {
         GridCacheVersion txId = tx.xidVersion();
 
         long order = txOrdering.get(txId);
+
+        log.warning("Send invoked -> " + order);
 
         //log.warning("Try send " + order + " " + tx + ". Already sent: " + send);
 
@@ -81,6 +83,8 @@ public class IgniteTxFinisher {
         GridCacheVersion txId = tx.xidVersion();
 
         long order = txOrdering.get(txId);
+
+        log.warning("Finished send invoked -> " + order);
 
         if (order >= send)
             if (!delayedSendings.containsKey(order))
