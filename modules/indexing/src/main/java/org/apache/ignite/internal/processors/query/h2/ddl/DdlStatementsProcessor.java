@@ -248,11 +248,9 @@ public class DdlStatementsProcessor {
      * @param sql SQL.
      * @param prepared Prepared.
      * @return Cursor on query results.
-     * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared)
-        throws IgniteCheckedException {
+    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared) {
         IgniteInternalFuture fut = null;
 
         try {
@@ -511,7 +509,7 @@ public class DdlStatementsProcessor {
         GridH2Table tbl = idx.dataTable(schemaName, tableName);
 
         if (tbl == null) {
-            ctx.cache().createMissingQueryCaches();;
+            ctx.cache().createMissingQueryCaches();
 
             tbl = idx.dataTable(schemaName, tableName);
         }
