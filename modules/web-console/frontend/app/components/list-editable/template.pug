@@ -14,9 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.le-body()
+.le-body
     .le-row(
-        ng-if='$ctrl.ngModel.$viewValue.length'
         ng-repeat='item in $ctrl.ngModel.$viewValue track by $ctrl.$index(item, $index)'
         ng-class=`{
             'le-row--editable': $ctrl.isEditView($index),
@@ -38,7 +37,7 @@
                 ignite-on-focus-out='$ctrl.stopEditView(item, $index, form);'
                 ignite-on-focus-out-ignored-classes='bssm-click-overlay bssm-item-text bssm-item-button'
             )
-                .le-row-item-view(ng-show='$ctrl.hasItemView' ng-init='!$ctrl.hasItemView && $ctrl.startEditView($index);item = $ctrl.getEditView($index);')
+                .le-row-item-view(ng-show='$ctrl.hasItemView' ng-init='$ctrl.startEditView($index);item = $ctrl.getEditView($index);')
                     div(list-editable-transclude='itemView')
                 .le-row-item-edit(ng-form name='form')
                     div(list-editable-transclude='itemEdit')
@@ -47,5 +46,5 @@
             button.btn-ignite.btn-ignite--link-dashed-secondary(type='button' ng-click='$ctrl.remove($index)')
                 svg(ignite-icon='cross')
 
-    .le-row(ng-if='!$ctrl.ngModel.$viewValue.length')
-        div(ng-transclude='noItems')
+    .le-row(ng-hide='$ctrl.ngModel.$viewValue.length')
+        .le-row-item(ng-transclude='noItems')

@@ -56,6 +56,9 @@ public class IgniteThread extends Thread {
     /** */
     private final byte plc;
 
+    /** */
+    private boolean executingEntryProcessor;
+
     /**
      * Creates thread with given worker.
      *
@@ -158,9 +161,36 @@ public class IgniteThread extends Thread {
     }
 
     /**
+     * @return {@code True} if thread is currently executing entry processor.
+     */
+    public boolean executingEntryProcessor() {
+        return executingEntryProcessor;
+    }
+
+    /**
+     * Callback before entry processor execution is started.
+     */
+    public static void onEntryProcessorEntered() {
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread)
+            ((IgniteThread)curThread).executingEntryProcessor = true;
+    }
+
+    /**
+     * Callback after entry processor execution is finished.
+     */
+    public static void onEntryProcessorLeft() {
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread)
+            ((IgniteThread)curThread).executingEntryProcessor = false;
+    }
+
+    /**
      * @return IgniteThread or {@code null} if current thread is not an instance of IgniteThread.
      */
-    public static IgniteThread current(){
+    public static IgniteThread current() {
         Thread thread = Thread.currentThread();
 
         return thread.getClass() == IgniteThread.class || thread instanceof IgniteThread ?

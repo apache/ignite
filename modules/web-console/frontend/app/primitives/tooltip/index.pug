@@ -16,7 +16,8 @@
 
 mixin tooltip(title, options, tipClass = 'tipField')
     if title
-        i.icon-help(
+        svg(
+            ignite-icon='info'
             bs-tooltip=''
 
             data-title=title

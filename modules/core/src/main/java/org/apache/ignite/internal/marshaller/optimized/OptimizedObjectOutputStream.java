@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridHandleTable;
 import org.apache.ignite.internal.util.io.GridDataOutput;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
 
@@ -180,7 +181,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         if (obj == null)
             writeByte(NULL);
         else {
-            if (obj instanceof Throwable && !(obj instanceof Externalizable)) {
+            if (obj instanceof Throwable && !(obj instanceof Externalizable) || U.isEnum(obj.getClass())) {
+                // Avoid problems with differing Enum objects or Enum implementation class deadlocks.
                 writeByte(JDK);
 
                 try {
@@ -230,12 +232,19 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                         mapper);
                 }
 
-                if (handle >= 0) {
-                    writeByte(HANDLE);
-                    writeInt(handle);
+                try {
+                    if (handle >= 0) {
+                        writeByte(HANDLE);
+
+                        writeInt(handle);
+                    }
+                    else
+                        desc.write(this, obj);
                 }
-                else
-                    desc.write(this, obj);
+                catch (IOException e){
+                    throw new IOException("Failed to serialize object [typeName=" +
+                        desc.describedClass().getName() + ']', e);
+                }
             }
         }
     }
@@ -476,58 +485,63 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         for (int i = 0; i < fields.size(); i++) {
             OptimizedClassDescriptor.FieldInfo t = fields.get(i);
 
-            switch (t.type()) {
-                case BYTE:
-                    if (t.field() != null)
-                        writeByte(getByte(obj, t.offset()));
+            try {
+                switch (t.type()) {
+                    case BYTE:
+                        if (t.field() != null)
+                            writeByte(getByte(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case SHORT:
-                    if (t.field() != null)
-                        writeShort(getShort(obj, t.offset()));
+                    case SHORT:
+                        if (t.field() != null)
+                            writeShort(getShort(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case INT:
-                    if (t.field() != null)
-                        writeInt(getInt(obj, t.offset()));
+                    case INT:
+                        if (t.field() != null)
+                            writeInt(getInt(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case LONG:
-                    if (t.field() != null)
-                        writeLong(getLong(obj, t.offset()));
+                    case LONG:
+                        if (t.field() != null)
+                            writeLong(getLong(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case FLOAT:
-                    if (t.field() != null)
-                        writeFloat(getFloat(obj, t.offset()));
+                    case FLOAT:
+                        if (t.field() != null)
+                            writeFloat(getFloat(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case DOUBLE:
-                    if (t.field() != null)
-                        writeDouble(getDouble(obj, t.offset()));
+                    case DOUBLE:
+                        if (t.field() != null)
+                            writeDouble(getDouble(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case CHAR:
-                    if (t.field() != null)
-                        writeChar(getChar(obj, t.offset()));
+                    case CHAR:
+                        if (t.field() != null)
+                            writeChar(getChar(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case BOOLEAN:
-                    if (t.field() != null)
-                        writeBoolean(getBoolean(obj, t.offset()));
+                    case BOOLEAN:
+                        if (t.field() != null)
+                            writeBoolean(getBoolean(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case OTHER:
-                    if (t.field() != null)
-                        writeObject0(getObject(obj, t.offset()));
+                    case OTHER:
+                        if (t.field() != null)
+                            writeObject0(getObject(obj, t.offset()));
+                }
+            }
+            catch (IOException e) {
+                throw new IOException("Failed to serialize field [name=" + t.name() + ']', e);
             }
         }
     }

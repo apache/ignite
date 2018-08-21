@@ -117,7 +117,7 @@ public interface PageMemoryEx extends PageMemory {
      *      the {@link #beginCheckpoint()} method call.
      * @param outBuf Temporary buffer to write changes into.
      * @param tracker Checkpoint metrics tracker.
-     * @return {@code Partition tag} if data was read, {@code null} otherwise (data already saved to storage).
+     * @return {@code Partition generation} if data was read, {@code null} otherwise (data already saved to storage).
      * @throws IgniteException If failed to obtain page data.
      */
     @Nullable public Integer getForCheckpoint(FullPageId pageId, ByteBuffer outBuf, CheckpointMetricsTracker tracker);
@@ -127,7 +127,7 @@ public interface PageMemoryEx extends PageMemory {
      *
      * @param grpId Group ID.
      * @param partId Partition ID.
-     * @return New partition tag (growing 1-based partition file version).
+     * @return New partition generation (growing 1-based partition file version).
      */
     public int invalidate(int grpId, int partId);
 
@@ -141,9 +141,9 @@ public interface PageMemoryEx extends PageMemory {
     /**
      * Asynchronously clears pages satisfying the given predicate.
      *
-     * @param pred Predicate for cache group id, pageId and partition tag.
+     * @param pred Predicate for cache group id, pageId.
      * @param cleanDirty Flag indicating that dirty pages collection should be cleaned.
      * @return Future that will be completed when all pages are cleared.
      */
-    public IgniteInternalFuture<Void> clearAsync(GridPredicate3<Integer, Long, Integer> pred, boolean cleanDirty);
+    public IgniteInternalFuture<Void> clearAsync(LoadedPagesMap.KeyPredicate pred, boolean cleanDirty);
 }

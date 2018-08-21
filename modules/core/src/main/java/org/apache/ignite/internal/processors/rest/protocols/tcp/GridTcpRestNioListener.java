@@ -99,9 +99,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** Supported protocol versions. */
     private static final Collection<Short> SUPP_VERS = new HashSet<>();
 
-    /**
-     * Fills {@code cacheCmdMap}.
-     */
+    // Fills {@code cacheCmdMap}.
     static {
         cacheCmdMap.put(PUT, CACHE_PUT);
         cacheCmdMap.put(PUT_ALL, CACHE_PUT_ALL);
@@ -356,7 +354,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 restTopReq.command(TOPOLOGY);
 
             restReq = restTopReq;
-        }else if (msg instanceof GridClientStateRequest) {
+        }
+        else if (msg instanceof GridClientStateRequest) {
             GridClientStateRequest req = (GridClientStateRequest)msg;
 
             GridRestChangeStateRequest restChangeReq = new GridRestChangeStateRequest();

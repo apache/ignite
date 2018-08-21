@@ -30,6 +30,8 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
@@ -44,13 +46,13 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(gridCount() + 1);
 
         initStoreStrategy();
 
-        grid(0).active(true);
+        grid(0).cluster().active(true);
 
         stopGrid(gridCount());
 
@@ -63,6 +65,6 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }

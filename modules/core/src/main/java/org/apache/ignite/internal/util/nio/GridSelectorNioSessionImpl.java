@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -376,6 +377,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
         assert recoveryDesc != null;
 
         outRecovery = recoveryDesc;
+
+        outRecovery.session(this);
     }
 
     /** {@inheritDoc} */
@@ -433,6 +436,26 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
         sysMsg = null;
 
         return ret;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridNioFuture<Boolean> close() {
+        GridNioFuture<Boolean> fut = super.close();
+
+        if (!fut.isDone()) {
+            fut.listen(fut0 -> {
+                try {
+                    fut0.get();
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to close session [ses=" + GridSelectorNioSessionImpl.this + ']', e);
+                }
+            });
+        }
+        else if (fut.error() != null)
+            log.error("Failed to close session [ses=" + GridSelectorNioSessionImpl.this + ']', fut.error());
+
+        return fut;
     }
 
     /** {@inheritDoc} */

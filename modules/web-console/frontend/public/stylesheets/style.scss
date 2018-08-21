@@ -23,6 +23,24 @@
 @import "./blocks/error";
 @import "./form-field";
 
+body {
+    overflow-y: scroll !important;
+}
+
+.flex-full-height {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+}
+
+.container--responsive {
+    padding: 0 30px;
+
+    .gridster-wrapper {
+        margin: -20px !important;
+    }
+}
+
 hr {
     margin: 20px 0;
 }
@@ -52,7 +70,7 @@ hr {
 }
 
 .table.table-vertical-middle tbody > tr > td {
-  vertical-align: middle;
+    vertical-align: middle;
 }
 
 .table .ui-grid-settings {
@@ -84,13 +102,8 @@ hr {
     color: $input-color-placeholder;
 }
 
-.theme-line .summary-pojo-list > ul.dropdown-menu {
-    width: 100%;
-    max-width: none;
-}
-
 .tooltip {
-  word-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .theme-line ul.dropdown-menu {
@@ -236,29 +249,6 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 2em;
 }
 
-.login-footer {
-    padding: 15px 0;
-    text-align: right;
-    border-top: 1px solid #e5e5e5;
-
-    label {
-        float: left;
-        margin: 0;
-    }
-
-    .btn:last-child {
-        margin-right: 0;
-    }
-
-    .checkbox {
-        margin: 0;
-    }
-
-    .btn {
-        margin-right: 0;
-    }
-}
-
 body {
     overflow-x: hidden;
     display: flex;
@@ -270,7 +260,7 @@ body > .wrapper,
 body > .wrapper > ui-view {
     display: flex;
     flex-direction: column;
-    min-height: 100%;
+    min-height: 100vh;
     flex: 1 0 auto;
 
     .body-container {
@@ -306,10 +296,6 @@ body > .wrapper > ui-view {
 
 .use-cache {
     display: flex;
-
-    input[type="checkbox"] {
-        width: 20px;
-    }
 }
 
 .group-section {
@@ -692,10 +678,6 @@ button.form-control {
     padding: 20px;
 }
 
-.theme-line .main-content a.customize {
-    margin-left: 5px;
-}
-
 .theme-line .panel-collapse {
     margin: 0;
 }
@@ -841,10 +823,6 @@ button.form-control {
 
 .admin-summary {
     padding-bottom: 10px;
-}
-
-.import-domain-model-wizard-page {
-    margin: 15px;
 }
 
 .scrollable-y {
@@ -1064,6 +1042,10 @@ button.form-control {
 
 .popover-content {
     padding: 5px;
+
+    button {
+        margin-left: 5px;
+    }
 }
 
 .popover:focus {
@@ -1085,7 +1067,28 @@ button.form-control {
     position: absolute;
     z-index: 1030;
     min-width: 305px;
-    max-width: 450px;
+    max-width: 335px;
+
+    treecontrol li {
+        line-height: 16px;
+    }
+
+    treeitem ul {
+        margin-top: -2px;
+        margin-bottom: 2px;
+    }
+
+    .node-display {
+        position: relative;
+        top: 0;
+
+        max-width: 280px;
+
+        text-overflow: ellipsis;
+        line-height: 16px;
+
+        overflow: hidden;
+    }
 
     .popover-title {
         color: black;
@@ -1140,46 +1143,11 @@ button.form-control {
     }
 }
 
-.theme-line .popover.summary-project-structure {
-    @extend .popover.settings;
-
-    z-index: 1030;
-    min-width: 305px;
-
-    .popover-title {
-        color: black;
-
-        line-height: 27px;
-
-        padding: 3px 5px 3px 10px;
-
-        white-space: nowrap;
-        overflow: hidden;
-        -o-text-overflow: ellipsis;
-        text-overflow: ellipsis;
-
-        .close {
-            float: right;
-            top: 0;
-            right: 0;
-            position: relative;
-            margin-left: 10px;
-            line-height: 27px;
-        }
-    }
-
-    > .popover-content {
-        overflow: auto;
-
-        white-space: nowrap;
-
-        min-height: 300px;
-        max-height: 300px;
-    }
-}
-
-.theme-line .popover.validation-error {
-    max-width: 400px;
+.popover.validation-error {
+    font-family: Roboto;
+    white-space: pre-wrap;
+    width: auto !important;
+    max-width: 400px !important;
     color: $brand-primary;
     background: white;
     border: 1px solid $brand-primary;
@@ -1263,16 +1231,16 @@ label {
 }
 
 .fa-chevron-circle-down {
-    color: $brand-primary;
+    color: $ignite-brand-success;
     margin-right: 5px;
 }
 
 .fa-chevron-circle-right {
-    color: $brand-primary;
+    color: $ignite-brand-success;
     margin-right: 5px;
 }
 
-label.required:after {
+.required:after {
     color: $brand-primary;
     content: ' *';
     display: inline;
@@ -1311,19 +1279,6 @@ label.required:after {
     .close {
         margin-right: 0;
         line-height: 19px;
-    }
-}
-
-.summary-tabs {
-    margin-top: 0.65em;
-}
-
-.summary-tab {
-    img {
-        margin-right: 5px;
-        height: 16px;
-        width: 16px;
-        float: left;
     }
 }
 
@@ -1457,8 +1412,8 @@ th[st-sort] {
 // element a background, we're telling Safari that it *really* needs to
 // paint the whole area. See https://github.com/ajaxorg/ace/issues/2872
 .ace_scrollbar-inner {
-	background-color: #FFF;
-	opacity: 0.01;
+    background-color: #FFF;
+    opacity: 0.01;
 
     .ace_dark & {
         background-color: #000;
@@ -1480,16 +1435,6 @@ th[st-sort] {
 
     .ace_gutter-cell, .ace_folding-enabled > .ace_gutter-cell {
         padding-left: 0.65em;
-    }
-}
-
-.preview-panel, .summary-tabs {
-    .ace_hidden-cursors {
-        opacity: 0;
-    }
-
-    .ace_cursor {
-        opacity: 0;
     }
 }
 
@@ -1555,6 +1500,7 @@ th[st-sort] {
 
 .preview-panel {
     min-height: 28px;
+    position: relative;
 
     margin-left: 20px;
 
@@ -1568,7 +1514,7 @@ th[st-sort] {
     top: -10px;
     right: 20px;
     position: absolute;
-    z-index: 900;
+    z-index: 2;
 
     a {
         color: $input-color-placeholder;
@@ -1587,7 +1533,7 @@ th[st-sort] {
 }
 
 .preview-content-empty {
-    color: $input-color-placeholder;
+    color: #757575;
     display: table;
     width: 100%;
     height: 26px;
@@ -1720,7 +1666,7 @@ button.select-toggle::after {
     border-right: 0.3em solid transparent;
     border-left: 0.3em solid transparent;
     position: absolute;
-    right: 5px;
+    right: 10px;
     top: 50%;
     vertical-align: middle;
 }
@@ -1941,18 +1887,6 @@ treecontrol.tree-classic {
     border-bottom-width: 0;
 }
 
-.summary-tabs {
-    .nav-tabs > li:first-child,
-    .nav-tabs > li:first-child.active {
-        & > a,
-        & > a:focus,
-        & > a:hover {
-            border-left: none;
-            border-top-left-radius: 0;
-        }
-    }
-}
-
 .ribbon-wrapper {
     width: 150px;
     height: 150px;
@@ -1970,14 +1904,10 @@ treecontrol.tree-classic {
 .ribbon {
     position: absolute;
     top: 42px;
-    width: 200px;
+    width: 186px;
     padding: 1px 0;
     color: $btn-primary-color;
     background: $btn-primary-border;
-
-    -moz-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
 
     right: -42px;
     -moz-transform: rotate(45deg);
@@ -1987,16 +1917,15 @@ treecontrol.tree-classic {
     transform: rotate(45deg);
 
     > label {
-        display: block;
         padding: 1px 0;
-        height: 24px;
-        line-height: 18px;
-
+        height: 17px;
+        line-height: 12px;
         text-align: center;
         text-decoration: none;
-        font-family: $font-family-sans-serif;
-        font-size: 20px;
-        font-weight: 500;
+        font-family: Roboto, sans-serif;
+        font-size: 16px;
+        display: block;
+        font-weight: 400;
 
         border: 1px solid rgba(255,255,255,0.3);
 
@@ -2006,9 +1935,19 @@ treecontrol.tree-classic {
     }
 }
 
-html,body,.splash-screen {
+.ribbon-wrapper.left {
+    overflow: visible;
+
+    .ribbon {
+        transform: rotate(-45deg);
+        left: -75px;
+        top: 10px;
+    }
+}
+
+html, body {
     width: 100%;
-    height: 100%;
+    min-height: 100vh;
 }
 
 .splash {
@@ -2036,10 +1975,10 @@ html,body,.splash-screen {
 }
 
 .splash:before {
-  content: '';
-  display: inline-block;
-  height: 100%;
-  vertical-align: middle;
+    content: '';
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
 }
 
 .spinner {
@@ -2111,14 +2050,6 @@ html,body,.splash-screen {
     }
 }
 
-.domains-import-dialog {
-    .modal-body {
-        height: 325px;
-        margin: 0;
-        padding: 0;
-    }
-}
-
 // Fix for incorrect tooltip placement after fast show|hide.
 .tooltip.ng-leave {
     transition: none !important; /* Disable transitions. */
@@ -2142,55 +2073,6 @@ html,body,.splash-screen {
     &.ng-animate {
         -webkit-animation: none 0s;
         animation: none 0s;
-    }
-}
-
-.admin-page {
-    .docs-header {
-        display: flex;
-        flex-direction: row;
-        align-items: baseline;
-
-        margin: 40px 0 20px 0;
-
-        h1 {
-            font-size: 24px;
-            margin: 0 10px 0 0;
-        }
-    }
-
-    .panel-heading {
-        height: 38px;
-
-        border-bottom: 0;
-        padding-bottom: 0;
-
-        cursor: default;
-
-        i {
-            margin-top: 2px;
-            margin-right: 10px;
-        }
-
-        sub {
-            bottom: 0;
-        }
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-filter-select {
-        width: calc(100% - 10px);
-    }
-
-    .ui-grid-cell-contents > i {
-        line-height: $line-height-base;
     }
 }
 
@@ -2232,15 +2114,31 @@ header.header-with-selector {
 
     div {
         display: flex;
-    }
 
-    .btn-ignite + .btn-ignite-group {
-        position: relative;
-        margin-left: 20px;
+        &:nth-child(2) {
+            .btn-ignite {
+                margin-left: 20px;
+            }
 
-        ul.dropdown-menu {
-            min-width: 100%;
-            font-family: Roboto;
+            .btn-ignite-group {
+                .btn-ignite {
+                    margin-left: 0;
+                }
+            }
+
+            .btn-ignite + .btn-ignite-group {
+                position: relative;
+                margin-left: 20px;
+
+                button {
+                    margin-left: 0;
+                }
+
+                ul.dropdown-menu {
+                    min-width: 100%;
+                    font-family: Roboto;
+                }
+            }
         }
     }
 }

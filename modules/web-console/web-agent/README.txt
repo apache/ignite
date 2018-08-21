@@ -20,36 +20,44 @@ Configuration file:
     tokens
     server-uri
     node-uri
+    node-login
+    node-password
     driver-folder
 
   Example configuration file:
     tokens=1a2b3c4d5f,2j1s134d12
-    serverURI=https://console.example.com
+    server-uri=https://console.example.com
+    node-uri=http://10.0.0.1:8080,http://10.0.0.2:8080
 
 Security tokens:
   1) By default security token of current user will be included into "default.properties" inside downloaded "ignite-web-agent-x.x.x.zip".
   2) One can get/reset token in Web Console profile (https://<your_console_address>/settings/profile).
-  3) One may specify several comma separated tokens using configuration file or command line arguments of web agent.
+  3) One may specify several comma-separated list of tokens using configuration file or command line arguments of web agent.
 
 Ignite Web agent requirements:
   1) In order to communicate with web agent Ignite node should be started with REST server (copy "ignite-rest-http" folder from "libs/optional/" to "libs/").
-  2) Configure web agent serverURI property by Ignite node REST server URI.
+  2) Configure web agent server-uri property with address where Web Console is running.
+  3) Configure web agent node-uri property with Ignite nodes URI(s).
 
 Options:
   -h, --help
-     Print this help message
+     Print this help message.
   -c, --config
      Path to configuration file
   -d, --driver-folder
      Path to folder with JDBC drivers, default value: ./jdbc-drivers
   -n, --node-uri
-     URI for connect to Ignite REST server, default value:
-     http://localhost:8080
+     Comma-separated list of URIs for connect to Ignite REST server,
+     default value: http://localhost:8080
+  -nl, --node-login
+     User name that will be used to connect to secured cluster.
+  -np, --node-password
+     Password that will be used to connect to secured cluster
   -s, --server-uri
-     URI for connect to Ignite Web Console via web-socket protocol, default
-     value: http://localhost:3000
+     URI for connect to Ignite Web Console via web-socket protocol,
+     default value: http://localhost:3000
   -t, --tokens
-     User's security tokens
+     Comma-separated list of user's security tokens.
 
 How to build:
   To build from sources run following command in Ignite project root folder:
@@ -78,11 +86,8 @@ Demo of Ignite Web Agent:
 
  For example:
    2.4) Enter SQL statement:
-           SELECT p.name, count(*) AS cnt
-           FROM "ParkingCache".Parking p
-           INNER JOIN "CarCache".Car c
-             ON (p.id) = (c.parkingId)
+           SELECT p.name, count(*) AS cnt FROM "ParkingCache".Parking p
+           INNER JOIN "CarCache".Car c ON (p.id) = (c.parkingId)
            GROUP BY P.NAME
    2.5) Click "Execute" button. You should get some data in table.
    2.6) Click charts buttons to see auto generated charts.
-

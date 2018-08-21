@@ -61,7 +61,6 @@ public class InlineIndexHelper {
         Value.SHORT,
         Value.INT,
         Value.LONG,
-        Value.LONG,
         Value.FLOAT,
         Value.DOUBLE,
         Value.DATE,

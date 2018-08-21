@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -52,7 +51,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Tests error recovery while node flushing
@@ -76,14 +74,14 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -138,7 +136,6 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      * @throws Exception if failed.
      */
     public void failWhilePut(boolean failWhileStart) throws Exception {
-
         final Ignite grid = startGridsMultiThreaded(gridCount());
 
         IgniteWriteAheadLogManager wal = ((IgniteKernal)grid).context().cache().context().wal();
@@ -213,14 +210,6 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         for (int i = 0; i < ITRS; i++)
             assertEquals(cache.get(i), "testValue" + i);
-    }
-
-
-    /**
-     * @throws IgniteCheckedException
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

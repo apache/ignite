@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.cache.processor.EntryProcessor;
@@ -32,10 +35,14 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -210,6 +217,94 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             invokeAll(cache, OPTIMISTIC);
         }
+    }
+
+    private static class MyKey {
+        String key;
+
+        @AffinityKeyMapped
+        String affkey = "affkey";
+
+        public MyKey(String key) {
+            this.key = key;
+        }
+
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof MyKey))
+                return false;
+            MyKey key1 = (MyKey)o;
+            return Objects.equals(key, key1.key) &&
+                Objects.equals(affkey, key1.affkey);
+        }
+
+        @Override public int hashCode() {
+
+            return Objects.hash(key, affkey);
+        }
+
+
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllAppliedOnceOnBinaryTypeRegistration() throws Exception {
+        IgniteCache<MyKey, Integer> cache = jcache();
+
+
+        LinkedHashSet<MyKey> keys = new LinkedHashSet<>(Arrays.asList(
+            new MyKey("remove_0"), new MyKey("1"), new MyKey("2"),
+            new MyKey("remove_3"), new MyKey("remove_4"), new MyKey("register_type_5"),
+            new MyKey("6"), new MyKey("remove_7"), new MyKey("register_type_8"),
+            new MyKey("9"), new MyKey("remove_10"), new MyKey("11"), new MyKey("12"), new MyKey("register_type_13")));
+
+        for (MyKey key : keys)
+            cache.put(key, 0);
+
+        cache.invokeAll(keys,
+            new CacheEntryProcessor<MyKey, Integer, Void>() {
+
+                @IgniteInstanceResource
+                Ignite ignite;
+
+                @Override public Void process(MutableEntry<MyKey, Integer> entry,
+                    Object... objects) throws EntryProcessorException {
+
+                    String key = entry.getKey().key;
+
+                    if (key.startsWith("register_type")) {
+                        BinaryObjectBuilder bo = ignite.binary().builder(key);
+
+                        bo.build();
+                    }
+
+                    if (key.startsWith("remove")) {
+                        entry.remove();
+                    } else {
+                        Integer value = entry.getValue() == null ? 0 : entry.getValue();
+
+                        entry.setValue(++value);
+                    }
+
+                    return null;
+                }
+
+            });
+
+        Map<MyKey, Integer> all = cache.getAll(keys);
+
+        for (MyKey key : keys)
+            System.out.println(key.key + " - " + cache.get(key));
+
+        for (Map.Entry<MyKey, Integer> entry : all.entrySet()) {
+            if (entry.getKey().key.startsWith("remove"))
+                assertNull(entry.getValue());
+            else
+                assertEquals('"' + entry.getKey().key + "' entry has wrong value", 1, (int)entry.getValue());
+        }
+
     }
 
     /**

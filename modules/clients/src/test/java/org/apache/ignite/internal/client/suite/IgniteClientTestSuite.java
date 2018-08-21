@@ -49,6 +49,8 @@ import org.apache.ignite.internal.client.util.ClientByteUtilsTest;
 import org.apache.ignite.internal.client.util.ClientConsistentHashSelfTest;
 import org.apache.ignite.internal.client.util.ClientJavaHasherSelfTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
 import org.apache.ignite.internal.processors.rest.RestBinaryProtocolSelfTest;
@@ -56,6 +58,7 @@ import org.apache.ignite.internal.processors.rest.RestMemcacheProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorMultiStartSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorStartSelfTest;
 import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
+import org.apache.ignite.internal.processors.rest.TcpRestUnmarshalVulnerabilityTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolConnectSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolServerSelfTest;
@@ -82,10 +85,13 @@ public class IgniteClientTestSuite extends TestSuite {
 
         // Test custom binary protocol with test client.
         suite.addTestSuite(RestBinaryProtocolSelfTest.class);
+        suite.addTestSuite(TcpRestUnmarshalVulnerabilityTest.class);
 
         // Test jetty rest processor
         suite.addTestSuite(JettyRestProcessorSignedSelfTest.class);
         suite.addTestSuite(JettyRestProcessorUnsignedSelfTest.class);
+        suite.addTestSuite(JettyRestProcessorAuthenticationWithCredsSelfTest.class);
+        suite.addTestSuite(JettyRestProcessorAuthenticationWithTokenSelfTest.class);
 
         // Test TCP rest processor with original memcache client.
         suite.addTestSuite(ClientMemcachedProtocolSelfTest.class);
