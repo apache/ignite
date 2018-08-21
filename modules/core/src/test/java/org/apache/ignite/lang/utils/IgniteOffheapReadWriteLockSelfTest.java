@@ -63,7 +63,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 try {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -159,7 +159,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 while (!done.get()) {
@@ -246,7 +246,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 while (!done.get()) {
@@ -320,8 +320,6 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testTagIdUpdateContinuous() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9335");
-
         checkTagIdUpdate(false);
     }
 
@@ -344,14 +342,15 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
         final AtomicInteger reads = new AtomicInteger();
         final AtomicInteger writes = new AtomicInteger();
         final AtomicBoolean done = new AtomicBoolean(false);
+        final AtomicBoolean run = new AtomicBoolean(true);
 
         final int threadCnt = 32;
 
-        final CyclicBarrier barr = new CyclicBarrier(threadCnt);
+        final CyclicBarrier barr = new CyclicBarrier(threadCnt, () -> {if (done.get()) run.set(false);});
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 try {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -359,7 +358,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
                     long lastSwitch = System.currentTimeMillis();
 
-                    while (true) {
+                    while (run.get()) {
                         boolean write = rnd.nextInt(10) < 2;
 
                         boolean locked;
@@ -425,8 +424,10 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                             try {
                                 barr.await();
                             }
-                            catch (BrokenBarrierException ignore) {
+                            catch (BrokenBarrierException e) {
                                 // Done.
+                                e.printStackTrace();
+
                                 return null;
                             }
 
@@ -437,12 +438,6 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
                             if (waitBeforeSwitch || (!waitBeforeSwitch && tag == 1))
                                 info("Switch to a new tag: " + tag);
-
-                            if (done.get()) {
-                                barr.reset();
-
-                                return null;
-                            }
 
                             lastSwitch = System.currentTimeMillis();
                         }
