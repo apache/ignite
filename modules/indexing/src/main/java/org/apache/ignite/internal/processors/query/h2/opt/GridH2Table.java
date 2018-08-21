@@ -98,6 +98,9 @@ public class GridH2Table extends TableBase {
     /** */
     private final AtomicInteger readLockCnt = new AtomicInteger();
 
+    /** Read lock was detached. */
+    private ThreadLocal<Boolean> readLockWasAttached = new ThreadLocal<>();
+
     /** */
     private boolean destroyed;
 
@@ -279,6 +282,12 @@ public class GridH2Table extends TableBase {
         if (qctx != null)
            qctx.lockedTables().add(this);
 
+        if (!exclusive) {
+            readLockCnt.incrementAndGet();
+
+            readLockWasAttached.set(false);
+        }
+
         return false;
     }
 
@@ -320,16 +329,17 @@ public class GridH2Table extends TableBase {
                         Thread.yield();
                 }
             }
-
-            if (exclusive) {
-                while (!readLockCnt.compareAndSet(-1, 0))
-                    assert false : "This code must be unreachable";
-            }
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
             throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
+        }
+        finally {
+            if (exclusive) {
+                while (!readLockCnt.compareAndSet(-1, 0))
+                    assert false : "This code must be unreachable";
+            }
         }
     }
 
@@ -350,8 +360,6 @@ public class GridH2Table extends TableBase {
     private void detachReadLockFromCurrentThread(Session ses) {
         assert sessions.containsKey(ses) : "Detached session have not locked the table: " + getName();
 
-        readLockCnt.incrementAndGet();
-
         unlock(false);
     }
 
@@ -362,6 +370,8 @@ public class GridH2Table extends TableBase {
         assert sessions.containsKey(ses) : "Attached session have not locked the table: " + getName();
 
         lock(false);
+
+        readLockWasAttached.set(true);
 
         readLockCnt.decrementAndGet();
     }
@@ -486,6 +496,12 @@ public class GridH2Table extends TableBase {
 
         if (qctx != null)
             qctx.lockedTables().remove(this);
+
+        if (!exclusive && !readLockWasAttached.get()) {
+            readLockWasAttached.set(null);
+
+            readLockCnt.decrementAndGet();
+        }
     }
 
     /**

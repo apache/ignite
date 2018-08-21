@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.query;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,6 +30,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
@@ -90,6 +93,50 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      */
     public void testMultipleNodesWithParallelism() throws Exception {
         checkMultipleNodes(4);
+    }
+
+    /**
+     * Test DDL operation on table with high load queries.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTableWriteLockStarvation() throws Exception {
+        final Ignite srv = startGrid(1);
+
+        srv.createCache(cacheConfiguration(4));
+
+        populateBaseQueryData(srv);
+
+        final AtomicBoolean end = new AtomicBoolean(false);
+
+        final int qryThreads = 10;
+
+        final CountDownLatch latch = new CountDownLatch(qryThreads);
+
+        // Do many concurrent queries.
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                latch.countDown();
+
+                while(!end.get()) {
+                    FieldsQueryCursor<List<?>> cursor = execute(srv, query(KEY_CNT - PAGE_SIZE_SMALL + PAGE_SIZE_SMALL)
+                        .setPageSize(PAGE_SIZE_SMALL));
+
+                    cursor.getAll();
+                }
+            }
+        }, qryThreads, "usr-qry");
+
+        latch.await();
+
+        Thread.sleep(500);
+
+        execute(srv, new SqlFieldsQuery("CREATE INDEX PERSON_NAME ON Person (name asc)")).getAll();
+        execute(srv, new SqlFieldsQuery("DROP INDEX PERSON_NAME")).getAll();
+
+        // Test is OK in case DDL operations is passed on hi load queries pressure.
+        end.set(true);
+        fut.get();
     }
 
     /**
