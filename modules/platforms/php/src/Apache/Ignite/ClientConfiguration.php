@@ -27,6 +27,7 @@ use Apache\Ignite\Impl\Utils\ArgumentChecker;
  * The configuration includes:
  *   - (mandatory) Ignite node endpoint(s)
  *   - (optional) user credentials for authentication
+ *   - (optional) TLS options for secure connection
  *   - (optional) connection options
  */
 class ClientConfiguration
@@ -90,7 +91,7 @@ class ClientConfiguration
     }
     
     /**
-     * Returns the username specified in the setUserName() method.
+     * Returns the current username.
      * 
      * @return string|null username or null (if authentication is disabled).
      */
@@ -116,7 +117,7 @@ class ClientConfiguration
     }
     
     /**
-     * Returns the password specified in the setPassword() method.
+     * Returns the current password.
      * 
      * @return string|null password or null (if password is empty).
      */
@@ -126,8 +127,12 @@ class ClientConfiguration
     }
     
     /**
+     * Enables and setup TLS connection.
      *
-     * @param array $tlsOptions TLS connection options in a format defined here: http://php.net/manual/en/context.ssl.php
+     * If not enabled (by default), the client does not use secure connection.
+     *
+     * @param array|null $tlsOptions TLS connection options in the format defined here: http://php.net/manual/en/context.ssl.php
+     * If null, secure connection is not used.
      *
      * @return ClientConfiguration the same instance of the ClientConfiguration.
      */
@@ -138,9 +143,9 @@ class ClientConfiguration
     }
     
     /**
+     * Returns the current TLS connection options.
      * 
-     * 
-     * @return array|null 
+     * @return array|null TLS connection options or null (if secure connection is not used).
      */
     public function getTLSOptions(): ?array
     {
@@ -148,9 +153,11 @@ class ClientConfiguration
     }
 
     /**
+     * Sets send/receive timeout.
      *
+     * Default value is defined by the PHP settings.
      *
-     * @param int $timeout send/receive timeout in milliseconds.
+     * @param int $timeout send/receive timeout (in milliseconds).
      *
      * @return ClientConfiguration the same instance of the ClientConfiguration.
      */
@@ -161,9 +168,9 @@ class ClientConfiguration
     }
 
     /**
+     * Returns the current send/receive timeout.
      *
-     *
-     * @return int
+     * @return int send/receive timeout (in milliseconds).
      */
     public function getTimeout(): int
     {
@@ -171,9 +178,11 @@ class ClientConfiguration
     }
 
     /**
+     * Sets the size of the send chunk.
      *
+     * 8192 bytes by default.
      *
-     * @param int $size
+     * @param int $size size of the send chunk (in bytes).
      *
      * @return ClientConfiguration the same instance of the ClientConfiguration.
      */
@@ -184,9 +193,9 @@ class ClientConfiguration
     }
 
     /**
+     * Returns the current size of the send chunk.
      *
-     *
-     * @return int
+     * @return int size of the send chunk (in bytes).
      */
     public function getSendChunkSize(): int
     {
@@ -194,9 +203,11 @@ class ClientConfiguration
     }
 
     /**
+     * Sets the size of the receive chunk.
      *
+     * 8192 bytes by default.
      *
-     * @param int $size
+     * @param int $size size of the receive chunk (in bytes).
      *
      * @return ClientConfiguration the same instance of the ClientConfiguration.
      */
@@ -207,9 +218,9 @@ class ClientConfiguration
     }
 
     /**
+     * Returns the current size of the receive chunk.
      *
-     *
-     * @return int
+     * @return int size of the receive chunk (in bytes).
      */
     public function getReceiveChunkSize(): int
     {
@@ -219,7 +230,9 @@ class ClientConfiguration
     /**
      * Disables/enables the TCP Nagle algorithm.
      *
-     * @param bool $tcpNoDelay
+     * Enabled by default.
+     *
+     * @param bool $tcpNoDelay true to enable, false to disable.
      *
      * @return ClientConfiguration the same instance of the ClientConfiguration.
      */
@@ -230,9 +243,9 @@ class ClientConfiguration
     }
 
     /**
+     * Returns the current status of the TCP Nagle algorithm.
      *
-     *
-     * @return bool
+     * @return bool true if enabled, false if disabled.
      */
     public function getTcpNoDelay(): bool
     {
