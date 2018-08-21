@@ -47,6 +47,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiMBeanTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiReconnectDelayTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiStartStopSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslParametersTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSecuredUnsecuredTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedSelfTest;
@@ -123,6 +124,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpDiscoverySslTrustedSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySslSecuredUnsecuredTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySslTrustedUntrustedTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySslParametersTest.class));
 
         // Disco cache reuse.
         suite.addTest(new TestSuite(IgniteDiscoveryCacheReuseSelfTest.class));
