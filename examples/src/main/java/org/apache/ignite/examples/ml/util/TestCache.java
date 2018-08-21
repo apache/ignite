@@ -43,7 +43,7 @@ public class TestCache {
      * @param data Data to fill the cache with.
      * @return Filled Ignite Cache.
      */
-    public IgniteCache<Integer, double[]> get(double[][] data) {
+    public IgniteCache<Integer, double[]> fillCacheWith(double[][] data) {
         CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("TEST_" + UUID.randomUUID());
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));

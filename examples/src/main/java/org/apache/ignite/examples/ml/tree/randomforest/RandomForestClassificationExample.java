@@ -53,7 +53,7 @@ public class RandomForestClassificationExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                     RandomForestClassificationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).get(data);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(13, 4, 101, 0.3, 2, 0);
 

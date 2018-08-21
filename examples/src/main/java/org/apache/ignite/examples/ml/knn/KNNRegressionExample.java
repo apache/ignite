@@ -58,7 +58,7 @@ public class KNNRegressionExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 KNNRegressionExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).get(data);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 

@@ -57,7 +57,7 @@ public class KNNClassificationExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 KNNClassificationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).get(data);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
