@@ -162,7 +162,11 @@ namespace ignite
                         // Skipping spaces.
                         if (iscntrl(sql[pos]) || isspace(sql[pos]))
                         {
-                            ++pos;
+                            do
+                            {
+                                ++pos;
+                            }
+                            while (!IsEod() && (iscntrl(sql[pos]) || isspace(sql[pos])));
 
                             continue;
                         }
@@ -185,11 +189,13 @@ namespace ignite
                 {
                     currentToken = SqlToken(&sql[tokenBegin], pos - tokenBegin, tokenType);
 
-                    break;
+                    return true;
                 }
             }
 
-            return true;
+            SetEod();
+
+            return false;
         }
 
         bool SqlLexer::IsEod() const

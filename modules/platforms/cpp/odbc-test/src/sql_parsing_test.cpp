@@ -43,31 +43,6 @@ using namespace ignite_test;
 
 using namespace boost::unit_test;
 
-/**
- * Test setup fixture.
- */
-struct SqlParsingTestSuiteFixture : odbc::OdbcTestSuite
-{
-    /**
-     * Constructor.
-     */
-    SqlParsingTestSuiteFixture()
-    {
-        grid = StartPlatformNode("queries-test.xml", "NodeMain");
-    }
-
-    /**
-     * Destructor.
-     */
-    ~SqlParsingTestSuiteFixture()
-    {
-        Ignition::StopAll(true);
-    }
-
-    /** Node started during the test. */
-    Ignite grid;
-};
-
 void CheckNextToken(odbc::SqlLexer& lexer, odbc::TokenType::Type tokenType, const std::string& expected)
 {
     BOOST_REQUIRE(!lexer.IsEod());
@@ -141,7 +116,10 @@ void CheckUnexpectedTokenError(const std::string& sql, const std::string& token,
     }
     catch (const odbc::OdbcError& err)
     {
-        std::string expErr = "Unexpected token: '" + token + "', " + expected + " expected.";
+        std::string expErr = "Unexpected token: '" + token + "'";
+
+        if (!expected.empty())
+            expErr += ", " + expected + " expected.";
 
         BOOST_CHECK_EQUAL(err.GetStatus(), odbc::SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION);
         BOOST_CHECK_EQUAL(err.GetErrorMessage(), expErr);
@@ -167,7 +145,7 @@ void CheckUnexpectedEndOfStatement(const std::string& sql, const std::string& ex
     }
 }
 
-BOOST_FIXTURE_TEST_SUITE(SqlParsingTestSuite, SqlParsingTestSuiteFixture)
+BOOST_AUTO_TEST_SUITE(SqlParsingTestSuite)
 
 BOOST_AUTO_TEST_CASE(LexerTokens)
 {
@@ -339,6 +317,7 @@ BOOST_AUTO_TEST_CASE(ParserSetStreamingOnUnexpectedTokenError)
     CheckUnexpectedTokenError("set streaming ON lorem_ipsum ordered", "lorem_ipsum");
 
     CheckUnexpectedTokenError("set streaming some", "some", "ON, OFF, 1 or 0");
+    CheckUnexpectedTokenError("some", "some", "");
 }
 
 BOOST_AUTO_TEST_CASE(ParserSetStreamingOffUnexpectedTokenError)

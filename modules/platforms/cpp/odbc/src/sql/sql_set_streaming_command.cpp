@@ -170,6 +170,8 @@ namespace ignite
             }
 
             ThrowUnexpectedTokenError(token, "integer number");
+
+            return 0;
         }
 
         int32_t SqlSetStreamingCommand::ExpectPositiveInteger(SqlLexer& lexer, const std::string& description)
