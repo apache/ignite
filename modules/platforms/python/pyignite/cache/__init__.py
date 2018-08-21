@@ -66,7 +66,7 @@ class Cache:
     """
     _cache_id = None
     _name = None
-    _conn = None
+    _client = None
     _settings = None
 
     @staticmethod
@@ -107,7 +107,7 @@ class Cache:
         :param get_only: (optional) do not communicate with Ignite server
          at all, only create Cache instance. Defaults to False.
         """
-        self._conn = client
+        self._client = client
         self.validate_settings(settings)
         if type(settings) == str:
             self._name = settings
@@ -133,7 +133,7 @@ class Cache:
         :return: dict of cache properties and their values.
         """
         if self._settings is None:
-            config_result = cache_get_configuration(self._conn, self._cache_id)
+            config_result = cache_get_configuration(self._client, self._cache_id)
             if config_result.status == 0:
                 self._settings = config_result.value
             else:
@@ -160,7 +160,7 @@ class Cache:
 
         :return: Client object, through which the cache is accessed.
         """
-        return self._conn
+        return self._client
 
     @property
     def cache_id(self) -> int:
@@ -180,7 +180,7 @@ class Cache:
          left intact.
         """
         if is_wrapped(value):
-            return unwrap_binary(self._conn, value)
+            return unwrap_binary(self._client, value)
         return value
 
     @status_to_exception(CacheError)
@@ -188,7 +188,7 @@ class Cache:
         """
         Destroys cache with a given name.
         """
-        return cache_destroy(self._conn, self._cache_id)
+        return cache_destroy(self._client, self._cache_id)
 
     @status_to_exception(CacheError)
     def get(self, key, key_hint: object=None) -> Any:
@@ -200,7 +200,7 @@ class Cache:
          should be converted,
         :return: value retrieved.
         """
-        result = cache_get(self._conn, self._cache_id, key, key_hint=key_hint)
+        result = cache_get(self._client, self._cache_id, key, key_hint=key_hint)
         result.value = self._process_binary(result.value)
         return result
 
@@ -218,7 +218,7 @@ class Cache:
          value should be converted.
         """
         return cache_put(
-            self._conn, self._cache_id, key, value,
+            self._client, self._cache_id, key, value,
             key_hint=key_hint, value_hint=value_hint
         )
 
@@ -230,7 +230,7 @@ class Cache:
         :param keys: list of keys or tuples of (key, key_hint),
         :return: a dict of key-value pairs.
         """
-        result = cache_get_all(self._conn, self._cache_id, keys)
+        result = cache_get_all(self._client, self._cache_id, keys)
         if result.value:
             for key, value in result.value.items():
                 result.value[key] = self._process_binary(value)
@@ -246,7 +246,7 @@ class Cache:
          to save. Each key or value can be an item of representable
          Python type or a tuple of (item, hint),
         """
-        return cache_put_all(self._conn, self._cache_id, pairs)
+        return cache_put_all(self._client, self._cache_id, pairs)
 
     @status_to_exception(CacheError)
     def replace(
@@ -263,7 +263,7 @@ class Cache:
          value should be converted.
         """
         result = cache_replace(
-            self._conn, self._cache_id, key, value,
+            self._client, self._cache_id, key, value,
             key_hint=key_hint, value_hint=value_hint
         )
         result.value = self._process_binary(result.value)
@@ -278,9 +278,9 @@ class Cache:
          hint) tuples to clear (default: clear all).
         """
         if keys:
-            return cache_clear_keys(self._conn, self._cache_id, keys)
+            return cache_clear_keys(self._client, self._cache_id, keys)
         else:
-            return cache_clear(self._conn, self._cache_id)
+            return cache_clear(self._client, self._cache_id)
 
     @status_to_exception(CacheError)
     def clear_key(self, key, key_hint: object=None):
@@ -292,7 +292,7 @@ class Cache:
          should be converted,
         """
         return cache_clear_key(
-            self._conn, self._cache_id, key, key_hint=key_hint
+            self._client, self._cache_id, key, key_hint=key_hint
         )
 
     @status_to_exception(CacheError)
@@ -306,7 +306,7 @@ class Cache:
         :return: boolean `True` when key is present, `False` otherwise.
         """
         return cache_contains_key(
-            self._conn, self._cache_id, key, key_hint=key_hint
+            self._client, self._cache_id, key, key_hint=key_hint
         )
 
     @status_to_exception(CacheError)
@@ -317,7 +317,7 @@ class Cache:
         :param keys: a list of keys or (key, type hint) tuples,
         :return: boolean `True` when all keys are present, `False` otherwise.
         """
-        return cache_contains_keys(self._conn, self._cache_id, keys)
+        return cache_contains_keys(self._client, self._cache_id, keys)
 
     @status_to_exception(CacheError)
     def get_and_put(self, key, value, key_hint=None, value_hint=None) -> Any:
@@ -334,7 +334,7 @@ class Cache:
         :return: old value or None.
         """
         result = cache_get_and_put(
-            self._conn, self._cache_id, key, value, key_hint, value_hint
+            self._client, self._cache_id, key, value, key_hint, value_hint
         )
         result.value = self._process_binary(result.value)
         return result
@@ -356,7 +356,7 @@ class Cache:
         :return: old value or None.
         """
         result = cache_get_and_put_if_absent(
-            self._conn, self._cache_id, key, value, key_hint, value_hint
+            self._client, self._cache_id, key, value, key_hint, value_hint
         )
         result.value = self._process_binary(result.value)
         return result
@@ -375,7 +375,7 @@ class Cache:
          value should be converted.
         """
         return cache_put_if_absent(
-            self._conn, self._cache_id, key, value, key_hint, value_hint
+            self._client, self._cache_id, key, value, key_hint, value_hint
         )
 
     @status_to_exception(CacheError)
@@ -389,7 +389,7 @@ class Cache:
         :return: old value or None.
         """
         result = cache_get_and_remove(
-            self._conn, self._cache_id, key, key_hint
+            self._client, self._cache_id, key, key_hint
         )
         result.value = self._process_binary(result.value)
         return result
@@ -412,7 +412,7 @@ class Cache:
         :return: old value or None.
         """
         result = cache_get_and_replace(
-            self._conn, self._cache_id, key, value, key_hint, value_hint
+            self._client, self._cache_id, key, value, key_hint, value_hint
         )
         result.value = self._process_binary(result.value)
         return result
@@ -426,7 +426,7 @@ class Cache:
         :param key_hint: (optional) Ignite data type, for which the given key
          should be converted,
         """
-        return cache_remove_key(self._conn, self._cache_id, key, key_hint)
+        return cache_remove_key(self._client, self._cache_id, key, key_hint)
 
     @status_to_exception(CacheError)
     def remove(self, keys: Optional[list]=None):
@@ -438,9 +438,9 @@ class Cache:
          remove. Defaults to all.
         """
         if keys:
-            return cache_remove_keys(self._conn, self._cache_id, keys)
+            return cache_remove_keys(self._client, self._cache_id, keys)
         else:
-            return cache_remove_all(self._conn, self._cache_id)
+            return cache_remove_all(self._client, self._cache_id)
 
     @status_to_exception(CacheError)
     def remove_if_equals(self, key, sample, key_hint=None, sample_hint=None):
@@ -456,7 +456,7 @@ class Cache:
          the given sample should be converted.
         """
         return cache_remove_if_equals(
-            self._conn, self._cache_id, key, sample, key_hint, sample_hint
+            self._client, self._cache_id, key, sample, key_hint, sample_hint
         )
 
     @status_to_exception(CacheError)
@@ -480,7 +480,7 @@ class Cache:
         :return: boolean `True` when key is present, `False` otherwise.
         """
         result = cache_replace_if_equals(
-            self._conn, self._cache_id, key, sample, value,
+            self._client, self._cache_id, key, sample, value,
             key_hint, sample_hint, value_hint
         )
         result.value = self._process_binary(result.value)
@@ -496,7 +496,7 @@ class Cache:
          (PeekModes.BACKUP). Defaults to all cache partitions (PeekModes.ALL),
         :return: integer number of cache entries.
         """
-        return cache_get_size(self._conn, self._cache_id, peek_modes)
+        return cache_get_size(self._client, self._cache_id, peek_modes)
 
     def scan(self, page_size: int=1, partitions: int=-1, local: bool=False):
         """
@@ -511,7 +511,7 @@ class Cache:
          on local node only. Defaults to False,
         :return: generator with key-value pairs.
         """
-        result = scan(self._conn, self._cache_id, page_size, partitions, local)
+        result = scan(self._client, self._cache_id, page_size, partitions, local)
         if result.status != 0:
             raise CacheError(result.message)
 
@@ -522,7 +522,7 @@ class Cache:
             yield k, v
 
         while result.value['more']:
-            result = scan_cursor_get_page(self._conn, cursor)
+            result = scan_cursor_get_page(self._client, cursor)
             if result.status != 0:
                 raise CacheError(result.message)
 
@@ -562,7 +562,7 @@ class Cache:
                 yield k, v
 
             while more:
-                inner_result = sql_cursor_get_page(self._conn, cursor)
+                inner_result = sql_cursor_get_page(self._client, cursor)
                 if result.status != 0:
                     raise SQLError(result.message)
                 more = inner_result.value['more']
@@ -577,7 +577,7 @@ class Cache:
         if not type_name:
             raise SQLError('Value type is unknown')
         result = sql(
-            self._conn,
+            self._client,
             self._cache_id,
             type_name,
             query_str,
