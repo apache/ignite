@@ -21,7 +21,7 @@ namespace Apache\Ignite\Tests;
 use PHPUnit\Framework\TestCase;
 use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\CacheEntry;
-use Apache\Ignite\CacheConfiguration;
+use Apache\Ignite\Config\CacheConfiguration;
 use Apache\Ignite\CacheInterface;
 
 final class CacheKeyValueOpsTestCase extends TestCase
@@ -31,19 +31,19 @@ final class CacheKeyValueOpsTestCase extends TestCase
     public static function setUpBeforeClass(): void
     {
         TestingHelper::init();
-        CacheKeyValueOpsTestCase::cleanUp();
-        TestingHelper::$client->getOrCreateCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        self::cleanUp();
+        TestingHelper::$client->getOrCreateCache(self::CACHE_NAME);
     }
 
     public static function tearDownAfterClass(): void
     {
-        CacheKeyValueOpsTestCase::cleanUp();
+        self::cleanUp();
         TestingHelper::cleanUp();
     }
     
     public function testCacheGet(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $value = $cache->get(1);
             $this->assertEquals($value, null);
@@ -67,7 +67,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheGetWrongArgs($cacheKey): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->get($cacheKey);
@@ -78,7 +78,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
     
     public function testCacheGetAll(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             for ($i = 0; $i < 5; $i++) {
                 $cache->put($i, $i * 2);
@@ -108,7 +108,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheGetAllWrongArgs($keys): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->getAll($keys);
@@ -119,7 +119,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
 
     public function testCachePut(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $value = $cache->get(1);
             $this->assertEquals($value, null);
@@ -148,7 +148,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCachePutWrongArgs($key, $value): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->put($key, $value);
@@ -159,7 +159,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
 
     public function testCachePutAll(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $cacheEntries = array();
             for ($i = 0; $i < 5; $i++) {
@@ -198,7 +198,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCachePutAllWrongArgs($entries): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->putAll($entries);
@@ -209,7 +209,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
     
     public function testContainsKey(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $result = $cache->containsKey(1);
             $this->assertFalse($result);
@@ -226,7 +226,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testContainsKeyWrongArgs($cacheKey): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->containsKey($cacheKey);
@@ -237,7 +237,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
   
     public function testCacheContainsKeys(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $result = $cache->containsKeys([1, 2, 3]);
             $this->assertFalse($result);
@@ -257,7 +257,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheContainsKeysWrongArgs($keys): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->containsKeys($keys);
@@ -268,7 +268,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
     
     public function testCacheGetAndPut(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $value = $cache->getAndPut(1, 2);
             $this->assertEquals($value, null);
@@ -290,7 +290,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheGetAndPutWrongArgs($key, $value): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->getAndPut($key, $value);
@@ -301,7 +301,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
 
     public function testCacheGetAndReplace(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $value = $cache->getAndReplace(1, 2);
             $this->assertEquals($value, null);
@@ -320,7 +320,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheGetAndReplaceWrongArgs($key, $value): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->getAndReplace($key, $value);
@@ -331,7 +331,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
     
     public function testCacheGetAndRemove(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $value = $cache->getAndRemove(1);
             $this->assertEquals($value, null);
@@ -350,7 +350,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheGetAndRemoveWrongArgs($cacheKey): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->getAndRemove($cacheKey);
@@ -361,7 +361,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
 
     public function testCachePutIfAbsent(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $result = $cache->putIfAbsent(1, 2);
             $this->assertTrue($result);
@@ -381,7 +381,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCachePutIfAbsentWrongArgs($key, $value): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->putIfAbsent($key, $value);
@@ -392,7 +392,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
   
     public function testCacheGetAndPutIfAbsent(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $value = $cache->getAndPutIfAbsent(1, 2);
             $this->assertEquals($value, null);
@@ -413,7 +413,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheGetAndPutIfAbsentWrongArgs($key, $value): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->getAndPutIfAbsent($key, $value);
@@ -424,7 +424,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
 
     public function testCacheReplace(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $result = $cache->replace(1, 2);
             $this->assertFalse($result);
@@ -446,7 +446,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheReplaceWrongArgs($key, $value): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->replace($key, $value);
@@ -457,7 +457,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
     
     public function testCacheReplaceIfEquals(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $result = $cache->replaceIfEquals(1, 2, 3);
             $this->assertFalse($result);
@@ -491,7 +491,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheReplaceIfEqualsWrongArgs($key, $value, $newValue): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->replaceIfEquals($key, $value, $newValue);
@@ -502,7 +502,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
   
     public function testCacheClear(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $cache->clear();
             $result = $cache->getSize();
@@ -522,7 +522,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
 
     public function testCacheClearKeys(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $cache->clearKeys([1, 2, 3]);
             $result = $cache->getSize();
@@ -545,7 +545,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheClearKeysWrongArgs($keys): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->clearKeys($keys);
@@ -556,7 +556,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
 
     public function testCacheClearKey(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $cache->clearKey(1);
             $result = $cache->getSize();
@@ -581,7 +581,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheClearKeyWrongArgs($cacheKey): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->clearKey($cacheKey);
@@ -592,7 +592,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
 
     public function testCacheRemoveKey(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $result = $cache->removeKey(1);
             $this->assertFalse($result);
@@ -621,7 +621,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheRemoveKeyWrongArgs($cacheKey): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->removeKey($cacheKey);
@@ -632,7 +632,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
     
     public function testRemoveIfEquals(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $result = $cache->removeIfEquals(1, 2);
             $this->assertFalse($result);
@@ -653,7 +653,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testRemoveIfEqualsWrongArgs($key, $value): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->removeIfEquals($key, $value);
@@ -664,7 +664,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
     
     public function testCacheRemoveKeys(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $cache->removeKeys([1, 2, 3]);
             $result = $cache->getSize();
@@ -687,7 +687,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheRemoveKeysWrongArgs($keys): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->removeKeys($keys);
@@ -698,7 +698,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
 
     public function testCacheRemoveAll(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $cache->removeAll();
             $result = $cache->getSize();
@@ -718,7 +718,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
     
     public function testCacheGetSize(): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $result = $cache->getSize();
             $this->assertEquals($result, 0);
@@ -747,7 +747,7 @@ final class CacheKeyValueOpsTestCase extends TestCase
      */
     public function testCacheGetSizeWrongArgs($modes): void
     {
-        $cache = TestingHelper::$client->getCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        $cache = TestingHelper::$client->getCache(self::CACHE_NAME);
         try {
             $this->expectException(ClientException::class);
             $cache->getSize($modes);
@@ -758,6 +758,6 @@ final class CacheKeyValueOpsTestCase extends TestCase
     
     private static function cleanUp(): void
     {
-        TestingHelper::destroyCache(CacheKeyValueOpsTestCase::CACHE_NAME);
+        TestingHelper::destroyCache(self::CACHE_NAME);
     }
 }

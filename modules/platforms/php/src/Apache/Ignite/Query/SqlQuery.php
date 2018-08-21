@@ -18,10 +18,12 @@
 
 namespace Apache\Ignite\Query;
 
-use Apache\Ignite\Impl\Connection\ClientFailoverSocket;
+use Apache\Ignite\Type\ObjectType;
+use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Impl\Binary\ClientOperation;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryWriter;
+use Apache\Ignite\Impl\Binary\BinaryCommunicator;
+use Apache\Ignite\Impl\Binary\BinaryUtils;
 use Apache\Ignite\Impl\Query\Cursor;
 use Apache\Ignite\Impl\Utils\ArgumentChecker;
 
@@ -32,10 +34,12 @@ class SqlQuery extends Query
 {
     private $args;
     private $argTypes;
+    protected $sql;
+    protected $type;
     protected $distributedJoins;
     protected $replicatedOnly;
     protected $timeout;
-    
+
     /**
      * Public constructor.
      *
@@ -55,7 +59,7 @@ class SqlQuery extends Query
      * @param string $type name of a type or SQL table.
      * @param string $sql SQL query string.
      * 
-     * @return SqlQuery new SqlQuery instance.
+     * @throws ClientException if error.
      */
     public function __construct(?string $type, string $sql)
     {
@@ -71,10 +75,12 @@ class SqlQuery extends Query
 
     /**
      * Set name of a type or SQL table.
-     * 
+     *
      * @param string $type name of a type or SQL table.
-     * 
+     *
      * @return SqlQuery the same instance of the SqlQuery.
+     *
+     * @throws ClientException if error.
      */
     public function setType(?string $type): SqlQuery
     {
@@ -132,6 +138,8 @@ class SqlQuery extends Query
      *   - or null (or not specified) that means the type is not specified
      * 
      * @return SqlQuery the same instance of the SqlQuery.
+     *
+     * @throws ClientException if error.
      */
     public function setArgTypes(...$argTypes): SqlQuery
     {
@@ -182,11 +190,24 @@ class SqlQuery extends Query
         return $this;
     }
 
-    public function write(MessageBuffer $buffer): void
+    protected function writeArgs(BinaryCommunicator $communicator, MessageBuffer $buffer): void
     {
-        BinaryWriter::writeString($buffer, $this->type);
-        BinaryWriter::writeString($buffer, $this->sql);
-        $this->writeArgs($buffer);
+        $argsLength = $this->args ? count($this->args) : 0;
+        $buffer->writeInteger($argsLength);
+        if ($argsLength > 0) {
+            for ($i = 0; $i < $argsLength; $i++) {
+                $argType = $this->argTypes && $i < count($this->argTypes) ? $this->argTypes[$i] : null;
+                $communicator->writeObject($buffer, $this->args[$i], $argType);
+            }
+        }
+    }
+
+    // This is not the public API method, is not intended for usage by an application.
+    public function write(BinaryCommunicator $communicator, MessageBuffer $buffer): void
+    {
+        BinaryCommunicator::writeString($buffer, $this->type);
+        BinaryCommunicator::writeString($buffer, $this->sql);
+        $this->writeArgs($communicator, $buffer);
         $buffer->writeBoolean($this->distributedJoins);
         $buffer->writeBoolean($this->local);
         $buffer->writeBoolean($this->replicatedOnly);
@@ -194,21 +215,10 @@ class SqlQuery extends Query
         $buffer->writeLong($this->timeout);
     }
 
-    public function writeArgs(MessageBuffer $buffer): void
+    // This is not the public API method, is not intended for usage by an application.
+    public function getCursor(BinaryCommunicator $communicator, MessageBuffer $payload, $keyType = null, $valueType = null): CursorInterface
     {
-        $argsLength = $this->args ? count($this->args) : 0;
-        $buffer->writeInteger($argsLength);
-        if ($argsLength > 0) {
-            for ($i = 0; $i < $argsLength; $i++) {
-                $argType = $this->argTypes && $i < count($this->argTypes) ? $this->argTypes[$i] : null;
-                BinaryWriter::writeObject($buffer, $this->args[$i], $argType);
-            }
-        }
-    }
-
-    public function getCursor(ClientFailoverSocket $socket, MessageBuffer $payload, $keyType = null, $valueType = null): CursorInterface
-    {
-        $cursor = new Cursor($socket, ClientOperation::QUERY_SQL_CURSOR_GET_PAGE, $payload, $keyType, $valueType);
+        $cursor = new Cursor($communicator, ClientOperation::QUERY_SQL_CURSOR_GET_PAGE, $payload, $keyType, $valueType);
         $cursor->readId($payload);
         return $cursor;
     }

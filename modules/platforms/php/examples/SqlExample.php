@@ -22,7 +22,7 @@ use Apache\Ignite\Client;
 use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\CacheInterface;
-use Apache\Ignite\CacheConfiguration;
+use Apache\Ignite\Config\CacheConfiguration;
 use Apache\Ignite\Query\SqlFieldsQuery;
 
 // This example shows primary APIs to use with Ignite as with an SQL database:
@@ -223,7 +223,8 @@ class SqlExample {
         }
     }
 
-    private function deleteDatabaseObjects($cache) {
+    private function deleteDatabaseObjects($cache): void
+    {
         $cache->query(new SqlFieldsQuery('DROP TABLE IF EXISTS Country'))->getAll();
         $cache->query(new SqlFieldsQuery('DROP TABLE IF EXISTS City'))->getAll();
         $cache->query(new SqlFieldsQuery('DROP TABLE IF EXISTS CountryLanguage'))->getAll();

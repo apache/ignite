@@ -20,6 +20,7 @@ namespace Apache\Ignite\Impl\Connection;
 
 use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\Exception\ConnectionException;
+use Apache\Ignite\Exception\OperationStatusUnknownException;
 use Apache\Ignite\Impl\Utils\Logger;
 
 class ClientFailoverSocket
@@ -30,13 +31,16 @@ class ClientFailoverSocket
 
     private $socket;
     private $state;
+    private $config;
     private $endpointsNumber;
     private $endpointIndex;
+    private $reconnectRequired;
             
     public function __construct()
     {
         $this->socket = null;
         $this->state = ClientFailoverSocket::STATE_DISCONNECTED;
+        $this->reconnectRequired = false;
     }
 
     public function connect(ClientConfiguration $config): void
@@ -49,19 +53,23 @@ class ClientFailoverSocket
         $this->endpointIndex = rand(0, $this->endpointsNumber - 1);
         $this->failoverConnect();
     }
-    
+
     public function send(int $opCode, ?callable $payloadWriter, callable $payloadReader = null): void
     {
+        if ($this->reconnectRequired) {
+            $this->failoverConnect();
+            $this->reconnectRequired = false;
+        }
         if ($this->state !== ClientFailoverSocket::STATE_CONNECTED) {
             throw new ConnectionException();
         }
         try {
             $this->socket->sendRequest($opCode, $payloadWriter, $payloadReader);
-        } catch (ConnectionException $e) {
-            $this->socket->disconnect();
-            $this->changeState(ClientFailoverSocket::STATE_DISCONNECTED);
+        } catch (OperationStatusUnknownException $e) {
+            $this->disconnect();
             $this->endpointIndex++;
-            $this->failoverConnect();
+            $this->reconnectRequired = true;
+            throw $e;
         }
     }
 

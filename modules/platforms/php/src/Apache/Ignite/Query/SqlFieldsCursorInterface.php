@@ -18,6 +18,8 @@
 
 namespace Apache\Ignite\Query;
 
+use Apache\Ignite\Type\ObjectType;
+
 /**
  * Interface representing a cursor to obtain results of SQL Fields query operation.
  *

@@ -19,35 +19,18 @@
 namespace Apache\Ignite\Impl\Binary;
 
 use Ds\Map;
-use Apache\Ignite\Impl\Connection\ClientFailoverSocket;
 use Apache\Ignite\Type\ComplexObjectType;
 
 class BinaryTypeStorage
 {
-    private static $entity;
-    
-    private $socket;
+    private $communicator;
     private $types;
-    private $complexObjectTypes;
+    private static $complexObjectTypes = null;
 
-    private function __construct(ClientFailoverSocket $socket)
+    public function __construct(BinaryCommunicator $communicator)
     {
-        $this->socket = $socket;
+        $this->communicator = $communicator;
         $this->types = [];
-        $this->complexObjectTypes = new Map();
-    }
-    
-    public static function getEntity(): BinaryTypeStorage
-    {
-        if (!BinaryTypeStorage::$entity) {
-            BinaryUtils::internalError();
-        }
-        return BinaryTypeStorage::$entity;
-    }
-
-    public static function createEntity(ClientFailoverSocket $socket): void
-    {
-        BinaryTypeStorage::$entity = new BinaryTypeStorage($socket);
     }
 
     public function addType(BinaryType $binaryType, BinarySchema $binarySchema): void
@@ -59,14 +42,13 @@ class BinaryTypeStorage
             $binaryType->addSchema($binarySchema);
             if (!$storageType) {
                 $this->types[$typeId] = $binaryType;
-                $storageType = $binaryType;
             } else {
                 $storageType->merge($binaryType, $binarySchema);
             }
             $this->putBinaryType($binaryType);
         }
     }
-    
+
     public function getType(int $typeId, int $schemaId = null): ?BinaryType
     {
         $storageType = $this->getStorageType($typeId);
@@ -78,24 +60,32 @@ class BinaryTypeStorage
         }
         return $storageType;
     }
-
-    public function getByComplexObjectType(ComplexObjectType $complexObjectType): ?array
+    
+    public static function getByComplexObjectType(ComplexObjectType $complexObjectType): ?array
     {
-        return $this->complexObjectTypes->get($complexObjectType, null);
+        return BinaryTypeStorage::getComplexObjectTypes()->get($complexObjectType, null);
     }
 
-    public function setByComplexObjectType(ComplexObjectType $complexObjectType, BinaryType $type, BinarySchema $schema): void
+    public static function setByComplexObjectType(ComplexObjectType $complexObjectType, BinaryType $type, BinarySchema $schema): void
     {
-        if (!$this->complexObjectTypes->hasKey($complexObjectType)) {
-            $this->complexObjectTypes->put($complexObjectType, [$type, $schema]);
+        if (!BinaryTypeStorage::getComplexObjectTypes()->hasKey($complexObjectType)) {
+            BinaryTypeStorage::getComplexObjectTypes()->put($complexObjectType, [$type, $schema]);
         }
+    }
+
+    private static function getComplexObjectTypes(): Map
+    {
+        if (!BinaryTypeStorage::$complexObjectTypes) {
+            BinaryTypeStorage::$complexObjectTypes = new Map();
+        }
+        return BinaryTypeStorage::$complexObjectTypes;
     }
 
     private function getBinaryType(int $typeId): ?BinaryType
     {
         $binaryType = new BinaryType(null);
         $binaryType->setId($typeId);
-        $this->socket->send(
+        $this->communicator->send(
             ClientOperation::GET_BINARY_TYPE,
             function (MessageBuffer $payload) use ($typeId)
             {
@@ -112,10 +102,10 @@ class BinaryTypeStorage
             });
         return $binaryType;
     }
-    
+
     private function putBinaryType(BinaryType $binaryType): void
     {
-        $this->socket->send(
+        $this->communicator->send(
             ClientOperation::PUT_BINARY_TYPE,
             function (MessageBuffer $payload) use ($binaryType)
             {

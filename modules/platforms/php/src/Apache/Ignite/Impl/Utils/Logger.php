@@ -56,7 +56,7 @@ class Logger
                 $length = $buffer->getLength();
             }
             $message = $buffer->getSlice($startPos, $length);
-            Logger::logDebug(json_encode(array_map('ord', str_split($message))));
+            Logger::logDebug('[' . implode(',', array_map('ord', str_split($message))) . ']');
         }
     }
 }

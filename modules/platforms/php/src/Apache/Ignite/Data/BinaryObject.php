@@ -20,6 +20,8 @@ namespace Apache\Ignite\Data;
 
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\ComplexObjectType;
+use Apache\Ignite\Exception\ClientException;
+use Apache\Ignite\Impl\Binary\BinaryCommunicator;
 use Apache\Ignite\Impl\Binary\BinaryTypeBuilder;
 use Apache\Ignite\Impl\Binary\BinaryObjectField;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
@@ -31,15 +33,15 @@ use Apache\Ignite\Impl\Utils\Logger;
 /**
  * Class representing a complex Ignite object in the binary form.
  *
- * It corresponds to COMPOSITE_TYPE.COMPLEX_OBJECT {@link ObjectType.COMPOSITE_TYPE},
+ * It corresponds to ObjectType::COMPLEX_OBJECT,
  * has mandatory type Id, which corresponds to a name of the complex type,
  * and includes optional fields.
  *
  * An instance of the BinaryObject can be obtained/created by the following ways:
  *   - returned by the client when a complex object is received from Ignite cache
- * and is not deserialized to another JavaScript object.
+ * and is not deserialized to another PHP object.
  *   - created using the public constructor. Fields may be added to such an instance using setField() method.
- *   - created from a JavaScript object using static fromObject() method.
+ *   - created from a PHP object using static fromObject() method.
  */
 class BinaryObject
 {
@@ -66,6 +68,9 @@ class BinaryObject
     private $buffer;
     private $schemaOffset;
     private $compactFooter;
+    private $offsetType;
+    private $startPos;
+    private $length;
 
     /**
      * Creates an instance of the BinaryObject without any fields.
@@ -74,9 +79,7 @@ class BinaryObject
      *
      * @param string $typeName name of the complex type to generate the type Id.
      *
-     * @return BinaryObject new BinaryObject instance.
-     *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function __construct(string $typeName)
     {
@@ -108,7 +111,7 @@ class BinaryObject
      * 
      * @return BinaryObject new BinaryObject instance.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public static function fromObject(object $object, ComplexObjectType $complexObjectType = null): BinaryObject
     {
@@ -117,21 +120,19 @@ class BinaryObject
         $result->typeBuilder = $typeBuilder;
         try {
             $class = new \ReflectionClass($object);
-        } catch (\ReflectionException $e) {
-            BinaryUtils::serializationError(true, sprintf('class "%s" does not exist', get_class($object)));
-        }
-        foreach ($typeBuilder->getFields() as $field) {
-            $fieldName = $field->getName();
-            try {
+            foreach ($typeBuilder->getFields() as $field) {
+                $fieldName = $field->getName();
                 if ($class->hasProperty($fieldName)) {
                     $result->setField(
                         $fieldName,
                         $class->getProperty($fieldName)->getValue($object),
                         $complexObjectType ? $complexObjectType->getFieldType($fieldName) : null);
+                } else {
+                    BinaryUtils::serializationError(true, sprintf('field "%s" does not exist', $fieldName));
                 }
-            } catch (\ReflectionException $e) {
-                BinaryUtils::serializationError(true, sprintf('field "%s" is undefined', $fieldName));
             }
+        } catch (\ReflectionException $e) {
+            BinaryUtils::serializationError(true, sprintf('class "%s" does not exist', get_class($object)));
         }
         return $result;
     }
@@ -154,7 +155,7 @@ class BinaryObject
      * 
      * @return BinaryObject the same instance of BinaryObject.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function setField(string $fieldName, $fieldValue, $fieldType = null): BinaryObject
     {
@@ -175,7 +176,7 @@ class BinaryObject
      * 
      * @return BinaryObject the same instance of BinaryObject.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function removeField(string $fieldName): BinaryObject
     {
@@ -196,7 +197,7 @@ class BinaryObject
      * 
      * @return bool true if exists, false otherwise.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function hasField(string $fieldName): bool
     {
@@ -212,6 +213,9 @@ class BinaryObject
      * If the type is not specified then the Ignite client
      * will try to make automatic mapping between PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
+     *
+     * If field with the specified name doesn't exist, throws Exception::ClientException.
+     * Use hasField() method to ensure the field exists.
      * 
      * @param string $fieldName name of the field.
      * @param int|ObjectType|null $fieldType type of the field:
@@ -219,9 +223,9 @@ class BinaryObject
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
      * 
-     * @return mixed value of the field or null if the field does not exist.
+     * @return mixed value of the field.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function getField(string $fieldName, $fieldType = null)
     {
@@ -231,7 +235,7 @@ class BinaryObject
         if (array_key_exists($fieldId, $this->fields)) {
             return $this->fields[$fieldId]->getValue($fieldType);
         }
-        return null;
+        throw new ClientException(sprintf('Field %s does not exist', $fieldName));
     }
     
     /**
@@ -241,7 +245,7 @@ class BinaryObject
      * 
      * @return object instance of the PHP object which corresponds to the specified complex object type.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function toObject(ComplexObjectType $complexObjectType): object
     {
@@ -280,7 +284,7 @@ class BinaryObject
      * 
      * @return array names of all fields.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function getFieldNames(): array
     {
@@ -294,6 +298,7 @@ class BinaryObject
                     BinaryUtils::internalError(
                         sprintf('Field "%s" is absent in binary type fields', $fieldId));
                 }
+                return null;
             },
             $this->typeBuilder->getSchema()->getFieldIds());
     }
@@ -303,26 +308,28 @@ class BinaryObject
         return ($flags & $flag) === $flag;
     }
 
-    public static function fromBuffer(MessageBuffer $buffer): BinaryObject
+    // This is not the public API method, is not intended for usage by an application.
+    public static function fromBuffer(BinaryCommunicator $communicator, MessageBuffer $buffer): BinaryObject
     {
         $result = new BinaryObject(' ');
         $result->buffer = $buffer;
         $result->startPos = $buffer->getPosition();
-        $result->read();
+        $result->read($communicator);
         return $result;
     }
 
-    public function write(MessageBuffer $buffer): void
+    // This is not the public API method, is not intended for usage by an application.
+    public function write(BinaryCommunicator $communicator, MessageBuffer $buffer): void
     {
         if ($this->buffer && !$this->modified) {
             $buffer->writeBuffer($this->buffer, $this->startPos, $this->length);
         } else {
-            $this->typeBuilder->finalize();
+            $this->typeBuilder->finalize($communicator);
             $this->startPos = $buffer->getPosition();
             $buffer->setPosition($this->startPos + BinaryObject::HEADER_LENGTH);
             // write fields
             foreach ($this->fields as $field) {
-                $field->writeValue($buffer, $this->typeBuilder->getField($field->getId())->getTypeCode());
+                $field->writeValue($communicator, $buffer, ($this->typeBuilder->getField($field->getId()))->getTypeCode());
             }
             $this->schemaOffset = $buffer->getPosition() - $this->startPos;
             // write schema
@@ -365,9 +372,9 @@ class BinaryObject
         $this->buffer->writeInteger($this->schemaOffset);
     }
 
-    private function read(): void
+    private function read(BinaryCommunicator $communicator): void
     {
-        $this->readHeader();
+        $this->readHeader($communicator);
         $this->buffer->setPosition($this->startPos + $this->schemaOffset);
         $fieldOffsets = [];
         $fieldIds = $this->typeBuilder->getSchema()->getFieldIds();
@@ -396,13 +403,13 @@ class BinaryObject
             $offset = $fieldOffsets[$i][1];
             $nextOffset = $i + 1 < count($fieldOffsets) ? $fieldOffsets[$i + 1][1] : $this->schemaOffset;
             $field = BinaryObjectField::fromBuffer(
-                $this->buffer, $this->startPos + $offset, $nextOffset - $offset, $fieldId);
+                $communicator, $this->buffer, $this->startPos + $offset, $nextOffset - $offset, $fieldId);
             $this->fields[$field->getId()] = $field;
         }
         $this->buffer->setPosition($this->startPos + $this->length);
     }
 
-    private function readHeader(): void
+    private function readHeader(BinaryCommunicator $communicator): void
     {
         // type code
         $this->buffer->readByte();
@@ -427,9 +434,9 @@ class BinaryObject
         $this->compactFooter = BinaryObject::isFlagSet($flags, BinaryObject::FLAG_COMPACT_FOOTER);
         $this->offsetType = BinaryObject::isFlagSet($flags, BinaryObject::FLAG_OFFSET_ONE_BYTE) ?
             ObjectType::BYTE :
-            BinaryObject::isFlagSet($flags, BinaryObject::FLAG_OFFSET_TWO_BYTES) ?
+            (BinaryObject::isFlagSet($flags, BinaryObject::FLAG_OFFSET_TWO_BYTES) ?
                 ObjectType::SHORT :
-                ObjectType::INTEGER;
+                ObjectType::INTEGER);
 
         if (BinaryObject::isFlagSet($flags, BinaryObject::FLAG_HAS_RAW_DATA)) {
             BinaryUtils::serializationError(
@@ -439,6 +446,6 @@ class BinaryObject
             BinaryUtils::serializationError(
                 false, 'schema is absent for object with compact footer');
         }
-        $this->typeBuilder = BinaryTypeBuilder::fromTypeId($typeId, $schemaId, $hasSchema);
+        $this->typeBuilder = BinaryTypeBuilder::fromTypeId($communicator, $typeId, $schemaId, $hasSchema);
     }
 }

@@ -18,7 +18,7 @@
 
 namespace Apache\Ignite\Type;
 
-use Apache\Ignite\Impl\Utils\ArgumentChecker;
+use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Impl\Binary\BinaryUtils;
 
 /**
@@ -44,8 +44,6 @@ class ComplexObjectType extends ObjectType
      * Creates a default representation of Ignite complex object type.
      * setPhpClassName(), setIgniteTypeName(), setFieldType() methods may be used
      * to change the default representation.
-     * 
-     * @return ComplexObjectType new ComplexObjectType instance.
      */
     public function __construct()
     {
@@ -136,7 +134,7 @@ class ComplexObjectType extends ObjectType
      *
      * @return ComplexObjectType the same instance of the ComplexObjectType.
      *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function setFieldType(string $fieldName, $fieldType): ComplexObjectType
     {

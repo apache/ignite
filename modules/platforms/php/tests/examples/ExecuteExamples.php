@@ -24,11 +24,38 @@ final class ExecuteExamplesTestCase extends TestCase
 {
     public function testCachePutGetExample(): void
     {
-        TestingHelper::executeExample('CachePutGetExample.php', $this);
+        TestingHelper::executeExample('CachePutGetExample.php', $this, array($this, 'checkNoErrors'));
     }
 
     public function testSqlExample(): void
     {
-        TestingHelper::executeExample('SqlExample.php', $this);
+        TestingHelper::executeExample('SqlExample.php', $this, array($this, 'checkNoErrors'));
+    }
+
+    public function testSqlQueryEntriesExample(): void
+    {
+        TestingHelper::executeExample('SqlQueryEntriesExample.php', $this, array($this, 'checkNoErrors'));
+    }
+
+    public function testFailoverExample(): void
+    {
+        TestingHelper::executeExample('FailoverExample.php', $this, array($this, 'checkClientConnected'));
+    }
+
+    public function checkNoErrors(array $output): void
+    {
+        foreach ($output as $out) {
+            $this->assertNotContains('ERROR:', $out);
+        }
+    }
+
+    public function checkClientConnected(array $output): void
+    {
+        foreach ($output as $out) {
+            if (strpos($out, 'Client connected') !== false) {
+                return;
+            }
+        }
+        $this->assertTrue(false);
     }
 }

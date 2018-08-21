@@ -51,7 +51,7 @@ class BinarySchema
         if (!$this->isValid) {
             $this->id = BinarySchema::FNV1_OFFSET_BASIS;
             foreach ($this->fieldIds as $key => $value) {
-                $this->id = BinarySchema::updateSchemaId($this->id, $key);
+                BinarySchema::updateSchemaId($key);
             }
             $this->isValid = true;
         }
@@ -61,7 +61,10 @@ class BinarySchema
     {
         $result = new BinarySchema();
         $result->id = $this->id;
-        $result->fieldIds = array_merge($this->fieldIds);
+        $result->fieldIds = [];
+        foreach($this->fieldIds as $key => $value) {
+            $result->fieldIds[$key] = $value;
+        }
         $result->isValid = $this->isValid;
         return $result;
     }
@@ -103,7 +106,7 @@ class BinarySchema
         $this->id = $this->id ^ (($fieldId >> 24) & 0xFF);
         $this->id = $this->id * BinarySchema::FNV1_PRIME;
         $this->id &= 0xFFFFFFFF; // Convert to 32bit integer
-        $this->id = BinaryUtils::intval32($this->id);
+        $this->id = BinaryUtils::intVal32($this->id);
     }
 
     public function write(MessageBuffer $buffer): void
@@ -118,7 +121,7 @@ class BinarySchema
             $buffer->writeInteger($key);
         }
     }
-    
+
     public function read(MessageBuffer $buffer): void
     {
         // schema id

@@ -54,16 +54,17 @@ class BinaryField
     public function write(MessageBuffer $buffer): void
     {
         // field name
-        BinaryWriter::writeString($buffer, $this->name);
+        BinaryCommunicator::writeString($buffer, $this->name);
         // type code
         $buffer->writeInteger($this->typeCode);
         // field id
         $buffer->writeInteger($this->id);
     }
 
-    public function read(MessageBuffer $buffer): void {
+    public function read(MessageBuffer $buffer): void
+    {
         // field name
-        $this->name = BinaryReader::readObject($buffer);
+        $this->name = BinaryCommunicator::readString($buffer);
         // type code
         $this->typeCode = $buffer->readInteger();
         // field id

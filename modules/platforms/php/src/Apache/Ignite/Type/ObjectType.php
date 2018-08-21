@@ -46,10 +46,11 @@ namespace Apache\Ignite\Type;
  * PHP type
  * ----------------
  * It is a PHP primitive or a PHP object: http://php.net/manual/en/language.types.intro.php
+ *
  * Plus additional types:
- *   - Ds\Set, Ds\Map - PHP Data Structures extension classes (http://php.net/manual/en/book.ds.php)
+ *   - Ds\\Set, Ds\\Map - PHP Data Structures extension classes (http://php.net/manual/en/book.ds.php)
  *   - Date, Time, Timestamp, EnumItem, BinaryObject - are PHP classes introduced by the Ignite client.
- *   - Brick\Math\BigDecimal - ??? https://github.com/brick/math
+ *   - Brick\\Math\\BigDecimal - ??? https://github.com/brick/math
  *
  * Ignite type code
  * ----------------
@@ -63,38 +64,33 @@ namespace Apache\Ignite\Type;
  * This mapping is used when an application does not explicitly specify an Ignite type
  * for a field and it is writing data to that field.
  *
- * <pre>
- * | PHP type                      | Ignite type code      |
- * | ----------------------------- | ----------------------|
- * | boolean                       | BOOLEAN               |
- * | integer                       | INTEGER               |
- * | float                         | DOUBLE                |
- * | string                        | STRING                |
- * | Date                          | DATE                  |
- * | Time                          | TIME                  |
- * | Timestamp                     | TIMESTAMP             |
- * | EnumItem                      | ENUM                  |
- * | Brick\Math\BigDecimal         | DECIMAL               |
- * | BinaryObject                  | COMPLEX_OBJECT        |
- * | any other PHP Object          | COMPLEX_OBJECT        |
- * | associative array of          |                       |
- * |    any PHP supported type     | MAP (HASH_MAP)        |
- * | indexed array of boolean      | BOOLEAN_ARRAY         |
- * | indexed array of integer      | INTEGER_ARRAY         |
- * | indexed array of float        | DOUBLE_ARRAY          |
- * | indexed array of string       | STRING_ARRAY          |
- * | indexed array of Date         | DATE_ARRAY            |
- * | indexed array of Time         | TIME_ARRAY            |
- * | indexed array of Timestamp    | TIMESTAMP_ARRAY       |
- * | indexed array of EnumItem     | ENUM_ARRAY            |
- * | indexed array of              |                       |
- * |    Brick\Math\BigDecimal      | DECIMAL_ARRAY         |
- * | indexed array of BinaryObject | OBJECT_ARRAY          |
- * | indexed array of              |                       |
- * |       any other PHP Object    | OBJECT_ARRAY          |
- * | Ds\Set                        | COLLECTION (HASH_SET) |
- * | Ds\Map                        | MAP (HASH_MAP)        |
- * </pre>
+ * | PHP type                                    | Ignite type code      |
+ * | ------------------------------------------- | ----------------------|
+ * | boolean                                     | BOOLEAN               |
+ * | integer                                     | INTEGER               |
+ * | float                                       | DOUBLE                |
+ * | string                                      | STRING                |
+ * | Date                                        | DATE                  |
+ * | Time                                        | TIME                  |
+ * | Timestamp                                   | TIMESTAMP             |
+ * | EnumItem                                    | ENUM                  |
+ * | Brick\\Math\\BigDecimal                     | DECIMAL               |
+ * | BinaryObject                                | COMPLEX_OBJECT        |
+ * | any other PHP Object                        | COMPLEX_OBJECT        |
+ * | associative array of any PHP supported type | MAP (HASH_MAP)        |
+ * | indexed array of boolean                    | BOOLEAN_ARRAY         |
+ * | indexed array of integer                    | INTEGER_ARRAY         |
+ * | indexed array of float                      | DOUBLE_ARRAY          |
+ * | indexed array of string                     | STRING_ARRAY          |
+ * | indexed array of Date                       | DATE_ARRAY            |
+ * | indexed array of Time                       | TIME_ARRAY            |
+ * | indexed array of Timestamp                  | TIMESTAMP_ARRAY       |
+ * | indexed array of EnumItem                   | ENUM_ARRAY            |
+ * | indexed array of Brick\\Math\\BigDecimal    | DECIMAL_ARRAY         |
+ * | indexed array of BinaryObject               | OBJECT_ARRAY          |
+ * | indexed array of any other PHP Object       | OBJECT_ARRAY          |
+ * | Ds\\Set                                     | COLLECTION (HASH_SET) |
+ * | Ds\\Map                                     | MAP (HASH_MAP)        |
  *
  * All other PHP types have no default mapping.
  *
@@ -102,6 +98,7 @@ namespace Apache\Ignite\Type;
  * PHP supported type - is any PHP type mentioned in the table.
  *
  * Associative and indexed PHP arrays: http://php.net/manual/en/language.types.array.php
+ *
  * Type of an array's value is determined by the value's type in the first element of the array.
  * Empty array has no default mapping.
  *
@@ -112,7 +109,6 @@ namespace Apache\Ignite\Type;
  * This mapping is used when an application does not explicitly specify an Ignite type
  * for a field and it is reading data from that field.
  *
- * <pre>
  * | Ignite type code             | PHP type                              |
  * | ---------------------------- | --------------------------------------|
  * | BYTE                         | integer                               |
@@ -121,7 +117,7 @@ namespace Apache\Ignite\Type;
  * | LONG                         | float                                 |
  * | FLOAT                        | float                                 |
  * | DOUBLE                       | float                                 |
- * | DECIMAL                      | Brick\Math\BigDecimal                 |
+ * | DECIMAL                      | Brick\\Math\\BigDecimal               |
  * | BOOLEAN                      | boolean                               |
  * | STRING                       | string                                |
  * | CHAR                         | string (one character)                |
@@ -137,7 +133,7 @@ namespace Apache\Ignite\Type;
  * | LONG_ARRAY                   | array of float                        |
  * | FLOAT_ARRAY                  | array of float                        |
  * | DOUBLE_ARRAY                 | array of float                        |
- * | DECIMAL_ARRAY                | array of Brick\Math\BigDecimal        |
+ * | DECIMAL_ARRAY                | array of Brick\\Math\\BigDecimal      |
  * | BOOLEAN_ARRAY                | array of boolean                      |
  * | STRING_ARRAY                 | array of string                       |
  * | CHAR_ARRAY                   | array of string (one character)       |
@@ -151,13 +147,12 @@ namespace Apache\Ignite\Type;
  * | COLLECTION (ARR_LIST)        | array                                 |
  * | COLLECTION (LINKED_LIST)     | array                                 |
  * | COLLECTION (SINGLETON_LIST)  | array                                 |
- * | COLLECTION (HASH_SET)        | Ds\Set                                |
- * | COLLECTION (LINKED_HASH_SET) | Ds\Set                                |
- * | COLLECTION (USER_SET)        | Ds\Set                                |
- * | MAP (HASH_MAP)               | Ds\Map                                |
- * | MAP (LINKED_HASH_MAP)        | Ds\Map                                |
+ * | COLLECTION (HASH_SET)        | Ds\\Set                               |
+ * | COLLECTION (LINKED_HASH_SET) | Ds\\Set                               |
+ * | COLLECTION (USER_SET)        | Ds\\Set                               |
+ * | MAP (HASH_MAP)               | Ds\\Map                               |
+ * | MAP (LINKED_HASH_MAP)        | Ds\\Map                               |
  * | NULL                         | null                                  |
- * </pre>
  *
  * ----------------------------------------------------------------------------
  *
@@ -181,6 +176,7 @@ namespace Apache\Ignite\Type;
  *
  * - NULL cannot be specified as a type of a field but PHP null may be returned
  * as a value of a field.
+ *
  *
  * ----------------------------------------------------------------------------
  *
@@ -207,6 +203,8 @@ namespace Apache\Ignite\Type;
  * for all Ignite types, except BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, CHAR, BOOLEAN.
  *
  * - for all *_ARRAY Ignite types an empty PHP Array is allowed.
+ *
+ *
  * ----------------------------------------------------------------------------
  * 
  */

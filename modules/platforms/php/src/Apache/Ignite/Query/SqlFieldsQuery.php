@@ -18,10 +18,10 @@
 
 namespace Apache\Ignite\Query;
 
-use Apache\Ignite\Impl\Connection\ClientFailoverSocket;
+use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Impl\Binary\ClientOperation;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryWriter;
+use Apache\Ignite\Impl\Binary\BinaryCommunicator;
 use Apache\Ignite\Impl\Query\SqlFieldsCursor;
 
 /**
@@ -33,22 +33,9 @@ class SqlFieldsQuery extends SqlQuery
      *  @anchor SqlFieldsQueryStatementType
      *  @{
      */
-
-    /**
-     * 
-     */
     const STATEMENT_TYPE_ANY = 0;
-    
-    /**
-     * 
-     */
     const STATEMENT_TYPE_SELECT = 1;
-    
-    /**
-     * 
-     */
     const STATEMENT_TYPE_UPDATE = 2;
-    
     /** @} */ // end of SqlFieldsQueryStatementType
     
     private $schema;
@@ -84,7 +71,7 @@ class SqlFieldsQuery extends SqlQuery
      * 
      * @param string $sql SQL query string.
      *
-     * @return SqlFieldsQuery new SqlFieldsQuery instance.
+     * @throws ClientException if error.
      */
     public function __construct(string $sql)
     {
@@ -128,7 +115,7 @@ class SqlFieldsQuery extends SqlQuery
     /**
      * Set statement type.
      * 
-     * @param int $type statement type, one of the @ref SqlFieldsQueryStatementType constants.
+     * @param int $type statement type, one of @ref SqlFieldsQueryStatementType constants.
      * 
      * @return SqlFieldsQuery the same instance of the SqlFieldsQuery.
      */
@@ -190,13 +177,14 @@ class SqlFieldsQuery extends SqlQuery
         return $this;
     }
 
-    public function write(MessageBuffer $buffer): void
+    // This is not the public API method, is not intended for usage by an application.
+    public function write(BinaryCommunicator $communicator, MessageBuffer $buffer): void
     {
-        BinaryWriter::writeString($buffer, $this->schema);
+        BinaryCommunicator::writeString($buffer, $this->schema);
         $buffer->writeInteger($this->pageSize);
         $buffer->writeInteger($this->maxRows);
-        BinaryWriter::writeString($buffer, $this->sql);
-        $this->writeArgs($buffer);
+        BinaryCommunicator::writeString($buffer, $this->sql);
+        $this->writeArgs($communicator, $buffer);
         $buffer->writeByte($this->statementType);
         $buffer->writeBoolean($this->distributedJoins);
         $buffer->writeBoolean($this->local);
@@ -208,9 +196,10 @@ class SqlFieldsQuery extends SqlQuery
         $buffer->writeBoolean($this->includeFieldNames);
     }
 
-    public function getCursor(ClientFailoverSocket $socket, MessageBuffer $payload, $keyType = null, $valueType = null): CursorInterface
+    // This is not the public API method, is not intended for usage by an application.
+    public function getCursor(BinaryCommunicator $communicator, MessageBuffer $payload, $keyType = null, $valueType = null): CursorInterface
     {
-        $cursor = new SqlFieldsCursor($socket, $payload);
+        $cursor = new SqlFieldsCursor($communicator, $payload);
         $cursor->readFieldNames($payload, $this->includeFieldNames);
         return $cursor;
     }

@@ -22,25 +22,29 @@ use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Impl\Utils\Logger;
 use Apache\Ignite\Impl\Binary\BinaryUtils;
-use Apache\Ignite\Impl\Binary\BinaryReader;
-use Apache\Ignite\Impl\Binary\BinaryWriter;
+use Apache\Ignite\Impl\Binary\BinaryCommunicator;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
 use Apache\Ignite\Impl\Binary\Request;
 use Apache\Ignite\Exception\ConnectionException;
 use Apache\Ignite\Exception\OperationException;
+use Apache\Ignite\Exception\OperationStatusUnknownException;
 
 class ClientSocket
 {
     const HANDSHAKE_SUCCESS_STATUS_CODE = 1;
     const REQUEST_SUCCESS_STATUS_CODE = 0;
     const PORT_DEFAULT = 10800;
-    const SOCKET_READ_SIZE = 8192;
+    const SOCKET_CHUNK_SIZE_DEFAULT = 8192;
+    const HANDSHAKE_CODE = 1;
+    const CLIENT_CODE = 2;
     
     private static $supportedVersions;
 
     private $endpoint;
     private $config;
     private $socket;
+    private $sendChunkSize;
+    private $receiveChunkSize;
     private $protocolVersion;
 
     public function __construct(string $endpoint, ClientConfiguration $config)
@@ -48,7 +52,18 @@ class ClientSocket
         $this->endpoint = $endpoint;
         $this->config = $config;
         $this->socket = null;
+        $this->sendChunkSize = $config->getSendChunkSize() > 0 ?
+            $config->getSendChunkSize() :
+            self::SOCKET_CHUNK_SIZE_DEFAULT;
+        $this->receiveChunkSize = $config->getReceiveChunkSize() > 0 ?
+            $config->getReceiveChunkSize() :
+            self::SOCKET_CHUNK_SIZE_DEFAULT;
         $this->protocolVersion = null;
+    }
+
+    public function __destruct()
+    {
+        $this->disconnect();
     }
     
     public static function init(): void
@@ -62,16 +77,19 @@ class ClientSocket
     {
         return $this->endpoint;
     }
-    
+
     public function connect(): void
     {
-        $options = $this->config->getConnectionOptions();
-        $isSsl = $options && array_key_exists('ssl', $options); 
+        $tlsOptions = $this->config->getTLSOptions();
+        $options = ['socket' => ['tcp_nodelay' => $this->config->getTcpNoDelay()]];
+        if ($tlsOptions) {
+            $options['ssl'] = $tlsOptions;
+        }
         $context = stream_context_create($options);
         $errno = 0;
         $errstr = null;
         if (!($this->socket = stream_socket_client(
-                ($isSsl ? 'ssl://' : 'tcp://') . $this->endpoint,
+                ($tlsOptions ? 'ssl://' : 'tcp://') . $this->endpoint,
                 $errno,
                 $errstr,
                 ini_get('default_socket_timeout'),
@@ -79,14 +97,19 @@ class ClientSocket
                 $context))) {
             throw new ConnectionException($errstr);
         }
+        if ($this->config->getTimeout() > 0) {
+            $timeout = $this->config->getTimeout();
+            stream_set_timeout($this->socket, intdiv($timeout, 1000), $timeout % 1000);
+        }
         // send handshake
         $this->processRequest($this->getHandshakeRequest(ProtocolVersion::$V_1_1_0));
     }
 
     public function disconnect(): void
     {
-        if ($this->socket !== false) {
+        if ($this->socket !== false && $this->socket !== null) {
             fclose($this->socket);
+            $this->socket = null;
         }
     }
     
@@ -95,58 +118,58 @@ class ClientSocket
         $this->protocolVersion = $version;
         return new Request(-1, array($this, 'handshakePayloadWriter'), null, true);
     }
-    
+
     public function handshakePayloadWriter(MessageBuffer $buffer): void
     {
         // Handshake code
-        $buffer->writeByte(1);
+        $buffer->writeByte(ClientSocket::HANDSHAKE_CODE);
         // Protocol version
         $this->protocolVersion->write($buffer);
         // Client code
-        $buffer->writeByte(2);
+        $buffer->writeByte(ClientSocket::CLIENT_CODE);
         if ($this->config->getUserName()) {
-            BinaryWriter::writeString($buffer, $this->config->getUserName());
-            BinaryWriter::writeString($buffer, $this->config->getPassword());
+            BinaryCommunicator::writeString($buffer, $this->config->getUserName());
+            BinaryCommunicator::writeString($buffer, $this->config->getPassword());
         }
     }
-    
+
     public function sendRequest(int $opCode, ?callable $payloadWriter, callable $payloadReader = null): void
     {
         $request = new Request($opCode, $payloadWriter, $payloadReader);
         $this->processRequest($request);
     }
-    
+
     private function processRequest(Request $request): void
     {
         $buffer = $request->getMessage();
         $this->logMessage($request->getId(), true, $buffer);
         $data = $buffer->getBuffer();
         while (($length = strlen($data)) > 0) {
-            $written = fwrite($this->socket, $data);
+            $written = fwrite($this->socket, $data, $this->sendChunkSize);
             if ($length === $written) {
                 break;
             }
             if ($written === false || $written === 0) {
-                throw new ConnectionException('Error while writing data to the server');
+                throw new OperationStatusUnknownException('Error while writing data to the server');
             }
             $data = substr($data, $written);
         }
         $this->processResponse($request);
     }
-    
+
     private function receive(MessageBuffer $buffer, int $minSize): void
     {
-        while ($buffer->getLength() < $minSize) 
+        while ($buffer->getLength() < $minSize)
         {
-            $chunk = fread($this->socket, ClientSocket::SOCKET_READ_SIZE);
+            $chunk = fread($this->socket, $this->receiveChunkSize);
             if ($chunk === false || $chunk === '') {
-                throw new ConnectionException('Error while reading data from the server');
+                throw new OperationStatusUnknownException('Error while reading data from the server');
             } else {
                 $buffer->append($chunk);
             }
         }
     }
-    
+
     private function processResponse(Request $request): void
     {
         $buffer = new MessageBuffer(0);
@@ -166,7 +189,7 @@ class ClientSocket
             $isSuccess = ($buffer->readInteger() === ClientSocket::REQUEST_SUCCESS_STATUS_CODE);
             if (!$isSuccess) {
                 // Error message
-                $errMessage = BinaryReader::readObject($buffer);
+                $errMessage = BinaryCommunicator::readString($buffer);
                 throw new OperationException($errMessage);
             } else {
                 $payloadReader = $request->getPayloadReader();
@@ -177,7 +200,7 @@ class ClientSocket
         }
         $this->logMessage($request->getId(), false, $buffer);
     }
-    
+
     private function processHandshake(MessageBuffer $buffer): void
     {
         // Handshake status
@@ -188,12 +211,12 @@ class ClientSocket
         $serverVersion = new ProtocolVersion();
         $serverVersion->read($buffer);
         // Error message
-        $errMessage = BinaryReader::readObject($buffer);
+        $errMessage = BinaryCommunicator::readString($buffer);
 
         if (!$this->protocolVersion->equals($serverVersion)) {
             throw new OperationException(
                 sprintf('Protocol version mismatch: client %s / server %s. Server details: %s',
-                    $this->protocolVersion.toString(), $serverVersion.toString(), $errMessage));
+                    $this->protocolVersion->toString(), $serverVersion->toString(), $errMessage));
         } else {
             $this->disconnect();
             throw new OperationException($errMessage);

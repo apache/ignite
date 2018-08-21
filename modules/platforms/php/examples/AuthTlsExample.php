@@ -47,17 +47,15 @@ class AuthTlsExample
     {
         $client = new Client();
         try {
-            $connectionOptions = [
-                'ssl' => [
-                    'local_cert' => AuthTlsExample::TLS_CLIENT_CERT_FILE_NAME,
-                    'cafile' => AuthTlsExample::TLS_CA_FILE_NAME
-                ]
+            $tlsOptions = [
+                'local_cert' => AuthTlsExample::TLS_CLIENT_CERT_FILE_NAME,
+                'cafile' => AuthTlsExample::TLS_CA_FILE_NAME
             ];
             
             $config = (new ClientConfiguration(AuthTlsExample::ENDPOINT))->
                 setUserName(AuthTlsExample::USER_NAME)->
                 setPassword(AuthTlsExample::PASSWORD)->
-                setConnectionOptions($connectionOptions);
+                setTLSOptions($tlsOptions);
                     
             $client->connect($config);
             

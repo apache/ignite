@@ -24,6 +24,13 @@ final class ExecuteAuthTlsExampleTestCase extends TestCase
 {
     public function testAuthTlsExample(): void
     {
-        TestingHelper::executeExample('AuthTlsExample.php', $this);
+        TestingHelper::executeExample('AuthTlsExample.php', $this, array($this, 'checkNoErrors'));
+    }
+
+    public function checkNoErrors(array $output): void
+    {
+        foreach ($output as $out) {
+            $this->assertNotContains('ERROR:', $out);
+        }
     }
 }

@@ -18,6 +18,8 @@
 
 namespace Apache\Ignite;
 
+use Apache\Ignite\Type\ObjectType;
+use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Query\Query;
 use Apache\Ignite\Query\CursorInterface;
 
@@ -85,7 +87,7 @@ interface CacheInterface
      *
      * @return CacheInterface the same instance of the class.
      *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function setKeyType($type): CacheInterface;
     
@@ -110,7 +112,7 @@ interface CacheInterface
      *
      * @return CacheInterface the same instance of the class.
      *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function setValueType($type): CacheInterface;
 
@@ -123,7 +125,7 @@ interface CacheInterface
      * 
      * @return mixed value associated with the specified key, or null if it does not exist.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function get($key);
     
@@ -135,7 +137,7 @@ interface CacheInterface
      * @return array the retrieved entries (key-value pairs) of CacheEntry.
      *   Entries with the keys which do not exist in the cache are not included into the array.
      *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function getAll(array $keys): array;
     
@@ -148,7 +150,7 @@ interface CacheInterface
      * @param mixed $key key
      * @param mixed $value value to be associated with the specified key.
      *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function put($key, $value): void;
 
@@ -160,7 +162,7 @@ interface CacheInterface
      *
      * @param array $entries entries (key-value pairs) of CacheEntry to be put into the cache.
      *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function putAll(array $entries): void;
     
@@ -171,7 +173,7 @@ interface CacheInterface
      * 
      * @return bool true if the key exists, false otherwise.
      *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function containsKey($key): bool;
     
@@ -183,7 +185,7 @@ interface CacheInterface
      * @return bool true if all the keys exist,
      *   false if at least one of the keys does not exist in the cache.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function containsKeys(array $keys): bool;
     
@@ -199,7 +201,7 @@ interface CacheInterface
      * 
      * @return mixed the previous value associated with the specified key, or null if it did not exist.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function getAndPut($key, $value);
 
@@ -213,7 +215,7 @@ interface CacheInterface
      * 
      * @return mixed the previous value associated with the specified key, or null if it did not exist.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function getAndReplace($key, $value);
     
@@ -224,7 +226,7 @@ interface CacheInterface
      * 
      * @return mixed the last value associated with the specified key, or null if it did not exist.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function getAndRemove($key);
 
@@ -237,7 +239,7 @@ interface CacheInterface
      * 
      * @return true if the operation has been done, false otherwise.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function putIfAbsent($key, $value): bool;
     
@@ -251,7 +253,7 @@ interface CacheInterface
      * @return mixed the current value associated with the key if it already exists in the cache,
      *   null if the new entry is created.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function getAndPutIfAbsent($key, $value);
     
@@ -264,7 +266,7 @@ interface CacheInterface
      * 
      * @return bool true if the operation has been done, false otherwise.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function replace($key, $value): bool;
 
@@ -279,14 +281,14 @@ interface CacheInterface
      * 
      * @return bool true if the operation has been done, false otherwise.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function replaceIfEquals($key, $value, $newValue): bool;
     
     /**
      * Removes all entries from the cache, without notifying listeners and cache writers.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function clear(): void;
     
@@ -295,7 +297,7 @@ interface CacheInterface
      * 
      * @param mixed $key key to be removed.
      *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function clearKey($key): void;
     
@@ -304,7 +306,7 @@ interface CacheInterface
      * 
      * @param array $keys keys to be removed.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function clearKeys($keys): void;
     
@@ -315,7 +317,7 @@ interface CacheInterface
      * 
      * @return bool true if the operation has been done, false otherwise.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function removeKey($key): bool;
     
@@ -328,7 +330,7 @@ interface CacheInterface
      * 
      * @return bool true if the operation has been done, false otherwise.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function removeIfEquals($key, $value): bool;
     
@@ -337,14 +339,14 @@ interface CacheInterface
      * 
      * @param array $keys keys to be removed.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function removeKeys($keys): void;
             
     /**
      * Removes all entries from the cache, notifying listeners and cache writers.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function removeAll(): void;
     
@@ -355,7 +357,7 @@ interface CacheInterface
      * 
      * @return int the number of the entries in the cache.
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function getSize(int ...$peekModes): int;
 
@@ -370,6 +372,8 @@ interface CacheInterface
      * to obtain the results of the query operation:
      *   - SqlFieldsCursorInterface in case of SqlFieldsQuery query
      *   - CursorInterface in case of other types of query
+     *
+     * @throws ClientException if error.
      */
     public function query(Query $query): CursorInterface;
 }

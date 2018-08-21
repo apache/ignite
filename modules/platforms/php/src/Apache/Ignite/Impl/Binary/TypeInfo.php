@@ -243,7 +243,7 @@ class TypeInfo
             ObjectType::TIME_ARRAY
         ];
     }
-    
+
     public static function getTypeInfo(int $typeCode): TypeInfo
     {
         return TypeInfo::$info[$typeCode];

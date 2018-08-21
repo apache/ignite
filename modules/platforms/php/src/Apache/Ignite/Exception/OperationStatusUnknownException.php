@@ -16,45 +16,20 @@
  * limitations under the License.
  */
 
-namespace Apache\Ignite;
+namespace Apache\Ignite\Exception;
 
 /**
- * A cache entry (key-value pair).
+ *
  */
-class CacheEntry
+class OperationStatusUnknownException extends ClientException
 {
-    private $key;
-    private $value;
-    
     /**
-     * Public constructor.
+     * Constructs an OperationStatusUnknownException with the specified detail message.
      * 
-     * @param mixed $key key corresponding to this entry.
-     * @param mixed $value value associated with the key.
+     * @param string $message the detail message.
      */
-    public function __construct($key, $value)
+    public function __construct(string $message)
     {
-        $this->key = $key;
-        $this->value = $value;
-    }
-
-    /**
-     * Returns the key corresponding to this entry.
-     * 
-     * @return mixed the key corresponding to this entry.
-     */
-    public function getKey()
-    {
-        return $this->key;
-    }
-
-    /**
-     * Returns the value corresponding to this entry.
-     *
-     * @return mixed the value corresponding to this entry.
-     */
-    public function getValue()
-    {
-        return $this->value;
+        parent::__construct($message);
     }
 }

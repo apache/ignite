@@ -39,12 +39,12 @@ class BinaryTypeBuilder
         $result->init($typeName);
         return $result;
     }
-    
-    public static function fromTypeId(int $typeId, int $schemaId, bool $hasSchema): BinaryTypeBuilder
+
+    public static function fromTypeId(BinaryCommunicator $communicator, int $typeId, int $schemaId, bool $hasSchema): BinaryTypeBuilder
     {
         $result = new BinaryTypeBuilder();
         if ($hasSchema) {
-            $type = BinaryTypeStorage::getEntity()->getType($typeId, $schemaId);
+            $type = $communicator->getTypeStorage()->getType($typeId, $schemaId);
             if ($type) {
                 $result->type = $type;
                 $result->schema = $type->getSchema($schemaId);
@@ -69,21 +69,21 @@ class BinaryTypeBuilder
         } else {
             $result = new BinaryTypeBuilder();
             $result->fromComplexObject(new ComplexObjectType(), $object);
-            return result;
+            return $result;
         }
     }
 
     public static function fromComplexObjectType(ComplexObjectType $complexObjectType, object $object): BinaryTypeBuilder
     {
         $result = new BinaryTypeBuilder();
-        $typeInfo = BinaryTypeStorage::getEntity()->getByComplexObjectType($complexObjectType);
+        $typeInfo = BinaryTypeStorage::getByComplexObjectType($complexObjectType);
         if ($typeInfo) {
             $result->type = $typeInfo[0];
             $result->schema = $typeInfo[1];
             $result->fromStorage = true;
         } else {
             $result->fromComplexObject($complexObjectType, $object);
-            BinaryTypeStorage::getEntity()->setByComplexObjectType($complexObjectType, $result->type, $result->schema);
+            BinaryTypeStorage::setByComplexObjectType($complexObjectType, $result->type, $result->schema);
         }
         return $result;
     }
@@ -153,10 +153,10 @@ class BinaryTypeBuilder
         }
     }
 
-    public function finalize(): void
+    public function finalize(BinaryCommunicator $communicator): void
     {
         $this->schema->finalize();
-        BinaryTypeStorage::getEntity()->addType($this->type, $this->schema);
+        $communicator->getTypeStorage()->addType($this->type, $this->schema);
     }
 
     private function fromComplexObject(ComplexObjectType $complexObjectType, object $object): void
@@ -183,19 +183,23 @@ class BinaryTypeBuilder
 
     private function setFields(ComplexObjectType $complexObjectType, object $object): void
     {
-        $reflect = new \ReflectionClass($object);
-        $properties  = $reflect->getProperties(\ReflectionProperty::IS_PUBLIC);
-        foreach ($properties as $property) {
-            if ($property->isStatic()) {
-                continue;
+        try {
+            $reflect = new \ReflectionClass($object);
+            $properties  = $reflect->getProperties(\ReflectionProperty::IS_PUBLIC);
+            foreach ($properties as $property) {
+                if ($property->isStatic()) {
+                    continue;
+                }
+                $fieldName = $property->getName();
+                $fieldType = $complexObjectType->getFieldType($fieldName);
+                if (!$fieldType) {
+                    $fieldValue = $property->getValue($object);
+                    $fieldType = BinaryUtils::calcObjectType($fieldValue);
+                }
+                $this->setField($fieldName, BinaryUtils::getTypeCode($fieldType));
             }
-            $fieldName = $property->getName();
-            $fieldType = $complexObjectType->getFieldType($fieldName);
-            if (!$fieldType) {
-                $fieldValue = $property->getValue($object);
-                $fieldType = BinaryUtils::calcObjectType($fieldValue);
-            }
-            $this->setField($fieldName, BinaryUtils::getTypeCode($fieldType));
-        }        
+        } catch (\ReflectionException $e) {
+            BinaryUtils::serializationError(true, sprintf('class "%s" does not exist', get_class($object)));
+        }
     }
 }

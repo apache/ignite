@@ -18,6 +18,7 @@
 
 namespace Apache\Ignite\Type;
 
+use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Impl\Binary\BinaryUtils;
 
 /**
@@ -43,7 +44,7 @@ class ObjectArrayType extends ObjectType
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function __construct($elementType = null)
     {

@@ -22,6 +22,7 @@ use \DateTime;
 use Ds\Map;
 use Ds\Set;
 use Brick\Math\BigDecimal;
+use PHPUnit\Framework\TestCase;
 use Apache\Ignite\Client;
 use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\Exception\OperationException;
@@ -71,7 +72,7 @@ class TestingHelper
         }
     }
     
-    public static function executeExample(string $name, $testCase): void
+    public static function executeExample(string $name, TestCase $testCase, array $outputChecker): void
     {
         $output = null;
         $return_var = 0;
@@ -79,7 +80,7 @@ class TestingHelper
         TestingHelper::logDebug(print_r($output, true));
         $testCase->assertEquals($return_var, 0);
         foreach ($output as $out) {
-            $testCase->assertNotContains('ERROR:', $out);
+            call_user_func($outputChecker, $output);
         }
     }
     
@@ -172,8 +173,7 @@ class TestingHelper
                     }
                 }
                 return true;
-            }
-            else {
+            } else {
                 $reflect1 = new \ReflectionClass($value1);
                 $properties1 = $reflect1->getProperties(\ReflectionProperty::IS_PUBLIC);
                 foreach ($properties1 as $property1) {
@@ -222,8 +222,6 @@ class TestingHelper
             }
             return true;
         }
-        
-        return false;
     }
     
     private static function initValues(): void

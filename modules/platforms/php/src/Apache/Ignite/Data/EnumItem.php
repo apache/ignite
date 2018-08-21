@@ -19,6 +19,7 @@
 namespace Apache\Ignite\Data;
 
 use Apache\Ignite\Impl\Utils\ArgumentChecker;
+use Apache\Ignite\Exception\ClientException;
 
 /**
  * Class representing an item of Ignite enum type.
@@ -45,8 +46,6 @@ class EnumItem
      * Public constructor.
      * 
      * @param int $typeId Id of the Ignite enum type.
-     * 
-     * @return EnumItem new EnumItem instance.
      */
     public function __construct(int $typeId)
     {
@@ -121,7 +120,7 @@ class EnumItem
      *
      * @return EnumItem the same instance of EnumItem.
      *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function setName(string $name): EnumItem
     {

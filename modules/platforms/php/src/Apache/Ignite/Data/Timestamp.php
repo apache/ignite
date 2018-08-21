@@ -33,8 +33,6 @@ class Timestamp extends Date
      * 
      * @param float $millis integer number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
      * @param int $nanos nanoseconds of the last millisecond, should be in the range from 0 to 999999.
-     *
-     * @return Timestamp new Timestamp instance.
      */
     public function __construct(float $millis, int $nanos)
     {
@@ -57,7 +55,7 @@ class Timestamp extends Date
     /**
      * Returns the nanoseconds of the last millisecond from the timestamp.
      * 
-     * @return float nanoseconds of the last millisecond.
+     * @return int nanoseconds of the last millisecond.
      */
     public function getNanos(): int
     {

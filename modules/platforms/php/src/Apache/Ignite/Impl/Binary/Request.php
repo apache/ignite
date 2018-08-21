@@ -18,7 +18,6 @@
 
 namespace Apache\Ignite\Impl\Binary;
 
-use Apache\Ignite\Impl\Binary\BinaryUtils;
 use Apache\Ignite\Type\ObjectType;
 
 class Request
@@ -49,7 +48,7 @@ class Request
     {
         return $this->isHandshake;
     }
-    
+
     public function getMessage(): MessageBuffer
     {
         $message = new MessageBuffer();

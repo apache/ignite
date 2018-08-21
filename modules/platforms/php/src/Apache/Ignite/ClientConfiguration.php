@@ -18,6 +18,9 @@
 
 namespace Apache\Ignite;
 
+use Apache\Ignite\Exception\ClientException;
+use Apache\Ignite\Impl\Utils\ArgumentChecker;
+
 /**
  * Class representing Ignite client configuration.
  *
@@ -31,27 +34,34 @@ class ClientConfiguration
     private $endpoints;
     private $userName;
     private $password;
-    private $options;
-    
+    private $tlsOptions;
+    private $timeout;
+    private $sendChunkSize;
+    private $receiveChunkSize;
+    private $tcpNoDelay;
+
     /**
      * Creates an instance of Ignite client configuration
      * with the provided mandatory settings and default optional settings.
      *
      * By default, the client does not use authentication and secure connection.
      *
-     * @param string ...$endpoints Ignite node endpoint(s). The client randomly connects/reconnects 
+     * @param string ...$endpoints Ignite node endpoint(s). The client randomly connects/reconnects
      * to one of the specified node.
      *
-     * @return ClientConfiguration new client configuration instance.
-     *
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function __construct(string ...$endpoints)
     {
+        ArgumentChecker::notEmpty($endpoints, 'endpoints');
         $this->endpoints = $endpoints;
         $this->userName = null;
         $this->password = null;
-        $this->options = null;
+        $this->tlsOptions = null;
+        $this->timeout = 0;
+        $this->sendChunkSize = 0;
+        $this->receiveChunkSize = 0;
+        $this->tcpNoDelay = true;
     }
     
     /**
@@ -116,19 +126,14 @@ class ClientConfiguration
     }
     
     /**
-     * Sets connection options.
      *
-     * By default the client establishes a non-secure connection with default connection options defined by PHP.
-     *
-     * @param array connectionOptions connection options in a format defined here: http://php.net/manual/en/context.php
-     *   - For non-secure connection options defined here: http://php.net/manual/en/context.socket.php
-     *   - For secure connection options defined here: http://php.net/manual/en/context.ssl.php
+     * @param array $tlsOptions TLS connection options in a format defined here: http://php.net/manual/en/context.ssl.php
      *
      * @return ClientConfiguration the same instance of the ClientConfiguration.
      */
-    public function setConnectionOptions(array $connectionOptions): ClientConfiguration
+    public function setTLSOptions(?array $tlsOptions): ClientConfiguration
     {
-        $this->options = $connectionOptions;
+        $this->tlsOptions = $tlsOptions;
         return $this;
     }
     
@@ -137,8 +142,100 @@ class ClientConfiguration
      * 
      * @return array|null 
      */
-    public function getConnectionOptions(): ?array
+    public function getTLSOptions(): ?array
     {
-        return $this->options;
+        return $this->tlsOptions;
+    }
+
+    /**
+     *
+     *
+     * @param int $timeout send/receive timeout in milliseconds.
+     *
+     * @return ClientConfiguration the same instance of the ClientConfiguration.
+     */
+    public function setTimeout(int $timeout): ClientConfiguration
+    {
+        $this->timeout = $timeout;
+        return $this;
+    }
+
+    /**
+     *
+     *
+     * @return int
+     */
+    public function getTimeout(): int
+    {
+        return $this->timeout;
+    }
+
+    /**
+     *
+     *
+     * @param int $size
+     *
+     * @return ClientConfiguration the same instance of the ClientConfiguration.
+     */
+    public function setSendChunkSize(int $size): ClientConfiguration
+    {
+        $this->sendChunkSize = $size;
+        return $this;
+    }
+
+    /**
+     *
+     *
+     * @return int
+     */
+    public function getSendChunkSize(): int
+    {
+        return $this->sendChunkSize;
+    }
+
+    /**
+     *
+     *
+     * @param int $size
+     *
+     * @return ClientConfiguration the same instance of the ClientConfiguration.
+     */
+    public function setReceiveChunkSize(int $size): ClientConfiguration
+    {
+        $this->receiveChunkSize = $size;
+        return $this;
+    }
+
+    /**
+     *
+     *
+     * @return int
+     */
+    public function getReceiveChunkSize(): int
+    {
+        return $this->receiveChunkSize;
+    }
+
+    /**
+     * Disables/enables the TCP Nagle algorithm.
+     *
+     * @param bool $tcpNoDelay
+     *
+     * @return ClientConfiguration the same instance of the ClientConfiguration.
+     */
+    public function setTcpNoDelay(bool $tcpNoDelay): ClientConfiguration
+    {
+        $this->tcpNoDelay = $tcpNoDelay;
+        return $this;
+    }
+
+    /**
+     *
+     *
+     * @return bool
+     */
+    public function getTcpNoDelay(): bool
+    {
+        return $this->tcpNoDelay;
     }
 }

@@ -30,8 +30,6 @@ class Time
      * Public constructor.
      * 
      * @param int $millis number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC.
-     *
-     * @return Time new Time instance.
      */
     public function __construct(int $millis)
     {

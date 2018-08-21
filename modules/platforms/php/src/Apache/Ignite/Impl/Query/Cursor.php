@@ -20,26 +20,27 @@ namespace Apache\Ignite\Impl\Query;
 
 use Apache\Ignite\CacheEntry;
 use Apache\Ignite\Query\CursorInterface;
-use Apache\Ignite\Impl\Connection\ClientFailoverSocket;
+use Apache\Ignite\Impl\Binary\ClientOperation;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryReader;
+use Apache\Ignite\Impl\Binary\BinaryCommunicator;
 
 class Cursor implements CursorInterface
 {
-    private $socket;
+    protected $communicator;
     private $operation;
     private $buffer;
     private $keyType;
     private $valueType;
-    private $id;
+    protected $id;
     private $hasNext;
     private $values;
     private $valueIndex;
     private $rewinds;
     private $index;
     
-    public function __construct(ClientFailoverSocket $socket, int $operation, MessageBuffer $buffer, $keyType = null, $valueType = null) {
-        $this->socket = $socket;
+    public function __construct(BinaryCommunicator $communicator, int $operation, MessageBuffer $buffer, $keyType = null, $valueType = null)
+    {
+        $this->communicator = $communicator;
         $this->operation = $operation;
         $this->buffer = $buffer;
         $this->keyType = $keyType;
@@ -72,7 +73,7 @@ class Cursor implements CursorInterface
     {
         $this->rewinds++;
     }
-    
+
     public function valid(): bool
     {
         if ($this->rewinds > 1) {
@@ -98,7 +99,7 @@ class Cursor implements CursorInterface
     {
         // Close cursor only if the server has more pages: the server closes cursor automatically on last page
         if ($this->id && $this->hasNext) {
-            $this->socket->send(
+            $this->communicator->send(
                 ClientOperation::RESOURCE_CLOSE,
                 function (MessageBuffer $payload)
                 {
@@ -112,7 +113,7 @@ class Cursor implements CursorInterface
         $this->hasNext = false;
         $this->values = null;
         $this->buffer = null;
-        $this->socket->send(
+        $this->communicator->send(
             $this->operation,
             function (MessageBuffer $payload)
             {
@@ -149,8 +150,8 @@ class Cursor implements CursorInterface
     protected function readRow(MessageBuffer $buffer)
     {
         return new CacheEntry(
-            BinaryReader::readObject($buffer, $this->keyType),
-            BinaryReader::readObject($buffer, $this->valueType));
+            $this->communicator->readObject($buffer, $this->keyType),
+            $this->communicator->readObject($buffer, $this->valueType));
     }
 
     private function read(MessageBuffer $buffer): void

@@ -86,22 +86,19 @@ class CachePutGetExample
     private $binaryObjectCache; 
     private $personObjectType;
     
-    public function __construct()
-    {
-        $this->personObjectType = (new ComplexObjectType())->
-            setFieldType('id', ObjectType::INTEGER);
-    }
-    
     public function start(): void
     {
         $client = new Client();
         try {
             $client->connect(new ClientConfiguration(CachePutGetExample::ENDPOINT));
-            
+
+            $this->personObjectType = (new ComplexObjectType())->
+                setFieldType('id', ObjectType::INTEGER);
+
             $this->personCache = $client->getOrCreateCache(CachePutGetExample::CACHE_NAME)->
                 setKeyType(ObjectType::INTEGER)->
                 setValueType($this->personObjectType);
-            
+
             $this->binaryObjectCache = $client->getCache(CachePutGetExample::CACHE_NAME)->
                 setKeyType(ObjectType::INTEGER);
 

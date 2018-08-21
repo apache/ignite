@@ -31,7 +31,8 @@ abstract class Query
     protected $operation;
     protected $pageSize;
     
-    protected function __construct(int $operation) {
+    protected function __construct(int $operation)
+    {
         $this->operation = $operation;
         $this->local = false;
         $this->pageSize = Query::PAGE_SIZE_DEFAULT;
@@ -60,7 +61,8 @@ abstract class Query
         $this->pageSize = $pageSize;
         return $this;
     }
-    
+
+    // This is not the public API method, is not intended for usage by an application.
     public function getOperation(): int
     {
         return $this->operation;

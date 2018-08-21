@@ -42,7 +42,7 @@ class BinaryUtils
     {
         return TypeInfo::getTypeInfo($typeCode)->getSize();
     }
-    
+
     public static function checkCompatibility($value, $type): void
     {
         if (!$type) {
@@ -60,7 +60,7 @@ class BinaryUtils
         }
         $valueTypeCode = BinaryUtils::getTypeCode(BinaryUtils::calcObjectType($value));
         if ($typeCode !== $valueTypeCode) {
-            BinaryUtils::typeCastError(valueTypeCode, typeCode);
+            BinaryUtils::typeCastError($valueTypeCode, $typeCode);
         }
     }
 
@@ -70,7 +70,8 @@ class BinaryUtils
             $typeCode !== ObjectType::COMPLEX_OBJECT;
     }
 
-    public static function checkStandardTypeCompatibility($value, $typeCode, $type = null, $signed = true) {
+    public static function checkStandardTypeCompatibility($value, $typeCode, $type = null, $signed = true)
+    {
         $valueType = gettype($value);
         switch ($typeCode) {
             case ObjectType::BYTE:
@@ -95,7 +96,7 @@ class BinaryUtils
                 }
                 return;
             case ObjectType::CHAR:
-                if (!is_string($value) || strlen($value) < 1 || strlen($value) > 2) {
+                if (!is_string($value) || mb_strlen($value) !== 1) {
                     BinaryUtils::valueCastError($value, $typeCode);
                 }
                 return;
@@ -112,7 +113,7 @@ class BinaryUtils
             case ObjectType::UUID:
                 if (!is_array($value) ||
                     count($value) !== BinaryUtils::getSize(ObjectType::UUID)) {
-                    BinaryUtils::valueCastError(value, typeCode);
+                    BinaryUtils::valueCastError($value, $typeCode);
                 }
                 foreach ($value as $element) {
                     BinaryUtils::checkStandardTypeCompatibility($element, ObjectType::BYTE, null, false);
@@ -124,7 +125,7 @@ class BinaryUtils
                 }
                 return;
             case ObjectType::ENUM:
-                if (!(value instanceof EnumItem)) {
+                if (!($value instanceof EnumItem)) {
                     BinaryUtils::valueCastError($value, $typeCode);
                 }
                 return;
@@ -188,7 +189,7 @@ class BinaryUtils
         }
     }
 
-    public static function checkTypesComatibility($expectedType, int $actualTypeCode): void
+    public static function checkTypesCompatibility($expectedType, int $actualTypeCode): void
     {
         if ($expectedType === null) {
             return;
@@ -251,8 +252,9 @@ class BinaryUtils
             return new ComplexObjectType();
         }
         BinaryUtils::unsupportedType(gettype($object));
+        return null;
     }
-    
+
     public static function getArrayType($elementType)
     {
         switch (BinaryUtils::getTypeCode($elementType)) {
@@ -292,7 +294,7 @@ class BinaryUtils
                 return new ObjectArrayType($elementType);
         }
     }
-    
+
     public static function getArrayElementType($arrayType)
     {
         if ($arrayType instanceof ObjectArrayType) {
@@ -321,7 +323,7 @@ class BinaryUtils
         $info = TypeInfo::getTypeInfo($typeCode);
         return $info ? $info->getName() : 'type code ' . $typeCode;
     }
-    
+
     public static function checkObjectType($type, string $argName): void
     {
         if ($type === null || $type instanceof ObjectType) {
@@ -345,7 +347,7 @@ class BinaryUtils
                 $hash &= 0xFFFFFFFF; // Convert to 32bit integer
             }
         }
-        return BinaryUtils::intval32($hash);
+        return BinaryUtils::intVal32($hash);
     }
     
     public static function hashCodeLowerCase(?string $str): int
@@ -362,24 +364,24 @@ class BinaryUtils
             $hash = 31 * $hash + ord($content[$i]);
             $hash &= 0xFFFFFFFF; // Convert to 32bit integer
         }
-        return BinaryUtils::intval32($hash);
+        return BinaryUtils::intVal32($hash);
     }
     
-    public static function intval32(int $value): int
+    public static function intVal32(int $value): int
     {
         return (($value ^ 0x80000000) & 0xFFFFFFFF) - 0x80000000;
     }
-    
+
     public static function internalError(string $message = null): void
     {
         throw new ClientException($message ? $message : 'Internal library error');
     }
-    
+
     public static function unsupportedType($type): void
     {
         throw new ClientException(sprintf('Type %s is not supported', BinaryUtils::getTypeName($type)));
     }
-    
+
     public static function serializationError(bool $serialize, string $message = null): void
     {
         $msg = $serialize ? 'Complex object can not be serialized' : 'Complex object can not be deserialized';
@@ -388,13 +390,13 @@ class BinaryUtils
         }
         throw new ClientException($msg);
     }
-    
+
     public static function typeCastError($fromType, $toType): void
     {
         throw new ClientException(sprintf('Type "%s" can not be cast to %s',
             BinaryUtils::getTypeName($fromType), BinaryUtils::getTypeName($toType)));
     }
-    
+
     public static function valueCastError($value, $toType): void
     {
         throw new ClientException(sprintf('Value "%s" can not be cast to %s',

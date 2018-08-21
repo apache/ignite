@@ -20,9 +20,9 @@ namespace Apache\Ignite\Impl\Query;
 
 use Apache\Ignite\Query\SqlFieldsCursorInterface;
 use Apache\Ignite\Impl\Binary\ClientOperation;
-use Apache\Ignite\Impl\Connection\ClientFailoverSocket;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryReader;
+use Apache\Ignite\Impl\Binary\BinaryCommunicator;
+use Apache\Ignite\Impl\Binary\BinaryUtils;
 
 class SqlFieldsCursor extends Cursor implements SqlFieldsCursorInterface
 {
@@ -30,8 +30,9 @@ class SqlFieldsCursor extends Cursor implements SqlFieldsCursorInterface
     private $fieldNames;
     private $fieldTypes;
     
-    public function __construct(ClientFailoverSocket $socket, MessageBuffer $buffer) {
-        parent::__construct($socket, ClientOperation::QUERY_SQL_FIELDS_CURSOR_GET_PAGE, $buffer);
+    public function __construct(BinaryCommunicator $communicator, MessageBuffer $buffer)
+    {
+        parent::__construct($communicator, ClientOperation::QUERY_SQL_FIELDS_CURSOR_GET_PAGE, $buffer);
         $this->fieldCount = 0;
         $this->fieldNames = [];
         $this->fieldTypes = null;
@@ -57,7 +58,7 @@ class SqlFieldsCursor extends Cursor implements SqlFieldsCursorInterface
         $this->fieldCount = $buffer->readInteger();
         if ($includeFieldNames) {
             for ($i = 0; $i < $this->fieldCount; $i++) {
-                array_push($this->fieldNames, BinaryReader::readObject($buffer));
+                array_push($this->fieldNames, $this->communicator->readObject($buffer));
             }
         }
     }
@@ -67,7 +68,7 @@ class SqlFieldsCursor extends Cursor implements SqlFieldsCursorInterface
         $values = [];
         for ($i = 0; $i < $this->fieldCount; $i++) {
             $fieldType = $this->fieldTypes && $i < count($this->fieldTypes) ? $this->fieldTypes[$i] : null;
-            array_push($values, BinaryReader::readObject($buffer, $fieldType));
+            array_push($values, $this->communicator->readObject($buffer, $fieldType));
         }
         return $values;
     }

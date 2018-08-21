@@ -18,8 +18,6 @@
 
 namespace Apache\Ignite\Impl\Binary;
 
-use Apache\Ignite\Impl\Binary\MessageBuffer;
-
 class BinaryType
 {
     private $name;
@@ -58,7 +56,7 @@ class BinaryType
     {
         return $this->name;
     }
-    
+
     public function getFields(): array
     {
         return array_values($this->fields);
@@ -135,8 +133,14 @@ class BinaryType
         $result = new BinaryType(null);
         $result->name = $this->name;
         $result->id = $this->id;
-        $result->fields = array_merge($this->fields);
-        $result->schemas = array_merge($this->schemas);
+        $result->fields = [];
+        foreach($this->fields as $key => $value) {
+            $result->fields[$key] = $value;
+        }
+        $result->schemas = [];
+        foreach($this->schemas as $key => $value) {
+            $result->schemas[$key] = $value;
+        }
         $result->isEnum = $this->isEnum;
         return $result;
     }
@@ -146,9 +150,9 @@ class BinaryType
         // type id
         $buffer->writeInteger($this->id);
         // type name
-        BinaryWriter::writeString($buffer, $this->name);
+        BinaryCommunicator::writeString($buffer, $this->name);
         // affinity key field name
-        BinaryWriter::writeString($buffer, null);
+        BinaryCommunicator::writeString($buffer, null);
         // fields count
         $buffer->writeInteger(count($this->fields));
         // fields
@@ -171,7 +175,7 @@ class BinaryType
             $buffer->writeInteger($length);
             if ($length > 0) {
                 foreach ($this->enumValues as $key => $value) {
-                    BinaryWriter::writeString($buffer, $key);
+                    BinaryCommunicator::writeString($buffer, $key);
                     $buffer->writeInteger($value);
                 }
             }
@@ -183,9 +187,9 @@ class BinaryType
         // type id
         $this->id = $buffer->readInteger();
         // type name
-        $this->name = BinaryReader::readObject($buffer);
+        $this->name = BinaryCommunicator::readString($buffer);
         // affinity key field name
-        BinaryReader::readObject($buffer);
+        BinaryCommunicator::readString($buffer);
         // fields count
         $fieldsCount = $buffer->readInteger();
         // fields
@@ -212,7 +216,7 @@ class BinaryType
             $valuesCount = $buffer->readInteger();
             $this->enumValues = [];
             for ($i = 0; $i < $valuesCount; $i++) {
-                array_push($this->enumValues, [BinaryReader::readObject($buffer), $buffer->readInteger()]);
+                array_push($this->enumValues, [BinaryCommunicator::readString($buffer), $buffer->readInteger()]);
             }
         }
     }

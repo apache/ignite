@@ -19,23 +19,26 @@
 namespace Apache\Ignite\Impl\Binary;
 
 use Apache\Ignite\Type\ObjectType;
-use Apache\Ignite\Impl\Binary\BinaryUtils;
 
 class MessageBuffer
 {
     const BYTE_ZERO = 0;
     const BYTE_ONE = 1;
     const BUFFER_CAPACITY_DEFAULT = 256;
-    
+
+    const PROTOCOL_STRING_ENCODING = 'UTF-8';
+
     private $buffer;
     private $position;
     private $length;
 
     private static $isLittleEndian;
+    private static $defaultEncoding;
 
     public static function init(): void
     {
         MessageBuffer::$isLittleEndian = pack('L', 1) === pack('V', 1);
+        MessageBuffer::$defaultEncoding = ini_get('default_charset');
     }
     
     public function __construct(int $capacity = MessageBuffer::BUFFER_CAPACITY_DEFAULT)
@@ -77,12 +80,12 @@ class MessageBuffer
         $this->buffer .= $buffer;
         $this->length += strlen($buffer);
     }
-    
+
     public function writeByte(int $value, $signed = true): void
     {
         $this->writeNumber($value, ObjectType::BYTE, $signed);
     }
-    
+
     public function writeShort(int $value): void
     {
         $this->writeNumber($value, ObjectType::SHORT);
@@ -118,19 +121,22 @@ class MessageBuffer
         $this->convertEndianness($strValue, $type);
         $this->writeStr($strValue);
     }
-    
+
     public function writeBoolean(bool $value): void
     {
         $this->writeByte($value ? MessageBuffer::BYTE_ONE : MessageBuffer::BYTE_ZERO);
     }
-    
+
     public function writeChar(string $value): void
     {
         $this->writeShort(mb_ord($value));
     }
 
-    public function writeString(string $value): void
+    public function writeString(string $value, bool $encode = true): void
     {
+        if ($encode) {
+            $value = mb_convert_encoding($value, self::PROTOCOL_STRING_ENCODING, self::$defaultEncoding);
+        }
         $length = strlen($value);
         $this->writeInteger($length);
         if ($length > 0) {
@@ -142,7 +148,7 @@ class MessageBuffer
     {
         $this->writeStr($buffer->buffer, $startPos, $length);
     }
-    
+
     public function readByte(bool $signed = true): int
     {
         return $this->readNumber(ObjectType::BYTE, $signed);
@@ -172,7 +178,7 @@ class MessageBuffer
     {
         return $this->readNumber(ObjectType::DOUBLE);
     }
-    
+
     public function readNumber(int $type, bool $signed = true)
     {
         $size = BinaryUtils::getSize($type);
@@ -188,20 +194,24 @@ class MessageBuffer
     {
         return $this->readByte() === MessageBuffer::BYTE_ONE;
     }
-    
-    public function readChar(): string {
+
+    public function readChar(): string
+    {
         return mb_chr($this->readShort());
     }
 
-    public function readString(): string
+    public function readString(bool $decode = true): string
     {
         $bytesCount = $this->readInteger();
         $this->ensureSize($bytesCount);
         $result = substr($this->buffer, $this->position, $bytesCount);
+        if ($decode) {
+            $result = mb_convert_encoding($result, self::$defaultEncoding, self::PROTOCOL_STRING_ENCODING);
+        }
         $this->position += $bytesCount;
         return $result;
     }
-    
+
     private function getNumberFormat(int $type, bool $signed): string
     {
         switch ($type) {
@@ -220,6 +230,7 @@ class MessageBuffer
             default:
                 BinaryUtils::internalError();
         }
+        return null;
     }
 
     private function convertEndianness(string &$value, int $type): void

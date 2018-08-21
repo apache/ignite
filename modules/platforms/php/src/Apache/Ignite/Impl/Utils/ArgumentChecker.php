@@ -28,14 +28,14 @@ class ArgumentChecker
             ArgumentChecker::illegalArgument(sprintf('"%s" argument should not be empty', $argName));
         }
     }
-    
+
     public static function notNull($arg, string $argName): void
     {
         if (is_null($arg)) {
             ArgumentChecker::illegalArgument(sprintf('"%s" argument should not be null', $argName));
         }
     }
-    
+
     public static function hasType($arg, string $argName, bool $isArray, ...$types): void
     {
         if ($arg === null) {
@@ -63,18 +63,23 @@ class ArgumentChecker
             }
         } else {
             if (!in_array($arg, $values)) {
-                ArgumentChecker::illegalArgument(sprintf('"%s" argument has incorrect value', $argName));
+                ArgumentChecker::invalidValue($argName);
             }
         }
     }
-    
+
+    public static function invalidValue(string $argName): void
+    {
+        ArgumentChecker::illegalArgument(sprintf('"%s" argument has incorrect value', $argName));
+    }
+
     public static function invalidArgument($arg, string $argName, string $typeName): void
     {
         if ($arg !== null) {
             ArgumentChecker::illegalArgument(sprintf('"%s" argument is invalid for %s', $argName, $typeName));
         }
     }
-    
+
     public static function illegalArgument($message): void
     {
         throw new ClientException($message);

@@ -32,8 +32,6 @@ class Date
      * Public constructor.
      * 
      * @param float $millis integer number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC.
-     *
-     * @return Date new Date instance.
      */
     public function __construct(float $millis)
     {

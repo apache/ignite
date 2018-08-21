@@ -18,6 +18,7 @@
 
 namespace Apache\Ignite\Type;
 
+use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Impl\Utils\ArgumentChecker;
 use Apache\Ignite\Impl\Binary\BinaryUtils;
 
@@ -60,7 +61,7 @@ class MapObjectType extends ObjectType
      * will try to make automatic mapping between PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
-     * @param int $subType map subtype, one of the MapObjectType constants.
+     * @param int $subType map subtype, one of @ref MapSubType constants.
      * @param int|ObjectType|null $keyType type of the keys in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
@@ -70,7 +71,7 @@ class MapObjectType extends ObjectType
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
      * 
-     * @throws Exception::ClientException if error.
+     * @throws ClientException if error.
      */
     public function __construct(int $subType = MapObjectType::HASH_MAP, $keyType = null, $valueType = null)
     {
@@ -85,9 +86,9 @@ class MapObjectType extends ObjectType
     }
 
     /**
-     * Returns map subtype, one of the MapObjectType constants.
+     * Returns map subtype, one of @ref MapSubType constants.
      * 
-     * @return int map subtype, one of the MapObjectType constants.
+     * @return int map subtype, one of @ref MapSubType constants.
      */
     public function getSubType(): int
     {

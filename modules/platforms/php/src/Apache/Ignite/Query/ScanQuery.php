@@ -18,10 +18,10 @@
 
 namespace Apache\Ignite\Query;
 
+use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Impl\Binary\ClientOperation;
 use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryWriter;
-use Apache\Ignite\Impl\Connection\ClientFailoverSocket;
+use Apache\Ignite\Impl\Binary\BinaryCommunicator;
 use Apache\Ignite\Impl\Query\Cursor;
 
 /**
@@ -46,8 +46,6 @@ class ScanQuery extends Query
      *     Filter object             :    null (not supported)
      * </pre>
      * Every setting (except Filter object) may be changed using set methods.
-     *
-     * @return ScanQuery new ScanQuery instance.
      */
     public function __construct()
     {
@@ -70,18 +68,20 @@ class ScanQuery extends Query
         return $this;
     }
 
-    public function write(MessageBuffer $buffer): void
+    // This is not the public API method, is not intended for usage by an application.
+    public function write(BinaryCommunicator $communicator, MessageBuffer $buffer): void
     {
         // filter
-        BinaryWriter::writeObject($buffer, null);
+        $communicator->writeObject($buffer, null);
         $buffer->writeInteger($this->pageSize);
         $buffer->writeInteger($this->partitionNumber);
         $buffer->writeBoolean($this->local);
     }
 
-    public function getCursor(ClientFailoverSocket $socket, MessageBuffer $payload, $keyType = null, $valueType = null): CursorInterface
+    // This is not the public API method, is not intended for usage by an application.
+    public function getCursor(BinaryCommunicator $communicator, MessageBuffer $payload, $keyType = null, $valueType = null): CursorInterface
     {
-        $cursor = new Cursor($socket, ClientOperation::QUERY_SCAN_CURSOR_GET_PAGE, $payload, $keyType, $valueType);
+        $cursor = new Cursor($communicator, ClientOperation::QUERY_SCAN_CURSOR_GET_PAGE, $payload, $keyType, $valueType);
         $cursor->readId($payload);
         return $cursor;
     }

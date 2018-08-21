@@ -18,6 +18,8 @@
 
 namespace Apache\Ignite\Impl\Binary;
 
+use Apache\Ignite\Exception\ClientException;
+
 class BinaryObjectField
 {
     private $name;
@@ -26,10 +28,11 @@ class BinaryObjectField
     private $type;
     private $typeCode;
 
+    private $communicator;
     private $buffer;
     private $offset;
     private $length;
-    
+
     public function __construct(?string $name, $value = null, $type = null)
     {
         $this->name = $name;
@@ -53,41 +56,46 @@ class BinaryObjectField
     {
         return $this->typeCode;
     }
-    
+
     public function getValue($type = null)
     {
-        if ($this->value === null || $this->buffer && $this->type !== $type) {
+        if ($this->buffer && ($this->value === null || $this->type !== $type)) {
             $this->buffer->setPosition($this->offset);
-            $this->value = BinaryReader::readObject($this->buffer, $type);
+            $this->value = $this->communicator->readObject($this->buffer, $type);
             $this->type = $type;
         }
         return $this->value;
     }
-    
-    public static function fromBuffer(MessageBuffer $buffer, int $offset, int $length, int $id): BinaryObjectField
+
+    public static function fromBuffer(BinaryCommunicator $communicator, MessageBuffer $buffer, int $offset, int $length, int $id): BinaryObjectField
     {
         $result = new BinaryObjectField(null);
         $result->id = $id;
+        $result->communicator = $communicator;
         $result->buffer = $buffer;
         $result->offset = $offset;
         $result->length = $length;
         return $result;
     }
-    
-    public function writeValue(MessageBuffer $buffer, int $expectedTypeCode): void
+
+    public function writeValue(BinaryCommunicator $communicator, MessageBuffer $buffer, int $expectedTypeCode): void
     {
         $offset = $buffer->getPosition();
-        if ($this->buffer) {
+        if ($this->buffer && $this->communicator === $communicator) {
             $buffer->writeBuffer($this->buffer, $this->offset, $this->length);
         } else {
+            if (!$this->value) {
+                $this->getValue($expectedTypeCode);
+            }
             BinaryUtils::checkCompatibility($this->value, $expectedTypeCode);
-            BinaryWriter::writeObject($buffer, $this->value, $this->type);
+            $communicator->writeObject($buffer, $this->value, $this->type);
         }
+        $this->communicator = $communicator;
         $this->buffer = $buffer;
         $this->length = $buffer->getPosition() - $offset;
         $this->offset = $offset;
     }
-    
+
     public function writeOffset(MessageBuffer $buffer, int $headerStartPos): void
     {
         $buffer->writeInteger($this->offset - $headerStartPos);
