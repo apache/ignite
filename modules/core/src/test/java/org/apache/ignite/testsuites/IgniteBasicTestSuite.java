@@ -24,7 +24,6 @@ import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
-import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
@@ -213,7 +212,6 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(StopNodeOrHaltFailureHandlerTest.class);
         suite.addTestSuite(OomFailureHandlerTest.class);
         suite.addTestSuite(TransactionIntegrityWithSystemWorkerDeathTest.class);
-        suite.addTestSuite(SystemWorkersTerminationTest.class);
 
         suite.addTestSuite(AtomicOperationsInTxTest.class);
 
