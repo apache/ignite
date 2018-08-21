@@ -1315,7 +1315,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
             else if (entry.getKey().getSimpleName().equals("GridH2QueryRequest")) {
                 sb.a(", longestQrys=").a(entry.getValue().qryExecs.entrySet().stream().sorted((o1,
-                    o2) -> o2.getValue().compareTo(o1.getValue())).limit(20).map(entry1 -> "[qry=" + entry1.getKey() +
+                    o2) -> o2.getValue().compareTo(o1.getValue())).limit(20).map(entry1 -> "[qry=" + entry1.getKey().
+                    substring(0, Math.min(100_000, entry1.getKey().length())).replace("\n", " ") +
                     ", dur=" + entry1.getValue() / 1000 / 1000. + ']').collect(Collectors.toList()));
             }
 
