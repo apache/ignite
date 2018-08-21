@@ -61,9 +61,11 @@ const config = {
             // Exclude tpl.pug files to import in bundle.
             {
                 test: /^(?:(?!tpl\.pug$).)*\.pug$/, // TODO: check this regexp for correct.
-                loader: 'pug-html-loader',
-                query: {
-                    basedir
+                use: {
+                    loader: 'pug-html-loader',
+                    options: {
+                        basedir
+                    }
                 }
             },
 
@@ -91,12 +93,12 @@ const config = {
             {
                 test: /\.js$/,
                 exclude: /node_modules/,
-                loader: 'babel-loader'
+                use: 'babel-loader'
             },
             {
                 test: /\.(ttf|eot|svg|woff(2)?)(\?v=[\d.]+)?(\?[a-z0-9#-]+)?$/,
                 exclude: [contentBase, /\.icon\.svg$/],
-                loader: 'file-loader?name=assets/fonts/[name].[ext]'
+                use: 'file-loader?name=assets/fonts/[name].[ext]'
             },
             {
                 test: /\.icon\.svg$/,
@@ -111,11 +113,11 @@ const config = {
             {
                 test: /.*\.url\.svg$/,
                 include: [contentBase],
-                loader: 'file-loader?name=assets/fonts/[name].[ext]'
+                use: 'file-loader?name=assets/fonts/[name].[ext]'
             },
             {
                 test: /\.(jpe?g|png|gif)$/i,
-                loader: 'file-loader?name=assets/images/[name].[hash].[ext]'
+                use: 'file-loader?name=assets/images/[name].[hash].[ext]'
             },
             {
                 test: require.resolve('jquery'),

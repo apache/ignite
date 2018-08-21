@@ -36,20 +36,28 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 /**
  * Example that shows how to implement your own algorithm (gradient descent trainer for linear regression) which uses
  * dataset as an underlying infrastructure.
- *
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
+ * <p>
+ * After that it creates an algorithm specific dataset to perform linear regression as described in more detail below.</p>
+ * <p>
+ * Finally, this example trains linear regression model using gradient descent and outputs the result.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this functionality further.</p>
+ * <p>
  * The common idea behind using algorithm specific datasets is to write a simple local version algorithm at first, then
- * find operations which involves data manipulations, and finally define algorithm specific version of the dataset
- * extended by introducing these new operations. As result your algorithm will work with extended dataset (based on
- * {@link DatasetWrapper}) in a sequential manner.
- *
+ * find operations which involve data manipulations, and finally define algorithm specific version of the dataset
+ * extended by introducing these new operations. As a result your algorithm will work with extended dataset (based on
+ * {@link DatasetWrapper}) in a sequential manner.</p>
+ * <p>
  * In this example we need to implement gradient descent. This is iterative method that involves calculation of gradient
- * on every step. In according with the common idea we defines
+ * on every step. In according with the common idea we define
  * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificDataset} - extended version of {@code Dataset} with
- * {@code gradient} method. As result our gradient descent method looks like a simple loop where every iteration
+ * {@code gradient} method. As a result our gradient descent method looks like a simple loop where every iteration
  * includes call of the {@code gradient} method. In the example we want to keep iteration number as well for logging.
  * Iteration number cannot be recovered from the {@code upstream} data and we need to keep it in the custom
  * partition {@code context} which is represented by
- * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificPartitionContext} class.
+ * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificPartitionContext} class.</p>
  */
 public class AlgorithmSpecificDatasetExample {
     /** Run example. */
@@ -59,7 +67,7 @@ public class AlgorithmSpecificDatasetExample {
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
-            // Creates a algorithm specific dataset to perform linear regression. Here we defines the way features and
+            // Creates a algorithm specific dataset to perform linear regression. Here we define the way features and
             // labels are extracted, and partition data and context are created.
             try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
                 ignite,
@@ -169,12 +177,12 @@ public class AlgorithmSpecificDatasetExample {
         private int iteration;
 
         /** */
-        public int getIteration() {
+        int getIteration() {
             return iteration;
         }
 
         /** */
-        public void setIteration(int iteration) {
+        void setIteration(int iteration) {
             this.iteration = iteration;
         }
     }
