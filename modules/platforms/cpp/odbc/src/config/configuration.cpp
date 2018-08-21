@@ -43,7 +43,7 @@ namespace ignite
             const bool Configuration::DefaultValue::enforceJoinOrder = false;
             const bool Configuration::DefaultValue::replicatedOnly = false;
             const bool Configuration::DefaultValue::collocated = false;
-            const bool Configuration::DefaultValue::lazy = false;
+            const bool Configuration::DefaultValue::lazy = true;
             const bool Configuration::DefaultValue::skipReducerOnUpdate = false;
 
             const ProtocolVersion& Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
