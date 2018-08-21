@@ -445,7 +445,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
                         GridQueryProperty prop = table.property(field.getKey());
 
-                        System.out.println("OdbcRequestHandler.getColumnsMeta - " + field.getKey() + ", precision - " + prop.precision() + ", ver - " + ver);
+                        log.warning("OdbcRequestHandler.getColumnsMeta - " + field.getKey() + ", precision - " + prop.precision() + ", ver - " + ver);
+                        log.error("OdbcRequestHandler.getColumnsMeta - " + field.getKey() + ", precision - " + prop.precision() + ", ver - " + ver);
 
                         OdbcColumnMeta columnMeta = new OdbcColumnMeta(table.schemaName(), table.tableName(),
                             field.getKey(), field.getValue(), prop.precision(), prop.scale(), ver);
