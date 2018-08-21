@@ -22,7 +22,7 @@ use Ds\Set;
 use PHPUnit\Framework\TestCase;
 use Apache\Ignite\Query\ScanQuery;
 use Apache\Ignite\Type\ObjectType;
-use Apache\Ignite\CacheEntry;
+use Apache\Ignite\Cache\CacheEntry;
 
 final class ScanQueryTestCase extends TestCase
 {

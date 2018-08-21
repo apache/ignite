@@ -20,12 +20,12 @@ namespace Apache\Ignite\Query;
 
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\Impl\Binary\ClientOperation;
-use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryCommunicator;
-use Apache\Ignite\Impl\Binary\BinaryUtils;
-use Apache\Ignite\Impl\Query\Cursor;
-use Apache\Ignite\Impl\Utils\ArgumentChecker;
+use Apache\Ignite\Internal\Binary\ClientOperation;
+use Apache\Ignite\Internal\Binary\MessageBuffer;
+use Apache\Ignite\Internal\Binary\BinaryCommunicator;
+use Apache\Ignite\Internal\Binary\BinaryUtils;
+use Apache\Ignite\Internal\Query\Cursor;
+use Apache\Ignite\Internal\Utils\ArgumentChecker;
 
 /**
  * Class representing an SQL query which returns the whole cache entries (key-value pairs).

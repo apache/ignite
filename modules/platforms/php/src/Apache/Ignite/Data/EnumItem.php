@@ -18,7 +18,7 @@
 
 namespace Apache\Ignite\Data;
 
-use Apache\Ignite\Impl\Utils\ArgumentChecker;
+use Apache\Ignite\Internal\Utils\ArgumentChecker;
 use Apache\Ignite\Exception\ClientException;
 
 /**

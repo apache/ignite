@@ -19,10 +19,10 @@
 namespace Apache\Ignite\Query;
 
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\Impl\Binary\ClientOperation;
-use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryCommunicator;
-use Apache\Ignite\Impl\Query\Cursor;
+use Apache\Ignite\Internal\Binary\ClientOperation;
+use Apache\Ignite\Internal\Binary\MessageBuffer;
+use Apache\Ignite\Internal\Binary\BinaryCommunicator;
+use Apache\Ignite\Internal\Query\Cursor;
 
 /**
  * Class representing a Scan query which returns the whole cache entries (key-value pairs).

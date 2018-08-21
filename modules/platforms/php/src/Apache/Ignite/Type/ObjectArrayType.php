@@ -19,7 +19,7 @@
 namespace Apache\Ignite\Type;
 
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\Impl\Binary\BinaryUtils;
+use Apache\Ignite\Internal\Binary\BinaryUtils;
 
 /**
  * Class representing an array type of Ignite objects.

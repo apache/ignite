@@ -19,14 +19,15 @@
 namespace Apache\Ignite;
 
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\Config\CacheConfiguration;
-use Apache\Ignite\Impl\Connection\ClientFailoverSocket;
-use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryCommunicator;
-use Apache\Ignite\Impl\Utils\ArgumentChecker;
-use Apache\Ignite\Impl\Utils\Logger;
-use Apache\Ignite\Impl\Binary\ClientOperation;
-use Apache\Ignite\Impl\Cache;
+use Apache\Ignite\Cache\CacheConfiguration;
+use Apache\Ignite\Cache\CacheInterface;
+use Apache\Ignite\Internal\Connection\ClientFailoverSocket;
+use Apache\Ignite\Internal\Binary\MessageBuffer;
+use Apache\Ignite\Internal\Binary\BinaryCommunicator;
+use Apache\Ignite\Internal\Utils\ArgumentChecker;
+use Apache\Ignite\Internal\Utils\Logger;
+use Apache\Ignite\Internal\Binary\ClientOperation;
+use Apache\Ignite\Internal\Cache;
 
 /**
  * Class representing Ignite client.

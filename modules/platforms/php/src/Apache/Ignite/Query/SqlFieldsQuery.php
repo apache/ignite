@@ -19,10 +19,10 @@
 namespace Apache\Ignite\Query;
 
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\Impl\Binary\ClientOperation;
-use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryCommunicator;
-use Apache\Ignite\Impl\Query\SqlFieldsCursor;
+use Apache\Ignite\Internal\Binary\ClientOperation;
+use Apache\Ignite\Internal\Binary\MessageBuffer;
+use Apache\Ignite\Internal\Binary\BinaryCommunicator;
+use Apache\Ignite\Internal\Query\SqlFieldsCursor;
 
 /**
  * Class representing an SQL Fields query.

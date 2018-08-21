@@ -21,14 +21,14 @@ namespace Apache\Ignite\Data;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\ComplexObjectType;
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\Impl\Binary\BinaryCommunicator;
-use Apache\Ignite\Impl\Binary\BinaryTypeBuilder;
-use Apache\Ignite\Impl\Binary\BinaryObjectField;
-use Apache\Ignite\Impl\Binary\MessageBuffer;
-use Apache\Ignite\Impl\Binary\BinaryUtils;
-use Apache\Ignite\Impl\Binary\BinaryField;
-use Apache\Ignite\Impl\Utils\ArgumentChecker;
-use Apache\Ignite\Impl\Utils\Logger;
+use Apache\Ignite\Internal\Binary\BinaryCommunicator;
+use Apache\Ignite\Internal\Binary\BinaryTypeBuilder;
+use Apache\Ignite\Internal\Binary\BinaryObjectField;
+use Apache\Ignite\Internal\Binary\MessageBuffer;
+use Apache\Ignite\Internal\Binary\BinaryUtils;
+use Apache\Ignite\Internal\Binary\BinaryField;
+use Apache\Ignite\Internal\Utils\ArgumentChecker;
+use Apache\Ignite\Internal\Utils\Logger;
 
 /**
  * Class representing a complex Ignite object in the binary form.

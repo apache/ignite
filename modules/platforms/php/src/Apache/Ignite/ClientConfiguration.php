@@ -19,7 +19,7 @@
 namespace Apache\Ignite;
 
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\Impl\Utils\ArgumentChecker;
+use Apache\Ignite\Internal\Utils\ArgumentChecker;
 
 /**
  * Class representing Ignite client configuration.

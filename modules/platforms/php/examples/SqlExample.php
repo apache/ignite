@@ -21,8 +21,8 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Apache\Ignite\Client;
 use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\CacheInterface;
-use Apache\Ignite\Config\CacheConfiguration;
+use Apache\Ignite\Cache\CacheInterface;
+use Apache\Ignite\Cache\CacheConfiguration;
 use Apache\Ignite\Query\SqlFieldsQuery;
 
 // This example shows primary APIs to use with Ignite as with an SQL database:

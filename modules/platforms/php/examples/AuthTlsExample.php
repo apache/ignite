@@ -20,7 +20,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use Apache\Ignite\Client;
 use Apache\Ignite\ClientConfiguration;
-use Apache\Ignite\CacheInterface;
+use Apache\Ignite\Cache\CacheInterface;
 use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Type\ObjectType;
 

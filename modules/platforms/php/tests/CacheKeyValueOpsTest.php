@@ -20,9 +20,9 @@ namespace Apache\Ignite\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\CacheEntry;
-use Apache\Ignite\Config\CacheConfiguration;
-use Apache\Ignite\CacheInterface;
+use Apache\Ignite\Cache\CacheEntry;
+use Apache\Ignite\Cache\CacheConfiguration;
+use Apache\Ignite\Cache\CacheInterface;
 
 final class CacheKeyValueOpsTestCase extends TestCase
 {

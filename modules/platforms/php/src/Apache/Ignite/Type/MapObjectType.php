@@ -19,8 +19,8 @@
 namespace Apache\Ignite\Type;
 
 use Apache\Ignite\Exception\ClientException;
-use Apache\Ignite\Impl\Utils\ArgumentChecker;
-use Apache\Ignite\Impl\Binary\BinaryUtils;
+use Apache\Ignite\Internal\Utils\ArgumentChecker;
+use Apache\Ignite\Internal\Binary\BinaryUtils;
 
 /** 
  * Class representing a map type of Ignite object.

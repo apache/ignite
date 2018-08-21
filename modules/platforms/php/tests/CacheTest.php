@@ -18,13 +18,13 @@
 
 namespace Apache\Ignite\Tests;
 
-use Apache\Ignite\Config\CacheKeyConfiguration;
-use Apache\Ignite\Config\QueryField;
-use Apache\Ignite\Config\QueryEntity;
-use Apache\Ignite\Config\QueryIndex;
+use Apache\Ignite\Cache\CacheKeyConfiguration;
+use Apache\Ignite\Cache\QueryField;
+use Apache\Ignite\Cache\QueryEntity;
+use Apache\Ignite\Cache\QueryIndex;
 use PHPUnit\Framework\TestCase;
-use Apache\Ignite\CacheInterface;
-use Apache\Ignite\Config\CacheConfiguration;
+use Apache\Ignite\Cache\CacheInterface;
+use Apache\Ignite\Cache\CacheConfiguration;
 use Apache\Ignite\Exception\OperationException;
 use Apache\Ignite\Exception\ClientException;
 

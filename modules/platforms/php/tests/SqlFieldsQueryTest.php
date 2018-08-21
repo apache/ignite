@@ -19,7 +19,7 @@
 namespace Apache\Ignite\Tests;
 
 use Ds\Set;
-use Apache\Ignite\Config\CacheConfiguration;
+use Apache\Ignite\Cache\CacheConfiguration;
 use Apache\Ignite\Query\SqlFieldsQuery;
 use PHPUnit\Framework\TestCase;
 use Apache\Ignite\Type\ObjectType;
