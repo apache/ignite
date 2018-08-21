@@ -53,20 +53,20 @@ class MapObjectType extends ObjectType
     /**
      * Public constructor.
      *
-     * Optionally specifies a kind of map and types of keys and values in the map.
+     * Optionally specifies the map subtype and Ignite types of keys and values in the map.
      *
-     * If a kind of map is not specified, MapObjectType::HASH_MAP is assumed.
+     * If the map subtype is not specified, MapObjectType::HASH_MAP is assumed.
      *
-     * If key and/or value type is not specified then during operations the Ignite client
-     * will try to make automatic mapping between PHP types and Ignite object types -
+     * If Ignite type is not specified for the key and/or value then during operations the Ignite client
+     * tries to make automatic mapping between PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
      * @param int $subType map subtype, one of @ref MapSubType constants.
-     * @param int|ObjectType|null $keyType type of the keys in the map:
+     * @param int|ObjectType|null $keyType Ignite type of the keys in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
-     * @param int|ObjectType|null $valueType type of the values in the map:
+     * @param int|ObjectType|null $valueType Ignite type of the values in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
@@ -86,7 +86,7 @@ class MapObjectType extends ObjectType
     }
 
     /**
-     * Returns map subtype, one of @ref MapSubType constants.
+     * Returns the map subtype, one of @ref MapSubType constants.
      * 
      * @return int map subtype, one of @ref MapSubType constants.
      */
@@ -96,12 +96,12 @@ class MapObjectType extends ObjectType
     }
     
     /**
-     * Returns type of the keys in the map.
+     * Returns Ignite type of the keys in the map.
      * 
      * @return int|ObjectType|null type of the keys in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
-     *   - or null (or not specified) that means the type is not specified
+     *   - or null that means the type is not specified
      */
     public function getKeyType()
     {
@@ -109,12 +109,12 @@ class MapObjectType extends ObjectType
     }
 
     /**
-     * Returns type of the values in the map.
+     * Returns Ignite type of the values in the map.
      * 
      * @return int|ObjectType|null type of the values in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
-     *   - or null (or not specified) that means the type is not specified
+     *   - or null that means the type is not specified
      */
     public function getValueType()
     {
