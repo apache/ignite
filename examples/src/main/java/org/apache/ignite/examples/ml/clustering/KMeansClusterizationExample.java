@@ -56,7 +56,7 @@ public class KMeansClusterizationExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 KMeansClusterizationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).get(data);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 KMeansTrainer trainer = new KMeansTrainer()
                     .withSeed(7867L);
