@@ -30,6 +30,7 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
@@ -88,6 +89,12 @@ public class SslContextFactory implements Factory<SSLContext> {
 
     /** Trust managers. */
     private TrustManager[] trustMgrs;
+
+    /** Enabled cipher suites. */
+    private String[] cipherSuites;
+
+    /** Enabled cipher suites. */
+    private String[] protocols;
 
     /**
      * Gets key store type used for context creation.
@@ -281,6 +288,38 @@ public class SslContextFactory implements Factory<SSLContext> {
     }
 
     /**
+     * Sets enabled cipher suites.
+     * @param cipherSuites enabled cipher suites.
+     */
+    public void setCipherSuites(String... cipherSuites) {
+        this.cipherSuites = cipherSuites;
+    }
+
+    /**
+     * Gets enabled cipher suites
+     * @return enabled cipher suites
+     */
+    public String[] getCipherSuites() {
+        return cipherSuites;
+    }
+
+    /**
+     * Gets enabled cipher suites
+     * @return enabled cipher suites
+     */
+    public String[] getProtocols() {
+        return protocols;
+    }
+
+    /**
+     * Sets enabled protocols.
+     * @param protocols enabled protocols.
+     */
+    public void setProtocols(String... protocols) {
+        this.protocols = protocols;
+    }
+
+    /**
      * Creates SSL context based on factory settings.
      *
      * @return Initialized SSL context.
@@ -309,6 +348,18 @@ public class SslContextFactory implements Factory<SSLContext> {
             }
 
             SSLContext ctx = SSLContext.getInstance(proto);
+
+            if (cipherSuites != null || protocols != null) {
+                SSLParameters sslParameters = new SSLParameters();
+
+                if (cipherSuites != null)
+                    sslParameters.setCipherSuites(cipherSuites);
+
+                if (protocols != null)
+                    sslParameters.setProtocols(protocols);
+
+                ctx = new SSLContextWrapper(ctx, sslParameters);
+            }
 
             ctx.init(keyMgrFactory.getKeyManagers(), mgrs, null);
 
