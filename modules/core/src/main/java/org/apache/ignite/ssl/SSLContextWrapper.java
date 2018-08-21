@@ -15,27 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.ssl;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 
-/**
- * Tests for Java thin client.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    ClientConfigurationTest.class,
-    ClientCacheConfigurationTest.class,
-    FunctionalTest.class,
-    IgniteBinaryTest.class,
-    LoadTest.class,
-    ReliabilityTest.class,
-    SecurityTest.class,
-    FunctionalQueryTest.class,
-    IgniteBinaryQueryTest.class,
-    SslParametersTest.class
-})
-public class ClientTestSuite {
-    // No-op.
+/** */
+class SSLContextWrapper extends SSLContext {
+    /** */
+    SSLContextWrapper(SSLContext delegate, SSLParameters sslParameters) {
+        super(new DelegatingSSLContextSpi(delegate, sslParameters),
+            delegate.getProvider(),
+            delegate.getProtocol());
+    }
 }
