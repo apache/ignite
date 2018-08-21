@@ -17,7 +17,7 @@
 
 import template from './header-logo.pug';
 
-export default ['igniteHeaderLogo', ['IgniteBranding', (branding) => {
+export default ['igniteHeaderLogo', ['IgniteBranding', function(branding) {
     function controller() {
         const ctrl = this;
 

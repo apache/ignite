@@ -17,7 +17,7 @@
 
 const template = '<div class="features" ng-bind-html="features.html"></div>';
 
-export default ['igniteFeatures', ['IgniteBranding', (branding) => {
+export default ['igniteFeatures', ['IgniteBranding', function(branding) {
     function controller() {
         const ctrl = this;
 

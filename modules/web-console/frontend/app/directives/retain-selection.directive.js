@@ -16,7 +16,7 @@
  */
 
 // Directive to workaround known issue with type ahead edit lost cursor position.
-export default ['igniteRetainSelection', ['$timeout', ($timeout) => {
+export default ['igniteRetainSelection', ['$timeout', function($timeout) {
     let promise;
 
     return function(scope, elem) {

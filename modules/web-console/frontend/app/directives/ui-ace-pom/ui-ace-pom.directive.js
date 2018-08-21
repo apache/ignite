@@ -18,7 +18,7 @@
 import template from './ui-ace-pom.pug';
 import controller from './ui-ace-pom.controller';
 
-export default ['igniteUiAcePom', [() => {
+export default ['igniteUiAcePom', [function() {
     const link = ($scope, $el, $attrs, [igniteUiAceTabs]) => {
         if (igniteUiAceTabs.onLoad)
             $scope.onLoad = igniteUiAceTabs.onLoad;

@@ -16,7 +16,7 @@
  */
 
 // Service to copy some value to OS clipboard.
-export default ['IgniteCopyToClipboard', ['$window', 'IgniteMessages', ($window, Messages) => {
+export default ['IgniteCopyToClipboard', ['$window', 'IgniteMessages', function($window, Messages) {
     const body = angular.element($window.document.body);
 
     const textArea = angular.element('<textarea/>');

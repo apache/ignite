@@ -26,7 +26,7 @@ angular.module('ignite-console.user', [
     'ignite-console.config',
     'ignite-console.core'
 ])
-.factory('sessionRecoverer', ['$injector', '$q', ($injector, $q) => {
+.factory('sessionRecoverer', ['$injector', '$q', function($injector, $q) {
     return {
         responseError: (response) => {
             // Session has expired

@@ -26,7 +26,7 @@ export default angular
     /**
      * Don't hide tooltip when mouse move from element to tooltip.
      */
-    .decorator('$tooltip', ['$delegate', ($delegate) => {
+    .decorator('$tooltip', ['$delegate', function($delegate) {
         function TooltipFactoryDecorated(element, config) {
             let tipElementEntered = false;
 

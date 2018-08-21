@@ -150,7 +150,7 @@ rules:
     no-sparse-arrays: 1
     no-sync: 0
     no-ternary: 0
-    no-trailing-spaces: 2
+    no-trailing-spaces: ["error", {"ignoreComments": true}]
     no-throw-literal: 0
     no-this-before-super: 2
     no-unexpected-multiline: 2

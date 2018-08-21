@@ -16,7 +16,7 @@
  */
 
 // Directive to describe element that should be focused on click.
-export default ['igniteOnClickFocus', ['IgniteFocus', (Focus) => {
+export default ['igniteOnClickFocus', ['IgniteFocus', function(Focus) {
     return function(scope, elem, attrs) {
         elem.on('click', () => Focus.move(attrs.igniteOnClickFocus));
 

@@ -78,7 +78,7 @@ angular
         return {enabled};
     }];
 }])
-.factory('demoInterceptor', ['Demo', (Demo) => {
+.factory('demoInterceptor', ['Demo', function(Demo) {
     const isApiRequest = (url) => /\/api\/v1/ig.test(url);
 
     return {
@@ -90,7 +90,7 @@ angular
         }
     };
 }])
-.controller('demoController', ['$scope', '$state', '$window', 'IgniteConfirm', ($scope, $state, $window, Confirm) => {
+.controller('demoController', ['$scope', '$state', '$window', 'IgniteConfirm', function($scope, $state, $window, Confirm) {
     const _openTab = (stateName) => $window.open($state.href(stateName), '_blank');
 
     $scope.startDemo = () => {
@@ -119,7 +119,7 @@ angular
         return items;
     }];
 }])
-.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) => {
+.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', function($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) {
     const scope = $rootScope.$new();
 
     let closePromise = null;

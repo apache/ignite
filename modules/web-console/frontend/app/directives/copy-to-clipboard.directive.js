@@ -16,7 +16,7 @@
  */
 
 // Directive for copy to clipboard.
-export default ['igniteCopyToClipboard', ['IgniteCopyToClipboard', (CopyToClipboard) => {
+export default ['igniteCopyToClipboard', ['IgniteCopyToClipboard', function(CopyToClipboard) {
     return {
         restrict: 'A',
         link(scope, element, attrs) {

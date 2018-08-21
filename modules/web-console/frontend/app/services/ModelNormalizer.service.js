@@ -16,7 +16,7 @@
  */
 
 // Service to normalize objects for dirty checks.
-export default ['IgniteModelNormalizer', () => {
+export default ['IgniteModelNormalizer', function() {
     /**
      * Normalize object for dirty checks.
      *

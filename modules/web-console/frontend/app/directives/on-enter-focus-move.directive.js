@@ -16,7 +16,7 @@
  */
 
 // Directive to move focus to specified element on ENTER key.
-export default ['igniteOnEnterFocusMove', ['IgniteFocus', (Focus) => {
+export default ['igniteOnEnterFocusMove', ['IgniteFocus', function(Focus) {
     return function(scope, elem, attrs) {
         elem.on('keydown keypress', (event) => {
             if (event.which === 13) {

@@ -17,7 +17,7 @@
 
 import angular from 'angular';
 
-export default ['igniteBsAffixUpdate', ['$window', '$timeout', ($window, $timeout) => {
+export default ['igniteBsAffixUpdate', ['$window', '$timeout', function($window, $timeout) {
     let update = null;
 
     const link = ({$last}) => {

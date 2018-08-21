@@ -18,7 +18,7 @@
 const template = `<img ng-src="{{ isOpen ? '/images/collapse.svg' : '/images/expand.svg' }}" style='width:13px;height:13px;' />`;
 
 export default ['igniteFormPanelChevron', ['$timeout', ($timeout) => {
-    const controller = [() => {}];
+    const controller = [function() {}];
 
     const link = ($scope, $element, $attrs, [bsCollapseCtrl]) => {
         const $target = $element.parent().parent().find('[bs-collapse-target]');

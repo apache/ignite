@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['IgniteLoading', [() => {
+export default ['IgniteLoading', [function() {
     const _overlays = {};
 
     const start = (key) => {

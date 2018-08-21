@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default [() => {
+export default [function() {
     let guid = 0;
 
     return () => `form-field-${guid++}`;
