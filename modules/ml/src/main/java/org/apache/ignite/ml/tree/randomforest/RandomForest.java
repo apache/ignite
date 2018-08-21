@@ -109,7 +109,7 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>>
                 NodeWithStatistics statistics = nodesStatistics.get(nodeKey);
                 NodeSplit bestSplit = statistics.findBestSplit();
 
-                if (needSplit(statistics, bestSplit)) {
+                if (needSplit(statistics.node, bestSplit)) {
                     List<TreeNode> children = bestSplit.split(statistics.node);
                     treesQueue.addAll(children);
                 }
@@ -196,8 +196,7 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>>
         }
     }
 
-    //TODO: need test
-    Map<Integer, BucketMeta> computeHistogramMeta(List<FeatureMeta> meta,
+    private Map<Integer, BucketMeta> computeHistogramMeta(List<FeatureMeta> meta,
         Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
 
         List<NormalDistributionStats> stats = dataset.compute(
@@ -217,7 +216,6 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>>
         return bucketsMeta;
     }
 
-    //TODO: need test
     List<NormalDistributionStats> computeStatsOnPartition(BaggedDatasetPartition part,
         List<FeatureMeta> meta) {
 
@@ -252,7 +250,6 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>>
         return res;
     }
 
-    //TODO: need test
     List<NormalDistributionStats> reduceStats(List<NormalDistributionStats> left,
         List<NormalDistributionStats> right,
         List<FeatureMeta> meta) {
@@ -281,10 +278,9 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>>
         ));
     }
 
-    //TODO: need test
-    boolean needSplit(NodeWithStatistics statistics, NodeSplit split) {
-        return Math.abs(split.getImpurity() - statistics.node.getImpurity()) > minImpurityDelta &&
-            statistics.node.getDepth() < maxDepth;
+    boolean needSplit(TreeNode parentNode, NodeSplit split) {
+        return parentNode.getImpurity() - split.getImpurity() > minImpurityDelta &&
+            parentNode.getDepth() < (maxDepth + 1);
     }
 
     protected abstract ModelsComposition buildComposition(List<TreeRoot> models);
