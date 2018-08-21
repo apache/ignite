@@ -83,7 +83,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void allowCompressionUntil(WALPointer ptr) {
+    @Override public void notchLastCheckpointPtr(WALPointer ptr) {
         // No-op.
     }
 
@@ -154,6 +154,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
 
     /** {@inheritDoc} */
     @Override public long lastArchivedSegment() {
+        return -1L;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long lastCompactedSegment() {
         return -1L;
     }
 
