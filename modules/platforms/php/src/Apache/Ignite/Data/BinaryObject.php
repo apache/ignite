@@ -94,16 +94,16 @@ class BinaryObject
     }
 
     /**
-     * Creates an instance of the BinaryObject from the specified instance of PHP Object.
+     * Creates an instance of the BinaryObject from the specified instance of PHP class.
      *
-     * All public properties of the PHP Object instance with their values are added as fields
+     * All public properties of the PHP object with their values are added as fields
      * to the BinaryObject.
      * Fields may be added or removed later using setField() and removeField() methods.
      *
      * If complexObjectType parameter is specified, then the type Id is taken from it.
-     * Otherwise, the type Id is generated from the name of the PHP Object.
+     * Otherwise, the type Id is generated from the name of the PHP class which instance is specified.
      * 
-     * @param object $object instance of PHP Object which adds and initializes the fields
+     * @param object $object instance of PHP class which adds and initializes the fields
      *     of the BinaryObject instance.
      * @param ComplexObjectType $complexObjectType instance of complex type definition
      *   which specifies non-standard mapping of the fields of the BinaryObject instance
@@ -138,17 +138,17 @@ class BinaryObject
     }
     
     /**
-     * Sets the new value of the specified field.
+     * Sets new value of the specified field.
      * Adds the specified field, if it did not exist before.
      *
-     * Optionally, specifies a type of the field.
-     * If the type is not specified then during operations the Ignite client
-     * will try to make automatic mapping between PHP types and Ignite object types -
+     * Optionally, specifies an Ignite type of the field.
+     * If the type is not specified then the Ignite client
+     * tries to make automatic mapping between PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
      * @param string $fieldName name of the field.
      * @param mixed $fieldValue new value of the field.
-     * @param int|ObjectType|null $fieldType type of the field:
+     * @param int|ObjectType|null $fieldType Ignite type of the field:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
@@ -209,16 +209,16 @@ class BinaryObject
     /**
      * Returns a value of the specified field.
      *
-     * Optionally, specifies a type of the field.
+     * Optionally, specifies Ignite type of the field.
      * If the type is not specified then the Ignite client
-     * will try to make automatic mapping between PHP types and Ignite object types -
+     * tries to make automatic mapping between PHP types and Ignite object types -
      * according to the mapping table defined in the description of the ObjectType class.
      *
      * If field with the specified name doesn't exist, throws Exception::ClientException.
      * Use hasField() method to ensure the field exists.
      * 
      * @param string $fieldName name of the field.
-     * @param int|ObjectType|null $fieldType type of the field:
+     * @param int|ObjectType|null $fieldType Ignite type of the field:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
@@ -239,7 +239,7 @@ class BinaryObject
     }
     
     /**
-     * Deserializes this BinaryObject instance into an instance of the specified complex object type.
+     * Deserializes this BinaryObject instance into PHP object which corresponds to the specified complex object type.
      * 
      * @param ComplexObjectType $complexObjectType instance of class representing complex object type.
      * 
@@ -280,7 +280,7 @@ class BinaryObject
     }
     
     /**
-     * Returns names of all fields of this BinaryObject instance.
+     * Returns names of all fields in this BinaryObject instance.
      * 
      * @return array names of all fields.
      * 

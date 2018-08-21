@@ -82,7 +82,7 @@ class EnumItem
      * Returns ordinal of the item in the Ignite enum type
      * or null if ordinal is not set.
      *
-     * @return int ordinal of the item in the Ignite enum type.
+     * @return int|null ordinal of the item in the Ignite enum type or null (if ordinal is not set).
      */
     public function getOrdinal(): ?int
     {
@@ -106,7 +106,7 @@ class EnumItem
      * Returns name of the item
      * or null if name is not set.
      *
-     * @return string name of the item.
+     * @return string|null name of the item or null (if name is not set).
      */
     public function getName(): ?string
     {
@@ -133,7 +133,7 @@ class EnumItem
      * Returns value of the item
      * or null if value is not set.
      *
-     * @return int value of the item.
+     * @return int|null value of the item or null (if value is not set).
      */
     public function getValue(): ?int
     {
