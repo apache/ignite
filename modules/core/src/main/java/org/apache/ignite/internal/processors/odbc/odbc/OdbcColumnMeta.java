@@ -33,16 +33,16 @@ public class OdbcColumnMeta {
     private final String tableName;
 
     /** Column name. */
-    private final String columnName;
+    public final String columnName;
 
     /** Data type. */
     private final Class<?> dataType;
 
     /** Precision. */
-    private final int precision;
+    public final int precision;
 
     /** Scale. */
-    private final int scale;
+    public final int scale;
 
     /** Client version. */
     private final ClientListenerProtocolVersion ver;
