@@ -24,10 +24,9 @@ import {Observable} from 'rxjs/Observable';
 
 const idRegex = `new|[a-z0-9]+`;
 
-const shortCachesResolve = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
+const shortCachesResolve = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', function(ConfigSelectors, ConfigureState, {etp}, $transition$) {
     if ($transition$.params().clusterID === 'new')
         return Promise.resolve();
-
     return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
         .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
         .switchMap((cluster) => {
