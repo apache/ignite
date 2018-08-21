@@ -50,7 +50,7 @@ public class IgniteTxFinisher {
                 }
 
                 if (isNew)
-                    log.warning("New tx = " + (ordered - 1) + " " + tx);
+                    log.warning("New tx = " + (ordered - 1));
             }
 
             transactionOp.run();

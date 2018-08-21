@@ -64,7 +64,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000;
+        return 20 * 60 * 1000;
     }
 
     /**
@@ -84,6 +84,8 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
             }
         }
     }
+
+
 
     /**
      * @param cfg Config.

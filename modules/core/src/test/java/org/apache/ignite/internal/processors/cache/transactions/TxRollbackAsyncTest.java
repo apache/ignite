@@ -138,6 +138,10 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    @Override protected long getTestTimeout() {
+        return 600 * 1000L;
+    }
+
     /**
      * @return Near cache flag.
      */
@@ -429,6 +433,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         lockFut.get();
 
         assertEquals(0, holdLockNode.cache(CACHE_NAME).get(0));
+
+        U.sleep(1000);
 
         checkFutures();
     }
@@ -907,7 +913,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             for (GridCacheFuture<?> fut : futs)
                 log.info("Waiting for future: " + fut);
 
-            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
+            assertTrue("Expecting no active futures: node=" + ig.localNode().id() + " " + futs, futs.isEmpty());
         }
     }
 
