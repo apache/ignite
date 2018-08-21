@@ -19,7 +19,7 @@
 namespace Apache\Ignite\Exception;
 
 /**
- * Class representing an exception thrown when Ignite server returns error for the requested operation.
+ * Ignite server returns error for the requested operation.
  */
 class OperationException extends ClientException
 {
