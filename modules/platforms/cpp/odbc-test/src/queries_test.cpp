@@ -2107,7 +2107,7 @@ BOOST_AUTO_TEST_CASE(TestManyCursorsTwoSelects2)
 
     for (int32_t i = 0; i < 100; ++i)
     {
-        SQLCHAR req[] = "SELECT 1; SELECT 2";
+        SQLCHAR req[] = "SELECT 1; SELECT 2;";
 
         SQLRETURN ret = SQLExecDirect(stmt, req, SQL_NTS);
 

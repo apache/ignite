@@ -127,6 +127,13 @@ namespace ignite
                 IGNITE_NO_COPY_ASSIGNMENT(DataQuery);
 
                 /**
+                 * Check whether all cursors are closed remotely.
+                 *
+                 * @return true, if all cursors closed remotely.
+                 */
+                bool IsClosedRemotely() const;
+
+                /**
                  * Make query execute request and use response to set internal
                  * state.
                  *
