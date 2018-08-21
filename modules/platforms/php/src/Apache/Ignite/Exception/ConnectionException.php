@@ -19,7 +19,7 @@
 namespace Apache\Ignite\Exception;
 
 /**
- * Class representing an exception thrown when there is a connection problem during the requested operation.
+ * Ignite client is not connected.
  */
 class ConnectionException extends ClientException
 {
