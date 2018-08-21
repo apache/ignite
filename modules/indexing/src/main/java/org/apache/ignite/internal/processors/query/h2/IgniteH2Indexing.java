@@ -1617,15 +1617,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(H2Utils.zeroCursor());
         }
         else {
-            try {
-                FieldsQueryCursor<List<?>> cursor = ddlProc.runDdlStatement(sql, cmd);
+            FieldsQueryCursor<List<?>> cursor = ddlProc.runDdlStatement(sql, cmd);
 
-                return Collections.singletonList(cursor);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sql + "]: "
-                    + e.getMessage(), e);
-            }
+            return Collections.singletonList(cursor);
         }
     }
 
@@ -1783,12 +1777,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw new IgniteSQLException("DDL statements are not supported for LOCAL caches",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                try {
-                    return Collections.singletonList(ddlProc.runDdlStatement(sqlQry, prepared));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
-                }
+                return Collections.singletonList(ddlProc.runDdlStatement(sqlQry, prepared));
             }
 
             if (prepared instanceof NoOperation) {
@@ -2567,7 +2556,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else {
             this.ctx = ctx;
 
-            schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA));
+            schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA, false));
 
             valCtx = new CacheQueryObjectValueContext(ctx);
 
@@ -2860,7 +2849,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (!isDefaultSchema(schemaName)) {
             synchronized (schemaMux) {
-                H2Schema schema = new H2Schema(schemaName);
+                H2Schema schema = new H2Schema(schemaName, !F.eq(QueryUtils.DFLT_SCHEMA, schemaName));
 
                 H2Schema oldSchema = schemas.putIfAbsent(schemaName, schema);
 
@@ -2917,7 +2906,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (!isDefaultSchema(schemaName)) {
                 synchronized (schemaMux) {
-                    if (schema.decrementUsageCount() == 0) {
+                    if (schema.decrementUsageCount()) {
                         schemas.remove(schemaName);
 
                         try {

@@ -34,6 +34,9 @@ public class H2Schema {
     /** */
     private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
+    /** Whether schema is static (i.e. it cannot be dropped. */
+    private final boolean canDrop;
+
     /** Usage count. */
     private int usageCnt;
 
@@ -42,8 +45,9 @@ public class H2Schema {
      *
      * @param schemaName Schema name.
      */
-    public H2Schema(String schemaName) {
+    public H2Schema(String schemaName, boolean canDrop) {
         this.schemaName = schemaName;
+        this.canDrop = canDrop;
     }
 
     /**
@@ -55,20 +59,19 @@ public class H2Schema {
 
     /**
      * Increments counter for number of caches having this schema.
-     *
-     * @return New value of caches counter.
      */
-    public int incrementUsageCount() {
-        return ++usageCnt;
+    public void incrementUsageCount() {
+        if (canDrop)
+            ++usageCnt;
     }
 
     /**
      * Increments counter for number of caches having this schema.
      *
-     * @return New value of caches counter.
+     * @return If schema is no longer used.
      */
-    public int decrementUsageCount() {
-        return --usageCnt;
+    public boolean decrementUsageCount() {
+        return canDrop && --usageCnt == 0;
     }
 
     /**
