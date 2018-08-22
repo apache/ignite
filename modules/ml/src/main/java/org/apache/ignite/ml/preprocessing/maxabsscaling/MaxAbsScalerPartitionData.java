@@ -17,9 +17,6 @@
 
 package org.apache.ignite.ml.preprocessing.maxabsscaling;
 
-import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPreprocessor;
-import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
-
 /**
  * Partition data used in maxabsscaling preprocessor.
  *
