@@ -2,16 +2,14 @@ package org.apache.ignite.ml.tree.randomforest;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
-import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.BucketMeta;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.GiniHistogram;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -35,17 +33,13 @@ public class RandomForestTest {
         new FeatureMeta(6, false)
     );
 
-    private RandomForest<GiniHistogram> rf = new RandomForest<GiniHistogram>(
-        meta, countOfTrees, 100, maxDepth, minImpDelta, x -> featuresPerTree, seed
-    ) {
-        @Override protected ModelsComposition buildComposition(List models) {
-            return null;
-        }
-
-        @Override protected GiniHistogram createImpurityComputer(int sampleId, BucketMeta meta) {
-            return null;
-        }
-    };
+    private RandomForestClassifier rf = new RandomForestClassifier(meta)
+        .withCountOfTrees(countOfTrees)
+        .withSeed(seed)
+        .withFeaturesSelectionStrgy(x -> 4)
+        .withMaxDepth(maxDepth)
+        .withMinImpurityDelta(minImpDelta)
+        .withSubsampleSize(0.1);
 
     @Test
     public void testCreateFeaturesSubspace() {
@@ -53,19 +47,16 @@ public class RandomForestTest {
         assertEquals(featuresPerTree, subspace.size());
     }
 
-    @Test(expected = AssertionError.class)
+    @Test(expected = RuntimeException.class)
     public void testCreateFeaturesSubspaceFail() {
-        new RandomForest<GiniHistogram>(
-            meta, countOfTrees, 100, 3, 0, x -> meta.size() + 1, seed
-        ) {
-            @Override protected ModelsComposition buildComposition(List models) {
-                return null;
-            }
-
-            @Override protected GiniHistogram createImpurityComputer(int sampleId, BucketMeta meta) {
-                return null;
-            }
-        }.createFeaturesSubspace();
+        new RandomForestClassifier(meta)
+            .withCountOfTrees(countOfTrees)
+            .withSeed(0L)
+            .withFeaturesSelectionStrgy(x -> meta.size() + 1)
+            .withMaxDepth(3)
+            .withMinImpurityDelta(100.0)
+            .withSubsampleSize(0.1)
+            .createFeaturesSubspace();
     }
 
     private BaggedDatasetPartition partition = new BaggedDatasetPartition(new BaggedVector[] {
@@ -155,12 +146,11 @@ public class RandomForestTest {
     public void testNeedSplit() {
         TreeNode node = new TreeNode(1, 1);
         node.setImpurity(1000);
-        assertTrue(rf.needSplit(node, new NodeSplit(0, 0, node.getImpurity() - minImpDelta * 1.01)));
-        assertFalse(rf.needSplit(node, new NodeSplit(0, 0, node.getImpurity() - minImpDelta * 0.5)));
-        assertFalse(rf.needSplit(node, new NodeSplit(0, 0, node.getImpurity())));
+        assertTrue(rf.needSplit(node, Optional.of(new NodeSplit(0, 0, node.getImpurity() - minImpDelta * 1.01))));
+        assertFalse(rf.needSplit(node, Optional.of(new NodeSplit(0, 0, node.getImpurity() - minImpDelta * 0.5))));
+        assertFalse(rf.needSplit(node, Optional.of(new NodeSplit(0, 0, node.getImpurity()))));
 
-        TreeNode child = node.toConditional(0, 0).get(0);
-        child.setImpurity(1000);
-        assertFalse(rf.needSplit(child, new NodeSplit(0, 0, child.getImpurity() - minImpDelta * 1.01)));
+        TreeNode child = node.toConditional(1000, 0, 0).get(0);
+        assertFalse(rf.needSplit(child, Optional.of(new NodeSplit(0, 0, child.getImpurity() - minImpDelta * 1.01))));
     }
 }

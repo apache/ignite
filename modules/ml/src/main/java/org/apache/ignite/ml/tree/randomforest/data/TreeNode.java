@@ -24,7 +24,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 public class TreeNode implements Model<Vector, Double>, Serializable {
-    enum Type {
+    public enum Type {
         UNKNOWN, LEAF, CONDITIONAL
     }
 
@@ -46,8 +46,7 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         }
     }
 
-    private final int treeId;
-    private final long id;
+    private final NodeId id;
     private int featureId;
     private Proba value;
     private Type type;
@@ -59,12 +58,11 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
     private TreeNode right;
 
     public TreeNode(long id, int treeId) {
-        this.id = id;
+        this.id = new NodeId(treeId, id);
         this.value = new Proba(Double.NaN, -1.0);
         this.type = Type.UNKNOWN;
-        this.impurity = Double.NaN;
+        this.impurity = Double.POSITIVE_INFINITY;
         this.depth = 1;
-        this.treeId = treeId;
     }
 
     public Double apply(Vector features) {
@@ -85,12 +83,12 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         }
     }
 
-    public long predictNextNodeKey(Vector features) {
+    public  NodeId predictNextNodeKey(Vector features) {
         switch (type) {
             case UNKNOWN:
                 return id;
             case LEAF:
-                return -1;
+                return id;
             default:
                 if (features.get(featureId) <= value.value)
                     return left.predictNextNodeKey(features);
@@ -99,16 +97,16 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         }
     }
 
-    public long getId() {
+    public NodeId getId() {
         return id;
     }
 
-    public List<TreeNode> toConditional(int featureId, double value) {
+    public List<TreeNode> toConditional(double impurity, int featureId, double value) {
         assert type == Type.UNKNOWN;
 
-        toLeaf(value);
-        left = new TreeNode(2 * id, treeId);
-        right = new TreeNode(2 * id + 1, treeId);
+        toLeaf(impurity);
+        left = new TreeNode(2 * id.nodeId(), id.treeId());
+        right = new TreeNode(2 * id.nodeId() + 1, id.treeId());
         this.type = Type.CONDITIONAL;
         this.featureId = featureId;
 
@@ -118,14 +116,22 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         return Arrays.asList(left, right);
     }
 
-    public void toLeaf(double value) {
+    public void toLeaf(double impurity) {
         assert type == Type.UNKNOWN;
 
-        this.value.value = value;
+        this.impurity = impurity;
         this.type = Type.LEAF;
 
         this.left = null;
         this.right = null;
+    }
+
+    public TreeNode getParent() {
+        return parent;
+    }
+
+    public void setValue(double value) {
+        this.value.value = value;
     }
 
     public Type getType() {
@@ -140,15 +146,15 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         return impurity;
     }
 
-    public double getParentImpurity() {
-        return parent == null ? Double.NaN : parent.impurity;
-    }
-
-    public int getTreeId() {
-        return treeId;
-    }
-
     public int getDepth() {
         return depth;
+    }
+
+    public TreeNode getLeft() {
+        return left;
+    }
+
+    public TreeNode getRight() {
+        return right;
     }
 }

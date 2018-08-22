@@ -70,17 +70,19 @@ public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogr
             hists.get(i).addHist(other.hists.get(i));
     }
 
-    @Override public NodeSplit findBestSplit() {
+    @Override public Optional<NodeSplit> findBestSplit() {
         double bestImpurity = Double.POSITIVE_INFINITY;
         double bestSplitValue = Double.NEGATIVE_INFINITY;
+        int bestBucketId = -1;
 
         List<TreeMap<Integer, Double>> distributions = hists.stream().map(FeatureHistogram::computeDistributionFunction)
             .collect(Collectors.toList());
-        double[] totalCounts = distributions.stream().mapToDouble(x -> x.lastEntry().getValue())
+        double[] totalCounts = distributions.stream()
+            .mapToDouble(x -> x.isEmpty() ? 0.0 : x.lastEntry().getValue()) //TODO: надо проверить что это вообще валидно
             .toArray();
 
         Map<Integer, Double> lastLeftValues = new HashMap<>();
-        for(int i = 0; i < lblMapping.size(); i++)
+        for (int i = 0; i < lblMapping.size(); i++)
             lastLeftValues.put(i, 0.0);
 
         for (Integer bucketId : bucketIds) {
@@ -92,7 +94,7 @@ public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogr
 
             for (int lbId = 0; lbId < lblMapping.size(); lbId++) {
                 Double left = distributions.get(lbId).get(bucketId);
-                if(left == null)
+                if (left == null)
                     left = lastLeftValues.get(lbId);
 
                 totalToleftCnt += left;
@@ -116,10 +118,21 @@ public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogr
             if (impurityInBucket < bestImpurity) {
                 bestImpurity = impurityInBucket;
                 bestSplitValue = bucketMeta.bucketIdToValue(bucketId);
+                bestBucketId = bucketId;
             }
         }
 
-        return new NodeSplit(featureId, bestSplitValue, bestImpurity);
+        int minBucketId = Integer.MAX_VALUE;
+        int maxBucketId = Integer.MIN_VALUE;
+        for (Integer bucketId : bucketIds) {
+            minBucketId = Math.min(minBucketId, bucketId);
+            maxBucketId = Math.max(maxBucketId, bucketId);
+        }
+
+        if (bestBucketId == minBucketId || bestBucketId == maxBucketId)
+            return Optional.empty();
+        else
+            return Optional.of(new NodeSplit(featureId, bestSplitValue, bestImpurity));
     }
 
     @Override public Set<Integer> buckets() {

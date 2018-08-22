@@ -17,8 +17,9 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.histogram;
 
+import java.util.Optional;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 
 public interface ImpurityComputer<T, H extends Histogram<T, H>> extends Histogram<T, H> {
-    public NodeSplit findBestSplit();
+    public Optional<NodeSplit> findBestSplit();
 }

@@ -93,8 +93,8 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
             contFeatureSmpl1.addElement(vec);
         }
 
-        NodeSplit catSplit = catFeatureSmpl1.findBestSplit();
-        NodeSplit contSplit = contFeatureSmpl1.findBestSplit();
+        NodeSplit catSplit = catFeatureSmpl1.findBestSplit().get();
+        NodeSplit contSplit = contFeatureSmpl1.findBestSplit().get();
         assertEquals(0.0, catSplit.getValue(), 0.01);
         assertEquals(-0.5, contSplit.getValue(), 0.01);
     }

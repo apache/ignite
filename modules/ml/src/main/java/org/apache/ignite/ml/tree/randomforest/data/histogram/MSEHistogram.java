@@ -69,9 +69,10 @@ public class MSEHistogram implements ImpurityComputer<BaggedVector, MSEHistogram
         throw new NotImplementedException();
     }
 
-    @Override public NodeSplit findBestSplit() {
+    @Override public Optional<NodeSplit> findBestSplit() {
         double bestImpurity = Double.POSITIVE_INFINITY;
         double bestSplitValue = Double.NEGATIVE_INFINITY;
+        int bestBucketId = -1;
 
         TreeMap<Integer, Double> counterDistrib = counters.computeDistributionFunction();
         TreeMap<Integer, Double> ysDistrib = ys.computeDistributionFunction();
@@ -100,13 +101,24 @@ public class MSEHistogram implements ImpurityComputer<BaggedVector, MSEHistogram
             if (rightCnt > 0)
                 impurity += impurity(rightCnt, rightY, rightY2);
 
-            if(impurity < bestImpurity) {
+            if (impurity < bestImpurity) {
                 bestImpurity = impurity;
                 bestSplitValue = bucketMeta.bucketIdToValue(bucketId);
+                bestBucketId = bucketId;
             }
         }
 
-        return new NodeSplit(featureId, bestSplitValue, bestImpurity);
+        int minBucketId = Integer.MAX_VALUE;
+        int maxBucketId = Integer.MIN_VALUE;
+        for (Integer bucketId : bucketIds) {
+            minBucketId = Math.min(minBucketId, bucketId);
+            maxBucketId = Math.max(maxBucketId, bucketId);
+        }
+
+        if (bestBucketId == minBucketId || bestBucketId == maxBucketId)
+            return Optional.empty();
+        else
+            return Optional.of(new NodeSplit(featureId, bestSplitValue, bestImpurity));
     }
 
     private double impurity(double count, double ys, double y2s) {

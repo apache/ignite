@@ -17,32 +17,19 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
-import java.util.List;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
-public class NodeSplit {
-    private final int featureId;
-    private final double value;
-    private final double impurity;
-
-    public NodeSplit(int featureId, double value, double impurity) {
-        this.featureId = featureId;
-        this.value = value;
-        this.impurity = impurity;
+public class NodeId extends IgniteBiTuple<Integer, Long> {
+    public NodeId(@Nullable Integer treeId, @Nullable Long nodeId) {
+        super(treeId, nodeId);
     }
 
-    public List<TreeNode> split(TreeNode node) {
-        return node.toConditional(impurity, featureId, value);
+    public Integer treeId() {
+        return get1();
     }
 
-    public void createLeaf(TreeNode node) {
-        node.toLeaf(impurity); //values will be set in last stage if training
-    }
-
-    public double getImpurity() {
-        return impurity;
-    }
-
-    public double getValue() {
-        return value;
+    public Long nodeId() {
+        return get2();
     }
 }

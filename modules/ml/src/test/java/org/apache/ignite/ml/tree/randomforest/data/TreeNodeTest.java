@@ -23,7 +23,8 @@ public class TreeNodeTest {
     @Test
     public void testPredictNextIdForLeaf() {
         TreeNode node = new TreeNode(5, 1);
-        node.toLeaf(0.5);
+        node.toLeaf(0);
+        node.setValue(0.5);
 
         assertEquals(TreeNode.Type.LEAF, node.getType());
         assertEquals(-1, node.predictNextNodeKey(features1));
@@ -33,7 +34,7 @@ public class TreeNodeTest {
     @Test
     public void testPredictNextIdForTree() {
         TreeNode root = new TreeNode(1, 1);
-        root.toConditional(0, 0.1);
+        root.toConditional(0, 0, 0.1);
 
         assertEquals(TreeNode.Type.CONDITIONAL, root.getType());
         assertEquals(2, root.predictNextNodeKey(features1));
@@ -43,9 +44,10 @@ public class TreeNodeTest {
     @Test
     public void testPredictProba() {
         TreeNode root = new TreeNode(1, 1);
-        List<TreeNode> leaves = root.toConditional(0, 0.1);
+        List<TreeNode> leaves = root.toConditional(0, 0, 0.1);
         leaves.forEach(leaf -> {
-            leaf.toLeaf(leaf.getId() % 2);
+            leaf.toLeaf(0);
+            leaf.setValue(leaf.getId().nodeId() % 2);
         });
 
         assertEquals(TreeNode.Type.CONDITIONAL, root.getType());
