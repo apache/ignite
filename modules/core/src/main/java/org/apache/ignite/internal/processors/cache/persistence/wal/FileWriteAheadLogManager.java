@@ -562,6 +562,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (currHnd != null)
                 currHnd.close(false);
 
+            if (walSegmentSyncWorker != null)
+                walSegmentSyncWorker.shutdown();
+
             if (walWriter != null)
                 walWriter.shutdown();
 
@@ -573,9 +576,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (decompressor != null)
                 decompressor.shutdown();
-
-            if (walSegmentSyncWorker != null)
-                walSegmentSyncWorker.shutdown();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd.fileIO, e);
