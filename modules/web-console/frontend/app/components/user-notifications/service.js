@@ -15,12 +15,17 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 import controller from './controller';
 import templateUrl from './template.tpl.pug';
 import {CancellationError} from 'app/errors/CancellationError';
 
 export default class UserNotificationsService {
     static $inject = ['$http', '$modal', '$q', 'IgniteMessages'];
+
+    /** @type {ng.IQService} */
+    $q;
 
     constructor($http, $modal, $q, Messages) {
         Object.assign(this, {$http, $modal, $q, Messages});
@@ -56,7 +61,7 @@ export default class UserNotificationsService {
             .finally(modalHide)
             .then(({ message, isShown }) => {
                 this.$http.put('/api/v1/admin/notifications', { message, isShown })
-                    .catch((err) => this.Messages.showError(err));
+                    .catch(this.Messages.showError);
             });
     }
 }

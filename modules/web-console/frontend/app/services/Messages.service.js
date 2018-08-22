@@ -16,40 +16,14 @@
  */
 
 import {CancellationError} from 'app/errors/CancellationError';
-import isEmpty from 'lodash/isEmpty';
-import {nonEmpty} from 'app/utils/lodashMixins';
 
 // Service to show various information and error messages.
-export default ['IgniteMessages', ['$alert', ($alert) => {
+export default ['IgniteMessages', ['$alert', 'IgniteErrorParser', ($alert, errorParser) => {
     // Common instance of alert modal.
     let msgModal;
 
     const errorMessage = (prefix, err) => {
-        prefix = prefix || '';
-
-        if (err) {
-            if (err.hasOwnProperty('data'))
-                err = err.data;
-
-            if (err.hasOwnProperty('message')) {
-                const msg = err.message;
-
-                const errIndex = msg.indexOf(' err=');
-
-                return prefix + (errIndex >= 0 ? msg.substring(errIndex + 5, msg.length - 1) : msg);
-            }
-
-            if (nonEmpty(err.className)) {
-                if (isEmpty(prefix))
-                    prefix = 'Internal cluster error: ';
-
-                return prefix + err.className;
-            }
-
-            return prefix + err;
-        }
-
-        return prefix + 'Internal error.';
+        return errorParser.extractMessage(err, prefix);
     };
 
     const hideAlert = () => {
@@ -73,16 +47,16 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
     return {
         errorMessage,
         hideAlert,
-        showError(message, err) {
+        showError(message, err, duration = 10) {
             if (message instanceof CancellationError)
                 return false;
 
-            _showMessage(message, err, 'danger', 10);
+            _showMessage(message, err, 'danger', duration);
 
             return false;
         },
-        showInfo(message) {
-            _showMessage(message, null, 'success', 3);
+        showInfo(message, duration = 5) {
+            _showMessage(message, null, 'success', duration);
         }
     };
 }]];

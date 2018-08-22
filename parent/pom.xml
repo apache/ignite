@@ -922,19 +922,19 @@
                                         <exclude>**/*.cmd</exclude>
                                         <exclude>**/*.ps1</exclude>
                                         <exclude>**/*.json</exclude>
-                                        <!--web console-->
-                                        <exclude>**/.babelrc</exclude>
-                                        <exclude>**/.eslintrc</exclude>
                                         <exclude>**/.dockerignore</exclude>
-                                        <exclude>**/backend/config/settings.json.sample</exclude>
-                                        <exclude>**/backend/node_modules/**</exclude>
-                                        <exclude>**/e2e/testcafe/node_modules/**</exclude>
-                                        <exclude>**/frontend/build/**</exclude>
-                                        <exclude>**/frontend/public/images/**/*.png</exclude>
-                                        <exclude>**/frontend/public/images/**/*.svg</exclude>
-                                        <exclude>**/frontend/ignite_modules/**</exclude>
-                                        <exclude>**/frontend/ignite_modules_temp/**</exclude>
-                                        <exclude>**/frontend/node_modules/**</exclude>
+                                        <!--web console-->
+                                        <exclude>**/web-console/**/.eslintrc</exclude>
+                                        <exclude>**/web-console/**/.babelrc</exclude>
+                                        <exclude>**/web-console/**/*.json</exclude>
+                                        <exclude>**/web-console/**/*.json.sample</exclude>
+                                        <exclude>**/web-console/backend/build/**</exclude>
+                                        <exclude>**/web-console/backend/node_modules/**</exclude>
+                                        <exclude>**/web-console/e2e/testcafe/node_modules/**</exclude>
+                                        <exclude>**/web-console/frontend/build/**</exclude>
+                                        <exclude>**/web-console/frontend/node_modules/**</exclude>
+                                        <exclude>**/web-console/frontend/**/*.png</exclude>
+                                        <exclude>**/web-console/frontend/**/*.svg</exclude>
                                         <!--RPM packaging, IGNITE-7107-->
                                         <exclude>**/packaging/rpm/SOURCES/name.service</exclude>
                                         <exclude>**/packaging/rpm/SOURCES/service.sh</exclude>

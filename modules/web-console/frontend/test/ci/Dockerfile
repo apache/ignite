@@ -17,23 +17,16 @@
 
 FROM alpine:edge
 
-RUN apk update && apk upgrade && \
-    apk add --no-cache bash git openssh
-
 RUN apk --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ add \
  nodejs nodejs-npm chromium xwininfo xvfb dbus eudev ttf-freefont fluxbox
 
 ENV CHROME_BIN /usr/bin/chromium-browser
 
-# Install frontend & backend apps.
-RUN mkdir -p /opt/web-console
-
-# Copy source.
-WORKDIR /opt/web-console
-COPY . ./frontend
-
-# Install node modules.
 WORKDIR /opt/web-console/frontend
-RUN npm install
+
+COPY ./package*.json ./
+RUN npm install --no-optional
+
+COPY . .
 
 ENTRYPOINT ["npm", "test"]

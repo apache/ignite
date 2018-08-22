@@ -22,8 +22,8 @@ include /app/helpers/jade/mixins
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Discovery
     panel-description
-        | TCP/IP discovery configuration. 
-        | #[a.link-success(href="https://apacheignite.readme.io/docs/cluster-config" target="_blank") More info]
+        | TCP/IP discovery configuration.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/cluster-discovery" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-20
@@ -63,7 +63,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +number('Thread priority:', `${model}.threadPriority`, '"threadPriority"', 'true', '10', '1', 'Thread priority for all threads started by SPI')
 
             //- Removed in ignite 2.0
-            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
                 +number('Heartbeat frequency:', `${model}.heartbeatFrequency`, '"heartbeatFrequency"', 'true', '2000', '1', 'Heartbeat messages issuing frequency')
             .pc-form-grid-col-30
                 +number('Max heartbeats miss w/o init:', `${model}.maxMissedHeartbeats`, '"maxMissedHeartbeats"', 'true', '1', '1',

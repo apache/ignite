@@ -134,8 +134,12 @@ angular
 
         return {
             restrict: 'EA',
-            require: ['?ngModel', '?^form'],
-            link: (scope, elm, attrs, [ngModel, form]) => {
+            require: ['?ngModel', '?^form', 'igniteAce'],
+            bindToController: {
+                onSelectionChange: '&?'
+            },
+            controller() {},
+            link: (scope, elm, attrs, [ngModel, form, igniteAce]) => {
                 /**
                  * Corresponds the igniteAceConfig ACE configuration.
                  *
@@ -164,6 +168,8 @@ angular
                  * @see [EditSession]{@link http://ace.c9.io/#nav=api&api=edit_session}
                  */
                 const session = acee.getSession();
+
+                const selection = session.getSelection();
 
                 /**
                  * Reference to a change listener created by the listener factory.
@@ -223,6 +229,14 @@ angular
                     ngModel.$render = () => session.setValue(ngModel.$viewValue);
 
                     acee.on('change', () => ngModel.$setViewValue(acee.getValue()));
+
+                    selection.on('changeSelection', () => {
+                        if (igniteAce.onSelectionChange) {
+                            const aceSelection = selection.isEmpty() ? null : acee.session.getTextRange(acee.getSelectionRange());
+
+                            igniteAce.onSelectionChange({$event: aceSelection});
+                        }
+                    });
                 }
 
                 // Listen for option updates.

@@ -130,7 +130,7 @@
     }
    .ignite-form-field__errors {
         color: $ignite-brand-primary;
-        padding: 5px 10px 0px;
+        padding: 5px 10px 0;
         line-height: 14px;
         font-size: 12px;
         clear: both;
@@ -215,6 +215,7 @@
             box-sizing: border-box;
             width: 100%;
             max-width: initial;
+            min-width: 0;
             height: 36px;
             padding: 9px 10px;
             margin-right: 0;
@@ -241,7 +242,16 @@
             }
         }
 
+        &--postfix::after {
+            content: attr(data-postfix);
+            display: inline-flex;
+            place-self: center;
+            margin-left: 10px;
+        }
+
         // Added right offset to appearance of input for invalid password
+        & > input[type='email'].ng-invalid.ng-touched,
+        & > input[type='text'].ng-invalid.ng-touched,
         & > input[type='password'].ng-invalid.ng-touched {
             padding-right: 36px;
         }
@@ -259,11 +269,19 @@
         right: 0;
         bottom: 0;
 
+        display: flex;
+
         [ng-message] {
             // TODO: remove after replace all fields to new
             overflow: visible !important;
             animation: none !important;
         }
+    }
+
+    &__control--postfix + &__errors::after {
+        content: attr(data-postfix);
+        margin-left: 10px;
+        visibility: hidden;
     }
 
     &__error {
@@ -307,6 +325,7 @@
 }
 
 .form-field__checkbox {
+    $errorSize: 16px;
     display: flex;
 
     .form-field {
@@ -319,12 +338,91 @@
             width: auto;
             margin-right: 10px;
             padding: 3px 0;
+            flex: 0 0 auto;
 
             input {
                 width: auto;
                 height: auto;
                 margin: 0;
+                border-radius: 0;
             }
         }
+
+        &__errors {
+            position: static;
+            right: initial;
+            bottom: initial;
+            order: 3;
+            margin-left: 5px;
+
+            .form-field__error {
+                width: $errorSize;
+                height: $errorSize;
+
+                div {
+                    // Required to correctly position error popover
+                    top: -10px;
+                    height: 36px;
+                    
+                    width: $errorSize;                    
+                }
+
+                [ignite-icon] {
+                    width: $errorSize;
+                    top: 0;
+                }
+            }
+        }
+    }
+}
+
+.form-field__password {
+    // Validation error notification will overlap with visibility button if it's not moved more to the left
+    input[type='password'].ng-invalid.ng-touched,
+    input[type='password'].ng-invalid.ng-touched + input {
+        padding-right: 62px;
+    }
+
+    // Extra space for visibility button
+    input {
+        padding-right: 36px;
+    }
+
+    // Distance between error notification and visibility button
+    .form-field__errors {
+        right: 26px;
+    }
+
+    password-visibility-toggle-button {
+        position: absolute;
+        right: 0;
+        height: 36px;
+    }
+}
+
+.form-fieldset {
+    padding: 10px;
+
+    border: 1px solid hsla(0,0%,77%,.5);
+    border-radius: 4px;
+
+    legend {
+        width: auto;
+        margin: 0 -5px;
+        padding: 0 5px;
+
+        border: 0;
+
+        color: #393939;
+        font-size: 14px;
+        line-height: 1.42857;
+    }
+
+    legend + * {
+        margin-top: 0 !important;
+    }
+
+    & > *:last-child {
+        margin-bottom: 0 !important;
     }
 }

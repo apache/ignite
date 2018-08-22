@@ -19,7 +19,7 @@ import DockerGenerator from './Docker.service';
 import {assert} from 'chai';
 import {outdent} from 'outdent/lib';
 
-suite.only('Dockerfile generator', () => {
+suite('Dockerfile generator', () => {
     const generator = new DockerGenerator();
 
     test('Target 2.0', () => {

@@ -32,7 +32,7 @@ mixin discovery-multicast(modelAt = '$ctrl.clonedCluster')
             +number('Attempts count:', `${model}.addressRequestAttempts`, '"addressRequestAttempts"', 'true', '2', '0',
                 'Number of attempts to send multicast address request<br/>\
                 IP finder re - sends request only in case if no reply for previous request is received')
-        .pc-form-grid-col-20
+        .pc-form-grid-col-20.pc-form-grid-col-free
             +text-ip-address('Local address:', `${model}.localAddress`, '"localAddress"', 'true', '0.0.0.0',
                 'Local host address used by this IP finder<br/>\
                 If provided address is non - loopback then multicast socket is bound to this interface<br/>\

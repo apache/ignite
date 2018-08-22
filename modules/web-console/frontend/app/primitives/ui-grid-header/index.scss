@@ -20,6 +20,10 @@
 .ui-grid-header--subcategories {
     border-color: $table-border-color;
 
+    .ui-grid-header-canvas {
+        background-color: #f5f5f5;
+    }
+
     .ui-grid-row:nth-child(even) .ui-grid-cell.cell-total {
         background-color: rgba(102,175,233,.6);
     }
@@ -115,7 +119,8 @@
     }
 }
 
-.ui-grid[ui-grid-selection][ui-grid-grouping] {
+.ui-grid[ui-grid-selection][ui-grid-grouping],
+.ui-grid[ui-grid-selection][ui-grid-tree-view] {
     .ui-grid-pinned-container-left {
         .ui-grid-header--subcategories {
             .ui-grid-header-span {
