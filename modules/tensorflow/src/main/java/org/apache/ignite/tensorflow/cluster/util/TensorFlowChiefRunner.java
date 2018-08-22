@@ -23,7 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServer;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerScriptFormatter;
-import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcessBuilderSupplier;
+import org.apache.ignite.tensorflow.core.util.PythonProcessBuilderSupplier;
 import org.apache.ignite.tensorflow.core.util.AsyncNativeProcessRunner;
 import org.apache.ignite.tensorflow.core.util.NativeProcessRunner;
 
