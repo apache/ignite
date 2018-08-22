@@ -15,7 +15,6 @@
 
 import ctypes
 
-from pyignite import Client
 from pyignite.constants import *
 
 
@@ -42,7 +41,7 @@ class Primitive:
     c_type = None
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         return cls.c_type, client.recv(ctypes.sizeof(cls.c_type))
 
     @staticmethod

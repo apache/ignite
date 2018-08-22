@@ -18,7 +18,6 @@ from datetime import date, datetime, time, timedelta
 import decimal
 import uuid
 
-from pyignite import Client
 from pyignite.constants import *
 from .type_codes import *
 from .null_object import Null
@@ -47,7 +46,7 @@ class StandardObject:
         raise NotImplementedError('This object is generic')
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         tc_type = client.recv(ctypes.sizeof(ctypes.c_byte))
 
         if tc_type == TC_NULL:
@@ -81,7 +80,7 @@ class String:
         )
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         tc_type = client.recv(ctypes.sizeof(ctypes.c_byte))
         # String or Null
         if tc_type == TC_NULL:
@@ -143,7 +142,7 @@ class DecimalObject:
         )
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         tc_type = client.recv(ctypes.sizeof(ctypes.c_byte))
         # Decimal or Null
         if tc_type == TC_NULL:
@@ -493,7 +492,7 @@ class StandardArray:
         )
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         header_class = cls.build_header_class()
         buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)

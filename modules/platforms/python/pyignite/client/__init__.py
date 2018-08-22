@@ -43,7 +43,9 @@ from pyignite.exceptions import (
     BinaryTypeError, CacheError, HandshakeError, ParameterError,
     ReconnectError, SocketError, SocketWriteError, SQLError,
 )
-from pyignite.utils import is_iterable, status_to_exception
+from pyignite.utils import (
+    entity_id, is_iterable, schema_id, status_to_exception,
+)
 from .handshake import HandshakeRequest, read_response
 from .ssl import wrap
 
@@ -143,6 +145,7 @@ class Client:
 
     read_response = read_response
     _wrap = wrap
+    binary_registry = {}
 
     @property
     def socket(self) -> socket.socket:
@@ -336,13 +339,14 @@ class Client:
 
         return get_binary_type(self, binary_type)
 
-    @status_to_exception(BinaryTypeError)
     def put_binary_type(
         self, type_name: str, affinity_key_field: str=None,
-        is_enum=False, schema: dict=None
-    ):
+        is_enum=False, schema: dict=None,
+    ) -> dict:
         """
-        Registers binary type information in cluster.
+        Registers binary type information in cluster. Refers to a local (one
+        per client class) binary type registry − a set of (binary type ID,
+        schema ID) tuples − to minimize server load.
 
         :param type_name: name of the data type being registered,
         :param affinity_key_field: (optional) name of the affinity key field,
@@ -351,13 +355,29 @@ class Client:
         :param schema: (optional) when register enum, pass a dict
          of enumerated parameter names as keys and an integers as values.
          When register binary type, pass a dict of field names: field types.
-         Binary type with no fields is OK.
+         Binary type with no fields is OK,
+        :return: dict with type and schema IDs.
         """
         from pyignite.api.binary import put_binary_type
 
-        return put_binary_type(
-            self, type_name, affinity_key_field, is_enum, schema
-        )
+        type_id = entity_id(type_name)
+        schema = schema or {}
+        s_id = schema_id(schema)
+        if (type_id, s_id) in self.binary_registry:
+            return {
+                'type_id': type_id,
+                'schema_id': s_id,
+            }
+        else:
+            result = put_binary_type(
+                self, type_name, affinity_key_field, is_enum, schema
+            )
+            if result.status != 0:
+                raise BinaryTypeError(result.message)
+            self.binary_registry[
+                (result.value['type_id'], result.value['schema_id'])
+            ] = schema
+            return result.value
 
     def create_cache(self, settings: Union[str, dict]) -> 'Cache':
         """

@@ -15,7 +15,6 @@
 
 import ctypes
 
-from pyignite import Client
 from pyignite.constants import *
 from .type_codes import *
 
@@ -52,7 +51,7 @@ class DataObject:
         )
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         data_type = cls.build_c_type()
         buffer = client.recv(ctypes.sizeof(data_type))
         return data_type, buffer

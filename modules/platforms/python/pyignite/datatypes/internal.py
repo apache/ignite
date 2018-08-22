@@ -22,7 +22,6 @@ import uuid
 
 import attr
 
-from pyignite import Client
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
 from pyignite.utils import is_hinted, is_iterable
@@ -121,7 +120,7 @@ class StructArray:
             },
         )
 
-    def parse(self, client: Client):
+    def parse(self, client: 'Client'):
         buffer = client.recv(ctypes.sizeof(self.counter_type))
         length = int.from_bytes(buffer, byteorder=PROTOCOL_BYTE_ORDER)
         fields = []
@@ -174,7 +173,7 @@ class Struct:
     fields = attr.ib(type=list)
     dict_type = attr.ib(default=OrderedDict)
 
-    def parse(self, client: Client) -> Tuple[type, bytes]:
+    def parse(self, client: 'Client') -> Tuple[type, bytes]:
         buffer = b''
         fields = []
 
@@ -250,7 +249,7 @@ class AnyDataObject:
             return type_first
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         type_code = client.recv(ctypes.sizeof(ctypes.c_byte))
         try:
             data_class = tc_map(type_code)
@@ -275,7 +274,7 @@ class AnyDataObject:
             DateObject, TimeObject, DecimalObject, LongArrayObject,
             DoubleArrayObject, StringArrayObject, BoolArrayObject,
             UUIDArrayObject, DateArrayObject, TimeArrayObject,
-            DecimalArrayObject, MapObject, ObjectArrayObject,
+            DecimalArrayObject, MapObject, ObjectArrayObject, BinaryObject,
         )
 
         python_map = {
@@ -290,6 +289,7 @@ class AnyDataObject:
             date: DateObject,
             timedelta: TimeObject,
             decimal.Decimal: DecimalObject,
+            object: BinaryObject,
         }
 
         python_array_map = {
@@ -362,7 +362,7 @@ class AnyDataArray(AnyDataObject):
             }
         )
 
-    def parse(self, client: Client):
+    def parse(self, client: 'Client'):
         header_class = self.build_header()
         buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)

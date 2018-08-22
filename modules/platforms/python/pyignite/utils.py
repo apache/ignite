@@ -16,6 +16,8 @@
 from functools import wraps
 from typing import Any, Type, Union
 
+from pyignite.constants import *
+
 
 def is_iterable(value):
     """ Check if value is iterable. """
@@ -114,6 +116,27 @@ def entity_id(cache: Union[str, int]) -> int:
     :return: entity ID.
     """
     return cache if type(cache) is int else hashcode(cache.lower())
+
+
+def schema_id(schema: dict) -> int:
+    """
+    Calculate Complex Object schema ID.
+
+    :param schema: a dict of field names: field types,
+    :return: schema ID.
+    """
+    s_id = FNV1_OFFSET_BASIS if schema else 0
+    for field_name in schema.keys():
+        field_id = entity_id(field_name)
+        s_id ^= (field_id & 0xff)
+        s_id = int_overflow(s_id * FNV1_PRIME)
+        s_id ^= ((field_id >> 8) & 0xff)
+        s_id = int_overflow(s_id * FNV1_PRIME)
+        s_id ^= ((field_id >> 16) & 0xff)
+        s_id = int_overflow(s_id * FNV1_PRIME)
+        s_id ^= ((field_id >> 24) & 0xff)
+        s_id = int_overflow(s_id * FNV1_PRIME)
+    return s_id
 
 
 def status_to_exception(exc: Type[Exception]):

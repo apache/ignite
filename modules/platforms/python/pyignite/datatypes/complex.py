@@ -17,7 +17,6 @@ from collections import OrderedDict
 import ctypes
 from importlib import import_module
 
-from pyignite import Client
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
 from pyignite.utils import hashcode, is_hinted
@@ -55,7 +54,7 @@ class ObjectArrayObject:
         )
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         header_class = cls.build_header()
         buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
@@ -136,7 +135,7 @@ class WrappedDataObject:
         )
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         header_class = cls.build_header()
         buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
@@ -217,7 +216,7 @@ class Map:
         )
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         from .internal import AnyDataObject
 
         header_class = cls.build_header()
@@ -360,7 +359,7 @@ class BinaryObject:
         return ctypes.c_uint
 
     @staticmethod
-    def get_fields(client: Client, header) -> list:
+    def get_fields(client: 'Client', header) -> list:
         from pyignite.api import get_binary_type
         from pyignite.datatypes.internal import tc_map
 
@@ -377,7 +376,7 @@ class BinaryObject:
         ]
 
     @classmethod
-    def parse(cls, client: Client):
+    def parse(cls, client: 'Client'):
         from pyignite.datatypes import Struct
 
         header_class = cls.build_header()
