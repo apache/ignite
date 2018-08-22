@@ -63,7 +63,7 @@ namespace ignite
 
             const SqlToken& token = lexer.GetCurrentToken();
 
-            while (lexer.Shift() && token.GetType() != TokenType::SEMICOLON)
+            while (*lexer.Shift() && token.GetType() != TokenType::SEMICOLON)
             {
                 if (token.ToLower() == WORD_BATCH_SIZE)
                 {
@@ -143,7 +143,7 @@ namespace ignite
 
         int32_t SqlSetStreamingCommand::ExpectInt(SqlLexer& lexer)
         {
-            if (!lexer.Shift())
+            if (!*lexer.Shift())
                 ThrowUnexpectedEndOfStatement("integer number");
 
             const SqlToken& token = lexer.GetCurrentToken();
@@ -154,7 +154,7 @@ namespace ignite
             {
                 sign = -1;
 
-                if (!lexer.Shift())
+                if (!*lexer.Shift())
                     ThrowUnexpectedEndOfStatement("integer number");
             }
 
@@ -191,10 +191,10 @@ namespace ignite
         {
             const SqlToken& token = lexer.GetCurrentToken();
 
-            if (!lexer.Shift())
+            if (!*lexer.Shift())
                 ThrowUnexpectedTokenError(token, "ON or OFF");
 
-            return sql_utils::TokenToBoolean(token);
+            return *sql_utils::TokenToBoolean(token);
         }
     }
 }
