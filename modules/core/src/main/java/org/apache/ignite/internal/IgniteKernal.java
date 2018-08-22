@@ -1112,7 +1112,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                         assert locNode.isClient();
 
-                        if (!locNode.isClient())
+                        if (!ctx.discovery().reconnectSupported())
                             throw new IgniteCheckedException("Client node in forceServerMode " +
                                 "is not allowed to reconnect to the cluster and will be stopped.");
 
