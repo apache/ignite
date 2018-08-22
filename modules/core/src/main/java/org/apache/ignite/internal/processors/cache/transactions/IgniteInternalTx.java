@@ -652,11 +652,7 @@ public interface IgniteInternalTx {
     public MvccSnapshot mvccSnapshot();
 
     /**
-     * Accumulates size change for cache partition.
-     *
-     * @param cacheId Cache id.
-     * @param part Partition id.
-     * @param delta Size delta.
+     * @return tx counters.
      */
-    public void accumulateSizeDelta(int cacheId, int part, long delta);
+    public TxCounters txCounters();
 }

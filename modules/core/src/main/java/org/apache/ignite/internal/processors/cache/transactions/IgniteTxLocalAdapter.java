@@ -925,7 +925,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 updateAndCollectLocalPartitionCounters();
 
-                updateLocalPartitionSizes();
+                txCounters().updateLocalPartitionSizes();
 
                 if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(ptr, false);

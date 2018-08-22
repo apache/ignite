@@ -789,7 +789,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                             applyUpdateCounters();
 
-                            updateLocalPartitionSizes();
+                            txCounters().updateLocalPartitionSizes();
 
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
                                 // Set new update counters for data entries received from persisted tx entries.

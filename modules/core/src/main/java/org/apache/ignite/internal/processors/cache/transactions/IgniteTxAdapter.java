@@ -34,9 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
@@ -65,12 +62,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -279,8 +274,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @GridToStringExclude
     private volatile IgniteInternalFuture rollbackFut;
 
-    /** Size changes for caches and partitions made by current transaction */
-    private final ConcurrentMap<Integer, ConcurrentMap<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
+    /** */
+    private TxCounters txCounters;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -347,6 +342,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+
+        txCounters = new TxCounters(cctx);
     }
 
     /**
@@ -398,6 +395,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+
+        txCounters = new TxCounters(cctx);
     }
 
     /**
@@ -2025,55 +2024,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
 
-
-    /** */
-    protected void updateLocalPartitionSizes() {
-        if (F.isEmpty(sizeDeltas))
-            return;
-
-        for (Map.Entry<Integer, ConcurrentMap<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
-            Integer cacheId = entry.getKey();
-            Map<Integer, AtomicLong> partDeltas = entry.getValue();
-
-            assert !F.isEmpty(partDeltas);
-
-            GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
-
-            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
-                Integer p = e.getKey();
-                long delta = e.getValue().get();
-
-                GridDhtLocalPartition dhtPart = top.localPartition(p);
-
-                assert dhtPart != null;
-
-                dhtPart.dataStore().updateSize(cacheId, delta);
-            }
-        }
-    }
-
     /** {@inheritDoc} */
-    @Override public void accumulateSizeDelta(int cacheId, int part, long delta) {
-        ConcurrentMap<Integer, AtomicLong> partDeltas = sizeDeltas.get(cacheId);
-
-        if (partDeltas == null) {
-            ConcurrentMap<Integer, AtomicLong> partDeltas0 =
-                sizeDeltas.putIfAbsent(cacheId, partDeltas = new ConcurrentHashMap<>());
-
-            if (partDeltas0 != null)
-                partDeltas = partDeltas0;
-        }
-
-        AtomicLong accDelta = partDeltas.get(part);
-
-        if (accDelta == null) {
-            AtomicLong accDelta0 = partDeltas.putIfAbsent(part, accDelta = new AtomicLong());
-
-            if (accDelta0 != null)
-                accDelta = accDelta0;
-        }
-
-        accDelta.addAndGet(delta);
+    @Override public TxCounters txCounters() {
+        return txCounters;
     }
 
     /** {@inheritDoc} */
@@ -2349,8 +2302,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public void accumulateSizeDelta(int cacheId, int part, long delta) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        @Override public TxCounters txCounters() {
+            return null;
         }
 
         /** {@inheritDoc} */
