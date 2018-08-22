@@ -601,7 +601,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
         int part = cctx.affinity().partition(key);
 
-        tx.addPartitionCountersMapping(cacheId, part);
+        tx.txState().touchPartition(cacheId, part);
 
         if (F.isEmpty(backups))
             return;

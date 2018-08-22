@@ -59,8 +59,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
@@ -166,7 +164,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     private GridLongList mvccWaitTxs;
 
     /** Update counters map */
-    private final ConcurrentMap<Integer, ConcurrentMap<Integer, Long>> updCntrs = new ConcurrentHashMap<>();
+    private Map<Integer, Map<Integer, Long>> updCntrs = new HashMap<>();
 
     /** Size changes for caches and partitions made by current transaction */
     private final ConcurrentMap<Integer, ConcurrentMap<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
@@ -929,7 +927,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                updateLocalPartitionCounters();
+                updateAndCollectLocalPartitionCounters();
 
                 updateLocalPartitionSizes();
 
@@ -1660,7 +1658,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         Map<Integer, DeferredPartitionUpdates> res = new HashMap<>();
 
-        for (Map.Entry<Integer, ConcurrentMap<Integer, Long>> entry : updCntrs.entrySet()) {
+        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
             Integer cacheId = entry.getKey();
 
             Map<Integer, Long> partsCntrs = entry.getValue();
@@ -1714,20 +1712,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         return res;
     }
 
-    /**
-     * @param cacheId Cache id.
-     * @param part Partition id.
-     */
-    @SuppressWarnings("Java8MapApi")
-    public void addPartitionCountersMapping(Integer cacheId, Integer part) {
-        ConcurrentMap<Integer, Long> partUpdCntrs = updCntrs.get(cacheId);
-
-        if (partUpdCntrs == null)
-            updCntrs.put(cacheId, partUpdCntrs = new ConcurrentHashMap<>());
-
-        partUpdCntrs.put(part, 0L);
-    }
-
     /** {@inheritDoc} */
     @Override public void accumulateSizeDelta(int cacheId, int part, long delta) {
         ConcurrentMap<Integer, AtomicLong> partDeltas = sizeDeltas.get(cacheId);
@@ -1756,19 +1740,27 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Merges mvcc update counters to the partition update counters. For mvcc transactions we update partitions
      * counters only on commit phase.
      */
-    private void updateLocalPartitionCounters() {
-        if (F.isEmpty(updCntrs))
+    private void updateAndCollectLocalPartitionCounters() {
+        if (F.isEmpty(txState.touchedCachePartitions()))
             return;
 
-        for (Map.Entry<Integer, ConcurrentMap<Integer, Long>> entry : updCntrs.entrySet()) {
-            Map<Integer, Long> partsCntrs = entry.getValue();
+        HashMap<Integer, Map<Integer, Long>> updCntrs = new HashMap<>();
 
-            assert !F.isEmpty(partsCntrs);
+        for (Map.Entry<Integer, Set<Integer>> entry : txState.touchedCachePartitions().entrySet()) {
+            Integer cacheId = entry.getKey();
 
-            GridCacheContext ctx0 = cctx.cacheContext(entry.getKey());
+            Set<Integer> parts = entry.getValue();
 
-            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
-                GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(e.getKey());
+            assert !F.isEmpty(parts);
+
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            HashMap<Integer, Long> partCntrs;
+
+            updCntrs.put(cacheId, partCntrs = new HashMap<>());
+
+            for (int p : parts) {
+                GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(p);
 
                 assert dhtPart != null;
 
@@ -1776,11 +1768,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 dhtPart.updateCounter(cntr);
 
-                Long prev = partsCntrs.put(e.getKey(), cntr);
+                Long prev = partCntrs.put(p, cntr);
 
                 assert prev == 0L : prev;
             }
         }
+
+        this.updCntrs = updCntrs;
     }
 
     /** */
