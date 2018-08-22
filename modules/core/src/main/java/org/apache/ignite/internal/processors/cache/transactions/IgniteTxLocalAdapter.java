@@ -24,10 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -923,7 +920,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                updateAndCollectLocalPartitionCounters();
+                applyAndCollectLocalUpdateCounters();
 
                 txCounters().updateLocalPartitionSizes();
 
@@ -1688,7 +1685,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Merges mvcc update counters to the partition update counters. For mvcc transactions we update partitions
      * counters only on commit phase.
      */
-    private void updateAndCollectLocalPartitionCounters() {
+    private void applyAndCollectLocalUpdateCounters() {
         if (F.isEmpty(txState.touchedCachePartitions()))
             return;
 

@@ -787,7 +787,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
-                            applyUpdateCounters();
+                            applyLocalUpdateCounters();
 
                             txCounters().updateLocalPartitionSizes();
 
@@ -834,7 +834,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** */
-    private void applyUpdateCounters() {
+    private void applyLocalUpdateCounters() {
         Map<Integer, PartitionUpdateCounters> updCntrs = updateCounters();
 
         if (F.isEmpty(updCntrs))
