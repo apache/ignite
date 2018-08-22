@@ -1,0 +1,88 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+-var model = '$ctrl.clonedCluster'
+-var form = 'failoverSpi'
+-var failoverSpi = model + '.failoverSpi'
+-var failoverCustom = '$item.kind === "Custom"'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Failover configuration
+    panel-description
+        | Failover SPI provides ability to supply custom logic for handling failed execution of a grid job. 
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/fault-tolerance" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            //- Since ignite 2.0
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.0.0")')
+                +number('Failure detection timeout:', model + '.failureDetectionTimeout', '"failureDetectionTimeout"', 'true',
+                    '10000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
+            .pc-form-grid-col-60(ng-if-end)
+                +number('Client failure detection timeout:', model + '.clientFailureDetectionTimeout', '"clientFailureDetectionTimeout"', 'true',
+                    '30000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
+
+            .pc-form-grid-col-60
+                mixin clusters-failover-spi
+                    .ignite-form-field
+                        +ignite-form-field__label('Failover SPI configurations:', '"failoverSpi"')
+                            +tooltip(`Failover SPI configurations`)
+                        .ignite-form-field__control
+                            -let items = failoverSpi
+
+                            list-editable.pc-list-editable-with-form-grid(ng-model=items name='failoverSpi')
+                                list-editable-item-edit.pc-form-grid-row
+                                    .pc-form-grid-col-60
+                                        +sane-ignite-form-field-dropdown({
+                                            required: true,
+                                            label: 'Failover SPI:',
+                                            model: '$item.kind',
+                                            name: '"failoverKind"',
+                                            placeholder: 'Choose Failover SPI',
+                                            options: '::$ctrl.Clusters.failoverSpis',
+                                            tip: `
+                                            Provides ability to supply custom logic for handling failed execution of a grid job
+                                            <ul>
+                                                <li>Job stealing - Supports job stealing from over-utilized nodes to under-utilized nodes</li>
+                                                <li>Never - Jobs are ordered as they arrived</li>
+                                                <li>Always - Jobs are first ordered by their priority</li>
+                                                <li>Custom - Jobs are activated immediately on arrival to mapped node</li>
+                                                <li>Default - Default FailoverSpi implementation</li>
+                                            </ul>`
+                                        })
+
+                                    .pc-form-grid-col-60(ng-show='$item.kind === "JobStealing"')
+                                        +number('Maximum failover attempts:', '$item.JobStealing.maximumFailoverAttempts', '"jsMaximumFailoverAttempts"', 'true', '5', '0',
+                                            'Maximum number of attempts to execute a failed job on another node')
+                                    .pc-form-grid-col-60(ng-show='$item.kind === "Always"')
+                                        +number('Maximum failover attempts:', '$item.Always.maximumFailoverAttempts', '"alwaysMaximumFailoverAttempts"', 'true', '5', '0',
+                                            'Maximum number of attempts to execute a failed job on another node')
+                                    .pc-form-grid-col-60(ng-show=failoverCustom)
+                                        +java-class('SPI implementation', '$item.Custom.class', '"failoverSpiClass"', 'true', failoverCustom,
+                                            'Custom FailoverSpi implementation class name.', failoverCustom)
+
+                                list-editable-no-items
+                                    list-editable-add-item-button(
+                                        add-item=`(${items} = ${items} || []).push({})`
+                                        label-single='failover SPI'
+                                        label-multiple='failover SPIs'
+                                    )
+
+                +clusters-failover-spi
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterFailover')

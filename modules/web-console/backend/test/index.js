@@ -17,13 +17,9 @@
 
 const Mocha = require('mocha');
 const glob = require('glob');
-const path = require('path');
 
 const mocha = new Mocha({ui: 'tdd', reporter: process.env.MOCHA_REPORTER || 'spec'});
 const testPath = ['./test/unit/**/*.js', './test/routes/**/*.js'];
-
-if (process.env.IGNITE_MODULES)
-    testPath.push(path.join(process.env.IGNITE_MODULES, 'backend', 'test', 'unit', '**', '*.js'));
 
 testPath
     .map((mask) => glob.sync(mask))

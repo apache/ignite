@@ -70,7 +70,7 @@ public class CheckpointMetricsTracker {
     private long cpEnd;
 
     /**
-     *
+     * Increments counter if copy on write page was written.
      */
     public void onCowPageWritten() {
         COW_PAGES_UPDATER.incrementAndGet(this);

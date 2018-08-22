@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 
 /**
  * Thin client request handler.
@@ -29,20 +31,37 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** Client context. */
     private final ClientConnectionContext ctx;
 
+    /** Auth context. */
+    private final AuthorizationContext authCtx;
+
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    ClientRequestHandler(ClientConnectionContext ctx) {
+    ClientRequestHandler(ClientConnectionContext ctx, AuthorizationContext authCtx) {
         assert ctx != null;
 
         this.ctx = ctx;
+        this.authCtx = authCtx;
     }
 
     /** {@inheritDoc} */
     @Override public ClientListenerResponse handle(ClientListenerRequest req) {
-        return ((ClientRequest) req).process(ctx);
+        if (authCtx != null) {
+            AuthorizationContext.context(authCtx);
+            SecurityContextHolder.set(ctx.securityContext());
+        }
+
+        try {
+            return ((ClientRequest)req).process(ctx);
+        }
+        finally {
+            if (authCtx != null)
+                AuthorizationContext.clear();
+
+            SecurityContextHolder.clear();
+        }
     }
 
     /** {@inheritDoc} */

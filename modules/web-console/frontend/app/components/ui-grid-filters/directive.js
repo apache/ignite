@@ -22,15 +22,21 @@ export default function uiGridFilters(uiGridConstants) {
     return {
         require: 'uiGrid',
         link: {
-            pre(scope, el, attr, grid) {
-                if (!grid.grid.options.enableFiltering) return;
-                grid.grid.options.columnDefs.filter((cd) => cd.multiselectFilterOptions).forEach((cd) => {
+            pre(scope, el, attr, gridApi) {
+                if (!gridApi.grid.options.enableFiltering)
+                    return;
+
+                const applyMultiselectFilter = (cd) => {
                     cd.headerCellTemplate = template;
+
                     cd.filter = {
                         type: uiGridConstants.filter.SELECT,
                         term: cd.multiselectFilterOptions.map((t) => t.value),
                         condition(searchTerm, cellValue) {
-                            return searchTerm.includes(cellValue);
+                            if (cellValue)
+                                return Array.isArray(cellValue) ? _.intersection(searchTerm, cellValue).length : searchTerm.includes(cellValue);
+
+                            return true;
                         },
                         selectOptions: cd.multiselectFilterOptions,
                         $$selectOptionsMapping: cd.multiselectFilterOptions.reduce((a, v) => Object.assign(a, {[v.value]: v.label}), {}),
@@ -53,6 +59,32 @@ export default function uiGridFilters(uiGridConstants) {
                             </div>
                         `;
                     }
+                };
+
+                const updateMultiselectOptionsHandler = (gridApi, colDef) => {
+                    if (!gridApi)
+                        return;
+
+                    const col = gridApi.grid.getColumn(colDef.name);
+                    const selectOptions = colDef.multiselectFilterOptionsFn(gridApi.grid, col.filter);
+
+                    if (selectOptions.length === col.filter.selectOptions.length)
+                        return;
+
+                    col.filter.term = selectOptions.map((t) => t.value);
+                    col.filter.selectOptions = selectOptions;
+                };
+
+                gridApi.grid.options.columnDefs.filter((cd) => cd.multiselectFilterOptions).forEach(applyMultiselectFilter);
+
+                gridApi.grid.options.columnDefs.filter((cd) => cd.multiselectFilterOptionsFn).forEach((cd) => {
+                    cd.multiselectFilterOptions = cd.multiselectFilterOptions || [];
+                    applyMultiselectFilter(cd);
+
+                    if (cd.multiselectFilterDialog)
+                        cd.filter.selectDialog = cd.multiselectFilterDialog;
+
+                    gridApi.grid.api.core.on.rowsVisibleChanged(scope, (gridApi) => updateMultiselectOptionsHandler(gridApi, cd));
                 });
             }
         }

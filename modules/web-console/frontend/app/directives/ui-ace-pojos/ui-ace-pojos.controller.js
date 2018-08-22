@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import {nonNil} from 'app/utils/lodashMixins';
+
 export default ['$scope', 'JavaTypes', 'JavaTransformer', function($scope, JavaTypes, generator) {
     const ctrl = this;
 
@@ -47,7 +49,7 @@ export default ['$scope', 'JavaTypes', 'JavaTransformer', function($scope, JavaT
             const classes = ctrl.classes = [];
 
             _.forEach(ctrl.pojos, (pojo) => {
-                if (_.nonNil(pojo.keyClass))
+                if (nonNil(pojo.keyClass))
                     classes.push(pojo.keyType);
 
                 classes.push(pojo.valueType);

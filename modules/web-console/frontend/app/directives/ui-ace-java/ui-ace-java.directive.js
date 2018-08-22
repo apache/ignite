@@ -16,36 +16,9 @@
  */
 
 import template from './ui-ace-java.pug';
-import controller from './ui-ace-java.controller';
+import IgniteUiAceJava from './ui-ace-java.controller';
 
-export default ['igniteUiAceJava', ['IgniteVersion', (Version) => {
-    const link = (scope, $el, attrs, [ctrl, igniteUiAceTabs, formCtrl, ngModelCtrl]) => {
-        if (formCtrl && ngModelCtrl)
-            formCtrl.$removeControl(ngModelCtrl);
-
-        if (igniteUiAceTabs && igniteUiAceTabs.onLoad) {
-            scope.onLoad = (editor) => {
-                igniteUiAceTabs.onLoad(editor);
-
-                scope.$watch('master', () => editor.attractAttention = false);
-            };
-        }
-
-        if (igniteUiAceTabs && igniteUiAceTabs.onChange)
-            scope.onChange = igniteUiAceTabs.onChange;
-
-        const noDeepWatch = !(typeof attrs.noDeepWatch !== 'undefined');
-
-        const next = () => {
-            ctrl.data = _.isNil(scope.master) ? null : ctrl.generate(scope.master, scope.detail).asString();
-        };
-
-        // Setup watchers.
-        scope.$watch('master', next, noDeepWatch);
-
-        Version.currentSbj.subscribe({next});
-    };
-
+export default () => {
     return {
         priority: 1,
         restrict: 'E',
@@ -58,10 +31,14 @@ export default ['igniteUiAceJava', ['IgniteVersion', (Version) => {
             generator: '@',
             client: '@'
         },
-        link,
         template,
-        controller,
+        controller: IgniteUiAceJava,
         controllerAs: 'ctrl',
-        require: ['igniteUiAceJava', '?^igniteUiAceTabs', '?^form', '?ngModel']
+        require: {
+            ctrl: 'igniteUiAceJava',
+            igniteUiAceTabs: '?^igniteUiAceTabs',
+            formCtrl: '?^form',
+            ngModelCtrl: '?ngModel'
+        }
     };
-}]];
+};

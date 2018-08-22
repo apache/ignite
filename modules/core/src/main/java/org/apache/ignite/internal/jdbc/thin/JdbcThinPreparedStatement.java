@@ -39,8 +39,8 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
@@ -262,13 +262,23 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        if (batch == null) {
-            batch = new ArrayList<>();
+        checkStatementEligibleForBatching(sql);
 
-            batch.add(new JdbcQuery(sql, args.toArray(new Object[args.size()])));
+        checkStatementBatchEmpty();
+
+        batchSize++;
+
+        if (conn.isStream())
+            conn.addBatch(sql, args);
+        else {
+            if (batch == null) {
+                batch = new ArrayList<>();
+
+                batch.add(new JdbcQuery(sql, args.toArray(new Object[args.size()])));
+            }
+            else
+                batch.add(new JdbcQuery(null, args.toArray(new Object[args.size()])));
         }
-        else
-            batch.add(new JdbcQuery(null, args.toArray(new Object[args.size()])));
 
         args = null;
     }
