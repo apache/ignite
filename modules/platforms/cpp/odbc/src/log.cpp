@@ -16,7 +16,6 @@
  */
 
 #include <cstdlib>
-#include <iostream>
 
 #include "ignite/odbc/log.h"
 
@@ -49,17 +48,19 @@ namespace ignite
             mutex(),
             stream()
         {
-            // No-op.
+            if (path)
+            {
+                stream.open(path);
+            }
         }
 
         Logger::~Logger()
         {
-            // No-op.
         }
 
         bool Logger::IsEnabled() const
         {
-            return true;
+            return stream.is_open();
         }
 
         void Logger::WriteMessage(std::string const& message)
@@ -67,7 +68,7 @@ namespace ignite
             if (IsEnabled())
             {
                 ignite::common::concurrent::CsLockGuard guard(mutex);
-                std::cout <<  message << std::endl;
+                stream << message << std::endl;
             }
         }
 
