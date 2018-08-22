@@ -43,9 +43,12 @@ void CheckNextToken(odbc::SqlLexer& lexer, odbc::TokenType::Type tokenType, cons
 {
     BOOST_REQUIRE(!lexer.IsEod());
 
-    bool hasNext = lexer.Shift();
+    odbc::OdbcExpected<bool> hasNext = lexer.Shift();
 
-    BOOST_CHECK(hasNext);
+    if (!hasNext.IsOk())
+        BOOST_FAIL(hasNext.GetError().GetErrorMessage());
+
+    BOOST_CHECK(*hasNext);
 
     const odbc::SqlToken& token = lexer.GetCurrentToken();
     
@@ -202,10 +205,13 @@ BOOST_AUTO_TEST_CASE(LexerTokens)
     CheckNextToken(lexer, odbc::TokenType::WORD, "end");
 
     BOOST_REQUIRE(lexer.IsEod());
+    
+    odbc::OdbcExpected<bool> hasNext = lexer.Shift();
 
-    bool hasNext = lexer.Shift();
+    if (!hasNext.IsOk())
+        BOOST_FAIL(hasNext.GetError().GetErrorMessage());
 
-    BOOST_CHECK(!hasNext);
+    BOOST_CHECK(!*hasNext);
 }
 
 BOOST_AUTO_TEST_CASE(ParserSetStreamingOff)

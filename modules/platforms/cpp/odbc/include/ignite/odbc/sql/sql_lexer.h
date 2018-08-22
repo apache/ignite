@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <string>
 
+#include <ignite/odbc/odbc_error.h>
 #include <ignite/odbc/sql/sql_token.h>
 
 namespace ignite
@@ -50,7 +51,7 @@ namespace ignite
              *
              * @return @c true if next token was found and @c false otherwise.
              */
-            bool Shift();
+            OdbcExpected<bool> Shift();
 
             /**
              * Check if the end of data reached.

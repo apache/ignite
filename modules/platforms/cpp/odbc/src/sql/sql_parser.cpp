@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#include "ignite/common/utils.h"
+#include <ignite/common/utils.h>
 
-#include "ignite/odbc/odbc_error.h"
-#include "ignite/odbc/sql/sql_set_streaming_command.h"
-#include "ignite/odbc/sql/sql_parser.h"
+#include <ignite/odbc/odbc_error.h>
+#include <ignite/odbc/sql/sql_set_streaming_command.h>
+#include <ignite/odbc/sql/sql_parser.h>
 
 const static std::string WORD_SET("set");
 
@@ -44,7 +44,7 @@ namespace ignite
         {
             while (true)
             {
-                if (!lexer.Shift())
+                if (!*lexer.Shift())
                     return std::auto_ptr<SqlCommand>();
 
                 const SqlToken& token = lexer.GetCurrentToken();
@@ -78,7 +78,7 @@ namespace ignite
             const SqlToken& token = lexer.GetCurrentToken();
 
             if (WORD_SET == token.ToLower() &&
-                lexer.Shift() &&
+                *lexer.Shift() &&
                 token.GetType() == TokenType::WORD &&
                 WORD_STREAMING == token.ToLower())
             {

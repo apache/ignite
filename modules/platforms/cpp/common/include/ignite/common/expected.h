@@ -160,19 +160,6 @@ namespace ignite
             }
 
             /**
-             * Bool cast operator.
-             *
-             * Act the same as @c IsOk() method.
-             * Can be used for checks like if (expected) {...}.
-             *
-             * @return @c false if the value is an error and @c true otherwise.
-             */
-            operator bool() const
-            {
-                return IsOk();
-            }
-
-            /**
              * Get result. Constant accesser.
              *
              * @return Result if it was set before.
