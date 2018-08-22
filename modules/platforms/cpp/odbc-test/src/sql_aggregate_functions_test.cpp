@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgInt)
 
     avg /= static_cast<int32_t>(in.size());
 
-    CheckSingleResult<int64_t>("SELECT {fn AVG(i32Field)} FROM TestType", avg);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn AVG(i32Field)} FROM TestType", avg);
 }
 
 BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgIntDistinct)
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgIntDistinct)
 
     testCache.Put(in.size() + 10, in[0]);
 
-    CheckSingleResult<int64_t>("SELECT {fn AVG(DISTINCT i32Field)} FROM TestType", avg);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn AVG(DISTINCT i32Field)} FROM TestType", avg);
 }
 
 BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgFloat)
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionCount)
     for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
         testCache.Put(i, in[i]);
 
-    CheckSingleResult<int64_t>("SELECT {fn COUNT(*)} FROM TestType", in.size());
+    CheckSingleResult<SQLBIGINT>("SELECT {fn COUNT(*)} FROM TestType", in.size());
 }
 
 BOOST_AUTO_TEST_CASE(TestAggregateFunctionCountDistinct)
@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionCountDistinct)
 
     testCache.Put(in.size() + 10, in[0]);
 
-    CheckSingleResult<int64_t>("SELECT {fn COUNT(DISTINCT i32Field)} FROM TestType", in.size());
+    CheckSingleResult<SQLBIGINT>("SELECT {fn COUNT(DISTINCT i32Field)} FROM TestType", in.size());
 }
 
 BOOST_AUTO_TEST_CASE(TestAggregateFunctionMax)
@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionMax)
     for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
         testCache.Put(i, in[i]);
 
-    CheckSingleResult<int64_t>("SELECT {fn MAX(i32Field)} FROM TestType", in[2].i32Field);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn MAX(i32Field)} FROM TestType", in[2].i32Field);
 }
 
 BOOST_AUTO_TEST_CASE(TestAggregateFunctionMin)
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionMin)
     for (int32_t i = 0; i < static_cast<int32_t>(in.size()); ++i)
         testCache.Put(i, in[i]);
 
-    CheckSingleResult<int64_t>("SELECT {fn MIN(i32Field)} FROM TestType", in[1].i32Field);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn MIN(i32Field)} FROM TestType", in[1].i32Field);
 }
 
 BOOST_AUTO_TEST_CASE(TestAggregateFunctionSum)
@@ -217,7 +217,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionSum)
         sum += in[i].i32Field;
     }
 
-    CheckSingleResult<int64_t>("SELECT {fn SUM(i32Field)} FROM TestType", sum);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn SUM(i32Field)} FROM TestType", sum);
 }
 
 BOOST_AUTO_TEST_CASE(TestAggregateFunctionSumDistinct)
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionSumDistinct)
 
     testCache.Put(in.size() + 10, in[0]);
 
-    CheckSingleResult<int64_t>("SELECT {fn SUM(DISTINCT i32Field)} FROM TestType", sum);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn SUM(DISTINCT i32Field)} FROM TestType", sum);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

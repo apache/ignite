@@ -75,7 +75,7 @@ void CheckRowData(Row& row, size_t rowIdx)
 {
     SqlLen reslen;
 
-    long longBuf;
+    SQLINTEGER longBuf;
     char strBuf[1024];
     SQLGUID guidBuf;
     char bitBuf;

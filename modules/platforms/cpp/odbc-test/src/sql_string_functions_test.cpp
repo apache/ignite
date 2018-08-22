@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionAscii)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn ASCII(strField)} FROM TestType", static_cast<int32_t>('H'));
+    CheckSingleResult<SQLINTEGER>("SELECT {fn ASCII(strField)} FROM TestType", static_cast<int32_t>('H'));
 }
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionBitLength)
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionBitLength)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn BIT_LENGTH(strField)} FROM TestType", in.strField.size() * 16);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn BIT_LENGTH(strField)} FROM TestType", in.strField.size() * 16);
 }
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionChar)
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionCharLength)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn CHAR_LENGTH(strField)} FROM TestType", in.strField.size());
+    CheckSingleResult<SQLBIGINT>("SELECT {fn CHAR_LENGTH(strField)} FROM TestType", in.strField.size());
 }
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionCharacterLength)
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionCharacterLength)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn CHARACTER_LENGTH(strField)} FROM TestType", in.strField.size());
+    CheckSingleResult<SQLBIGINT>("SELECT {fn CHARACTER_LENGTH(strField)} FROM TestType", in.strField.size());
 }
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionConcat)
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionDifference)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn DIFFERENCE(strField, \'Hola!\')} FROM TestType", 4);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn DIFFERENCE(strField, \'Hola!\')} FROM TestType", 4);
 }
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionInsert)
@@ -157,7 +157,7 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionLength)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn LENGTH(strField)} FROM TestType", in.strField.size());
+    CheckSingleResult<SQLBIGINT>("SELECT {fn LENGTH(strField)} FROM TestType", in.strField.size());
 }
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionLocate)
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionLocate)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn LOCATE(\'ip\', strField)} FROM TestType", 7);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn LOCATE(\'ip\', strField)} FROM TestType", 7);
 }
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionLocate2)
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionLocate2)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn LOCATE(\'ip\', strField, 10)} FROM TestType", 43);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn LOCATE(\'ip\', strField, 10)} FROM TestType", 43);
 }
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionLtrim)
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionOctetLength)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn OCTET_LENGTH(strField)} FROM TestType", in.strField.size() * 2);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn OCTET_LENGTH(strField)} FROM TestType", in.strField.size() * 2);
 }
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionPosition)
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(TestStringFunctionPosition)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn POSITION(\'sit\', strField)} FROM TestType", 19);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn POSITION(\'sit\', strField)} FROM TestType", 19);
 }
 
 BOOST_AUTO_TEST_CASE(TestStringFunctionRepeat)

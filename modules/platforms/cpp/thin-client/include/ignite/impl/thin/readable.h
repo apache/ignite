@@ -84,7 +84,7 @@ namespace ignite
                  */
                 virtual void Read(binary::BinaryReaderImpl& reader)
                 {
-                    reader.ReadTopObject0(value);
+                    reader.ReadTopObject0<ignite::binary::BinaryReader, ValueType>(value);
                 }
 
             private:
@@ -146,8 +146,8 @@ namespace ignite
                     {
                         std::pair<ElementType1, ElementType2> pair;
 
-                        reader.ReadTopObject0<ElementType1>(pair.first);
-                        reader.ReadTopObject0<ElementType2>(pair.second);
+                        reader.ReadTopObject0<BinaryReader, ElementType1>(pair.first);
+                        reader.ReadTopObject0<BinaryReader, ElementType2>(pair.second);
 
                         iter = pair;
 
