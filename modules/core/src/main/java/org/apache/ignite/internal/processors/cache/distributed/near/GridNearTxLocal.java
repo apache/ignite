@@ -3434,40 +3434,39 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!commit) {
                 final GridNearTxFinishFuture rollbackFut = new GridNearTxFinishFuture<>(cctx, this, false);
 
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
-                        if (FINISH_FUT_UPD.compareAndSet(tx, fut, rollbackFut)) {
-                            if (tx.state() == COMMITTED) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to rollback, transaction is already committed: " + tx);
+                fut.listen(f -> cctx.tm().finisher().execute(tx, () -> {
+                    if (FINISH_FUT_UPD.compareAndSet(tx, fut, rollbackFut)) {
+                        if (tx.state() == COMMITTED) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to rollback, transaction is already committed: " + tx);
 
-                                rollbackFut.forceFinish();
+                            rollbackFut.forceFinish();
 
-                                assert rollbackFut.isDone() : rollbackFut;
-                            }
-                            else {
-                                if (!cctx.mvcc().addFuture(rollbackFut, rollbackFut.futureId()))
-                                    return;
-
-                                rollbackFut.finish(false, clearThreadMap, onTimeout);
-                            }
+                            assert rollbackFut.isDone() : rollbackFut;
                         }
                         else {
-                            finishFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                                    try {
-                                        fut.get();
+                            if (!cctx.mvcc().addFuture(rollbackFut, rollbackFut.futureId()))
+                                return;
 
-                                        rollbackFut.markInitialized();
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        rollbackFut.onDone(e);
-                                    }
-                                }
-                            });
+                            rollbackFut.finish(false, clearThreadMap, onTimeout);
                         }
                     }
-                });
+                    else {
+                        finishFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
+                            @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                try {
+                                    fut.get();
+
+                                    rollbackFut.markInitialized();
+                                }
+                                catch (IgniteCheckedException e) {
+                                    rollbackFut.onDone(e);
+                                }
+                            }
+                        });
+                    }
+                })
+                );
 
                 return rollbackFut;
             }
