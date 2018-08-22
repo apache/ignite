@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalOptimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalPessimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.PartitionsExchangeCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.ReplicatedAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
@@ -109,10 +110,10 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(IgniteExchangeLatchManagerCoordinatorFailTest.class);
 
+        suite.addTestSuite(PartitionsExchangeCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheTryLockMultithreadedTest.class);
 
         //suite.addTestSuite(CacheClientsConcurrentStartTest.class);
-        //suite.addTestSuite(CacheTryLockMultithreadedTest.class);
         //suite.addTestSuite(GridCacheRebalancingOrderingTest.class);
         //suite.addTestSuite(IgniteCacheClientMultiNodeUpdateTopologyLockTest.class);
 

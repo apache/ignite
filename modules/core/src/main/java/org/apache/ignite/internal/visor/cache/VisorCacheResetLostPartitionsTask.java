@@ -43,7 +43,7 @@ public class VisorCacheResetLostPartitionsTask extends VisorOneNodeTask<VisorCac
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg Object with list cache names to reset lost partitons.
+         * @param arg Object with list cache names to reset lost partitions.
          * @param debug Debug flag.
          */
         private VisorCacheResetLostPartitionsJob(VisorCacheResetLostPartitionsTaskArg arg, boolean debug) {
