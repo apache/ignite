@@ -331,21 +331,23 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         if (!hasWriteKey(entry.txKey()))
             return false;
 
-        IgniteTxCommitFuture commitFuture = startCommit();
+        cctx.tm().finisher().execute(this, () -> {
+            IgniteTxCommitFuture commitFut = startCommit();
 
-        commitFuture.listen(f -> cctx.tm().finisher().execute(this, () -> {
-            try {
-                finishCommit(commitFuture);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to commit remote transaction: " + this, e);
+            commitFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
+                try {
+                    finishCommit(commitFut);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to commit remote transaction: " + this, e);
 
-                invalidate(true);
-                systemInvalidate(true);
+                    invalidate(true);
+                    systemInvalidate(true);
 
-                rollbackRemoteTx();
-            }
-        }));
+                    rollbackRemoteTx();
+                }
+            }));
+        });
 
         return true;
     }
@@ -714,7 +716,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         return near() || cctx.snapshot().needTxReadLogging() ? allEntries() : writeEntries();
     }
 
-    public void finishCommit(IgniteTxCommitEntriesFuture commitEntriesFuture) throws IgniteCheckedException {
+    private void finishCommitEntries(IgniteTxCommitEntriesFuture commitEntriesFuture) throws IgniteCheckedException {
         assert commitEntriesFuture.isDone();
 
         // Nothing to commit.
@@ -778,7 +780,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     throw (Error)ex;
             }
 
-            if (err != null) {
+            if (err == null) {
                 if (latestPtr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(latestPtr, false);
             }
@@ -802,6 +804,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public IgniteTxCommitFuture startCommit() {
         try {
+            if (!Thread.currentThread().getName().contains("dedicated")) {
+                throw new AssertionError("Commit requested not from dedicated stripe.");
+            }
+
             if (optimistic())
                 state(PREPARED);
 
@@ -838,7 +844,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         commitFuture.get(); // Check for errors.
 
         if (commitFuture.commitEntriesFuture() != null)
-            finishCommit(commitFuture.commitEntriesFuture());
+            finishCommitEntries(commitFuture.commitEntriesFuture());
     }
 
     /**
@@ -854,18 +860,20 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
         GridFutureAdapter<IgniteInternalTx> fut = new GridFutureAdapter<>();
 
-        IgniteTxCommitFuture commitFut = startCommit();
+        cctx.tm().finisher().execute(this, () -> {
+            IgniteTxCommitFuture commitFut = startCommit();
 
-        commitFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
-            try {
-                finishCommit(commitFut);
+            commitFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
+                try {
+                    finishCommit(commitFut);
 
-                fut.onDone(this);
-            }
-            catch (IgniteCheckedException e) {
-                fut.onDone(e);
-            }
-        }));
+                    fut.onDone(this);
+                }
+                catch (IgniteCheckedException e) {
+                    fut.onDone(e);
+                }
+            }));
+        });
 
         return fut;
     }
@@ -896,7 +904,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             U.error(log, "Failed to invalidate transaction: " + xidVersion(), e);
         }
 
-        return null;
+        return new GridFinishedFuture<>();
     }
 
     /** {@inheritDoc} */

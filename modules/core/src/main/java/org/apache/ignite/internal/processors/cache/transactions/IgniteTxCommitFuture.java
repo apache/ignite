@@ -16,6 +16,8 @@ public class IgniteTxCommitFuture extends GridFutureAdapter<Boolean> {
 
         if (!async)
             onDone();
+        else
+            commitEntriesFuture.listen(f -> onDone());
     }
 
     public IgniteTxCommitFuture(Throwable err) {

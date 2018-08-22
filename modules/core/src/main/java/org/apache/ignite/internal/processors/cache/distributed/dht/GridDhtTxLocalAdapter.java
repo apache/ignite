@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxCommitEntriesFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxCommitFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
@@ -788,23 +787,11 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             }
         }
 
-/*
-        log.warning("Finish thread id = " + Thread.currentThread().getName());
-*/
-
-        if (!Thread.currentThread().getName().contains("dedicated")) {
+        if (!Thread.currentThread().getName().contains("dedicated"))
             throw new AssertionError("Commit requested not from dedicated stipe");
-        }
 
-        if (commit && !isRollbackOnly()) {
-            IgniteTxCommitEntriesFuture fut = startCommit();
-
-            IgniteTxCommitFuture commitFuture = new IgniteTxCommitFuture(fut, true);
-
-            fut.listen(f -> commitFuture.onDone());
-
-            return commitFuture;
-        }
+        if (commit && !isRollbackOnly())
+            return new IgniteTxCommitFuture(startCommit(), true);
         else
             return new IgniteTxCommitFuture(userRollback(clearThreadMap), false);
     }
