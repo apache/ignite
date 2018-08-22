@@ -971,9 +971,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Start security processors.
             startProcessor(createComponent(GridSecurityProcessor.class, ctx));
 
-            // Start transactional data replication processor.
-            startProcessor(createComponent(TransactionalDrProcessor.class, ctx));
-
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
             startManager(new GridIoManager(ctx));
@@ -1020,6 +1017,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
+
+                // Start transactional data replication processor.
+                startProcessor(createComponent(TransactionalDrProcessor.class, ctx));
 
                 // Start plugins.
                 for (PluginProvider provider : ctx.plugins().allProviders()) {

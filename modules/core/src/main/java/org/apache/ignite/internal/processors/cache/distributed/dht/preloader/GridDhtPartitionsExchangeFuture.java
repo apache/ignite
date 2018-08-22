@@ -1022,6 +1022,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 try {
+                    cctx.kernalContext().txDr().onDeActivate(cctx.kernalContext());
+
                     cctx.kernalContext().dataStructures().onDeActivate(cctx.kernalContext());
 
                     cctx.kernalContext().service().onDeActivate(cctx.kernalContext());

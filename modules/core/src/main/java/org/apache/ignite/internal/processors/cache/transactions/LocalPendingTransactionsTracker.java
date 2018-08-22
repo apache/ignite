@@ -536,6 +536,38 @@ public class LocalPendingTransactionsTracker {
     }
 
     /**
+     * Resets the state of this tracker.
+     */
+    public void reset() {
+        stateLock.writeLock().lock();
+
+        try {
+            txFinishAwaiting = null;
+
+            trackPrepared.set(false);
+
+            trackedPreparedTxs.clear();
+
+            currentlyPreparedTxs.clear();
+
+            trackCommitted.set(false);
+
+            trackedCommittedTxs.clear();
+
+            currentlyCommittingTxs.clear();
+
+            preparedCommittedTxsCounters.clear();
+
+            writtenKeysToNearXidVer.clear();
+
+            dependentTransactionsGraph.clear();
+        }
+        finally {
+            stateLock.writeLock().unlock();
+        }
+    }
+
+    /**
      * @param nearXidVer Near xid version.
      */
     private void checkTxFinishFutureDone(GridCacheVersion nearXidVer) {

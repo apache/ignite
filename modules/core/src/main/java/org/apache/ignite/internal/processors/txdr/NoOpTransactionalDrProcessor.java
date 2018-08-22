@@ -16,7 +16,9 @@
 */
 package org.apache.ignite.internal.processors.txdr;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 
 /**
@@ -28,5 +30,17 @@ public class NoOpTransactionalDrProcessor extends GridProcessorAdapter implement
      */
     public NoOpTransactionalDrProcessor(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMarkCheckPointBegin(long snapshotId, WALPointer ptr) {
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
     }
 }
