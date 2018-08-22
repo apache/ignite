@@ -166,7 +166,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     private GridLongList mvccWaitTxs;
 
     /** Update counters map */
-    private ConcurrentMap<Integer, ConcurrentMap<Integer, Long>> updCntrs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, ConcurrentMap<Integer, Long>> updCntrs = new ConcurrentHashMap<>();
 
     /** Size changes for caches and partitions made by current transaction */
     private final ConcurrentMap<Integer, ConcurrentMap<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
