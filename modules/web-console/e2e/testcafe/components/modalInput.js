@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 import {FormField} from './FormField';
-import {Selector, t} from 'testcafe';
+import {t} from 'testcafe';
 
 export class ModalInput {
     constructor() {
