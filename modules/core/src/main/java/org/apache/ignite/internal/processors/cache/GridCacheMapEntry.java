@@ -1117,12 +1117,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert tx.local() && updateCntr == null || !tx.local() && updateCntr != null && updateCntr > 0;
 
-            if (tx.local()) {
+            if (tx.local())
                 updateCntr = nextMvccPartitionCounter();
 
-                if (res.resultType() == ResultType.PREV_NULL)
-                    ((IgniteTxLocalEx)tx).accumulateSizeDelta(cctx.cacheId(), partition(), 1);
-            }
+            if (res.resultType() == ResultType.PREV_NULL)
+                tx.accumulateSizeDelta(cctx.cacheId(), partition(), 1);
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
@@ -1217,12 +1216,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert tx.local() && updateCntr == null || !tx.local() && updateCntr != null && updateCntr > 0;
 
-            if (tx.local()) {
+            if (tx.local())
                 updateCntr = nextMvccPartitionCounter();
 
-                if (res.resultType() == ResultType.PREV_NOT_NULL)
-                    ((IgniteTxLocalEx)tx).accumulateSizeDelta(cctx.cacheId(), partition(), -1);
-            }
+            if (res.resultType() == ResultType.PREV_NOT_NULL)
+                tx.accumulateSizeDelta(cctx.cacheId(), partition(), -1);
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = logTxUpdate(tx, null, 0, updateCntr);

@@ -166,9 +166,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** Update counters map */
     private Map<Integer, Map<Integer, Long>> updCntrs = new HashMap<>();
 
-    /** Size changes for caches and partitions made by current transaction */
-    private final ConcurrentMap<Integer, ConcurrentMap<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
-
     /** */
     private volatile boolean qryEnlisted;
 
@@ -1653,7 +1650,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @return Partition counters map for the given backup node.
      */
     public Map<Integer, DeferredPartitionUpdates> deferredUpdatesForNode(ClusterNode node) {
-        if (F.isEmpty(updCntrs) && F.isEmpty(sizeDeltas))
+        if (F.isEmpty(updCntrs))
             return null;
 
         Map<Integer, DeferredPartitionUpdates> res = new HashMap<>();
@@ -1685,55 +1682,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 res.put(cacheId, resBackupUpdates);
         }
 
-        for (Map.Entry<Integer, ConcurrentMap<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
-            Integer cacheId = entry.getKey();
-
-            Map<Integer, AtomicLong> partDeltas = entry.getValue();
-
-            assert !F.isEmpty(partDeltas);
-
-            GridCacheAffinityManager affinity = cctx.cacheContext(cacheId).affinity();
-
-            DeferredPartitionUpdates resBackupUpdates = res.get(cacheId);
-
-            if (resBackupUpdates == null)
-                res.put(cacheId, resBackupUpdates = new DeferredPartitionUpdates());
-
-            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
-                Integer p = e.getKey();
-
-                long delta = e.getValue().get();
-
-                if (affinity.backupByPartition(node, p, topologyVersionSnapshot()))
-                    resBackupUpdates.sizeDeltas().put(p, delta);
-            }
-        }
-
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void accumulateSizeDelta(int cacheId, int part, long delta) {
-        ConcurrentMap<Integer, AtomicLong> partDeltas = sizeDeltas.get(cacheId);
-
-        if (partDeltas == null) {
-            ConcurrentMap<Integer, AtomicLong> partDeltas0 =
-                sizeDeltas.putIfAbsent(cacheId, partDeltas = new ConcurrentHashMap<>());
-
-            if (partDeltas0 != null)
-                partDeltas = partDeltas0;
-        }
-
-        AtomicLong accDelta = partDeltas.get(part);
-
-        if (accDelta == null) {
-            AtomicLong accDelta0 = partDeltas.putIfAbsent(part, accDelta = new AtomicLong());
-
-            if (accDelta0 != null)
-                accDelta = accDelta0;
-        }
-
-        accDelta.addAndGet(delta);
     }
 
     /**
@@ -1768,39 +1717,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 dhtPart.updateCounter(cntr);
 
-                Long prev = partCntrs.put(p, cntr);
-
-                assert prev == 0L : prev;
+                partCntrs.put(p, cntr);
             }
         }
 
         this.updCntrs = updCntrs;
-    }
-
-    /** */
-    private void updateLocalPartitionSizes() {
-        if (F.isEmpty(sizeDeltas))
-            return;
-
-        for (Map.Entry<Integer, ConcurrentMap<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
-            Integer cacheId = entry.getKey();
-            Map<Integer, AtomicLong> partDeltas = entry.getValue();
-
-            assert !F.isEmpty(partDeltas);
-
-            GridDhtPartitionTopology topology = cctx.cacheContext(cacheId).topology();
-
-            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
-                Integer p = e.getKey();
-                long delta = e.getValue().get();
-
-                GridDhtLocalPartition dhtPart = topology.localPartition(p);
-
-                assert dhtPart != null;
-
-                dhtPart.dataStore().updateSize(cacheId, delta);
-            }
-        }
     }
 
     /**

@@ -56,13 +56,4 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @throws IgniteCheckedException If finish failed.
      */
     public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException;
-
-    /**
-     * Accumulates size change for cache partition.
-     *
-     * @param cacheId Cache id.
-     * @param part Partition id.
-     * @param delta Size delta.
-     */
-    public void accumulateSizeDelta(int cacheId, int part, long delta);
 }
