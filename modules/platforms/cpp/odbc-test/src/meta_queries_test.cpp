@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnLength)
     SQLExecDirect(stmt, req, SQL_NTS);
 
     SQLLEN intVal;
-    SQLCHAR strBuf[1024];
+    char strBuf[1024];
     SQLSMALLINT strLen;
 
     SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_LENGTH, strBuf, sizeof(strBuf), &strLen, &intVal);
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
     SQLExecDirect(stmt, req, SQL_NTS);
 
     SQLLEN intVal;
-    SQLCHAR strBuf[1024];
+    char strBuf[1024];
     SQLSMALLINT strLen;
 
     SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_PRECISION, strBuf, sizeof(strBuf), &strLen, &intVal);
