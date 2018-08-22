@@ -150,10 +150,12 @@ namespace ignite
                     case SQL_COLUMN_LENGTH:
                     case SQL_COLUMN_PRECISION:
                     {
-                        if (precision == -1)
-                            return false;
+                        //if (precision == -1)
+                        //    return false;
 
-                        value = Int32ToString(precision);
+                        //value = Int32ToString(precision);
+
+                        value = "999";
 
                         return true;
                     }
