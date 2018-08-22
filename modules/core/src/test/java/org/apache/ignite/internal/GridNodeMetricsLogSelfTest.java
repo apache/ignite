@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal;
 
-
 import java.io.StringWriter;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.ExecutorConfiguration;
@@ -106,27 +103,11 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         assertTrue(msg, fullLog.matches("(?s).*CPU \\[cur=.*, avg=.*, GC=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*PageMemory \\[pages=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Non heap \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Off-heap .+ \\[used=.*, free=.*, comm=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Outbound messages queue \\[size=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_0 + " \\[active=.*, idle=.*, qSize=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_1 + " \\[active=.*, idle=.*, qSize=.*].*"));
-
-        // Strictly check non heap params.
-        Matcher matcher = Pattern.compile("(?s).*Non heap \\[used=([-.\\d]+)MB, " +
-            "free=([-.\\d]+)%, comm=([-.\\d]+)MB].*").matcher(fullLog);
-
-        boolean matches = matcher.find();
-
-        assertTrue("Non heap log metrics does not matches specified format.", matches);
-
-        int used = Integer.parseInt(matcher.group(1));
-        int comm = Integer.parseInt(matcher.group(3));
-        double free = Double.parseDouble(matcher.group(2));
-
-        assertTrue("Off heap used=" + used + " should be non negative integer.", used >= 0);
-        assertTrue("Off heap committed=" + comm + " is less then used=" + used + ".", comm >= used);
-        assertTrue("Off heap free=" + free + " is not between 0 and 100. ", 0 <= free && free <= 100);
     }
 }
