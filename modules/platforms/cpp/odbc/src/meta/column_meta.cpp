@@ -87,10 +87,6 @@ namespace ignite
                     precision = reader.ReadInt32();
                     scale = reader.ReadInt32();
                 }
-                else
-                {
-                    precision = 1234;
-                }
             }
 
             bool ColumnMeta::GetAttribute(uint16_t fieldId, std::string& value) const 
@@ -154,11 +150,8 @@ namespace ignite
                     case SQL_COLUMN_LENGTH:
                     case SQL_COLUMN_PRECISION:
                     {
-                        if (precision == -1) {
-                            value = "1111";
-
+                        if (precision == -1)
                             return false;
-                        }
 
                         value = Int32ToString(precision);
 
