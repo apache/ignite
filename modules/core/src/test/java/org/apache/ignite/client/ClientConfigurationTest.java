@@ -27,7 +27,6 @@ import java.io.ObjectOutputStream;
 import java.util.Collections;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -37,7 +36,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class ClientConfigurationTest {
     /** Serialization/deserialization. */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testSerialization() throws IOException, ClassNotFoundException {
         ClientConfiguration target = new ClientConfiguration()
             .setAddresses("127.0.0.1:10800", "127.0.0.1:10801")

@@ -26,8 +26,11 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -40,7 +43,7 @@ public class IgniteBinaryTest {
     /**
      * Unmarshalling schema-less Ignite binary objects into Java static types.
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testUnmarshalSchemalessIgniteBinaries() throws Exception {
         int key = 1;
         Person val = new Person(key, "Joe");
@@ -63,7 +66,7 @@ public class IgniteBinaryTest {
     /**
      * Reading schema-less Ignite Binary object.
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testReadingSchemalessIgniteBinaries() throws Exception {
         int key = 1;
         Person val = new Person(key, "Joe");
@@ -87,7 +90,7 @@ public class IgniteBinaryTest {
     /**
      * Put/get operations with Ignite Binary Object API
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testBinaryObjectPutGet() throws Exception {
         int key = 1;
 
@@ -126,7 +129,7 @@ public class IgniteBinaryTest {
      * {@link IgniteBinary#buildEnum(String, String)}
      * {@link IgniteBinary#registerEnum(String, Map)}
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testBinaryObjectApi() throws Exception {
         try (Ignite srv = Ignition.start(Config.getServerConfiguration())) {
             try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {

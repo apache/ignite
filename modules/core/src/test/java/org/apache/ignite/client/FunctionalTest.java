@@ -40,7 +40,6 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -66,7 +65,7 @@ public class FunctionalTest {
      * <li>{@link IgniteCache#size(CachePeekMode...)}</li>
      * </ul>
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testCacheManagement() throws Exception {
         try (LocalIgniteCluster ignored = LocalIgniteCluster.start(2);
              IgniteClient client = Ignition.startClient(getClientConfiguration())
@@ -128,7 +127,7 @@ public class FunctionalTest {
      * <li>{@link ClientCache#getConfiguration()}</li>
      * </ul>
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testCacheConfiguration() throws Exception {
         try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
@@ -188,7 +187,7 @@ public class FunctionalTest {
      * <li>{@link ClientCache#containsKey(Object)}</li>
      * </ul>
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testPutGet() throws Exception {
         // Existing cache, primitive key and object value
         try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
@@ -251,7 +250,7 @@ public class FunctionalTest {
      * <li>{@link ClientCache#clear()}</li>
      * </ul>
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testBatchPutGet() throws Exception {
         // Existing cache, primitive key and object value
         try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
@@ -301,7 +300,7 @@ public class FunctionalTest {
      * <li>{@link ClientCache#putIfAbsent(Object, Object)}</li>
      * </ul>
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testAtomicPutGet() throws Exception {
         try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
@@ -334,7 +333,7 @@ public class FunctionalTest {
      * <li>{@link ClientCache#removeAll(Set)}</li>
      * </ul>
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testRemoveReplace() throws Exception {
         try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
@@ -379,7 +378,7 @@ public class FunctionalTest {
     /**
      * Test client fails on start if server is unavailable
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testClientFailsOnStart() {
         ClientConnectionException expEx = null;
 

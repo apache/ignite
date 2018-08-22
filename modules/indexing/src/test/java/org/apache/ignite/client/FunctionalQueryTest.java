@@ -36,7 +36,6 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -51,7 +50,7 @@ public class FunctionalQueryTest {
      * <li>{@link ClientCache#query(Query)}</li>
      * </ul>
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testQueries() throws Exception {
         IgniteConfiguration srvCfg = Config.getServerConfiguration();
 
@@ -129,7 +128,7 @@ public class FunctionalQueryTest {
      * <li>{@link IgniteClient#query(SqlFieldsQuery)}</li>
      * </ul>
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testSql() throws Exception {
         try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
@@ -158,7 +157,7 @@ public class FunctionalQueryTest {
     }
 
     /** */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testGettingEmptyResultWhenQueryingEmptyTable() throws Exception {
         try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))

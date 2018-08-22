@@ -34,9 +34,13 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.ClientServerError;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.LocalIgniteCluster;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -50,7 +54,7 @@ public class ReliabilityTest {
     /**
      * Thin clint failover.
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testFailover() throws Exception {
         final int CLUSTER_SIZE = 3;
 

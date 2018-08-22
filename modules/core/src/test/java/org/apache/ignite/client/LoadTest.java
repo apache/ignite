@@ -39,7 +39,9 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -53,7 +55,7 @@ public class LoadTest {
     /**
      * Test thin client in multi-thread environment.
      */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testMultithreading() throws Exception {
         final int THREAD_CNT = 8;
         final int ITERATION_CNT = 20;

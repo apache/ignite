@@ -38,7 +38,6 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -48,7 +47,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class ClientCacheConfigurationTest {
     /** Serialization/deserialization. */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testSerialization() throws IOException, ClassNotFoundException {
         ClientCacheConfiguration target = new ClientCacheConfiguration().setName("Person")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)

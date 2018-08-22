@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,7 +53,7 @@ public class SecurityTest {
     }
 
     /** Test SSL/TLS encryption. */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testEncryption() throws Exception {
         // Server-side security configuration
         IgniteConfiguration srvCfg = Config.getServerConfiguration();
@@ -127,7 +126,7 @@ public class SecurityTest {
     }
 
     /** Test valid user authentication. */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testInvalidUserAuthentication() {
         Exception authError = null;
 
@@ -148,7 +147,7 @@ public class SecurityTest {
     }
 
     /** Test valid user authentication. */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testValidUserAuthentication() throws Exception {
         final String USER = "joe";
         final String PWD = "password";
@@ -164,7 +163,7 @@ public class SecurityTest {
     }
 
     /** Test user cannot create user. */
-    @Test (timeout = GridTestUtils.DFLT_TEST_TIMEOUT)
+    @Test
     public void testUserCannotCreateUser() throws Exception {
         final String USER = "joe";
         final String PWD = "password";
