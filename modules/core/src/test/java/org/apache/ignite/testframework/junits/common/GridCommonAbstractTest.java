@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTask;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -1201,6 +1203,21 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return List of keys.
      */
     protected final List<Integer> movingKeysAfterJoin(Ignite ign, String cacheName, int size) {
+        return movingKeysAfterJoin(ign, cacheName, size, null);
+    }
+
+    /**
+     * Return list of keys that are primary for given node on current topology,
+     * but primary node will change after new node will be added.
+     *
+     * @param ign Ignite.
+     * @param cacheName Cache name.
+     * @param size Number of keys.
+     * @param nodeInitializer Node initializer closure.
+     * @return List of keys.
+     */
+    protected final List<Integer> movingKeysAfterJoin(Ignite ign, String cacheName, int size,
+        @Nullable IgniteInClosure<ClusterNode> nodeInitializer) {
         assertEquals("Expected consistentId is set to node name", ign.name(), ign.cluster().localNode().consistentId());
 
         GridCacheContext<Object, Object> cctx = ((IgniteKernal)ign).context().cache().internalCache(cacheName).context();
@@ -1219,6 +1236,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         List<List<ClusterNode>> calcAff = func.assignPartitions(ctx);
 
         GridTestNode fakeNode = new GridTestNode(UUID.randomUUID(), null);
+
+        if (nodeInitializer != null)
+            nodeInitializer.apply(fakeNode);
 
         fakeNode.consistentId(getTestIgniteInstanceName(nodes.size()));
 
