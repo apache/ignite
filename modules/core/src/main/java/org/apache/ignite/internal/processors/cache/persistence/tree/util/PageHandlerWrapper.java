@@ -14,34 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import java.io.IOException;
-import org.apache.ignite.IgniteCheckedException;
+package org.apache.ignite.internal.processors.cache.persistence.tree.util;
+
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 
 /**
- * Exception is needed to distinguish persistent storage I/O errors.
+ * Wrapper factory for {@link PageHandler} instances.
+ *
+ * @param <R> Result type of actual {@link PageHandler} class.
  */
-public class PersistentStorageIOException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public interface PageHandlerWrapper<R> {
     /**
-     * Create an instance of exception.
+     * Wraps given {@code hnd}.
      *
-     * @param cause Error cause.
+     * @param tree Instance of {@link BPlusTree} where given {@code} is used.
+     * @param hnd Page handler to wrap.
+     * @return Wrapped version of given {@code hnd}.
      */
-    public PersistentStorageIOException(IOException cause) {
-        super(cause);
-    }
-
-    /**
-     * Create an instance of exception.
-     *
-     * @param msg Error message.
-     * @param cause Error cause.
-     */
-    public PersistentStorageIOException(String msg, IOException cause) {
-        super(msg, cause);
-    }
+    public PageHandler<?, R> wrap(BPlusTree<?, ?> tree, PageHandler<?, R> hnd);
 }

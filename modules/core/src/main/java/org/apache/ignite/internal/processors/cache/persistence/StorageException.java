@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;

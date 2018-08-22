@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestor
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithSystemWorkerDeathTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
@@ -89,8 +91,6 @@ import org.apache.ignite.testframework.test.ParametersTest;
 import org.apache.ignite.testframework.test.VariationsIteratorTest;
 import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Set;
 
 /**
  * Basic test suite.
@@ -211,6 +211,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(StopNodeFailureHandlerTest.class);
         suite.addTestSuite(StopNodeOrHaltFailureHandlerTest.class);
         suite.addTestSuite(OomFailureHandlerTest.class);
+        suite.addTestSuite(TransactionIntegrityWithSystemWorkerDeathTest.class);
 
         suite.addTestSuite(AtomicOperationsInTxTest.class);
 
