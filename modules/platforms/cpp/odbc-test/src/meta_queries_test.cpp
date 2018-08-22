@@ -181,9 +181,9 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnLength)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    std::string str((const char*)strBuf);
+    SQLCHAR expPrec[] = "999";
 
-    BOOST_CHECK_EQUAL(str, "999");
+    BOOST_CHECK_EQUAL(strBuf, expPrec);
 }
 
 BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
@@ -202,9 +202,9 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    std::string str((const char*)strBuf);
+    SQLCHAR expPrec[] = "999";
 
-    BOOST_CHECK_EQUAL(str, "999");
+    BOOST_CHECK_EQUAL(strBuf, expPrec);
 }
 
 BOOST_AUTO_TEST_CASE(TestColAttributesColumnScale)

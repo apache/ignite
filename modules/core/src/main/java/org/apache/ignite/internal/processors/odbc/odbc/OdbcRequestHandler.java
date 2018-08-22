@@ -268,9 +268,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(qry, true, false);
 
-            log.warning("OdbcRequestHandler.executeQuery - " + ver);
-
             OdbcQueryResults results = new OdbcQueryResults(cursors, ver);
+
             Collection<OdbcColumnMeta> fieldsMeta;
 
             if (!results.hasUnfetchedRows()) {

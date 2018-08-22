@@ -82,17 +82,11 @@ namespace ignite
 
                 dataType = reader.ReadInt8();
 
-                LOG_MSG("VERSION:")
-                LOG_MSG(ver.ToString());
-/*
                 if (ver >= ProtocolVersion::VERSION_2_7_0)
                 {
-*/
                     precision = reader.ReadInt32();
                     scale = reader.ReadInt32();
-//              }
-                LOG_MSG(precision);
-                LOG_MSG(scale);
+                }
             }
 
             bool ColumnMeta::GetAttribute(uint16_t fieldId, std::string& value) const 
@@ -156,9 +150,6 @@ namespace ignite
                     case SQL_COLUMN_LENGTH:
                     case SQL_COLUMN_PRECISION:
                     {
-                        LOG_MSG("column_meta - ")
-                        LOG_MSG(precision);
-
                         if (precision == -1)
                             return false;
 
