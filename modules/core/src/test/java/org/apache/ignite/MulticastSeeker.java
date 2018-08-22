@@ -34,29 +34,18 @@ public class MulticastSeeker {
         suites.sort(Comparator.comparing(Class::getName));
 
         for (Class<? extends TestSuite> suiteCls : suites) {
-            List<String> suiteMultiTests = new ArrayList<>();
-
             try {
                 TestSuite suite = invokeMethod(suiteCls, null, "suite");
 
-                for (int i = 0; i < suite.testCount(); i++) {
-                    Test test = suite.testAt(i);
+                List<String> leafSuiteNames = getLeafSuiteNames(suite);
 
-                    if (test instanceof TestSuite) {
-                        TestSuite childSuite = (TestSuite)test;
+                leafSuiteNames.retainAll(multiTestNames);
 
-                        if (multiTestNames.contains(childSuite.getName()))
-                            suiteMultiTests.add(childSuite.getName());
-                    }
-                    else
-                        System.err.println(suite.getName() + "[" + i + "] is not a TestSuite");
-                }
+                Collections.sort(leafSuiteNames);
 
-                Collections.sort(suiteMultiTests);
+                System.out.println(suiteCls.getName() + ": " + leafSuiteNames.size() + " tests");
 
-                System.out.println(suiteCls.getName() + ": " + suiteMultiTests.size() + " tests");
-
-                for (String testName : suiteMultiTests)
+                for (String testName : leafSuiteNames)
                     System.out.println("\t" + testName);
 
                 System.out.println();
@@ -65,6 +54,27 @@ public class MulticastSeeker {
                 e.printStackTrace();
             }
         }
+    }
+
+    private List<String> getLeafSuiteNames(TestSuite suite) {
+        List<String> leafNames = new ArrayList<>();
+
+        for (int i = 0; i < suite.testCount(); i++) {
+            Test test = suite.testAt(i);
+
+            if (test instanceof TestSuite) {
+                TestSuite childSuite = (TestSuite)test;
+
+                List<String> grandChildrenNames = getLeafSuiteNames(childSuite);
+
+                leafNames.addAll(grandChildrenNames);
+            }
+        }
+
+        if (leafNames.isEmpty())
+            leafNames.add(suite.getName());
+
+        return leafNames;
     }
 
     private Set<String> collectMulticastTests() {
