@@ -310,7 +310,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param cache Discovery data cache.
      */
     private void processEventInactive(DiscoveryEvent evt, DiscoCache cache) {
-        // Clean local join caches context.
+        // Clear local join caches context.
         cctx.cache().localJoinCachesContext();
 
         if (log.isDebugEnabled())
