@@ -52,7 +52,9 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteException.class, null);
+        }, IgniteException.class, "SQL schema name derived from cache name is reserved (please set explicit SQL " +
+            "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [cacheName=IGNITE, " +
+            "schemaName=null]");
     }
 
     /**
@@ -67,7 +69,9 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, CacheException.class, null);
+        }, CacheException.class, "SQL schema name derived from cache name is reserved (please set explicit SQL " +
+            "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [" +
+            "cacheName=IGNITE, schemaName=null]");
     }
 
     /**
@@ -85,7 +89,8 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteException.class, null);
+        }, IgniteException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
+            "schemaName=ignite]");
     }
 
     /**
@@ -102,7 +107,7 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, CacheException.class, null);
+        }, CacheException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=ignite]");
     }
 
     /**
@@ -120,7 +125,8 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteException.class, null);
+        }, IgniteException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
+            "schemaName=IGNITE]");
     }
 
     /**
@@ -137,7 +143,8 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, CacheException.class, null);
+        }, CacheException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
+            "schemaName=IGNITE]");
     }
 
     /**
@@ -155,7 +162,8 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteException.class, null);
+        }, IgniteException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
+            "schemaName=\"IGNITE\"]");
     }
 
     /**
@@ -173,6 +181,7 @@ public class SqlIllegalSchemaSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, CacheException.class, null);
+        }, CacheException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
+            "schemaName=\"IGNITE\"]");
     }
 }
