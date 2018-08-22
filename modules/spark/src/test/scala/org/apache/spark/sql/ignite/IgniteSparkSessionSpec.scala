@@ -40,13 +40,17 @@ class IgniteSparkSessionSpec extends AbstractDataFrameSpec {
             }
 
             var df = dfProvider(igniteSession).cache()
+
             val cachedData = igniteSession.sharedState.cacheManager.lookupCachedData(df)
+
             cachedData shouldBe defined
 
             val otherSession = igniteSession.cloneSession()
 
             df = dfProvider(otherSession)
+
             val otherCachedData = otherSession.sharedState.cacheManager.lookupCachedData(df)
+
             otherCachedData shouldBe defined
 
             cachedData shouldEqual otherCachedData

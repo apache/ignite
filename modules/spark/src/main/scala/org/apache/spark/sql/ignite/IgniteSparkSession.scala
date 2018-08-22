@@ -75,14 +75,14 @@ class IgniteSparkSession private(
     /** @inheritdoc */
     @transient override lazy val sessionState: SessionState = {
         parentSessionState
-          .map(_.clone(this))
-          .getOrElse {
-              val sessionState = new SessionStateBuilder(self, None).build()
+            .map(_.clone(this))
+            .getOrElse {
+                val sessionState = new SessionStateBuilder(self, None).build()
 
-              sessionState.experimentalMethods.extraOptimizations =
-                sessionState.experimentalMethods.extraOptimizations :+ IgniteOptimization
+                sessionState.experimentalMethods.extraOptimizations =
+                    sessionState.experimentalMethods.extraOptimizations :+ IgniteOptimization
 
-              sessionState
+                sessionState
           }
     }
 
