@@ -245,11 +245,10 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
 
             sock.on('cluster:topology', (top) => {
                 if (_.isNil(top)) {
-                    console.log('Topology not found in response!');
+                    console.log('Topology not found in "cluster:topology" event data');
 
                     return;
                 }
-
 
                 const cluster = this.getOrCreateCluster(top);
 

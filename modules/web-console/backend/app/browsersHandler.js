@@ -205,11 +205,8 @@ module.exports = {
             nodeListeners(sock) {
                 // Return command result from grid to browser.
                 sock.on('node:rest', ({clusterId, params, credentials} = {}, cb) => {
-                    if (_.isNil(clusterId)) {
-                        console.log('Cluster ID not found in response!');
-
-                        return;
-                    }
+                    if (_.isNil(params))
+                        return cb('Parameters not found in "node:rest" event data');
 
                     const demo = sock.request._query.IgniteDemoMode === 'true';
                     const token = sock.request.user.token;
@@ -240,11 +237,8 @@ module.exports = {
 
                 // Return command result from grid to browser.
                 sock.on('node:visor', ({clusterId, params = {}, credentials} = {}, cb) => {
-                    if (_.isNil(clusterId)) {
-                        console.log('Cluster ID not found in response!');
-
-                        return;
-                    }
+                    if (_.isNil(clusterId))
+                        return cb('Cluster ID not found in "node:visor" event data');
 
                     const demo = sock.request._query.IgniteDemoMode === 'true';
                     const token = sock.request.user.token;
