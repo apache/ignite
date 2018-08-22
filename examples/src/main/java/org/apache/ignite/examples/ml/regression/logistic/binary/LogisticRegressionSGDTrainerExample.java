@@ -60,7 +60,7 @@ public class LogisticRegressionSGDTrainerExample {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 LogisticRegressionSGDTrainerExample.class.getSimpleName(), () -> {
 
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).get(data);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 System.out.println(">>> Create new logistic regression trainer object.");
                 LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(

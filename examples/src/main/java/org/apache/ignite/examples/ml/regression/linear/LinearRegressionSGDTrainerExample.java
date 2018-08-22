@@ -116,7 +116,7 @@ public class LinearRegressionSGDTrainerExample {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 LinearRegressionSGDTrainerExample.class.getSimpleName(), () -> {
 
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).get(data);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 System.out.println(">>> Create new linear regression trainer object.");
                 LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(
