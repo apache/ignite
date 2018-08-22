@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.sys;
 
 import java.util.ArrayList;
-
+import java.util.Iterator;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -202,7 +202,7 @@ public class SqlSystemTable extends TableBase {
      * @param first First.
      * @param last Last.
      */
-    public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+    public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         return view.getRows(ses, first, last);
     }
 }
