@@ -123,12 +123,16 @@ public class KNNRegressionTest {
             (k, v) -> v[0]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.SIMPLE);
+            .withStrategy(stgy);
 
         Vector vector = new DenseVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
 
         Assert.assertNotNull(knnMdl.apply(vector));
 
         Assert.assertEquals(67857, knnMdl.apply(vector), 2000);
+
+        Assert.assertTrue(knnMdl.toString().contains(stgy.name()));
+        Assert.assertTrue(knnMdl.toString(true).contains(stgy.name()));
+        Assert.assertTrue(knnMdl.toString(false).contains(stgy.name()));
     }
 }
