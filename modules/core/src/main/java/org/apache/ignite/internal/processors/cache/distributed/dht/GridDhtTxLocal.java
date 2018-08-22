@@ -94,7 +94,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     private volatile GridDhtTxPrepareFuture prepFut;
 
     /** Transaction label. */
-    private @Nullable String label;
+    private @Nullable String lb;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -118,7 +118,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param storeEnabled Store enabled flag.
      * @param txSize Expected transaction size.
      * @param txNodes Transaction nodes mapping.
-     * @param label Transaction label.
+     * @param lb Transaction label.
      */
     public GridDhtTxLocal(
         GridCacheSharedContext cctx,
@@ -143,7 +143,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         Map<UUID, Collection<UUID>> txNodes,
         UUID subjId,
         int taskNameHash,
-        @Nullable String label
+        @Nullable String lb
     ) {
         super(
             cctx,
@@ -163,7 +163,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             subjId,
             taskNameHash);
 
-        this.label = label;
+        this.lb = lb;
 
         assert nearNodeId != null;
         assert nearFutId != null;
@@ -535,7 +535,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
     /** {@inheritDoc} */
     @Nullable @Override public String label() {
-        return label;
+        return lb;
     }
 
     /** {@inheritDoc} */

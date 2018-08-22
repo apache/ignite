@@ -80,7 +80,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** Transaction label. */
     @GridToStringInclude
-    @Nullable private String label;
+    @Nullable private String txLb;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -147,7 +147,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
-        label = tx.label();
+        txLb = tx.label();
 
         setFlag(near, NEAR_FLAG_MASK);
         setFlag(implicitSingle, IMPLICIT_SINGLE_FLAG_MASK);
@@ -237,8 +237,8 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @return Transaction label.
      */
-    @Nullable public String label() {
-        return label;
+    @Nullable public String txLabel() {
+        return txLb;
     }
 
     /**
@@ -352,7 +352,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeString("label", label))
+                if (!writer.writeString("label", txLb))
                     return false;
 
                 writer.incrementState();
@@ -421,7 +421,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 26:
-                label = reader.readString("label");
+                txLb = reader.readString("label");
 
                 if (!reader.isLastRead())
                     return false;

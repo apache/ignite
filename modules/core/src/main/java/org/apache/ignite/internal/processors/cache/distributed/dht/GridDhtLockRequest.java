@@ -93,7 +93,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     private long accessTtl;
 
     /** Transaction label. */
-    private String label;
+    private String txLb;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -126,7 +126,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param storeUsed Cache store used flag.
      * @param keepBinary Keep binary flag.
      * @param addDepInfo Deployment info flag.
-     * @param label Transaction label.
+     * @param txLb Transaction label.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -152,7 +152,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         boolean storeUsed,
         boolean keepBinary,
         boolean addDepInfo,
-        String label
+        String txLb
     ) {
         super(cacheId,
             nodeId,
@@ -185,7 +185,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
 
-        this.label = label;
+        this.txLb = txLb;
     }
 
     /**
@@ -319,8 +319,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     /**
      * @return Transaction label.
      */
-    @Nullable public String label() {
-        return label;
+    @Nullable public String txLabel() {
+        return txLb;
     }
 
     /** {@inheritDoc} */
@@ -438,7 +438,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 30:
-                if(!writer.writeString("label", label))
+                if(!writer.writeString("label", txLb))
                     return false;
 
                 writer.incrementState();
@@ -540,7 +540,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 30:
-                label = reader.readString("label");
+                txLb = reader.readString("label");
 
                 if(!reader.isLastRead())
                     return false;

@@ -90,7 +90,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param label Transaction label.
+     * @param txLb Transaction label.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public GridNearTxRemote(
@@ -111,7 +111,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        String label
+        @Nullable String txLb
     ) throws IgniteCheckedException {
         super(
             ctx,
@@ -127,7 +127,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             txSize,
             subjId,
             taskNameHash,
-            label
+            txLb
         );
 
         assert nearNodeId != null;
@@ -171,7 +171,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param label Transaction label.
+     * @param txLb Transaction label.
      */
     public GridNearTxRemote(
         GridCacheSharedContext ctx,
@@ -190,7 +190,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        String label
+        @Nullable String txLb
     ) {
         super(
             ctx,
@@ -206,7 +206,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             txSize,
             subjId,
             taskNameHash,
-            label
+            txLb
         );
 
         assert nearNodeId != null;

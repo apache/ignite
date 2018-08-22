@@ -260,7 +260,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param key Key for the event.
      * @param evtNodeId Event node ID.
      * @param tx Possible surrounding transaction.
-     * @param txLb Possible lable of possible surrounding transaction.
+     * @param txLb Possible label of possible surrounding transaction.
      * @param lockId Lock ID.
      * @param type Event type.
      * @param newVal New value.

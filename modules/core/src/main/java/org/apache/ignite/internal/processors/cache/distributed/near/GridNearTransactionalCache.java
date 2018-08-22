@@ -332,7 +332,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.txSize(),
                                         req.subjectId(),
                                         req.taskNameHash(),
-                                        req.label()
+                                        req.txLabel()
                                     );
 
                                     tx = ctx.tm().onCreated(null, tx);
