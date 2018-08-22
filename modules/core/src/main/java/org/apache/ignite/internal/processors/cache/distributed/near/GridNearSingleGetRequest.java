@@ -31,6 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -81,6 +82,9 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Transaction label. */
+    private @Nullable String txLb;
+
     /**
      * Empty constructor required for {@link Message}.
      */
@@ -103,6 +107,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @param addReader Add reader flag.
      * @param needVer {@code True} if entry version is needed.
      * @param addDepInfo Deployment info.
+     * @param txLb Transaction label
      */
     public GridNearSingleGetRequest(
         int cacheId,
@@ -118,7 +123,8 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean addReader,
         boolean needVer,
         boolean addDepInfo,
-        boolean recovery
+        boolean recovery,
+        @Nullable String txLb
     ) {
         assert key != null;
 
@@ -131,6 +137,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
+        this.txLb = txLb;
 
         if (readThrough)
             flags |= READ_THROUGH_FLAG_MASK;
@@ -204,6 +211,15 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         assert key != null;
 
         return key.partition();
+    }
+
+    /**
+     * Get transaction label (may be null).
+     *
+     * @return Transaction label;
+     */
+    @Nullable public String txLabel() {
+        return txLb;
     }
 
     /**
@@ -345,6 +361,14 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
                 reader.incrementState();
 
+            case 11:
+                txLb = reader.readString("label");
+
+                if(!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearSingleGetRequest.class);
@@ -413,6 +437,12 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
                 writer.incrementState();
 
+            case 11:
+                if (!writer.writeString("label", txLb))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -430,7 +460,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */

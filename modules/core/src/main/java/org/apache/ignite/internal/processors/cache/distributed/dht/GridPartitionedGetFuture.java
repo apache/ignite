@@ -74,6 +74,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** Logger. */
     private static IgniteLogger log;
 
+
+    /** Transaction label. */
+    private String txLb;
+
     /**
      * @param cctx Context.
      * @param keys Keys.
@@ -88,6 +92,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
+     * @param txLb Transaction label.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
@@ -101,7 +106,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObjects
+        boolean keepCacheObjects,
+        @Nullable String txLb
     ) {
         super(cctx,
             keys,
@@ -115,6 +121,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             needVer,
             keepCacheObjects,
             recovery);
+
+        this.txLb = txLb;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridPartitionedGetFuture.class);
@@ -293,7 +301,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
                         skipVals,
-                        recovery);
+                        recovery,
+                        txLb);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -350,7 +359,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     false,
                     skipVals,
                     cctx.deploymentEnabled(),
-                    recovery);
+                    recovery,
+                    txLb);
 
                 add(fut); // Append new future.
 
@@ -477,6 +487,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             if (evt) {
                                 cctx.events().readEvent(key,
                                     null,
+                                    txLb,
                                     row.value(),
                                     subjId,
                                     taskName,

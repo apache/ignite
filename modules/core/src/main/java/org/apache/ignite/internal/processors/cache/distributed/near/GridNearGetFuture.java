@@ -319,7 +319,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
                         skipVals,
-                        recovery);
+                        recovery,
+                        null);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -382,7 +383,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     true,
                     skipVals,
                     cctx.deploymentEnabled(),
-                    recovery);
+                    recovery,
+                    null);
 
                 add(fut); // Append new future.
 

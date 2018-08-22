@@ -45,6 +45,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
@@ -106,6 +107,9 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Transaction label. */
+    private @Nullable String txLb;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -128,6 +132,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      * @param addDepInfo Deployment info.
+     * @param txLb Transaction label
      */
     public GridNearGetRequest(
         int cacheId,
@@ -144,7 +149,8 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         boolean addReader,
         boolean skipVals,
         boolean addDepInfo,
-        boolean recovery
+        boolean recovery,
+        @Nullable String txLb
     ) {
         assert futId != null;
         assert miniId != null;
@@ -173,6 +179,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
+        this.txLb = txLb;
 
         if (readThrough)
             flags |= READ_THROUGH_FLAG_MASK;
@@ -279,6 +286,15 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /** {@inheritDoc} */
     @Override public int partition() {
         return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
+    }
+
+    /**
+     * Get transaction label (may be null).
+     *
+     * @return Possible transaction label;
+     */
+    @Nullable public String txLabel() {
+        return txLb;
     }
 
     /**
@@ -411,6 +427,12 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 writer.incrementState();
 
+            case 14:
+                if (!writer.writeString("label", txLb))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -515,6 +537,14 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 reader.incrementState();
 
+            case 14:
+                txLb = reader.readString("label");
+
+                if(!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearGetRequest.class);
@@ -527,7 +557,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 15;
     }
 
     /** {@inheritDoc} */

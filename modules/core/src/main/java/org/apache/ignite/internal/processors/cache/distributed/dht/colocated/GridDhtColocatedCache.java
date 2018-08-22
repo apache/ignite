@@ -241,7 +241,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             needVer,
             /*keepCacheObjects*/false,
-            opCtx != null && opCtx.recovery());
+            opCtx != null && opCtx.recovery(), null);
 
         fut.init();
 
@@ -303,7 +303,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             recovery,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
-            needVer);
+            needVer,
+            null);
     }
 
     /**
@@ -317,6 +318,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer Need version.
+     * @param txLb Transaction label.
      * @return Loaded values.
      */
     public IgniteInternalFuture<Map<K, V>> loadAsync(
@@ -330,7 +332,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean needVer) {
+        boolean needVer,
+        @Nullable String txLb) {
         return loadAsync(keys,
             readThrough,
             forcePrimary,
@@ -341,7 +344,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc,
             skipVals,
             needVer,
-            false);
+            false,
+            txLb);
     }
 
     /**
@@ -356,6 +360,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObj Keep cache objects flag.
+     * @param txLb Transaction label.
      * @return Load future.
      */
     public final IgniteInternalFuture<Object> loadAsync(
@@ -370,7 +375,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObj,
-        boolean recovery
+        boolean recovery,
+        @Nullable String txLb
     ) {
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
             ctx.toCacheKeyObject(key),
@@ -384,7 +390,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             needVer,
             keepCacheObj,
-            recovery);
+            recovery,
+            txLb);
 
         fut.init();
 
@@ -403,6 +410,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObj Keep cache objects flag.
+     * @param txLb Transaction label.
      * @return Load future.
      */
     public final IgniteInternalFuture<Map<K, V>> loadAsync(
@@ -417,7 +425,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObj
+        boolean keepCacheObj,
+        @Nullable String txLb
     ) {
         if (keys == null || keys.isEmpty())
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -461,6 +470,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 if (evt) {
                                     ctx.events().readEvent(key,
                                         null,
+                                        txLb,
                                         row.value(),
                                         subjId,
                                         taskName,
@@ -600,7 +610,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc,
             skipVals,
             needVer,
-            keepCacheObj);
+            keepCacheObj,
+            txLb);
 
         fut.init(topVer);
 

@@ -426,6 +426,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                         if (evt) {
                             ctx.events().readEvent(cacheKey,
                                 null,
+                                null,
                                 row.value(),
                                 subjId,
                                 taskName,

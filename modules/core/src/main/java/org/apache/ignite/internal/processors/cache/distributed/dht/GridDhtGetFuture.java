@@ -114,6 +114,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** */
     private final boolean addReaders;
 
+    /** Transaction label. */
+    private final String txLb;
+
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -125,6 +128,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param taskNameHash Task name hash code.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
+     * @param txLb Transaction label.
      */
     public GridDhtGetFuture(
         GridCacheContext<K, V> cctx,
@@ -138,7 +142,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean recovery,
-        boolean addReaders
+        boolean addReaders,
+        @Nullable String txLb
     ) {
         super(CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
 
@@ -157,6 +162,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.skipVals = skipVals;
         this.recovery = recovery;
         this.addReaders = addReaders;
+        this.txLb = txLb;
 
         futId = IgniteUuid.randomUuid();
 
@@ -422,7 +428,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 taskName,
                 expiryPlc,
                 skipVals,
-                recovery);
+                recovery,
+                txLb);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -445,7 +452,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             taskName,
                             expiryPlc,
                             skipVals,
-                            recovery);
+                            recovery,
+                            txLb);
                     }
                 }
             );

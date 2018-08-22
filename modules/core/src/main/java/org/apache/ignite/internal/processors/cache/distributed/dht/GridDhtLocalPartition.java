@@ -1041,6 +1041,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                                 ctx.localNodeId(),
                                 null,
                                 null,
+                                null,
                                 EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
                                 null,
                                 false,

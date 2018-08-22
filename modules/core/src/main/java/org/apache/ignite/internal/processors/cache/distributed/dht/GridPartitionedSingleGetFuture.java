@@ -127,6 +127,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     /** Post processing closure. */
     private volatile BackupPostProcessingClosure postProcessingClos;
 
+    /** Transaction label. */
+    private String txLb;
+
     /**
      * @param cctx Context.
      * @param key Key.
@@ -140,6 +143,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
+     * @param txLb Transaction label.
      */
     public GridPartitionedSingleGetFuture(
         GridCacheContext cctx,
@@ -154,7 +158,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
-        boolean recovery
+        boolean recovery,
+        String txLb
     ) {
         assert key != null;
 
@@ -181,6 +186,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
         this.topVer = topVer;
+
+        this.txLb = txLb;
 
         futId = IgniteUuid.randomUuid();
 
@@ -235,7 +242,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc,
                 skipVals,
-                recovery);
+                recovery,
+                txLb);
 
             final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -305,7 +313,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 /*add reader*/false,
                 needVer,
                 cctx.deploymentEnabled(),
-                recovery);
+                recovery,
+                txLb);
 
             try {
                 cctx.io().send(node, req, cctx.ioPolicy());
@@ -393,6 +402,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                             if (evt) {
                                 cctx.events().readEvent(key,
                                     null,
+                                    txLb,
                                     row.value(),
                                     subjId,
                                     taskName,

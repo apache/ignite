@@ -47,6 +47,12 @@ import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeDynam
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartAtomicTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartTxTest;
 import org.apache.ignite.internal.processors.cache.CacheTxNotAllowReadFromBackupTest;
+import org.apache.ignite.internal.processors.cache.CashEventWithTxLabelOptimisticReadCommitedTest;
+import org.apache.ignite.internal.processors.cache.CashEventWithTxLabelOptimisticRepeatableReadTest;
+import org.apache.ignite.internal.processors.cache.CashEventWithTxLabelOptimisticSerializableTest;
+import org.apache.ignite.internal.processors.cache.CashEventWithTxLabelPessimisticReadCommitedTest;
+import org.apache.ignite.internal.processors.cache.CashEventWithTxLabelPessimisticRepeatableReadTest;
+import org.apache.ignite.internal.processors.cache.CashEventWithTxLabelPessimisticSerializableTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheLockTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMarshallingNodeJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomicNearEnabledSelfTest;
@@ -355,6 +361,13 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheAtomicPrimarySyncBackPressureTest.class);
 
         suite.addTestSuite(IgniteCacheContainsKeyAtomicTest.class);
+
+        suite.addTestSuite(CashEventWithTxLabelOptimisticReadCommitedTest.class);
+        suite.addTestSuite(CashEventWithTxLabelOptimisticRepeatableReadTest.class);
+        suite.addTestSuite(CashEventWithTxLabelOptimisticSerializableTest.class);
+        suite.addTestSuite(CashEventWithTxLabelPessimisticReadCommitedTest.class);
+        suite.addTestSuite(CashEventWithTxLabelPessimisticRepeatableReadTest.class);
+        suite.addTestSuite(CashEventWithTxLabelPessimisticSerializableTest.class);
 
         return suite;
     }

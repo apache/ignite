@@ -1315,7 +1315,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     replicate ? DR_PRELOAD : DR_NONE,
                                     false)) {
                                     if (rec && !entry.isInternal())
-                                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
+                                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
                                             null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                             false, null, null, null, false);
                                 }
