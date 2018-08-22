@@ -176,6 +176,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateD
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.LazyQuerySelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
+import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
@@ -221,6 +222,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(ClientConnectorConfigurationValidationSelfTest.class);
 
         suite.addTestSuite(SqlSchemaSelfTest.class);
+        suite.addTestSuite(SqlIllegalSchemaSelfTest.class);
         suite.addTestSuite(MultipleStatementsSqlQuerySelfTest.class);
 
         // Misc tests.

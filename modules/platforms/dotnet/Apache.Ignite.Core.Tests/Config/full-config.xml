@@ -47,6 +47,10 @@
         <string>-Xms1g</string>
         <string>-Xmx4g</string>
     </jvmOptions>
+    <sqlSchemas>
+        <string>SCHEMA_1</string>
+        <string>schema_2</string>
+    </sqlSchemas>
     <lifecycleHandlers>
         <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
     </lifecycleHandlers>
