@@ -27,31 +27,35 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Message containing changes which should be applied only on MVCC transaction commit.
+ * Partition update counters message.
  */
-public class DeferredPartitionUpdates implements Message {
+public class PartitionUpdateCounters implements Message {
     /** */
-    private static final long serialVersionUID = 1661031664775111613L;
+    private static final long serialVersionUID = 193442457510062844L;
 
     /** Map of update counters made by this tx. Mapping: partId -> updCntr. */
     @GridDirectMap(keyType = Integer.class, valueType = Long.class)
-    private Map<Integer, Long> updCntrs = new HashMap<>();
-    /** Partition size changes by this tx. */
-    @GridDirectMap(keyType = Integer.class, valueType = Long.class)
-    private Map<Integer, Long> sizeDeltas = new HashMap<>();
+    private  Map<Integer, Long> updCntrs;
 
     /**
-     * @return Partition update counters.
+     *
+     */
+    public PartitionUpdateCounters() {
+        updCntrs = new HashMap<>();
+    }
+
+    /**
+     * @return Update counters.
      */
     public Map<Integer, Long> updateCounters() {
         return updCntrs;
     }
 
     /**
-     * @return Partition size deltas.
+     * @param updCntrs Update counters.
      */
-    public Map<Integer, Long> sizeDeltas() {
-        return sizeDeltas;
+    public void updateCounters(Map<Integer, Long> updCntrs) {
+        this.updCntrs = updCntrs;
     }
 
     /** {@inheritDoc} */
@@ -67,12 +71,6 @@ public class DeferredPartitionUpdates implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("sizeDeltas", sizeDeltas, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeMap("updCntrs", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
@@ -92,14 +90,6 @@ public class DeferredPartitionUpdates implements Message {
 
         switch (reader.state()) {
             case 0:
-                sizeDeltas = reader.readMap("sizeDeltas", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 updCntrs = reader.readMap("updCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
@@ -109,7 +99,7 @@ public class DeferredPartitionUpdates implements Message {
 
         }
 
-        return reader.afterMessageRead(DeferredPartitionUpdates.class);
+        return reader.afterMessageRead(PartitionUpdateCounters.class);
     }
 
     /** {@inheritDoc} */
@@ -119,7 +109,7 @@ public class DeferredPartitionUpdates implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */

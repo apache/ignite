@@ -80,7 +80,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     private boolean storeWriteThrough;
 
     /** */
-    private Map<Integer, DeferredPartitionUpdates> deferredUpdates;
+    private Map<Integer, PartitionUpdateCounters> updCntrs;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -502,13 +502,13 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void deferredUpdates(Map<Integer, DeferredPartitionUpdates> deferredUpdates) {
-       this.deferredUpdates = deferredUpdates;
+    @Override public void updateCounters(Map<Integer, PartitionUpdateCounters> updCntrs) {
+       this.updCntrs = updCntrs;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, DeferredPartitionUpdates> deferredUpdates() {
-        return deferredUpdates;
+    @Override public Map<Integer, PartitionUpdateCounters> updateCounters() {
+        return updCntrs;
     }
 
     /** {@inheritDoc} */

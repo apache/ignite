@@ -456,10 +456,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             for (IgniteTxEntry e : dhtMapping.entries())
                 updCntrs.add(e.updateCounter());
 
-            Map<Integer, DeferredPartitionUpdates> deferredUpdates = null;
+            Map<Integer, PartitionUpdateCounters> updCntrsMap = null;
 
             if (dhtMapping.queryUpdate() && commit)
-                deferredUpdates = tx.deferredUpdatesForNode(n);
+                updCntrsMap = tx.updateCountersForNode(n);
 
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
@@ -488,7 +488,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 false,
                 false,
                 mvccSnapshot,
-                deferredUpdates);
+                updCntrsMap);
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 

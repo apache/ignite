@@ -61,8 +61,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.DeferredPartitionUpdates;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCounters;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -1649,11 +1648,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /**
      * @return Partition counters map for the given backup node.
      */
-    public Map<Integer, DeferredPartitionUpdates> deferredUpdatesForNode(ClusterNode node) {
+    public Map<Integer, PartitionUpdateCounters> updateCountersForNode(ClusterNode node) {
         if (F.isEmpty(updCntrs))
             return null;
 
-        Map<Integer, DeferredPartitionUpdates> res = new HashMap<>();
+        Map<Integer, PartitionUpdateCounters> res = new HashMap<>();
 
         for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
             Integer cacheId = entry.getKey();
@@ -1664,7 +1663,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             GridCacheAffinityManager affinity = cctx.cacheContext(cacheId).affinity();
 
-            DeferredPartitionUpdates resBackupUpdates = new DeferredPartitionUpdates();
+            PartitionUpdateCounters resBackupUpdates = new PartitionUpdateCounters();
 
             for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
                 Integer p = e.getKey();
