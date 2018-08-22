@@ -84,13 +84,21 @@ namespace ignite
 
                 if (ver >= ProtocolVersion::VERSION_2_7_0)
                 {
+                    LOG_MSG("Read - NewVersion");
+
                     precision = reader.ReadInt32();
                     scale = reader.ReadInt32();
+                }
+                else
+                {
+                    LOG_MSG("Read - OldVersion");
                 }
             }
 
             bool ColumnMeta::GetAttribute(uint16_t fieldId, std::string& value) const 
             {
+                LOG_MSG("GetAttribute called: " << fieldId);
+
                 using namespace ignite::impl::binary;
                 using ignite::common::Int32ToString;
 
@@ -150,12 +158,12 @@ namespace ignite
                     case SQL_COLUMN_LENGTH:
                     case SQL_COLUMN_PRECISION:
                     {
-                        //if (precision == -1)
-                        //    return false;
+                        LOG_MSG("SQL_COLUMN_PRECISION");
 
-                        //value = Int32ToString(precision);
+                        if (precision == -1)
+                            return false;
 
-                        value = "999";
+                        value = Int32ToString(precision);
 
                         return true;
                     }
