@@ -478,7 +478,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private void doFinish(boolean commit, boolean clearThreadMap) {
         IgniteTxCommitFuture commitFuture = tx.startLocalCommit(commit, clearThreadMap);
 
+/*
         log.warning("Local commit started " + cctx.tm().finisher().order(tx) + " " + commitFuture + " " + commitFuture.started() + " " + commitFuture.async() + " " + commitFuture.commitEntriesFuture());
+*/
 
         if (commitFuture.async())
             commitFuture.listen(f -> cctx.tm().finisher().execute(tx, () -> doFinishAsync(commitFuture, commit, clearThreadMap)));
@@ -497,7 +499,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             if (commitFuture.started()) {
                 tx.finishLocalCommit(commitFuture, commit, clearThreadMap);
 
+/*
                 log.warning("Local commit finished " + cctx.tm().finisher().order(tx) + " " + commitFuture + " " + commitFuture.started() + " " + commitFuture.async() + " " + commitFuture.commitEntriesFuture());
+*/
             }
             else
                 commitFuture.get(); // Check for errors.
