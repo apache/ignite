@@ -18,7 +18,9 @@
 #ifndef _IGNITE_COMMON_EXPECTED
 #define _IGNITE_COMMON_EXPECTED
 
-#include <ignite/common/default_allocator.h>
+#include <memory>
+
+#include <ignite/common/utils.h>
 
 namespace ignite
 {
@@ -61,8 +63,8 @@ namespace ignite
         template<
             typename R,
             typename E,
-            typename AR = DefaultAllocator<R>,
-            typename AE = DefaultAllocator<E> >
+            typename AR = std::allocator<R>,
+            typename AE = std::allocator<E> >
         class Expected
         {
         public:
@@ -89,7 +91,7 @@ namespace ignite
             {
                 ResultAllocatorType ral;
 
-                ral.construct(&value.res, res);
+                ral.construct(AsResult(), res);
             }
 
             /**
@@ -103,7 +105,48 @@ namespace ignite
             {
                 ErrorAllocatorType ral;
 
-                ral.construct(&value.err, err.err);
+                ral.construct(AsError(), err.err);
+            }
+
+            /**
+             * Copy constructor.
+             *
+             * @param other Other.
+             */
+            Expected(const Expected& other) :
+                ok(other.ok)
+            {
+                if (ok)
+                {
+                    ResultAllocatorType ral;
+
+                    ral.construct(AsResult(), *other.AsResult());
+                }
+                else
+                {
+                    ErrorAllocatorType ral;
+
+                    ral.construct(AsError(), *other.AsError());
+                }
+            }
+
+            /**
+             * Destructor.
+             */
+            ~Expected()
+            {
+                if (ok)
+                {
+                    ResultAllocatorType ral;
+
+                    ral.destroy(AsResult());
+                }
+                else
+                {
+                    ErrorAllocatorType ral;
+
+                    ral.destroy(AsError());
+                }
             }
 
             /**
@@ -138,9 +181,9 @@ namespace ignite
             const ResultType& GetResult() const
             {
                 if (!ok)
-                    throw value.err;
+                    throw *AsError();
 
-                return value.res;
+                return *AsResult();
             }
 
             /**
@@ -152,9 +195,9 @@ namespace ignite
             ResultType& GetResult()
             {
                 if (!ok)
-                    throw value.err;
+                    throw *AsError();
 
-                return value.res;
+                return *AsResult();
             }
 
             /**
@@ -207,32 +250,59 @@ namespace ignite
              * @return Error if it was set before. If there is no error, default
              * constructed error is returned (which is expected to be "No error").
              */
-            const ResultType& GetError() const
+            const ErrorType& GetError() const
             {
                 static ErrorType noError;
 
                 if (ok)
                     return noError;
 
-                return value.err;
+                return *AsError();
             }
 
         private:
             /**
-             * Storage type. Can store either result or error, but not both.
-             * Used to pack data.
+             * Get storage as an result.
+             *
+             * @return Storage pointer as an result pointer.
              */
-            union StorageType
+            ResultType* AsResult()
             {
-                /** Result. */
-                ResultType res;
+                return reinterpret_cast<ResultType*>(&storage);
+            }
 
-                /** Error. */
-                ErrorType err;
-            };
+            /**
+             * Get storage as an result.
+             *
+             * @return Storage pointer as an result pointer.
+             */
+            const ResultType* AsResult() const
+            {
+                return reinterpret_cast<const ResultType*>(&storage);
+            }
 
-            /** Stored value. */
-            StorageType value;
+            /**
+             * Get storage as an error.
+             *
+             * @return Storage pointer as an error pointer.
+             */
+            ErrorType* AsError()
+            {
+                return reinterpret_cast<ErrorType*>(&storage);
+            }
+
+            /**
+             * Get storage as an error.
+             *
+             * @return Storage pointer as an error pointer.
+             */
+            const ErrorType* AsError() const
+            {
+                return reinterpret_cast<const ErrorType*>(&storage);
+            }
+
+            /** Storage. */
+            int8_t storage[sizeof(Bigger<ResultType, ErrorType>::type)];
 
             /** Result flag. Set to @c false if the value is an error. */
             bool ok;
