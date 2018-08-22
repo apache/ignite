@@ -165,7 +165,7 @@ public class FilePageStore implements PageStore {
         try {
             ByteBuffer hdr = header(type, dbCfg.getPageSize());
 
-        fileIO.writeFully(hdr);
+            fileIO.writeFully(hdr);
 
             //there is 'super' page in every file
             return headerSize() + dbCfg.getPageSize();
@@ -347,28 +347,20 @@ public class FilePageStore implements PageStore {
             long off = pageOffset(pageId);
 
             assert pageBuf.capacity() == pageSize;
+            assert pageBuf.remaining() == pageSize;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
             assert off <= (allocated.get() - headerSize()) : "calculatedOffset=" + off +
                 ", allocated=" + allocated.get() + ", headerSize="+headerSize();
 
-            int len = pageSize;
+            int n = readWithFailover(pageBuf, off);
 
-            do {
-                int n = readWithFailover(pageBuf, off);
+            // If page was not written yet, nothing to read.
+            if (n < 0) {
+                pageBuf.put(new byte[pageBuf.remaining()]);
 
-                // If page was not written yet, nothing to read.
-                if (n < 0) {
-                    pageBuf.put(new byte[pageBuf.remaining()]);
-
-                    return;
-                }
-
-                off += n;
-
-                len -= n;
+                return;
             }
-            while (len > 0);
 
             int savedCrc32 = PageIO.getCrc(pageBuf);
 
@@ -405,22 +397,7 @@ public class FilePageStore implements PageStore {
         try {
             assert buf.remaining() == headerSize();
 
-            int len = headerSize();
-
-            long off = 0;
-
-            do {
-                int n = readWithFailover(buf, off);
-
-                // If page was not written yet, nothing to read.
-                if (n < 0)
-                    return;
-
-                off += n;
-
-                len -= n;
-            }
-            while (len > 0);
+            readWithFailover(buf, 0);
         }
         catch (IOException e) {
             throw new PersistentStorageIOException("Read error", e);
@@ -738,7 +715,7 @@ public class FilePageStore implements PageStore {
             try {
                 assert destBuf.remaining() > 0;
 
-                int bytesRead = fileIO.read(destBuf, position);
+                int bytesRead = fileIO.readFully(destBuf, position);
 
                 if (interrupted)
                     Thread.currentThread().interrupt();

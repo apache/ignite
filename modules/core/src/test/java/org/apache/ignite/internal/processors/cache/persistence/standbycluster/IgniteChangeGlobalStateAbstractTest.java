@@ -151,7 +151,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
      * @param cnt Count.
      * @throws Exception If failed.
      */
-    private void startPrimaryNodes(int cnt) throws Exception {
+    void startPrimaryNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++)
             startPrimary(i);
 
@@ -181,7 +181,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
      * @param cnt Count.
      * @throws Exception If failed.
      */
-    private void startBackUpNodes(int cnt) throws Exception {
+    void startBackUpNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++)
             startBackUp(i);
     }

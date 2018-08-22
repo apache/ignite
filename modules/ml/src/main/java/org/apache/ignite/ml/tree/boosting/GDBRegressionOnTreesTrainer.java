@@ -17,10 +17,8 @@
 
 package org.apache.ignite.ml.tree.boosting;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.composition.boosting.GDBLearningStrategy;
 import org.apache.ignite.ml.composition.boosting.GDBRegressionTrainer;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -54,7 +52,7 @@ public class GDBRegressionOnTreesTrainer extends GDBRegressionTrainer {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override protected DatasetTrainer<? extends Model<Vector, Double>, Double> buildBaseModelTrainer() {
+    @NotNull @Override protected DecisionTreeRegressionTrainer buildBaseModelTrainer() {
         return new DecisionTreeRegressionTrainer(maxDepth, minImpurityDecrease).withUseIndex(useIndex);
     }
 
@@ -67,5 +65,10 @@ public class GDBRegressionOnTreesTrainer extends GDBRegressionTrainer {
     public GDBRegressionOnTreesTrainer withUseIndex(boolean useIndex) {
         this.useIndex = useIndex;
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GDBLearningStrategy getLearningStrategy() {
+        return new GDBOnTreesLearningStrategy(useIndex);
     }
 }
