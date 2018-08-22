@@ -489,6 +489,15 @@ namespace ignite
         };
 
         /**
+         * Returns the bigger type.
+         */
+        template<typename T1, typename T2>
+        struct Bigger
+        {
+            typedef typename Conditional<(sizeof(T1) > sizeof(T2)), T1, T2>::type type;
+        };
+
+        /**
          * Utility class to bind class instance with member function.
          */
         template<typename R, typename T>
