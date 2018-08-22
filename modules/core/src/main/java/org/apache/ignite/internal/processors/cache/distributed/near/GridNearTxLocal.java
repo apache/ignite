@@ -1267,7 +1267,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             }
                         }
                         catch (ClusterTopologyCheckedException e) {
-                            entry.touch(topologyVersion());
+                            entry.touch();
 
                             throw e;
                         }
@@ -1325,7 +1325,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (readCommitted())
-                            entry.touch(topologyVersion());
+                            entry.touch();
 
                         break; // While.
                     }
@@ -2347,7 +2347,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 }
                             }
                             else
-                                entry.touch(topVer);
+                                entry.touch();
                         }
                     }
                 }
@@ -2529,7 +2529,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             GridCacheEntryEx cached0 = txEntry.cached();
 
             if (cached0 != null)
-                cached0.touch(topologyVersion());
+                cached0.touch();
         }
     }
 
@@ -4089,7 +4089,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         GridCacheEntryEx e = txEntry == null ? entryEx(cacheCtx, txKey, topVer) : txEntry.cached();
 
                         if (readCommitted() || skipVals) {
-                            e.touch(topologyVersion());
+                            e.touch();
 
                             if (visibleVal != null) {
                                 cacheCtx.addResult(map,

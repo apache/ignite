@@ -360,7 +360,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             assertTrue("Invalid backup cache entry: " + dhtEntry, dhtEntry.rawGet() == null);
         }
 
-        dhtEntry.touch(null);
+        dhtEntry.touch();
     }
 
     /**

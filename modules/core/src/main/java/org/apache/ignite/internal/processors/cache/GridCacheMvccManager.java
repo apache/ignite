@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -360,7 +359,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             try {
                 entry.removeExplicitNodeLocks(leftNodeId);
 
-                entry.touch(topVer);
+                entry.touch();
             }
             catch (GridCacheEntryRemovedException ignore) {
                 if (log.isDebugEnabled())

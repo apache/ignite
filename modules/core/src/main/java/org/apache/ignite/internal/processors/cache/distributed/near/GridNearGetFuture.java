@@ -554,7 +554,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             }
             finally {
                 if (entry != null && tx == null)
-                    entry.touch(topVer);
+                    entry.touch();
             }
         }
 
@@ -655,7 +655,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 if (dhtEntry != null)
                     // Near cache is enabled, so near entry will be enlisted in the transaction.
                     // Always touch DHT entry in this case.
-                    dhtEntry.touch(topVer);
+                    dhtEntry.touch();
             }
         }
     }
@@ -799,7 +799,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 entry.releaseEviction();
 
                 if (tx == null)
-                    entry.touch(topVer);
+                    entry.touch();
             }
         }
     }
