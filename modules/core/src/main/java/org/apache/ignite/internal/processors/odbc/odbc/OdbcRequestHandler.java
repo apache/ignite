@@ -268,6 +268,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(qry, true, false);
 
+            log.debug("OdbcRequestHandler.executeQuery - " + ver + ", ");
+
             OdbcQueryResults results = new OdbcQueryResults(cursors, ver);
             Collection<OdbcColumnMeta> fieldsMeta;
 
@@ -279,6 +281,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 qryResults.put(qryId, results);
 
                 fieldsMeta = results.currentResultSet().fieldsMeta();
+
+                for (OdbcColumnMeta meta : fieldsMeta) {
+                    log.warning("Meta - " + meta.columnName + ", " + meta.precision + ", " + meta.scale);
+                }
             }
 
             OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());
