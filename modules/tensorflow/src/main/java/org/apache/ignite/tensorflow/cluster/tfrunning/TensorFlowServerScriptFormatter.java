@@ -70,10 +70,10 @@ public class TensorFlowServerScriptFormatter {
             .append(srv.getTaskIdx())
             .append("))")
             .append("\n");
-        builder.append("print('IGNITE_DATASET_HOST = ', os.environ['IGNITE_DATASET_HOST'])").append("\n");
-        builder.append("print('IGNITE_DATASET_PORT = ', os.environ['IGNITE_DATASET_PORT'])").append("\n");
-        builder.append("print('IGNITE_DATASET_LOCAL = ', os.environ['IGNITE_DATASET_LOCAL'])").append("\n");
-        builder.append("print('IGNITE_DATASET_PART = ', os.environ['IGNITE_DATASET_PART'])").append("\n");
+        builder.append("print('IGNITE_DATASET_HOST = ', os.environ.get('IGNITE_DATASET_HOST'))").append("\n");
+        builder.append("print('IGNITE_DATASET_PORT = ', os.environ.get('IGNITE_DATASET_PORT'))").append("\n");
+        builder.append("print('IGNITE_DATASET_LOCAL = ', os.environ.get('IGNITE_DATASET_LOCAL'))").append("\n");
+        builder.append("print('IGNITE_DATASET_PART = ', os.environ.get('IGNITE_DATASET_PART'))").append("\n");
 
         builder.append("server = tf.train.Server(cluster");
 
