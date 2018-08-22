@@ -29,8 +29,6 @@ public class SegmentCompressStorage {
     private final SegmentArchivedStorage segmentArchivedStorage;
     /** Last successfully compressed segment. */
     private volatile long lastCompressedIdx = -1L;
-    /** All segments prior to this (inclusive) can be compressed. */
-    private volatile long lastAllowedToCompressIdx = -1L;
 
     /**
      * @param segmentArchivedStorage Storage of last archived segment.
@@ -50,17 +48,6 @@ public class SegmentCompressStorage {
         segmentArchivedStorage.addObserver(storage::onSegmentArchived);
 
         return storage;
-    }
-
-    /**
-     * Update to new segment to compress.
-     *
-     * @param allowedSegmentUntilCompress Segment until which segments can be compress.
-     */
-    synchronized void allowCompressionUntil(long allowedSegmentUntilCompress) {
-        lastAllowedToCompressIdx = allowedSegmentUntilCompress - 1;
-
-        notify();
     }
 
     /**
@@ -88,7 +75,7 @@ public class SegmentCompressStorage {
 
         try {
             while (
-                segmentToCompress > Math.min(lastAllowedToCompressIdx, segmentArchivedStorage.lastArchivedAbsoluteIndex())
+                segmentToCompress > segmentArchivedStorage.lastArchivedAbsoluteIndex()
                     && !interrupted
                 )
                 wait();

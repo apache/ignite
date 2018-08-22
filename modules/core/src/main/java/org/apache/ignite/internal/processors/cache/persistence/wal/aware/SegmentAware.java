@@ -101,15 +101,6 @@ public class SegmentAware {
     }
 
     /**
-     * Update to new segment to compress.
-     *
-     * @param allowedSegmentUntilCompress Segment until which segments can be compress.
-     */
-    public void allowCompressionUntil(long allowedSegmentUntilCompress) {
-        segmentCompressStorage.allowCompressionUntil(allowedSegmentUntilCompress);
-    }
-
-    /**
      * Force set last compressed segment.
      *
      * @param lastCompressedIdx Segment which was last compressed.

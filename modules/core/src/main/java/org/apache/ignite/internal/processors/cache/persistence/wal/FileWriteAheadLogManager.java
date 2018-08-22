@@ -966,7 +966,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public void notchLastCheckpointPtr(WALPointer ptr) {
         if (compressor != null)
-            segmentAware.allowCompressionUntil(((FileWALPointer)ptr).index());
+            compressor.keepUncompressedIdxFrom(((FileWALPointer)ptr).index());
     }
 
     /** {@inheritDoc} */
@@ -990,7 +990,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public long lastCompactedSegment() {
-        return compressor != null ? compressor.lastCompressedIdx : -1L;
+        return segmentAware.lastCompressedIdx();
     }
 
     /** {@inheritDoc} */
@@ -1801,6 +1801,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private class FileCompressor extends Thread {
         /** Current thread stopping advice. */
         private volatile boolean stopped;
+
+        /** All segments prior to this (inclusive) can be compressed. */
+        private volatile long minUncompressedIdxToKeep = -1L;
         /**
          *
          */
@@ -1825,6 +1828,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (alreadyCompressed.length > 0)
                 segmentAware.lastCompressedIdx(alreadyCompressed[alreadyCompressed.length - 1].idx());
+        }
+
+        /**
+         * @param idx Minimum raw segment index that should be preserved from deletion.
+         */
+        void keepUncompressedIdxFrom(long idx) {
+            minUncompressedIdxToKeep = idx;
         }
 
         /**
@@ -1861,7 +1871,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (segmentReservedOrLocked(desc.idx))
                     return;
 
-                if (desc.idx < segmentAware.lastCompressedIdx() && duplicateIndices.contains(desc.idx)) {
+                if (desc.idx < minUncompressedIdxToKeep && duplicateIndices.contains(desc.idx)) {
                     if (!desc.file.delete())
                         U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                             desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());

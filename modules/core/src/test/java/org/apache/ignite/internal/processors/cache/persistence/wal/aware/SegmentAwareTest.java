@@ -390,7 +390,6 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(10);
 
         aware.lastCompressedIdx(5);
-        aware.allowCompressionUntil(7);
 
         IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
 
@@ -410,32 +409,11 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(10);
 
         aware.lastCompressedIdx(5);
-        aware.allowCompressionUntil(7);
 
         IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
 
         //when: marked expected segment.
         aware.markAsMovedToArchive(6);
-
-        //then: waiting should finish immediately.
-        future.get(20);
-    }
-
-    /**
-     * Waiting finished when segment archived.
-     */
-    @Test
-    public void shouldFinishWaitSegmentToCompress_WhenSetAllowCompressSegment() throws IgniteCheckedException, InterruptedException {
-        //given: thread which awaited segment.
-        SegmentAware aware = new SegmentAware(10);
-
-        aware.lastCompressedIdx(5);
-        aware.setLastArchivedAbsoluteIndex(6);
-
-        IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
-
-        //when: next segment to allow to compress.
-        aware.allowCompressionUntil(7);
 
         //then: waiting should finish immediately.
         future.get(20);
@@ -451,7 +429,6 @@ public class SegmentAwareTest {
 
         aware.lastCompressedIdx(5);
         aware.setLastArchivedAbsoluteIndex(6);
-        aware.allowCompressionUntil(7);
         aware.lastTruncatedArchiveIdx(7);
 
         //when:
