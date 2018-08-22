@@ -26,7 +26,7 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
  * @see MaxAbsScalerTrainer
  * @see MaxAbsScalerPreprocessor
  */
-public class AbsMaxScalerPartitionData implements AutoCloseable {
+public class MaxAbsScalerPartitionData implements AutoCloseable {
     /** Maximum absolute values. */
     private final double[] maxAbs;
 
@@ -35,7 +35,7 @@ public class AbsMaxScalerPartitionData implements AutoCloseable {
      *
      * @param maxAbs Maximal absolute values.
      */
-    public AbsMaxScalerPartitionData(double[] min, double[] maxAbs) {
+    public MaxAbsScalerPartitionData(double[] maxAbs) {
         this.maxAbs = maxAbs;
     }
 
