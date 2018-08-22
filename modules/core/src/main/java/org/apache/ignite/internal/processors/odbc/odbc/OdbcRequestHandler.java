@@ -268,8 +268,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(qry, true, false);
 
-            log.debug("OdbcRequestHandler.executeQuery - " + ver + ", ");
-
             OdbcQueryResults results = new OdbcQueryResults(cursors, ver);
             Collection<OdbcColumnMeta> fieldsMeta;
 
@@ -281,10 +279,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 qryResults.put(qryId, results);
 
                 fieldsMeta = results.currentResultSet().fieldsMeta();
-
-                for (OdbcColumnMeta meta : fieldsMeta) {
-                    log.warning("Meta - " + meta.columnName + ", " + meta.precision + ", " + meta.scale);
-                }
             }
 
             OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());
@@ -450,9 +444,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                             continue;
 
                         GridQueryProperty prop = table.property(field.getKey());
-
-                        log.warning("OdbcRequestHandler.getColumnsMeta - " + field.getKey() + ", precision - " + prop.precision() + ", ver - " + ver);
-                        log.error("OdbcRequestHandler.getColumnsMeta - " + field.getKey() + ", precision - " + prop.precision() + ", ver - " + ver);
 
                         OdbcColumnMeta columnMeta = new OdbcColumnMeta(table.schemaName(), table.tableName(),
                             field.getKey(), field.getValue(), prop.precision(), prop.scale(), ver);
