@@ -15,17 +15,13 @@
  * limitations under the License.
  */
 
-#ifdef _WIN32
-#   include <Windows.h>
-#endif
-
-#include <string>
-
 #ifndef _MSC_VER
 #   define BOOST_TEST_DYN_LINK
 #endif
 
 #include <boost/test/unit_test.hpp>
+
+#include <string>
 
 #include <ignite/ignite.h>
 #include <ignite/ignition.h>
@@ -35,7 +31,6 @@
 #include <ignite/odbc/sql/sql_parser.h>
 #include <ignite/odbc/sql/sql_set_streaming_command.h>
 
-#include "odbc_test_suite.h"
 #include "test_utils.h"
 
 
