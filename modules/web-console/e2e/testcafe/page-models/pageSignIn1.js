@@ -18,7 +18,7 @@
 import {Selector, t} from 'testcafe';
 import {CustomFormField} from '../components/FormField';
 
-export const pageSignin = {
+export const pageSignIn1 = {
     email: new CustomFormField({model: '$ctrl.data.email'}),
     password: new CustomFormField({model: '$ctrl.data.password'}),
     signinButton: Selector('button').withText('Sign In'),
