@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Map;
 import java.util.Set;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
