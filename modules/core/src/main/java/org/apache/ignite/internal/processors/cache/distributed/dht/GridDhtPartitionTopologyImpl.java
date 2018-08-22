@@ -662,8 +662,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (locPart == null)
                     updateLocal(p, EVICTED, updateSeq, topVer);
-                else
-                    updateLocal(p, locPart.state(), updateSeq, topVer);
+                else {
+                    GridDhtPartitionState state = locPart.state();
+
+                    updateLocal(p, state, updateSeq, topVer);
+
+                    // Restart cleaning.
+                    if (state == RENTING)
+                        locPart.clearAsync();
+                }
             }
         }
         finally {
@@ -1429,7 +1436,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 log.debug("Removing left node from full map update [grp=" + grp.cacheOrGroupName() +
                                     ", nodeId=" + nodeId + ", partMap=" + partMap + ']');
 
-                            leftNode2Part.put(nodeId, partMap.get(nodeId));
+                            if (node2part.containsKey(nodeId)) {
+                                GridDhtPartitionMap map = partMap.get(nodeId);
+
+                                if (map != null)
+                                    leftNode2Part.put(nodeId, map);
+                            }
 
                             it.remove();
                         }
@@ -1725,7 +1737,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert cur != null;
 
                     String msg = "Stale update for single partition map update (will ignore) [" +
-                        "grp=" + grp.cacheOrGroupName() +
+                        "nodeId=" + parts.nodeId() +
+                        ", grp=" + grp.cacheOrGroupName() +
                         ", exchId=" + exchId +
                         ", curMap=" + cur +
                         ", newMap=" + parts + ']';
@@ -2277,12 +2290,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     // If all affinity nodes are owners, then evict partition from local node.
                     if (nodeIds.containsAll(F.nodeIds(affNodes))) {
-                        IgniteInternalFuture<?> rentFuture = part.rent(false);
-                        rentingFutures.add(rentFuture);
+                        GridDhtPartitionState state0 = part.state();
+
+                        IgniteInternalFuture<?> rentFut = part.rent(false);
+
+                        rentingFutures.add(rentFut);
 
                         updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
-                        changed = true;
+                        changed = state0 != part.state();
 
                         if (log.isDebugEnabled()) {
                             log.debug("Evicted local partition (all affinity nodes are owners) [grp=" + grp.cacheOrGroupName() +
@@ -2303,12 +2319,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 ClusterNode n = nodes.get(i);
 
                                 if (locId.equals(n.id())) {
-                                    IgniteInternalFuture<?> rentFuture = part.rent(false);
-                                    rentingFutures.add(rentFuture);
+                                    GridDhtPartitionState state0 = part.state();
+
+                                    IgniteInternalFuture<?> rentFut = part.rent(false);
+
+                                    rentingFutures.add(rentFut);
 
                                     updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
-                                    changed = true;
+                                    changed = state0 != part.state();
 
                                     if (log.isDebugEnabled()) {
                                         log.debug("Evicted local partition (this node is oldest non-affinity node) [" +

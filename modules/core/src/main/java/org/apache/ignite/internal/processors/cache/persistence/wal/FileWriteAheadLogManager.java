@@ -69,6 +69,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.events.WalSegmentCompactedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -127,9 +128,11 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
+import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
@@ -138,12 +141,15 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 import static org.apache.ignite.internal.util.IgniteUtils.findField;
 import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
+import static org.apache.ignite.internal.util.IgniteUtils.sleep;
 
 /**
  * File WAL manager.
  */
 @SuppressWarnings("IfMayBeConditional")
 public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
+    /** Dfault wal segment sync timeout. */
+    public static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
     /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
     private static final Method force0 = findNonPublicMethod(
         MappedByteBuffer.class, "force0",
@@ -348,6 +354,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     @Nullable private volatile IgniteInClosure<FileIO> createWalFileListener;
 
+    /** Wal segment sync worker. */
+    private WalSegmentSyncer walSegmentSyncWorker;
+
     /**
      * Manage of segment location.
      */
@@ -459,7 +468,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             walDisableContext = cctx.walState().walDisableContext();
 
-            if (mode != WALMode.NONE) {
+            if (mode != WALMode.NONE && mode != WALMode.FSYNC) {
+                walSegmentSyncWorker = new WalSegmentSyncer(igCfg.getIgniteInstanceName(),
+                    cctx.kernalContext().log(WalSegmentSyncer.class));
+
                 if (log.isInfoEnabled())
                     log.info("Started write-ahead log manager [mode=" + mode + ']');
             }
@@ -570,6 +582,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (decompressor != null)
                 decompressor.shutdown();
+
+            if (walSegmentSyncWorker != null)
+                walSegmentSyncWorker.shutdown();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd.fileIO, e);
@@ -590,6 +605,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 new IgniteThread(archiver).start();
             }
+
+            if (walSegmentSyncWorker != null)
+                new IgniteThread(walSegmentSyncWorker).start();
 
             if (compressor != null)
                 compressor.start();
@@ -946,7 +964,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void allowCompressionUntil(WALPointer ptr) {
+    @Override public void notchLastCheckpointPtr(WALPointer ptr) {
+        if (compressor != null)
             segmentAware.allowCompressionUntil(((FileWALPointer)ptr).index());
     }
 
@@ -967,6 +986,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public long lastArchivedSegment() {
         return segmentAware.lastArchivedAbsoluteIndex();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long lastCompactedSegment() {
+        return compressor != null ? compressor.lastCompressedIdx : -1L;
     }
 
     /** {@inheritDoc} */
@@ -1874,6 +1898,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (mode != WALMode.NONE) {
                         try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
                             f0.force();
+                        }
+
+                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED)) {
+                            evt.record(new WalSegmentCompactedEvent(
+                                cctx.discovery().localNode(),
+                                currReservedSegment,
+                                zip.getAbsoluteFile())
+                            );
                         }
                     }
 
@@ -3049,7 +3081,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             writeBuffer(seg.position(), seg.buffer());
                         }
                         catch (Throwable e) {
-                            log.error("Exception in WAL writer thread: ", e);
+                            log.error("Exception in WAL writer thread:", e);
 
                             err = e;
                         }
@@ -3230,6 +3262,48 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 throw se;
             }
+        }
+    }
+
+    /**
+     * Syncs WAL segment file.
+     */
+    private class WalSegmentSyncer extends GridWorker {
+        /** Sync timeout. */
+        long syncTimeout;
+
+        /**
+         * @param igniteInstanceName Ignite instance name.
+         * @param log Logger.
+         */
+        public WalSegmentSyncer(String igniteInstanceName, IgniteLogger log) {
+            super(igniteInstanceName, "wal-segment-syncer", log);
+
+            syncTimeout = Math.max(IgniteSystemProperties.getLong(IGNITE_WAL_SEGMENT_SYNC_TIMEOUT,
+                DFLT_WAL_SEGMENT_SYNC_TIMEOUT), 100L);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            while (!isCancelled()) {
+                sleep(syncTimeout);
+
+                try {
+                    flush(null, true);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Exception when flushing WAL.", e);
+                }
+            }
+        }
+
+        /** Shutted down the worker. */
+        private void shutdown() {
+            synchronized (this) {
+                U.cancel(this);
+            }
+
+            U.join(this, log);
         }
     }
 

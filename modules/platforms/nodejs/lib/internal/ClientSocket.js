@@ -26,8 +26,7 @@ const Errors = require('../Errors');
 const IgniteClientConfiguration = require('../IgniteClientConfiguration');
 const MessageBuffer = require('./MessageBuffer');
 const BinaryUtils = require('./BinaryUtils');
-const BinaryReader = require('./BinaryReader');
-const BinaryWriter = require('./BinaryWriter');
+const BinaryCommunicator = require('./BinaryCommunicator');
 const ArgumentChecker = require('./ArgumentChecker');
 const Logger = require('./Logger');
 
@@ -240,7 +239,7 @@ class ClientSocket {
             const serverVersion = new ProtocolVersion();
             serverVersion.read(buffer);
             // Error message
-            const errMessage = await BinaryReader.readObject(buffer);
+            const errMessage = BinaryCommunicator.readString(buffer);
 
             if (!this._protocolVersion.equals(serverVersion)) {
                 if (!this._isSupportedVersion(serverVersion) ||
@@ -271,7 +270,7 @@ class ClientSocket {
     async _finalizeResponse(buffer, request, isSuccess) {
         if (!isSuccess) {
             // Error message
-            const errMessage = await BinaryReader.readObject(buffer);
+            const errMessage = BinaryCommunicator.readString(buffer);
             request.reject(new Errors.OperationError(errMessage));
         }
         else {
@@ -295,8 +294,8 @@ class ClientSocket {
         // Client code
         payload.writeByte(2);
         if (this._config._userName) {
-            await BinaryWriter.writeString(payload, this._config._userName);
-            await BinaryWriter.writeString(payload, this._config._password);
+            BinaryCommunicator.writeString(payload, this._config._userName);
+            BinaryCommunicator.writeString(payload, this._config._password);
         }
     }
 

@@ -18,27 +18,32 @@
 package org.apache.ignite.examples.ml.clustering;
 
 import java.util.Arrays;
-import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.util.TestCache;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
-import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run kNN multi-class classification trainer over distributed dataset.
- *
- * @see KNNClassificationTrainer
+ * Run KMeans clustering algorithm ({@link KMeansTrainer}) over distributed dataset.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (based on the
+ * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
+ * <p>
+ * After that it trains the model based on the specified data using KMeans algorithm.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
+ * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class KMeansClusterizationExample {
     /** Run example. */
@@ -51,7 +56,7 @@ public class KMeansClusterizationExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 KMeansClusterizationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 KMeansTrainer trainer = new KMeansTrainer()
                     .withSeed(7867L);
@@ -94,31 +99,14 @@ public class KMeansClusterizationExample {
 
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
                     System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+
+                    System.out.println(">>> KMeans clustering algorithm over cached dataset usage example completed.");
                 }
             });
 
             igniteThread.start();
             igniteThread.join();
         }
-    }
-
-    /**
-     * Fills cache with data and returns it.
-     *
-     * @param ignite Ignite instance.
-     * @return Filled Ignite Cache.
-     */
-    private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
-        CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-        IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
-
-        for (int i = 0; i < data.length; i++)
-            cache.put(i, data[i]);
-
-        return cache;
     }
 
     /** The Iris dataset. */

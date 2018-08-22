@@ -284,7 +284,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                 }
                 finally {
                     if (entry != null)
-                        ctx.evicts().touch(entry, topVer);
+                        entry.touch(topVer);
                 }
             }
         }

@@ -66,6 +66,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.events.WalSegmentCompactedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -121,6 +122,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
+import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
@@ -856,9 +858,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public void allowCompressionUntil(WALPointer ptr) {
+    @Override public void notchLastCheckpointPtr(WALPointer ptr) {
         if (compressor != null)
-            compressor.allowCompressionUntil(((FileWALPointer)ptr).index());
+            compressor.keepUncompressedIdxFrom(((FileWALPointer)ptr).index());
     }
 
     /** {@inheritDoc} */
@@ -878,6 +880,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** {@inheritDoc} */
     @Override public long lastArchivedSegment() {
         return archiver.lastArchivedAbsoluteIndex();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long lastCompactedSegment() {
+        return compressor != null ? compressor.lastCompressedIdx : -1L;
     }
 
     /** {@inheritDoc} */
@@ -1747,7 +1754,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         private volatile long lastCompressedIdx = -1L;
 
         /** All segments prior to this (inclusive) can be compressed. */
-        private volatile long lastAllowedToCompressIdx = -1L;
+        private volatile long minUncompressedIdxToKeep = -1L;
 
         /**
          *
@@ -1776,10 +1783,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         }
 
         /**
-         * @param lastCpStartIdx Segment index to allow compression until (exclusively).
+         * @param idx Minimum raw segment index that should be preserved from deletion.
          */
-        synchronized void allowCompressionUntil(long lastCpStartIdx) {
-            lastAllowedToCompressIdx = lastCpStartIdx - 1;
+        synchronized void keepUncompressedIdxFrom(long idx) {
+            minUncompressedIdxToKeep = idx;
 
             notify();
         }
@@ -1802,7 +1809,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 if (stopped)
                     return -1;
 
-                while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archiver.lastArchivedAbsoluteIndex())) {
+                while (segmentToCompress > archiver.lastArchivedAbsoluteIndex()) {
                     wait();
 
                     if (stopped)
@@ -1841,7 +1848,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 if (archiver0 != null && archiver0.reserved(desc.idx))
                     return;
 
-                if (desc.idx < lastCompressedIdx && duplicateIndices.contains(desc.idx)) {
+                if (desc.idx < minUncompressedIdxToKeep && duplicateIndices.contains(desc.idx)) {
                     if (!desc.file.delete())
                         U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                             desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
@@ -1878,6 +1885,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     if (mode != WALMode.NONE) {
                         try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
                             f0.force();
+                        }
+
+                        if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED)) {
+                            evt.record(new WalSegmentCompactedEvent(
+                                cctx.discovery().localNode(),
+                                currReservedSegment,
+                                zip.getAbsoluteFile())
+                            );
                         }
                     }
 
