@@ -787,8 +787,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             }
         }
 
-        if (!Thread.currentThread().getName().contains("dedicated"))
-            throw new AssertionError("Commit requested not from dedicated stipe");
+        cctx.tm().finisher().check();
 
         if (commit && !isRollbackOnly())
             return new IgniteTxCommitFuture(startCommit(), true);

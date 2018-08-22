@@ -719,6 +719,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     private void finishCommitEntries(IgniteTxCommitEntriesFuture commitEntriesFuture) throws IgniteCheckedException {
         assert commitEntriesFuture.isDone();
 
+        if (state() == COMMITTED)
+            return;
+
         // Nothing to commit.
         if (!commitEntriesFuture.initialized())
             return;
@@ -804,9 +807,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public IgniteTxCommitFuture startCommit() {
         try {
-            if (!Thread.currentThread().getName().contains("dedicated")) {
-                throw new AssertionError("Commit requested not from dedicated stripe.");
-            }
+            cctx.tm().finisher().check();
 
             if (optimistic())
                 state(PREPARED);

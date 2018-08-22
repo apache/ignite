@@ -1,10 +1,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.jetbrains.annotations.Nullable;
 
 public class CacheEntryExecutor {
+    private static final boolean TPP_ENABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ENABLE_THREAD_PER_PARTITION, true);
 
     private final StripedExecutor executor;
 
@@ -31,7 +33,7 @@ public class CacheEntryExecutor {
 
         CacheEntryOperationFuture<R> future = new CacheEntryOperationFuture<>();
 
-        executor.execute(entry.key().partition(), () -> {
+        Runnable cmd = () -> {
             GridCacheEntryEx entry0 = entry;
 
             R result;
@@ -77,14 +79,13 @@ public class CacheEntryExecutor {
                     cctx.database().checkpointReadUnlock();
                 }
             }
-        });
+        };
+
+        if (TPP_ENABLED)
+            executor.execute(entry.key().partition(), cmd);
+        else
+            cmd.run();
 
         return future;
-    }
-
-    static class ExecutionContext {
-
-        private GridCacheEntryEx entry;
-
     }
 }

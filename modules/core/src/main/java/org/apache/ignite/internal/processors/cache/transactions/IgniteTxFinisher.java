@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -13,6 +14,8 @@ import org.jsr166.ConcurrentLinkedHashMap;
  *
  */
 public class IgniteTxFinisher {
+    private static final boolean TPP_ENABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ENABLE_THREAD_PER_PARTITION, true);
+
     private static final int DEDICATED_WORKER_IDX = 0;
 
     private final IgniteLogger log;
@@ -35,6 +38,12 @@ public class IgniteTxFinisher {
     }
 
     public void execute(IgniteInternalTx tx, Runnable transactionOp) {
+        if (!TPP_ENABLED) {
+            transactionOp.run();
+
+            return;
+        }
+
         cctx.kernalContext().getStripedExecutorService().executeDedicated(DEDICATED_WORKER_IDX, () -> {
             GridCacheVersion txId = tx.xidVersion();
 
@@ -60,6 +69,12 @@ public class IgniteTxFinisher {
     }
 
     public void send(IgniteInternalTx tx, Runnable transactionSendOp) {
+        if (!TPP_ENABLED) {
+            transactionSendOp.run();
+
+            return;
+        }
+
         GridCacheVersion txId = tx.xidVersion();
 
         long order = txOrdering.get(txId);
@@ -82,6 +97,9 @@ public class IgniteTxFinisher {
     }
 
     public void finishSend(IgniteInternalTx tx) {
+        if (!TPP_ENABLED)
+            return;
+
         GridCacheVersion txId = tx.xidVersion();
 
         long order = txOrdering.get(txId);
@@ -118,5 +136,12 @@ public class IgniteTxFinisher {
 
     public long order(IgniteInternalTx tx) {
         return txOrdering.get(tx.xidVersion());
+    }
+
+    public void check() {
+        if (TPP_ENABLED) {
+            if (!Thread.currentThread().getName().contains("dedicated"))
+                throw new AssertionError("Commit requested not from dedicated stripe.");
+        }
     }
 }

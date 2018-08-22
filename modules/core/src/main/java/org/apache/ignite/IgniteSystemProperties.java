@@ -949,6 +949,8 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
+    public static final String IGNITE_ENABLE_THREAD_PER_PARTITION = "IGNITE_ENABLE_THREAD_PER_PARTITION";
+
     /**
      * Enforces singleton.
      */
