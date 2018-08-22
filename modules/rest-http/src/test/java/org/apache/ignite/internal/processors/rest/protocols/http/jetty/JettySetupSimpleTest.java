@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Map;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -24,7 +30,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class ProtocolSetupSimpleTest extends GridCommonAbstractTest {
+public class JettySetupSimpleTest extends GridCommonAbstractTest {
+    /** Jetty port. */
+    private static final int JETTY_PORT = 8080;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
@@ -34,14 +43,34 @@ public class ProtocolSetupSimpleTest extends GridCommonAbstractTest {
         return configuration;
     }
 
-    /**
-     *
-     */
-    public void testStartup() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
+    }
 
-        //todo 'http://localhost:8080/ignite?cmd=version'
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids(true);
+    }
 
-        stopGrid(0);
+    /**
+     * Runs version command using GridJettyRestProtocol.
+     */
+    public void testVersionCommand() throws Exception {
+        URLConnection conn = new URL("http://localhost:" + JETTY_PORT + "/ignite?cmd=version").openConnection();
+
+        conn.connect();
+
+        try (InputStreamReader streamReader = new InputStreamReader(conn.getInputStream())) {
+            ObjectMapper objMapper = new ObjectMapper();
+            Map<String, Object> myMap = objMapper.readValue(streamReader,
+                new TypeReference<Map<String, Object>>() {
+                });
+
+            log.info("Version command response is: " + myMap);
+
+            assertTrue(myMap.containsKey("response"));
+            assertEquals(0, myMap.get("successStatus"));
+        }
     }
 }
