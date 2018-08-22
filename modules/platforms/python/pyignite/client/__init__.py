@@ -327,17 +327,92 @@ class Client:
 
         return b''.join(chunks)
 
-    @status_to_exception(BinaryTypeError)
-    def get_binary_type(self, binary_type: Union[str, int]) -> dict:
+    def get_binary_type(
+        self, binary_type: Union[str, int], schema: Union[dict, int]=None
+    ) -> dict:
         """
         Gets the binary type information by type ID.
 
-        :param binary_type: binary type name or ID,
-        :return: binary type description with type ID and schemas.
+        :param binary_type: binary object type name or ID,
+        :param schema: (optional) binary object schema or schema ID,
+        :return: binary type description with type ID and schema (or schemas,
+         if no schema ID is given).
         """
         from pyignite.api.binary import get_binary_type
+        from pyignite.datatypes.internal import tc_map
 
-        return get_binary_type(self, binary_type)
+        def convert_type(tc_type: int):
+            from pyignite.datatypes import BinaryObject
+
+            try:
+                return tc_map(tc_type.to_bytes(1, PROTOCOL_BYTE_ORDER))
+            except (KeyError, OverflowError):
+                # if conversion to char or type lookup failed,
+                # we probably have a binary object type ID
+                return BinaryObject
+
+        def convert_schema(field_ids: list, binary_fields: list):
+            converted_schema = {}
+            for field_id in field_ids:
+                binary_field = [
+                    x
+                    for x in binary_fields
+                    if x['field_id'] == field_id
+                ][0]
+                converted_schema[binary_field['field_name']] = convert_type(
+                    binary_field['type_id']
+                )
+            return converted_schema
+
+        def one_schema_result(result_value: dict, schema: dict):
+            result = result_value.copy()
+            result['schemas'] = [schema]
+            return result
+
+        if schema is None:
+            # do not look up the binary types registry! Do a server query
+            # and update the registry with the returned results instead
+            result = get_binary_type(self, binary_type)
+            if result.status != 0:
+                raise BinaryTypeError(result.message)
+            if not result.value['type_exists']:
+                return result.value
+
+            binary_fields = result.value.pop('binary_fields')
+            old_schemas = result.value.pop('schema')
+            new_schemas = []
+            for s_id, field_ids in old_schemas.items():
+                converted_schema = convert_schema(field_ids, binary_fields)
+                self.binary_registry[
+                    (entity_id(binary_type), s_id)
+                ] = one_schema_result(result.value, converted_schema)
+                new_schemas.append(converted_schema)
+            result.value['schemas'] = new_schemas
+            return result.value
+        else:
+            # first look up the registry, then query the server
+            memoized = self.binary_registry.get(
+                (entity_id(binary_type), schema_id(schema)), None
+            )
+            if memoized:
+                return memoized
+
+            result = get_binary_type(self, binary_type)
+            if result.status != 0:
+                raise BinaryTypeError(result.message)
+            if not result.value['type_exists']:
+                return result.value
+
+            binary_fields = result.value.pop('binary_fields')
+            old_schemas = result.value.pop('schema')
+            exact_result = {'type_exists': False}
+            for s_id, field_ids in old_schemas.items():
+                converted_schema = convert_schema(field_ids, binary_fields)
+                result = one_schema_result(result.value, converted_schema)
+                self.binary_registry[(entity_id(binary_type), s_id)] = result
+                if s_id == schema_id(schema):
+                    exact_result = result
+            return exact_result
 
     def put_binary_type(
         self, type_name: str, affinity_key_field: str=None,
@@ -376,7 +451,13 @@ class Client:
                 raise BinaryTypeError(result.message)
             self.binary_registry[
                 (result.value['type_id'], result.value['schema_id'])
-            ] = schema
+            ] = {
+                'type_exists': True,
+                'type_name': type_name,
+                'schema': schema,
+                'affinity_key_field': affinity_key_field,
+                'is_enum': is_enum,
+            }
             return result.value
 
     def create_cache(self, settings: Union[str, dict]) -> 'Cache':

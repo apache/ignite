@@ -143,8 +143,11 @@ def test_get_binary_type(client):
     )
 
     binary_type_info = client.get_binary_type('TestBinaryType')
-    assert len(binary_type_info['binary_fields']) == 5
-    assert len(binary_type_info['schema']) == 3
+    assert len(binary_type_info['schemas']) == 3
+
+    binary_type_info = client.get_binary_type('NonExistentType')
+    assert binary_type_info['type_exists'] is False
+    assert len(binary_type_info) == 1
 
 
 @pytest.mark.parametrize('page_size', range(1, 17, 5))

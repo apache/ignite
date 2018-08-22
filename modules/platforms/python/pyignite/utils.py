@@ -118,13 +118,15 @@ def entity_id(cache: Union[str, int]) -> int:
     return cache if type(cache) is int else hashcode(cache.lower())
 
 
-def schema_id(schema: dict) -> int:
+def schema_id(schema: Union[int, dict]) -> int:
     """
     Calculate Complex Object schema ID.
 
     :param schema: a dict of field names: field types,
     :return: schema ID.
     """
+    if type(schema) is int:
+        return schema
     s_id = FNV1_OFFSET_BASIS if schema else 0
     for field_name in schema.keys():
         field_id = entity_id(field_name)
