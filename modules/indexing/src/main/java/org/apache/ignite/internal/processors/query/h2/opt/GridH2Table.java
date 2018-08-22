@@ -32,6 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -39,8 +40,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.thread.IgniteThread;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
 import org.h2.engine.DbObject;
@@ -269,6 +270,9 @@ public class GridH2Table extends TableBase {
         if (destroyed) {
             unlock(exclusive);
 
+            if (!exclusive)
+                readLockCnt.decrementAndGet();
+
             throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
         }
 
@@ -311,35 +315,35 @@ public class GridH2Table extends TableBase {
      * @param exclusive Exclusive flag.
      */
     private void lock(boolean exclusive) {
-        if (exclusive) {
-            while (!readLockCnt.compareAndSet(0, -1))
-                Thread.yield();
-        }
-
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            if (!exclusive || !GridMapQueryExecutor.FORCE_LAZY)
-                l.lockInterruptibly();
-            else {
-                for (;;) {
-                    if (l.tryLock(200, TimeUnit.MILLISECONDS))
-                        break;
-                    else
-                        Thread.yield();
+            if (!exclusive
+                && IgniteThread.current() != null
+                && IgniteThread.current().policy() == GridIoPolicy.QUERY_POOL) {
+                // Readlock in QUERY_POOL
+                if (!l.tryLock(200, TimeUnit.MILLISECONDS))
+                    throw new GridH2ReadLockTimeoutException();
+            }
+            else if (exclusive) {
+                for (; ; ) {
+                    if (l.tryLock(200, TimeUnit.MILLISECONDS)) {
+                        if (readLockCnt.get() == 0)
+                            break;
+                        else
+                            l.unlock();
+                    }
+
+                    Thread.yield();
                 }
             }
+            else
+                l.lockInterruptibly();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
             throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
-        }
-        finally {
-            if (exclusive) {
-                while (!readLockCnt.compareAndSet(-1, 0))
-                    assert false : "This code must be unreachable";
-            }
         }
     }
 
@@ -490,17 +494,20 @@ public class GridH2Table extends TableBase {
         if (exclusive == null)
             return;
 
-        unlock(exclusive);
+        try {
+            unlock(exclusive);
+        }
+        finally {
+            GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+            if (qctx != null)
+                qctx.lockedTables().remove(this);
 
-        if (qctx != null)
-            qctx.lockedTables().remove(this);
+            if (!exclusive && !readLockWasAttached.get()) {
+                readLockWasAttached.set(null);
 
-        if (!exclusive && !readLockWasAttached.get()) {
-            readLockWasAttached.set(null);
-
-            readLockCnt.decrementAndGet();
+                readLockCnt.decrementAndGet();
+            }
         }
     }
 
