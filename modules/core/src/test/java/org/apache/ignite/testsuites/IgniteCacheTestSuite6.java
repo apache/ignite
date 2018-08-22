@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationProces
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
@@ -68,6 +69,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(WalModeChangeSelfTest.class);
         suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
         suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
+
+        suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
 
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
