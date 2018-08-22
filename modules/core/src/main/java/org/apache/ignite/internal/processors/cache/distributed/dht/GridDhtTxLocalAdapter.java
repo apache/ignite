@@ -788,7 +788,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             }
         }
 
+/*
         log.warning("Finish thread id = " + Thread.currentThread().getName());
+*/
 
         if (!Thread.currentThread().getName().contains("dedicated")) {
             throw new AssertionError("Commit requested not from dedicated stipe");

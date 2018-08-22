@@ -49,8 +49,10 @@ public class IgniteTxFinisher {
                     ordered++;
                 }
 
+/*
                 if (isNew)
                     log.warning("New tx = " + (ordered - 1));
+*/
             }
 
             transactionOp.run();
@@ -62,7 +64,7 @@ public class IgniteTxFinisher {
 
         long order = txOrdering.get(txId);
 
-        log.warning("Send invoked -> " + order);
+        //log.warning("Send invoked -> " + order);
 
         //log.warning("Try send " + order + " " + tx + ". Already sent: " + send);
 
@@ -84,7 +86,7 @@ public class IgniteTxFinisher {
 
         long order = txOrdering.get(txId);
 
-        log.warning("Finished send invoked -> " + order);
+        //log.warning("Finished send invoked -> " + order);
 
         if (order >= send)
             if (!delayedSendings.containsKey(order))
@@ -101,7 +103,7 @@ public class IgniteTxFinisher {
             //log.warning("Send incremented: " + send);
 
             while (delayedSendings.containsKey(send)) {
-                log.warning("Send delayed 2 - > " + send);
+                //log.warning("Send delayed 2 - > " + send);
 
                 List<Runnable> delayed = delayedSendings.remove(send);
                 txs.remove(send);

@@ -411,7 +411,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
+/*
             log.warning("One-phase commit -> " + cctx.tm().finisher().order(tx) + " " + tx);
+*/
 
             checkBackup();
 
