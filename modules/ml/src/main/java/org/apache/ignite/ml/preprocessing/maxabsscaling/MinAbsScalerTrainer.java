@@ -62,7 +62,8 @@ public class MinAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vec
                 return new MaxAbsScalerPartitionData(maxAbs);
             }
         )) {
-            double[] maxAbs = dataset.compute(data -> data.getMaxAbs(),(a, b) -> {
+            double[] maxAbs = dataset.compute(data -> data.getMaxAbs(),
+                    (a,b) -> {
                 if (a == null)
                     return b;
 
