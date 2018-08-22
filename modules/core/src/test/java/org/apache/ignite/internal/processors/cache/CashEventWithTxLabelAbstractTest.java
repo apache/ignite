@@ -26,22 +26,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -51,7 +44,6 @@ import org.junit.Assert;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
  * Base test to check passing transaction's label for EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT,
@@ -83,11 +75,8 @@ public abstract class CashEventWithTxLabelAbstractTest extends GridCommonAbstrac
     /** Key related to backup node. */
     private Integer backupKey = 0;
 
-    /** Number of backups for caches. */
-    private int backups = 0;
-
-    /** List to keep all events with no tx label */
-    private List<CacheEvent> incorrectEvts = Collections.synchronizedList(new ArrayList<>());
+    /** List to keep all events with no tx label between run tests */
+    private static List<CacheEvent> incorrectEvts = Collections.synchronizedList(new ArrayList<>());
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -99,7 +88,7 @@ public abstract class CashEventWithTxLabelAbstractTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         client = false;
@@ -114,15 +103,29 @@ public abstract class CashEventWithTxLabelAbstractTest extends GridCommonAbstrac
 
         waitForDiscovery(primary(), backup1(), backup2(), client());
 
+        registerEventListeners(primary(), backup1(), backup2(), client());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         incorrectEvts.clear();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        super.afterTest();
 
         Assert.assertTrue("Has been received " + incorrectEvts.size() + " cache events with incorrect txlabel",
             incorrectEvts.isEmpty());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
     }
 
     /**
@@ -645,8 +648,6 @@ public abstract class CashEventWithTxLabelAbstractTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void runTransactionally(Ignite startNode, Consumer<Ignite> cmdInTx) throws Exception {
-        registerEventListeners(primary(), backup1(), backup2(), client());
-
         try (Transaction tx = startNode.transactions().withLabel(TX_LABEL).txStart(transactionConcurrency(), transactionIsolation())) {
             cmdInTx.accept(startNode);
             tx.commit();
@@ -678,20 +679,34 @@ public abstract class CashEventWithTxLabelAbstractTest extends GridCommonAbstrac
     }
 
     /**
-     * Create cache with passed number of backups and determinate primary and backup keys.
+     * Create cache with passed number of backups and determinate primary and backup keys. If cache was created before
+     * it will be removed before create new one.
      *
      * @param cacheBackups Number of buckups for cache.
      */
-    private void prepareCache(int cacheBackups) {
-        this.backups = cacheBackups;
+    private void prepareCache(int cacheBackups) throws InterruptedException {
+        IgniteCache<Object, Object> cache = client().cache(CACHE_NAME);
+
+        if (cache != null)
+            cache.destroy();
+
         client().createCache(
             new CacheConfiguration<Integer, Integer>()
                 .setName(CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setBackups(backups())
+                .setBackups(cacheBackups)
         );
 
+        awaitPartitionMapExchange();
+
+        evaluateKeys();
+    }
+
+    /**
+     * Evaluate primary and backup keys.
+     */
+    private void evaluateKeys() {
         while (!client().affinity(CACHE_NAME).isPrimary(((IgniteKernal)primary()).localNode(), primaryKey))
             primaryKey++;
 
@@ -734,15 +749,6 @@ public abstract class CashEventWithTxLabelAbstractTest extends GridCommonAbstrac
      */
     private Ignite client() {
         return ignite(3);
-    }
-
-    /**
-     * Return number of backups for cache.
-     *
-     * @return number of backups for cache.
-     */
-    private int backups() {
-        return backups;
     }
 
     /**
