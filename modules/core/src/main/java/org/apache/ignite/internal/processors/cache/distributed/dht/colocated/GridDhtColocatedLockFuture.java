@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -180,7 +179,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** */
     private int miniId;
 
-    /** Used for synchronization between lock cancellation and mapping phase. */
+    /** {@code True} when mappings are ready for processing. */
     private boolean mappingsReady;
 
     /**
@@ -580,6 +579,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (inTx()) {
             onError(tx.rollbackException());
 
+            /** Should wait until {@link mappings} are ready before continuing with async rollback
+             * or some primary nodes might not receive tx finish messages because of race. */
             synchronized (this) {
                 while (!mappingsReady)
                     try {
@@ -651,6 +652,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);
 
+            /** Ensures what waiters for ready {@link mappings} will be unblocked if error has occurred while mapping. */
             synchronized (this) {
                 if (!mappingsReady) {
                     mappingsReady = true;
@@ -899,13 +901,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         catch (IgniteCheckedException ex) {
             onDone(false, ex);
         }
-        finally {
-            synchronized (this) {
-                mappingsReady = true;
-
-                notifyAll();
-            }
-        }
     }
 
     /**
@@ -1137,6 +1132,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         }
         else
             trackable = false;
+
+
+        mappingsReady = true;
+
+        /** Notify ready {@link mappings} waiters. See {@link #cancel()} */
+        notifyAll();
 
         proceedMapping();
     }

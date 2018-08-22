@@ -952,6 +952,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         doSleep(500);
 
+        // Rollback tx using kill task.
         VisorTxTaskArg arg =
             new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null);
 
