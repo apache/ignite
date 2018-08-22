@@ -1249,15 +1249,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             double freeHeapPct = heapMax > 0 ? ((double)((heapMax - heapUsed) * 100)) / heapMax : -1;
 
-                            //Non heap params
-                            long nonHeapUsed = m.getNonHeapMemoryUsed();
-                            long nonHeapMax = m.getNonHeapMemoryMaximum();
-
-                            long nonHeapUsedInMBytes = nonHeapUsed / 1024 / 1024;
-                            long nonHeapCommInMBytes = m.getNonHeapMemoryCommitted() / 1024 / 1024;
-
-                            double freeNonHeapPct = nonHeapMax > 0 ? ((double)((nonHeapMax - nonHeapUsed) * 100)) / nonHeapMax : -1;
-
                             int hosts = 0;
                             int nodes = 0;
                             int cpus = 0;
@@ -1277,12 +1268,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             int loadedPages = 0;
 
+                            //Non heap params
+                            long nonHeapUsed = 0;
+                            long nonHeapCommitted = 0;
+                            long nonHeapMax = 0;
+
                             Collection<DataRegion> policies = ctx.cache().context().database().dataRegions();
 
                             if (!F.isEmpty(policies)) {
-                                for (DataRegion memPlc : policies)
+                                for (DataRegion memPlc : policies) {
                                     loadedPages += memPlc.pageMemory().loadedPages();
+                                    nonHeapUsed += memPlc.pageMemory().systemPageSize() * memPlc.pageMemory().loadedPages();
+                                    nonHeapMax += memPlc.config().getMaxSize();
+                                    nonHeapCommitted += memPlc.memoryMetrics().getOffHeapSize();
+                                }
                             }
+
+                            long nonHeapUsedInMBytes = nonHeapUsed / 1024 / 1024;
+                            long nonHeapCommInMBytes = nonHeapCommitted / 1024 / 1024;
+
+                            double freeNonHeapPct = nonHeapMax > 0 ? ((double)((nonHeapMax - nonHeapUsed) * 100)) / nonHeapMax : -1;
 
                             String id = U.id8(localNode().id());
 
