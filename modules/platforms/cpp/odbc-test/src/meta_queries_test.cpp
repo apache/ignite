@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnLength)
     SQLExecDirect(stmt, req, SQL_NTS);
 
     SQLLEN intVal;
-    char strBuf[1024];
+    SQLCHAR strBuf[1024];
     SQLSMALLINT strLen;
 
     SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_LENGTH, strBuf, sizeof(strBuf), &strLen, &intVal);
@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnLength)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    BOOST_CHECK_EQUAL(std::string(strBuf, static_cast<size_t>(strLen)), "999");
+    BOOST_CHECK_EQUAL(intVal, 999);
 }
 
 BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
     SQLExecDirect(stmt, req, SQL_NTS);
 
     SQLLEN intVal;
-    char strBuf[1024];
+    SQLCHAR strBuf[1024];
     SQLSMALLINT strLen;
 
     SQLRETURN ret = SQLColAttribute(stmt, 1, SQL_COLUMN_PRECISION, strBuf, sizeof(strBuf), &strLen, &intVal);
@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    BOOST_CHECK_EQUAL(std::string(strBuf, static_cast<size_t>(strLen)), "999");
+    BOOST_CHECK_EQUAL(intVal, 999);
 }
 
 BOOST_AUTO_TEST_CASE(TestColAttributesColumnScale)
