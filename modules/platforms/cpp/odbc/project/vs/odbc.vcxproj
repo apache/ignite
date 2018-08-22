@@ -255,6 +255,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_set_streaming_command.h" />
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_token.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_utils.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\secure_socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_bindings.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_gateway.h" />

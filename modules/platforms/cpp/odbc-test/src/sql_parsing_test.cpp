@@ -30,6 +30,7 @@
 #include <ignite/ignite.h>
 #include <ignite/ignition.h>
 
+#include <ignite/odbc/odbc_error.h>
 #include <ignite/odbc/sql/sql_lexer.h>
 #include <ignite/odbc/sql/sql_parser.h>
 #include <ignite/odbc/sql/sql_set_streaming_command.h>
@@ -143,6 +144,14 @@ void CheckUnexpectedEndOfStatement(const std::string& sql, const std::string& ex
         BOOST_CHECK_EQUAL(err.GetStatus(), odbc::SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION);
         BOOST_CHECK_EQUAL(err.GetErrorMessage(), expErr);
     }
+}
+
+void CheckUnknownCommand(const std::string& sql)
+{
+    odbc::SqlParser parser(sql);
+
+    std::auto_ptr<odbc::SqlCommand> cmd = parser.GetNextCommand();
+    BOOST_CHECK(cmd.get() == 0);
 }
 
 BOOST_AUTO_TEST_SUITE(SqlParsingTestSuite)
@@ -321,6 +330,13 @@ BOOST_AUTO_TEST_CASE(ParserSetStreamingOnUnexpectedTokenError)
 }
 
 BOOST_AUTO_TEST_CASE(ParserSetStreamingOffUnexpectedTokenError)
+{
+    CheckUnexpectedTokenError("set streaming 0 ololo", "ololo");
+    CheckUnexpectedTokenError("set streaming 0 ordered", "ordered", "no parameters with STREAMING OFF command");
+    CheckUnexpectedTokenError("set streaming OFF lorem_ipsum ordered", "lorem_ipsum");
+}
+
+BOOST_AUTO_TEST_CASE(ParserUnknownCommand)
 {
     CheckUnexpectedTokenError("set streaming 0 ololo", "ololo");
     CheckUnexpectedTokenError("set streaming 0 ordered", "ordered", "no parameters with STREAMING OFF command");
