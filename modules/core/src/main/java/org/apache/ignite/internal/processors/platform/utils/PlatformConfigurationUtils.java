@@ -642,6 +642,19 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setAuthenticationEnabled(in.readBoolean());
 
+        int sqlSchemasCnt = in.readInt();
+
+        if (sqlSchemasCnt == -1)
+            cfg.setSqlSchemas((String[])null);
+        else {
+            String[] sqlSchemas = new String[sqlSchemasCnt];
+
+            for (int i = 0; i < sqlSchemasCnt; i++)
+                sqlSchemas[i] = in.readString();
+
+            cfg.setSqlSchemas(sqlSchemas);
+        }
+
         Object consId = in.readObjectDetached();
 
         if (consId instanceof Serializable) {
@@ -1167,6 +1180,16 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(cfg.isActiveOnStart());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isAuthenticationEnabled());
+
+        if (cfg.getSqlSchemas() == null)
+            w.writeInt(-1);
+        else {
+            w.writeInt(cfg.getSqlSchemas().length);
+
+            for (String schema : cfg.getSqlSchemas())
+                w.writeString(schema);
+        }
+
         w.writeObject(cfg.getConsistentId());
 
         // Thread pools.

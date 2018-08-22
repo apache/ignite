@@ -255,7 +255,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         "(added to cancelled locks set): " + req);
                             }
 
-                            ctx.evicts().touch(entry, topVer);
+                            entry.touch(topVer);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Received unlock request for entry that could not be found: " + req);
@@ -363,7 +363,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             );
 
                             if (!req.inTx())
-                                ctx.evicts().touch(entry, req.topologyVersion());
+                                entry.touch(req.topologyVersion());
                         }
                         else {
                             if (evicted == null)
@@ -596,7 +596,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         if (topVer.equals(AffinityTopologyVersion.NONE))
                             topVer = ctx.affinity().affinityTopologyVersion();
 
-                        ctx.evicts().touch(entry, topVer);
+                        entry.touch(topVer);
 
                         break;
                     }
