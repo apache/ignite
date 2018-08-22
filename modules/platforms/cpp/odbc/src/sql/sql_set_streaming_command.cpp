@@ -17,11 +17,11 @@
 
 #include <ignite/common/utils.h>
 
-#include <ignite/odbc/sql/sql_set_streaming_command.h>
+#include <ignite/odbc/odbc_error.h>
 #include <ignite/odbc/sql/sql_lexer.h>
 #include <ignite/odbc/sql/sql_token.h>
-#include <ignite/odbc/odbc_error.h>
-#include <locale>
+#include <ignite/odbc/sql/sql_utils.h>
+#include <ignite/odbc/sql/sql_set_streaming_command.h>
 
 const static std::string WORD_BATCH_SIZE("batch_size");
 
@@ -194,7 +194,7 @@ namespace ignite
             if (!lexer.Shift())
                 ThrowUnexpectedTokenError(token, "ON or OFF");
 
-            return token.ParseBoolean();
+            return sql_utils::TokenToBoolean(token);
         }
     }
 }
