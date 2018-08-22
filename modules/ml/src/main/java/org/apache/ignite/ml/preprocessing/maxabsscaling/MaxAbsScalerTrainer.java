@@ -32,7 +32,7 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPartitionDat
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class MinAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
+public class MaxAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
     /** {@inheritDoc} */
     @Override public MaxAbsScalerPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> basePreprocessor) {
