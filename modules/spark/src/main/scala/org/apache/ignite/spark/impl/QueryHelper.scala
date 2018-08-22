@@ -18,12 +18,14 @@
 package org.apache.ignite.spark.impl
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
-import org.apache.ignite.spark.IgniteDataFrameSettings._
-import QueryUtils.{compileCreateTable, compileDropTable, compileInsert}
 import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.spark.IgniteContext
+import org.apache.ignite.spark.IgniteDataFrameSettings._
+import org.apache.ignite.spark.impl.QueryUtils.{compileCreateTable, compileDropTable, compileInsert}
 import org.apache.ignite.{Ignite, IgniteException}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.execution.QueryExecution
+import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.sql.{DataFrame, Row}
 
 /**
@@ -125,6 +127,36 @@ private[apache] object QueryHelper {
             ))
     }
 
+    def saveTable(qry: QueryExecution,
+        tblName: String,
+        valMapper: ((Any, DataType)) => Object,
+        ctx: IgniteContext,
+        streamerAllowOverwrite: Option[Boolean],
+        streamerFlushFrequency: Option[Long],
+        streamerPerNodeBufferSize: Option[Int],
+        streamerPerNodeParallelOperations: Option[Int],
+        primaryKeyFields: Option[String],
+        createTblOpts: Option[String]
+    ): Unit = {
+        val schema = qry.analyzed.schema
+        val insertQry = compileInsert(tblName, schema)
+
+        qry.toRdd.foreachPartition(iterator =>
+            savePartition(iterator,
+                insertQry,
+                tblName,
+                schema,
+                valMapper,
+                ctx,
+                streamerAllowOverwrite,
+                streamerFlushFrequency,
+                streamerPerNodeBufferSize,
+                streamerPerNodeParallelOperations,
+                primaryKeyFields,
+                createTblOpts
+            ))
+    }
+
     /**
       * Saves partition data to the Ignite table.
       *
@@ -181,6 +213,56 @@ private[apache] object QueryHelper {
         finally {
             streamer.close()
         }
+    }
 
+    private def savePartition(iterator: Iterator[InternalRow],
+        insertQry: String,
+        tblName: String,
+        schema: StructType,
+        valMapper: ((Any, DataType)) => Object,
+        ctx: IgniteContext,
+        streamerAllowOverwrite: Option[Boolean],
+        streamerFlushFrequency: Option[Long],
+        streamerPerNodeBufferSize: Option[Int],
+        streamerPerNodeParallelOperations: Option[Int],
+        primaryKeyFields: Option[String],
+        createTblOpts: Option[String]
+    ): Unit = {
+        val ignite = ctx.ignite()
+        val tblInfoOption = sqlTableInfo[Any, Any](ignite, tblName)
+        val tblInfo = tblInfoOption.getOrElse {
+            val primaryKeys = primaryKeyFields.getOrElse(
+                throw new IllegalArgumentException(s"Option '$OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS' must be " +
+                    s"specified when $FORMAT_IGNITE is used as a streaming target and the target table " +
+                    s"'$tblName' does not exist.")
+            ).split(",")
+
+            createTable(schema, tblName, primaryKeys, createTblOpts, ignite)
+            sqlTableInfo[Any, Any](ignite, tblName).get
+        }
+
+        val streamer = ctx.ignite().dataStreamer(tblInfo._1.getName)
+
+        streamerAllowOverwrite.foreach(v ⇒ streamer.allowOverwrite(v))
+
+        streamerFlushFrequency.foreach(v ⇒ streamer.autoFlushFrequency(v))
+
+        streamerPerNodeBufferSize.foreach(v ⇒ streamer.perNodeBufferSize(v))
+
+        streamerPerNodeParallelOperations.foreach(v ⇒ streamer.perNodeParallelOperations(v))
+
+        try {
+            val qryProcessor = ctx.ignite().asInstanceOf[IgniteEx].context().query()
+
+            iterator.foreach { row ⇒
+                val args = row.toSeq(schema).zipWithIndex.map(vi => (vi._1, schema(vi._2).dataType)).map(valMapper)
+
+                qryProcessor.streamUpdateQuery(tblInfo._1.getName,
+                    tblInfo._1.getSqlSchema, streamer, insertQry, args.toArray)
+            }
+        }
+        finally {
+            streamer.close()
+        }
     }
 }

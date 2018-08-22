@@ -162,4 +162,18 @@ object IgniteDataFrameSettings {
       * @see [[org.apache.spark.sql.ignite.IgniteOptimization]]
       */
     val OPTION_DISABLE_SPARK_SQL_OPTIMIZATION = "ignite.disableSparkSQLOptimization"
+
+    /**
+      * Offset Policy name. This is mandatory using Spark with Ignite in streaming mode. These offset policies are
+      * available:
+      *     - incremental: an auto-incremental numeric field is used to compute entry offset in Ignite table.
+      *     - timestamp: an timestamp field is used to compute entry offset in Ignite table.
+      */
+    val OPTION_OFFSET_POLICY = "offsetPolicy"
+
+    /**
+      * Specifies name of an incremental or timestamp field in Ignite table.
+      * This configuration option is mandatory when incremental or timestamp offset policy is used.
+      */
+    val OPTION_OFFSET_FIELD = "offsetField"
 }
