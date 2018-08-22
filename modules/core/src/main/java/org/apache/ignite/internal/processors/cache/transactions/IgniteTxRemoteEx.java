@@ -26,9 +26,16 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public interface IgniteTxRemoteEx extends IgniteInternalTx {
     /**
+     * Starts asynchronous commit.
+     *
+     * @return Commit future.
+     */
+    public IgniteTxCommitFuture startCommit();
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
-    public void commitRemoteTx() throws IgniteCheckedException;
+    public void finishCommit(IgniteTxCommitFuture commitFuture) throws IgniteCheckedException;
 
     /**
      *

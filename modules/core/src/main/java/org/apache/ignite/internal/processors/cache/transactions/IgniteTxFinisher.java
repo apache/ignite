@@ -21,7 +21,7 @@ public class IgniteTxFinisher {
 
     private final ConcurrentLinkedHashMap<GridCacheVersion, Long> txOrdering = new ConcurrentLinkedHashMap<GridCacheVersion, Long>();
 
-    private final ConcurrentLinkedHashMap<Long, IgniteTxAdapter> txs = new ConcurrentLinkedHashMap<>();
+    private final ConcurrentLinkedHashMap<Long, IgniteInternalTx> txs = new ConcurrentLinkedHashMap<>();
 
     private final Map<Long, List<Runnable>> delayedSendings = new LinkedHashMap<>();
 
@@ -34,7 +34,7 @@ public class IgniteTxFinisher {
         this.log = cctx.logger(getClass());
     }
 
-    public void execute(IgniteTxAdapter tx, Runnable transactionOp) {
+    public void execute(IgniteInternalTx tx, Runnable transactionOp) {
         cctx.kernalContext().getStripedExecutorService().executeDedicated(DEDICATED_WORKER_IDX, () -> {
             GridCacheVersion txId = tx.xidVersion();
 
@@ -59,7 +59,7 @@ public class IgniteTxFinisher {
         });
     }
 
-    public void send(IgniteTxAdapter tx, Runnable transactionSendOp) {
+    public void send(IgniteInternalTx tx, Runnable transactionSendOp) {
         GridCacheVersion txId = tx.xidVersion();
 
         long order = txOrdering.get(txId);
@@ -81,7 +81,7 @@ public class IgniteTxFinisher {
         }
     }
 
-    public void finishSend(IgniteTxAdapter tx) {
+    public void finishSend(IgniteInternalTx tx) {
         GridCacheVersion txId = tx.xidVersion();
 
         long order = txOrdering.get(txId);
@@ -116,7 +116,7 @@ public class IgniteTxFinisher {
         }
     }
 
-    public long order(IgniteTxAdapter tx) {
+    public long order(IgniteInternalTx tx) {
         return txOrdering.get(tx.xidVersion());
     }
 }

@@ -1335,7 +1335,34 @@ public class IgniteTxHandler {
                 tx.setPartitionUpdateCounters(
                     req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
 
-                tx.commitRemoteTx();
+                IgniteTxCommitFuture commitFut = tx.startCommit();
+
+                commitFut.listen(f -> ctx.tm().finisher().execute(tx, () -> {
+                    try {
+                        tx.finishCommit(commitFut);
+                    }
+                    catch (Throwable e) {
+                        U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
+
+                        // Mark transaction for invalidate.
+                        tx.invalidate(true);
+                        tx.systemInvalidate(true);
+
+                        IgniteTxCommitFuture commitFuture = tx.startCommit();
+
+                        commitFuture.listen(f0 -> ctx.tm().finisher().execute(tx, () -> {
+                            try {
+                                tx.finishCommit(commitFuture);
+                            }
+                            catch (IgniteCheckedException ex) {
+                                U.error(log, "Failed to invalidate transaction: " + tx, ex);
+                            }
+                        }));
+
+                        if (e instanceof Error)
+                            throw (Error)e;
+                    }
+                }));
             }
             else {
                 tx.doneRemote(req.baseVersion(), null, null, null);
@@ -1350,12 +1377,16 @@ public class IgniteTxHandler {
             tx.invalidate(true);
             tx.systemInvalidate(true);
 
-            try {
-                tx.commitRemoteTx();
-            }
-            catch (IgniteCheckedException ex) {
-                U.error(log, "Failed to invalidate transaction: " + tx, ex);
-            }
+            IgniteTxCommitFuture commitFuture = tx.startCommit();
+
+            commitFuture.listen(f -> ctx.tm().finisher().execute(tx, () -> {
+                try {
+                    tx.finishCommit(commitFuture);
+                }
+                catch (IgniteCheckedException ex) {
+                    U.error(log, "Failed to invalidate transaction: " + tx, ex);
+                }
+            }));
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -1366,7 +1397,7 @@ public class IgniteTxHandler {
      * @param tx Transaction.
      * @param req Request.
      */
-    protected void finish(
+    private void finish(
         GridDistributedTxRemoteAdapter tx,
         GridDhtTxPrepareRequest req) throws IgniteTxHeuristicCheckedException {
         assert tx != null : "No transaction for one-phase commit prepare request: " + req;
@@ -1378,7 +1409,7 @@ public class IgniteTxHandler {
             // Complete remote candidates.
             tx.doneRemote(req.version(), null, null, null);
 
-            tx.commitRemoteTx();
+            tx.startCommit();
         }
         catch (IgniteTxHeuristicCheckedException e) {
             // Just rethrow this exception. Transaction was already uncommitted.
