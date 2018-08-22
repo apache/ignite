@@ -3020,6 +3020,9 @@ public class IgniteConfiguration {
      * Sets SQL schemas to be created on node startup. Schemas are created on local node only and are not propagated
      * to other cluster nodes. Created schemas cannot be dropped.
      * <p>
+     * By default schema names are case-insensitive, i.e. {@code my_schema} and {@code My_Schema} represents the same
+     * object. Use quotes to enforce case sensitivity (e.g. {@code "My_Schema"}).
+     * <p>
      * Property is ignored if {@code ignite-indexing} module is not in classpath.
      *
      * @param sqlSchemas SQL schemas to be created on node startup.
