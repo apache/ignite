@@ -580,12 +580,53 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Create and register schema if needed.
+     *
+     * @param schemaName Schema name.
+     * @param predefined Whether this is predefined schema.
+     */
+    private void createSchemaIfNeeded(String schemaName, boolean predefined) {
+        assert Thread.holdsLock(schemaMux);
+
+        if (!predefined)
+            predefined = isSchemaPredefined(schemaName);
+
+        H2Schema schema = new H2Schema(schemaName, predefined);
+
+        H2Schema oldSchema = schemas.putIfAbsent(schemaName, schema);
+
+        if (oldSchema == null)
+            createSchema0(schemaName);
+        else
+            schema = oldSchema;
+
+        schema.incrementUsageCount();
+    }
+
+    /**
+     * Check if schema is predefined.
+     *
+     * @param schemaName Schema name.
+     * @return {@code True} if predefined.
+     */
+    private boolean isSchemaPredefined(String schemaName) {
+        if (F.eq(QueryUtils.DFLT_SCHEMA, schemaName))
+            return true;
+
+        for (H2Schema schema : schemas.values()) {
+            if (F.eq(schema.schemaName(), schemaName) && schema.predefined())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Creates DB schema if it has not been created yet.
      *
      * @param schema Schema name.
-     * @throws IgniteCheckedException If failed to create db schema.
      */
-    private void createSchema(String schema) throws IgniteCheckedException {
+    private void createSchema0(String schema) {
         executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
@@ -596,9 +637,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Creates DB schema if it has not been created yet.
      *
      * @param schema Schema name.
-     * @throws IgniteCheckedException If failed to create db schema.
      */
-    private void dropSchema(String schema) throws IgniteCheckedException {
+    private void dropSchema(String schema) {
         executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
@@ -1618,15 +1658,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(H2Utils.zeroCursor());
         }
         else {
-            try {
-                FieldsQueryCursor<List<?>> cursor = ddlProc.runDdlStatement(sql, cmd);
+            FieldsQueryCursor<List<?>> cursor = ddlProc.runDdlStatement(sql, cmd);
 
-                return Collections.singletonList(cursor);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sql + "]: "
-                    + e.getMessage(), e);
-            }
+            return Collections.singletonList(cursor);
         }
     }
 
@@ -1784,12 +1818,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw new IgniteSQLException("DDL statements are not supported for LOCAL caches",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                try {
-                    return Collections.singletonList(ddlProc.runDdlStatement(sqlQry, prepared));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
-                }
+                return Collections.singletonList(ddlProc.runDdlStatement(sqlQry, prepared));
             }
 
             if (prepared instanceof NoOperation) {
@@ -2237,6 +2266,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param type Type descriptor.
      * @throws IgniteCheckedException If validation failed.
      */
+    @SuppressWarnings("CollectionAddAllCanBeReplacedWithConstructor")
     private void validateTypeDescriptor(GridQueryTypeDescriptor type)
         throws IgniteCheckedException {
         assert type != null;
@@ -2589,7 +2619,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else {
             this.ctx = ctx;
 
-            schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA));
+            // Register PUBLIC schema which is always present.
+            schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA, true));
+
+            // Register additional schemas.
+            String[] additionalSchemas = ctx.config().getSqlSchemas();
+
+            if (!F.isEmpty(additionalSchemas)) {
+                synchronized (schemaMux) {
+                    for (String schema : additionalSchemas) {
+                        if (F.isEmpty(schema))
+                            continue;
+
+                        schema = QueryUtils.normalizeSchemaName(null, schema);
+
+                        createSchemaIfNeeded(schema, true);
+                    }
+                }
+            }
 
             valCtx = new CacheQueryObjectValueContext(ctx);
 
@@ -2620,7 +2667,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (sysViewsEnabled) {
                 try {
                     synchronized (schemaMux) {
-                        createSchema(QueryUtils.SCHEMA_SYS);
+                        createSchema0(QueryUtils.SCHEMA_SYS);
                     }
 
                     Connection c = connectionForSchema(QueryUtils.SCHEMA_SYS);
@@ -2824,7 +2871,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void stop() {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
@@ -2865,34 +2912,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /**
-     * Whether this is default schema.
-     *
-     * @param schemaName Schema name.
-     * @return {@code True} if default.
-     */
-    private boolean isDefaultSchema(String schemaName) {
-        return F.eq(schemaName, QueryUtils.DFLT_SCHEMA);
-    }
-
     /** {@inheritDoc} */
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx)
         throws IgniteCheckedException {
         rowCache.onCacheRegistered(cctx);
 
-        if (!isDefaultSchema(schemaName)) {
-            synchronized (schemaMux) {
-                H2Schema schema = new H2Schema(schemaName);
-
-                H2Schema oldSchema = schemas.putIfAbsent(schemaName, schema);
-
-                if (oldSchema == null)
-                    createSchema(schemaName);
-                else
-                    schema = oldSchema;
-
-                schema.incrementUsageCount();
-            }
+        synchronized (schemaMux) {
+            createSchemaIfNeeded(schemaName, false);
         }
 
         cacheName2schema.put(cacheName, schemaName);
@@ -2937,17 +2963,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            if (!isDefaultSchema(schemaName)) {
-                synchronized (schemaMux) {
-                    if (schema.decrementUsageCount() == 0) {
-                        schemas.remove(schemaName);
+            synchronized (schemaMux) {
+                if (schema.decrementUsageCount()) {
+                    schemas.remove(schemaName);
 
-                        try {
-                            dropSchema(schemaName);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
-                        }
+                    try {
+                        dropSchema(schemaName);
+                    }
+                    catch (IgniteException e) {
+                        U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
                     }
                 }
             }
