@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -39,7 +40,7 @@ public class SqlSystemViewBaselineNodes extends SqlAbstractLocalSystemView {
      * @param ctx Grid context.
      */
     public SqlSystemViewBaselineNodes(GridKernalContext ctx) {
-        super("BLT_NODES", "Baseline topology nodes", ctx,
+        super("BASELINE_NODES", "Baseline topology nodes", ctx,
             newColumn("CONSISTENT_ID"),
             newColumn("ONLINE", Value.BOOLEAN)
         );
@@ -49,10 +50,12 @@ public class SqlSystemViewBaselineNodes extends SqlAbstractLocalSystemView {
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         List<Row> rows = new ArrayList<>();
 
-        if (!ctx.state().clusterState().hasBaselineTopology())
+        BaselineTopology blt = ctx.state().clusterState().baselineTopology();
+
+        if (blt == null)
             return rows.iterator();
 
-        Set<Object> consistentIds = ctx.state().clusterState().baselineTopology().consistentIds();
+        Set<Object> consistentIds = blt.consistentIds();
 
         Collection<ClusterNode> srvNodes = ctx.discovery().aliveServerNodes();
 
@@ -77,9 +80,8 @@ public class SqlSystemViewBaselineNodes extends SqlAbstractLocalSystemView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        if (ctx.state().clusterState().hasBaselineTopology())
-            return ctx.state().clusterState().baselineTopology().consistentIds().size();
+        BaselineTopology blt = ctx.state().clusterState().baselineTopology();
 
-        return 0;
+        return blt == null ? 0 : blt.consistentIds().size();
     }
 }

@@ -296,7 +296,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        List<List<?>> res = execSql("SELECT CONSISTENT_ID, ONLINE FROM IGNITE.BLT_NODES ORDER BY CONSISTENT_ID");
+        List<List<?>> res = execSql("SELECT CONSISTENT_ID, ONLINE FROM IGNITE.BASELINE_NODES ORDER BY CONSISTENT_ID");
 
         assertColumnTypes(res.get(0), String.class, Boolean.class);
 
@@ -310,7 +310,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         stopGrid(getTestIgniteInstanceName(1));
 
-        res = execSql("SELECT CONSISTENT_ID FROM IGNITE.BLT_NODES WHERE ONLINE = false");
+        res = execSql("SELECT CONSISTENT_ID FROM IGNITE.BASELINE_NODES WHERE ONLINE = false");
 
         assertEquals(1, res.size());
 
@@ -318,10 +318,10 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = startGrid(getTestIgniteInstanceName(2), getPdsConfiguration("node2"));
 
-        assertEquals(2, execSql(ignite2, "SELECT CONSISTENT_ID FROM IGNITE.BLT_NODES").size());
+        assertEquals(2, execSql(ignite2, "SELECT CONSISTENT_ID FROM IGNITE.BASELINE_NODES").size());
 
-        res = execSql("SELECT CONSISTENT_ID FROM IGNITE.NODES N WHERE NOT EXISTS (SELECT 1 FROM IGNITE.BLT_NODES B " +
-            " WHERE B.CONSISTENT_ID = N.CONSISTENT_ID)");
+        res = execSql("SELECT CONSISTENT_ID FROM IGNITE.NODES N WHERE NOT EXISTS (SELECT 1 FROM " +
+            "IGNITE.BASELINE_NODES B WHERE B.CONSISTENT_ID = N.CONSISTENT_ID)");
 
         assertEquals(1, res.size());
 
