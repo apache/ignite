@@ -244,6 +244,13 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             });
 
             sock.on('cluster:topology', (top) => {
+                if (_.isNil(top)) {
+                    console.log('Topology not found in response!');
+
+                    return;
+                }
+
+
                 const cluster = this.getOrCreateCluster(top);
 
                 _.forEach(this.topLsnrs, (lsnr) => lsnr(agentSocket, cluster, top));
@@ -315,7 +322,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
                     this.io = socketio(srv, {path: '/agents'});
 
                     this.io.on('connection', (sock) => {
-                        sock.on('agent:auth', ({ver, bt, tokens, disableDemo}, cb) => {
+                        sock.on('agent:auth', ({ver, bt, tokens, disableDemo} = {}, cb) => {
                             if (_.isEmpty(tokens))
                                 return cb('Tokens not set. Please reload agent archive or check settings');
 
