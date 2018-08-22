@@ -468,7 +468,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 // Node that for near transactions we grab all entries.
                 for (IgniteTxEntry txEntry : entries) {
                     // Prepare context for transaction entry.
-                    TransactionEntryContext txContext = prepareContext(txEntry);
+                    TransactionEntryContext txContext = prepareContext(txEntry, ret);
 
                     // Nothing to perform.
                     if (txContext == null) {
@@ -989,7 +989,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         return txEntry.context().cache().entryEx(txEntry.key(), topologyVersion());
     }
 
-    private TransactionEntryContext prepareContext(IgniteTxEntry txEntry) throws IgniteCheckedException {
+    private TransactionEntryContext prepareContext(IgniteTxEntry txEntry, GridCacheReturn ret) throws IgniteCheckedException {
         GridCacheContext cacheCtx = txEntry.context();
 
         for (;;) {
@@ -1012,7 +1012,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 if (!F.isEmpty(txEntry.entryProcessors()))
                     txEntry.cached().unswap(false);
 
-                IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(txEntry, false, null);
+                IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(txEntry, false, ret);
 
                 GridCacheOperation op = res.get1();
                 CacheObject val = res.get2();
