@@ -61,6 +61,8 @@ public class MovieGAExample {
     public static void main(String args[]) {
         System.out.println(">>> Movie GA grid example started.");
 
+        System.setProperty("IGNITE_QUIET", "false");
+
         List<String> genres = new ArrayList<>();
         String sGenres = "Action,Comedy,Romance";
 
@@ -108,11 +110,13 @@ public class MovieGAExample {
             // Create an Ignite instance as you would in any other use case.
             Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
 
-            MovieTerminateCriteria termCriteria = new MovieTerminateCriteria(ignite, System.out::println);
+            MovieTerminateCriteria termCriteria = new MovieTerminateCriteria(ignite);
 
             gaCfg.setTerminateCriteria(termCriteria);
 
             GAGrid gaGrid = new GAGrid(gaCfg, ignite);
+
+            ignite.log();
 
             Chromosome chromosome = gaGrid.evolve();
 

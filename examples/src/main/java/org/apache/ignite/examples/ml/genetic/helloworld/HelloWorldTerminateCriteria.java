@@ -18,8 +18,8 @@
 package org.apache.ignite.examples.ml.genetic.helloworld;
 
 import java.util.List;
-import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
@@ -31,21 +31,19 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * Class terminates Genetic algorithm when fitness score is more than 10.</p>
  */
 public class HelloWorldTerminateCriteria implements ITerminateCriteria {
+    /** Ignite logger. */
+    private IgniteLogger igniteLog;
     /** Ignite instance. */
-    private final Ignite ignite;
-
-    /** */
-    private final Consumer<String> logConsumer;
+    private Ignite ignite;
 
     /**
      * Create class instance.
      *
      * @param ignite Ignite instance.
-     * @param logConsumer Logging consumer.
      */
-    HelloWorldTerminateCriteria(Ignite ignite, Consumer<String> logConsumer) {
+    public HelloWorldTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;
-        this.logConsumer = logConsumer;
+        this.igniteLog = ignite.log();
     }
 
     /**
@@ -60,14 +58,13 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
         int currGeneration) {
         boolean isTerminate = true;
 
-        logConsumer.accept(
-            "\n##########################################################################################"
-                + "\n Generation: " + currGeneration
-                + "\n Fittest is Chromosome Key: " + fittestChromosome
-                + "\n Chromosome: " + fittestChromosome
-                + "\n" + printPhrase(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
-                + "\nAvg Chromosome Fitness: " + averageFitnessScore
-                + "\n##########################################################################################");
+        igniteLog.info("##########################################################################################");
+        igniteLog.info("Generation: " + currGeneration);
+        igniteLog.info("Fittest is Chromosome Key: " + fittestChromosome);
+        igniteLog.info("Chromosome: " + fittestChromosome);
+        printPhrase(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
+        igniteLog.info("Avg Chromosome Fitness: " + averageFitnessScore);
+        igniteLog.info("##########################################################################################");
 
         if (!(fittestChromosome.getFitnessScore() > 10))
             isTerminate = false;
@@ -79,14 +76,13 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
      * Helper to print phrase.
      *
      * @param genes List of Genes.
-     * @return Phrase to print.
      */
-    private String printPhrase(List<Gene> genes) {
+    private void printPhrase(List<Gene> genes) {
         StringBuilder sbPhrase = new StringBuilder();
 
         for (Gene gene : genes)
             sbPhrase.append(((Character)gene.getVal()).toString());
 
-        return sbPhrase.toString();
+        igniteLog.info(sbPhrase.toString());
     }
 }

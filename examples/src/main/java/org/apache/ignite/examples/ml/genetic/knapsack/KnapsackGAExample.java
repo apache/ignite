@@ -19,7 +19,6 @@ package org.apache.ignite.examples.ml.genetic.knapsack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.genetic.Chromosome;
@@ -56,6 +55,8 @@ public class KnapsackGAExample {
     public static void main(String args[]) {
         System.out.println(">>> Knapsack GA grid example started.");
 
+        System.setProperty("IGNITE_QUIET", "false");
+
         try {
             // Create an Ignite instance as you would in any other use case.
             Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
@@ -77,13 +78,10 @@ public class KnapsackGAExample {
             gaCfg.setFitnessFunction(function);
 
             // Create and set TerminateCriteria.
-            AtomicInteger cnt = new AtomicInteger(0);
-            KnapsackTerminateCriteria termCriteria = new KnapsackTerminateCriteria(ignite,
-                msg -> {
-                    if (cnt.getAndIncrement() % 10 == 0)
-                        System.out.println(msg);
-                });
+            KnapsackTerminateCriteria termCriteria = new KnapsackTerminateCriteria(ignite);
             gaCfg.setTerminateCriteria(termCriteria);
+
+            ignite.log();
 
             GAGrid gaGrid = new GAGrid(gaCfg, ignite);
 
