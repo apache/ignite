@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tensorflow.core.pythonrunning;
+package org.apache.ignite.tensorflow.core.util;
 
 import java.lang.management.ManagementFactory;
 import java.util.Map;
