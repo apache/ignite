@@ -26,6 +26,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.typedef.X;
@@ -37,8 +40,17 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**
@@ -271,5 +283,64 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(0,
             execSql("SELECT NODE_ID FROM IGNITE.NODE_ATTRIBUTES WHERE NODE_ID = ? AND NAME = '-'",
                 cliNodeId).size());
+    }
+
+    /**
+     * Test baseline topology system view.
+     */
+    public void testBaselineViews() throws Exception {
+        cleanPersistenceDir();
+
+        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0"));
+        startGrid(getTestIgniteInstanceName(1), getPdsConfiguration("node1"));
+
+        ignite.cluster().active(true);
+
+        List<List<?>> res = execSql("SELECT CONSISTENT_ID, ONLINE FROM IGNITE.BASELINE_NODES ORDER BY CONSISTENT_ID");
+
+        assertColumnTypes(res.get(0), String.class, Boolean.class);
+
+        assertEquals(2, res.size());
+
+        assertEquals("node0", res.get(0).get(0));
+        assertEquals("node1", res.get(1).get(0));
+
+        assertEquals(true, res.get(0).get(1));
+        assertEquals(true, res.get(1).get(1));
+
+        stopGrid(getTestIgniteInstanceName(1));
+
+        res = execSql("SELECT CONSISTENT_ID FROM IGNITE.BASELINE_NODES WHERE ONLINE = false");
+
+        assertEquals(1, res.size());
+
+        assertEquals("node1", res.get(0).get(0));
+
+        Ignite ignite2 = startGrid(getTestIgniteInstanceName(2), getPdsConfiguration("node2"));
+
+        assertEquals(2, execSql(ignite2, "SELECT CONSISTENT_ID FROM IGNITE.BASELINE_NODES").size());
+
+        res = execSql("SELECT CONSISTENT_ID FROM IGNITE.NODES N WHERE NOT EXISTS (SELECT 1 FROM " +
+            "IGNITE.BASELINE_NODES B WHERE B.CONSISTENT_ID = N.CONSISTENT_ID)");
+
+        assertEquals(1, res.size());
+
+        assertEquals("node2", res.get(0).get(0));
+    }
+
+    /**
+     * Gets ignite configuration with persistance enabled.
+     */
+    private IgniteConfiguration getPdsConfiguration(String consistentId) throws Exception {
+        IgniteConfiguration cfg = getConfiguration();
+
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(100L * 1024L * 1024L).setPersistenceEnabled(true))
+        );
+
+        cfg.setConsistentId(consistentId);
+
+        return cfg;
     }
 }
