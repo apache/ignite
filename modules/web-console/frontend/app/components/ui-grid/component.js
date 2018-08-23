@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-@import "../../../../public/stylesheets/variables";
+import './style.scss';
+import template from './template.pug';
+import controller from './controller';
 
-.form-field-feedback {
-    position: relative;
-    width: 0;
-    height: 28px;
-    float: right;
-    z-index: 2;
+export default {
+    template,
+    controller,
+    bindings: {
+        gridApi: '=?',
 
-    color: $brand-primary;
-    line-height: $input-height;
-    pointer-events: initial;
-    text-align: center;
+        // Input Events.
+        items: '<',
+        columnDefs: '<',
+        categories: '<',
+        oneWaySelection: '<?',
+        rowIdentityKey: '@?',
 
-    &:before {
-        position: absolute;
-        right: 0;
-        width: 38px;
+        // Output events.
+        onSelectionChange: '&?'
     }
-}
+};

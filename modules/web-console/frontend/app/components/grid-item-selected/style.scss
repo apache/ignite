@@ -15,29 +15,9 @@
  * limitations under the License.
  */
 
-@import "../../../../public/stylesheets/variables";
+grid-item-selected {
+    display: inline-flex;
+    align-items: center;
 
-.indexField {
-    float: left;
-    line-height: 28px;
-    margin-right: 5px;
-    color: $brand-primary;
-}
-
-.form-field-save {
-    position: relative;
-    width: 0;
-    height: 28px;
-    float: right;
-    z-index: 2;
-
-    line-height: $input-height;
-    pointer-events: initial;
-    text-align: center;
-
-    &:before {
-        position: absolute;
-        right: 0;
-        width: 38px;
-    }    
+    font-size: 14px;
 }
