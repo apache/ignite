@@ -25,11 +25,11 @@ public class NodeId extends IgniteBiTuple<Integer, Long> {
         super(treeId, nodeId);
     }
 
-    public Integer treeId() {
+    public int treeId() {
         return get1();
     }
 
-    public Long nodeId() {
+    public long nodeId() {
         return get2();
     }
 }
