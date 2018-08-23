@@ -70,8 +70,12 @@ public class MaxAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vec
                 if (b == null)
                     return a;
 
-                 //FIXME
-                return new double[0];
+                double[] result = new double[a.length];
+
+                for (int i = 0; i < result.length; i++) {
+                    result[i] = Math.max(Math.abs(a[i]), Math.abs(b[i]));
+                }
+                return result;
             });
             return new MaxAbsScalerPreprocessor<>(maxAbs, basePreprocessor);
 
