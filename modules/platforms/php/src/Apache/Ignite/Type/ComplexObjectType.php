@@ -64,6 +64,8 @@ class ComplexObjectType extends ObjectType
      * By default (if the name is not specified), the Ignite complex type name of the received complex object
      * is used as PHP class name to instantiate a PHP object during deserialization.
      *
+     * The PHP Class must have a constructor without parameters or with optional parameters only.
+     *
      * @param string|null $phpClassName name of the PHP class or null (the name is not specified).
      * 
      * @return ComplexObjectType the same instance of the ComplexObjectType.
