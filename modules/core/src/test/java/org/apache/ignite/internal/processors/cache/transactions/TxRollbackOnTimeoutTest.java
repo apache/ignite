@@ -685,7 +685,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      * @param isolation Isolation.
      * @param clientWait {@code True} to wait remap on client, otherwise wait remap on server.
      */
-    private void doTestRollbackOnTimeoutTxRemap(TransactionConcurrency concurrency, TransactionIsolation isolation,
+    private void doTestRollbackOnTimeoutTxRemap(TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
         boolean clientWait) throws Exception {
         IgniteEx client = (IgniteEx)startClient();
 

@@ -145,10 +145,11 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
      * Wait for a future (listen with timeout).
      * @param fut Future.
      * @param timeout Timeout millis. -1 means expired timeout, 0 - no timeout.
-     * @param clo Finish closure. First argument contains error on future wait if any,
+     * @param clo Finish closure. First argument contains error on future or null if no errors,
      * second is {@code true} if wait timed out.
      */
-    public void waitAsync(final IgniteInternalFuture<?> fut, long timeout,
+    public void waitAsync(final IgniteInternalFuture<?> fut,
+        long timeout,
         IgniteBiInClosure<IgniteCheckedException, Boolean> clo) {
         if (timeout == -1) {
             clo.apply(null, false);

@@ -79,7 +79,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -558,39 +557,6 @@ public class IgniteTxHandler {
 
         GridDhtTopologyFuture topFut = ctx.exchange().lastTopologyFuture();
 
-        final IgniteInClosure<IgniteCheckedException> waitTopVerClo = e -> {
-            if (e == null)
-                e = new IgniteTxTimeoutCheckedException("Failed to wait topology version for near prepare " +
-                    "[txId=" + req.version() +
-                    ", topVer=" + topFut.initialVersion() +
-                    ", node=" + node.id() +
-                    ", req=" + req + ']');
-
-            GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-                req.partition(),
-                req.version(),
-                req.futureId(),
-                req.miniId(),
-                req.version(),
-                req.version(),
-                null,
-                e,
-                null,
-                req.onePhaseCommit(),
-                req.deployInfo() != null);
-
-            try {
-                ctx.io().send(node.id(), res, req.policy());
-            }
-            catch (IgniteCheckedException e0) {
-                U.error(txPrepareMsgLog, "Failed to send wait topology version response for near prepare " +
-                    "[txId=" + req.version() +
-                    ", topVer=" + topFut.initialVersion() +
-                    ", node=" + node.id() +
-                    ", req=" + req + ']', e0);
-            }
-        };
-
         if (!topFut.isDone()) {
             Thread curThread = Thread.currentThread();
 
@@ -600,7 +566,7 @@ public class IgniteTxHandler {
                 if (thread.cachePoolThread()) {
                     ctx.time().waitAsync(topFut, req.timeout(), (e, timedOut) -> {
                             if (e != null || timedOut) {
-                                waitTopVerClo.apply(e);
+                                sendResponseOnTimeoutOrError(e, topFut, node, req);
 
                                 return;
                             }
@@ -626,7 +592,7 @@ public class IgniteTxHandler {
                     topFut.get();
             }
             catch (IgniteFutureTimeoutCheckedException e) {
-                waitTopVerClo.apply(e);
+                sendResponseOnTimeoutOrError(null, topFut, node, req);
 
                 return true;
             }
@@ -636,6 +602,48 @@ public class IgniteTxHandler {
         }
 
         return false;
+    }
+
+    /**
+     * @param e Exception or null if timed out.
+     * @param topFut Topology future.
+     * @param node Node.
+     * @param req Prepare request.
+     */
+    private void sendResponseOnTimeoutOrError(@Nullable IgniteCheckedException e,
+        GridDhtTopologyFuture topFut,
+        ClusterNode node,
+        GridNearTxPrepareRequest req) {
+        if (e == null)
+            e = new IgniteTxTimeoutCheckedException("Failed to wait topology version for near prepare " +
+                "[txId=" + req.version() +
+                ", topVer=" + topFut.initialVersion() +
+                ", node=" + node.id() +
+                ", req=" + req + ']');
+
+        GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+            req.partition(),
+            req.version(),
+            req.futureId(),
+            req.miniId(),
+            req.version(),
+            req.version(),
+            null,
+            e,
+            null,
+            req.onePhaseCommit(),
+            req.deployInfo() != null);
+
+        try {
+            ctx.io().send(node.id(), res, req.policy());
+        }
+        catch (IgniteCheckedException e0) {
+            U.error(txPrepareMsgLog, "Failed to send wait topology version response for near prepare " +
+                "[txId=" + req.version() +
+                ", topVer=" + topFut.initialVersion() +
+                ", node=" + node.id() +
+                ", req=" + req + ']', e0);
+        }
     }
 
     /**

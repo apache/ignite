@@ -221,70 +221,6 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     }
 
     /**
-     * @param fut Future.
-     * @param clo Closure.
-     */
-    protected void applyWhenReady(final IgniteInternalFuture<?> fut, GridAbsClosureX clo) {
-        long remaining = tx.remainingTime();
-
-        if (remaining == -1) {
-            IgniteCheckedException e = tx.timeoutException();
-
-            ERR_UPD.compareAndSet(this, null, e);
-
-            onDone(e);
-
-            return;
-        }
-
-        if (fut == null || fut.isDone()) {
-            try {
-                clo.applyx();
-            }
-            catch (IgniteCheckedException e) {
-                ERR_UPD.compareAndSet(this, null, e);
-
-                onDone(e);
-            }
-        }
-        else {
-            RemapTimeoutObject timeoutObj = null;
-
-            AtomicBoolean state = new AtomicBoolean();
-
-            if (remaining > 0) {
-                timeoutObj = new RemapTimeoutObject(remaining, fut, state);
-
-                cctx.time().addTimeoutObject(timeoutObj);
-            }
-
-            final RemapTimeoutObject finalTimeoutObj = timeoutObj;
-
-            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
-                    if (!state.compareAndSet(false, true))
-                        return;
-
-                    try {
-                        fut.get();
-
-                        clo.applyx();
-                    }
-                    catch (IgniteCheckedException e) {
-                        ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
-
-                        onDone(e);
-                    }
-                    finally {
-                        if (finalTimeoutObj != null)
-                            cctx.time().removeTimeoutObject(finalTimeoutObj);
-                    }
-                }
-            });
-        }
-    }
-
-    /**
      * Keys lock future.
      */
     protected static class KeyLockFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
@@ -345,46 +281,6 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(KeyLockFuture.class, this, super.toString());
-        }
-    }
-
-    /**
-     *
-     */
-    private class RemapTimeoutObject extends GridTimeoutObjectAdapter {
-        /** */
-        private final IgniteInternalFuture<?> fut;
-
-        /** */
-        private final AtomicBoolean state;
-
-        /**
-         * @param timeout Timeout.
-         * @param fut Future.
-         * @param state State.
-         */
-        RemapTimeoutObject(long timeout, IgniteInternalFuture<?> fut, AtomicBoolean state) {
-            super(timeout);
-
-            this.fut = fut;
-
-            this.state = state;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onTimeout() {
-            if (!fut.isDone() && state.compareAndSet(false, true)) {
-                IgniteCheckedException e = tx.timeoutException();
-
-                ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
-
-                onDone(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(RemapTimeoutObject.class, this);
         }
     }
 }
