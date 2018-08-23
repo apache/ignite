@@ -26,18 +26,31 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests for ignite SQL meta views.
+ * Tests for ignite SQL system views.
  */
 public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**
@@ -70,7 +83,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      */
     private void assertSqlError(final String sql) {
         Throwable t = GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 execSql(sql);
 
                 return null;
@@ -85,7 +98,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     }
     
     /**
-     * Test meta views modifications.
+     * Test system views modifications.
      */
     public void testModifications() throws Exception {
         startGrid();
@@ -140,7 +153,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that we can't use cache tables and meta views in the same query.
+     * Test that we can't use cache tables and system views in the same query.
      */
     public void testCacheToViewJoin() throws Exception {
         Ignite ignite = startGrid();
@@ -163,7 +176,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test nodes meta view.
+     * Test nodes system view.
      *
      * @throws Exception If failed.
      */
@@ -243,5 +256,91 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(ignite1.cluster().localNode().id(), execSql("SELECT N1.ID FROM IGNITE.NODES N1 " +
             "WHERE NOT EXISTS (SELECT 1 FROM IGNITE.NODES N2 WHERE N2.ID = N1.ID AND N2.IS_LOCAL = false)")
             .get(0).get(0));
+
+        // Check node attributes view
+        UUID cliNodeId = ignite2.cluster().localNode().id();
+
+        String cliAttrName = IgniteNodeAttributes.ATTR_CLIENT_MODE;
+
+        assertColumnTypes(execSql("SELECT NODE_ID, NAME, VALUE FROM IGNITE.NODE_ATTRIBUTES").get(0),
+            UUID.class, String.class, String.class);
+
+        assertEquals(1,
+            execSql("SELECT NODE_ID FROM IGNITE.NODE_ATTRIBUTES WHERE NAME = ? AND VALUE = 'true'",
+                cliAttrName).size());
+
+        assertEquals(3,
+            execSql("SELECT NODE_ID FROM IGNITE.NODE_ATTRIBUTES WHERE NAME = ?", cliAttrName).size());
+
+        assertEquals(1,
+            execSql("SELECT NODE_ID FROM IGNITE.NODE_ATTRIBUTES WHERE NODE_ID = ? AND NAME = ? AND VALUE = 'true'",
+                cliNodeId, cliAttrName).size());
+
+        assertEquals(0,
+            execSql("SELECT NODE_ID FROM IGNITE.NODE_ATTRIBUTES WHERE NODE_ID = '-' AND NAME = ?",
+                cliAttrName).size());
+
+        assertEquals(0,
+            execSql("SELECT NODE_ID FROM IGNITE.NODE_ATTRIBUTES WHERE NODE_ID = ? AND NAME = '-'",
+                cliNodeId).size());
+    }
+
+    /**
+     * Test baseline topology system view.
+     */
+    public void testBaselineViews() throws Exception {
+        cleanPersistenceDir();
+
+        Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0"));
+        startGrid(getTestIgniteInstanceName(1), getPdsConfiguration("node1"));
+
+        ignite.cluster().active(true);
+
+        List<List<?>> res = execSql("SELECT CONSISTENT_ID, ONLINE FROM IGNITE.BASELINE_NODES ORDER BY CONSISTENT_ID");
+
+        assertColumnTypes(res.get(0), String.class, Boolean.class);
+
+        assertEquals(2, res.size());
+
+        assertEquals("node0", res.get(0).get(0));
+        assertEquals("node1", res.get(1).get(0));
+
+        assertEquals(true, res.get(0).get(1));
+        assertEquals(true, res.get(1).get(1));
+
+        stopGrid(getTestIgniteInstanceName(1));
+
+        res = execSql("SELECT CONSISTENT_ID FROM IGNITE.BASELINE_NODES WHERE ONLINE = false");
+
+        assertEquals(1, res.size());
+
+        assertEquals("node1", res.get(0).get(0));
+
+        Ignite ignite2 = startGrid(getTestIgniteInstanceName(2), getPdsConfiguration("node2"));
+
+        assertEquals(2, execSql(ignite2, "SELECT CONSISTENT_ID FROM IGNITE.BASELINE_NODES").size());
+
+        res = execSql("SELECT CONSISTENT_ID FROM IGNITE.NODES N WHERE NOT EXISTS (SELECT 1 FROM " +
+            "IGNITE.BASELINE_NODES B WHERE B.CONSISTENT_ID = N.CONSISTENT_ID)");
+
+        assertEquals(1, res.size());
+
+        assertEquals("node2", res.get(0).get(0));
+    }
+
+    /**
+     * Gets ignite configuration with persistance enabled.
+     */
+    private IgniteConfiguration getPdsConfiguration(String consistentId) throws Exception {
+        IgniteConfiguration cfg = getConfiguration();
+
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(100L * 1024L * 1024L).setPersistenceEnabled(true))
+        );
+
+        cfg.setConsistentId(consistentId);
+
+        return cfg;
     }
 }

@@ -39,13 +39,12 @@ include /app/helpers/jade/mixins
         'Listener to be set for notification of external collision events', '$ctrl.clonedCluster.collision.kind === "JobStealing"')
 .pc-form-grid-col-60
     .ignite-form-field
-        +ignite-form-field__label('Stealing attributes:', '"stealingAttributes"')
-            +tooltip(`Configuration parameter to enable stealing to/from only nodes that have these attributes set`)
-        .ignite-form-field__control
-            +list-pair-edit({
-                items: stealingAttributes,
-                keyLbl: 'Attribute name', 
-                valLbl: 'Attribute value',
-                itemName: 'stealing attribute',
-                itemsName: 'stealing attributes'
-            })
+        +form-field__label({ label: 'Stealing attributes:', name: '"stealingAttributes"' })
+            +form-field__tooltip(`Configuration parameter to enable stealing to/from only nodes that have these attributes set`)
+        +list-pair-edit({
+            items: stealingAttributes,
+            keyLbl: 'Attribute name', 
+            valLbl: 'Attribute value',
+            itemName: 'stealing attribute',
+            itemsName: 'stealing attributes'
+        })

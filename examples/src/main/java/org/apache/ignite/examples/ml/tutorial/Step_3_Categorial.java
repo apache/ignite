@@ -23,7 +23,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
+import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
+import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
@@ -32,13 +33,25 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Let's add two categorial features "sex", "embarked" to predict more precisely.
- *
- * To encode categorial features the StringEncoderTrainer will be used.
+ * Let's add two categorial features "sex", "embarked" to predict more precisely than in {@link Step_1_Read_and_Learn}.
+ * <p>
+ * To encode categorial features the String kind type of {@link EncoderTrainer} will be used.</p>
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * <p>
+ * After that it defines preprocessors that extract features from an upstream data and encode string values (categories)
+ * to double values in specified range.</p>
+ * <p>
+ * Then, it trains the model based on the processed data using decision tree classification.</p>
+ * <p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_3_Categorial {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
+        System.out.println();
+        System.out.println(">>> Tutorial step 3 (categorial) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 Step_3_Categorial.class.getSimpleName(), () -> {
@@ -51,7 +64,8 @@ public class Step_3_Categorial {
 
                     IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                        .withEncoderType(EncoderType.STRING_ENCODER)
                         .encodeFeature(1)
                         .encodeFeature(4)
                         .fit(ignite,
@@ -75,6 +89,8 @@ public class Step_3_Categorial {
                         lbExtractor
                     );
 
+                    System.out.println("\n>>> Trained model: " + mdl);
+
                     double accuracy = Evaluator.evaluate(
                         dataCache,
                         mdl,
@@ -85,6 +101,8 @@ public class Step_3_Categorial {
 
                     System.out.println("\n>>> Accuracy " + accuracy);
                     System.out.println("\n>>> Test Error " + (1 - accuracy));
+
+                    System.out.println(">>> Tutorial step 3 (categorial) example completed.");
                 }
                 catch (FileNotFoundException e) {
                     e.printStackTrace();

@@ -1386,6 +1386,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert oldRow == null || oldRow.cacheId() == cacheId : oldRow;
 
+                if (key.partition() == -1)
+                    key.partition(partId);
+
                 DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
@@ -1581,7 +1584,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         rowStore.removeRow(row.link());
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Fail remove row [link=" + row.link() + "]");
+                        U.error(log, "Failed to remove row [link=" + row.link() + "]");
 
                         IgniteCheckedException ex = exception.get();
 
@@ -1594,7 +1597,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             });
 
             if (exception.get() != null)
-                throw new IgniteCheckedException("Fail destroy store", exception.get());
+                throw new IgniteCheckedException("Failed to destroy store", exception.get());
         }
 
         /** {@inheritDoc} */
