@@ -48,9 +48,10 @@ namespace Apache\Ignite\Type;
  * It is a PHP primitive or a PHP object: http://php.net/manual/en/language.types.intro.php
  *
  * Plus additional types:
- *   - Ds\\Set, Ds\\Map - PHP Data Structures extension classes (http://php.net/manual/en/book.ds.php)
- *   - Date, Time, Timestamp, EnumItem, BinaryObject - are PHP classes introduced by the Ignite client.
- *   - Brick\\Math\\BigDecimal - ??? https://github.com/brick/math
+ *   - Ds\\Set, Ds\\Map - PHP Data Structures extension classes: http://php.net/manual/en/book.ds.php
+ *   - Brick\\Math\\BigDecimal - PHP class from the extension library
+ *                               to work with arbitrary precision numbers: https://github.com/brick/math
+ *   - Date, Time, Timestamp, EnumItem, BinaryObject - PHP classes introduced by the Ignite client.
  *
  * Ignite type code
  * ----------------
@@ -60,6 +61,7 @@ namespace Apache\Ignite\Type;
  * ----------------------------------------------------------------------------
  *
  * DEFAULT MAPPING FROM PHP type TO Ignite type code:
+ * ----------------
  *
  * This mapping is used when an application does not explicitly specify an Ignite type
  * for a field and it is writing data to that field.
@@ -76,9 +78,9 @@ namespace Apache\Ignite\Type;
  * | EnumItem                                    | ENUM                  |
  * | Brick\\Math\\BigDecimal                     | DECIMAL               |
  * | BinaryObject                                | COMPLEX_OBJECT        |
- * | any other PHP Object                        | COMPLEX_OBJECT        |
- * | associative array of any PHP supported type | MAP (HASH_MAP)        |
- * | indexed array of boolean                    | BOOLEAN_ARRAY         |
+ * | any other PHP Object**                      | COMPLEX_OBJECT        |
+ * | associative*** array of PHP supported type* | MAP (HASH_MAP)        |
+ * | indexed*** array of boolean                 | BOOLEAN_ARRAY         |
  * | indexed array of integer                    | INTEGER_ARRAY         |
  * | indexed array of float                      | DOUBLE_ARRAY          |
  * | indexed array of string                     | STRING_ARRAY          |
@@ -88,16 +90,17 @@ namespace Apache\Ignite\Type;
  * | indexed array of EnumItem                   | ENUM_ARRAY            |
  * | indexed array of Brick\\Math\\BigDecimal    | DECIMAL_ARRAY         |
  * | indexed array of BinaryObject               | OBJECT_ARRAY          |
- * | indexed array of any other PHP Object       | OBJECT_ARRAY          |
+ * | indexed array of any other PHP Object**     | OBJECT_ARRAY          |
  * | Ds\\Set                                     | COLLECTION (HASH_SET) |
  * | Ds\\Map                                     | MAP (HASH_MAP)        |
  *
- * All other PHP types have no default mapping.
+ * All other PHP types have no default mapping to Ignite type codes.
  *
- * PHP Class - ???
- * PHP supported type - is any PHP type mentioned in the table.
+ * (*) PHP supported type - is any PHP type mentioned in the table.
  *
- * Associative and indexed PHP arrays: http://php.net/manual/en/language.types.array.php
+ * (**) Any other PHP Object - is any PHP class, not explicitly mentioned in the table.
+ *
+ * (***) Associative and indexed PHP arrays: http://php.net/manual/en/language.types.array.php
  *
  * Type of an array's value is determined by the value's type in the first element of the array.
  * Empty array has no default mapping.
@@ -105,6 +108,7 @@ namespace Apache\Ignite\Type;
  * ----------------------------------------------------------------------------
  *
  * DEFAULT MAPPING FROM Ignite type code TO PHP type:
+ * ----------------
  *
  * This mapping is used when an application does not explicitly specify an Ignite type
  * for a field and it is reading data from that field.
@@ -157,6 +161,7 @@ namespace Apache\Ignite\Type;
  * ----------------------------------------------------------------------------
  *
  * RETURNED PHP types WHEN READING DATA OF THE SPECIFIED Ignite type code:
+ * ----------------
  *
  * When an application explicitly specifies an Ignite type for a field
  * and it is reading data from that field, the following PHP types
@@ -181,6 +186,7 @@ namespace Apache\Ignite\Type;
  * ----------------------------------------------------------------------------
  *
  * ALLOWED PHP types WHEN WRITING DATA OF THE SPECIFIED Ignite type code:
+ * ----------------
  *
  * When an application explicitly specifies an Ignite type for a field
  * and it is writing data to that field, the following PHP types
