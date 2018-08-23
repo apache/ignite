@@ -1274,6 +1274,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ses.setQueryTimeout(timeoutMillis);
 
         try {
+            log.info("+++ EXECUTE " + Integer.toHexString(System.identityHashCode(stmt)));
             return stmt.executeQuery();
         }
         catch (SQLException e) {
@@ -1296,7 +1297,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private static void cancelStatement(PreparedStatement stmt) {
         try {
-            System.out.println("+++ " + Thread.currentThread().getName() + " CANCEL " + stmt);
+            System.out.println("+++ " + Thread.currentThread().getName() + " CANCEL " + Integer.toHexString(System.identityHashCode(stmt)));
             stmt.cancel();
         }
         catch (SQLException ignored) {
