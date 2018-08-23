@@ -19,29 +19,6 @@ include /app/helpers/jade/mixins
 -var form = 'store'
 -var model = '$ctrl.clonedCache'
 
-mixin hibernateField(name, model, items, valid, save, newItem)
-    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
-    -var onEnter = `${valid} && (${save}); ${valid} && ${resetOnEnter};`
-
-    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
-
-    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
-    -var onBlur = `${valid} && (${save}); ${resetOnBlur};`
-
-    div(ignite-on-focus-out=onBlur)
-        if block
-            block
-
-        .input-tip
-            +ignite-form-field-input(name, model, false, 'true', 'key=value')(
-                data-ignite-property-unique=items
-                data-ignite-property-value-specified
-                data-ignite-form-field-input-autofocus='true'
-
-                ignite-on-enter=onEnter
-                ignite-on-escape=onEscape
-            )
-
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Store
     panel-description 
@@ -52,7 +29,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             -var storeFactory = `${model}.cacheStoreFactory`;
             -var storeFactoryKind = `${storeFactory}.kind`;
             .pc-form-grid-col-60
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Store factory:',
                     model: storeFactoryKind,
                     name: '"cacheStoreFactory"',
@@ -73,16 +50,16 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     ui-validate-watch-collection=`"[${model}.readThrough, ${model}.writeThrough, ${model}.writeBehindEnabled]"`
                     ng-model-options='{allowInvalid: true}'
                 )
-                    +form-field-feedback(null, 'writeThroughOn', 'Write through is enabled but store is not set')
-                    +form-field-feedback(null, 'readThroughOn', 'Read through is enabled but store is not set')
-                    +form-field-feedback(null, 'writeBehindOn', 'Write-behind is enabled but store is not set')
+                    +form-field__error({ error: 'writeThroughOn', message: 'Write through is enabled but store is not set' })
+                    +form-field__error({ error: 'readThroughOn', message: 'Read through is enabled but store is not set' })
+                    +form-field__error({ error: 'writeBehindOn', message: 'Write-behind is enabled but store is not set' })
             .pc-form-group(ng-if=storeFactoryKind)
                 .pc-form-grid-row(ng-if=`${storeFactoryKind} === 'CacheJdbcPojoStoreFactory'`)
                     -var pojoStoreFactory = `${storeFactory}.CacheJdbcPojoStoreFactory`
                     -var required = `${storeFactoryKind} === 'CacheJdbcPojoStoreFactory'`
 
                     .pc-form-grid-col-60
-                        +sane-ignite-form-field-text({
+                        +form-field__text({
                             label: 'Data source bean name:',
                             model: `${pojoStoreFactory}.dataSourceBean`,
                             name: '"pojoDataSourceBean"',
@@ -93,9 +70,9 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                             is-valid-java-identifier
                             not-java-reserved-word
                         )
-                            +form-field-feedback(null, 'required', 'Data source bean name is required')
-                            +form-field-feedback(null, 'isValidJavaIdentifier', 'Data source bean name is not a valid Java identifier')
-                            +form-field-feedback(null, 'notJavaReservedWord', 'Data source bean name should not be a Java reserved word')
+                            +form-field__error({ error: 'required', message: 'Data source bean name is required' })
+                            +form-field__error({ error: 'isValidJavaIdentifier', message: 'Data source bean name is not a valid Java identifier' })
+                            +form-field__error({ error: 'notJavaReservedWord', message: 'Data source bean name should not be a Java reserved word' })
                     .pc-form-grid-col-60
                         +dialect('Dialect:', `${pojoStoreFactory}.dialect`, '"pojoDialect"', required,
                             'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect',
@@ -152,7 +129,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     -var required = `${storeFactoryKind} === 'CacheJdbcBlobStoreFactory' && ${blobStoreFactoryVia} !== 'URL'`
 
                     .pc-form-grid-col-60(ng-if-start=`${blobStoreFactoryVia} !== 'URL'`)
-                        +sane-ignite-form-field-text({
+                        +form-field__text({
                             label: 'Data source bean name:',
                             model: `${blobStoreFactory}.dataSourceBean`,
                             name: '"blobDataSourceBean"',
@@ -163,9 +140,9 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                             is-valid-java-identifier
                             not-java-reserved-word
                         )
-                            +form-field-feedback(null, 'required', 'Data source bean name is required')
-                            +form-field-feedback(null, 'isValidJavaIdentifier', 'Data source bean name is not a valid Java identifier')
-                            +form-field-feedback(null, 'notJavaReservedWord', 'Data source bean name should not be a Java reserved word')
+                            +form-field__error({ error: 'required', message: 'Data source bean name is required' })
+                            +form-field__error({ error: 'isValidJavaIdentifier', message: 'Data source bean name is not a valid Java identifier' })
+                            +form-field__error({ error: 'notJavaReservedWord', message: 'Data source bean name should not be a Java reserved word' })
                     .pc-form-grid-col-60(ng-if-end)
                         +dialect('Database:', `${blobStoreFactory}.dialect`, '"blobDialect"', required, 'Supported databases:', 'Generic database', 'Choose database')
 
@@ -198,17 +175,17 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
 
                     .pc-form-grid-col-60
                         .ignite-form-field
-                            +ignite-form-field__label('Hibernate properties:', '"hibernateProperties"')
-                                +tooltip(`List of Hibernate properties<bt />
-                                    For example: connection.url=jdbc:h2:mem:exampleDb`)
-                            .ignite-form-field__control
-                                +list-pair-edit({
-                                    items: `${hibernateStoreFactory}.hibernateProperties`,
-                                    keyLbl: 'Property name', 
-                                    valLbl: 'Property value',
-                                    itemName: 'property',
-                                    itemsName: 'properties'
-                                })
+                            +form-field__label({ label: 'Hibernate properties:', name: '"hibernateProperties"' })
+                                +form-field__tooltip({ title: `List of Hibernate properties<bt />
+                                    For example: connection.url=jdbc:h2:mem:exampleDb` })
+
+                            +list-pair-edit({
+                                items: `${hibernateStoreFactory}.hibernateProperties`,
+                                keyLbl: 'Property name', 
+                                valLbl: 'Property value',
+                                itemName: 'property',
+                                itemsName: 'properties'
+                            })
 
             - form = 'store'
             .pc-form-grid-col-60
@@ -227,7 +204,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         <li> IgniteCache.getAndPutIfAbsent()</li>\
                     </ul>')
             .pc-form-grid-col-60
-                +sane-form-field-checkbox({
+                +form-field__checkbox({
                     label: 'Read-through',
                     model: `${model}.readThrough`,
                     name: '"readThrough"',
@@ -239,9 +216,9 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     }`
                     ui-validate-watch-collection=`"[${storeFactoryKind}, ${model}.writeThrough, ${model}.readThrough]"`
                 )
-                    +form-field-feedback(0, 'storeEnabledReadOrWriteOn', 'Read or write through should be turned on when store kind is set')
+                    +form-field__error({ error: 'storeEnabledReadOrWriteOn', message: 'Read or write through should be turned on when store kind is set' })
             .pc-form-grid-col-60
-                +sane-form-field-checkbox({
+                +form-field__checkbox({
                     label: 'Write-through',
                     model: `${model}.writeThrough`,
                     name: '"writeThrough"',
@@ -253,12 +230,12 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     }`
                     ui-validate-watch-collection=`"[${storeFactoryKind}, ${model}.writeThrough, ${model}.readThrough]"`
                 )
-                    +form-field-feedback(0, 'storeEnabledReadOrWriteOn', 'Read or write through should be turned on when store kind is set')
+                    +form-field__error({ error: 'storeEnabledReadOrWriteOn', message: 'Read or write through should be turned on when store kind is set' })
 
             -var enabled = `${model}.writeBehindEnabled`
 
             .pc-form-grid-col-60.pc-form-group__text-title
-                +sane-form-field-checkbox({
+                +form-field__checkbox({
                     label: 'Write-behind',
                     model: enabled,
                     name: '"writeBehindEnabled"',
@@ -269,14 +246,14 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })(
                     ng-model-options='{allowInvalid: true}'
                 )
-                    +form-field-feedback(0, 'storeDisabledValueOff', 'Write-behind is enabled but store kind is not set')
+                    +form-field__error({ error: 'storeDisabledValueOff', message: 'Write-behind is enabled but store kind is not set' })
             .pc-form-group.pc-form-grid-row(ng-if=enabled)
                 .pc-form-grid-col-30
                     +number('Batch size:', `${model}.writeBehindBatchSize`, '"writeBehindBatchSize"', enabled, '512', '1',
                         'Maximum batch size for write-behind cache store operations<br/>\
                          Store operations(get or remove) are combined in a batch of this size to be passed to cache store')
                 .pc-form-grid-col-30
-                    +sane-ignite-form-field-number({
+                    +form-field__number({
                         label: 'Flush size:',
                         model: `${model}.writeBehindFlushSize`,
                         name: '"writeBehindFlushSize"',
@@ -288,7 +265,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         ng-model-options='{allowInvalid: true}'
                     )
                 .pc-form-grid-col-30
-                    +sane-ignite-form-field-number({
+                    +form-field__number({
                         label: 'Flush frequency:',
                         model: `${model}.writeBehindFlushFrequency`,
                         name: '"writeBehindFlushFrequency"',

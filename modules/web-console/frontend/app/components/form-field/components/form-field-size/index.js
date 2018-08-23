@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-const template = '<i class="group-legend-btn icon-help"></i>';
+import template from './template.pug';
+import controller from './controller';
 
-export default ['igniteFormGroupTooltip', ['$tooltip', ($tooltip) => {
-    return {
-        restrict: 'E',
-        scope: {},
-        template,
-        link($scope, $el, $attr, $ctrl, $transclude) {
-            $transclude((clone) => {
-                const title = Array.from(clone)
-                    .reduce((html, el) => html += el.outerHTML || el.textContent || el, '');
-                const legend = $el.closest('.group').find('.group-legend');
-
-                $tooltip($el, {title});
-                legend.append($el);
-            });
-        },
-        replace: true,
-        transclude: true
-    };
-}]];
+export default {
+    controller,
+    template,
+    transclude: true,
+    require: {
+        ngModel: 'ngModel'
+    },
+    bindings: {
+        label: '@',
+        placeholder: '@',
+        min: '@?',
+        max: '@?',
+        tip: '@',
+        required: '<?',
+        sizeType: '@?',
+        sizeScaleLabel: '@?',
+        onScaleChange: '&?',
+        ngDisabled: '<?'
+    }
+};

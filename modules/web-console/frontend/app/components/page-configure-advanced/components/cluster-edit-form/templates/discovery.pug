@@ -40,7 +40,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-30
                 +number('Socket timeout:', `${model}.socketTimeout`, '"socketTimeout"', 'true', '5000', '0', 'Socket operations timeout')
             .pc-form-grid-col-30
-                +sane-ignite-form-field-number({
+                +form-field__number({
                     label: 'Acknowledgement timeout:',
                     model: `${model}.ackTimeout`,
                     name: '"ackTimeout"',
@@ -50,7 +50,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     max: `{{ ${model}.maxAckTimeout || 600000 }}`,
                     tip: 'Message acknowledgement timeout'
                 })
-                    +form-field-feedback('"ackTimeout"', 'max', `Acknowledgement timeout should be less than max acknowledgement timeout ({{ ${model}.maxAckTimeout || 60000 }}).`)
+                    +form-field__error({ error: 'max', message: `Acknowledgement timeout should be less than max acknowledgement timeout ({{ ${model}.maxAckTimeout || 60000 }}).` })
             .pc-form-grid-col-30
                 +number('Max acknowledgement timeout:', `${model}.maxAckTimeout`, '"maxAckTimeout"', 'true', '600000', '0', 'Maximum message acknowledgement timeout')
             .pc-form-grid-col-30
