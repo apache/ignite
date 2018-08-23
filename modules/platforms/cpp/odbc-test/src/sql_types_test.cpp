@@ -305,17 +305,4 @@ BOOST_AUTO_TEST_CASE(TestTimeInsert)
     BOOST_REQUIRE_EQUAL(out.timeField.GetSeconds(), expected.GetSeconds());
 }
 
-BOOST_AUTO_TEST_CASE(TestInsertTooLongValueFail)
-{
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
-
-    SQLCHAR insertReq[] =
-        "insert into TestType(_key, strField) VALUES(42, '0123456789012345678901234567890123456789012345678901234567891')";
-
-    SQLRETURN ret = SQLExecDirect(stmt, insertReq, SQL_NTS);
-
-    if (SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-}
-
 BOOST_AUTO_TEST_SUITE_END()
