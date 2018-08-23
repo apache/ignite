@@ -20,84 +20,44 @@ package org.apache.ignite.ml.regressions.logistic;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  * Tests for {@link LogisticRegressionSGDTrainer}.
  */
-@RunWith(Parameterized.class)
-public class LogisticRegressionSGDTrainerTest {
-    /** Fixed size of Dataset. */
-    private static final int AMOUNT_OF_OBSERVATIONS = 1000;
-
-    /** Fixed size of columns in Dataset. */
-    private static final int AMOUNT_OF_FEATURES = 2;
-
-    /** Precision in test checks. */
-    private static final double PRECISION = 1e-2;
-
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions")
-    public static Iterable<Integer[]> data() {
-        return Arrays.asList(
-            new Integer[] {1},
-            new Integer[] {2},
-            new Integer[] {3},
-            new Integer[] {5},
-            new Integer[] {7},
-            new Integer[] {100}
-        );
-    }
-
-    /** Number of partitions. */
-    @Parameterized.Parameter
-    public int parts;
-
+public class LogisticRegressionSGDTrainerTest extends TrainerTest {
     /**
      * Test trainer on classification model y = x.
      */
     @Test
     public void trainWithTheLinearlySeparableCase() {
-        Map<Integer, double[]> data = new HashMap<>();
+        Map<Integer, double[]> cacheMock = new HashMap<>();
 
-        ThreadLocalRandom rndX = ThreadLocalRandom.current();
-        ThreadLocalRandom rndY = ThreadLocalRandom.current();
-
-        for (int i = 0; i < AMOUNT_OF_OBSERVATIONS; i++) {
-            double x = rndX.nextDouble(-1000, 1000);
-            double y = rndY.nextDouble(-1000, 1000);
-            double[] vec = new double[AMOUNT_OF_FEATURES + 1];
-            vec[0] = y - x > 0 ? 1 : 0; // assign label.
-            vec[1] = x;
-            vec[2] = y;
-            data.put(i, vec);
-        }
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
+            cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
         LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator().withLearningRate(0.2),
             SimpleGDParameterUpdate::sumLocal,
             SimpleGDParameterUpdate::avg
-        ), 100000,  10, 100, 123L);
+        ), 100000, 10, 100, 123L);
 
         LogisticRegressionModel mdl = trainer.fit(
-            data,
-            10,
+            cacheMock,
+            parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(0, mdl.apply(new DenseVector(new double[]{100, 10})), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(new DenseVector(new double[]{10, 100})), PRECISION);
+        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
     }
 }

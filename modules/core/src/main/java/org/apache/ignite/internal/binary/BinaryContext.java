@@ -651,7 +651,7 @@ public class BinaryContext {
                         schemas, desc0.isEnum(),
                         cls.isEnum() ? enumMap(cls) : null);
 
-                    metaHnd.addMeta(desc0.typeId(), meta.wrap(this));
+                    metaHnd.addMeta(desc0.typeId(), meta.wrap(this), false);
 
                     return desc0;
                 }
@@ -799,7 +799,7 @@ public class BinaryContext {
 
         if (!deserialize)
             metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null,
-                desc.isEnum(), cls.isEnum() ? enumMap(cls) : null).wrap(this));
+                desc.isEnum(), cls.isEnum() ? enumMap(cls) : null).wrap(this), false);
 
         descByCls.put(cls, desc);
 
@@ -1168,7 +1168,7 @@ public class BinaryContext {
         }
 
         metaHnd.addMeta(id,
-            new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum, enumMap).wrap(this));
+            new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum, enumMap).wrap(this), false);
     }
 
     /**
@@ -1323,10 +1323,11 @@ public class BinaryContext {
     /**
      * @param typeId Type ID.
      * @param meta Meta data.
+     * @param failIfUnregistered Fail if unregistered.
      * @throws BinaryObjectException In case of error.
      */
-    public void updateMetadata(int typeId, BinaryMetadata meta) throws BinaryObjectException {
-        metaHnd.addMeta(typeId, meta.wrap(this));
+    public void updateMetadata(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException {
+        metaHnd.addMeta(typeId, meta.wrap(this), failIfUnregistered);
     }
 
     /**
