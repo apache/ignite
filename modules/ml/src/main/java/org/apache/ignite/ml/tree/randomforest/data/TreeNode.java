@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.tree.randomforest.NodeId;
 
 public class TreeNode implements Model<Vector, Double>, Serializable {
     public enum Type {

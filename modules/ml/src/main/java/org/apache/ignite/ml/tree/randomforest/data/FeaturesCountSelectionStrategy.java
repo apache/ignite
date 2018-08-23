@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.randomforest;
+package org.apache.ignite.ml.tree.randomforest.data;
 
 import java.util.List;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;

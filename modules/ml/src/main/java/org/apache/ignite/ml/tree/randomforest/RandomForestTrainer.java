@@ -47,6 +47,8 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.dataset.impl.bagging.BaggedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.bagging.BaggedDatasetPartition;
 import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
+import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategy;
+import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityComputer;

@@ -19,6 +19,9 @@ package org.apache.ignite.examples.ml.tree.randomforest;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -28,26 +31,23 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.environment.logging.ConsoleLogger;
-import org.apache.ignite.ml.environment.logging.MLLogger;
-import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategy;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
-import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Example represents a solution for the task of price predictions for houses in Boston based on RandomForest
- * implementation for regression. It shows an initialization of {@link RandomForestTrainer}, +initialization of Ignite
+ * Example represents a solution for the task of price predictions for houses in Boston based on RandomForestTrainer
+ * implementation for regression. It shows an initialization of {@link RandomForestTrainerOld}, +initialization of Ignite
  * Cache, learning step and evaluation of model quality in terms of Mean Squared Error (MSE) and Mean Absolute Error
  * (MAE).
  *
  * Dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/
  *
- * @see RandomForestRegressionTrainer
+ * @see RandomForestRegressionTrainerOld
  */
-public class RandomForestRegressionExample {
+public class RandomForestRegressionExample2 {
     /**
      * Run example.
      */
@@ -59,15 +59,18 @@ public class RandomForestRegressionExample {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                RandomForestRegressionExample.class.getSimpleName(), () -> {
+                RandomForestRegressionExample2.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
-                trainer.setEnvironment(LearningEnvironment.builder()
-                    .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
-                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW))
-                    .build()
-                );
+                AtomicInteger indx = new AtomicInteger(0);
+                RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(
+                    IntStream.range(0, data[0].length - 1).mapToObj(x -> new FeatureMeta(indx.getAndIncrement(), false)).collect(Collectors.toList())
+                ).withCountOfTrees(101)
+                    .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategy.ONE_THIRD)
+                    .withMaxDepth(4)
+                    .withMinImpurityDelta(0.)
+                    .withSubsampleSize(0.3)
+                    .withSeed(0);
 
                 ModelsComposition randomForest = trainer.fit(ignite, dataCache,
                         (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
@@ -114,7 +117,7 @@ public class RandomForestRegressionExample {
     private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
         CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 100));
 
         IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
 
