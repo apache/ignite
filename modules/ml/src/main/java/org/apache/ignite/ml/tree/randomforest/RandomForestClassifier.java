@@ -31,7 +31,6 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
-import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.BucketMeta;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureHistogram;
@@ -43,7 +42,6 @@ public class RandomForestClassifier extends RandomForest<GiniHistogram, RandomFo
 
     public RandomForestClassifier(List<FeatureMeta> meta) {
         super(meta);
-        withFeaturesSelectionStrgy(FeaturesCountSelectionStrategy.SQRT);
     }
 
     @Override protected RandomForestClassifier instance() {
@@ -63,7 +61,8 @@ public class RandomForestClassifier extends RandomForest<GiniHistogram, RandomFo
                     return r;
                 if (r == null)
                     return l;
-                Set<Double> lbls = new HashSet<>(l);
+                Set<Double> lbls = new HashSet<>();
+                lbls.addAll(l);
                 lbls.addAll(r);
                 return lbls;
             }
@@ -120,28 +119,20 @@ public class RandomForestClassifier extends RandomForest<GiniHistogram, RandomFo
                 if (r == null)
                     return l;
 
-
                 Set<NodeId> keys = new HashSet<>(l.keySet());
                 keys.addAll(r.keySet());
-                Map<NodeId, FeatureHistogram<BaggedVector>> res = new HashMap<>();
                 for (NodeId key : keys) {
-                    FeatureHistogram<BaggedVector> leftHist = l.get(key);
-                    FeatureHistogram<BaggedVector> rightHist = r.get(key);
-                    if(leftHist == null)
-                        res.put(key, rightHist);
-                    else if(rightHist == null)
-                        res.put(key, leftHist);
-                    else {
-                        leftHist.addHist(rightHist);
-                        res.put(key, leftHist);
-                    }
+                    if (!l.containsKey(key))
+                        l.put(key, r.get(key));
+                    else if (r.containsKey(key))
+                        l.get(key).addHist(r.get(key));
                 }
 
                 return l;
             });
 
-        stats.forEach((id, histogram) -> {
-            TreeNode leaf = leafs.get(id);
+        leafs.forEach((id, leaf) -> {
+            FeatureHistogram<BaggedVector> histogram = stats.get(id);
             Integer bucketId = histogram.buckets().stream()
                 .max(Comparator.comparing(b -> histogram.get(b).orElse(0.0)))
                 .get();

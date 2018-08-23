@@ -45,14 +45,13 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetBuilder;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
-import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.BucketMeta;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.ImpurityComputer;
 
-public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, T extends RandomForest<S, ?>>
+public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, T extends RandomForest<S, T>>
     extends DatasetTrainer<ModelsComposition, Double> {
 
     public static final double BUCKET_SIZE_FACTOR = (1 / 10.0);
@@ -64,7 +63,6 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
     private int featuresPerTree;
     private Random random;
     private long seed;
-    private Map<Integer, BucketMeta> bucketMetas;
 
     public RandomForest(List<FeatureMeta> meta) {
         this.meta = meta;
@@ -73,8 +71,7 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
         this.maxDepth = 5;
         this.minImpurityDelta = 0.0;
         this.featuresPerTree = FeaturesCountSelectionStrategy.ALL.apply(meta);
-        this.seed = System.currentTimeMillis();
-        this.random = new Random(seed);
+        this.random = new Random(System.currentTimeMillis());
     }
 
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
@@ -83,7 +80,7 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BaggedDatasetPartition> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new BaggedDatasetBuilder<>(featureExtractor, lbExtractor, countOfTrees, subsampleSize).withSeed(seed))) {
+            new BaggedDatasetBuilder<>(featureExtractor, lbExtractor, countOfTrees, subsampleSize))) {
 
             init(dataset);
             models = fit(dataset);
@@ -118,12 +115,12 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
         return instance();
     }
 
-    public T withFeaturesSelectionStrgy(IgniteFunction<List<FeatureMeta>, Integer> seletionStrgy) {
-        this.featuresPerTree = seletionStrgy.apply(meta);
+    public T withFeaturesCountSelectionStrgy(IgniteFunction<List<FeatureMeta>, Integer> strgy) {
+        this.featuresPerTree = strgy.apply(meta);
         return instance();
     }
 
-    public T withSeed(Long seed) {
+    public T withSeed(long seed) {
         this.seed = seed;
         this.random = new Random(seed);
         return instance();
@@ -160,10 +157,9 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
                     treesQueue.addAll(children);
                 }
                 else {
-                    if (bestSplit.isPresent()) {
-                        cornerNode.setImpurity(bestSplit.get().getImpurity());
-                        cornerNode.toLeaf(0.0);
-                    } else {
+                    if (bestSplit.isPresent())
+                        bestSplit.get().createLeaf(cornerNode);
+                    else {
                         cornerNode.setImpurity(Double.NEGATIVE_INFINITY);
                         cornerNode.toLeaf(0.0);
                     }
@@ -357,9 +353,6 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
             .collect(Collectors.toMap(n -> n, n -> new NodeStatistics(n, new HashMap<>())));
 
         dataset.foreach(vector -> {
-            long startTs = System.currentTimeMillis();
-            long predictTs = 0;
-            long featuresTs = 0;
             for (int sampleId = 0; sampleId < vector.getRepetitionsCounters().length; sampleId++) {
                 if(vector.getRepetitionsCounters()[sampleId] == 0)
                     continue;
@@ -369,7 +362,6 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
                 NodeId key = root.node.predictNextNodeKey(vector.getFeatures());
                 if (!part.containsKey(key))
                     continue;
-                predictTs += (System.currentTimeMillis() - innerStart);
 
                 innerStart = System.currentTimeMillis();
                 NodeStatistics statistics = res.get(key);
@@ -380,12 +372,7 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
                     S impurityComputer = statistics.perFeatureStatistics.get(featureId);
                     impurityComputer.addElement(vector);
                 }
-                featuresTs += (System.currentTimeMillis() - innerStart);
             }
-
-//            System.out.println(String.format("One vector time: %d", System.currentTimeMillis() - startTs));
-//            System.out.println(String.format("\t Predict time: %d", predictTs));
-//            System.out.println(String.format("\t Features time: %d", featuresTs));
         });
         return res;
     }

@@ -30,7 +30,6 @@ import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictio
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
-import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.BucketMeta;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
@@ -39,7 +38,6 @@ import org.apache.ignite.ml.tree.randomforest.data.histogram.MSEHistogram;
 public class RandomForestRegressor extends RandomForest<MSEHistogram, RandomForestRegressor> {
     public RandomForestRegressor(List<FeatureMeta> meta) {
         super(meta);
-        withFeaturesSelectionStrgy(FeaturesCountSelectionStrategy.ONE_THIRD);
     }
 
     @Override protected RandomForestRegressor instance() {

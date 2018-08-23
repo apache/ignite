@@ -78,14 +78,6 @@ public class MSEHistogram implements ImpurityComputer<BaggedVector, MSEHistogram
         TreeMap<Integer, Double> ysDistrib = ys.computeDistributionFunction();
         TreeMap<Integer, Double> y2sDistrib = y2s.computeDistributionFunction();
 
-        System.out.println(counterDistrib.size());
-        counterDistrib.forEach((bucket, counter) -> {
-            System.out.print(counter + " ");
-        });
-        System.out.println();
-        if (0 == 0)
-            throw new RuntimeException();
-
         double cntrMax = counterDistrib.lastEntry().getValue();
         double ysMax = ysDistrib.lastEntry().getValue();
         double y2sMax = y2sDistrib.lastEntry().getValue();

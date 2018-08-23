@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.histogram;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -72,4 +71,5 @@ public class FeatureHistogram<T> implements Histogram<T, FeatureHistogram<T>>, D
 
         return result;
     }
+
 }

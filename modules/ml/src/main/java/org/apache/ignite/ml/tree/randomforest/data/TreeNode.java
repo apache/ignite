@@ -22,15 +22,34 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.tree.randomforest.NodeId;
 
 public class TreeNode implements Model<Vector, Double>, Serializable {
     public enum Type {
         UNKNOWN, LEAF, CONDITIONAL
     }
 
+    public static class Proba implements Serializable {
+        private double value;
+        private double probability;
+
+        public Proba(double value, double probability) {
+            this.value = value;
+            this.probability = probability;
+        }
+
+        public double getValue() {
+            return value;
+        }
+
+        public double getProbability() {
+            return probability;
+        }
+    }
+
     private final NodeId id;
     private int featureId;
-    private double value;
+    private Proba value;
     private Type type;
     private double impurity;
     private int depth;
@@ -41,26 +60,27 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
 
     public TreeNode(long id, int treeId) {
         this.id = new NodeId(treeId, id);
-        this.value = -1.0;
+        this.value = new Proba(Double.NaN, -1.0);
         this.type = Type.UNKNOWN;
         this.impurity = Double.POSITIVE_INFINITY;
         this.depth = 1;
     }
 
     public Double apply(Vector features) {
-        return predict(features);
+        return predictProba(features).value;
     }
 
-    private double predict(Vector features) {
+    public Proba predictProba(Vector features) {
         assert type != Type.UNKNOWN;
 
-        if (type == Type.LEAF)
+        if (type == Type.LEAF) {
             return value;
+        }
         else {
-            if (features.get(featureId) <= value)
-                return left.predict(features);
+            if (features.get(featureId) <= value.value)
+                return left.predictProba(features);
             else
-                return right.predict(features);
+                return right.predictProba(features);
         }
     }
 
@@ -71,7 +91,7 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
             case LEAF:
                 return id;
             default:
-                if (features.get(featureId) <= value)
+                if (features.get(featureId) <= value.value)
                     return left.predictNextNodeKey(features);
                 else
                     return right.predictNextNodeKey(features);
@@ -100,23 +120,15 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
     public void toLeaf(double value) {
         assert type == Type.UNKNOWN;
 
-        this.value = value;
+        this.value.value = value;
         this.type = Type.LEAF;
 
         this.left = null;
         this.right = null;
     }
 
-    public TreeNode getParent() {
-        return parent;
-    }
-
-    public double getValue() {
-        return value;
-    }
-
     public void setValue(double value) {
-        this.value = value;
+        this.value.value = value;
     }
 
     public Type getType() {
@@ -129,6 +141,10 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
 
     public double getImpurity() {
         return impurity;
+    }
+
+    public double getParentImpurity() {
+        return parent == null ? Double.NaN : parent.impurity;
     }
 
     public int getDepth() {

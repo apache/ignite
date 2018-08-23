@@ -36,6 +36,11 @@ public class NodeSplit {
         return children;
     }
 
+    public void createLeaf(TreeNode node) {
+        node.setImpurity(impurity);
+        node.toLeaf(0.0); //values will be set in last stage if training
+    }
+
     public double getImpurity() {
         return impurity;
     }

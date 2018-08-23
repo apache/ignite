@@ -48,6 +48,14 @@ public class BucketMeta {
         this.bucketSize = bucketSize;
     }
 
+    public double getBucketSize() {
+        return bucketSize;
+    }
+
+    public double getMinValue() {
+        return minValue;
+    }
+
     public FeatureMeta getFeatureMeta() {
         return featureMeta;
     }
