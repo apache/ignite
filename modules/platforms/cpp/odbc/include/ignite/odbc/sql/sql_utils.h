@@ -18,7 +18,6 @@
 #ifndef _IGNITE_ODBC_SQL_SQL_UTILS
 #define _IGNITE_ODBC_SQL_SQL_UTILS
 
-#include <stdint.h>
 #include <string>
 
 #include <ignite/odbc/odbc_error.h>
@@ -48,6 +47,14 @@ namespace ignite
                 return OdbcError(SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION,
                     "Unexpected token: '" + token.ToString() + "', ON, OFF, 1 or 0 expected.");
             }
+
+            /**
+             * Check if the SQL is internal command.
+             *
+             * @param sql SQL request string.
+             * @return @c true if internal.
+             */
+            bool IsInternalCommand(const std::string& sql);
         }
     }
 }

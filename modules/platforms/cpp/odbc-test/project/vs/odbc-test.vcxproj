@@ -171,6 +171,7 @@
     <ClCompile Include="..\..\..\odbc\src\sql\sql_lexer.cpp" />
     <ClCompile Include="..\..\..\odbc\src\sql\sql_parser.cpp" />
     <ClCompile Include="..\..\..\odbc\src\sql\sql_set_streaming_command.cpp" />
+    <ClCompile Include="..\..\..\odbc\src\sql\sql_utils.cpp" />
     <ClCompile Include="..\..\..\odbc\src\ssl\ssl_mode.cpp" />
     <ClCompile Include="..\..\..\odbc\src\utility.cpp" />
     <ClCompile Include="..\..\src\api_robustness_test.cpp" />
