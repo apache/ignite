@@ -1254,12 +1254,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (lazyWorker != null) {
                         lazyWorker.runStatementCancelTask(new Runnable() {
                             @Override public void run() {
+                                log.info("+++ cancelStatement lazy");
                                 cancelStatement(stmt);
                             }
                         });
                     }
-                    else
+                    else {
+                        log.info("+++ cancelStatement");
+
                         cancelStatement(stmt);
+                    }
                 }
             });
         }
@@ -1292,6 +1296,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private static void cancelStatement(PreparedStatement stmt) {
         try {
+            System.out.println("+++ " + Thread.currentThread().getName() + " CANCEL " + stmt);
             stmt.cancel();
         }
         catch (SQLException ignored) {
