@@ -53,8 +53,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * EVT_CACHE_OBJECT_REMOVED events.
  */
 public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
-
-    /** types event to be checked. */
+    /** Types event to be checked. */
     private static final int[] CACHE_EVENT_TYPES = {EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED};
 
     /** Transaction label. */
@@ -70,7 +69,7 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
     public static final String CACHE_NAME = "cache";
 
     /** Client or server mode to start Ignite instance. */
-    private boolean client;
+    private static boolean client;
 
     /** Key related to primary node. */
     private Integer primaryKey = 0;
@@ -164,7 +163,6 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
                         writeInvokeRemoveTest(nodeForPut, nodeForGet);
 
                         writeInvokeAllRemoveTest(nodeForPut, nodeForGet);
-
                     }
                 }
             }
@@ -295,7 +293,6 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void singleNodeBatchWriteReadRemoveTest(Ignite instanceToPut, Ignite instanceToGet) throws Exception {
-
         IgnitePair<Integer> keys = evaluatePrimaryAndBackupKeys(primaryKey + 1, backupKey + 1);
 
         Map<Integer, Integer> keyValuesMap = new HashMap<>();
@@ -349,7 +346,6 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void writeInvokeAllRemoveTest(Ignite instanceToPut, Ignite instanceToGet) throws Exception {
-
         Map<Integer, Integer> keyValuesMap = IntStream.range(0, 100).boxed()
             .collect(Collectors.toMap(Function.identity(), Function.identity()));
 
@@ -378,6 +374,7 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
     private void runTransactionally(Ignite startNode, Consumer<Ignite> cmdInTx) throws Exception {
         try (Transaction tx = startNode.transactions().withLabel(TX_LABEL).txStart(concurrency, isolation)) {
             cmdInTx.accept(startNode);
+
             tx.commit();
         }
     }
@@ -388,7 +385,7 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
      * @param igns Ignite instances.
      */
     private void registerEventListeners(Ignite... igns) {
-        if (igns != null)
+        if (igns != null) {
             for (Ignite ign : igns) {
                 ign.events().enableLocal(CACHE_EVENT_TYPES);
                 ign.events().localListen((IgnitePredicate<Event>)event -> {
@@ -404,13 +401,14 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
                     return true;
                 }, CACHE_EVENT_TYPES);
             }
+        }
     }
 
     /**
      * Create cache with passed number of backups and determinate primary and backup keys. If cache was created before
      * it will be removed before create new one.
      *
-     * @param cacheBackups Number of buckups for cache.
+     * @param cacheBackups Number of backups for cache.
      * @throws InterruptedException In case of fail.
      */
     private void prepareCache(int cacheBackups) throws InterruptedException {
@@ -430,6 +428,7 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         IgnitePair<Integer> keys = evaluatePrimaryAndBackupKeys(0, 0);
+
         primaryKey = keys.get1();
         backupKey = keys.get2();
     }
@@ -490,5 +489,4 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
     private Ignite client() {
         return ignite(3);
     }
-
 }
