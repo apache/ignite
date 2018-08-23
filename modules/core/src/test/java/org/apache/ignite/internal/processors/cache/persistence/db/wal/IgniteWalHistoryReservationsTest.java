@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -43,7 +44,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -65,7 +65,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration()
                     .setMaxSize(200 * 1024 * 1024)
                     .setPersistenceEnabled(true))
-            .setWalMode(WALMode.LOG_ONLY);
+            .setWalMode(WALMode.LOG_ONLY)
+            .setWalSegmentSize(512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -86,7 +87,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -97,7 +98,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
@@ -248,8 +249,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
-        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
-
         int entryCnt = 10_000;
 
         IgniteEx ig0 = (IgniteEx) startGrids(2);
@@ -261,14 +260,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         for (int k = 0; k < entryCnt; k++)
             cache.put(k, k);
 
-        forceCheckpoint();
-
         stopGrid(1);
 
         for (int k = 0; k < entryCnt; k += 2)
             cache.remove(k);
-
-        forceCheckpoint();
 
         IgniteEx ig1 = startGrid(1);
 
@@ -362,6 +357,45 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testWalHistoryPartiallyRemoved() throws Exception {
+        int entryCnt = 10_000;
+
+        IgniteEx ig0 = (IgniteEx) startGrids(2);
+
+        ig0.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
+
+        for (int k = 0; k < entryCnt; k++)
+            cache.put(k, k);
+
+        GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                forceCheckpoint();
+
+                return null;
+            }
+        });
+
+        String nodeId0 = U.maskForFileName(ig0.localNode().consistentId().toString());
+
+        String walArchPath = ig0.configuration().getDataStorageConfiguration().getWalArchivePath();
+
+        stopAllGrids();
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), walArchPath + "/" +
+                nodeId0, false));
+
+        startGrid(0);
+
+        Ignite ig1 = startGrid(1);
+
+        ig1.cluster().active(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testNodeLeftDuringExchange() throws Exception {
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
@@ -448,27 +482,5 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         assert released;
 
         awaitPartitionMapExchange();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-    }
-
-    /**
-     *
-     */
-    private void forceCheckpoint() throws Exception {
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.cluster().localNode().isClient())
-                continue;
-
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
-        }
     }
 }

@@ -53,7 +53,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
     }
 
     /** {@inheritDoc} */

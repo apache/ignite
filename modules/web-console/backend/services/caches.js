@@ -28,11 +28,11 @@ module.exports = {
 
 /**
  * @param mongo
- * @param {SpacesService} spaceService
+ * @param {SpacesService} spacesService
  * @param errors
  * @returns {CachesService}
  */
-module.exports.factory = (mongo, spaceService, errors) => {
+module.exports.factory = (mongo, spacesService, errors) => {
     /**
      * Convert remove status operation to own presentation.
      *
@@ -101,6 +101,55 @@ module.exports.factory = (mongo, spaceService, errors) => {
      * Service for manipulate Cache entities.
      */
     class CachesService {
+        static shortList(userId, demo, clusterId) {
+            return spacesService.spaceIds(userId, demo)
+                .then((spaceIds) => mongo.Cache.find({space: {$in: spaceIds}, clusters: clusterId }).select('name cacheMode atomicityMode backups').lean().exec());
+        }
+
+        static get(userId, demo, _id) {
+            return spacesService.spaceIds(userId, demo)
+                .then((spaceIds) => mongo.Cache.findOne({space: {$in: spaceIds}, _id}).lean().exec());
+        }
+
+        static upsertBasic(cache) {
+            if (_.isNil(cache._id))
+                return Promise.reject(new errors.IllegalArgumentException('Cache id can not be undefined or null'));
+
+            const query = _.pick(cache, ['space', '_id']);
+            const newDoc = _.pick(cache, ['space', '_id', 'name', 'cacheMode', 'atomicityMode', 'backups', 'clusters']);
+
+            return mongo.Cache.update(query, {$set: newDoc}, {upsert: true}).exec()
+                .catch((err) => {
+                    if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
+                        throw new errors.DuplicateKeyException(`Cache with name: "${cache.name}" already exist.`);
+
+                    throw err;
+                })
+                .then((updated) => {
+                    if (updated.nModified === 0)
+                        return mongo.Cache.update(query, {$set: cache}, {upsert: true}).exec();
+
+                    return updated;
+                });
+        }
+
+        static upsert(cache) {
+            if (_.isNil(cache._id))
+                return Promise.reject(new errors.IllegalArgumentException('Cache id can not be undefined or null'));
+
+            const query = _.pick(cache, ['space', '_id']);
+
+            return mongo.Cache.update(query, {$set: cache}, {upsert: true}).exec()
+                .then(() => mongo.DomainModel.update({_id: {$in: cache.domains}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec())
+                .then(() => mongo.DomainModel.update({_id: {$nin: cache.domains}}, {$pull: {caches: cache._id}}, {multi: true}).exec())
+                .catch((err) => {
+                    if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
+                        throw new errors.DuplicateKeyException(`Cache with name: "${cache.name}" already exist.`);
+
+                    throw err;
+                });
+        }
+
         /**
          * Create or update cache.
          *
@@ -125,21 +174,26 @@ module.exports.factory = (mongo, spaceService, errors) => {
         }
 
         /**
-         * Remove cache.
+         * Remove caches.
          *
-         * @param {mongo.ObjectId|String} cacheId - The cache id for remove.
+         * @param {Array.<String>|String} ids - The cache ids for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */
-        static remove(cacheId) {
-            if (_.isNil(cacheId))
+        static remove(ids) {
+            if (_.isNil(ids))
                 return Promise.reject(new errors.IllegalArgumentException('Cache id can not be undefined or null'));
 
-            return mongo.Cluster.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec()
-                .then(() => mongo.Cluster.update({}, {$pull: {checkpointSpi: {kind: 'Cache', Cache: {cache: cacheId}}}}, {multi: true}).exec())
-                // TODO WC-201 fix clenup of cache on deletion for cluster service configuration.
+            ids = _.castArray(ids);
+
+            if (_.isEmpty(ids))
+                return Promise.resolve({rowsAffected: 0});
+
+            return mongo.Cluster.update({caches: {$in: ids}}, {$pull: {caches: {$in: ids}}}, {multi: true}).exec()
+                .then(() => mongo.Cluster.update({}, {$pull: {checkpointSpi: {kind: 'Cache', Cache: {cache: {$in: ids}}}}}, {multi: true}).exec())
+                // TODO WC-201 fix cleanup of cache on deletion for cluster service configuration.
                 // .then(() => mongo.Cluster.update({'serviceConfigurations.cache': cacheId}, {$unset: {'serviceConfigurations.$.cache': ''}}, {multi: true}).exec())
-                .then(() => mongo.DomainModel.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                .then(() => mongo.Cache.remove({_id: cacheId}).exec())
+                .then(() => mongo.DomainModel.update({caches: {$in: ids}}, {$pull: {caches: {$in: ids}}}, {multi: true}).exec())
+                .then(() => mongo.Cache.remove({_id: {$in: ids}}).exec())
                 .then(convertRemoveStatus);
         }
 
@@ -151,7 +205,7 @@ module.exports.factory = (mongo, spaceService, errors) => {
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */
         static removeAll(userId, demo) {
-            return spaceService.spaceIds(userId, demo)
+            return spacesService.spaceIds(userId, demo)
                 .then(removeAllBySpaces)
                 .then(convertRemoveStatus);
         }

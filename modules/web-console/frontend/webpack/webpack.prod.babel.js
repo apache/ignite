@@ -15,50 +15,47 @@
  * limitations under the License.
  */
 
-import webpack from 'webpack';
+import path from 'path';
 import merge from 'webpack-merge';
 
-import ExtractTextPlugin from 'extract-text-webpack-plugin';
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+import UglifyJSPlugin from 'uglifyjs-webpack-plugin';
 
 import commonCfg from './webpack.common';
 
+const basedir = path.join(__dirname, '../');
+
 export default merge(commonCfg, {
     bail: true, // Cancel build on error.
-    devtool: 'cheap-source-map',
+    mode: 'production',
     module: {
         rules: [
             {
                 test: /\.css$/,
-                use: ExtractTextPlugin.extract({
-                    fallback: 'style',
-                    use: ['css']
-                })
+                use: [MiniCssExtractPlugin.loader, 'css-loader']
             },
             {
                 test: /\.scss$/,
-                use: ExtractTextPlugin.extract({
-                    fallback: 'style-loader',
-                    use: ['css', 'sass']
-                })
+                use: [MiniCssExtractPlugin.loader, 'css-loader', {
+                    loader: 'sass',
+                    options: {
+                        includePaths: [basedir]
+                    }
+                }]
             }
         ]
     },
     plugins: [
-        new webpack.optimize.CommonsChunkPlugin({name: 'vendor'}),
-        new webpack.LoaderOptionsPlugin({
-            minimize: true,
-            debug: false
-        }),
-        new webpack.optimize.UglifyJsPlugin({
-            beautify: false,
-            mangle: {
-                screw_ie8: true,
-                keep_fnames: true
-            },
-            compress: {
-                screw_ie8: true
-            },
-            comments: false
-        })
-    ]
+        new MiniCssExtractPlugin({filename: 'assets/css/[name].[hash].css'})
+    ],
+    optimization: {
+        minimizer: [
+            new UglifyJSPlugin({
+                uglifyOptions: {
+                    keep_fnames: true,
+                    keep_classnames: true
+                }
+            })
+        ]
+    }
 });

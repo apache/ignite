@@ -318,6 +318,67 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests dynamic service proxies.
+        /// </summary>
+        [Test]
+        public void TestGetDynamicServiceProxy()
+        {
+            // Deploy to remotes.
+            var svc = new TestIgniteServiceSerializable { TestProperty = 37 };
+            Grid1.GetCluster().ForRemotes().GetServices().DeployNodeSingleton(SvcName, svc);
+
+            // Make sure there is no local instance on grid3
+            Assert.IsNull(Grid3.GetServices().GetService<ITestIgniteService>(SvcName));
+
+            // Get proxy.
+            dynamic prx = Grid3.GetServices().GetDynamicServiceProxy(SvcName, false);
+
+            // Property getter.
+            Assert.AreEqual(37, prx.TestProperty);
+            Assert.IsTrue(prx.Initialized);
+            Assert.IsTrue(prx.Executed);
+            Assert.IsFalse(prx.Cancelled);
+            Assert.AreEqual(SvcName, prx.LastCallContextName);
+
+            // Property setter.
+            prx.TestProperty = 42;
+            Assert.AreEqual(42, prx.TestProperty);
+
+            // Method invoke.
+            Assert.AreEqual(prx.ToString(), svc.ToString());
+            Assert.AreEqual("baz", prx.Method("baz"));
+
+            // Non-existent member.
+            var ex = Assert.Throws<ServiceInvocationException>(() => prx.FooBar(1));
+            Assert.AreEqual(
+                string.Format("Failed to invoke proxy: there is no method 'FooBar' in type '{0}' with 1 arguments",
+                    typeof(TestIgniteServiceSerializable)), (ex.InnerException ?? ex).Message);
+
+            // Exception in service.
+            ex = Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
+            Assert.AreEqual("ExpectedException", (ex.InnerException ?? ex).Message.Substring(0, 17));
+        }
+
+        /// <summary>
+        /// Tests dynamic service proxies with local service instance.
+        /// </summary>
+        [Test]
+        public void TestGetDynamicServiceProxyLocal()
+        {
+            // Deploy to all nodes.
+            var svc = new TestIgniteServiceSerializable { TestProperty = 37 };
+            Grid1.GetServices().DeployNodeSingleton(SvcName, svc);
+
+            // Make sure there is an instance on grid1.
+            var svcInst = Grid1.GetServices().GetService<ITestIgniteService>(SvcName);
+            Assert.IsNotNull(svcInst);
+
+            // Get dynamic proxy that simply wraps the service instance.
+            var prx = Grid1.GetServices().GetDynamicServiceProxy(SvcName);
+            Assert.AreSame(prx, svcInst);
+        }
+
+        /// <summary>
         /// Tests the duck typing: proxy interface can be different from actual service interface, 
         /// only called method signature should be compatible.
         /// </summary>
@@ -729,13 +790,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaService()
         {
-            const string javaSvcName = "javaService";
-
             // Deploy Java service
-            Grid1.GetCompute()
-                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
-
-            TestUtils.WaitForCondition(() => Services.GetServiceDescriptors().Any(x => x.Name == javaSvcName), 1000);
+            const string javaSvcName = "javaService";
+            DeployJavaService(javaSvcName);
 
             // Verify decriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
@@ -811,6 +868,85 @@ namespace Apache.Ignite.Core.Tests.Services
                     .GetField<int>("Field"));
 
             Services.Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation with dynamic proxy.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
+        {
+            const string javaSvcName = "javaService";
+            DeployJavaService(javaSvcName);
+
+            var svc = Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
+
+            // Basics
+            Assert.IsTrue(svc.isInitialized());
+            Assert.IsTrue(TestUtils.WaitForCondition(() => svc.isExecuted(), 500));
+            Assert.IsFalse(svc.isCancelled());
+
+            // Primitives
+            Assert.AreEqual(4, svc.test((byte)3));
+            Assert.AreEqual(5, svc.test((short)4));
+            Assert.AreEqual(6, svc.test(5));
+            Assert.AreEqual(6, svc.test((long)5));
+            Assert.AreEqual(3.8f, svc.test(2.3f));
+            Assert.AreEqual(5.8, svc.test(3.3));
+            Assert.IsFalse(svc.test(true));
+            Assert.AreEqual('b', svc.test('a'));
+            Assert.AreEqual("Foo!", svc.test("Foo"));
+
+            // Nullables (Java wrapper types)
+            Assert.AreEqual(4, svc.testWrapper(3));
+            Assert.AreEqual(5, svc.testWrapper((short?)4));
+            Assert.AreEqual(6, svc.testWrapper((int?)5));
+            Assert.AreEqual(6, svc.testWrapper((long?)5));
+            Assert.AreEqual(3.8f, svc.testWrapper(2.3f));
+            Assert.AreEqual(5.8, svc.testWrapper(3.3));
+            Assert.AreEqual(false, svc.testWrapper(true));
+            Assert.AreEqual('b', svc.testWrapper('a'));
+
+            // Arrays
+            Assert.AreEqual(new byte[] { 2, 3, 4 }, svc.testArray(new byte[] { 1, 2, 3 }));
+            Assert.AreEqual(new short[] { 2, 3, 4 }, svc.testArray(new short[] { 1, 2, 3 }));
+            Assert.AreEqual(new[] { 2, 3, 4 }, svc.testArray(new[] { 1, 2, 3 }));
+            Assert.AreEqual(new long[] { 2, 3, 4 }, svc.testArray(new long[] { 1, 2, 3 }));
+            Assert.AreEqual(new float[] { 2, 3, 4 }, svc.testArray(new float[] { 1, 2, 3 }));
+            Assert.AreEqual(new double[] { 2, 3, 4 }, svc.testArray(new double[] { 1, 2, 3 }));
+            Assert.AreEqual(new[] { "a1", "b1" }, svc.testArray(new[] { "a", "b" }));
+            Assert.AreEqual(new[] { 'c', 'd' }, svc.testArray(new[] { 'b', 'c' }));
+            Assert.AreEqual(new[] { false, true, false }, svc.testArray(new[] { true, false, true }));
+
+            // Nulls
+            Assert.AreEqual(9, svc.testNull(8));
+            Assert.IsNull(svc.testNull(null));
+
+            // Overloads
+            Assert.AreEqual(3, svc.test(2, "1"));
+            Assert.AreEqual(3, svc.test("1", 2));
+
+            // Binary
+            Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable { Field = 6 }).Field);
+
+            // Binary object
+            var binSvc = Services.WithKeepBinary().WithServerKeepBinary().GetDynamicServiceProxy(javaSvcName);
+
+            Assert.AreEqual(15,
+                binSvc.testBinaryObject(
+                    Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable { Field = 6 }))
+                    .GetField<int>("Field"));
+        }
+
+        /// <summary>
+        /// Deploys the java service.
+        /// </summary>
+        private void DeployJavaService(string javaSvcName)
+        {
+            Grid1.GetCompute()
+                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
+
+            TestUtils.WaitForCondition(() => Services.GetServiceDescriptors().Any(x => x.Name == javaSvcName), 1000);
         }
 
         /// <summary>

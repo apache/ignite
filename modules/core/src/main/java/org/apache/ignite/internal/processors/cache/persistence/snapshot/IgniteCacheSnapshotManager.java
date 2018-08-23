@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -48,9 +49,12 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      * Try to start local snapshot operation if it's required by discovery event.
      *
      * @param discoveryEvent Discovery event.
+     * @param topVer topology version on the moment when this method was called
+     *
+     * @throws IgniteCheckedException if failed
      */
     @Nullable public IgniteInternalFuture tryStartLocalSnapshotOperation(
-            @Nullable DiscoveryEvent discoveryEvent
+            @Nullable DiscoveryEvent discoveryEvent, AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         return null;
     }
@@ -61,7 +65,8 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      */
     @Nullable public IgniteInternalFuture startLocalSnapshotOperation(
         UUID initiatorNodeId,
-        T snapshotOperation
+        T snapshotOperation,
+        AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         return null;
     }

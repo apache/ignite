@@ -25,6 +25,7 @@ import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -65,7 +66,7 @@ public final class IgniteSystemProperties {
     /** Defines Ignite installation folder. */
     public static final String IGNITE_HOME = "IGNITE_HOME";
 
-    /** If this system property is set to {@code false} - no shutdown hook will be set. */
+    /** If this system property is set to {@code true} - no shutdown hook will be set. */
     public static final String IGNITE_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";
 
     /**
@@ -116,8 +117,11 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
 
-    /** This property allow rewriting default ({@code 30}) rest session expire time (in seconds). */
+    /** This property allow rewriting default ({@code 30}) REST session expire time (in seconds). */
     public static final String IGNITE_REST_SESSION_TIMEOUT = "IGNITE_REST_SESSION_TIMEOUT";
+
+    /** This property allow rewriting default ({@code 300}) REST session security token expire time (in seconds). */
+    public static final String IGNITE_REST_SECURITY_TOKEN_TIMEOUT = "IGNITE_REST_SECURITY_TOKEN_TIMEOUT";
 
     /**
      * This property allows to override maximum count of task results stored on one node
@@ -452,6 +456,9 @@ public final class IgniteSystemProperties {
 
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
+
+    /** Force all SQL queries to be processed lazily regardless of what clients request. */
+    public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
@@ -793,11 +800,54 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
 
     /**
+     * When set to {@code true}, warnings that are intended for development environments and not for production
+     * (such as coding mistakes in code using Ignite) will not be logged.
+     */
+    public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
+
+    /**
+     * When set to {@code true} (default), pages are written to page store without holding segment lock (with delay).
+     * Because other thread may require exactly the same page to be loaded from store, reads are protected by locking.
+     */
+    public static final String IGNITE_DELAYED_REPLACED_PAGE_WRITE = "IGNITE_DELAYED_REPLACED_PAGE_WRITE";
+
+    /**
      * When set to {@code true}, WAL implementation with dedicated worker will be used even in FSYNC mode.
      * Default is {@code false}.
      */
     public static final String IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER = "IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER";
 
+    /**
+     * When set to {@code true}, on-heap cache cannot be enabled - see
+     * {@link CacheConfiguration#setOnheapCacheEnabled(boolean)}.
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_ONHEAP_CACHE = "IGNITE_DISABLE_ONHEAP_CACHE";
+
+    /**
+     * Number of repetitions to capture a lock in the B+Tree.
+     */
+    public static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
+
+    /**
+     * When set to {@code false}, loaded pages implementation is switched to previous version of implementation,
+     * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
+
+    /**
+     * Sets timeout for TCP client recovery descriptor reservation.
+     */
+    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
+        "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
+
+    /**
+     * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
+     *
+     * Default is 500 ms.
+     */
+    public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
 
     /**
      * Enforces singleton.
@@ -872,7 +922,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code int} using {@code Integer.parseInt()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -900,7 +950,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code float} using {@code Float.parseFloat()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Float value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -928,7 +978,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code long} using {@code Long.parseLong()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -956,7 +1006,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code double} using {@code Double.parseDouble()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
