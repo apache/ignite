@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.randomforest.data;
+package org.apache.ignite.ml.dataset.impl.bagging;
 
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
 
