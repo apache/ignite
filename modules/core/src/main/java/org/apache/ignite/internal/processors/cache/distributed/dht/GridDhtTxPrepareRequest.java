@@ -108,7 +108,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** Transaction label. */
     @GridToStringInclude
-    @Nullable private String txLb;
+    @Nullable private String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -179,7 +179,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         skipCompletedVers = tx.xidVersion() == tx.nearXidVersion();
 
-        txLb = tx.label();
+        txLbl = tx.label();
     }
 
     /**
@@ -314,7 +314,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
-        return txLb;
+        return txLbl;
     }
 
     /**
@@ -487,7 +487,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 33:
-                if (!writer.writeString("label", txLb))
+                if (!writer.writeString("label", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -612,7 +612,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 33:
-                txLb = reader.readString("label");
+                txLbl = reader.readString("label");
 
                 if (!reader.isLastRead())
                     return false;

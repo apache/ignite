@@ -87,7 +87,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private byte flags;
 
     /** Transaction label. */
-    private String txLb;
+    private String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -119,7 +119,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param skipStore Skip store flag.
      * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
      * @param addDepInfo Deployment info flag.
-     * @param txLb Transaction label.
+     * @param txLbl Transaction label.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -146,7 +146,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         boolean firstClientReq,
         boolean nearCache,
         boolean addDepInfo,
-        @Nullable String txLb
+        @Nullable String txLbl
     ) {
         super(
             cacheId,
@@ -174,7 +174,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
 
-        this.txLb = txLb;
+        this.txLbl = txLbl;
 
         dhtVers = new GridCacheVersion[keyCnt];
 
@@ -331,7 +331,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
-        return txLb;
+        return txLbl;
     }
 
     /** {@inheritDoc} */
@@ -432,7 +432,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 29:
-                if(!writer.writeString("label", txLb))
+                if(!writer.writeString("label", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -525,7 +525,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 29:
-                txLb = reader.readString("label");
+                txLbl = reader.readString("label");
 
                 if(!reader.isLastRead())
                     return false;

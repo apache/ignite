@@ -83,7 +83,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     private long accessTtl;
 
     /** Transaction label. */
-    private @Nullable String txLb;
+    private @Nullable String txLbl;
 
     /**
      * Empty constructor required for {@link Message}.
@@ -107,7 +107,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @param addReader Add reader flag.
      * @param needVer {@code True} if entry version is needed.
      * @param addDepInfo Deployment info.
-     * @param txLb Transaction label
+     * @param txLbl Transaction label
      */
     public GridNearSingleGetRequest(
         int cacheId,
@@ -124,7 +124,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean needVer,
         boolean addDepInfo,
         boolean recovery,
-        @Nullable String txLb
+        @Nullable String txLbl
     ) {
         assert key != null;
 
@@ -137,7 +137,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
-        this.txLb = txLb;
+        this.txLbl = txLbl;
 
         if (readThrough)
             flags |= READ_THROUGH_FLAG_MASK;
@@ -219,7 +219,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @return Transaction label;
      */
     @Nullable public String txLabel() {
-        return txLb;
+        return txLbl;
     }
 
     /**
@@ -362,7 +362,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 11:
-                txLb = reader.readString("label");
+                txLbl = reader.readString("label");
 
                 if(!reader.isLastRead())
                     return false;
@@ -438,7 +438,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeString("label", txLb))
+                if (!writer.writeString("label", txLbl))
                     return false;
 
                 writer.incrementState();

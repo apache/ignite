@@ -124,7 +124,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** Transaction label. */
     @GridToStringInclude
-    @Nullable private String txLb;
+    @Nullable private String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -147,7 +147,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param txLb Transaction label.
+     * @param txLbl Transaction label.
      *
      */
     public GridDistributedTxRemoteAdapter(
@@ -164,7 +164,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        String txLb
+        String txLbl
     ) {
         super(
             ctx,
@@ -182,7 +182,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             taskNameHash);
 
         this.invalidate = invalidate;
-        this.txLb = txLb;
+        this.txLbl = txLbl;
 
         commitVersion(commitVer);
 
@@ -966,7 +966,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @return Transaction label.
      */
     @Nullable public String label() {
-        return txLb;
+        return txLbl;
     }
 
     /** {@inheritDoc} */

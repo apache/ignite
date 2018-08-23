@@ -318,7 +318,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer Need version.
-     * @param txLb Transaction label.
+     * @param txLbl Transaction label.
      * @return Loaded values.
      */
     public IgniteInternalFuture<Map<K, V>> loadAsync(
@@ -333,7 +333,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        @Nullable String txLb) {
+        @Nullable String txLbl) {
         return loadAsync(keys,
             readThrough,
             forcePrimary,
@@ -345,7 +345,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             needVer,
             false,
-            txLb);
+            txLbl);
     }
 
     /**
@@ -360,7 +360,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObj Keep cache objects flag.
-     * @param txLb Transaction label.
+     * @param txLbl Transaction label.
      * @return Load future.
      */
     public final IgniteInternalFuture<Object> loadAsync(
@@ -376,7 +376,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean needVer,
         boolean keepCacheObj,
         boolean recovery,
-        @Nullable String txLb
+        @Nullable String txLbl
     ) {
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
             ctx.toCacheKeyObject(key),
@@ -391,7 +391,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             keepCacheObj,
             recovery,
-            txLb);
+            txLbl);
 
         fut.init();
 
@@ -410,7 +410,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObj Keep cache objects flag.
-     * @param txLb Transaction label.
+     * @param txLbl Transaction label.
      * @return Load future.
      */
     public final IgniteInternalFuture<Map<K, V>> loadAsync(
@@ -426,7 +426,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObj,
-        @Nullable String txLb
+        @Nullable String txLbl
     ) {
         if (keys == null || keys.isEmpty())
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -470,7 +470,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 if (evt) {
                                     ctx.events().readEvent(key,
                                         null,
-                                        txLb,
+                                        txLbl,
                                         row.value(),
                                         subjId,
                                         taskName,
@@ -611,7 +611,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             needVer,
             keepCacheObj,
-            txLb);
+            txLbl);
 
         fut.init(topVer);
 

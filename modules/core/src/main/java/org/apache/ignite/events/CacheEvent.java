@@ -96,7 +96,7 @@ public class CacheEvent extends EventAdapter {
 
     /** Transaction label. */
     @GridToStringInclude
-    private String txLb;
+    private String txLbl;
 
     /** Lock ID. */
     @GridToStringInclude
@@ -156,7 +156,7 @@ public class CacheEvent extends EventAdapter {
      * @param near Flag indicating whether event happened on {@code near} or {@code partitioned} cache.
      * @param key Cache key.
      * @param xid Transaction ID.
-     * @param txLb Transaction label.
+     * @param txLbl Transaction label.
      * @param lockId Lock ID.
      * @param newVal New value.
      * @param hasNewVal Flag indicating whether new value is present in case if we
@@ -168,7 +168,7 @@ public class CacheEvent extends EventAdapter {
      * @param cloClsName Closure class name.
      */
     public CacheEvent(String cacheName, ClusterNode node, @Nullable ClusterNode evtNode, String msg, int type, int part,
-        boolean near, Object key, IgniteUuid xid, String txLb, Object lockId, Object newVal, boolean hasNewVal,
+        boolean near, Object key, IgniteUuid xid, String txLbl, Object lockId, Object newVal, boolean hasNewVal,
         Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName, String taskName) {
         super(node, msg, type);
         this.cacheName = cacheName;
@@ -177,7 +177,7 @@ public class CacheEvent extends EventAdapter {
         this.near = near;
         this.key = key;
         this.xid = xid;
-        this.txLb = txLb;
+        this.txLbl = txLbl;
         this.lockId = lockId;
         this.newVal = newVal;
         this.hasNewVal = hasNewVal;
@@ -251,7 +251,7 @@ public class CacheEvent extends EventAdapter {
      * @return Label of surrounding cache transaction.
      */
     public String txLabel() {
-        return txLb;
+        return txLbl;
     }
 
     /**

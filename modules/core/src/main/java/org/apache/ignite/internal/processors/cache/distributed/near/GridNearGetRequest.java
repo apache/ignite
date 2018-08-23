@@ -108,7 +108,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     private long accessTtl;
 
     /** Transaction label. */
-    private @Nullable String txLb;
+    private @Nullable String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -132,7 +132,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      * @param addDepInfo Deployment info.
-     * @param txLb Transaction label
+     * @param txLbl Transaction label
      */
     public GridNearGetRequest(
         int cacheId,
@@ -150,7 +150,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         boolean skipVals,
         boolean addDepInfo,
         boolean recovery,
-        @Nullable String txLb
+        @Nullable String txLbl
     ) {
         assert futId != null;
         assert miniId != null;
@@ -179,7 +179,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
-        this.txLb = txLb;
+        this.txLbl = txLbl;
 
         if (readThrough)
             flags |= READ_THROUGH_FLAG_MASK;
@@ -294,7 +294,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @return Possible transaction label;
      */
     @Nullable public String txLabel() {
-        return txLb;
+        return txLbl;
     }
 
     /**
@@ -428,7 +428,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeString("label", txLb))
+                if (!writer.writeString("label", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -538,7 +538,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 14:
-                txLb = reader.readString("label");
+                txLbl = reader.readString("label");
 
                 if(!reader.isLastRead())
                     return false;

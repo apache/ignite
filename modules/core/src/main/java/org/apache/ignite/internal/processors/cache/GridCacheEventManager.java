@@ -63,7 +63,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     /**
      * @param key Key for event.
      * @param tx Possible surrounding transaction.
-     * @param txLb Possible lable of possible surrounding transaction.
+     * @param txLbl Possible lable of possible surrounding transaction.
      * @param val Read value.
      * @param subjId Subject ID.
      * @param taskName Task name.
@@ -71,7 +71,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      */
     public void readEvent(KeyCacheObject key,
         @Nullable IgniteInternalTx tx,
-        @Nullable String txLb,
+        @Nullable String txLbl,
         @Nullable CacheObject val,
         @Nullable UUID subjId,
         @Nullable String taskName,
@@ -81,7 +81,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 key,
                 cctx.localNodeId(),
                 tx,
-                txLb,
+                txLbl,
                 null,
                 EVT_CACHE_OBJECT_READ,
                 val,
@@ -260,7 +260,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param key Key for the event.
      * @param evtNodeId Event node ID.
      * @param tx Possible surrounding transaction.
-     * @param txLb Possible label of possible surrounding transaction.
+     * @param txLbl Possible label of possible surrounding transaction.
      * @param lockId Lock ID.
      * @param type Event type.
      * @param newVal New value.
@@ -276,7 +276,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         KeyCacheObject key,
         UUID evtNodeId,
         @Nullable IgniteInternalTx tx,
-        @Nullable String txLb,
+        @Nullable String txLbl,
         @Nullable Object lockId,
         int type,
         @Nullable CacheObject newVal,
@@ -336,7 +336,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
 
             IgniteUuid xid = tx == null ? null : tx.xid();
 
-            String finalTxLb = (tx == null || tx.label() == null) ? txLb : tx.label();
+            String finalTxLbl = (tx == null || tx.label() == null) ? txLbl : tx.label();
 
             cctx.gridEvents().record(new CacheEvent(cctx.name(),
                 cctx.localNode(),
@@ -347,7 +347,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 cctx.isNear(),
                 key0,
                 xid,
-                finalTxLb,
+                finalTxLbl,
                 lockId,
                 val0,
                 hasNewVal,

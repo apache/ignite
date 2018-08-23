@@ -104,7 +104,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     private final boolean recovery;
 
     /** Transaction label. */
-    private final String txLb;
+    private final String txLbl;
 
     /**
      * @param cctx Context.
@@ -118,7 +118,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param taskNameHash Task name hash code.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
-     * @param txLb Transaction label.
+     * @param txLbl Transaction label.
      */
     public GridDhtGetSingleFuture(
         GridCacheContext<K, V> cctx,
@@ -133,7 +133,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean recovery,
-        @Nullable String txLb
+        @Nullable String txLbl
     ) {
         assert reader != null;
         assert key != null;
@@ -150,7 +150,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.recovery = recovery;
-        this.txLb = txLb;
+        this.txLbl = txLbl;
 
         futId = IgniteUuid.randomUuid();
 
@@ -372,7 +372,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 expiryPlc,
                 skipVals,
                 recovery,
-                txLb);
+                txLbl);
         }
         else {
             final ReaderArguments args = readerArgs;

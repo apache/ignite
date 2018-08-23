@@ -76,7 +76,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
 
     /** Transaction label. */
-    private String txLb;
+    private String txLbl;
 
     /**
      * @param cctx Context.
@@ -92,7 +92,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
-     * @param txLb Transaction label.
+     * @param txLbl Transaction label.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
@@ -107,7 +107,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
-        @Nullable String txLb
+        @Nullable String txLbl
     ) {
         super(cctx,
             keys,
@@ -122,7 +122,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             keepCacheObjects,
             recovery);
 
-        this.txLb = txLb;
+        this.txLbl = txLbl;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridPartitionedGetFuture.class);
@@ -302,7 +302,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
-                        txLb);
+                        txLbl);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -360,7 +360,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery,
-                    txLb);
+                    txLbl);
 
                 add(fut); // Append new future.
 
@@ -487,7 +487,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             if (evt) {
                                 cctx.events().readEvent(key,
                                     null,
-                                    txLb,
+                                    txLbl,
                                     row.value(),
                                     subjId,
                                     taskName,

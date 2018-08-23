@@ -1897,7 +1897,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects.
      * @param needVer If {@code true} returns values as tuples containing value and version.
-     * @param txLb Transaction label.
+     * @param txLbl Transaction label.
      * @return Future.
      */
     protected final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
@@ -1913,7 +1913,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean keepCacheObjects,
         final boolean recovery,
         final boolean needVer,
-        @Nullable String txLb
+        @Nullable String txLbl
     ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K1, V1>emptyMap());
@@ -1994,7 +1994,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     if (evt) {
                                         ctx.events().readEvent(key,
                                             null,
-                                            txLb,
+                                            txLbl,
                                             row.value(),
                                             subjId,
                                             taskName,

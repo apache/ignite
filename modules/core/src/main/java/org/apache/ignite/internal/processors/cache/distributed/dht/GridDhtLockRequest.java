@@ -93,7 +93,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     private long accessTtl;
 
     /** Transaction label. */
-    private String txLb;
+    private String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -126,7 +126,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param storeUsed Cache store used flag.
      * @param keepBinary Keep binary flag.
      * @param addDepInfo Deployment info flag.
-     * @param txLb Transaction label.
+     * @param txLbl Transaction label.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -152,7 +152,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         boolean storeUsed,
         boolean keepBinary,
         boolean addDepInfo,
-        String txLb
+        String txLbl
     ) {
         super(cacheId,
             nodeId,
@@ -185,7 +185,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
 
-        this.txLb = txLb;
+        this.txLbl = txLbl;
     }
 
     /**
@@ -320,7 +320,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
-        return txLb;
+        return txLbl;
     }
 
     /** {@inheritDoc} */
@@ -438,7 +438,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 30:
-                if(!writer.writeString("label", txLb))
+                if(!writer.writeString("label", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -540,7 +540,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 30:
-                txLb = reader.readString("label");
+                txLbl = reader.readString("label");
 
                 if(!reader.isLastRead())
                     return false;
