@@ -20,6 +20,8 @@ package org.apache.ignite.internal.visor.node;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Set;
+
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -46,8 +48,8 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
     /** If {@code false} then cache metrics will not be collected. */
     private boolean collectCacheMetrics;
 
-    /** Optional cache group, if provided, then caches only from that group will be collected. */
-    private String cacheGrp;
+    /** Optional Set of cache groups, if provided, then caches only from that groups will be collected. */
+    private Set<String> cacheGrps;
 
     /**
      * Default constructor.
@@ -64,7 +66,7 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
      * @param evtThrottleCntrKey Event throttle counter key, unique for Visor instance.
      * @param sysCaches If {@code true} then collect information about system caches.
      * @param collectCacheMetrics If {@code false} then cache metrics will not be collected.
-     * @param cacheGrp Optional cache group, if provided, then caches only from that group will be collected.
+     * @param cacheGrps Optional Set of cache groups, if provided, then caches only from that groups will be collected.
      */
     public VisorNodeDataCollectorTaskArg(
         boolean taskMonitoringEnabled,
@@ -72,14 +74,14 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
         String evtThrottleCntrKey,
         boolean sysCaches,
         boolean collectCacheMetrics,
-        String cacheGrp
+        Set<String> cacheGrps
     ) {
         this.taskMonitoringEnabled = taskMonitoringEnabled;
         this.evtOrderKey = evtOrderKey;
         this.evtThrottleCntrKey = evtThrottleCntrKey;
         this.sysCaches = sysCaches;
         this.collectCacheMetrics = collectCacheMetrics;
-        this.cacheGrp = cacheGrp;
+        this.cacheGrps = cacheGrps;
     }
     /**
      * Create task arguments with given parameters.
@@ -190,15 +192,15 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
     /**
      * @return Optional cache group, if provided, then caches only from that group will be collected.
      */
-    public String getCacheGroup() {
-        return cacheGrp;
+    public Set<String> getCacheGroups() {
+        return cacheGrps;
     }
 
     /**
-     * @param cacheGrp Optional cache group, if provided, then caches only from that group will be collected.
+     * @param cacheGrps Optional Set of cache groups, if provided, then caches only from that groups will be collected.
      */
-    public void setCollectCacheMetrics(String cacheGrp) {
-        this.cacheGrp = cacheGrp;
+    public void setCacheGroups(Set<String> cacheGrps) {
+        this.cacheGrps = cacheGrps;
     }
 
     /** {@inheritDoc} */
@@ -213,7 +215,7 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
         U.writeString(out, evtThrottleCntrKey);
         out.writeBoolean(sysCaches);
         out.writeBoolean(collectCacheMetrics);
-        U.writeString(out, cacheGrp);
+        U.writeCollection(out, cacheGrps);
     }
 
     /** {@inheritDoc} */
@@ -225,7 +227,7 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
 
         collectCacheMetrics = protoVer < V2 || in.readBoolean();
 
-        cacheGrp = protoVer < V3 ? null : U.readString(in);
+        cacheGrps = protoVer < V3 ? null : U.readSet(in);
     }
 
     /** {@inheritDoc} */
