@@ -25,9 +25,12 @@ import org.apache.ignite.spark.IgniteContext
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.spark.impl.QueryHelper.{createTable, dropTable, ensureCreateTableOptions, saveTable}
 import org.apache.spark.sql.SaveMode.{Append, Overwrite}
+import org.apache.spark.sql.execution.streaming.{Sink, Source}
 import org.apache.spark.sql.ignite.IgniteExternalCatalog.{IGNITE_PROTOCOL, OPTION_GRID}
-import org.apache.spark.sql.ignite.IgniteOptimization
+import org.apache.spark.sql.ignite.{IgniteOptimization, IgniteStreamingSink, IgniteStreamingSource}
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.streaming.OutputMode
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
 
 /**
@@ -35,6 +38,8 @@ import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
   */
 class IgniteRelationProvider extends RelationProvider
     with CreatableRelationProvider
+    with StreamSourceProvider
+    with StreamSinkProvider
     with DataSourceRegister {
     /**
       * @return "ignite" - name of relation provider.
@@ -171,6 +176,48 @@ class IgniteRelationProvider extends RelationProvider
             sqlCtx)
     }
 
+    /** @inheritdoc*/
+    override def sourceSchema(
+        sqlCtx: SQLContext,
+        schema: Option[StructType],
+        providerName: String,
+        parameters: Map[String, String]): (String, StructType) = {
+        val tbl = tableName(parameters)
+        schema match {
+            case Some(s) => (tbl, s)
+            case None => (
+                tbl,
+                igniteSQLTable(igniteContext(parameters, sqlCtx).ignite(), tbl)
+                    .map(IgniteSQLRelation.schema)
+                    .getOrElse(
+                        throw new IllegalArgumentException(s"Table '$tbl' does not exist in source '$FORMAT_IGNITE'")
+                    )
+            )
+        }
+    }
+
+    /** @inheritdoc */
+    override def createSource(
+        sqlCtx: SQLContext,
+        metadataPath: String,
+        schema: Option[StructType],
+        providerName: String,
+        parameters: Map[String, String]): Source =
+        new IgniteStreamingSource(
+            sqlCtx,
+            schema,
+            tableName(parameters),
+            igniteContext(parameters, sqlCtx),
+            parameters)
+
+    /** @inheritdoc */
+    override def createSink(
+        sqlCtx: SQLContext,
+        parameters: Map[String, String],
+        partitionColumns: Seq[String],
+        outputMode: OutputMode): Sink =
+        new IgniteStreamingSink(tableName(parameters), igniteContext(parameters, sqlCtx), parameters)
+
     /**
       * @param igniteCtx Ignite context.
       * @param tblName Table name.
@@ -184,9 +231,9 @@ class IgniteRelationProvider extends RelationProvider
         val experimentalMethods = sqlCtx.sparkSession.sessionState.experimentalMethods
 
         if (optimizationDisabled) {
-            experimentalMethods.extraOptimizations = 
+            experimentalMethods.extraOptimizations =
                 experimentalMethods.extraOptimizations.filter(_ != IgniteOptimization)
-        } 
+        }
         else {
             val optimizationExists = experimentalMethods.extraOptimizations.contains(IgniteOptimization)
 
