@@ -88,7 +88,7 @@
 
                                 <property name="fieldsPrecision">
                                     <map>
-                                        <entry key="strField" value="20" />
+                                        <entry key="strField" value="60" />
                                     </map>
                                 </property>
                             </bean>
