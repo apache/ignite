@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for {@link RandomForestRegressionTrainerOld}.
+ * Tests for {@link RandomForestRegressionTrainer}.
  */
 @RunWith(Parameterized.class)
 public class RandomForestRegressionTrainerOldTest {
@@ -72,17 +72,17 @@ public class RandomForestRegressionTrainerOldTest {
             sample.put(x1 * x2 + x3 * x4, new double[] {x1, x2, x3, x4});
         }
 
-        RandomForestRegressionTrainerOld trainer = new RandomForestRegressionTrainerOld(4, 3, 5, 0.3, 4, 0.1)
-            .withUseIndex(false);
-
-        ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(v), (k, v) -> k);
-
-        mdl.getModels().forEach(m -> {
-            assertTrue(m instanceof ModelOnFeaturesSubspace);
-            assertTrue(((ModelOnFeaturesSubspace) m).getMdl() instanceof DecisionTreeConditionalNode);
-        });
-
-        assertTrue(mdl.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
-        assertEquals(5, mdl.getModels().size());
+//        RandomForestRegressionTrainerOld trainer = new RandomForestRegressionTrainerOld(4, 3, 5, 0.3, 4, 0.1)
+//            .withUseIndex(false);
+//
+//        ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(v), (k, v) -> k);
+//
+//        mdl.getModels().forEach(m -> {
+//            assertTrue(m instanceof ModelOnFeaturesSubspace);
+//            assertTrue(((ModelOnFeaturesSubspace) m).getMdl() instanceof DecisionTreeConditionalNode);
+//        });
+//
+//        assertTrue(mdl.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
+//        assertEquals(5, mdl.getModels().size());
     }
 }

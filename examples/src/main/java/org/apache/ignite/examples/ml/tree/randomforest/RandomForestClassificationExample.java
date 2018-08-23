@@ -34,18 +34,19 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
+import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example represents a solution for the task of wine classification based on RandomForestTrainer implementation for
- * multi-classification. It shows an initialization of {@link RandomForestTrainerOld} with thread pool for multi-thread
+ * multi-classification. It shows an initialization of {@link RandomForestTrainer} with thread pool for multi-thread
  * learning, initialization of Ignite Cache, learning step and evaluation of accuracy of model.
  *
  * Dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/wine/
  *
- * @see RandomForestClassifierTrainerOld
+ * @see RandomForestClassifierTrainer
  */
-public class RandomForestClassificationExample2 {
+public class RandomForestClassificationExample {
     /**
      * Run example.
      */
@@ -57,7 +58,7 @@ public class RandomForestClassificationExample2 {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                RandomForestClassificationExample2.class.getSimpleName(), () -> {
+                RandomForestClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
                 AtomicInteger indx = new AtomicInteger(0);
@@ -111,7 +112,7 @@ public class RandomForestClassificationExample2 {
     private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
         CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 1000));
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 100));
 
         IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
 

@@ -5,7 +5,7 @@ import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
+import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.junit.Before;
 import org.junit.Test;

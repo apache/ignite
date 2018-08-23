@@ -32,6 +32,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategy;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
@@ -39,15 +40,15 @@ import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example represents a solution for the task of price predictions for houses in Boston based on RandomForestTrainer
- * implementation for regression. It shows an initialization of {@link RandomForestTrainerOld}, +initialization of Ignite
+ * implementation for regression. It shows an initialization of {@link RandomForestTrainer}, +initialization of Ignite
  * Cache, learning step and evaluation of model quality in terms of Mean Squared Error (MSE) and Mean Absolute Error
  * (MAE).
  *
  * Dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/
  *
- * @see RandomForestRegressionTrainerOld
+ * @see RandomForestRegressionTrainer
  */
-public class RandomForestRegressionExample2 {
+public class RandomForestRegressionExample {
     /**
      * Run example.
      */
@@ -59,7 +60,7 @@ public class RandomForestRegressionExample2 {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                RandomForestRegressionExample2.class.getSimpleName(), () -> {
+                RandomForestRegressionExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
                 AtomicInteger indx = new AtomicInteger(0);

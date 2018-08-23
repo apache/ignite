@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for {@link RandomForestClassifierTrainerOld}.
+ * Tests for {@link RandomForestClassifierTrainer}.
  */
 @RunWith(Parameterized.class)
 public class RandomForestClassifierTrainerTrainerOldTest {
@@ -75,27 +75,27 @@ public class RandomForestClassifierTrainerTrainerOldTest {
             sample.put(new double[] {x1, x2, x3, x4}, (double)(i % 2));
         }
 
-        RandomForestClassifierTrainerOld trainer = new RandomForestClassifierTrainerOld(4, 3, 5, 0.3, 4, 0.1)
-            .withUseIndex(false);
-
-        ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
-
-        mdl.getModels().forEach(m -> {
-            assertTrue(m instanceof ModelOnFeaturesSubspace);
-
-            ModelOnFeaturesSubspace mdlOnFeaturesSubspace = (ModelOnFeaturesSubspace) m;
-
-            assertTrue(mdlOnFeaturesSubspace.getMdl() instanceof DecisionTreeConditionalNode);
-
-            assertTrue(mdlOnFeaturesSubspace.getFeaturesMapping().size() > 0);
-
-            String expClsName = "ModelOnFeatureSubspace";
-            assertTrue(mdlOnFeaturesSubspace.toString().contains(expClsName));
-            assertTrue(mdlOnFeaturesSubspace.toString(true).contains(expClsName));
-            assertTrue(mdlOnFeaturesSubspace.toString(false).contains(expClsName));
-        });
-
-        assertTrue(mdl.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
-        assertEquals(5, mdl.getModels().size());
+//        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4, 3, 5, 0.3, 4, 0.1)
+//            .withUseIndex(false);
+//
+//        ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+//
+//        mdl.getModels().forEach(m -> {
+//            assertTrue(m instanceof ModelOnFeaturesSubspace);
+//
+//            ModelOnFeaturesSubspace mdlOnFeaturesSubspace = (ModelOnFeaturesSubspace) m;
+//
+//            assertTrue(mdlOnFeaturesSubspace.getMdl() instanceof DecisionTreeConditionalNode);
+//
+//            assertTrue(mdlOnFeaturesSubspace.getFeaturesMapping().size() > 0);
+//
+//            String expClsName = "ModelOnFeatureSubspace";
+//            assertTrue(mdlOnFeaturesSubspace.toString().contains(expClsName));
+//            assertTrue(mdlOnFeaturesSubspace.toString(true).contains(expClsName));
+//            assertTrue(mdlOnFeaturesSubspace.toString(false).contains(expClsName));
+//        });
+//
+//        assertTrue(mdl.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
+//        assertEquals(5, mdl.getModels().size());
     }
 }

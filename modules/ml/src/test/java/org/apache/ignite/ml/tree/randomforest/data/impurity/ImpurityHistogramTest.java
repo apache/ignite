@@ -19,7 +19,7 @@ package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
 import java.util.Set;
 import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
-import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
+import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
 
 import static org.junit.Assert.assertArrayEquals;
 
