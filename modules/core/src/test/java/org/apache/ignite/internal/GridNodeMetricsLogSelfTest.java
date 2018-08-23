@@ -17,9 +17,15 @@
 
 package org.apache.ignite.internal;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -72,13 +78,6 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNodeMetricsLog() throws Exception {
-        checkBaseNodeMetrics();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    protected void checkBaseNodeMetrics() throws Exception {
         IgniteCache<Integer, String> cache2 = grid(0).createCache("TestCache2");
         IgniteCache<Integer, String> cache1 = grid(1).createCache("TestCache1");
 
@@ -91,29 +90,82 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         assertEquals("one", cache1.get(1));
         assertEquals("two", cache2.get(2));
 
-        String fullLog = stringLogger().toString();
+        String logOutput = strLog.toString();
 
-        String msg = "Metrics are missing in the log or have an unexpected format";
+        checkNodeMetricsFormat(logOutput);
 
-        // don't check the format strictly, but check that all expected metrics are present
-        assertTrue(msg, fullLog.contains("Metrics for local node (to disable set 'metricsLogFrequency' to 0)"));
-        assertTrue(msg, fullLog.matches("(?s).*Node \\[id=.*, name=.*, uptime=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*H/N/C \\[hosts=.*, nodes=.*, CPUs=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*CPU \\[cur=.*, avg=.*, GC=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*PageMemory \\[pages=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Off-heap .+ \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Outbound messages queue \\[size=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_0 + " \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_1 + " \\[active=.*, idle=.*, qSize=.*].*"));
+        checkMemoryMetrics(logOutput);
     }
 
     /**
-     * @return Grid string logger.
+     * Check node metrics format.
+     *
+     * @param logOutput Log output.
      */
-    protected GridStringLogger stringLogger() {
-        return strLog;
+    protected void checkNodeMetricsFormat(String logOutput) {
+        String msg = "Metrics are missing in the log or have an unexpected format";
+
+        // don't check the format strictly, but check that all expected metrics are present
+        assertTrue(msg, logOutput.contains("Metrics for local node (to disable set 'metricsLogFrequency' to 0)"));
+        assertTrue(msg, logOutput.matches("(?s).*Node \\[id=.*, name=.*, uptime=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*H/N/C \\[hosts=.*, nodes=.*, CPUs=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*CPU \\[cur=.*, avg=.*, GC=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*PageMemory \\[pages=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*Off-heap .+ \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*Outbound messages queue \\[size=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*" + CUSTOM_EXECUTOR_0 + " \\[active=.*, idle=.*, qSize=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*" + CUSTOM_EXECUTOR_1 + " \\[active=.*, idle=.*, qSize=.*].*"));
+    }
+
+    /**
+     * Check memory metrics values.
+     *
+     * @param logOutput Log output.
+     */
+    protected  void checkMemoryMetrics(String logOutput) {
+        boolean fmtMatches = false;
+
+        Set<String> regions = new HashSet<>();
+
+        Matcher matcher = Pattern.compile("(?m).*Off-heap (?<name>.+) " +
+                "\\[used=(?<used>[-.\\d]*).*, free=(?<free>[-.\\d]*).*, comm=(?<comm>[-.\\d]*).*].*")
+            .matcher(logOutput);
+
+        while (matcher.find()) {
+            String subj = logOutput.substring(matcher.start(), matcher.end());
+
+            assertFalse("\"used\" cannot be empty: " + subj, F.isEmpty(matcher.group("used")));
+            assertFalse("\"free\" cannot be empty: " + subj, F.isEmpty(matcher.group("free")));
+            assertFalse("\"comm\" cannot be empty: " + subj, F.isEmpty(matcher.group("comm")));
+
+            int used = Integer.parseInt(matcher.group("used"));
+            int comm = Integer.parseInt(matcher.group("comm"));
+            double free = Double.parseDouble(matcher.group("free"));
+
+            assertTrue(used + " should be non negative: " + subj, used >= 0);
+            assertTrue(comm + " is less then used=" + used + ": " + subj, comm >= used);
+            assertTrue(free + " is not between 0 and 100: " + subj, 0 <= free && free <= 100);
+
+            regions.add(matcher.group("name"));
+
+            fmtMatches = true;
+        }
+
+        assertTrue("Off-heap metrics have unexpected format.", fmtMatches);
+
+        Set<String> expRegions = grid(0)
+            .context()
+            .cache()
+            .context()
+            .database()
+            .dataRegions()
+            .stream()
+            .map(v -> v.config().getName().trim())
+            .collect(Collectors.toSet());
+
+        assertEquals(expRegions, regions);
     }
 }

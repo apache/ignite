@@ -17,10 +17,16 @@
 
 package org.apache.ignite.internal;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Check logging local node metrics with PDS enabled.
@@ -49,6 +55,8 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
         cleanPersistenceDir();
 
         super.beforeTest();
+
+        grid(0).cluster().active(true);
     }
 
     /** {@inheritDoc} */
@@ -58,18 +66,55 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
         cleanPersistenceDir();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNodeMetricsLog() throws Exception {
-        grid(0).cluster().active(true);
 
-        checkBaseNodeMetrics();
-
-        String fullLog = stringLogger().toString();
+    /** {@inheritDoc} */
+    @Override protected void checkNodeMetricsFormat(String logOutput) {
+        super.checkNodeMetricsFormat(logOutput);
 
         String msg = "Metrics are missing in the log or have an unexpected format";
 
-        assertTrue(msg, fullLog.matches("(?s).*Ignite persistence .+ \\[used=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*Ignite persistence .+ \\[used=.*].*"));
+    }
+
+    /** {@inheritDoc} */
+    protected  void checkMemoryMetrics(String logOutput) {
+        super.checkMemoryMetrics(logOutput);
+
+        boolean fmtMatches = false;
+
+        Set<String> regions = new HashSet<>();
+
+        Pattern ptrn = Pattern.compile("(?m).*Ignite persistence (?<name>.+) \\[used=(?<used>[-.\\d]*).*].*");
+
+        Matcher matcher = ptrn.matcher(logOutput);
+
+        while (matcher.find()) {
+            String subj = logOutput.substring(matcher.start(), matcher.end());
+
+            assertFalse("\"used\" cannot be empty: " + subj, F.isEmpty(matcher.group("used")));
+
+            int used = Integer.parseInt(matcher.group("used"));
+
+            assertTrue(used + " should be non negative: " + subj, used >= 0);
+
+            regions.add(matcher.group("name"));
+
+            fmtMatches = true;
+        }
+
+        assertTrue("Persistence metrics have unexpected format.", fmtMatches);
+
+        Set<String> expRegions = grid(0)
+            .context()
+            .cache()
+            .context()
+            .database()
+            .dataRegions()
+            .stream()
+            .filter(v -> v.config().isPersistenceEnabled() && v.config().isMetricsEnabled())
+            .map(v -> v.config().getName().trim())
+            .collect(Collectors.toSet());
+
+        assertEquals(expRegions, regions);
     }
 }
