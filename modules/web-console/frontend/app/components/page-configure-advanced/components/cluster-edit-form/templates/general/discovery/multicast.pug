@@ -39,25 +39,23 @@ mixin discovery-multicast(modelAt = '$ctrl.clonedCluster')
                 If local address is not set or is any local address then IP finder creates multicast sockets for all found non - loopback addresses')
         .pc-form-grid-col-60
             .ignite-form-field
-                .ignite-form-field__control
-                    +list-addresses({
-                        items: addresses,
-                        name: 'multicastAddresses',
-                        tip: `Addresses may be represented as follows:
-                        <ul>
-                            <li>IP address (e.g. 127.0.0.1, 9.9.9.9, etc)</li>
-                            <li>IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc)</li>
-                            <li>IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc)</li>
-                            <li>Hostname (e.g. host1.com, host2, etc)</li>
-                            <li>Hostname and port (e.g. host1.com:47500, host2:47502, etc)</li>
-                            <li>Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)</li>
-                        </ul>
-                        If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)<br />
-                        If port range is provided (e.g. host:port1..port2) the following should be considered:
-                        </ul>
-                        <ul>
-                            <li> port1 &lt; port2 should be true</li>
-                            <li> Both port1 and port2 should be greater than 0</li>
-                        </ul>`
-                    })
-                    
+                +list-addresses({
+                    items: addresses,
+                    name: 'multicastAddresses',
+                    tip: `Addresses may be represented as follows:
+                    <ul>
+                        <li>IP address (e.g. 127.0.0.1, 9.9.9.9, etc)</li>
+                        <li>IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc)</li>
+                        <li>IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc)</li>
+                        <li>Hostname (e.g. host1.com, host2, etc)</li>
+                        <li>Hostname and port (e.g. host1.com:47500, host2:47502, etc)</li>
+                        <li>Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)</li>
+                    </ul>
+                    If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)<br />
+                    If port range is provided (e.g. host:port1..port2) the following should be considered:
+                    </ul>
+                    <ul>
+                        <li> port1 &lt; port2 should be true</li>
+                        <li> Both port1 and port2 should be greater than 0</li>
+                    </ul>`
+                })

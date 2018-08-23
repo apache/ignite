@@ -14,9 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__input({ name, model, disabled, required, placeholder })
+mixin form-field__input({ name, model, disabled, required, placeholder, namePostfix = '' })
     input(
-        id=`{{ ${name} }}Input`
+        id=`{{ ${name} }}${ namePostfix }Input`
         name=`{{ ${name} }}`
         placeholder=placeholder
 
@@ -24,5 +24,6 @@ mixin form-field__input({ name, model, disabled, required, placeholder })
 
         ng-required=required && `${required}`
         ng-disabled=disabled && `${disabled}`
-        ng-focus='tableReset()'
+        expose-ignite-form-field-control='$input'
+
     )&attributes(attributes ? attributes.attributes ? attributes.attributes : attributes : {})

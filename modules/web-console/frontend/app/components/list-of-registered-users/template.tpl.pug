@@ -34,8 +34,40 @@ ul.tabs.tabs--blue
             span.badge.badge--blue {{ $ctrl.countries.length }}
 
 .panel--ignite
-    .panel-heading.ui-grid-settings.ui-grid-ignite__panel
-        .panel-title
+    header.header-with-selector
+        div(ng-if='!$ctrl.selected.length')
+            span(ng-if='$ctrl.groupBy === "user"') List of registered users
+            span(ng-if='$ctrl.groupBy === "company"') List of registered companies
+            span(ng-if='$ctrl.groupBy === "country"') List of registered countries
+            grid-column-selector(grid-api='$ctrl.gridApi')
+
+        div(ng-if='$ctrl.selected.length')
+            grid-item-selected(grid-api='$ctrl.gridApi')
+
+        div
+            .form-field--inline
+                +form-field__text({
+                    label: 'Exclude:',
+                    model: '$ctrl.params.companiesExclude',
+                    name: '"exclude"',
+                    placeholder: 'Exclude by company name...'
+                })
+
+            .form-field--inline
+                +form-field__datepicker({
+                    label: 'Period: from',
+                    model: '$ctrl.params.startDate',
+                    name: '"startDate"', 
+                    maxdate: '$ctrl.params.endDate'
+                })
+            .form-field--inline
+                +form-field__datepicker({
+                    label: 'to',
+                    model: '$ctrl.params.endDate',
+                    name: '"endDate"',
+                    mindate: '$ctrl.params.startDate'
+                })
+
             +ignite-form-field-bsdropdown({
                 label: 'Actions',
                 model: '$ctrl.action',
@@ -44,22 +76,5 @@ ul.tabs.tabs--blue
                 required: false,
                 options: '$ctrl.actionOptions'
             })
-            grid-export(grid-api='$ctrl.gridApi')
-            form.ui-grid-settings-dateperiod(name=form novalidate)
-                -var form = 'admin'
-                +ignite-form-field-datepicker('Period: from', '$ctrl.params.startDate', '"startDate"', null, '$ctrl.params.endDate')
-                +ignite-form-field-datepicker('to', '$ctrl.params.endDate', '"endDate"', '$ctrl.params.startDate', null)
-            form.ui-grid-settings-filter
-                -var form = 'admin'
-                +ignite-form-field-text('Exclude:', '$ctrl.params.companiesExclude', '"exclude"', false, false, 'Exclude by company name...')
 
-            .ui-grid-settings--heading(ng-hide='$ctrl.selected.length')
-                span(ng-if='$ctrl.groupBy === "user"') List of registered users
-                span(ng-if='$ctrl.groupBy === "company"') List of registered companies
-                span(ng-if='$ctrl.groupBy === "country"') List of registered countries
-                grid-column-selector(grid-api='$ctrl.gridApi')
-            .panel-selected(ng-show='$ctrl.selected.length')
-                grid-item-selected(grid-api='$ctrl.gridApi')
-
-    .panel-collapse
-        .grid.ui-grid--ignite.ui-grid-disabled-group-selection(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-grouping ui-grid-hovering)
+    .grid.ui-grid--ignite.ui-grid-disabled-group-selection(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-grouping ui-grid-hovering)

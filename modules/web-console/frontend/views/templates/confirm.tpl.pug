@@ -26,9 +26,10 @@
             .modal-body(ng-show='content')
                 p(ng-bind-html='content')
             .modal-footer
-                button#confirm-btn-cancel.btn-ignite.btn-ignite--link-success(ng-click='confirmCancel()') Cancel
+                div
+                    button#confirm-btn-cancel.btn-ignite.btn-ignite--link-success(ng-click='confirmCancel()') Cancel
 
-                button#confirm-btn-no.btn-ignite.btn-ignite--link-success(ng-if='yesNo' ng-click='confirmNo()') No
-                button#confirm-btn-yes.btn-ignite.btn-ignite--success(ignite-auto-focus ng-if='yesNo' ng-click='confirmYes()') Yes
+                    button#confirm-btn-no.btn-ignite.btn-ignite--link-success(ng-if='yesNo' ng-click='confirmNo()') No
+                    button#confirm-btn-yes.btn-ignite.btn-ignite--success(ignite-auto-focus ng-if='yesNo' ng-click='confirmYes()') Yes
 
-                button#confirm-btn-ok.btn-ignite.btn-ignite--success(ignite-auto-focus ng-if='!yesNo' ng-click='confirmYes()') Confirm
+                    button#confirm-btn-ok.btn-ignite.btn-ignite--success(ignite-auto-focus ng-if='!yesNo' ng-click='confirmYes()') Confirm

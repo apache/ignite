@@ -23,33 +23,32 @@ mixin discovery-vm(modelAt = '$ctrl.clonedCluster')
 
     .pc-form-grid-row&attributes(attributes=attributes)
         .pc-form-grid-col-60
-            .ignite-form-field
-                .ignite-form-field__control
-                    +list-addresses({
-                        items: addresses,
-                        name: 'vmAddresses',
-                        tip: `Addresses may be represented as follows:
-                            <ul>
-                                <li>IP address (e.g. 127.0.0.1, 9.9.9.9, etc)</li>
-                                <li>IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc)</li>
-                                <li>IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc)</li>
-                                <li>Hostname (e.g. host1.com, host2, etc)</li>
-                                <li>Hostname and port (e.g. host1.com:47500, host2:47502, etc)</li>
-                                <li>Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)</li>
-                            </ul>
-                            If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)<br />
-                            If port range is provided (e.g. host:port1..port2) the following should be considered:
-                            </ul>
-                            <ul>
-                                <li> port1 &lt; port2 should be true</li>
-                                <li> Both port1 and port2 should be greater than 0</li>
-                            </ul>`
-                    })(
-                        ng-required='true'
-                        expose-ignite-form-field-control='$vmAddresses'
-                    )
-                .ignite-form-field__errors(
+            .form-field.ignite-form-field
+                +list-addresses({
+                    items: addresses,
+                    name: 'vmAddresses',
+                    tip: `Addresses may be represented as follows:
+                        <ul>
+                            <li>IP address (e.g. 127.0.0.1, 9.9.9.9, etc)</li>
+                            <li>IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc)</li>
+                            <li>IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc)</li>
+                            <li>Hostname (e.g. host1.com, host2, etc)</li>
+                            <li>Hostname and port (e.g. host1.com:47500, host2:47502, etc)</li>
+                            <li>Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)</li>
+                        </ul>
+                        If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)<br />
+                        If port range is provided (e.g. host:port1..port2) the following should be considered:
+                        </ul>
+                        <ul>
+                            <li> port1 &lt; port2 should be true</li>
+                            <li> Both port1 and port2 should be greater than 0</li>
+                        </ul>`
+                })(
+                    ng-required='true'
+                    expose-ignite-form-field-control='$vmAddresses'
+                )
+                .form-field__errors(
                     ng-messages=`$vmAddresses.$error`
                     ng-show=`$vmAddresses.$invalid`
                 )
-                    +form-field-feedback(_, 'required', 'Addresses should be configured')
+                    +form-field__error({ error: 'required', message: 'Addresses should be configured' })

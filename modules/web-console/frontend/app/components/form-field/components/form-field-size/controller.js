@@ -42,6 +42,11 @@ export default class PCFormFieldSizeController {
             {label: 'ns', value: 1 / 1000},
             {label: 'ms', value: 1},
             {label: 's', value: 1000}
+        ],
+        time: [
+            {label: 'sec', value: 1},
+            {label: 'min', value: 60},
+            {label: 'hour', value: 60 * 60}
         ]
     };
 
@@ -62,7 +67,7 @@ export default class PCFormFieldSizeController {
     $onInit() {
         if (!this.min) this.min = 0;
         if (!this.sizesMenu) this.setDefaultSizeType();
-        this.$element.addClass('ignite-form-field');
+        this.$element.addClass('form-field');
         this.ngModel.$render = () => this.assignValue(this.ngModel.$viewValue);
     }
 

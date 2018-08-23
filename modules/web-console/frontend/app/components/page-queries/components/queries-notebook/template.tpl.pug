@@ -16,6 +16,24 @@
 
 include /app/helpers/jade/mixins
 
+mixin form-field__sensitive({ label, modelFilter, modelSensitive, name, placeholder })
+    .form-field.form-field__sensitive.ignite-form-field
+        +form-field__label({ label, name })
+            +form-field__tooltip({ title: 'You can set case sensitive search' })
+        .form-field__control.form-field__control-group
+            +form-field__input({ name, model: modelFilter, placeholder })(
+                type='text'
+            )
+            label.btn-ignite.btn-ignite--secondary
+                +form-field__input({ name: `${ name } + "Sensitive"`, model: modelSensitive, placeholder })(
+                    type='checkbox'
+                )
+                span Cs
+        .form-field__errors(
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
+        )
+
 mixin btn-toolbar(btn, click, tip, focusId)
     i.btn.btn-default.fa(class=btn ng-click=click bs-tooltip='' data-title=tip ignite-on-click-focus=focusId data-trigger='hover' data-placement='bottom')
 
@@ -72,59 +90,120 @@ mixin paragraph-rename
             input.form-control(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' ignite-on-enter='renameParagraph(paragraph, paragraph.editName)' ignite-on-escape='paragraph.edit = false')
 
 mixin query-settings
-    .panel-top-align
-        label.tipLabel(bs-tooltip data-placement='bottom' data-title='Configure periodical execution of last successfully executed query') Refresh rate:
-            button.btn.btn-default.fa.fa-clock-o.tipLabel(ng-class='{"btn-info": paragraph.rate && paragraph.rate.installed}' bs-popover data-template-url='{{ $ctrl.paragraphRateTemplateUrl }}' data-placement='left' data-auto-close='1' data-trigger='click') {{rateAsString(paragraph)}}
+    div
+        .form-field--inline(
+            bs-tooltip
+            data-placement='top'
+            data-title='Max number of rows to show in query result as one page'
+        )
+            +form-field__dropdown({
+                label: 'Rows per page:',
+                model: 'paragraph.pageSize',
+                name: '"pageSize" + paragraph.id',
+                options: 'pageSizesOptions'
+            })
 
-        label.tipLabel(bs-tooltip data-placement='bottom' data-title='Max number of rows to show in query result as one page') Page size:
-            button.btn.btn-default.select-toggle.tipLabel(ng-model='paragraph.pageSize' bs-select bs-options='item for item in pageSizes')
+        .form-field--inline(
+            bs-tooltip
+            data-placement='top'
+            data-title='Limit query max results to specified number of pages'
+        )
+            +form-field__dropdown({
+                label: 'Max pages:',
+                model: 'paragraph.maxPages',
+                name: '"maxPages" + paragraph.id',
+                options: 'maxPages'
+            })
 
-        label.tipLabel(bs-tooltip data-placement='bottom' data-title='Limit query max results to specified number of pages') Max pages:
-            button.btn.btn-default.select-toggle.tipLabel(ng-model='paragraph.maxPages' bs-select bs-options='item.value as item.label for item in maxPages')
+        .form-field--inline(
+            bs-tooltip
+            data-placement='bottom'
+            data-title='Configure periodical execution of last successfully executed query'
+        )
+            button.btn-ignite-group(
+                bs-popover
+                data-template-url='{{ $ctrl.paragraphRateTemplateUrl }}'
+                data-placement='bottom-right'
+                data-auto-close='1'
+                data-trigger='click'
+            )
+                .btn-ignite(
+                    ng-class='{\
+                        "btn-ignite--primary": paragraph.rate && paragraph.rate.installed,\
+                        "btn-ignite--secondary": !(paragraph.rate && paragraph.rate.installed),\
+                    }'
+                )
+                    svg(ignite-icon='clock')
+                    | &nbsp; {{ rateAsString(paragraph) }}
+                .btn-ignite(
+                    ng-class='{\
+                        "btn-ignite--primary": paragraph.rate && paragraph.rate.installed,\
+                        "btn-ignite--secondary": !(paragraph.rate && paragraph.rate.installed),\
+                    }'
+                )
+                    span.icon.fa.fa-caret-down
+    div
+        .row(ng-if='nonCollocatedJoinsAvailable(paragraph)')
+            +form-field__checkbox({
+                label: 'Allow non-collocated joins',
+                model: 'paragraph.nonCollocatedJoins',
+                name: '"nonCollocatedJoins" + paragraph.id',
+                tip: 'Non-collocated joins is a special mode that allow to join data across cluster without collocation.<br/>\
+                Nested joins are not supported for now.<br/>\
+                <b>NOTE</b>: In some cases it may consume more heap memory or may take a long time than collocated joins.',
+                tipOpts: { placement: 'top' }
+            })
 
-        .panel-tip-container
-            .row(ng-if='nonCollocatedJoinsAvailable(paragraph)')
-                label.tipLabel(bs-tooltip data-placement='bottom' data-title='Non-collocated joins is a special mode that allow to join data across cluster without collocation.<br/>\
-                    Nested joins are not supported for now.<br/>\
-                    <b>NOTE</b>: In some cases it may consume more heap memory or may take a long time than collocated joins.' data-trigger='hover')
-                    input(type='checkbox' ng-model='paragraph.nonCollocatedJoins')
-                    span Allow non-collocated joins
-            .row(ng-if='collocatedJoinsAvailable(paragraph)')
-                label.tipLabel(bs-tooltip data-placement='bottom' data-title='Used For Optimization Purposes Of Queries With GROUP BY Statements.<br/>\
-                    <b>NOTE:</b> Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.<br/>\
-                    If you know in advance that the elements of your query selection are collocated together on the same node\
-                    and you group by collocated key (primary or affinity key), then Ignite can make significant performance and\
-                    network optimizations by grouping data on remote nodes.' data-trigger='hover')
-                    input(type='checkbox' ng-model='paragraph.collocated')
-                    span Collocated Query
-            .row(ng-if='enforceJoinOrderAvailable(paragraph)')
-                label.tipLabel(bs-tooltip data-placement='bottom' data-title='Enforce join order of tables in the query.<br/>\
-                    If <b>set</b>, then query optimizer will not reorder tables within join.<br/>\
-                    <b>NOTE:</b> It is not recommended to enable this property unless you have verified that\
-                    indexes are not selected in optimal order.' data-trigger='hover')
-                    input(type='checkbox' ng-model='paragraph.enforceJoinOrder')
-                    span Enforce join order
-            .row(ng-if='lazyQueryAvailable(paragraph)')
-                label.tipLabel(bs-tooltip data-placement='bottom' data-title='By default Ignite attempts to fetch the whole query result set to memory and send it to the client.<br/>\
-                    For small and medium result sets this provides optimal performance and minimize duration of internal database locks, thus increasing concurrency.<br/>\
-                    If result set is too big to fit in available memory this could lead to excessive GC pauses and even OutOfMemoryError.<br/>\
-                    Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory consumption at the cost of moderate performance hit.' data-trigger='hover')
-                    input(type='checkbox' ng-model='paragraph.lazy')
-                    span Lazy result set
+        .row(ng-if='collocatedJoinsAvailable(paragraph)')
+            +form-field__checkbox({
+                label: 'Collocated Query',
+                model: 'paragraph.collocated',
+                name: '"collocated" + paragraph.id',
+                tip: 'Used For Optimization Purposes Of Queries With GROUP BY Statements.<br/>\
+                <b>NOTE:</b> Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.<br/>\
+                If you know in advance that the elements of your query selection are collocated together on the same node\
+                and you group by collocated key (primary or affinity key), then Ignite can make significant performance and\
+                network optimizations by grouping data on remote nodes.',
+                tipOpts: { placement: 'top' }
+            })
+
+        .row(ng-if='enforceJoinOrderAvailable(paragraph)')
+            +form-field__checkbox({
+                label: 'Enforce join order',
+                model: 'paragraph.enforceJoinOrder',
+                name: '"enforceJoinOrder" + paragraph.id',
+                tip: 'Enforce join order of tables in the query.<br/>\
+                If <b>set</b>, then query optimizer will not reorder tables within join.<br/>\
+                <b>NOTE:</b> It is not recommended to enable this property unless you have verified that\
+                indexes are not selected in optimal order.',
+                tipOpts: { placement: 'top' }
+            })
+
+        .row(ng-if='lazyQueryAvailable(paragraph)')
+            +form-field__checkbox({
+                label: 'Lazy result set',
+                model: 'paragraph.lazy',
+                name: '"lazy" + paragraph.id',
+                tip: 'By default Ignite attempts to fetch the whole query result set to memory and send it to the client.<br/>\
+                For small and medium result sets this provides optimal performance and minimize duration of internal database locks, thus increasing concurrency.<br/>\
+                If result set is too big to fit in available memory this could lead to excessive GC pauses and even OutOfMemoryError.<br/>\
+                Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory consumption at the cost of moderate performance hit.',
+                tipOpts: { placement: 'top' }
+            })
 
 mixin query-actions
-    button.btn.btn-primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph)')
-        div
-            i.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(false)')
-            i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(false)')
-            span.tipLabelExecute Execute
-    button.btn.btn-primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph, true)')
-        div
-            i.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(true)')
-            i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(true)')
-            span.tipLabelExecute Execute on selected node
+    button.btn-ignite.btn-ignite--primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph)')
+        span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(false)')
+        span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(false)')
+        | Execute
 
-    a.btn.btn-default(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}') Explain
+    button.btn-ignite.btn-ignite--primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph, true)')
+        span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.executionInProgress(true)')
+        span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.executionInProgress(true)')
+        | Execute on selected node
+
+    button.btn-ignite.btn-ignite--secondary(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}')
+        | Explain
 
 mixin table-result-heading-query
     .total.row
@@ -243,24 +322,36 @@ mixin paragraph-scan
             .col-sm-3
                 +dropdown-required('Cache:', 'paragraph.cacheName', '"cache"', 'true', 'false', 'Choose cache', 'caches')
             .col-sm-3
-                +text-enabled('Filter:', 'paragraph.filter', '"filter"', true, false, 'Enter filter')
-                    label.btn.btn-default.ignite-form-field__btn(ng-click='paragraph.caseSensitive = !paragraph.caseSensitive')
-                        input(type='checkbox' ng-model='paragraph.caseSensitive')
-                        span(bs-tooltip data-title='Select this checkbox for case sensitive search') Cs
-            label.tipLabel(bs-tooltip data-placement='bottom' data-title='Max number of rows to show in query result as one page') Page size:
-                button.btn.btn-default.select-toggle.tipLabel(ng-model='paragraph.pageSize' bs-select bs-options='item for item in pageSizes')
+                +form-field__sensitive({
+                    label: 'Filter:',
+                    modelFilter: 'paragraph.filter',
+                    modelSensitive: 'paragraph.caseSensitive',
+                    name: '"filter"',
+                    placeholder: 'Enter filter'
+                })
+
+            .col-sm-3
+                +form-field__dropdown({
+                    label: 'Rows per page:',
+                    model: 'paragraph.pageSize',
+                    name: '"pageSize" + paragraph.id',
+                    options: 'pageSizesOptions',
+                    tip: 'Max number of rows to show in query result as one page',
+                    tipOpts: { placement: 'top' }
+                })
 
         .col-sm-12.sql-controls
-            button.btn.btn-primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph)')
-                div
-                    i.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(false)')
-                    i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(false)')
-                    span.tipLabelExecute Scan
+            div
+                button.btn-ignite.btn-ignite--primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph)')
+                    span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(false)')
+                    span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(false)')
+                    | Scan
 
-            button.btn.btn-primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph, true)')
-                i.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(true)')
-                i.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
-                span.tipLabelExecute Scan on selected node
+                button.btn-ignite.btn-ignite--primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph, true)')
+                    span.icon-left.fa.fa-fw.fa-play(ng-hide='paragraph.checkScanInProgress(true)')
+                    span.icon-left.fa.fa-fw.fa-refresh.fa-spin(ng-show='paragraph.checkScanInProgress(true)')
+                    | Scan on selected node
+            div
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted() && !paragraph.scanningInProgress' ng-switch='paragraph.resultType()')
             .error(ng-switch-when='error') Error: {{paragraph.error.message}}
@@ -295,31 +386,36 @@ mixin paragraph-query
                     i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='{{ $ctrl.cacheMetadataTemplateUrl }}' data-placement='bottom-right' data-trigger='click' data-container='#{{ paragraph.id }}')
                     .input-tip
                         input.form-control(type='text' st-search='label' placeholder='Filter caches...')
-                    table.links
-                        tbody.scrollable-y(style='max-height: 15em; display: block;')
-                            tr(ng-repeat='cache in displayedCaches track by cache.name')
-                                td(style='width: 100%')
-                                    input.labelField(id='cache_{{ [paragraph.id, $index].join("_") }}' type='radio' value='{{cache.name}}' ng-model='paragraph.cacheName')
-                                    label(for='cache_{{ [paragraph.id, $index].join("_") }} ' ng-bind-html='cache.label')
+
+                    .queries-notebook-displayed-caches
+                        div(ng-repeat='cache in displayedCaches track by cache.name')
+                            +form-field__radio({
+                                label: '{{ cache.label }}',
+                                model: 'paragraph.cacheName',
+                                name: '"cache_" + [paragraph.id, $index].join("_")',
+                                value: 'cache.name'
+                            })
+
                     .settings-row
                         .row(ng-if='ddlAvailable(paragraph)')
-                            label.tipLabel.use-cache(bs-tooltip data-placement='bottom'
-                                data-title=
-                                    'Use selected cache as default schema name.<br/>\
+                            +form-field__checkbox({
+                                label: 'Use selected cache as default schema name',
+                                model: 'paragraph.useAsDefaultSchema',
+                                name: '"useAsDefaultSchema" + paragraph.id',
+                                tip: 'Use selected cache as default schema name.<br/>\
                                     This will allow to execute query on specified cache without specify schema name.<br/>\
-                                    <b>NOTE:</b> In future version of Ignite this feature will be removed.'
-                                data-trigger='hover')
-                                input(type='checkbox' ng-model='paragraph.useAsDefaultSchema')
-                                span Use selected cache as default schema name
+                                    <b>NOTE:</b> In future version of Ignite this feature will be removed.',
+                                tipOpts: { placement: 'top' }
+                            })
                 .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                     label Wrong caches filter
                 .empty-caches(ng-show='caches.length == 0')
                     label No caches
         .col-sm-12.sql-controls
-            +query-actions
+            div
+                +query-actions
 
-            .pull-right
-                +query-settings
+            +query-settings
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
             .error(ng-switch-when='error')
                 label Error: {{paragraph.error.message}}

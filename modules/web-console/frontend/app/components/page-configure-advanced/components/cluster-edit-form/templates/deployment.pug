@@ -77,8 +77,15 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                             list-editable-item-view {{ $item }}
 
                             list-editable-item-edit
-                                +list-java-package-field('Package name', '$item', '"packageName"', items)(
-                                    ignite-auto-focus
+                                +form-field__java-package({
+                                    label: 'Package name',
+                                    model: '$item',
+                                    name: '"packageName"',
+                                    placeholder: 'Enter package name',
+                                    required: enabled
+                                })(
+                                    data-ignite-unique=items
+                                    data-ignite-form-field-input-autofocus='true'
                                 )
                                     +unique-feedback('"packageName"', uniqueTip)
 

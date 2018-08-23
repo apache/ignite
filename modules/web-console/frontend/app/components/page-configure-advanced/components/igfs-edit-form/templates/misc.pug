@@ -70,39 +70,45 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-60
                 mixin igfs-misc-path-modes
                     .ignite-form-field
-                        +ignite-form-field__label('Path modes:', '"pathModes"')
-                            +tooltip(`Map of path prefixes to IGFS modes used for them`)
-                        .ignite-form-field__control
-                            -let items = pathModes
+                        +form-field__label({ label: 'Path modes:', name: '"pathModes"' })
+                            +form-field__tooltip({ title: `Map of path prefixes to IGFS modes used for them` })
 
-                            list-editable(ng-model=items)
-                                list-editable-item-view
-                                    | {{ $item.path + " [" + $item.mode + "]"}}
+                        -let items = pathModes
 
-                                list-editable-item-edit
-                                    - form = '$parent.form'
+                        list-editable(ng-model=items)
+                            list-editable-item-view
+                                | {{ $item.path + " [" + $item.mode + "]"}}
 
-                                    .pc-form-grid-row
-                                        .pc-form-grid-col-30
-                                            +ignite-form-field-text('Path:', '$item.path', '"path"', false, true, 'Enter path')(ignite-auto-focus)
-                                        .pc-form-grid-col-30
-                                            +sane-ignite-form-field-dropdown({
-                                                label: 'Mode:',
-                                                model: `$item.mode`,
-                                                name: '"mode"',
-                                                required: true,
-                                                placeholder: 'Choose igfs mode',
-                                                options: '{{::$ctrl.IGFSs.defaultMode.values}}'
-                                            })(
-                                                ng-model-options='{allowInvalid: true}'
-                                            )
+                            list-editable-item-edit
+                                - form = '$parent.form'
 
-                                list-editable-no-items
-                                    list-editable-add-item-button(
-                                        add-item=`$editLast((${items} = ${items} || []).push({}))`
-                                        label-single='path mode'
-                                        label-multiple='path modes'
-                                    )
+                                .pc-form-grid-row
+                                    .pc-form-grid-col-30
+                                        +form-field__text({
+                                            label: 'Path:',
+                                            model: '$item.path',
+                                            name: '"path"',
+                                            required: true,
+                                            placeholder: 'Enter path'
+                                        })(ignite-auto-focus)
+                                    .pc-form-grid-col-30
+                                        +form-field__dropdown({
+                                            label: 'Mode:',
+                                            model: `$item.mode`,
+                                            name: '"mode"',
+                                            required: true,
+                                            placeholder: 'Choose igfs mode',
+                                            options: '{{::$ctrl.IGFSs.defaultMode.values}}'
+                                        })(
+                                            ng-model-options='{allowInvalid: true}'
+                                        )
+
+                            list-editable-no-items
+                                list-editable-add-item-button(
+                                    add-item=`$editLast((${items} = ${items} || []).push({}))`
+                                    label-single='path mode'
+                                    label-multiple='path modes'
+                                )
 
                 +igfs-misc-path-modes
 

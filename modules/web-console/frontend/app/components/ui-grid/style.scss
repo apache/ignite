@@ -1,0 +1,111 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+ignite-grid-table {
+	@import 'public/stylesheets/variables';
+
+    .ui-grid.ui-grid--ignite {
+        // Start section row height.
+        .ui-grid-row {
+            height: 48px;
+
+            .ui-grid-cell {
+                height: 100%;
+            }
+        }
+
+        .ui-grid-cell .ui-grid-cell-contents {
+            padding: 14px 20px;
+        }
+
+        // Set force header height.
+        // Fix hide border bottom of pinned column without data.
+        .ui-grid-header-canvas {
+            height: 70px;
+        }
+
+        [role="columnheader"] {
+            display: flex;
+            align-items: center;
+            margin: 11px 0;
+        }
+
+        .ui-grid-header--subcategories [role="columnheader"] {
+            margin: 0;
+        }
+
+        // Fix checkbox position.
+        .ui-grid-header-cell  .ui-grid-selection-row-header-buttons {
+            margin-top: 12px;
+        }
+
+        // Removes unwanted box-shadow and border-right from checkboxes column
+        .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-render-container-left:before {
+            box-shadow: none;
+        }
+        .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-cell:last-child {
+            border-right: none;
+        }
+
+        .ui-grid-pinned-container-left .ui-grid-header--subcategories .ui-grid-header-span.ui-grid-header-cell {
+            box-shadow: none;
+        }
+
+        .ui-grid-header:not(.ui-grid-header--subcategories) .ui-grid-filters[role="columnheader"] {
+            padding-top: 6px;
+        }
+
+        // End section row height.
+        .ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
+            border-right: none;
+        }
+
+        input[type="text"].ui-grid-filter-input {
+            &::placeholder {
+                color: rgba(66, 66, 66, 0.5);
+                font-weight: normal;
+                text-align: left;
+            }
+
+            &:focus {
+                border-color: $ignite-brand-success;
+                box-shadow: none;
+            }
+
+            font-family: Roboto;
+            outline: none;
+            overflow: visible;
+
+            box-sizing: border-box;
+            width: 100%;
+            max-width: initial;
+            height: 29px;
+            padding: 0 10px;
+            margin-right: 0;
+
+            border: solid 1px #c5c5c5;
+            border-radius: 4px;
+            background-color: #ffffff;
+            box-shadow: none;
+
+            color: $text-color;
+            text-align: left;
+            font-weight: normal;
+            line-height: 16px;
+        }
+    }
+}

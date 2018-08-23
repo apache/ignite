@@ -27,7 +27,7 @@ panel-collapsible(opened=`::true` ng-form=form)
     panel-content.pca-form-row
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +sane-ignite-form-field-text({
+                +form-field__text({
                     label: 'Name:',
                     model: `${model}.name`,
                     name: '"igfsName"',
@@ -40,7 +40,7 @@ panel-collapsible(opened=`::true` ng-form=form)
                 )
                     +unique-feedback(`${model}.name`, 'IGFS name should be unique.')
             .pc-form-grid-col-30
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'IGFS mode:',
                     model: `${model}.defaultMode`,
                     name: '"defaultMode"',
@@ -57,7 +57,7 @@ panel-collapsible(opened=`::true` ng-form=form)
                     `
                 })
             .pc-form-grid-col-30
-                +sane-ignite-form-field-number({
+                +form-field__number({
                     label: 'Group size:',
                     model: `${model}.affinnityGroupSize`,
                     name: '"affinnityGroupSize"',

@@ -29,11 +29,18 @@ include /app/helpers/jade/mixins
             .modal-body
                 .row
                     .col-100
-                        +ignite-form-field-text('{{ ctrl.label }}', 'ctrl.value', '"input-field"', false, true, 'Enter value')(
+                        +form-field__text({
+                            label: '{{ ctrl.label }}',
+                            model: 'ctrl.value',
+                            name: '"inputDialogField"',
+                            required: true,
+                            placeholder: 'Enter value'
+                        })(
                             data-ignite-form-field-input-autofocus='true'
                             ignite-on-enter='form.$valid && ctrl.confirm()'
                         )
 
             .modal-footer
-                button#copy-btn-cancel.btn-ignite.btn-ignite--link-success(ng-click='$hide()') Cancel
-                button#copy-btn-confirm.btn-ignite.btn-ignite--success(ng-disabled='ctrl.form.$invalid' ng-click='ctrl.confirm()') Confirm
+                div
+                    button#copy-btn-cancel.btn-ignite.btn-ignite--link-success(ng-click='$hide()') Cancel
+                    button#copy-btn-confirm.btn-ignite.btn-ignite--success(ng-disabled='ctrl.form.$invalid' ng-click='ctrl.confirm()') Confirm

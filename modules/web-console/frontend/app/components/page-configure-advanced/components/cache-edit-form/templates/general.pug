@@ -27,7 +27,7 @@ panel-collapsible(opened=`::true` ng-form=form)
     panel-content.pca-form-row
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +sane-ignite-form-field-text({
+                +form-field__text({
                     label: 'Name:',
                     model: `${model}.name`,
                     name: '"cacheName"',
@@ -40,7 +40,7 @@ panel-collapsible(opened=`::true` ng-form=form)
                 )
                     +unique-feedback(`${model}.name`, 'Cache name should be unique')
             .pc-form-grid-col-60
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Domain models:',
                     model: `${model}.domains`,
                     name: '"domains"',

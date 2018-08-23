@@ -283,7 +283,15 @@ export class NotebookCtrl {
 
         $scope.caches = [];
 
-        $scope.pageSizes = [50, 100, 200, 400, 800, 1000];
+        $scope.pageSizesOptions = [
+            {value: 50, label: '50'},
+            {value: 100, label: '100'},
+            {value: 200, label: '200'},
+            {value: 400, label: '400'},
+            {value: 800, label: '800'},
+            {value: 1000, label: '1000'}
+        ];
+
         $scope.maxPages = [
             {label: 'Unlimited', value: 0},
             {label: '1', value: 1},
@@ -1048,7 +1056,7 @@ export class NotebookCtrl {
             const paragraph = _newParagraph({
                 name: 'Query' + (sz === 0 ? '' : sz),
                 query: '',
-                pageSize: $scope.pageSizes[1],
+                pageSize: $scope.pageSizesOptions[1].value,
                 timeLineSpan: $scope.timeLineSpans[0],
                 result: 'none',
                 rate: {
@@ -1077,7 +1085,7 @@ export class NotebookCtrl {
             const paragraph = _newParagraph({
                 name: 'Scan' + (sz === 0 ? '' : sz),
                 query: '',
-                pageSize: $scope.pageSizes[1],
+                pageSize: $scope.pageSizesOptions[1].value,
                 timeLineSpan: $scope.timeLineSpans[0],
                 result: 'none',
                 rate: {

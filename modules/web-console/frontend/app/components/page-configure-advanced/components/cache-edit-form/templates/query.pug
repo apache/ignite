@@ -101,7 +101,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +number('Query parallelism', model + '.queryParallelism', '"queryParallelism"', 'true', '1', '1',
                     'A hint to query execution engine on desired degree of parallelism within a single node')
             .pc-form-grid-col-30(ng-if-end)
-                +sane-ignite-form-field-number({
+                +form-field__number({
                     label: 'SQL index max inline size:',
                     model: `${model}.sqlIndexMaxInlineSize`,
                     name: '"sqlIndexMaxInlineSize"',

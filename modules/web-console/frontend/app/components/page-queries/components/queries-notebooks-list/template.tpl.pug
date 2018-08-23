@@ -27,22 +27,19 @@ page-queries-slot(slot-name="'queriesButtons'" ng-if="!$root.IgniteDemoMode")
 
 .queries-notebooks-list
     .panel--ignite
-        .panel-heading.ui-grid-settings.ui-grid-ignite__panel
-            .panel-title
-                div(ng-if="!$root.IgniteDemoMode")
-                    +ignite-form-field-bsdropdown({
-                        label: 'Actions',
-                        model: '$ctrl.action',
-                        name: 'action',
-                        disabled: '$ctrl.gridApi.selection.legacyGetSelectedRows().length === 0',
-                        required: false,
-                        options: '$ctrl.actionOptions'
-                    })
+        header.header-with-selector
+            div
+                span Notebooks
 
-                .ui-grid-settings--heading
-                    span Notebooks
-
-
+            div(ng-if="!$root.IgniteDemoMode")
+                +ignite-form-field-bsdropdown({
+                    label: 'Actions',
+                    model: '$ctrl.action',
+                    name: 'action',
+                    disabled: '$ctrl.gridApi.selection.legacyGetSelectedRows().length === 0',
+                    required: false,
+                    options: '$ctrl.actionOptions'
+                })
 
         .panel-collapse(ignite-loading='notebooksLoading' ignite-loading-text='Loading notebooks...')
             .grid.ui-grid--ignite#queriesNotebooksList(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-hovering)
