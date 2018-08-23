@@ -19,16 +19,16 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 import junit.framework.TestSuite;
 
 /**
- *
+ * Integration tests for Grid REST functionality; Jetty is under the hood.
  */
-public class GridJettySuite extends TestSuite {
+public class GridRestSuite extends TestSuite {
     /**
      * @return Suite that contains all tests for REST.
      */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Apache Flink sink Test Suite");
+        TestSuite suite = new TestSuite("Apache Ignite REST Api suite");
 
-        suite.addTest(new TestSuite(JettySetupSimpleTest.class));
+        suite.addTest(new TestSuite(RestSetupSimpleTest.class));
 
         return suite;
     }

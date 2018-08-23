@@ -28,9 +28,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- *
+ * Integration test for Grid REST functionality; Jetty is under the hood.
  */
-public class JettySetupSimpleTest extends GridCommonAbstractTest {
+public class RestSetupSimpleTest extends GridCommonAbstractTest {
     /** Jetty port. */
     private static final int JETTY_PORT = 8080;
 
