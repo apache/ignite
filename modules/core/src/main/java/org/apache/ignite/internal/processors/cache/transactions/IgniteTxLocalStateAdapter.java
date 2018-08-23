@@ -54,7 +54,7 @@ public abstract class IgniteTxLocalStateAdapter implements IgniteTxLocalState {
     }
 
     /** {@inheritDoc} */
-    @Override public void touchPartition(int cacheId, int partId) {
+    @Override public void addPartitionMapping(int cacheId, int partId) {
         cacheParts.computeIfAbsent(cacheId, k -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
             .add(partId);
     }

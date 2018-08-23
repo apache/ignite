@@ -1562,6 +1562,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
+    @Override public void addPartitionMapping(int cacheId, int partId) {
+        txState.addPartitionMapping(cacheId, partId);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxLocalAdapter.class, this, "super", super.toString(),
             "size", allEntries().size());

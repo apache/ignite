@@ -56,5 +56,5 @@ public interface IgniteTxLocalState extends IgniteTxState {
      * @param cacheId Cache id.
      * @param partId Partition id.
      */
-    public void touchPartition(int cacheId, int partId);
+    public void addPartitionMapping(int cacheId, int partId);
 }
