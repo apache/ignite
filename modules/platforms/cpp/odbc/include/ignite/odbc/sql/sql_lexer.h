@@ -54,6 +54,16 @@ namespace ignite
             OdbcExpected<bool> Shift();
 
             /**
+             * Check that the following token is the expected one.
+             * Shifts to next token if possible.
+             *
+             * @param typ Token type.
+             * @param expected Expected token. Should be lowercase.
+             * @return @c true if the next token is expected and @c false otherwise.
+             */
+            bool ExpectNextToken(TokenType::Type typ, const char* expected);
+
+            /**
              * Check if the end of data reached.
              *
              * @return @c true if the end of data reached.

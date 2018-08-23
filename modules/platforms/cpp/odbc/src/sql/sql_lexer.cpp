@@ -198,6 +198,18 @@ namespace ignite
             return false;
         }
 
+        bool SqlLexer::ExpectNextToken(TokenType::Type typ, const char* expected)
+        {
+            OdbcExpected<bool> hasNext = Shift();
+
+            if (!hasNext.IsOk() || !*hasNext)
+                return false;
+
+            const SqlToken& token = GetCurrentToken();
+
+            return token.GetType() == typ && token.ToLower() == expected;
+        }
+
         bool SqlLexer::IsEod() const
         {
             return pos >= static_cast<int32_t>(sql.size());
