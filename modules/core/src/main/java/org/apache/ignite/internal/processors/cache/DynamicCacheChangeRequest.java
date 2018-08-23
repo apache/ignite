@@ -68,6 +68,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Restart flag. */
     private boolean restart;
 
+    /** Restart operation id. */
+    private IgniteUuid restartId;
+
     /** Cache active on start or not*/
     private boolean disabledAfterStart;
 
@@ -259,6 +262,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void restart(boolean restart) {
         this.restart = restart;
+    }
+
+    /**
+     * @return Id of restart to allow only initiator start the restarting cache.
+     */
+    public IgniteUuid restartId() {
+        return restartId;
+    }
+
+    /**
+     * @param restartId Id of cache restart requester.
+     */
+    public void restartId(IgniteUuid restartId) {
+        this.restartId = restartId;
     }
 
     /**

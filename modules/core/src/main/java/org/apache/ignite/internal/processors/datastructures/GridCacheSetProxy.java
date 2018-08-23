@@ -17,14 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
-import java.util.Collection;
-import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.internal.GridKernalContext;
@@ -40,6 +32,15 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.NotNull;
+
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Cache set proxy.
@@ -365,7 +366,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
             if (delegate.separated()) {
                 IgniteInternalFuture<Boolean> fut = cctx.kernalContext().cache().dynamicDestroyCache(
-                    cctx.cache().name(), false, true, false);
+                    cctx.cache().name(), false, true, false, null);
 
                 ((GridFutureAdapter)fut).ignoreInterrupts();
 

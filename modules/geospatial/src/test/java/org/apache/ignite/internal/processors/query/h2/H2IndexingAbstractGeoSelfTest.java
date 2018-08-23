@@ -227,7 +227,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
         if (!dynamic)
             cache.destroy();
         else
-            grid.context().cache().dynamicDestroyCache(cache.getName(), true, true, false);
+            grid.context().cache().dynamicDestroyCache(cache.getName(), true, true, false, null);
     }
 
     /**
