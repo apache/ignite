@@ -23,7 +23,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
-import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
+import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 

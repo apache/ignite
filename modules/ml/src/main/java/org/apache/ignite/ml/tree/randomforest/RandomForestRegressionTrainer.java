@@ -31,7 +31,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
+import org.apache.ignite.ml.dataset.impl.bagging.BaggedDatasetPartition;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogram;
 
