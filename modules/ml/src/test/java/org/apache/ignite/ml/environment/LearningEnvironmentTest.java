@@ -33,7 +33,7 @@ import org.apache.ignite.ml.environment.logging.ConsoleLogger;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
+import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainerOld;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 
@@ -79,7 +79,7 @@ public class LearningEnvironmentTest extends GridCommonAbstractTest {
             LearningEnvironmentTest.class.getSimpleName(), () -> {
             IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-            RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
+            RandomForestRegressionTrainerOld trainer = new RandomForestRegressionTrainerOld(13, 4, 101, 0.3, 2, 0);
 
             trainer.setEnvironment(LearningEnvironment.builder()
                 .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)

@@ -5,7 +5,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class TreeNodeTest {
     private final Vector features1 = VectorUtils.of(0., 1.);
@@ -23,8 +23,7 @@ public class TreeNodeTest {
     @Test
     public void testPredictNextIdForLeaf() {
         TreeNode node = new TreeNode(5, 1);
-        node.toLeaf(0);
-        node.setValue(0.5);
+        node.toLeaf(0.5);
 
         assertEquals(TreeNode.Type.LEAF, node.getType());
         assertEquals(-1, node.predictNextNodeKey(features1));
@@ -35,7 +34,6 @@ public class TreeNodeTest {
     public void testPredictNextIdForTree() {
         TreeNode root = new TreeNode(1, 1);
         root.toConditional(0, 0.1);
-        root.setImpurity(0);
 
         assertEquals(TreeNode.Type.CONDITIONAL, root.getType());
         assertEquals(2, root.predictNextNodeKey(features1));
@@ -47,12 +45,14 @@ public class TreeNodeTest {
         TreeNode root = new TreeNode(1, 1);
         List<TreeNode> leaves = root.toConditional(0, 0.1);
         leaves.forEach(leaf -> {
-            leaf.toLeaf(0);
-            leaf.setValue(leaf.getId().nodeId() % 2);
+            leaf.toLeaf(leaf.getId().nodeId() % 2);
         });
 
         assertEquals(TreeNode.Type.CONDITIONAL, root.getType());
-        assertEquals(0.0, root.apply(features1), 0.001);
-        assertEquals(1.0, root.apply(features2), 0.001);
+        assertEquals(0.0, root.predictProba(features1).getValue(), 0.001);
+        assertEquals(1.0, root.predictProba(features1).getProbability(), 0.001);
+
+        assertEquals(1.0, root.predictProba(features2).getValue(), 0.001);
+        assertEquals(1.0, root.predictProba(features2).getProbability(), 0.001);
     }
 }

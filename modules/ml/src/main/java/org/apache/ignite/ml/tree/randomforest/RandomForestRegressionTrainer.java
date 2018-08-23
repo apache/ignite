@@ -17,73 +17,93 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
-import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
+import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
+import org.apache.ignite.ml.tree.randomforest.data.histogram.BucketMeta;
+import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
+import org.apache.ignite.ml.tree.randomforest.data.histogram.MSEHistogram;
 
-/**
- * Random forest regression trainer.
- */
-public class RandomForestRegressionTrainer extends RandomForestTrainer {
-    /**
-     * Constructs new instance of RandomForestRegressionTrainer.
-     *
-     * @param predictionsAggregator Predictions aggregator.
-     * @param featureVectorSize Feature vector size.
-     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
-     * @param ensembleSize Ensemble size.
-     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
-     * @param maxDeep Max decision tree deep.
-     * @param minImpurityDecrease Min impurity decrease.
-     */
-    public RandomForestRegressionTrainer(PredictionsAggregator predictionsAggregator,
-        int featureVectorSize,
-        int maximumFeaturesCntPerMdl,
-        int ensembleSize,
-        double samplePartSizePerMdl,
-        int maxDeep,
-        double minImpurityDecrease) {
-
-        super(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl,
-            ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease);
+public class RandomForestRegressionTrainer extends RandomForestTrainer<MSEHistogram, RandomForestRegressionTrainer> {
+    public RandomForestRegressionTrainer(List<FeatureMeta> meta) {
+        super(meta);
     }
 
-    /**
-     * Constructs new instance of RandomForestRegressionTrainer.
-     *
-     * @param featureVectorSize Feature vector size.
-     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
-     * @param ensembleSize Ensemble size.
-     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
-     * @param maxDeep Max decision tree deep.
-     * @param minImpurityDecrease Min impurity decrease.
-     */
-    public RandomForestRegressionTrainer(int featureVectorSize,
-        int maximumFeaturesCntPerMdl,
-        int ensembleSize,
-        double samplePartSizePerMdl,
-        int maxDeep,
-        double minImpurityDecrease) {
-
-        this(new MeanValuePredictionsAggregator(), featureVectorSize, maximumFeaturesCntPerMdl,
-            ensembleSize, samplePartSizePerMdl, maxDeep, minImpurityDecrease);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected DatasetTrainer<DecisionTreeNode, Double> buildDatasetTrainerForModel() {
-        return new DecisionTreeRegressionTrainer(maxDeep, minImpurityDecrease).withUseIndex(useIndex);
-    }
-
-    /**
-     * Sets useIndex parameter and returns trainer instance.
-     *
-     * @param useIndex Use index.
-     * @return Decision tree trainer.
-     */
-    public RandomForestRegressionTrainer withUseIndex(boolean useIndex) {
-        this.useIndex = useIndex;
+    @Override protected RandomForestRegressionTrainer instance() {
         return this;
+    }
+
+    @Override
+    protected void computeLeafValues(ArrayList<TreeRoot> roots, Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
+        Map<NodeId, TreeNode> leafs = roots.stream().flatMap(r -> r.getLeafs().stream())
+            .collect(Collectors.toMap(TreeNode::getId, n -> n));
+
+        Map<NodeId, IgniteBiTuple<Double, Integer>> stats = dataset.compute(
+            data -> {
+                Map<NodeId, IgniteBiTuple<Double, Integer>> res = new HashMap<>();
+                for (int sampleId = 0; sampleId < roots.size(); sampleId++) {
+                    final int sampleIdConst = sampleId;
+
+                    data.foreach(vec -> {
+                        NodeId leafId = roots.get(sampleIdConst).getNode().predictNextNodeKey(vec.getFeatures());
+                        if (!leafs.containsKey(leafId))
+                            throw new IllegalStateException();
+
+                        if (!res.containsKey(leafId))
+                            res.put(leafId, new IgniteBiTuple<>(0.0, 0));
+
+                        IgniteBiTuple<Double, Integer> t = res.get(leafId);
+                        t.set1(t.get1() + vec.getLabel() * vec.getRepetitionsCounters()[sampleIdConst]);
+                        t.set2(t.get2() + vec.getRepetitionsCounters()[sampleIdConst]);
+                    });
+                }
+
+                return res;
+            },
+            (l, r) -> {
+                if (l == null)
+                    return r;
+                if (r == null)
+                    return l;
+
+                Set<NodeId> keys = new HashSet<>(l.keySet());
+                keys.addAll(r.keySet());
+                for (NodeId key : keys) {
+                    if (!l.containsKey(key))
+                        l.put(key, r.get(key));
+                    else if (r.containsKey(key)) {
+                        IgniteBiTuple<Double, Integer> t1 = l.get(key);
+                        IgniteBiTuple<Double, Integer> t2 = r.get(key);
+                        t1.set1(t1.get1() + t2.get1());
+                        t1.set2(t1.get2() + t2.get2());
+                    }
+                }
+
+                return l;
+            });
+
+        leafs.forEach((id, leaf) -> {
+            IgniteBiTuple<Double, Integer> t = stats.get(id);
+            leaf.setValue(t.get1() / t.get2());
+        });
+    }
+
+    @Override protected ModelsComposition buildComposition(List<TreeRoot> models) {
+        return new ModelsComposition(models, new MeanValuePredictionsAggregator());
+    }
+
+    @Override protected MSEHistogram createImpurityComputer(int sampleId, BucketMeta meta) {
+        return new MSEHistogram(sampleId, meta);
     }
 }

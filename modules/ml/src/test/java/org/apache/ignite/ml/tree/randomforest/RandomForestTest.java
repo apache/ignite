@@ -33,10 +33,10 @@ public class RandomForestTest {
         new FeatureMeta(6, false)
     );
 
-    private RandomForestClassifier rf = new RandomForestClassifier(meta)
+    private RandomForestClassifierTrainer rf = new RandomForestClassifierTrainer(meta)
         .withCountOfTrees(countOfTrees)
         .withSeed(seed)
-        .withFeaturesSelectionStrgy(x -> 4)
+        .withFeaturesCountSelectionStrgy(x -> 4)
         .withMaxDepth(maxDepth)
         .withMinImpurityDelta(minImpDelta)
         .withSubsampleSize(0.1);
@@ -49,10 +49,10 @@ public class RandomForestTest {
 
     @Test(expected = RuntimeException.class)
     public void testCreateFeaturesSubspaceFail() {
-        new RandomForestClassifier(meta)
+        new RandomForestClassifierTrainer(meta)
             .withCountOfTrees(countOfTrees)
             .withSeed(0L)
-            .withFeaturesSelectionStrgy(x -> meta.size() + 1)
+            .withFeaturesCountSelectionStrgy(x -> meta.size() + 1)
             .withMaxDepth(3)
             .withMinImpurityDelta(100.0)
             .withSubsampleSize(0.1)
@@ -74,21 +74,21 @@ public class RandomForestTest {
 
     @Test
     public void testComputeStatsOnPartition() {
-        List<RandomForest.NormalDistributionStats> result = rf.computeStatsOnPartition(partition, meta);
-        RandomForest.NormalDistributionStats[] expected = new RandomForest.NormalDistributionStats[] {
-            new RandomForest.NormalDistributionStats(0, 9, 285, 45, 10),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(2, 11, 505, 65, 10),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(4, 13, 805, 85, 10),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(6, 15, 1185, 105, 10),
+        List<RandomForestTrainer.NormalDistributionStats> result = rf.computeStatsOnPartition(partition, meta);
+        RandomForestTrainer.NormalDistributionStats[] expected = new RandomForestTrainer.NormalDistributionStats[] {
+            new RandomForestTrainer.NormalDistributionStats(0, 9, 285, 45, 10),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(2, 11, 505, 65, 10),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(4, 13, 805, 85, 10),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(6, 15, 1185, 105, 10),
         };
 
         assertEquals(expected.length, result.size());
         for (int i = 0; i < expected.length; i++) {
-            RandomForest.NormalDistributionStats expectedStat = expected[i];
-            RandomForest.NormalDistributionStats resultStat = result.get(i);
+            RandomForestTrainer.NormalDistributionStats expectedStat = expected[i];
+            RandomForestTrainer.NormalDistributionStats resultStat = result.get(i);
             assertEquals(expectedStat.mean(), resultStat.mean(), 0.01);
             assertEquals(expectedStat.variance(), resultStat.variance(), 0.01);
             assertEquals(expectedStat.std(), resultStat.std(), 0.01);
@@ -99,41 +99,41 @@ public class RandomForestTest {
 
     @Test
     public void testReduceStatistics() {
-        List<RandomForest.NormalDistributionStats> left = Arrays.asList(
-            new RandomForest.NormalDistributionStats(0, 9, 285, 45, 10),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(2, 11, 505, 65, 10),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(4, 13, 805, 85, 10),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(6, 15, 1185, 105, 10)
+        List<RandomForestTrainer.NormalDistributionStats> left = Arrays.asList(
+            new RandomForestTrainer.NormalDistributionStats(0, 9, 285, 45, 10),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(2, 11, 505, 65, 10),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(4, 13, 805, 85, 10),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(6, 15, 1185, 105, 10)
         );
 
-        List<RandomForest.NormalDistributionStats> right = Arrays.asList(
-            new RandomForest.NormalDistributionStats(6, 15, 1185, 105, 10),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(4, 13, 805, 85, 10),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(2, 11, 505, 65, 10),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(0, 9, 285, 45, 10)
+        List<RandomForestTrainer.NormalDistributionStats> right = Arrays.asList(
+            new RandomForestTrainer.NormalDistributionStats(6, 15, 1185, 105, 10),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(4, 13, 805, 85, 10),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(2, 11, 505, 65, 10),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(0, 9, 285, 45, 10)
         );
 
-        List<RandomForest.NormalDistributionStats> result = rf.reduceStats(left, right, meta);
-        RandomForest.NormalDistributionStats[] expected = new RandomForest.NormalDistributionStats[] {
-            new RandomForest.NormalDistributionStats(0, 15, 1470, 150, 20),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(2, 13, 1310, 150, 20),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(2, 13, 1310, 150, 20),
-            new RandomForest.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
-            new RandomForest.NormalDistributionStats(0, 15, 1470, 150, 20)
+        List<RandomForestTrainer.NormalDistributionStats> result = rf.reduceStats(left, right, meta);
+        RandomForestTrainer.NormalDistributionStats[] expected = new RandomForestTrainer.NormalDistributionStats[] {
+            new RandomForestTrainer.NormalDistributionStats(0, 15, 1470, 150, 20),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(2, 13, 1310, 150, 20),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(2, 13, 1310, 150, 20),
+            new RandomForestTrainer.NormalDistributionStats(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, 0, 10),
+            new RandomForestTrainer.NormalDistributionStats(0, 15, 1470, 150, 20)
         };
 
         assertEquals(expected.length, result.size());
         for (int i = 0; i < expected.length; i++) {
-            RandomForest.NormalDistributionStats expectedStat = expected[i];
-            RandomForest.NormalDistributionStats resultStat = result.get(i);
+            RandomForestTrainer.NormalDistributionStats expectedStat = expected[i];
+            RandomForestTrainer.NormalDistributionStats resultStat = result.get(i);
             assertEquals(expectedStat.mean(), resultStat.mean(), 0.01);
             assertEquals(expectedStat.variance(), resultStat.variance(), 0.01);
             assertEquals(expectedStat.std(), resultStat.std(), 0.01);

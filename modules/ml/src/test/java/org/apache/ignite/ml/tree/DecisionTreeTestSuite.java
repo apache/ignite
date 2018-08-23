@@ -24,8 +24,8 @@ import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureCalculatorTest;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureTest;
 import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressorTest;
 import org.apache.ignite.ml.tree.impurity.util.StepFunctionTest;
-import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainerTest;
-import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainerTest;
+import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainerTrainerOldTest;
+import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainerOldTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -45,8 +45,8 @@ import org.junit.runners.Suite;
     MSEImpurityMeasureTest.class,
     StepFunctionTest.class,
     SimpleStepFunctionCompressorTest.class,
-    RandomForestClassifierTrainerTest.class,
-    RandomForestRegressionTrainerTest.class
+    RandomForestClassifierTrainerTrainerOldTest.class,
+    RandomForestRegressionTrainerOldTest.class
 })
 public class DecisionTreeTestSuite {
 }
