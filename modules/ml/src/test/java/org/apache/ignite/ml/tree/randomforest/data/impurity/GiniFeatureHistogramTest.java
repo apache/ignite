@@ -97,7 +97,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
 
         NodeSplit catSplit = catFeatureSmpl1.findBestSplit().get();
         NodeSplit contSplit = contFeatureSmpl1.findBestSplit().get();
-        assertEquals(0.0, catSplit.getValue(), 0.01);
+        assertEquals(1.0, catSplit.getValue(), 0.01);
         assertEquals(-0.5, contSplit.getValue(), 0.01);
     }
 
@@ -131,18 +131,18 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         checkBucketIds(contFeatureSmpl1.buckets(), new Integer[] {1, 4, 6, 7, 8});
 
         //categorical feature
-        checkCounters(catFeatureSmpl1.getHistForLabel(1.0), new double[] {7, 2, 1}); //for feature values 0 and 1
+        checkCounters(catFeatureSmpl1.getHistForLabel(1.0), new double[] {3, 2, 6}); //for feature values 0 and 1
         checkBucketIds(catFeatureSmpl1.getHistForLabel(1.0).buckets(), new Integer[] {0, 1, 2});
-        checkCounters(catFeatureSmpl1.getHistForLabel(2.0), new double[] {0, 6, 5});    //for feature value 1
-        checkBucketIds(catFeatureSmpl1.getHistForLabel(2.0).buckets(), new Integer[] {0, 1, 2});
+        checkCounters(catFeatureSmpl1.getHistForLabel(2.0), new double[] {4, 6});    //for feature value 1
+        checkBucketIds(catFeatureSmpl1.getHistForLabel(2.0).buckets(), new Integer[] {0, 1});
         checkCounters(catFeatureSmpl1.getHistForLabel(3.0), new double[] {2});    //for feature value 0
         checkBucketIds(catFeatureSmpl1.getHistForLabel(3.0).buckets(), new Integer[] {0});
 
         //continuous feature
-        checkCounters(contFeatureSmpl1.getHistForLabel(1.0), new double[] {1, 5, 3, 1}); //for feature values 0 and 1
+        checkCounters(contFeatureSmpl1.getHistForLabel(1.0), new double[] {1, 1, 8, 1}); //for feature values 0 and 1
         checkBucketIds(contFeatureSmpl1.getHistForLabel(1.0).buckets(), new Integer[] {1, 4, 6, 8});
-        checkCounters(contFeatureSmpl1.getHistForLabel(2.0), new double[] {1, 5, 5});    //for feature value 1
-        checkBucketIds(contFeatureSmpl1.getHistForLabel(2.0).buckets(), new Integer[] {1, 6, 7});
+        checkCounters(contFeatureSmpl1.getHistForLabel(2.0), new double[] {1, 4, 0, 5});    //for feature value 1
+        checkBucketIds(contFeatureSmpl1.getHistForLabel(2.0).buckets(), new Integer[] {1, 4, 6, 7});
         checkCounters(contFeatureSmpl1.getHistForLabel(3.0), new double[] {2});    //for feature value 0
         checkBucketIds(contFeatureSmpl1.getHistForLabel(3.0).buckets(), new Integer[] {8});
     }
@@ -156,20 +156,20 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
     };
 
     private BaggedVector[] toSplitDataset = new BaggedVector[] {
-        new BaggedVector(VectorUtils.of(0, -1), 1, new int[] {2}),
-        new BaggedVector(VectorUtils.of(0, -1), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(0, -1), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(0, -1), 2, new int[] {2}),
+        new BaggedVector(VectorUtils.of(0, -1), 2, new int[] {1}),
+        new BaggedVector(VectorUtils.of(0, -1), 2, new int[] {1}),
         new BaggedVector(VectorUtils.of(0, 3), 1, new int[] {1}),
         new BaggedVector(VectorUtils.of(0, 1), 2, new int[] {0}),
         new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
         new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
         new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
         new BaggedVector(VectorUtils.of(1, -4), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
         new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
     };
 }
