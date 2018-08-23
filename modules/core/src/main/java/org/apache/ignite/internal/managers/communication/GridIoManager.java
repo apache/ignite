@@ -77,6 +77,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
@@ -158,6 +159,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private static final long IGNITE_STAT_TOO_LONG_PROCESSING =
         IgniteSystemProperties.getLong(
             IgniteSystemProperties.IGNITE_STAT_TOO_LONG_PROCESSING, TimeUnit.MILLISECONDS.toNanos(1000));
+
+    /** */
+    private static final int[] BUCKET_THRESHOLDS = new int[] {1, 10, 30, 50, 100, 200, 400, 750, 1000, 0};
+
+    /** */
+    private static final long BILLION = 1_000_000;
 
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
@@ -903,7 +910,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         // Set common stat handlers.
         addStatHandler(GridNearSingleGetRequest.class, (stat, msg, duration) -> {
-            stat.addKey(msg.key(), msg.cacheId());
+            try {
+                stat.addKey(msg.key(), msg.cacheId());
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed to add key", e);
+            }
         });
         addStatHandler(GridJobExecuteRequest.class, (stat, msg, duration) -> {
             stat.addJob(msg.getTaskClassName(), duration);
@@ -1269,7 +1281,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     MessageStat res = mergeMap.get(entry.getKey());
 
                     if (res == null) {
-                        mergeMap.put(entry.getKey(), (res = new MessageStat()));
+                        mergeMap.put(entry.getKey(), (res = new MessageStat(ctx)));
 
                         avgCntMap.put(entry.getKey(), 1);
 
@@ -1419,7 +1431,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             MessageStat stat = statMap.get(msgCls);
 
             if (stat == null)
-                statMap.put(msgCls, (stat = new MessageStat()));
+                statMap.put(msgCls, (stat = new MessageStat(ctx)));
 
             stat.increment(duration);
 
@@ -3427,12 +3439,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** */
     public static class MessageStat {
         /** */
-        private static final int[] BUCKET_THRESHOLDS = new int[] {1, 10, 30, 50, 100, 200, 400, 750, 1000, 0};
-
-        /** */
-        private static final long BILLION = 1_000_000;
-
-        /** */
         final long[] buckets = new long[10];
 
         /** */
@@ -3449,6 +3455,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         /** */
         long total;
+
+        /** */
+        private final GridKernalContext ctx;
+
+        public MessageStat(GridKernalContext ctx) {
+            this.ctx = ctx;
+        }
 
         /**
          * @param duration Duration.
@@ -3519,9 +3532,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /**
          * @param key Key.
          */
-        public void addKey(KeyCacheObject key, int cacheId) {
+        public void addKey(KeyCacheObject key, int cacheId) throws IgniteCheckedException{
             if (hotKeys.size() >= IGNITE_STAT_HOT_KEYS_MAX_SIZE)
                 return;
+
+            if (ctx != null) {
+                GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
+
+                key.finishUnmarshal(cctx.cacheObjectContext(), null);
+            }
 
             T2<KeyCacheObject, Integer> k0 = new T2<>(key, cacheId);
 
@@ -3556,8 +3575,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             qryExecs.put(qry, totalDuration == null ? duration : totalDuration + duration);
         }
 
-        public static void main(String[] args) {
-            MessageStat stat1 = new MessageStat();
+        public static void main(String[] args) throws IgniteCheckedException {
+            MessageStat stat1 = new MessageStat(null);
 
             for (int i = 0; i < 10; i++)
                 stat1.addKey(new KeyCacheObjectImpl("k" + i, new byte[0], 0), -100000);
@@ -3566,7 +3585,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             stat1.increment(100);
             stat1.increment(200);
 
-            MessageStat stat2 = new MessageStat();
+            MessageStat stat2 = new MessageStat(null);
 
             stat2.increment(100);
             stat2.increment(100);
@@ -3579,7 +3598,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             System.out.println(stat2.rollingAvg);
             System.out.println(stat2.total);
 
-            MessageStat merge = new MessageStat();
+            MessageStat merge = new MessageStat(null);
 
             stat1.merge(merge, 1);
             stat2.merge(merge, 2);
