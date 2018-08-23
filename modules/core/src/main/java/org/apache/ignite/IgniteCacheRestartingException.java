@@ -32,6 +32,9 @@ public class IgniteCacheRestartingException extends IgniteException {
     /** */
     private transient final IgniteFuture<?> restartFut;
 
+    /**
+     * Actual topology version when this exception was thrown.
+     */
     private AffinityTopologyVersion topologyVersion;
 
     /**
@@ -50,7 +53,8 @@ public class IgniteCacheRestartingException extends IgniteException {
     public IgniteCacheRestartingException(
         IgniteFuture<?> restartFut,
         String cacheName,
-        @Nullable Throwable cause) {
+        @Nullable Throwable cause
+    ) {
         super("Cache is restarting:" + cacheName + ", you could wait restart completion with restartFuture", cause);
 
         this.restartFut = restartFut;
@@ -63,10 +67,16 @@ public class IgniteCacheRestartingException extends IgniteException {
         return restartFut;
     }
 
+    /**
+     * @param topologyVersion Actual topology version.
+     */
     public void setTopologyVersion(AffinityTopologyVersion topologyVersion) {
         this.topologyVersion = topologyVersion;
     }
 
+    /**
+     * @return Topology version which was actual on the moment of throwing the exception (on the node which did it).
+     */
     public AffinityTopologyVersion getTopologyVersion() {
         return topologyVersion;
     }

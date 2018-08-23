@@ -6300,7 +6300,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             try {
                 cache = ((IgniteEx) ignite).context().cache().cache(cacheName);
-            } catch (IgniteCacheRestartingException e) {
+            }
+            catch (IgniteCacheRestartingException e) {
                 e.setTopologyVersion(((IgniteEx)ignite).context().cache().context().exchange().lastTopologyFuture().initialVersion());
 
                 throw e;

@@ -3033,8 +3033,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sql,
                 failIfExists,
                 failIfNotStarted,
-                    null,
-                    false,
+                null,
+                false,
                 null);
 
             if (req != null) {
@@ -3085,14 +3085,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @return Future that will be completed when all caches are deployed.
      */
-    public IgniteInternalFuture<?> dynamicStartCaches(Collection<CacheConfiguration> ccfgList, boolean failIfExists,
-        boolean checkThreadTx, boolean disabledAfterStart) {
+    public IgniteInternalFuture<?> dynamicStartCaches(
+        Collection<CacheConfiguration> ccfgList,
+        boolean failIfExists,
+        boolean checkThreadTx,
+        boolean disabledAfterStart
+    ) {
         return dynamicStartCachesByStoredConf(
             ccfgList.stream().map(StoredCacheData::new).collect(Collectors.toList()),
             failIfExists,
             checkThreadTx,
             disabledAfterStart,
-                null);
+            null);
     }
 
     /**
@@ -3196,8 +3200,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param restartId Restart requester id (it'll allow to start this cache only him).
      * @return Future that will be completed when cache is destroyed.
      */
-    public IgniteInternalFuture<Boolean> dynamicDestroyCache(String cacheName, boolean sql, boolean checkThreadTx,
-        boolean restart, IgniteUuid restartId) {
+    public IgniteInternalFuture<Boolean> dynamicDestroyCache(
+        String cacheName,
+        boolean sql,
+        boolean checkThreadTx,
+        boolean restart,
+        IgniteUuid restartId
+    ) {
         assert cacheName != null;
 
         if (checkThreadTx)
@@ -3229,9 +3238,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when cache is destroyed.
      */
     public IgniteInternalFuture<?> dynamicDestroyCaches(
-            Collection<String> cacheNames,
-            boolean checkThreadTx,
-            boolean destroy
+        Collection<String> cacheNames,
+        boolean checkThreadTx,
+        boolean destroy
     ) {
         if (checkThreadTx)
             checkEmptyTransactions();
@@ -4483,16 +4492,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws CacheExistsException if cache exists and failIfExists flag is {@code true}
      */
     private DynamicCacheChangeRequest prepareCacheChangeRequest(
-            @Nullable CacheConfiguration ccfg,
-            String cacheName,
-            @Nullable NearCacheConfiguration nearCfg,
-            CacheType cacheType,
-            boolean sql,
-            boolean failIfExists,
-            boolean failIfNotStarted,
-            IgniteUuid restartId,
-            boolean disabledAfterStart,
-            @Nullable Collection<QueryEntity> qryEntities
+        @Nullable CacheConfiguration ccfg,
+        String cacheName,
+        @Nullable NearCacheConfiguration nearCfg,
+        CacheType cacheType,
+        boolean sql,
+        boolean failIfExists,
+        boolean failIfNotStarted,
+        IgniteUuid restartId,
+        boolean disabledAfterStart,
+        @Nullable Collection<QueryEntity> qryEntities
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 

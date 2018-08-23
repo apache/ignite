@@ -415,7 +415,7 @@ class ClusterCachesInfo {
             requests.add(DynamicCacheChangeRequest.stopRequest(ctx, cacheName, cacheDescr.sql(), true));
         }
 
-        processCacheChangeRequests(exchangeActions, requests, topVer,false);
+        processCacheChangeRequests(exchangeActions, requests, topVer, false);
 
         failMsg.exchangeActions(exchangeActions);
     }
@@ -472,8 +472,8 @@ class ClusterCachesInfo {
         ExchangeActions exchangeActions,
         Collection<DynamicCacheChangeRequest> reqs,
         AffinityTopologyVersion topVer,
-        boolean persistedCfgs) {
-
+        boolean persistedCfgs
+    ) {
         CacheChangeProcessResult res = new CacheChangeProcessResult();
 
         final List<T2<DynamicCacheChangeRequest, AffinityTopologyVersion>> reqsToComplete = new ArrayList<>();
@@ -527,15 +527,15 @@ class ClusterCachesInfo {
      * @param persistedCfgs {@code True} if process start of persisted caches during cluster activation.
      * @param res Accumulator for cache change process results.
      * @param reqsToComplete Accumulator for cache change requests which should be completed after
-     *                       ({@link org.apache.ignite.internal.processors.cache.GridCacheProcessor#pendingFuts}
+     * ({@link org.apache.ignite.internal.processors.cache.GridCacheProcessor#pendingFuts}
      */
     private void processCacheChangeRequest0(
-            DynamicCacheChangeRequest req,
-            ExchangeActions exchangeActions,
-            AffinityTopologyVersion topVer,
-            boolean persistedCfgs,
-            CacheChangeProcessResult res,
-            List<T2<DynamicCacheChangeRequest, AffinityTopologyVersion>> reqsToComplete
+        DynamicCacheChangeRequest req,
+        ExchangeActions exchangeActions,
+        AffinityTopologyVersion topVer,
+        boolean persistedCfgs,
+        CacheChangeProcessResult res,
+        List<T2<DynamicCacheChangeRequest, AffinityTopologyVersion>> reqsToComplete
     ) {
         String cacheName = req.cacheName();
 
@@ -559,11 +559,11 @@ class ClusterCachesInfo {
             boolean proceedFuther = true;
 
             if (restartingCaches.containsKey(cacheName) &&
-                    (req.restartId() == null || !req.restartId().equals(restartingCaches.get(cacheName)))) {
+                (req.restartId() == null || !req.restartId().equals(restartingCaches.get(cacheName)))) {
 
                 if (req.failIfExists()) {
                     ctx.cache().completeCacheStartFuture(req, false,
-                            new CacheExistsException("Failed to start cache (a cache is restarting): " + cacheName));
+                        new CacheExistsException("Failed to start cache (a cache is restarting): " + cacheName));
                 }
 
                 proceedFuther = false;
@@ -584,7 +584,7 @@ class ClusterCachesInfo {
                             waitTopVer = desc.clientCacheStartVersion();
                         else {
                             AffinityTopologyVersion nodeStartVer =
-                                    new AffinityTopologyVersion(ctx.discovery().localNode().order(), 0);
+                                new AffinityTopologyVersion(ctx.discovery().localNode().order(), 0);
 
                             if (desc.startTopologyVersion() != null)
                                 waitTopVer = desc.startTopologyVersion();
@@ -646,10 +646,10 @@ class ClusterCachesInfo {
      * @param desc Dynamic cache descriptor.
      */
     private void processStopCacheRequest(
-            ExchangeActions exchangeActions,
-            DynamicCacheChangeRequest req,
-            String cacheName,
-            DynamicCacheDescriptor desc
+        ExchangeActions exchangeActions,
+        DynamicCacheChangeRequest req,
+        String cacheName,
+        DynamicCacheDescriptor desc
     ) {
         DynamicCacheDescriptor old = registeredCaches.remove(cacheName);
 
@@ -699,9 +699,9 @@ class ClusterCachesInfo {
      * @param req Dynamic cache change request.
      */
     private void processTemplateAddRequest(
-            boolean persistedCfgs,
-            CacheChangeProcessResult res,
-            DynamicCacheChangeRequest req
+        boolean persistedCfgs,
+        CacheChangeProcessResult res,
+        DynamicCacheChangeRequest req
     ) {
         CacheConfiguration ccfg = req.startCacheConfiguration();
 
@@ -738,15 +738,14 @@ class ClusterCachesInfo {
      * @param req Cache change request.
      * @param cacheName Cache name.
      * @param desc Dynamic cache descriptor.
-     *
      * @return True if it is needed to start client cache.
      */
     private boolean processStartAlreadyStartedCacheRequest(
-            AffinityTopologyVersion topVer,
-            boolean persistedCfgs,
-            DynamicCacheChangeRequest req,
-            String cacheName,
-            DynamicCacheDescriptor desc
+        AffinityTopologyVersion topVer,
+        boolean persistedCfgs,
+        DynamicCacheChangeRequest req,
+        String cacheName,
+        DynamicCacheDescriptor desc
     ) {
         assert !persistedCfgs;
         assert req.initiatingNodeId() != null : req;
@@ -782,23 +781,21 @@ class ClusterCachesInfo {
     }
 
     /**
-     *
      * @param exchangeActions Exchange actions to update.
      * @param topVer Topology version.
      * @param persistedCfgs {@code True} if process start of persisted caches during cluster activation.
      * @param res Accumulator for cache change process results.
      * @param req Cache change request.
      * @param cacheName Cache name.
-     *
      * @return True if there was no errors.
      */
     private boolean processStartNewCacheRequest(
-            ExchangeActions exchangeActions,
-            AffinityTopologyVersion topVer,
-            boolean persistedCfgs,
-            CacheChangeProcessResult res,
-            DynamicCacheChangeRequest req,
-            String cacheName
+        ExchangeActions exchangeActions,
+        AffinityTopologyVersion topVer,
+        boolean persistedCfgs,
+        CacheChangeProcessResult res,
+        DynamicCacheChangeRequest req,
+        String cacheName
     ) {
         String conflictErr = checkCacheConflict(req.startCacheConfiguration());
 
@@ -1474,7 +1471,8 @@ class ClusterCachesInfo {
      * @return Exchange action.
      * @throws IgniteCheckedException If configuration validation failed.
      */
-    public ExchangeActions onStateChangeRequest(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer, DiscoveryDataClusterState curState)
+    public ExchangeActions onStateChangeRequest(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer,
+        DiscoveryDataClusterState curState)
         throws IgniteCheckedException {
         ExchangeActions exchangeActions = new ExchangeActions();
 
@@ -1714,7 +1712,7 @@ class ClusterCachesInfo {
 
         //If conflict was detected we don't merge config and we leave existed config.
         if (!hasSchemaPatchConflict && !patchesToApply.isEmpty())
-            for(Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry: patchesToApply.entrySet()){
+            for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
                 if (entry.getKey().applySchemaPatch(entry.getValue()))
                     saveCacheConfiguration(entry.getKey());
             }
@@ -1922,7 +1920,8 @@ class ClusterCachesInfo {
      * @param exchActions Optional exchange actions to update if new group was added.
      * @param startedCacheCfg Started cache configuration.
      */
-    private boolean resolvePersistentFlag(@Nullable ExchangeActions exchActions, CacheConfiguration<?, ?> startedCacheCfg) {
+    private boolean resolvePersistentFlag(@Nullable ExchangeActions exchActions,
+        CacheConfiguration<?, ?> startedCacheCfg) {
         if (!ctx.clientNode()) {
             // On server, we always can determine whether cache is persistent by local storage configuration.
             return CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration());
@@ -2054,6 +2053,7 @@ class ClusterCachesInfo {
 
     /**
      * Returns registered cache descriptors ordered by {@code comparator}
+     *
      * @param comparator Comparator (DIRECT, REVERSE or custom) to order cache descriptors.
      * @return Ordered by comparator cache descriptors.
      */
