@@ -137,14 +137,11 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
         Map<Integer, BucketMeta> histMeta = computeHistogramMeta(meta, dataset);
 
         while (!treesQueue.isEmpty()) {
-            Long start = System.currentTimeMillis();
             Map<NodeId, TreeNode> nodesToLearn = getNodesToLearn(treesQueue);
             Map<NodeId, NodeStatistics> nodesStatistics = dataset.compute(
                 x -> aggregateStatistics(x, roots, histMeta, nodesToLearn),
                 this::reduce
             );
-            Long dt = System.currentTimeMillis() - start;
-            System.out.println(dt);
 
             if (nodesToLearn.size() != nodesStatistics.size())
                 throw new IllegalStateException();
@@ -159,7 +156,7 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
                     treesQueue.addAll(children);
                 }
                 else
-                    cornerNode.toLeaf(Double.NEGATIVE_INFINITY);
+                    cornerNode.toLeaf(Double.NaN);
             }
         }
 
@@ -353,13 +350,11 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
                 if (vector.getRepetitionsCounters()[sampleId] == 0)
                     continue;
 
-                long innerStart = System.currentTimeMillis();
                 TreeRoot root = roots.get(sampleId);
                 NodeId key = root.node.predictNextNodeKey(vector.getFeatures());
                 if (!part.containsKey(key))
                     continue;
 
-                innerStart = System.currentTimeMillis();
                 NodeStatistics statistics = res.get(key);
                 for (Integer featureId : root.getUsedFeatures()) {
                     BucketMeta meta = histMeta.get(featureId);

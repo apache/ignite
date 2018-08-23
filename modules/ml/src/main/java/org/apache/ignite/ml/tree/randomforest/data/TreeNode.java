@@ -28,27 +28,9 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         UNKNOWN, LEAF, CONDITIONAL
     }
 
-    public static class Proba implements Serializable {
-        private double value;
-        private double probability;
-
-        public Proba(double value, double probability) {
-            this.value = value;
-            this.probability = probability;
-        }
-
-        public double getValue() {
-            return value;
-        }
-
-        public double getProbability() {
-            return probability;
-        }
-    }
-
     private final NodeId id;
     private int featureId;
-    private Proba value;
+    private double value;
     private Type type;
     private double impurity;
     private int depth;
@@ -59,27 +41,26 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
 
     public TreeNode(long id, int treeId) {
         this.id = new NodeId(treeId, id);
-        this.value = new Proba(Double.NaN, -1.0);
+        this.value = -1.0;
         this.type = Type.UNKNOWN;
         this.impurity = Double.POSITIVE_INFINITY;
         this.depth = 1;
     }
 
     public Double apply(Vector features) {
-        return predictProba(features).value;
+        return predict(features);
     }
 
-    public Proba predictProba(Vector features) {
+    private double predict(Vector features) {
         assert type != Type.UNKNOWN;
 
-        if (type == Type.LEAF) {
+        if (type == Type.LEAF)
             return value;
-        }
         else {
-            if (features.get(featureId) <= value.value)
-                return left.predictProba(features);
+            if (features.get(featureId) <= value)
+                return left.predict(features);
             else
-                return right.predictProba(features);
+                return right.predict(features);
         }
     }
 
@@ -90,7 +71,7 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
             case LEAF:
                 return id;
             default:
-                if (features.get(featureId) <= value.value)
+                if (features.get(featureId) <= value)
                     return left.predictNextNodeKey(features);
                 else
                     return right.predictNextNodeKey(features);
@@ -101,10 +82,10 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         return id;
     }
 
-    public List<TreeNode> toConditional(double impurity, int featureId, double value) {
+    public List<TreeNode> toConditional(int featureId, double value) {
         assert type == Type.UNKNOWN;
 
-        toLeaf(impurity);
+        toLeaf(value);
         left = new TreeNode(2 * id.nodeId(), id.treeId());
         right = new TreeNode(2 * id.nodeId() + 1, id.treeId());
         this.type = Type.CONDITIONAL;
@@ -116,10 +97,10 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         return Arrays.asList(left, right);
     }
 
-    public void toLeaf(double impurity) {
+    public void toLeaf(double value) {
         assert type == Type.UNKNOWN;
 
-        this.impurity = impurity;
+        this.value = value;
         this.type = Type.LEAF;
 
         this.left = null;
@@ -130,8 +111,12 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         return parent;
     }
 
+    public double getValue() {
+        return value;
+    }
+
     public void setValue(double value) {
-        this.value.value = value;
+        this.value = value;
     }
 
     public Type getType() {

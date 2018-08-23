@@ -150,7 +150,8 @@ public class RandomForestTest {
         assertFalse(rf.needSplit(node, Optional.of(new NodeSplit(0, 0, node.getImpurity() - minImpDelta * 0.5))));
         assertFalse(rf.needSplit(node, Optional.of(new NodeSplit(0, 0, node.getImpurity()))));
 
-        TreeNode child = node.toConditional(1000, 0, 0).get(0);
+        TreeNode child = node.toConditional(0, 0).get(0);
+        child.setImpurity(1000);
         assertFalse(rf.needSplit(child, Optional.of(new NodeSplit(0, 0, child.getImpurity() - minImpDelta * 1.01))));
     }
 }

@@ -71,5 +71,4 @@ public class FeatureHistogram<T> implements Histogram<T, FeatureHistogram<T>>, D
 
         return result;
     }
-
 }

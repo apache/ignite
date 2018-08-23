@@ -31,11 +31,13 @@ public class NodeSplit {
     }
 
     public List<TreeNode> split(TreeNode node) {
-        return node.toConditional(impurity, featureId, value);
+        List<TreeNode> children = node.toConditional(featureId, value);
+        node.setImpurity(impurity);
+        return children;
     }
 
     public void createLeaf(TreeNode node) {
-        node.toLeaf(impurity); //values will be set in last stage if training
+        node.toLeaf(value); //values will be set on last stage if training
     }
 
     public double getImpurity() {
