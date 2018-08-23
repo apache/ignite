@@ -48,6 +48,16 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     }
 
     /**
+     * @param tblName Table name.
+     * @param desc Description.
+     * @param ctx Context.
+     * @param cols Columns.
+     */
+    public SqlAbstractLocalSystemView(String tblName, String desc, GridKernalContext ctx, Column ... cols) {
+        this(tblName, desc, ctx, new String[] {}, cols);
+    }
+
+    /**
      * @param ses Session.
      * @param key Key.
      * @param data Data for each column.
