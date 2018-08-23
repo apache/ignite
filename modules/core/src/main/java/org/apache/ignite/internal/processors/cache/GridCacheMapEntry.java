@@ -35,7 +35,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -81,6 +83,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
@@ -897,7 +900,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         finally {
             if (touch)
-                cctx.evicts().touch(this, cctx.affinity().affinityTopologyVersion());
+                touch(cctx.affinity().affinityTopologyVersion());
         }
     }
 
@@ -1493,6 +1496,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(key, old, version(), keepBinary, this);
 
+                IgniteThread.onEntryProcessorEntered(false);
+
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
 
@@ -1516,6 +1521,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updated = old;
 
                     invokeRes = CacheInvokeResult.fromError(e);
+                }
+                finally {
+                    IgniteThread.onEntryProcessorLeft();
                 }
 
                 if (!entry.modified()) {
@@ -1823,6 +1831,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             CacheInvokeEntry<Object, Object> entry =
                                 new CacheInvokeEntry<>(key, prevVal, version(), keepBinary, this);
 
+                            IgniteThread.onEntryProcessorEntered(true);
+
                             try {
                                 entryProcessor.process(entry, invokeArgs);
 
@@ -1831,6 +1841,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             }
                             catch (Exception ignore) {
                                 evtVal = prevVal;
+                            }
+                            finally {
+                                IgniteThread.onEntryProcessorLeft();
                             }
                         }
                         else
@@ -4335,6 +4348,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public void touch(AffinityTopologyVersion topVer) {
+        context().evicts().touch(this, topVer);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         // Identity comparison left on purpose.
         return o == this;
@@ -5405,6 +5423,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private IgniteBiTuple<Object, Exception> runEntryProcessor(CacheInvokeEntry<Object, Object> invokeEntry) {
             EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
 
+            IgniteThread.onEntryProcessorEntered(true);
+
             try {
                 Object computed = entryProcessor.process(invokeEntry, invokeArgs);
 
@@ -5422,9 +5442,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 return null;
             }
             catch (Exception e) {
+                if (e instanceof UnregisteredClassException || e instanceof UnregisteredBinaryTypeException)
+                    throw (IgniteException) e;
+
                 writeObj = invokeEntry.valObj;
 
                 return new IgniteBiTuple<>(null, e);
+            }
+            finally {
+                IgniteThread.onEntryProcessorLeft();
             }
         }
 
