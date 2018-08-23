@@ -241,7 +241,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             needVer,
             /*keepCacheObjects*/false,
-            opCtx != null && opCtx.recovery(), null);
+            opCtx != null && opCtx.recovery(),
+            null);
 
         fut.init();
 

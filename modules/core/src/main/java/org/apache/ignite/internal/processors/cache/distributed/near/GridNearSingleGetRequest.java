@@ -362,7 +362,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 11:
-                txLbl = reader.readString("label");
+                txLbl = reader.readString("txLbl");
 
                 if(!reader.isLastRead())
                     return false;
@@ -438,7 +438,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeString("label", txLbl))
+                if (!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();

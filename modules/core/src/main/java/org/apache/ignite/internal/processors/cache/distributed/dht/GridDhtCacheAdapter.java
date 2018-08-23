@@ -780,7 +780,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean recovery,
         @Nullable String txLbl
     ) {
-
         return getAllAsync0(keys,
             readerArgs,
             readThrough,
