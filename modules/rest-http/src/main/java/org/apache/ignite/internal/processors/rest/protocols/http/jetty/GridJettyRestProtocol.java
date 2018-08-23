@@ -63,13 +63,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      */
     static {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
-            Properties p = new Properties();
-
-            p.setProperty("org.eclipse.jetty.LEVEL", "WARN");
-            p.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
-            p.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
-
-            StdErrLog.setProperties(p);
+            // See also https://www.eclipse.org/jetty/documentation/9.4.x/configuring-logging.html
+            // It seems that using system properties should be fine.
+            System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+            System.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
+            System.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
 
             try {
                 Class<?> logCls = Class.forName("org.apache.log4j.Logger");
