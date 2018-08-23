@@ -17,84 +17,44 @@
 
 package org.apache.ignite.ml.knn;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /** Tests behaviour of ANNClassificationTest. */
-@RunWith(Parameterized.class)
-public class ANNClassificationTest {
-    /** Number of parts to be tested. */
-    private static final int[] partsToBeTested = new int[]{1, 2, 3, 4, 5, 7, 100};
-
-    /** Fixed size of Dataset. */
-    private static final int AMOUNT_OF_OBSERVATIONS = 1000;
-
-    /** Fixed size of columns in Dataset. */
-    private static final int AMOUNT_OF_FEATURES = 2;
-
-    /** Precision in test checks. */
-    private static final double PRECISION = 1e-2;
-
-    /** Number of partitions. */
-    @Parameterized.Parameter
-    public int parts;
-
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
-    public static Iterable<Integer[]> data() {
-        List<Integer[]> res = new ArrayList<>();
-
-        for (int part : partsToBeTested)
-            res.add(new Integer[]{part});
-
-        return res;
-    }
-
+public class ANNClassificationTest extends TrainerTest {
     /** */
     @Test
-    public void testBinaryClassificationTest() {
-        Map<Integer, double[]> data = new HashMap<>();
+    public void testBinaryClassification() {
+        Map<Integer, double[]> cacheMock = new HashMap<>();
 
-        ThreadLocalRandom rndX = ThreadLocalRandom.current();
-        ThreadLocalRandom rndY = ThreadLocalRandom.current();
-
-        for (int i = 0; i < AMOUNT_OF_OBSERVATIONS; i++) {
-            double x = rndX.nextDouble(500, 600);
-            double y = rndY.nextDouble(500, 600);
-            double[] vec = new double[AMOUNT_OF_FEATURES + 1];
-            vec[0] = 0; // assign label.
-            vec[1] = x;
-            vec[2] = y;
-            data.put(i, vec);
-        }
-
-        for (int i = AMOUNT_OF_OBSERVATIONS; i < AMOUNT_OF_OBSERVATIONS * 2; i++) {
-            double x = rndX.nextDouble(-600, -500);
-            double y = rndY.nextDouble(-600, -500);
-            double[] vec = new double[AMOUNT_OF_FEATURES + 1];
-            vec[0] = 1; // assign label.
-            vec[1] = x;
-            vec[2] = y;
-            data.put(i, vec);
-        }
+        for (int i = 0; i < twoClusters.length; i++)
+            cacheMock.put(i, twoClusters[i]);
 
         ANNClassificationTrainer trainer = new ANNClassificationTrainer()
-            .withK(10);
+            .withK(10)
+            .withMaxIterations(10)
+            .withEpsilon(1e-4)
+            .withDistance(new EuclideanDistance())
+            .withSeed(1234L);
+
+        Assert.assertEquals(10, trainer.getK());
+        Assert.assertEquals(10, trainer.getMaxIterations());
+        TestUtils.assertEquals(1e-4, trainer.getEpsilon(), PRECISION);
+        Assert.assertEquals(new EuclideanDistance(), trainer.getDistance());
+        Assert.assertEquals(1234L, trainer.getSeed());
 
         NNClassificationModel mdl = trainer.fit(
-            data,
+            cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
@@ -104,5 +64,11 @@ public class ANNClassificationTest {
 
         TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(550, 550)), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(-550, -550)), PRECISION);
+
+        Assert.assertNotNull(((ANNClassificationModel) mdl).getCandidates());
+
+        Assert.assertTrue(mdl.toString().contains(NNStrategy.SIMPLE.name()));
+        Assert.assertTrue(mdl.toString(true).contains(NNStrategy.SIMPLE.name()));
+        Assert.assertTrue(mdl.toString(false).contains(NNStrategy.SIMPLE.name()));
     }
 }

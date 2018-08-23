@@ -37,7 +37,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -900,7 +900,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         finally {
             if (touch)
-                cctx.evicts().touch(this, cctx.affinity().affinityTopologyVersion());
+                touch(cctx.affinity().affinityTopologyVersion());
         }
     }
 
@@ -4345,6 +4345,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public boolean lockedByCurrentThread() {
         return lock.isHeldByCurrentThread();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void touch(AffinityTopologyVersion topVer) {
+        context().evicts().touch(this, topVer);
     }
 
     /** {@inheritDoc} */

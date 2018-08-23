@@ -77,7 +77,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -563,6 +563,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (currHnd != null)
                 currHnd.close(false);
 
+            if (walSegmentSyncWorker != null)
+                walSegmentSyncWorker.shutdown();
+
             if (walWriter != null)
                 walWriter.shutdown();
 
@@ -574,9 +577,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (decompressor != null)
                 decompressor.shutdown();
-
-            if (walSegmentSyncWorker != null)
-                walSegmentSyncWorker.shutdown();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd.fileIO, e);

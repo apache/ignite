@@ -67,14 +67,6 @@
     }
 }
 
-.modal .modal-content {
-    background-color: $gray-lighter;
-
-    .input-tip {
-        padding-top: 1px;
-    }
-}
-
 .modal .modal-content .modal-header {
     background-color: $ignite-background-color;
     text-align: center;
@@ -222,4 +214,23 @@
             }
         }
     }
+}
+
+.modal-footer {
+    display: flex;
+    align-items: center;
+
+    > div {
+        display: flex;
+        flex: 1;
+
+        &:last-child {
+            flex: 1;
+            justify-content: flex-end;
+        }
+    }
+}
+
+.modal--wide .modal-dialog {
+    width: 900px;
 }

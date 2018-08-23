@@ -18,15 +18,13 @@
 package org.apache.ignite.examples.ml.svm.binary;
 
 import java.util.Arrays;
-import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.util.TestCache;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
@@ -34,9 +32,18 @@ import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run SVM binary-class classification model over distributed dataset.
- *
- * @see SVMLinearBinaryClassificationModel
+ * Run SVM binary-class classification model ({@link SVMLinearBinaryClassificationModel}) over distributed dataset.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (based on the
+ * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
+ * <p>
+ * After that it trains the model based on the specified data using KMeans algorithm.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
+ * does this point belong to, compares prediction to expected outcome (ground truth), and builds
+ * <a href="https://en.wikipedia.org/wiki/Confusion_matrix">confusion matrix</a>.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class SVMBinaryClassificationExample {
     /** Run example. */
@@ -49,7 +56,7 @@ public class SVMBinaryClassificationExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 SVMBinaryClassificationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
 
@@ -99,32 +106,14 @@ public class SVMBinaryClassificationExample {
                 }
 
                 System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
+
+                System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
             });
 
             igniteThread.start();
             igniteThread.join();
         }
     }
-
-    /**
-     * Fills cache with data and returns it.
-     *
-     * @param ignite Ignite instance.
-     * @return Filled Ignite Cache.
-     */
-    private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
-        CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-        IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
-
-        for (int i = 0; i < data.length; i++)
-            cache.put(i, data[i]);
-
-        return cache;
-    }
-
 
     /** The 1st and 2nd classes from the Iris dataset. */
     private static final double[][] data = {
