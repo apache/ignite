@@ -580,9 +580,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             onError(tx.rollbackException());
 
             /** Should wait until {@link mappings} are ready before continuing with async rollback
-             * or some primary nodes might not receive tx finish messages because of race. */
+             * or some primary nodes might not receive tx finish messages because of race.
+             * If prepare phase has not started waiting is not necessary.
+             */
             synchronized (this) {
-                while (!mappingsReady)
+                while (!mappingsReady && tx.currentPrepareFuture() != null)
                     try {
                         wait();
                     }
