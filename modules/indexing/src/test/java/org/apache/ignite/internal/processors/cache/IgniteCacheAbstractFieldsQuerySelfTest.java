@@ -352,7 +352,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                 }
                 else if (DEFAULT_CACHE_NAME.equals(meta.cacheName()) || noOpCache.getName().equals(meta.cacheName()))
                     assertTrue("Invalid types size", types.isEmpty());
-                else
+                else if (!"cacheWithCustomKeyPrecision".equalsIgnoreCase(meta.cacheName()))
                     fail("Unknown cache: " + meta.cacheName());
             }
         }
