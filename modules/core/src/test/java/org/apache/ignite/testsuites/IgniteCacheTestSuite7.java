@@ -27,18 +27,19 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationProces
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
-import org.apache.ignite.internal.processors.cache.CacheMetricsManageTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
 
 /**
  * Test suite.
@@ -58,7 +59,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
-        TestSuite suite = new TestSuite("IgniteCache Test Suite part 7");
+        TestSuite suite = new TestSuite("IgniteCache With Persistence Test Suite");
 
         suite.addTestSuite(CheckpointBufferDeadlockTest.class);
 
@@ -83,16 +84,12 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
 
         suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
-        suite.addTestSuite(CacheMetricsManageTest.class);
         suite.addTestSuite(PageEvictionMultinodeMixedRegionsTest.class);
 
         suite.addTestSuite(IgniteDynamicCacheStartFailWithPersistenceTest.class);
 
         suite.addTestSuite(TxWithSmallTimeoutAndContentionOneKeyTest.class);
 
-        suite.addTestSuite(CacheRentingStateRepairTest.class);
-
-        suite.addTestSuite(TransactionIntegrityWithPrimaryIndexCorruptionTest.class);
         suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
 
         return suite;
