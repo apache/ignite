@@ -195,7 +195,7 @@ public class StripedExecutor implements ExecutorService {
         for (int i = 0; i < stripes.length; i++) {
             Stripe stripe = stripes[i];
 
-            if (!stripe.contHist.isEmpty() || !stripe.taskHist.isEmpty()) {
+            if (!stripe.contHist.isEmpty()) {
                 GridStringBuilder sb = new GridStringBuilder();
 
                 sb.a(">>> Possible contention in striped pool.").a(U.nl())
@@ -212,16 +212,6 @@ public class StripedExecutor implements ExecutorService {
                                     .a("runnables: ").a(snap.message()).a(U.nl());
                 });
 
-//                stripe.taskHist.descendingMap().values().stream().limit(5)
-//                        .forEach(snap -> {
-//                                sb.a("  ").a(LocalDateTime.ofInstant(
-//                                            Instant.ofEpochMilli(snap.timestamp()),
-//                                            sysZoneId).format(formatter))
-//                                        .a(" ")
-//                                        .a("task duration: ").a(TimeUnit.NANOSECONDS.toMillis(snap.duration())).a("ms ")
-//                                        .a("runnable: ").a(snap.message()).a(U.nl());
-//                });
-
                 String msg = sb.toString();
 
                 U.warn(log, msg);
@@ -231,8 +221,6 @@ public class StripedExecutor implements ExecutorService {
                     sb);
 
                 stripe.contHist.clear();
-
-                //stripe.taskHist.clear();
             }
         }
     }
@@ -524,72 +512,21 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
-     *
-     */
-    private static class StripeTaskSnap {
-        /** */
-        long ts;
-
-        /** */
-        long duration;
-
-        /** */
-        String msg;
-
-        /**
-         * @param ts Timestamp.
-         * @param duration In nanos.
-         * @param msg Message.
-         */
-        StripeTaskSnap(long ts, long duration, String msg) {
-            this.ts = ts;
-            this.duration = duration;
-            this.msg = msg;
-        }
-
-        /**
-         * @return Timestamp.
-         */
-        public long timestamp() {
-            return ts;
-        }
-
-        /**
-         * @return Duration in nanos.
-         */
-        public long duration() {
-            return duration;
-        }
-
-        /**
-         * @return Message.
-         */
-        public String message() {
-            return msg;
-        }
-    }
-
-    /**
      * Stripe.
      */
     private static abstract class Stripe extends GridWorker {
+        /** */
         private static final int IGNITE_STRIPE_QUEUE_THRESHOLD =
                 IgniteSystemProperties.getInteger(
                         IgniteSystemProperties.IGNITE_STRIPE_QUEUE_THRESHOLD, 10);
 
+        /** */
         private static final int IGNITE_STRIPE_MAX_CONTENTION_HISTORY_SIZE =
                 IgniteSystemProperties.getInteger(
                         IgniteSystemProperties.IGNITE_STRIPE_MAX_CONTENTION_HISTORY_SIZE, 1000);
 
-        private static final long IGNITE_STRIPE_TASK_LONG_EXECUTION_THRESHOLD =
-                IgniteSystemProperties.getInteger(
-                        IgniteSystemProperties.IGNITE_STRIPE_TASK_LONG_EXECUTION_THRESHOLD, 1000) * 1_000_000L;
-
         /** */
         ConcurrentNavigableMap<Integer, List<StripeSnap>> contHist = new ConcurrentSkipListMap<>();
-
-        /** */
-        ConcurrentNavigableMap<Long, StripeTaskSnap> taskHist = new ConcurrentSkipListMap<>();
 
         /** */
         private final String igniteInstanceName;
@@ -663,16 +600,7 @@ public class StripedExecutor implements ExecutorService {
                         active = true;
 
                         try {
-                            long startMillis = System.currentTimeMillis();
-                            long start = System.nanoTime();
                             cmd.run();
-                            long duration = System.nanoTime() - start;
-                            if (duration >= IGNITE_STRIPE_TASK_LONG_EXECUTION_THRESHOLD) {
-                                taskHist.put(duration, new StripeTaskSnap(startMillis, duration, cmd.toString()));
-
-                                if (taskHist.size() > IGNITE_STRIPE_MAX_CONTENTION_HISTORY_SIZE)
-                                    taskHist.remove(taskHist.firstKey());
-                            }
                         }
                         finally {
                             active = false;
@@ -707,7 +635,7 @@ public class StripedExecutor implements ExecutorService {
         void execute(Runnable cmd) {
             int qSz = queueSize();
             if (qSz >= IGNITE_STRIPE_QUEUE_THRESHOLD) {
-                long snapTime = System.currentTimeMillis();
+                long snapTime = U.currentTimeMillis();
 
                 contHist.computeIfAbsent(qSz, k -> Collections.synchronizedList(new ArrayList<>()))
                         .add(new StripeSnap(snapTime, qSz, makeSnapMessage()));

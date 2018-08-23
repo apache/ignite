@@ -19,6 +19,10 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,7 +56,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -90,12 +93,11 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -151,6 +153,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private static final long IGNITE_STAT_QUERY_MAX_SIZE =
         IgniteSystemProperties.getInteger(
             IgniteSystemProperties.IGNITE_STAT_QUERY_MAX_SIZE, 100);
+
+    /** */
+    private static final long IGNITE_STAT_TOO_LONG_PROCESSING =
+        IgniteSystemProperties.getLong(
+            IgniteSystemProperties.IGNITE_STAT_TOO_LONG_PROCESSING, TimeUnit.MILLISECONDS.toNanos(1000));
 
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
@@ -1120,16 +1127,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final byte plc,
         final IgniteRunnable msgC
     ) throws IgniteCheckedException {
+        final long enqueueTime = System.nanoTime();
+
+        final long startTime = U.currentTimeMillis();
+
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
                     threadProcessingMessage(true, msgC);
 
-                    long t1 = System.nanoTime();
-
                     processRegularMessage0(msg, nodeId);
 
-                    logMessageProcessingTime(msg, System.nanoTime() - t1);
+                    logMessageProcessingTime(msg, System.nanoTime() - enqueueTime, startTime);
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1211,7 +1220,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private ThreadLocal<Map<Class<? extends Message>, MessageStat>> locStatHolder = new ThreadLocal<>();
 
     /** */
-    private Map<Thread, Map<Class<? extends Message>, MessageStat>> sharedStats = new HashMap<>();
+    private ThreadLocal<List<T3<Long, Long, String>>> slowMsgHolder = new ThreadLocal<>();
+
+    /** */
+    private final Map<Thread, Map<Class<? extends Message>, MessageStat>> sharedStats = new HashMap<>();
+
+    /** */
+    private final Map<Thread, List<T3<Long, Long, String>>> sharedSlowMsgs = new HashMap<>();
 
     /** Needed for correct rolling average calculation. */
     private Map<Class<? extends Message>, Integer> avgCntMap = new HashMap<>();
@@ -1331,6 +1346,38 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         U.warn(log, sb.toString());
 
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        ZoneId sysZoneId = ZoneId.systemDefault();
+
+        sb.setLength(0);
+
+        Set<Entry<Thread, List<T3<Long, Long, String>>>> entries = sharedSlowMsgs.entrySet();
+
+        for (Entry<Thread, List<T3<Long, Long, String>>> entry : entries) {
+            List<T3<Long, Long, String>> messages = entry.getValue();
+
+            List<T3<Long, Long, String>> cp;
+
+            synchronized (messages) {
+                cp = new ArrayList<>(messages);
+
+                messages.clear();
+            }
+
+            for (T3<Long, Long, String> message : cp) {
+                sb.a(">>><DBG> Slow message: enqTime=").a(LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(message.get1()),
+                    sysZoneId).format(formatter)).
+                    a(", duration=").
+                    a(TimeUnit.NANOSECONDS.toMillis(message.get2())).
+                    a("ms, message=").
+                    a(message.get3()).a(U.nl());
+
+            }
+        }
+
+        U.warn(log, sb.toString());
+
         return mergeMap;
     }
 
@@ -1338,7 +1385,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param msg Message.
      * @param duration Duration.
      */
-    private void logMessageProcessingTime(GridIoMessage msg, long duration) {
+    private void logMessageProcessingTime(GridIoMessage msg, long duration, long startTime) {
         if (ctx.clientNode())
             return;
 
@@ -1347,7 +1394,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (statMap == null) {
             locStatHolder.set(statMap = new HashMap<>());
 
-            sharedStats.put(Thread.currentThread(), statMap);
+            synchronized (sharedStats) {
+                sharedStats.put(Thread.currentThread(), statMap);
+            }
+        }
+
+        List<T3<Long, Long, String>> messages = slowMsgHolder.get();
+
+        if (messages == null) {
+            slowMsgHolder.set(messages = new ArrayList<>());
+
+            synchronized (sharedSlowMsgs) {
+                sharedSlowMsgs.put(Thread.currentThread(), messages);
+            }
         }
 
         Message msg0 = msg.message();
@@ -1369,8 +1428,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     clo.apply(stat, msg0, duration);
                 }
                 catch (Throwable e) {
-                    log.error("Failed to apply stat closure", e);
+                    log.error("Failed to apply stat closure: msgCls=" + msgCls.getSimpleName(), e);
                 }
+        }
+
+        synchronized (messages) {
+            if (duration > IGNITE_STAT_TOO_LONG_PROCESSING) {
+                try {
+                    messages.add(new T3<>(startTime, duration, msg0.toString()));
+                }
+                catch (Throwable e) {
+                    log.error("Failed to add slow message: msgCls=" + msgCls.getSimpleName(), e);
+                }
+            }
         }
     }
 

@@ -778,6 +778,10 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_MESSAGE_STATS =
         "IGNITE_ENABLE_MESSAGE_STATS";
 
+    /** */
+    public static final String IGNITE_STAT_TOO_LONG_PROCESSING =
+        "IGNITE_STAT_TOO_LONG_PROCESSING";
+
     /**
      * If this property is set, then Ignite will use Async File IO factory by default.
      */

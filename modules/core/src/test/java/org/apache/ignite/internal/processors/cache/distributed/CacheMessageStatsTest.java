@@ -93,6 +93,7 @@ public class CacheMessageStatsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_MESSAGE_STATS, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_STAT_TOO_LONG_PROCESSING, "0");
 
         cleanPersistenceDir();
 
@@ -106,6 +107,7 @@ public class CacheMessageStatsTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
 
         System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_MESSAGE_STATS);
+        System.clearProperty(IgniteSystemProperties.IGNITE_STAT_TOO_LONG_PROCESSING);
 
         stopAllGrids();
 
