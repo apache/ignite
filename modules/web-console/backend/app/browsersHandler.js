@@ -236,7 +236,7 @@ module.exports = {
                 this.registerVisorTask('toggleClusterState', internalVisor('misc.VisorChangeGridActiveStateTask'), internalVisor('misc.VisorChangeGridActiveStateTaskArg'));
 
                 // Return command result from grid to browser.
-                sock.on('node:visor', ({clusterId, params = {}, credentials} = {}, cb) => {
+                sock.on('node:visor', ({clusterId, params, credentials} = {}, cb) => {
                     if (_.isNil(clusterId) || _.isNil(params))
                         return cb('Invalid format of message: "node:visor"');
 
