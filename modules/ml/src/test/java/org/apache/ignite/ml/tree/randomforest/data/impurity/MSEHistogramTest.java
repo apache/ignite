@@ -1,11 +1,11 @@
-package org.apache.ignite.ml.tree.randomforest.data.histogram;
+package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
+import org.apache.ignite.ml.dataset.feature.BucketMeta;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class MSEHistogramTest extends ImpurityHistogramTest {
     private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta(0, true));

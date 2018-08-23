@@ -15,22 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.randomforest.data.histogram;
+package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
-import java.util.Set;
-import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
+import java.util.Optional;
+import org.apache.ignite.ml.dataset.feature.Histogram;
+import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 
-import static org.junit.Assert.assertArrayEquals;
-
-public class ImpurityHistogramTest {
-    protected void checkBucketIds(Set<Integer> bucketIdsSet, Integer[] expected) {
-        Integer[] bucketIds = new Integer[bucketIdsSet.size()];
-        bucketIdsSet.toArray(bucketIds);
-        assertArrayEquals(expected, bucketIds);
-    }
-
-    protected void checkCounters(FeatureHistogram<BaggedVector> hist, double[] expected) {
-        double[] counters = hist.buckets().stream().mapToDouble(x -> hist.get(x).get()).toArray();
-        assertArrayEquals(expected, counters, 0.01);
-    }
+public interface ImpurityComputer<T, H extends Histogram<T, H>> extends Histogram<T, H> {
+    public Optional<NodeSplit> findBestSplit();
 }

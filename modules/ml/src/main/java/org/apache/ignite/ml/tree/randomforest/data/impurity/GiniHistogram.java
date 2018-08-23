@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.randomforest.data.histogram;
+package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,7 +26,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import org.apache.ignite.ml.dataset.feature.BucketMeta;
+import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
@@ -79,7 +80,7 @@ public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogr
         List<TreeMap<Integer, Double>> distributions = hists.stream().map(FeatureHistogram::computeDistributionFunction)
             .collect(Collectors.toList());
         double[] totalCounts = distributions.stream()
-            .mapToDouble(x -> x.isEmpty() ? 0.0 : x.lastEntry().getValue()) //TODO: надо проверить что это вообще валидно
+            .mapToDouble(x -> x.isEmpty() ? 0.0 : x.lastEntry().getValue())
             .toArray();
 
         Map<Integer, Double> lastLeftValues = new HashMap<>();

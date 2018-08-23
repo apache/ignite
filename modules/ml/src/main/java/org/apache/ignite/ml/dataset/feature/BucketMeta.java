@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.randomforest.data.histogram;
+package org.apache.ignite.ml.dataset.feature;
 
 public class BucketMeta {
     private final FeatureMeta featureMeta;
@@ -46,14 +46,6 @@ public class BucketMeta {
 
     public void setBucketSize(double bucketSize) {
         this.bucketSize = bucketSize;
-    }
-
-    public double getBucketSize() {
-        return bucketSize;
-    }
-
-    public double getMinValue() {
-        return minValue;
     }
 
     public FeatureMeta getFeatureMeta() {

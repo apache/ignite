@@ -1,8 +1,7 @@
-package org.apache.ignite.ml.tree.randomforest.data.histogram;
+package org.apache.ignite.ml.dataset.feature;
 
 import java.util.Optional;
 import java.util.TreeMap;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureHistogram;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -28,12 +28,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.feature.BucketMeta;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.BucketMeta;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.MSEHistogram;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogram;
 
 public class RandomForestRegressionTrainer extends RandomForestTrainer<MSEHistogram, RandomForestRegressionTrainer> {
     public RandomForestRegressionTrainer(List<FeatureMeta> meta) {

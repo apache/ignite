@@ -15,10 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.randomforest.data.histogram;
+package org.apache.ignite.ml.dataset.feature;
 
-import java.util.TreeMap;
+import java.util.Optional;
+import java.util.Set;
 
-public interface DistributionComputer {
-    public TreeMap<Integer, Double> computeDistributionFunction();
+public interface Histogram<T, H extends Histogram<T, H>> {
+    public void addElement(T value);
+
+    public void addHist(H other);
+
+    public Set<Integer> buckets();
+
+    public Optional<Double> get(Integer bucket);
 }

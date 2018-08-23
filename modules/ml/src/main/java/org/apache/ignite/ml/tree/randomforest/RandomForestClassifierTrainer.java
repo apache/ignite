@@ -28,14 +28,14 @@ import java.util.stream.Collectors;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.feature.BucketMeta;
+import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.BucketMeta;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureHistogram;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.GiniHistogram;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogram;
 
 public class RandomForestClassifierTrainer extends RandomForestTrainer<GiniHistogram, RandomForestClassifierTrainer> {
     private Map<Double, Integer> lblMapping = new HashMap<>();

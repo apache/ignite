@@ -36,6 +36,8 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.BucketMeta;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -47,9 +49,7 @@ import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.BucketMeta;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.ImpurityComputer;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityComputer;
 
 public abstract class RandomForestTrainer<S extends ImpurityComputer<BaggedVector, S>, T extends RandomForestTrainer<S, T>>
     extends DatasetTrainer<ModelsComposition, Double> {

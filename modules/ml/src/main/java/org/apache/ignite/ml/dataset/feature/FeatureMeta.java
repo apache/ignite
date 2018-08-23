@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.randomforest.data.histogram;
+package org.apache.ignite.ml.dataset.feature;
 
 public class FeatureMeta {
     private final int featureId;

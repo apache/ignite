@@ -4,12 +4,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedDatasetPartition;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

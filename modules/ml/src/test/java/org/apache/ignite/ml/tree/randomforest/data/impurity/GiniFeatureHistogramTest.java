@@ -1,7 +1,9 @@
-package org.apache.ignite.ml.tree.randomforest.data.histogram;
+package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.dataset.feature.BucketMeta;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.data.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;

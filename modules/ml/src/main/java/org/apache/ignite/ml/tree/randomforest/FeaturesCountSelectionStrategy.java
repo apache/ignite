@@ -18,8 +18,8 @@
 package org.apache.ignite.ml.tree.randomforest;
 
 import java.util.List;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
 
 public class FeaturesCountSelectionStrategy {
     public static IgniteFunction<List<FeatureMeta>, Integer> SQRT = (List<FeatureMeta> meta) -> {
