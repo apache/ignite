@@ -17,28 +17,24 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.impl.bagging.BaggedDatasetPartition;
 import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
-import org.apache.ignite.ml.tree.randomforest.data.NodeId;
-import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogram;
 
-public class RandomForestClassifierTrainer extends RandomForestTrainer<GiniHistogram, RandomForestClassifierTrainer> {
+public class RandomForestClassifierTrainer extends RandomForestTrainer<FeatureHistogram<BaggedVector>, GiniHistogram, RandomForestClassifierTrainer> {
     private Map<Double, Integer> lblMapping = new HashMap<>();
 
     public RandomForestClassifierTrainer(List<FeatureMeta> meta) {
@@ -84,64 +80,32 @@ public class RandomForestClassifierTrainer extends RandomForestTrainer<GiniHisto
         return new GiniHistogram(sampleId, lblMapping, meta);
     }
 
-    @Override protected void computeLeafValues(ArrayList<TreeRoot> roots,
-        Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
+    @Override protected void addElementToLeafStat(FeatureHistogram<BaggedVector> leafStatAggr, BaggedVector vec, int sampleId) {
+        leafStatAggr.addElement(vec);
+    }
 
-        Map<NodeId, TreeNode> leafs = roots.stream().flatMap(r -> r.getLeafs().stream())
-            .collect(Collectors.toMap(TreeNode::getId, n -> n));
+    @Override protected FeatureHistogram<BaggedVector> mergeLeafStats(FeatureHistogram<BaggedVector> leafStatAggr1,
+        FeatureHistogram<BaggedVector> leafStatAggr2) {
 
-        Map<NodeId, FeatureHistogram<BaggedVector>> stats = dataset.compute(
-            data -> {
-                Map<NodeId, FeatureHistogram<BaggedVector>> res = new HashMap<>();
-                for (int sampleId = 0; sampleId < roots.size(); sampleId++) {
-                    final int sampleIdConst = sampleId;
+        leafStatAggr1.addHist(leafStatAggr2);
+        return leafStatAggr1;
+    }
 
-                    data.foreach(vec -> {
-                        NodeId leafId = roots.get(sampleIdConst).getNode().predictNextNodeKey(vec.getFeatures());
-                        if (!leafs.containsKey(leafId))
-                            throw new IllegalStateException();
+    @Override protected FeatureHistogram<BaggedVector> createLeafStatsAggregator(int sampleId) {
+        return new FeatureHistogram<>(
+            x -> lblMapping.get(x.getLabel()),
+            x -> (double)x.getRepetitionsCounters()[sampleId]
+        );
+    }
 
-                        if (!res.containsKey(leafId)) {
-                            res.put(leafId, new FeatureHistogram<>(
-                                x -> lblMapping.get(x.getLabel()),
-                                x -> (double)x.getRepetitionsCounters()[sampleIdConst])
-                            );
-                        }
+    @Override protected double computeLeafValue(FeatureHistogram<BaggedVector> stat) {
+        Integer bucketId = stat.buckets().stream()
+            .max(Comparator.comparing(b -> stat.get(b).orElse(0.0)))
+            .get();
 
-                        res.get(leafId).addElement(vec);
-                    });
-                }
-
-                return res;
-            },
-            (l, r) -> {
-                if (l == null)
-                    return r;
-                if (r == null)
-                    return l;
-
-                Set<NodeId> keys = new HashSet<>(l.keySet());
-                keys.addAll(r.keySet());
-                for (NodeId key : keys) {
-                    if (!l.containsKey(key))
-                        l.put(key, r.get(key));
-                    else if (r.containsKey(key))
-                        l.get(key).addHist(r.get(key));
-                }
-
-                return l;
-            });
-
-        leafs.forEach((id, leaf) -> {
-            FeatureHistogram<BaggedVector> histogram = stats.get(id);
-            Integer bucketId = histogram.buckets().stream()
-                .max(Comparator.comparing(b -> histogram.get(b).orElse(0.0)))
-                .get();
-            Double lb = lblMapping.entrySet().stream()
-                .filter(x -> x.getValue().equals(bucketId))
-                .findFirst()
-                .get().getKey();
-            leaf.setValue(lb);
-        });
+        return lblMapping.entrySet().stream()
+            .filter(x -> x.getValue().equals(bucketId))
+            .findFirst()
+            .get().getKey();
     }
 }

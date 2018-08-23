@@ -53,7 +53,7 @@ import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityComputer;
 
-public abstract class RandomForestTrainer<S extends ImpurityComputer<BaggedVector, S>, T extends RandomForestTrainer<S, T>>
+public abstract class RandomForestTrainer<LeafStatsAggregator, S extends ImpurityComputer<BaggedVector, S>, T extends RandomForestTrainer<LeafStatsAggregator, S, T>>
     extends DatasetTrainer<ModelsComposition, Double> {
 
     public static final double BUCKET_SIZE_FACTOR = (1 / 10.0);
@@ -65,6 +65,7 @@ public abstract class RandomForestTrainer<S extends ImpurityComputer<BaggedVecto
     private int featuresPerTree;
     private Random random;
     private long seed;
+    private IgniteFunction<Queue<TreeNode>, List<TreeNode>> nodesToLearnSelectionStrgy;
 
     public RandomForestTrainer(List<FeatureMeta> meta) {
         this.meta = meta;
@@ -74,6 +75,7 @@ public abstract class RandomForestTrainer<S extends ImpurityComputer<BaggedVecto
         this.minImpurityDelta = 0.0;
         this.featuresPerTree = FeaturesCountSelectionStrategy.ALL.apply(meta);
         this.random = new Random(System.currentTimeMillis());
+        this.nodesToLearnSelectionStrgy = this::defaultNodesToLearnSelectionStrgy;
     }
 
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
@@ -122,6 +124,11 @@ public abstract class RandomForestTrainer<S extends ImpurityComputer<BaggedVecto
         return instance();
     }
 
+    public T withNodesToLearnSelectionStrgy(IgniteFunction<Queue<TreeNode>, List<TreeNode>> strgy) {
+        this.nodesToLearnSelectionStrgy = strgy;
+        return instance();
+    }
+
     public T withSeed(long seed) {
         this.seed = seed;
         this.random = new Random(seed);
@@ -137,14 +144,11 @@ public abstract class RandomForestTrainer<S extends ImpurityComputer<BaggedVecto
         Map<Integer, BucketMeta> histMeta = computeHistogramMeta(meta, dataset);
 
         while (!treesQueue.isEmpty()) {
-            Long start = System.currentTimeMillis();
             Map<NodeId, TreeNode> nodesToLearn = getNodesToLearn(treesQueue);
             Map<NodeId, NodeStatistics> nodesStatistics = dataset.compute(
                 x -> aggregateStatistics(x, roots, histMeta, nodesToLearn),
                 this::reduce
             );
-            Long dt = System.currentTimeMillis() - start;
-            System.out.println(dt);
 
             if (nodesToLearn.size() != nodesStatistics.size())
                 throw new IllegalStateException();
@@ -173,8 +177,66 @@ public abstract class RandomForestTrainer<S extends ImpurityComputer<BaggedVecto
         return roots;
     }
 
-    protected abstract void computeLeafValues(ArrayList<TreeRoot> roots,
-        Dataset<EmptyContext, BaggedDatasetPartition> dataset);
+    protected void computeLeafValues(ArrayList<TreeRoot> roots,
+        Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
+
+        Map<NodeId, TreeNode> leafs = roots.stream().flatMap(r -> r.getLeafs().stream())
+            .collect(Collectors.toMap(TreeNode::getId, n -> n));
+
+        Map<NodeId, LeafStatsAggregator> stats = dataset.compute(
+            data -> {
+                Map<NodeId, LeafStatsAggregator> res = new HashMap<>();
+                for (int sampleId = 0; sampleId < roots.size(); sampleId++) {
+                    final int sampleIdConst = sampleId;
+
+                    data.foreach(vec -> {
+                        NodeId leafId = roots.get(sampleIdConst).getNode().predictNextNodeKey(vec.getFeatures());
+                        if (!leafs.containsKey(leafId))
+                            throw new IllegalStateException();
+
+                        if (!res.containsKey(leafId))
+                            res.put(leafId, createLeafStatsAggregator(sampleIdConst));
+
+                        addElementToLeafStat(res.get(leafId), vec, sampleIdConst);
+                    });
+                }
+
+                return res;
+            },
+            (left, right) -> {
+                if (left == null)
+                    return right;
+                if (right == null)
+                    return left;
+
+                Set<NodeId> keys = new HashSet<>(left.keySet());
+                keys.addAll(right.keySet());
+                for (NodeId key : keys) {
+                    if (!left.containsKey(key))
+                        left.put(key, right.get(key));
+                    else if (right.containsKey(key))
+                        left.put(key, mergeLeafStats(left.get(key), right.get(key)));
+                }
+
+                return left;
+            });
+
+        leafs.forEach((id, leaf) -> {
+            LeafStatsAggregator stat = stats.get(id);
+            double leafVal = computeLeafValue(stat);
+            leaf.setValue(leafVal);
+        });
+    }
+
+    protected abstract void addElementToLeafStat(LeafStatsAggregator leafStatAggr, BaggedVector vec, int sampleId);
+
+    protected abstract LeafStatsAggregator mergeLeafStats(
+        LeafStatsAggregator leafStatAggr1, LeafStatsAggregator leafStatAggr2);
+
+    protected abstract LeafStatsAggregator createLeafStatsAggregator(int sampleId);
+
+    protected abstract double computeLeafValue(LeafStatsAggregator stat);
+
 
     protected ArrayList<TreeRoot> initTrees(Queue<TreeNode> treesQueue) {
         ArrayList<TreeRoot> roots = new ArrayList<>();
@@ -333,7 +395,12 @@ public abstract class RandomForestTrainer<S extends ImpurityComputer<BaggedVecto
     }
 
     private Map<NodeId, TreeNode> getNodesToLearn(Queue<TreeNode> queue) {
-        Map<NodeId, TreeNode> result = queue.stream().collect(Collectors.toMap(TreeNode::getId, node -> node));
+        return nodesToLearnSelectionStrgy.apply(queue).stream()
+            .collect(Collectors.toMap(TreeNode::getId, node -> node));
+    }
+
+    private List<TreeNode> defaultNodesToLearnSelectionStrgy(Queue<TreeNode> queue) {
+        List<TreeNode> result = new ArrayList<>(queue);
         queue.clear();
         return result;
     }
@@ -345,7 +412,6 @@ public abstract class RandomForestTrainer<S extends ImpurityComputer<BaggedVecto
 
     protected abstract ModelsComposition buildComposition(List<TreeRoot> models);
 
-    //TODO: need test
     Map<NodeId, NodeStatistics> aggregateStatistics(
         BaggedDatasetPartition dataset, ArrayList<TreeRoot> roots,
         Map<Integer, BucketMeta> histMeta,
@@ -356,18 +422,16 @@ public abstract class RandomForestTrainer<S extends ImpurityComputer<BaggedVecto
 
         dataset.foreach(vector -> {
             for (int sampleId = 0; sampleId < vector.getRepetitionsCounters().length; sampleId++) {
-                if(vector.getRepetitionsCounters()[sampleId] == 0)
+                if (vector.getRepetitionsCounters()[sampleId] == 0)
                     continue;
 
-                long innerStart = System.currentTimeMillis();
                 TreeRoot root = roots.get(sampleId);
                 NodeId key = root.node.predictNextNodeKey(vector.getFeatures());
                 if (!part.containsKey(key))
                     continue;
 
-                innerStart = System.currentTimeMillis();
                 NodeStatistics statistics = res.get(key);
-                for(Integer featureId : root.getUsedFeatures()) {
+                for (Integer featureId : root.getUsedFeatures()) {
                     BucketMeta meta = histMeta.get(featureId);
                     if (!statistics.perFeatureStatistics.containsKey(featureId))
                         statistics.perFeatureStatistics.put(featureId, createImpurityComputer(sampleId, meta));

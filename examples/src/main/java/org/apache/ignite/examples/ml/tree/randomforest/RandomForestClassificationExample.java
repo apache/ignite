@@ -35,6 +35,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
 import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
+import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategy;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -65,7 +66,7 @@ public class RandomForestClassificationExample {
                 RandomForestClassifierTrainer classifier = new RandomForestClassifierTrainer(
                     IntStream.range(0, 13).mapToObj(x -> new FeatureMeta(indx.getAndIncrement(), false)).collect(Collectors.toList()))
                     .withCountOfTrees(101)
-                    .withFeaturesCountSelectionStrgy(x -> 13)
+                    .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategy.SQRT)
                     .withMaxDepth(3)
                     .withMinImpurityDelta(0.)
                     .withSubsampleSize(0.3)

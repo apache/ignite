@@ -4,17 +4,19 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
     private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta(0, true));
     private BucketMeta feature2Meta = new BucketMeta(new FeatureMeta(1, false));
+    private BucketMeta feature3Meta = new BucketMeta(new FeatureMeta(2, true));
 
     @Before
     public void setUp() throws Exception {
@@ -86,6 +88,8 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
 
         GiniHistogram catFeatureSmpl1 = new GiniHistogram(0, lblMapping, feature1Meta);
         GiniHistogram contFeatureSmpl1 = new GiniHistogram(0, lblMapping, feature2Meta);
+        GiniHistogram emptyHist = new GiniHistogram(0, lblMapping, feature3Meta);
+        GiniHistogram catFeatureSmpl2 = new GiniHistogram(0, lblMapping, feature3Meta);
 
         feature2Meta.setMinValue(-5);
         feature2Meta.setBucketSize(1);
@@ -93,12 +97,15 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         for (BaggedVector vec : toSplitDataset) {
             catFeatureSmpl1.addElement(vec);
             contFeatureSmpl1.addElement(vec);
+            catFeatureSmpl2.addElement(vec);
         }
 
         NodeSplit catSplit = catFeatureSmpl1.findBestSplit().get();
         NodeSplit contSplit = contFeatureSmpl1.findBestSplit().get();
         assertEquals(1.0, catSplit.getValue(), 0.01);
         assertEquals(-0.5, contSplit.getValue(), 0.01);
+        assertFalse(emptyHist.findBestSplit().isPresent());
+        assertFalse(catFeatureSmpl2.findBestSplit().isPresent());
     }
 
     @Test
@@ -156,20 +163,20 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
     };
 
     private BaggedVector[] toSplitDataset = new BaggedVector[] {
-        new BaggedVector(VectorUtils.of(0, -1), 2, new int[] {2}),
-        new BaggedVector(VectorUtils.of(0, -1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(0, -1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(0, 3), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(0, 1), 2, new int[] {0}),
-        new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(1, -4), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {2}),
+        new BaggedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {1}),
+        new BaggedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {1}),
+        new BaggedVector(VectorUtils.of(0, 3, 0, 0), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(0, 1, 0, 0), 2, new int[] {0}),
+        new BaggedVector(VectorUtils.of(1, 2, 0, 0), 2, new int[] {1}),
+        new BaggedVector(VectorUtils.of(1, 2, 0, 0), 2, new int[] {1}),
+        new BaggedVector(VectorUtils.of(1, 2, 0, 0), 2, new int[] {1}),
+        new BaggedVector(VectorUtils.of(1, -4, 0, 0), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
+        new BaggedVector(VectorUtils.of(2, 1, 0, 1), 1, new int[] {1}),
     };
 }

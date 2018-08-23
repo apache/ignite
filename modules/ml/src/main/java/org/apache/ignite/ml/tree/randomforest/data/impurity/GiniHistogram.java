@@ -73,6 +73,9 @@ public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogr
     }
 
     @Override public Optional<NodeSplit> findBestSplit() {
+        if(bucketIds.size() < 2)
+            return Optional.empty();
+
         double bestImpurity = Double.POSITIVE_INFINITY;
         double bestSplitValue = Double.NEGATIVE_INFINITY;
         int bestBucketId = -1;
@@ -117,7 +120,7 @@ public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogr
             }
 
             double impurityInBucket = -(leftImpurity + rightImpurity);
-            if (impurityInBucket < bestImpurity) {
+            if (impurityInBucket <= bestImpurity) {
                 bestImpurity = impurityInBucket;
                 bestSplitValue = bucketMeta.bucketIdToValue(bucketId);
                 bestBucketId = bucketId;
@@ -131,7 +134,7 @@ public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogr
             maxBucketId = Math.max(maxBucketId, bucketId);
         }
 
-        if (bestBucketId == minBucketId || bestBucketId == maxBucketId)
+        if (bestBucketId == maxBucketId)
             return Optional.empty();
         else
             return Optional.of(new NodeSplit(featureId, bestSplitValue, bestImpurity));

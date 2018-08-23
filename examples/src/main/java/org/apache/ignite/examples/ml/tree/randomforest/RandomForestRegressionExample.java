@@ -118,7 +118,7 @@ public class RandomForestRegressionExample {
     private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
         CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 100));
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 1000));
 
         IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
 
