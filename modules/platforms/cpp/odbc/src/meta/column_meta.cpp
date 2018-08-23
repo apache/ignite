@@ -92,7 +92,6 @@ namespace ignite
             bool ColumnMeta::GetAttribute(uint16_t fieldId, std::string& value) const 
             {
                 using namespace ignite::impl::binary;
-                using ignite::common::Int32ToString;
 
                 switch (fieldId)
                 {
@@ -153,7 +152,7 @@ namespace ignite
                         if (precision == -1)
                             return false;
 
-                        value = Int32ToString(precision);
+                        value = common::LexicalCast<std::string>(precision);
 
                         return true;
                     }
@@ -164,7 +163,7 @@ namespace ignite
                         if (scale == -1)
                             return false;
 
-                        value = Int32ToString(scale);
+                        value = common::LexicalCast<std::string>(precision);
 
                         return true;
                     }

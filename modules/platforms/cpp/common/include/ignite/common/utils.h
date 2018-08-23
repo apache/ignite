@@ -147,19 +147,6 @@ namespace ignite
         }
 
         /**
-         * Get string representation of int32_t in decimal form.
-         *
-         * @param val int32_t value to be converted to string.
-         * @return String contataining decimal representation of the value.
-         */
-        inline std::string Int32ToString(int32_t val)
-        {
-            std::stringstream tmp;
-            tmp << val;
-            return tmp.str();
-        }
-
-        /**
          * Parse string to try and get int value.
          *
          * @param str String to be parsed.

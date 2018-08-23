@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnLength)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    BOOST_CHECK_EQUAL(intVal, 999);
+    BOOST_CHECK_EQUAL(intVal, 20);
 }
 
 BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE(TestColAttributesColumnPresicion)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    BOOST_CHECK_EQUAL(intVal, 999);
+    BOOST_CHECK_EQUAL(intVal, 20);
 }
 
 BOOST_AUTO_TEST_CASE(TestColAttributesColumnScale)
@@ -280,6 +280,17 @@ BOOST_AUTO_TEST_CASE(TestGetDataWithSelectQuery)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     CheckSingleRowResultSetWithGetData(stmt);
+}
+
+BOOST_AUTO_TEST_CASE(TestInsertTooLongValueFail)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR insertReq[] = "insert into TestType(_key, strField) VALUES(42, '012345678901234567891')";
+    SQLRETURN ret = SQLExecDirect(stmt, insertReq, SQL_NTS);
+
+    if (SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 }
 
 BOOST_AUTO_TEST_CASE(TestGetInfoScrollOptions)

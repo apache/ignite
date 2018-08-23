@@ -68,11 +68,10 @@ namespace ignite
                  */
                 ColumnMeta(const std::string& schemaName, const std::string& tableName,
                            const std::string& columnName, int8_t dataType) :
-                    schemaName(schemaName), tableName(tableName), columnName(columnName), dataType(dataType)
+                    schemaName(schemaName), tableName(tableName), columnName(columnName), dataType(dataType),
+                    precision(-1), scale(-1)
                 {
-                    precision = -1;
-
-                    scale = -1;
+                    // No-op.
                 }
 
                 /**
