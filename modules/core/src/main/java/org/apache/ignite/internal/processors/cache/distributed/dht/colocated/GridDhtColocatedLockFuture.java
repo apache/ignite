@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -836,19 +835,15 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 markInitialized();
             }
             else {
-                fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                        try {
-                            fut.get();
+                cctx.time().waitAsync(fut, tx == null ? 0 : tx.remainingTime(), (e, timedOut) -> {
+                    if (errorOrTimeoutOnTopologyVersion(e, timedOut))
+                        return;
 
-                            mapOnTopology(remap, c);
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
-                        }
-                        finally {
-                            cctx.shared().txContextReset();
-                        }
+                    try {
+                        mapOnTopology(remap, c);
+                    }
+                    finally {
+                        cctx.shared().txContextReset();
                     }
                 });
             }
@@ -1428,6 +1423,23 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
+     * @param e Exception.
+     * @param timedOut {@code True} if timed out.
+     */
+    private boolean errorOrTimeoutOnTopologyVersion(IgniteCheckedException e, boolean timedOut) {
+        if (e != null || timedOut) {
+            // Can timeout only if tx is not null.
+            assert e != null || tx != null : "Timeout is possible only in transaction";
+
+            onDone(e == null ? tx.timeoutException() : e);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
@@ -1625,25 +1637,17 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 IgniteInternalFuture<?> affFut =
                     cctx.shared().exchange().affinityReadyFuture(res.clientRemapVersion());
 
-                if (affFut != null && !affFut.isDone()) {
-                    affFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> fut) {
-                            try {
-                                fut.get();
+                cctx.time().waitAsync(affFut, tx == null ? 0 : tx.remainingTime(), (e, timedOut) -> {
+                    if (errorOrTimeoutOnTopologyVersion(e, timedOut))
+                        return;
 
-                                remap();
-                            }
-                            catch (IgniteCheckedException e) {
-                                onDone(e);
-                            }
-                            finally {
-                                cctx.shared().txContextReset();
-                            }
-                        }
-                    });
-                }
-                else
-                    remap();
+                    try {
+                        remap();
+                    }
+                    finally {
+                        cctx.shared().txContextReset();
+                    }
+                });
             }
             else {
                 int i = 0;
