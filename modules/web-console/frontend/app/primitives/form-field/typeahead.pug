@@ -14,11 +14,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field-datalist(label, model, name, disabled, required, placeholder, options, tip)
+mixin form-field__typeahead({ label, model, name, disabled, required, placeholder, options, tip })
     -var errLbl = label.substring(0, label.length - 1)
-
-    mixin form-field-input()
-        input.form-control(
+    mixin __form-field__typeahead()
+        input(
             id=`{{ ${name} }}Input`
             name=`{{ ${name} }}`
             placeholder=placeholder
@@ -36,17 +35,20 @@ mixin form-field-datalist(label, model, name, disabled, required, placeholder, o
             expose-ignite-form-field-control='$input'
         )&attributes(attributes.attributes)
 
-    .ignite-form-field
-        +ignite-form-field__label(label, name, required, disabled)
-            +tooltip(tip, tipOpts)
-        .ignite-form-field__control
-            .input-tip
-                +form-field-input(attributes=attributes)
-        .ignite-form-field__errors(
+    .form-field.form-field__typeahead.ignite-form-field(id=`{{ ${name} }}Field`)
+        +form-field__label({ label, name, required, disabled })
+            +form-field__tooltip({ title: tip, options: tipOpts })
+
+        .form-field__control
+            - attributes.type='text'
+            +__form-field__typeahead(attributes=attributes)
+
+        .form-field__errors(
             ng-messages=`$input.$error`
-            ng-if=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
             if block
                 block
 
-            +form-field-feedback(name, 'required', `${errLbl} could not be empty!`)
+            if required
+                +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
