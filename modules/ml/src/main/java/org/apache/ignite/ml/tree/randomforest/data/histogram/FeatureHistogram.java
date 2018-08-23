@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.histogram;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;

@@ -68,9 +68,9 @@ public class RandomForestRegressionExample2 {
                     IntStream.range(0, 13).mapToObj(x -> new FeatureMeta(indx.getAndIncrement(), false))
                         .collect(Collectors.toList())
                 ).withSeed(0L)
-                    .withCountOfTrees(101)
-                    .withFeaturesSelectionStrgy(x -> 4)
-                    .withMaxDepth(2)
+                    .withCountOfTrees(1)
+                    .withFeaturesSelectionStrgy(x -> 13)
+                    .withMaxDepth(5)
                     .withMinImpurityDelta(0.)
                     .withSubsampleSize(0.3);
 
@@ -119,7 +119,7 @@ public class RandomForestRegressionExample2 {
     private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
         CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 1));
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 100));
 
         IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
 

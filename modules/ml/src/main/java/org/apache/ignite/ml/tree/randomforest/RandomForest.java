@@ -64,6 +64,7 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
     private int featuresPerTree;
     private Random random;
     private long seed;
+    private Map<Integer, BucketMeta> bucketMetas;
 
     public RandomForest(List<FeatureMeta> meta) {
         this.meta = meta;
@@ -137,11 +138,14 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
         Map<Integer, BucketMeta> histMeta = computeHistogramMeta(meta, dataset);
 
         while (!treesQueue.isEmpty()) {
+            Long start = System.currentTimeMillis();
             Map<NodeId, TreeNode> nodesToLearn = getNodesToLearn(treesQueue);
             Map<NodeId, NodeStatistics> nodesStatistics = dataset.compute(
                 x -> aggregateStatistics(x, roots, histMeta, nodesToLearn),
                 this::reduce
             );
+            Long dt = System.currentTimeMillis() - start;
+            System.out.println(dt);
 
             if (nodesToLearn.size() != nodesStatistics.size())
                 throw new IllegalStateException();
@@ -155,8 +159,15 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
                     List<TreeNode> children = bestSplit.get().split(cornerNode);
                     treesQueue.addAll(children);
                 }
-                else
-                    cornerNode.toLeaf(Double.NaN);
+                else {
+                    if (bestSplit.isPresent()) {
+                        cornerNode.setImpurity(bestSplit.get().getImpurity());
+                        cornerNode.toLeaf(0.0);
+                    } else {
+                        cornerNode.setImpurity(Double.NEGATIVE_INFINITY);
+                        cornerNode.toLeaf(0.0);
+                    }
+                }
             }
         }
 
@@ -167,7 +178,7 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
     protected abstract void computeLeafValues(ArrayList<TreeRoot> roots,
         Dataset<EmptyContext, BaggedDatasetPartition> dataset);
 
-    private ArrayList<TreeRoot> initTrees(Queue<TreeNode> treesQueue) {
+    protected ArrayList<TreeRoot> initTrees(Queue<TreeNode> treesQueue) {
         ArrayList<TreeRoot> roots = new ArrayList<>();
 
         for (TreeNode node : treesQueue) {
@@ -346,24 +357,35 @@ public abstract class RandomForest<S extends ImpurityComputer<BaggedVector, S>, 
             .collect(Collectors.toMap(n -> n, n -> new NodeStatistics(n, new HashMap<>())));
 
         dataset.foreach(vector -> {
+            long startTs = System.currentTimeMillis();
+            long predictTs = 0;
+            long featuresTs = 0;
             for (int sampleId = 0; sampleId < vector.getRepetitionsCounters().length; sampleId++) {
-                if (vector.getRepetitionsCounters()[sampleId] == 0)
+                if(vector.getRepetitionsCounters()[sampleId] == 0)
                     continue;
 
+                long innerStart = System.currentTimeMillis();
                 TreeRoot root = roots.get(sampleId);
                 NodeId key = root.node.predictNextNodeKey(vector.getFeatures());
                 if (!part.containsKey(key))
                     continue;
+                predictTs += (System.currentTimeMillis() - innerStart);
 
+                innerStart = System.currentTimeMillis();
                 NodeStatistics statistics = res.get(key);
-                for (Integer featureId : root.getUsedFeatures()) {
+                for(Integer featureId : root.getUsedFeatures()) {
                     BucketMeta meta = histMeta.get(featureId);
                     if (!statistics.perFeatureStatistics.containsKey(featureId))
                         statistics.perFeatureStatistics.put(featureId, createImpurityComputer(sampleId, meta));
                     S impurityComputer = statistics.perFeatureStatistics.get(featureId);
                     impurityComputer.addElement(vector);
                 }
+                featuresTs += (System.currentTimeMillis() - innerStart);
             }
+
+//            System.out.println(String.format("One vector time: %d", System.currentTimeMillis() - startTs));
+//            System.out.println(String.format("\t Predict time: %d", predictTs));
+//            System.out.println(String.format("\t Features time: %d", featuresTs));
         });
         return res;
     }

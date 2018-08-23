@@ -57,7 +57,7 @@ public class BaggedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V, Empt
             Vector features = featureExtractor.apply(entry.getKey(), entry.getValue());
             Double label = lbExtractor.apply(entry.getKey(), entry.getValue());
             int[] repetitionCounters = new int[samplesCount];
-            Arrays.setAll(repetitionCounters, i -> poissonDistribution.sample());
+            Arrays.setAll(repetitionCounters, i -> 1);
             dataset[ptr.getAndIncrement()] = new BaggedVector(features, label, repetitionCounters);
         });
 

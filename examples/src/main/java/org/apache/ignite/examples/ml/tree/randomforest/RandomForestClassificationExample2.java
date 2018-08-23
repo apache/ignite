@@ -32,6 +32,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.tree.randomforest.FeaturesCountSelectionStrategy;
 import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
 import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.histogram.FeatureMeta;
@@ -68,7 +69,7 @@ public class RandomForestClassificationExample2 {
                     .collect(Collectors.toList()))
                     .withSeed(0L)
                     .withCountOfTrees(101)
-                    .withFeaturesSelectionStrgy(x -> 4)
+                    .withFeaturesSelectionStrgy(FeaturesCountSelectionStrategy.SQRT)
                     .withMaxDepth(2)
                     .withMinImpurityDelta(0.)
                     .withSubsampleSize(0.3);

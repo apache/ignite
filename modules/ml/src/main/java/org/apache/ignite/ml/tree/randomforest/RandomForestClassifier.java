@@ -120,20 +120,28 @@ public class RandomForestClassifier extends RandomForest<GiniHistogram, RandomFo
                 if (r == null)
                     return l;
 
+
                 Set<NodeId> keys = new HashSet<>(l.keySet());
                 keys.addAll(r.keySet());
+                Map<NodeId, FeatureHistogram<BaggedVector>> res = new HashMap<>();
                 for (NodeId key : keys) {
-                    if (!l.containsKey(key))
-                        l.put(key, r.get(key));
-                    else if (r.containsKey(key))
-                        l.get(key).addHist(r.get(key));
+                    FeatureHistogram<BaggedVector> leftHist = l.get(key);
+                    FeatureHistogram<BaggedVector> rightHist = r.get(key);
+                    if(leftHist == null)
+                        res.put(key, rightHist);
+                    else if(rightHist == null)
+                        res.put(key, leftHist);
+                    else {
+                        leftHist.addHist(rightHist);
+                        res.put(key, leftHist);
+                    }
                 }
 
                 return l;
             });
 
-        leafs.forEach((id, leaf) -> {
-            FeatureHistogram<BaggedVector> histogram = stats.get(id);
+        stats.forEach((id, histogram) -> {
+            TreeNode leaf = leafs.get(id);
             Integer bucketId = histogram.buckets().stream()
                 .max(Comparator.comparing(b -> histogram.get(b).orElse(0.0)))
                 .get();
