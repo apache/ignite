@@ -245,7 +245,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
 
             sock.on('cluster:topology', (top) => {
                 if (_.isNil(top)) {
-                    console.log('Topology not found in "cluster:topology" event data');
+                    console.log('Invalid format of message: "cluster:topology"');
 
                     return;
                 }
@@ -289,19 +289,8 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             _.forEach(tokens, (token) => {
                 this._agentSockets.add(token, agentSocket);
 
-                // TODO start demo if needed.
-                // const browserSockets = _.filter(this._browserSockets[token], 'request._query.IgniteDemoMode');
-                //
-                // // First agent join after user start demo.
-                // if (_.size(browserSockets))
-                //     agentSocket.runDemoCluster(token, browserSockets);
-
                 this._browsersHnd.agentStats(token);
             });
-
-            // ioSocket.on('cluster:topology', (top) => {
-            //
-            // });
         }
 
         /**
