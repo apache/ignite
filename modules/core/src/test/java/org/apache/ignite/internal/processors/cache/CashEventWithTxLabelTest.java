@@ -94,7 +94,7 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
     private int prevErrCnt = 0;
 
     /** List to keep all events with no tx label between run tests */
-    private static List<CacheEvent> incorrectEvts = Collections.synchronizedList(new ArrayList<>());
+    private static List<CacheEvent> wrongEvts = Collections.synchronizedList(new ArrayList<>());
 
     /** Simple entry processor to use for tests */
     private static CacheEntryProcessor entryProcessor = (CacheEntryProcessor)(entry, objects) -> entry.getValue();
@@ -138,13 +138,17 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
     public void testPassTxLabelInCashEventForAllCases() throws Exception {
         Ignite[] nodes = {client(), primary(), backup1(), backup2()};
 
-        for (int backupCnt = 0; backupCnt < 3; backupCnt++) {
-            prepareCache(0);
+        for (int backupCnt = 0; backupCnt < SRVS; backupCnt++) {
             this.backupCnt = backupCnt;
+
+            prepareCache(backupCnt);
+
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 this.isolation = isolation;
+
                 for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     this.concurrency = concurrency;
+
                     for (int i = 0; i < nodes.length - 1; i++) {
                         Ignite nodeForPut = nodes[i];
                         Ignite nodeForGet = nodes[i + 1];
@@ -181,7 +185,7 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
      * @param node2 Second node
      */
     private void checkResult(String testName, Ignite node1, Ignite node2) {
-        int currErrCnt = incorrectEvts.size();
+        int currErrCnt = wrongEvts.size();
 
         if (prevErrCnt != currErrCnt) {
             prevErrCnt = currErrCnt;
@@ -394,7 +398,7 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
                         log.error("Has been received event with incorrect label " + cacheEvt.txLabel() + " ," +
                             " expected " + TX_LABEL + " label");
 
-                        incorrectEvts.add(cacheEvt);
+                        wrongEvts.add(cacheEvt);
                     }
 
                     return true;
@@ -437,14 +441,18 @@ public class CashEventWithTxLabelTest extends GridCommonAbstractTest {
      * @param backupKeyStart Value from need to start calculate backup key.
      * @return Pair of result. The first result is found primary key. The second is found backup key.
      */
-    private IgnitePair<Integer> evaluatePrimaryAndBackupKeys(int primaryKeyStart, int backupKeyStart) {
-        while (!client().affinity(CACHE_NAME).isPrimary(((IgniteKernal)primary()).localNode(), primaryKeyStart))
-            primaryKeyStart++;
+    private IgnitePair<Integer> evaluatePrimaryAndBackupKeys(final int primaryKeyStart, final int backupKeyStart) {
+        int primaryKey = primaryKeyStart;
+        int backupKey = backupKeyStart;
 
-        while (!client().affinity(CACHE_NAME).isBackup(((IgniteKernal)primary()).localNode(), backupKeyStart)
-            && backupKeyStart < 1000)
-            backupKeyStart++;
-        return new IgnitePair<>(primaryKeyStart, backupKeyStart);
+        while (!client().affinity(CACHE_NAME).isPrimary(((IgniteKernal)primary()).localNode(), primaryKey))
+            primaryKey++;
+
+        while (!client().affinity(CACHE_NAME).isBackup(((IgniteKernal)primary()).localNode(), backupKey)
+            && backupKey < 100 + backupKeyStart)
+            backupKey++;
+
+        return new IgnitePair<>(primaryKey, backupKey);
     }
 
     /**
