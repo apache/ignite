@@ -27,7 +27,9 @@ export default function ConfigurationResourceService($http) {
                 .then(({data}) => data)
                 .catch(({data}) => Promise.reject(data));
         },
-        populate({spaces, clusters, caches, igfss, domains}) {
+        populate(data) {
+            const {spaces, clusters, caches, igfss, domains} = _.cloneDeep(data);
+
             _.forEach(clusters, (cluster) => {
                 cluster.caches = _.filter(caches, ({_id}) => _.includes(cluster.caches, _id));
 

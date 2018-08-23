@@ -1112,7 +1112,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                         assert locNode.isClient();
 
-                        if (!locNode.isClient())
+                        if (!ctx.discovery().reconnectSupported())
                             throw new IgniteCheckedException("Client node in forceServerMode " +
                                 "is not allowed to reconnect to the cluster and will be stopped.");
 
@@ -2457,7 +2457,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         U.log(log, "System cache's DataRegion size is configured to " +
             (memCfg.getSystemRegionInitialSize() / (1024 * 1024)) + " MB. " +
-            "Use DataStorageConfiguration.systemCacheMemorySize property to change the setting.");
+            "Use DataStorageConfiguration.systemRegionInitialSize property to change the setting.");
     }
 
     /**

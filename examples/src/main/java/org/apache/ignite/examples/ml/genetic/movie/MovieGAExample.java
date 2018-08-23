@@ -29,56 +29,54 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
- * This example demonstrates how to use the GAGrid framework.
- *
- * In this example, we utilize GA Grid to calculate an optimal set of movies based on our interests in various genres
- * (ie: Action, Comedy, and Romance)
- *
- *
- * How To Run:
- *
- * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.movie.MovieGAExample" -DGENRES=Action,Comedy
- *
- * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
- * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup in
- * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
+ * In this example, we utilize {@link GAGrid} framework to calculate an optimal set of movies based on our interests
+ * in various genres (ie: Action, Comedy, and Romance).
+ * <p>
+ * Code in this example launches Ignite grid, prepares simple test data (gene pool) and configures GA grid.</p>
+ * <p>
+ * After that it launches the process of evolution on GA grid and outputs the progress and results.</p>
+ * <p>
+ * You can change the test data and parameters of GA grid used in this example and re-run it to explore
+ * this functionality further.</p>
+ * <p>
+ * How to run from command line:</p>
+ * <p>
+ * {@code mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.movie.MovieGAExample"
+ * -DGENRES=Action,Comedy}</p>
+ * <p>
+ * Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
+ * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
+ * <p>
+ * Alternatively you can run ExampleNodeStartup in another JVM which will start node with
+ * {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class MovieGAExample {
-    /** Ignite instance */
-    private static Ignite ignite = null;
-    /** GAGrid */
-    private static GAGrid gaGrid = null;
-    /** GAConfiguration */
-    private static GAConfiguration gaConfig = null;
-
     /**
      * Executes example.
      *
-     * Specify value for -DGENRES JVM system variable
+     * Specify value for {@code -DGENRES} JVM system variable.
      *
      * @param args Command line arguments, none required.
      */
-
     public static void main(String args[]) {
+        System.out.println(">>> Movie GA grid example started.");
+
         System.setProperty("IGNITE_QUIET", "false");
 
-        List genres = new ArrayList();
+        List<String> genres = new ArrayList<>();
         String sGenres = "Action,Comedy,Romance";
 
-        StringBuffer sbErrorMessage = new StringBuffer();
-        sbErrorMessage.append("GENRES System property not set. Please provide GENRES information.");
-        sbErrorMessage.append(" ");
-        sbErrorMessage.append("IE: -DGENRES=Action,Comedy,Romance");
-        sbErrorMessage.append("\n");
-        sbErrorMessage.append("Using default value: Action,Comedy,Romance");
+        StringBuffer sbErrorMsg = new StringBuffer();
+        sbErrorMsg.append("GENRES System property not set. Please provide GENRES information.");
+        sbErrorMsg.append(" ");
+        sbErrorMsg.append("IE: -DGENRES=Action,Comedy,Romance");
+        sbErrorMsg.append("\n");
+        sbErrorMsg.append("Using default value: Action,Comedy,Romance");
 
-        if (System.getProperty("GENRES") == null) {
-            System.out.println(sbErrorMessage);
-
-        }
-        else {
+        if (System.getProperty("GENRES") == null)
+            System.out.println(sbErrorMsg);
+        else
             sGenres = System.getProperty("GENRES");
-        }
 
         StringTokenizer st = new StringTokenizer(sGenres, ",");
 
@@ -87,58 +85,61 @@ public class MovieGAExample {
             genres.add(genre);
         }
 
-        // Create GAConfiguration
-        gaConfig = new GAConfiguration();
+        // Create GAConfiguration.
+        GAConfiguration gaCfg = new GAConfiguration();
 
-        // set Gene Pool
+        // Set Gene Pool.
         List<Gene> genes = getGenePool();
 
-        // Define Chromosome
-        gaConfig.setChromosomeLen(3);
-        gaConfig.setPopulationSize(100);
-        gaConfig.setGenePool(genes);
-        gaConfig.setTruncateRate(.10);
-        gaConfig.setCrossOverRate(.50);
-        gaConfig.setMutationRate(.50);
-        gaConfig.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_TRUNCATION);
+        // Define Chromosome.
+        gaCfg.setChromosomeLen(3);
+        gaCfg.setPopulationSize(100);
+        gaCfg.setGenePool(genes);
+        gaCfg.setTruncateRate(.10);
+        gaCfg.setCrossOverRate(.50);
+        gaCfg.setMutationRate(.50);
+        gaCfg.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_TRUNCATION);
 
-        //Create fitness function
+        // Create fitness function.
         MovieFitnessFunction function = new MovieFitnessFunction(genres);
 
-        //set fitness function
-        gaConfig.setFitnessFunction(function);
+        // Set fitness function.
+        gaCfg.setFitnessFunction(function);
 
         try {
-
-            //Create an Ignite instance as you would in any other use case.
-            ignite = Ignition.start("examples/config/example-ignite.xml");
+            // Create an Ignite instance as you would in any other use case.
+            Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
 
             MovieTerminateCriteria termCriteria = new MovieTerminateCriteria(ignite);
 
-            gaConfig.setTerminateCriteria(termCriteria);
+            gaCfg.setTerminateCriteria(termCriteria);
 
-            gaGrid = new GAGrid(gaConfig, ignite);
+            GAGrid gaGrid = new GAGrid(gaCfg, ignite);
 
             ignite.log();
-            Chromosome fittestChromosome = gaGrid.evolve();
+
+            Chromosome chromosome = gaGrid.evolve();
+
+            System.out.println(">>> Evolution result: " + chromosome);
 
             Ignition.stop(true);
-            ignite = null;
 
+            System.out.println(">>> Movie GA grid example completed.");
         }
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
-
     }
 
+    /** */
     private static List<Gene> getGenePool() {
-        List list = new ArrayList();
+        List<Gene> list = new ArrayList<>();
 
         Movie movie1 = new Movie();
         movie1.setName("The Matrix");
         movie1.setImdbRating(7);
-        List genre1 = new ArrayList();
+        List<String> genre1 = new ArrayList<>();
         genre1.add("SciFi");
         genre1.add("Action");
         movie1.setGenre(genre1);
@@ -150,7 +151,7 @@ public class MovieGAExample {
         Movie movie2 = new Movie();
         movie2.setName("The Dark Knight");
         movie2.setImdbRating(9.6);
-        List genre2 = new ArrayList();
+        List<String> genre2 = new ArrayList<>();
         genre2.add("Action");
         movie2.setGenre(genre2);
         movie2.setRating("PG-13");
@@ -163,7 +164,7 @@ public class MovieGAExample {
         movie3.setImdbRating(9.6);
         movie3.setYear("2012");
 
-        List genre3 = new ArrayList();
+        List<String> genre3 = new ArrayList<>();
         genre3.add("Action");
         movie3.setGenre(genre3);
         movie3.setRating("PG-13");
@@ -173,7 +174,7 @@ public class MovieGAExample {
         Movie movie4 = new Movie();
         movie4.setName("The Hangover");
         movie4.setImdbRating(7.6);
-        List genre4 = new ArrayList();
+        List<String> genre4 = new ArrayList<>();
         genre4.add("Comedy");
         movie4.setGenre(genre4);
         movie4.setRating("R");
@@ -184,7 +185,7 @@ public class MovieGAExample {
         Movie movie5 = new Movie();
         movie5.setName("The Hangover 2");
         movie5.setImdbRating(9.6);
-        List genre5 = new ArrayList();
+        List<String> genre5 = new ArrayList<>();
         genre5.add("Comedy");
         movie5.setGenre(genre5);
         movie5.setRating("R");
@@ -195,7 +196,7 @@ public class MovieGAExample {
         Movie movie6 = new Movie();
         movie6.setName("This Means War");
         movie6.setImdbRating(6.4);
-        List genre6 = new ArrayList();
+        List<String> genre6 = new ArrayList<>();
         genre6.add("Comedy");
         genre6.add("Action");
         genre6.add("Romance");
@@ -208,7 +209,7 @@ public class MovieGAExample {
         Movie movie7 = new Movie();
         movie7.setName("Hitch");
         movie7.setImdbRating(10);
-        List genre7 = new ArrayList();
+        List<String> genre7 = new ArrayList<>();
         genre7.add("Comedy");
         genre7.add("Romance");
         movie7.setGenre(genre7);
@@ -220,7 +221,7 @@ public class MovieGAExample {
         Movie movie8 = new Movie();
         movie8.setName("21 Jump Street");
         movie8.setImdbRating(6.7);
-        List genre8 = new ArrayList();
+        List<String> genre8 = new ArrayList<>();
         genre8.add("Comedy");
         genre8.add("Action");
         movie8.setGenre(genre8);
@@ -232,7 +233,7 @@ public class MovieGAExample {
         Movie movie9 = new Movie();
         movie9.setName("Killers");
         movie9.setImdbRating(5.1);
-        List genre9 = new ArrayList();
+        List<String> genre9 = new ArrayList<>();
         genre9.add("Comedy");
         genre9.add("Action");
         genre9.add("Romance");
@@ -245,7 +246,7 @@ public class MovieGAExample {
         Movie movie10 = new Movie();
         movie10.setName("What to Expect When You're Expecting");
         movie10.setImdbRating(5.1);
-        List genre10 = new ArrayList();
+        List<String> genre10 = new ArrayList<>();
         genre10.add("Comedy");
         genre10.add("Romance");
         movie10.setGenre(genre10);
@@ -266,7 +267,5 @@ public class MovieGAExample {
         list.add(gene10);
 
         return list;
-
     }
-
 }

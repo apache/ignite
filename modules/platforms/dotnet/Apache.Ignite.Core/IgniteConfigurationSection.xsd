@@ -2029,6 +2029,16 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="sqlSchemas" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>SQL schemas to be created on node startup. Schemas are created on local node only and are not propagated.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>

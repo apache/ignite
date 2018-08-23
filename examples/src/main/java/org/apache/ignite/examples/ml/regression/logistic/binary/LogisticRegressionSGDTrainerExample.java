@@ -18,15 +18,13 @@
 package org.apache.ignite.examples.ml.regression.logistic.binary;
 
 import java.util.Arrays;
-import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.util.TestCache;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -37,9 +35,19 @@ import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDT
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model over distributed cache.
- *
- * @see LogisticRegressionSGDTrainer
+ * Run logistic regression model based on stochastic gradient descent algorithm ({@link LogisticRegressionSGDTrainer})
+ * over distributed cache.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (based on the
+ * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
+ * <p>
+ * After that it trains the logistic regression model based on the specified data.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict the target value,
+ * compares prediction to expected outcome (ground truth), and builds
+ * <a href="https://en.wikipedia.org/wiki/Confusion_matrix">confusion matrix</a>.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LogisticRegressionSGDTrainerExample {
     /** Run example. */
@@ -52,7 +60,7 @@ public class LogisticRegressionSGDTrainerExample {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 LogisticRegressionSGDTrainerExample.class.getSimpleName(), () -> {
 
-                IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 System.out.println(">>> Create new logistic regression trainer object.");
                 LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>(new UpdatesStrategy<>(
@@ -105,6 +113,8 @@ public class LogisticRegressionSGDTrainerExample {
 
                 System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
                 System.out.println(">>> ---------------------------------");
+
+                System.out.println(">>> Logistic regression model over partitioned dataset usage example completed.");
             });
 
             igniteThread.start();
@@ -112,25 +122,6 @@ public class LogisticRegressionSGDTrainerExample {
             igniteThread.join();
         }
     }
-    /**
-     * Fills cache with data and returns it.
-     *
-     * @param ignite Ignite instance.
-     * @return Filled Ignite Cache.
-     */
-    private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
-        CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
-        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-        IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
-
-        for (int i = 0; i < data.length; i++)
-            cache.put(i, data[i]);
-
-        return cache;
-    }
-
 
     /** The 1st and 2nd classes from the Iris dataset. */
     private static final double[][] data = {
