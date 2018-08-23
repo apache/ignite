@@ -32,25 +32,26 @@ public class MaxAbsScalerPreprocessorTest {
     @Test
     public void testApply() {
         double[][] data = new double[][]{
-            {2., 4., 1.},
-            {1., 8., 22.},
-            {4., 10., 100.},
-            {0., 22., 300.}
+         //{f1,   f2,    f3}
+            {2.,  4.,    1.},
+            {1.,  8.,   22.},
+            {-4., 10., 100.},
+            {0.,  22., 300.}
         };
-
+        double[] maxAbs = new double[] {4, 22, 300};
         MaxAbsScalerPreprocessor<Integer, Vector> preprocessor = new MaxAbsScalerPreprocessor<>(
-            new double[] {4, 22, 300},
+            maxAbs,
             (k, v) -> v
         );
 
-        double[][] standardData = new double[][]{
-            {2. / 4, (4. - 4.) / 18.,  0.},
-            {1. / 4, (8. - 4.) / 18.,  (22. - 1.) / 299.},
-            {1.,     (10. - 4.) / 18., (100. - 1.) / 299.},
-            {0.,     (22. - 4.) / 18., (300. - 1.) / 299.}
+        double[][] expectedData = new double[][]{
+                {.5,  4./22,  1./300},
+                {.25, 8./22,  22./300},
+                {-1., 10./22, 100./300},
+                {0.,  22./22, 300./300}
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(standardData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
+           assertArrayEquals(expectedData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
     }
 }
