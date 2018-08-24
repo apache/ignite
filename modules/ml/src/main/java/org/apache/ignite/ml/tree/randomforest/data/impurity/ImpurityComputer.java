@@ -21,6 +21,18 @@ import java.util.Optional;
 import org.apache.ignite.ml.dataset.feature.Histogram;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 
+/**
+ * Interface represents an object that can compute best splitting point using features histograms.
+ *
+ * @param <T> Base object type for histogram.
+ * @param <H> Type of histogram that can be used in math operations with this object.
+ */
 public interface ImpurityComputer<T, H extends Histogram<T, H>> extends Histogram<T, H> {
+    /**
+     * Returns best split point computed on histogram if it exists.
+     * Split point may be absent when there is no data in histograms or split point lay in last bucket in histogram.
+     *
+     * @return Splitting point for decision tree.
+     */
     public Optional<NodeSplit> findBestSplit();
 }

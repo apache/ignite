@@ -32,16 +32,37 @@ import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+/**
+ * Class contains implementation of splitting point finding algorithm based on Gini metric (see https://en.wikipedia.org/wiki/Gini_coefficient)
+ * and represents * a set of histograms in according to this metric.
+ */
 public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniHistogram> {
+    /** Bucket meta. */
     private final BucketMeta bucketMeta;
+
+    /** Feature id. */
     private final int featureId;
+
+    /** Sample id. */
     private final int sampleId;
+
+    /** Hists of counters for each labels. */
     private final ArrayList<FeatureHistogram<BootstrappedVector>> hists;
+
+    /** Label mapping to internal representation. */
     private final Map<Double, Integer> lblMapping;
+
+    /** Bucket ids. */
     private final Set<Integer> bucketIds;
 
+    /**
+     * Creates an instance of GiniHistogram.
+     *
+     * @param sampleId Sample id.
+     * @param lblMapping Label mapping.
+     * @param bucketMeta Bucket meta.
+     */
     public GiniHistogram(int sampleId, Map<Double, Integer> lblMapping, BucketMeta bucketMeta) {
-
         this.hists = new ArrayList<>(lblMapping.size());
         this.featureId = bucketMeta.getFeatureMeta().getFeatureId();
         this.sampleId = sampleId;
@@ -54,15 +75,18 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
         this.bucketIds = new TreeSet<>();
     }
 
+    /** {@inheritDoc} */
     @Override public void addElement(BootstrappedVector vector) {
         Integer lblId = lblMapping.get(vector.getLabel());
         hists.get(lblId).addElement(vector);
     }
 
+    /** {@inheritDoc} */
     @Override public Optional<Double> get(Integer bucket) {
         throw new NotImplementedException();
     }
 
+    /** {@inheritDoc} */
     @Override public void addHist(GiniHistogram other) {
         assert featureId == other.featureId;
         assert sampleId == other.sampleId;
@@ -72,6 +96,7 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
             hists.get(i).addHist(other.hists.get(i));
     }
 
+    /** {@inheritDoc} */
     @Override public Optional<NodeSplit> findBestSplit() {
         if(bucketIds.size() < 2)
             return Optional.empty();
@@ -140,18 +165,37 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
             return Optional.of(new NodeSplit(featureId, bestSplitValue, bestImpurity));
     }
 
+    /** {@inheritDoc} */
     @Override public Set<Integer> buckets() {
         return bucketIds;
     }
 
+    /**
+     * Returns counters histogram for class-label.
+     *
+     * @param lbl Label.
+     * @return counters histogram for class-label.
+     */
     FeatureHistogram<BootstrappedVector> getHistForLabel(Double lbl) {
         return hists.get(lblMapping.get(lbl));
     }
 
+    /**
+     * Maps vector to counter value.
+     *
+     * @param vec Vector.
+     * @return Counter value.
+     */
     private Double counterMap(BootstrappedVector vec) {
         return (double)vec.getRepetitionsCounters()[sampleId];
     }
 
+    /**
+     * Maps vector to bucket id.
+     *
+     * @param vec Vector.
+     * @return Bucket id.
+     */
     private Integer bucketMap(BootstrappedVector vec) {
         int bucketId = bucketMeta.getBucketId(vec.getFeatures().get(featureId));
         this.bucketIds.add(bucketId);

@@ -27,15 +27,38 @@ import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+/**
+ * Class contains implementation of splitting point finding algorithm based on MSE metric (see https://en.wikipedia.org/wiki/Mean_squared_error)
+ * and represents a set of histograms in according to this metric.
+ */
 public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHistogram> {
+    /** Bucket meta. */
     private final BucketMeta bucketMeta;
+
+    /** Feature id. */
     private final int featureId;
+
+    /** Sample id. */
     private final int sampleId;
+
+    /** Bucket ids. */
     private final Set<Integer> bucketIds;
+
+    /** Counters. */
     private final FeatureHistogram<BootstrappedVector> counters;
+
+    /** Sums of Ys. */
     private final FeatureHistogram<BootstrappedVector> ys;
+
+    /** Sums of Y^2s. */
     private final FeatureHistogram<BootstrappedVector> y2s;
 
+    /**
+     * Creates an instance of MSEHistogram.
+     *
+     * @param sampleId Sample id.
+     * @param bucketMeta Bucket meta.
+     */
     public MSEHistogram(int sampleId, BucketMeta bucketMeta) {
         this.bucketMeta = bucketMeta;
         this.featureId = bucketMeta.getFeatureMeta().getFeatureId();
@@ -47,12 +70,14 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
         bucketIds = new TreeSet<>();
     }
 
+    /** {@inheritDoc} */
     @Override public void addElement(BootstrappedVector vector) {
         counters.addElement(vector);
         ys.addElement(vector);
         y2s.addElement(vector);
     }
 
+    /** {@inheritDoc} */
     @Override public void addHist(MSEHistogram other) {
         assert featureId == other.featureId;
         assert sampleId == other.sampleId;
@@ -63,14 +88,17 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
         y2s.addHist(other.y2s);
     }
 
+    /** {@inheritDoc} */
     @Override public Set<Integer> buckets() {
         return bucketIds;
     }
 
+    /** {@inheritDoc} */
     @Override public Optional<Double> get(Integer bucket) {
         throw new NotImplementedException();
     }
 
+    /** {@inheritDoc} */
     @Override public Optional<NodeSplit> findBestSplit() {
         double bestImpurity = Double.POSITIVE_INFINITY;
         double bestSplitValue = Double.NEGATIVE_INFINITY;
@@ -123,36 +151,83 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
             return Optional.of(new NodeSplit(featureId, bestSplitValue, bestImpurity));
     }
 
+    /**
+     * Computes impurity function value.
+     *
+     * @param count Counter value.
+     * @param ys sum of Ys.
+     * @param y2s sum of Y^2 s.
+     * @return impurity value.
+     */
     private double impurity(double count, double ys, double y2s) {
         return y2s - 2.0 * ys / count * ys + Math.pow(ys / count, 2) * count;
     }
 
+    /**
+     * Maps vector to bucket id.
+     *
+     * @param vec Vector.
+     * @return Bucket id.
+     */
     private Integer bucketMap(BootstrappedVector vec) {
         int bucketId = bucketMeta.getBucketId(vec.getFeatures().get(featureId));
         this.bucketIds.add(bucketId);
         return bucketId;
     }
 
+    /**
+     * Maps vector to counter value.
+     *
+     * @param vec Vector.
+     * @return Counter value.
+     */
     private Double counterMap(BootstrappedVector vec) {
         return (double)vec.getRepetitionsCounters()[sampleId];
     }
 
+    /**
+     * Maps vector to Y-value.
+     *
+     * @param vec Vector.
+     * @return Y value.
+     */
     private Double ysMap(BootstrappedVector vec) {
         return vec.getRepetitionsCounters()[sampleId] * vec.getLabel();
     }
 
+    /**
+     * Maps vector to Y^2 value.
+     *
+     * @param vec Vec.
+     * @return Y^2 value.
+     */
     private Double y2sMap(BootstrappedVector vec) {
         return vec.getRepetitionsCounters()[sampleId] * Math.pow(vec.getLabel(), 2);
     }
 
+    /**
+     * Returns counters histogram.
+     *
+     * @return Counters histogram.
+     */
     FeatureHistogram<BootstrappedVector> getCounters() {
         return counters;
     }
 
+    /**
+     * Returns Ys histogram.
+     *
+     * @return Ys histogram.
+     */
     FeatureHistogram<BootstrappedVector> getYs() {
         return ys;
     }
 
+    /**
+     * Returns Y^2s histogram.
+     *
+     * @return Y^2s histogram.
+     */
     FeatureHistogram<BootstrappedVector> getY2s() {
         return y2s;
     }
