@@ -378,6 +378,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** H2 JDBC connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
     private Connection sysConn;
 
+    /** Cached value of {@code IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION}. */
+    private final boolean isDmlAllowedOverride;
+
+    /**
+     * Default constructor.
+     */
+    public IgniteH2Indexing() {
+        isDmlAllowedOverride = Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
+    }
+
     /**
      * @return Kernal context.
      */
@@ -1864,8 +1874,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteSQLException In case DML not allowed.
      */
     private void checkDmlOperationIsAllowed() throws IgniteSQLException {
-        boolean isDmlAllowedOverride = Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
-
         if (ctx.cache().context().tm().inUserTx() && !isDmlAllowedOverride)
             throw new IgniteSQLException("DML statement doesn't allowed within a transaction");
     }

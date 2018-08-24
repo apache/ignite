@@ -26,8 +26,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -35,7 +35,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  * Tests DML allow/disallow operation inside transaction.
  */
-public class DmlInsideTransactionTest extends GridCacheAbstractSelfTest {
+public class DmlInsideTransactionTest extends GridCommonAbstractTest {
 
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";
@@ -50,67 +50,77 @@ public class DmlInsideTransactionTest extends GridCacheAbstractSelfTest {
     };
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-        IgniteEx ignite = grid(0);
+    /**
+     * Checking correct behaviour for DML inside transaction by default.
+     *
+     * @throws Exception In case failure.
+     */
+    public void testDmlInTransactionByDefault() throws Exception {
+        prepareIgnite();
+
+        for (String dmlQuery : DML_QUERIES)
+            runDmlInTransactionTest(dmlQuery, false);
+    }
+
+    /**
+     * Checking correct behaviour for DML inside transaction when compatibility property set as disabled.
+     *
+     * @throws Exception In case failure.
+     */
+    public void testDmlInTransactionInDisabledCompatibilityMode() throws Exception {
+        try (SystemProperty ignored = new SystemProperty(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION, "false")) {
+            prepareIgnite();
+
+            for (String dmlQuery : DML_QUERIES)
+                runDmlInTransactionTest(dmlQuery, false);
+        }
+    }
+
+    /**
+     * Checking correct behaviour for DML inside transaction when compatibility property set as enabled.
+     *
+     * @throws Exception In case failure.
+     */
+    public void testDmlInTransactionInCompatibilityMode() throws Exception {
+        try (SystemProperty ignored = new SystemProperty(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION, "true")) {
+            prepareIgnite();
+
+            for (String dmlQuery : DML_QUERIES)
+                runDmlInTransactionTest(dmlQuery, true);
+        }
+    }
+
+    /**
+     * Checking that DML can be executed without a errors outside transaction.
+     *
+     * @throws Exception In case failure.
+     */
+    public void testDmlNotInTransaction() throws Exception {
+        prepareIgnite();
+
+        for (String dmlQuery : DML_QUERIES)
+            grid(0).cache(CACHE_PERSON).query(new SqlFieldsQuery(dmlQuery));
+    }
+
+    /**
+     * Start Ignite grid and create cache.
+     *
+     * @throws Exception In case is failure.
+     */
+    private void prepareIgnite() throws Exception {
+        IgniteEx ignite = startGrid(0);
 
         ignite.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setSqlSchema("TEST")
             .setIndexedTypes(PersonKey.class, Person.class));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /**
-     * Checking correct behaviour for DML inside transaction by default
-     */
-    public void testDmlInTransactionByDefault() {
-        for (String dmlQuery : DML_QUERIES) {
-            runDmlInTransactionTest(dmlQuery, false);
-        }
-    }
-
-    /**
-     * Checking correct behaviour for DML inside transaction when compatibility property set as disabled
-     */
-    public void testDmlInTransactionInDisabledCompatibilityMode() {
-        try (SystemProperty ignored = new SystemProperty(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION, "false")) {
-            for (String dmlQuery : DML_QUERIES) {
-                runDmlInTransactionTest(dmlQuery, false);
-            }
-        }
-    }
-
-    /**
-     * Checking correct behaviour for DML inside transaction when compatibility property set as enabled
-     */
-    public void testDmlInTransactionInCompatibilityMode() {
-        try (SystemProperty ignored = new SystemProperty(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION, "true")) {
-            for (String dmlQuery : DML_QUERIES) {
-                runDmlInTransactionTest(dmlQuery, true);
-            }
-        }
-    }
-
-    /**
-     * Checking that DML can be executed without a errors outside transaction
-     */
-    public void testDmlNotInTransaction() {
-        for (String dmlQuery : DML_QUERIES) {
-            grid(0).cache(CACHE_PERSON).query(new SqlFieldsQuery(dmlQuery));
-        }
     }
 
     /**
