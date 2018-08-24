@@ -36,42 +36,42 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +java-class('Serializer:', model + '.serializer', '"serializer"', 'true', 'false', 'Class with custom serialization logic for binary objects')
             .pc-form-grid-col-60
                 .ignite-form-field
-                    +ignite-form-field__label('Type configurations:', '"typeConfigurations"')
-                        +tooltip(`Configuration properties for binary types`)
-                    .ignite-form-field__control
-                        -var items = model + '.typeConfigurations'
-                        list-editable.pc-list-editable-with-form-grid(ng-model=items name='typeConfigurations')
-                            list-editable-item-edit.pc-form-grid-row
-                                - form = '$parent.form'
-                                .pc-form-grid-col-60
-                                    +java-class-autofocus('Type name:', '$item.typeName', '"typeName"', 'true', 'true', 'true', 'Type name')(
-                                        ignite-unique=items
-                                        ignite-unique-property='typeName'
-                                    )
-                                        +unique-feedback(`$item.typeName`, 'Type name should be unique.')
-                                .pc-form-grid-col-60
-                                    +java-class('ID mapper:', '$item.idMapper', '"idMapper"', 'true', 'false',
-                                        'Maps given from BinaryNameMapper type and filed name to ID that will be used by Ignite in internals<br/>\
-                                        Ignite never writes full strings for field or type/class names.\
-                                        Instead, for performance reasons, Ignite writes integer hash codes for type/class and field names.\
-                                        It has been tested that hash code conflicts for the type/class names or the field names within the same type are virtually non - existent and,\
-                                        to gain performance, it is safe to work with hash codes.\
-                                        For the cases when hash codes for different types or fields actually do collide <b>BinaryIdMapper</b> allows to override the automatically generated hash code IDs for the type and field names')
-                                .pc-form-grid-col-60
-                                    +java-class('Name mapper:', '$item.nameMapper', '"nameMapper"', 'true', 'false',
-                                        'Maps type/class and field names to different names')
-                                .pc-form-grid-col-60
-                                    +java-class('Serializer:', '$item.serializer', '"serializer"', 'true', 'false',
-                                        'Class with custom serialization logic for binary object')
-                                .pc-form-grid-col-60
-                                    +checkbox('Enum', '$item.enum', 'enum', 'Flag indicating that this type is the enum')
+                    +form-field__label({ label: 'Type configurations:', name: '"typeConfigurations"' })
+                        +form-field__tooltip({ title: `Configuration properties for binary types`})
 
-                            list-editable-no-items
-                                list-editable-add-item-button(
-                                    add-item=`$ctrl.Clusters.addBinaryTypeConfiguration($ctrl.clonedCluster)`
-                                    label-single='configuration'
-                                    label-multiple='configurations'
+                    -var items = model + '.typeConfigurations'
+                    list-editable.pc-list-editable-with-form-grid(ng-model=items name='typeConfigurations')
+                        list-editable-item-edit.pc-form-grid-row
+                            - form = '$parent.form'
+                            .pc-form-grid-col-60
+                                +java-class-autofocus('Type name:', '$item.typeName', '"typeName"', 'true', 'true', 'true', 'Type name')(
+                                    ignite-unique=items
+                                    ignite-unique-property='typeName'
                                 )
+                                    +unique-feedback(`$item.typeName`, 'Type name should be unique.')
+                            .pc-form-grid-col-60
+                                +java-class('ID mapper:', '$item.idMapper', '"idMapper"', 'true', 'false',
+                                    'Maps given from BinaryNameMapper type and filed name to ID that will be used by Ignite in internals<br/>\
+                                    Ignite never writes full strings for field or type/class names.\
+                                    Instead, for performance reasons, Ignite writes integer hash codes for type/class and field names.\
+                                    It has been tested that hash code conflicts for the type/class names or the field names within the same type are virtually non - existent and,\
+                                    to gain performance, it is safe to work with hash codes.\
+                                    For the cases when hash codes for different types or fields actually do collide <b>BinaryIdMapper</b> allows to override the automatically generated hash code IDs for the type and field names')
+                            .pc-form-grid-col-60
+                                +java-class('Name mapper:', '$item.nameMapper', '"nameMapper"', 'true', 'false',
+                                    'Maps type/class and field names to different names')
+                            .pc-form-grid-col-60
+                                +java-class('Serializer:', '$item.serializer', '"serializer"', 'true', 'false',
+                                    'Class with custom serialization logic for binary object')
+                            .pc-form-grid-col-60
+                                +checkbox('Enum', '$item.enum', 'enum', 'Flag indicating that this type is the enum')
+
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$ctrl.Clusters.addBinaryTypeConfiguration($ctrl.clonedCluster)`
+                                label-single='configuration'
+                                label-multiple='configurations'
+                            )
 
             - form = 'binary'
             .pc-form-grid-col-60

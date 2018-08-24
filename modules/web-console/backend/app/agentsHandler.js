@@ -253,6 +253,12 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             });
 
             sock.on('cluster:topology', (top) => {
+                if (_.isNil(top)) {
+                    console.log('Invalid format of message: "cluster:topology"');
+
+                    return;
+                }
+
                 const cluster = this.getOrCreateCluster(top);
 
                 _.forEach(this.topLsnrs, (lsnr) => lsnr(agentSocket, cluster, top));
@@ -322,7 +328,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
                             console.log(`Agent disconnected with [socketId=${sockId}, reason=${reason}]`);
                         });
 
-                        sock.on('agent:auth', ({ver, bt, tokens, disableDemo}, cb) => {
+                        sock.on('agent:auth', ({ver, bt, tokens, disableDemo} = {}, cb) => {
                             console.log(`Received authentication request [socketId=${sockId}, tokens=${tokens}, ver=${ver}].`);
 
                             if (_.isEmpty(tokens))

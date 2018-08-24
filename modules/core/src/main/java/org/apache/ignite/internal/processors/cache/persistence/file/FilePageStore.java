@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
@@ -182,7 +183,7 @@ public class FilePageStore implements PageStore {
      * Checks that file store has correct header and size.
      *
      * @return Next available position in the file to store a data.
-     * @throws IOException If check is failed.
+     * @throws IOException If check has failed.
      */
     private long checkFile(FileIO fileIO) throws IOException {
         ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
@@ -233,10 +234,10 @@ public class FilePageStore implements PageStore {
     }
 
     /**
-     * @param cleanFile {@code True} to delete file.
-     * @throws PersistentStorageIOException If failed.
+     * @param delete {@code True} to delete file.
+     * @throws StorageException If failed in case of underlying I/O exception.
      */
-    public void stop(boolean cleanFile) throws PersistentStorageIOException {
+    public void stop(boolean delete) throws StorageException {
         lock.writeLock().lock();
 
         try {
@@ -249,11 +250,12 @@ public class FilePageStore implements PageStore {
 
             fileIO = null;
 
-            if (cleanFile)
+            if (delete)
                 Files.delete(cfgFile.toPath());
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException(e);
+            throw new StorageException("Failed to stop serving partition file [file=" + cfgFile.getPath()
+                + ", delete=" + delete + "]", e);
         }
         finally {
             lock.writeLock().unlock();
@@ -264,9 +266,9 @@ public class FilePageStore implements PageStore {
      * Truncates and deletes partition file.
      *
      * @param tag New partition tag.
-     * @throws PersistentStorageIOException If failed
+     * @throws StorageException If failed in case of underlying I/O exception.
      */
-    public void truncate(int tag) throws PersistentStorageIOException {
+    public void truncate(int tag) throws StorageException {
         init();
 
         lock.writeLock().lock();
@@ -283,7 +285,7 @@ public class FilePageStore implements PageStore {
             Files.delete(cfgFile.toPath());
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Failed to delete partition file: " + cfgFile.getPath(), e);
+            throw new StorageException("Failed to truncate partition file [file=" + cfgFile.getPath() + "]", e);
         }
         finally {
             allocatedTracker.updateTotalAllocatedPages(-1L * allocated.get() / pageSize);
@@ -311,9 +313,9 @@ public class FilePageStore implements PageStore {
     }
 
     /**
-     *
+     * @throws StorageException If failed in case of underlying I/O exception.
      */
-    public void finishRecover() throws PersistentStorageIOException {
+    public void finishRecover() throws StorageException {
         lock.writeLock().lock();
 
         try {
@@ -332,7 +334,7 @@ public class FilePageStore implements PageStore {
             recover = false;
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Failed to finish recover", e);
+            throw new StorageException("Failed to finish recover partition file [file=" + cfgFile.getAbsolutePath() + "]", e);
         }
         finally {
             lock.writeLock().unlock();
@@ -386,7 +388,7 @@ public class FilePageStore implements PageStore {
                 PageIO.setCrc(pageBuf, savedCrc32);
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Read error", e);
+            throw new StorageException("Failed to read page [file=" + cfgFile.getAbsolutePath() + ", pageId=" + pageId + "]", e);
         }
     }
 
@@ -400,14 +402,14 @@ public class FilePageStore implements PageStore {
             readWithFailover(buf, 0);
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Read error", e);
+            throw new StorageException("Failed to read header [file=" + cfgFile.getAbsolutePath() + "]", e);
         }
     }
 
     /**
-     * @throws PersistentStorageIOException If failed to initialize store file.
+     * @throws StorageException If failed to initialize store file.
      */
-    private void init() throws PersistentStorageIOException {
+    private void init() throws StorageException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -415,7 +417,7 @@ public class FilePageStore implements PageStore {
                 if (!inited) {
                     FileIO fileIO = null;
 
-                    PersistentStorageIOException err = null;
+                    StorageException err = null;
 
                     long newSize;
 
@@ -449,8 +451,8 @@ public class FilePageStore implements PageStore {
                         inited = true;
                     }
                     catch (IOException e) {
-                        err = new PersistentStorageIOException(
-                            "Failed to initialize partition file: " + cfgFile.getName(), e);
+                        err = new StorageException(
+                            "Failed to initialize partition file: " + cfgFile.getAbsolutePath(), e);
 
                         throw err;
                     }
@@ -608,8 +610,8 @@ public class FilePageStore implements PageStore {
                     }
                 }
 
-                throw new PersistentStorageIOException("Failed to write the page to the file store [pageId=" + pageId
-                    + ", file=" + cfgFile.getAbsolutePath() + ']', e);
+                throw new StorageException("Failed to write page [file=" + cfgFile.getAbsolutePath()
+                    + ", pageId=" + pageId + ", tag=" + tag + "]", e);
             }
         }
     }
@@ -635,7 +637,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void sync() throws IgniteCheckedException {
+    @Override public void sync() throws StorageException {
         lock.writeLock().lock();
 
         try {
@@ -647,7 +649,7 @@ public class FilePageStore implements PageStore {
                 fileIO.force();
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Sync error", e);
+            throw new StorageException("Failed to fsync partition file [file=" + cfgFile.getAbsolutePath() + "]", e);
         }
         finally {
             lock.writeLock().unlock();
