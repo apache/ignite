@@ -459,10 +459,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             for (IgniteTxEntry e : dhtMapping.entries())
                 updCntrs.add(e.updateCounter());
 
-            Map<Integer, PartitionUpdateCounters> updCntrsMap = null;
+            Map<Integer, PartitionUpdateCounters> updCntrsForNode = null;
 
             if (dhtMapping.queryUpdate() && commit)
-                updCntrsMap = filterUpdateCountersForNode(n);
+                updCntrsForNode = tx.filterUpdateCountersForBackupNode(n);
 
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
@@ -491,7 +491,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 false,
                 false,
                 mvccSnapshot,
-                updCntrsMap);
+                updCntrsForNode);
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -595,50 +595,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     }
                 }
             }
-        }
-
-        return res;
-    }
-
-    /**
-     * @return Partition counters map for the given backup node.
-     */
-    private Map<Integer, PartitionUpdateCounters> filterUpdateCountersForNode(ClusterNode node) {
-        // t0d0 check me
-        Map<Integer, PartitionUpdateCounters> updCntrs = tx.txCounters().updateCounters();
-
-        if (F.isEmpty(updCntrs))
-            return null;
-
-        Map<Integer, PartitionUpdateCounters> res = new HashMap<>();
-
-        AffinityTopologyVersion top = tx.topologyVersionSnapshot();
-
-        for (Map.Entry<Integer, PartitionUpdateCounters> entry : updCntrs.entrySet()) {
-            Integer cacheId = entry.getKey();
-
-            Map<Integer, Long> partsCntrs = entry.getValue().updateCounters();
-
-            assert !F.isEmpty(partsCntrs);
-
-            GridCacheAffinityManager affinity = cctx.cacheContext(cacheId).affinity();
-
-            PartitionUpdateCounters resBackupUpdates = new PartitionUpdateCounters();
-
-            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
-                Integer p = e.getKey();
-
-                Long cntr = e.getValue();
-
-                if (affinity.backupByPartition(node, p, top)) {
-                    assert cntr != null && cntr > 0 : cntr;
-
-                    resBackupUpdates.updateCounters().put(p, cntr);
-                }
-            }
-
-            if (!resBackupUpdates.updateCounters().isEmpty())
-                res.put(cacheId, resBackupUpdates);
         }
 
         return res;
