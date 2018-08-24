@@ -32,7 +32,6 @@ public class MaxAbsScalerPreprocessorTest {
     @Test
     public void testApply() {
         double[][] data = new double[][]{
-         //{f1,   f2,    f3}
             {2.,  4.,    1.},
             {1.,  8.,   22.},
             {-4., 10., 100.},
