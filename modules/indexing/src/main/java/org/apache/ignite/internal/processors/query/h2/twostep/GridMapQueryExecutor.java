@@ -644,9 +644,6 @@ public class GridMapQueryExecutor {
 
             qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, worker);
 
-            if (nodeRess.put(reqId, segmentId, qr) != null)
-                throw new IllegalStateException();
-
             // Prepare query context.
             final GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
                 node.id(),
@@ -661,99 +658,95 @@ public class GridMapQueryExecutor {
                 .reservations(reserved)
                 .lazyWorker(worker);
 
-            Connection conn = h2.connectionForSchema(schemaName);
-
-            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
-
-            GridH2QueryContext.set(qctx);
+            // qctx is set, we have to release reservations inside of it.
+            reserved = null;
 
             if (worker != null)
                 worker.queryContext(qctx);
 
-            // qctx is set, we have to release reservations inside of it.
-            reserved = null;
+            GridH2QueryContext.set(qctx);
 
-            try {
-                if (nodeRess.cancelled(reqId)) {
-                    GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qctx.type());
+            if (nodeRess.put(reqId, segmentId, qr) != null)
+                throw new IllegalStateException();
 
-                    nodeRess.cancelRequest(reqId);
+            Connection conn = h2.connectionForSchema(schemaName);
+
+            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
+
+            if (nodeRess.cancelled(reqId)) {
+                GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qctx.type());
+
+                nodeRess.cancelRequest(reqId);
+
+                throw new QueryCancelledException();
+            }
+
+            // Run queries.
+            int qryIdx = 0;
+
+            boolean evt = mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
+
+            for (GridCacheSqlQuery qry : qrys) {
+                ResultSet rs = null;
+
+                // If we are not the target node for this replicated query, just ignore it.
+                if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
+                    rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
+                        F.asList(qry.parameters(params)), true,
+                        timeout,
+                        qr.queryCancel(qryIdx));
+
+                    if (evt) {
+                        ctx.event().record(new CacheQueryExecutedEvent<>(
+                            node,
+                            "SQL query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.SQL.name(),
+                            mainCctx.name(),
+                            null,
+                            qry.query(),
+                            null,
+                            null,
+                            params,
+                            node.id(),
+                            null));
+                    }
+
+                    assert rs instanceof JdbcResultSet : rs.getClass();
+                }
+
+                qr.addResult(qryIdx, qry, node.id(), rs, params);
+
+                if (qr.cancelled()) {
+                    qr.result(qryIdx).close();
 
                     throw new QueryCancelledException();
                 }
 
-                // Run queries.
-                int qryIdx = 0;
+                // Send the first page.
+                sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
 
-                boolean evt = mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
-
-                for (GridCacheSqlQuery qry : qrys) {
-                    ResultSet rs = null;
-
-                    // If we are not the target node for this replicated query, just ignore it.
-                    if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
-                            F.asList(qry.parameters(params)), true,
-                            timeout,
-                            qr.queryCancel(qryIdx));
-
-                        if (evt) {
-                            ctx.event().record(new CacheQueryExecutedEvent<>(
-                                node,
-                                "SQL query executed.",
-                                EVT_CACHE_QUERY_EXECUTED,
-                                CacheQueryType.SQL.name(),
-                                mainCctx.name(),
-                                null,
-                                qry.query(),
-                                null,
-                                null,
-                                params,
-                                node.id(),
-                                null));
-                        }
-
-                        assert rs instanceof JdbcResultSet : rs.getClass();
-                    }
-
-                    qr.addResult(qryIdx, qry, node.id(), rs, params);
-
-                    if (qr.cancelled()) {
-                        qr.result(qryIdx).close();
-
-                        throw new QueryCancelledException();
-                    }
-
-                    // Send the first page.
-                    sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
-
-                    qryIdx++;
-                }
-
-                // All request results are in the memory in result set already, so it's ok to release partitions.
-                if (!lazy)
-                    releaseReservations();
-                else if (!qr.isAllClosed()) {
-                    if (MapQueryLazyWorker.currentWorker() == null) {
-                        final ObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
-
-                        worker.detachedConnection(detachedConn);
-
-                        GridH2Table.detachReadLocksFromCurrentThread(H2Utils.session(conn));
-
-                        worker.start();
-
-                        GridH2QueryContext.clearThreadLocal();
-                    }
-                }
-                else
-                    unregisterLazyWorker(worker);
+                qryIdx++;
             }
-            catch (Throwable e){
+
+            // All request results are in the memory in result set already, so it's ok to release partitions.
+            if (!lazy && MapQueryLazyWorker.currentWorker() == null)
                 releaseReservations();
+            else if (!qr.isAllClosed()) {
+                if (MapQueryLazyWorker.currentWorker() == null) {
+                    final ObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
 
-                throw e;
+                    worker.detachedConnection(detachedConn);
+
+                    GridH2Table.detachReadLocksFromCurrentThread(H2Utils.session(conn));
+
+                    worker.start();
+
+                    GridH2QueryContext.clearThreadLocal();
+                }
             }
+            else
+                unregisterLazyWorker(worker);
         }
         catch (Throwable e) {
             if (qr != null) {
@@ -761,6 +754,8 @@ public class GridMapQueryExecutor {
 
                 qr.cancel(false);
             }
+            else
+                releaseReservations();
 
             if (X.cause(e, GridH2ReadLockTimeoutException.class) != null) {
                 // Execute query in separate lazy worker in case we couldn't obtain table lock long time.
