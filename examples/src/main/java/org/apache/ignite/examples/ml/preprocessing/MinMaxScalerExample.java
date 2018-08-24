@@ -42,7 +42,7 @@ public class MinMaxScalerExample {
     /** Run example. */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> Normalization example started.");
+            System.out.println(">>> MinMax preprocessing example started.");
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
@@ -79,7 +79,7 @@ public class MinMaxScalerExample {
                     System.out.println("\t" + Arrays.toString(row));
             }
 
-            System.out.println(">>> Normalization example completed.");
+            System.out.println(">>> MinMax preprocessing example completed.");
         }
     }
 
