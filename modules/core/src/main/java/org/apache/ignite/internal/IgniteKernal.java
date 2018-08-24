@@ -1112,9 +1112,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     catch (IgniteNeedReconnectException e) {
                         ClusterNode locNode = ctx.discovery().localNode();
 
-                        assert CU.clientNode(locNode);
+                        assert locNode.isClient();
 
-                        if (!locNode.isClient())
+                        if (!ctx.discovery().reconnectSupported())
                             throw new IgniteCheckedException("Client node in forceServerMode " +
                                 "is not allowed to reconnect to the cluster and will be stopped.");
 
@@ -1590,8 +1590,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Warn about loopback.
         if (ips.isEmpty() && macs.isEmpty())
             U.warn(log, "Ignite is starting on loopback address... Only nodes on the same physical " +
-                    "computer can participate in topology.",
-                "Ignite is starting on loopback address...");
+                "computer can participate in topology.");
 
         // Stick in network context into attributes.
         add(ATTR_IPS, (ips.isEmpty() ? "" : ips));
@@ -2460,7 +2459,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         U.log(log, "System cache's DataRegion size is configured to " +
             (memCfg.getSystemRegionInitialSize() / (1024 * 1024)) + " MB. " +
-            "Use DataStorageConfiguration.systemCacheMemorySize property to change the setting.");
+            "Use DataStorageConfiguration.systemRegionInitialSize property to change the setting.");
     }
 
     /**
@@ -2517,9 +2516,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.warn(
                 log,
                 "Peer class loading is enabled (disable it in production for performance and " +
-                    "deployment consistency reasons)",
-                "Peer class loading is enabled (disable it for better performance)"
-            );
+                    "deployment consistency reasons)");
     }
 
     /**

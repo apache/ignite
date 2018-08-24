@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
@@ -518,18 +519,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (delay != 0) {
             if (cc.getCacheMode() != PARTITIONED)
-                U.warn(log, "Rebalance delay is supported only for partitioned caches (will ignore): " + (cc.getName()),
-                    "Will ignore rebalance delay for cache: " + U.maskName(cc.getName()));
+                U.warn(log, "Rebalance delay is supported only for partitioned caches (will ignore): " + (cc.getName()));
             else if (cc.getRebalanceMode() == SYNC) {
                 if (delay < 0) {
                     U.warn(log, "Ignoring SYNC rebalance mode with manual rebalance start (node will not wait for " +
-                            "rebalancing to be finished): " + U.maskName(cc.getName()),
-                        "Node will not wait for rebalance in SYNC mode: " + U.maskName(cc.getName()));
+                        "rebalancing to be finished): " + U.maskName(cc.getName()));
                 }
                 else {
                     U.warn(log, "Using SYNC rebalance mode with rebalance delay (node will wait until rebalancing is " +
-                            "initiated for " + delay + "ms) for cache: " + U.maskName(cc.getName()),
-                        "Node will wait until rebalancing is initiated for " + delay + "ms for cache: " + U.maskName(cc.getName()));
+                        "initiated for " + delay + "ms) for cache: " + U.maskName(cc.getName()));
                 }
             }
         }
@@ -552,6 +550,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Using cache group names reserved for datastructures is not allowed for " +
                 "other cache types [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                 ", cacheType=" + cacheType + "]");
+
+        // Make sure we do not use sql schema for system views.
+        if (ctx.query().moduleEnabled()) {
+            String schema = QueryUtils.normalizeSchemaName(cc.getName(), cc.getSqlSchema());
+
+            if (F.eq(schema, QueryUtils.SCHEMA_SYS)) {
+                if (cc.getSqlSchema() == null) {
+                    // Conflict on cache name.
+                    throw new IgniteCheckedException("SQL schema name derived from cache name is reserved (" +
+                        "please set explicit SQL schema name through CacheConfiguration.setSqlSchema() or choose " +
+                        "another cache name) [cacheName=" + cc.getName() + ", schemaName=" + cc.getSqlSchema() + "]");
+                }
+                else {
+                    // Conflict on schema name.
+                    throw new IgniteCheckedException("SQL schema name is reserved (please choose another one) [" +
+                        "cacheName=" + cc.getName() + ", schemaName=" + cc.getSqlSchema() + ']');
+                }
+            }
+        }
 
         if (cc.isEncrypted() && !ctx.clientNode()) {
             if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration())) {
@@ -690,8 +707,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
             if (depMode != CONTINUOUS && depMode != SHARED)
                 U.warn(log, "Deployment mode for cache is not CONTINUOUS or SHARED " +
-                        "(it is recommended that you change deployment mode and restart): " + depMode,
-                    "Deployment mode for cache is not CONTINUOUS or SHARED.");
+                    "(it is recommended that you change deployment mode and restart): " + depMode);
         }
 
         initializeInternalCacheNames();
@@ -2508,6 +2524,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheIoManager ioMgr = new GridCacheIoManager();
         CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();
         GridCacheSharedTtlCleanupManager ttl = new GridCacheSharedTtlCleanupManager();
+        PartitionsEvictManager evict = new PartitionsEvictManager();
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
 
@@ -2526,6 +2543,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             topMgr,
             ioMgr,
             ttl,
+            evict,
             jta,
             storeSesLsnrs
         );
@@ -3809,7 +3827,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
-        if (!CU.clientNode(node)) {
+        if (!node.isClient()) {
             for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
 

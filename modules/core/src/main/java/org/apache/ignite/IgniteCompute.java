@@ -702,6 +702,20 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      */
     public IgniteCompute withNoFailover();
 
+
+    /**
+     * Disables caching for the next executed task in the <b>current thread</b>.
+     * Has the same behaviour as annotation {@link org.apache.ignite.compute.ComputeTaskNoResultCache}.
+     *
+     * <p>
+     * Here is an example.
+     * <pre name="code" class="java">
+     * ignite.compute().withNoResultCache().run(new IgniteRunnable() {...});
+     * </pre>
+     * @return This {@code IgniteCompute} instance for chaining calls.
+     */
+    public IgniteCompute withNoResultCache();
+
     /**
      * Explicitly deploys a task with given class loader on the local node. Upon completion of this method,
      * a task can immediately be executed on the grid, considering that all participating

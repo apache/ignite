@@ -20,55 +20,35 @@ package org.apache.ignite.ml.svm;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Test;
 
 /**
  * Tests for {@link SVMLinearBinaryClassificationTrainer}.
  */
-public class SVMBinaryTrainerTest {
-    /** Fixed size of Dataset. */
-    private static final int AMOUNT_OF_OBSERVATIONS = 1000;
-
-    /** Fixed size of columns in Dataset. */
-    private static final int AMOUNT_OF_FEATURES = 2;
-
-    /** Precision in test checks. */
-    private static final double PRECISION = 1e-2;
-
+public class SVMBinaryTrainerTest extends TrainerTest {
     /**
      * Test trainer on classification model y = x.
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase() {
-        Map<Integer, double[]> data = new HashMap<>();
+        Map<Integer, double[]> cacheMock = new HashMap<>();
 
-        ThreadLocalRandom rndX = ThreadLocalRandom.current();
-        ThreadLocalRandom rndY = ThreadLocalRandom.current();
-
-        for (int i = 0; i < AMOUNT_OF_OBSERVATIONS; i++) {
-            double x = rndX.nextDouble(-1000, 1000);
-            double y = rndY.nextDouble(-1000, 1000);
-            double[] vec = new double[AMOUNT_OF_FEATURES + 1];
-            vec[0] = y - x > 0 ? 1 : -1; // assign label.
-            vec[1] = x;
-            vec[2] = y;
-            data.put(i, vec);
-        }
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
+            cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
         SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
 
         SVMLinearBinaryClassificationModel mdl = trainer.fit(
-            data,
-            10,
+            cacheMock,
+            parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(-1, mdl.apply(new DenseVector(new double[]{100, 10})), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(new DenseVector(new double[]{10, 100})), PRECISION);
+        TestUtils.assertEquals(-1, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
     }
 }

@@ -41,6 +41,12 @@ public class GridSpringTransactionManagerSpringBeanSelfTest extends GridSpringTr
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ApplicationContext appCtx = new GenericXmlApplicationContext("config/spring-transactions-ignite-spring-bean.xml");
+
+        // To produce multiple calls of ApplicationListener::onApplicationEvent
+        GenericXmlApplicationContext child = new GenericXmlApplicationContext();
+        child.setParent(appCtx);
+        child.refresh();
+
         ignite = (Ignite)appCtx.getBean("mySpringBean");
         service = (GridSpringTransactionService)appCtx.getBean("gridSpringTransactionService");
     }
