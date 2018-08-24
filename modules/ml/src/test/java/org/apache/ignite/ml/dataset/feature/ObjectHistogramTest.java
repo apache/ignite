@@ -9,23 +9,23 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class FeatureHistogramTest {
+public class ObjectHistogramTest {
     private double[] dataFirstPart = new double[] {0., 0., 0., 0., 1., 1., 1, 2., 2., 3., 4., 5.};
     private double[] dataSecondPart = new double[] {0., 1., 0., 1., 0., 1., 0, 1., 0., 1., 0., 5., 6.};
 
-    private FeatureHistogram<Double> hist1;
-    private FeatureHistogram<Double> hist2;
+    private ObjectHistogram<Double> hist1;
+    private ObjectHistogram<Double> hist2;
 
     @Before
     public void setUp() throws Exception {
-        hist1 = new FeatureHistogram<>(this::computeBucket, x -> 1.);
-        hist2 = new FeatureHistogram<>(this::computeBucket, x -> 1.);
+        hist1 = new ObjectHistogram<>(this::computeBucket, x -> 1.);
+        hist2 = new ObjectHistogram<>(this::computeBucket, x -> 1.);
 
         fillHist(hist1, dataFirstPart);
         fillHist(hist2, dataSecondPart);
     }
 
-    private void fillHist(FeatureHistogram<Double> hist, double[] data) {
+    private void fillHist(ObjectHistogram<Double> hist, double[] data) {
         for (int i = 0; i < data.length; i++)
             hist.addElement(data[i]);
     }
@@ -36,7 +36,7 @@ public class FeatureHistogramTest {
         testBuckets(hist2, new int[] {0, 1, 5, 6}, new int[] {6, 5, 1, 1});
     }
 
-    private void testBuckets(FeatureHistogram<Double> hist, int[] expectedBuckets, int[] expectedCounters) {
+    private void testBuckets(ObjectHistogram<Double> hist, int[] expectedBuckets, int[] expectedCounters) {
         int size = hist.buckets().size();
         int[] buckets = new int[size];
         int[] counters = new int[size];

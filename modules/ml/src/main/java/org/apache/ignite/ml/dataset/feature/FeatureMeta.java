@@ -17,19 +17,33 @@
 
 package org.apache.ignite.ml.dataset.feature;
 
+/**
+ * Feature meta class.
+ */
 public class FeatureMeta {
+    /** Id of feature in feature vector. */
     private final int featureId;
+
+    /** Is categorical feature flag. */
     private final boolean isCategoricalFeature;
 
+    /**
+     * Create an instance of Feature meta.
+     *
+     * @param featureId Feature id.
+     * @param isCategoricalFeature Is categorical feature.
+     */
     public FeatureMeta(int featureId, boolean isCategoricalFeature) {
         this.featureId = featureId;
         this.isCategoricalFeature = isCategoricalFeature;
     }
 
+    /** */
     public int getFeatureId() {
         return featureId;
     }
 
+    /** */
     public boolean isCategoricalFeature() {
         return isCategoricalFeature;
     }

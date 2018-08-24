@@ -17,15 +17,34 @@
 
 package org.apache.ignite.ml.dataset.feature;
 
+/**
+ * Bucket meta-information for feature histogram.
+ */
 public class BucketMeta {
+    /** Feature meta. */
     private final FeatureMeta featureMeta;
+
+    /** Bucket size. */
     private double bucketSize;
+
+    /** Min value of feature. */
     private double minValue;
 
+    /**
+     * Creates an instance of BucketMeta.
+     *
+     * @param featureMeta Feature meta.
+     */
     public BucketMeta(FeatureMeta featureMeta) {
         this.featureMeta = featureMeta;
     }
 
+    /**
+     * Returns bucket id for feature value.
+     *
+     * @param value Value.
+     * @return bucket id.
+     */
     public int getBucketId(Double value) {
         if(featureMeta.isCategoricalFeature())
             return (int) Math.rint(value);
@@ -33,6 +52,12 @@ public class BucketMeta {
         return (int) Math.rint((value - minValue) / bucketSize);
     }
 
+    /**
+     * Returns mean value by bucket id.
+     *
+     * @param bucketId Bucket id.
+     * @return mean value of feature.
+     */
     public double bucketIdToValue(int bucketId) {
         if(featureMeta.isCategoricalFeature())
             return (double) bucketId;
@@ -40,14 +65,21 @@ public class BucketMeta {
         return minValue + (bucketId + 0.5) * bucketSize;
     }
 
+    /**
+     * @param minValue Min value.
+     */
     public void setMinValue(double minValue) {
         this.minValue = minValue;
     }
 
+    /**
+     * @param bucketSize Bucket size.
+     */
     public void setBucketSize(double bucketSize) {
         this.bucketSize = bucketSize;
     }
 
+    /** */
     public FeatureMeta getFeatureMeta() {
         return featureMeta;
     }

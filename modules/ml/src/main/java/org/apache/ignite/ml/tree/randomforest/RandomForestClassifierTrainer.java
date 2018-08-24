@@ -27,14 +27,14 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
-import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogram;
 
-public class RandomForestClassifierTrainer extends RandomForestTrainer<FeatureHistogram<BootstrappedVector>, GiniHistogram, RandomForestClassifierTrainer> {
+public class RandomForestClassifierTrainer extends RandomForestTrainer<ObjectHistogram<BootstrappedVector>, GiniHistogram, RandomForestClassifierTrainer> {
     private Map<Double, Integer> lblMapping = new HashMap<>();
 
     public RandomForestClassifierTrainer(List<FeatureMeta> meta) {
@@ -80,25 +80,25 @@ public class RandomForestClassifierTrainer extends RandomForestTrainer<FeatureHi
         return new GiniHistogram(sampleId, lblMapping, meta);
     }
 
-    @Override protected void addElementToLeafStat(FeatureHistogram<BootstrappedVector> leafStatAggr, BootstrappedVector vec, int sampleId) {
+    @Override protected void addElementToLeafStat(ObjectHistogram<BootstrappedVector> leafStatAggr, BootstrappedVector vec, int sampleId) {
         leafStatAggr.addElement(vec);
     }
 
-    @Override protected FeatureHistogram<BootstrappedVector> mergeLeafStats(FeatureHistogram<BootstrappedVector> leafStatAggr1,
-        FeatureHistogram<BootstrappedVector> leafStatAggr2) {
+    @Override protected ObjectHistogram<BootstrappedVector> mergeLeafStats(ObjectHistogram<BootstrappedVector> leafStatAggr1,
+        ObjectHistogram<BootstrappedVector> leafStatAggr2) {
 
         leafStatAggr1.addHist(leafStatAggr2);
         return leafStatAggr1;
     }
 
-    @Override protected FeatureHistogram<BootstrappedVector> createLeafStatsAggregator(int sampleId) {
-        return new FeatureHistogram<>(
+    @Override protected ObjectHistogram<BootstrappedVector> createLeafStatsAggregator(int sampleId) {
+        return new ObjectHistogram<>(
             x -> lblMapping.get(x.getLabel()),
             x -> (double)x.getRepetitionsCounters()[sampleId]
         );
     }
 
-    @Override protected double computeLeafValue(FeatureHistogram<BootstrappedVector> stat) {
+    @Override protected double computeLeafValue(ObjectHistogram<BootstrappedVector> stat) {
         Integer bucketId = stat.buckets().stream()
             .max(Comparator.comparing(b -> stat.get(b).orElse(0.0)))
             .get();

@@ -27,7 +27,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
-import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
+import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
@@ -47,7 +47,7 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
     private final int sampleId;
 
     /** Hists of counters for each labels. */
-    private final ArrayList<FeatureHistogram<BootstrappedVector>> hists;
+    private final ArrayList<ObjectHistogram<BootstrappedVector>> hists;
 
     /** Label mapping to internal representation. */
     private final Map<Double, Integer> lblMapping;
@@ -70,7 +70,7 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
         this.lblMapping = lblMapping;
 
         for (int i = 0; i < lblMapping.size(); i++)
-            hists.add(new FeatureHistogram<>(this::bucketMap, this::counterMap));
+            hists.add(new ObjectHistogram<>(this::bucketMap, this::counterMap));
 
         this.bucketIds = new TreeSet<>();
     }
@@ -105,7 +105,7 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
         double bestSplitValue = Double.NEGATIVE_INFINITY;
         int bestBucketId = -1;
 
-        List<TreeMap<Integer, Double>> distributions = hists.stream().map(FeatureHistogram::computeDistributionFunction)
+        List<TreeMap<Integer, Double>> distributions = hists.stream().map(ObjectHistogram::computeDistributionFunction)
             .collect(Collectors.toList());
         double[] totalCounts = distributions.stream()
             .mapToDouble(x -> x.isEmpty() ? 0.0 : x.lastEntry().getValue())
@@ -176,7 +176,7 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
      * @param lbl Label.
      * @return counters histogram for class-label.
      */
-    FeatureHistogram<BootstrappedVector> getHistForLabel(Double lbl) {
+    ObjectHistogram<BootstrappedVector> getHistForLabel(Double lbl) {
         return hists.get(lblMapping.get(lbl));
     }
 

@@ -22,7 +22,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
-import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
+import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
@@ -45,13 +45,13 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
     private final Set<Integer> bucketIds;
 
     /** Counters. */
-    private final FeatureHistogram<BootstrappedVector> counters;
+    private final ObjectHistogram<BootstrappedVector> counters;
 
     /** Sums of Ys. */
-    private final FeatureHistogram<BootstrappedVector> ys;
+    private final ObjectHistogram<BootstrappedVector> ys;
 
     /** Sums of Y^2s. */
-    private final FeatureHistogram<BootstrappedVector> y2s;
+    private final ObjectHistogram<BootstrappedVector> y2s;
 
     /**
      * Creates an instance of MSEHistogram.
@@ -64,9 +64,9 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
         this.featureId = bucketMeta.getFeatureMeta().getFeatureId();
         this.sampleId = sampleId;
 
-        counters = new FeatureHistogram<>(this::bucketMap, this::counterMap);
-        ys = new FeatureHistogram<>(this::bucketMap, this::ysMap);
-        y2s = new FeatureHistogram<>(this::bucketMap, this::y2sMap);
+        counters = new ObjectHistogram<>(this::bucketMap, this::counterMap);
+        ys = new ObjectHistogram<>(this::bucketMap, this::ysMap);
+        y2s = new ObjectHistogram<>(this::bucketMap, this::y2sMap);
         bucketIds = new TreeSet<>();
     }
 
@@ -210,7 +210,7 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
      *
      * @return Counters histogram.
      */
-    FeatureHistogram<BootstrappedVector> getCounters() {
+    ObjectHistogram<BootstrappedVector> getCounters() {
         return counters;
     }
 
@@ -219,7 +219,7 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
      *
      * @return Ys histogram.
      */
-    FeatureHistogram<BootstrappedVector> getYs() {
+    ObjectHistogram<BootstrappedVector> getYs() {
         return ys;
     }
 
@@ -228,7 +228,7 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
      *
      * @return Y^2s histogram.
      */
-    FeatureHistogram<BootstrappedVector> getY2s() {
+    ObjectHistogram<BootstrappedVector> getY2s() {
         return y2s;
     }
 }

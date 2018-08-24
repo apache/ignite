@@ -20,12 +20,37 @@ package org.apache.ignite.ml.dataset.feature;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Interface of histogram over type T.
+ *
+ * @param <T> Type of object for histogram.
+ * @param <H> Type of histogram that can be used in math operations with this histogram.
+ */
 public interface Histogram<T, H extends Histogram<T, H>> {
+    /**
+     * Add object to histogram.
+     *
+     * @param value Value.
+     */
     public void addElement(T value);
 
+    /**
+     * Accumulate values from other histogram.
+     *
+     * @param other Other histogram.
+     */
     public void addHist(H other);
 
+    /**
+     *
+     * @return bucket ids.
+     */
     public Set<Integer> buckets();
 
+    /**
+     *
+     * @param bucket Bucket id.
+     * @return value in according to bucket id.
+     */
     public Optional<Double> get(Integer bucket);
 }

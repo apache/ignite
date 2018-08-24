@@ -1,4 +1,5 @@
 /*
+
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,18 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.feature;
-
-import java.util.TreeMap;
-
 /**
- * Interface specifies an object that can compute some discrete distribution.
+ * <!-- Package description. -->
+ * Package for helper classes over features such as {@link org.apache.ignite.ml.dataset.feature.ObjectHistogram} or
+ * {@link org.apache.ignite.ml.dataset.feature.FeatureMeta}.
  */
-public interface DistributionComputer {
-    /**
-     * Compute distribution function.
-     *
-     * @return Map represents discrete distribution function.
-     */
-    public TreeMap<Integer, Double> computeDistributionFunction();
-}
+package org.apache.ignite.ml.dataset.feature;
