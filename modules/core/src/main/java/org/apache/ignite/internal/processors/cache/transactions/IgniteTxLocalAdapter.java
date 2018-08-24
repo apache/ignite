@@ -159,9 +159,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** */
     private GridLongList mvccWaitTxs;
 
-    /** Update counters map */
-    private Map<Integer, Map<Integer, Long>> updCntrs = new HashMap<>();
-
     /** */
     private volatile boolean qryEnlisted;
 
@@ -920,7 +917,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                applyAndCollectLocalUpdateCounters();
+                Map<Integer, Map<Integer, Long>> updCntrs = applyAndCollectLocalUpdateCounters();
+
+                txCounters().updateCounters(updCntrs);
 
                 txCounters().updateLocalPartitionSizes();
 
@@ -1648,51 +1647,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * @return Partition counters map for the given backup node.
-     */
-    public Map<Integer, PartitionUpdateCounters> updateCountersForNode(ClusterNode node) {
-        if (F.isEmpty(updCntrs))
-            return null;
-
-        Map<Integer, PartitionUpdateCounters> res = new HashMap<>();
-
-        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
-            Integer cacheId = entry.getKey();
-
-            Map<Integer, Long> partsCntrs = entry.getValue();
-
-            assert !F.isEmpty(partsCntrs);
-
-            GridCacheAffinityManager affinity = cctx.cacheContext(cacheId).affinity();
-
-            PartitionUpdateCounters resBackupUpdates = new PartitionUpdateCounters();
-
-            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
-                Integer p = e.getKey();
-
-                Long cntr = e.getValue();
-
-                if (affinity.backupByPartition(node, p, topologyVersionSnapshot())) {
-                    assert cntr != null && cntr > 0 : cntr;
-
-                    resBackupUpdates.updateCounters().put(p, cntr);
-                }
-            }
-
-            if (!resBackupUpdates.updateCounters().isEmpty())
-                res.put(cacheId, resBackupUpdates);
-        }
-
-        return res;
-    }
-
-    /**
      * Merges mvcc update counters to the partition update counters. For mvcc transactions we update partitions
      * counters only on commit phase.
      */
-    private void applyAndCollectLocalUpdateCounters() {
+    private Map<Integer, Map<Integer, Long>> applyAndCollectLocalUpdateCounters() {
+        // TODO possible duplication 1
         if (F.isEmpty(txState.touchedCachePartitions()))
-            return;
+            return null;
 
         HashMap<Integer, Map<Integer, Long>> updCntrs = new HashMap<>();
 
@@ -1722,7 +1683,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
         }
 
-        this.updCntrs = updCntrs;
+        return updCntrs;
     }
 
     /**

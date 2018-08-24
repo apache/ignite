@@ -502,16 +502,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(Map<Integer, PartitionUpdateCounters> updCntrs) {
-       this.updCntrs = updCntrs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<Integer, PartitionUpdateCounters> updateCounters() {
-        return updCntrs;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxRemote.class, this, "super", super.toString());
     }

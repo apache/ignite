@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,6 +32,8 @@ import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -459,7 +462,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             Map<Integer, PartitionUpdateCounters> updCntrsMap = null;
 
             if (dhtMapping.queryUpdate() && commit)
-                updCntrsMap = tx.updateCountersForNode(n);
+                updCntrsMap = filterUpdateCountersForNode(n);
 
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
@@ -592,6 +595,50 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     }
                 }
             }
+        }
+
+        return res;
+    }
+
+    /**
+     * @return Partition counters map for the given backup node.
+     */
+    private Map<Integer, PartitionUpdateCounters> filterUpdateCountersForNode(ClusterNode node) {
+        // TODO possible duplication 1
+        Map<Integer, Map<Integer, Long>> updCntrs = tx.txCounters().updateCounters();
+
+        if (F.isEmpty(updCntrs))
+            return null;
+
+        Map<Integer, PartitionUpdateCounters> res = new HashMap<>();
+
+        AffinityTopologyVersion top = tx.topologyVersionSnapshot();
+
+        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
+            Integer cacheId = entry.getKey();
+
+            Map<Integer, Long> partsCntrs = entry.getValue();
+
+            assert !F.isEmpty(partsCntrs);
+
+            GridCacheAffinityManager affinity = cctx.cacheContext(cacheId).affinity();
+
+            PartitionUpdateCounters resBackupUpdates = new PartitionUpdateCounters();
+
+            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
+                Integer p = e.getKey();
+
+                Long cntr = e.getValue();
+
+                if (affinity.backupByPartition(node, p, top)) {
+                    assert cntr != null && cntr > 0 : cntr;
+
+                    resBackupUpdates.updateCounters().put(p, cntr);
+                }
+            }
+
+            if (!resBackupUpdates.updateCounters().isEmpty())
+                res.put(cacheId, resBackupUpdates);
         }
 
         return res;

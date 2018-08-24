@@ -835,21 +835,21 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** */
     private void applyLocalUpdateCounters() {
-        Map<Integer, PartitionUpdateCounters> updCntrs = updateCounters();
+        Map<Integer, Map<Integer, Long>> updCntrs = txCounters().updateCounters();
 
         if (F.isEmpty(updCntrs))
             return;
 
-        for (Map.Entry<Integer, PartitionUpdateCounters> entry : updCntrs.entrySet()) {
+        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
             int cacheId = entry.getKey();
 
             GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
 
-            PartitionUpdateCounters cacheUpdates = entry.getValue();
+            Map<Integer, Long> cacheUpdates = entry.getValue();
 
             assert cacheUpdates != null;
 
-            for (Map.Entry<Integer, Long> e : cacheUpdates.updateCounters().entrySet()) {
+            for (Map.Entry<Integer, Long> e : cacheUpdates.entrySet()) {
                 long updCntr = e.getValue();
 
                 GridDhtLocalPartition dhtPart = top.localPartition(e.getKey());
@@ -1012,18 +1012,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(Map<Integer, PartitionUpdateCounters> updCntrs) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<Integer, PartitionUpdateCounters> updateCounters() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDistributedTxRemoteAdapter.class, this, "super", super.toString());
     }
-
 }

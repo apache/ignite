@@ -36,6 +36,8 @@ public class TxCounters {
     private final GridCacheSharedContext<?, ?> cctx;
     /** Size changes for cache partitions made by transaction */
     private final ConcurrentMap<Integer, ConcurrentMap<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
+    /** Update counters for cache partitions in the end of transaction */
+    private Map<Integer, Map<Integer, Long>> updCntrs;
 
     /**
      * @param cctx Cctx.
@@ -74,6 +76,17 @@ public class TxCounters {
         accDelta.addAndGet(delta);
     }
 
+    /** */
+    public void updateCounters(Map<Integer, Map<Integer, Long>> updCntrs) {
+        this.updCntrs = updCntrs;
+    }
+
+    /** */
+    public Map<Integer, Map<Integer, Long>> updateCounters() {
+        return updCntrs;
+    }
+
+    // TODO extract from here?
     /**
      * Updates local partitions size metric.
      */

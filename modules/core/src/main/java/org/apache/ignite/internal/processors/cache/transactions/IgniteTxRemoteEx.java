@@ -52,14 +52,4 @@ public interface IgniteTxRemoteEx extends IgniteInternalTx {
      * @param cntrs Partition update indexes.
      */
     public void setPartitionUpdateCounters(long[] cntrs);
-
-    /**
-     * @param updCntrs Partition updates deferred until transaction commit.
-     */
-    public void updateCounters(Map<Integer, PartitionUpdateCounters> updCntrs);
-
-    /**
-     * @return Partition updates deferred until transaction commit.
-     */
-    public Map<Integer, PartitionUpdateCounters> updateCounters();
 }
