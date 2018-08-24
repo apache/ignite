@@ -26,28 +26,41 @@ import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogram;
 
+/**
+ * Regression trainer based on RandomForest algorithm.
+ */
 public class RandomForestRegressionTrainer extends RandomForestTrainer<IgniteBiTuple<Double, Integer>, MSEHistogram, RandomForestRegressionTrainer> {
+    /**
+     * Constructs an instance of RandomForestRegressionTrainer.
+     *
+     * @param meta Meta.
+     */
     public RandomForestRegressionTrainer(List<FeatureMeta> meta) {
         super(meta);
     }
 
+    /** {@inheritDoc} */
     @Override protected RandomForestRegressionTrainer instance() {
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override protected ModelsComposition buildComposition(List<TreeRoot> models) {
         return new ModelsComposition(models, new MeanValuePredictionsAggregator());
     }
 
+    /** {@inheritDoc} */
     @Override protected MSEHistogram createImpurityComputer(int sampleId, BucketMeta meta) {
         return new MSEHistogram(sampleId, meta);
     }
 
-    @Override protected void addElementToLeafStat(IgniteBiTuple<Double, Integer> leafStatAggr, BootstrappedVector vec, int sampleId) {
+    /** {@inheritDoc} */
+    @Override protected void addElementToLeafStatistic(IgniteBiTuple<Double, Integer> leafStatAggr, BootstrappedVector vec, int sampleId) {
         leafStatAggr.set1(leafStatAggr.get1() + vec.getLabel() * vec.getRepetitionsCounters()[sampleId]);
         leafStatAggr.set2(leafStatAggr.get2() + vec.getRepetitionsCounters()[sampleId]);
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteBiTuple<Double, Integer> mergeLeafStats(IgniteBiTuple<Double, Integer> leafStatAggr1,
         IgniteBiTuple<Double, Integer> leafStatAggr2) {
 
@@ -56,10 +69,12 @@ public class RandomForestRegressionTrainer extends RandomForestTrainer<IgniteBiT
         return leafStatAggr1;
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteBiTuple<Double, Integer> createLeafStatsAggregator(int sampleId) {
         return new IgniteBiTuple<>(0.0, 0);
     }
 
+    /** {@inheritDoc} */
     @Override protected double computeLeafValue(IgniteBiTuple<Double, Integer> stat) {
         return stat.get1() / stat.get2();
     }
