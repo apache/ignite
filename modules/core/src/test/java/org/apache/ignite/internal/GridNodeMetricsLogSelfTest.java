@@ -113,7 +113,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         assertTrue(msg, logOutput.matches("(?s).*PageMemory \\[pages=.*].*"));
         assertTrue(msg, logOutput.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));
         assertTrue(msg, logOutput.matches("(?s).*Off-heap \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*Off-heap .+ region \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*Data region: .+, off-heap \\[used=.*, free=.*, comm=.*].*"));
         assertTrue(msg, logOutput.matches("(?s).*Outbound messages queue \\[size=.*].*"));
         assertTrue(msg, logOutput.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
         assertTrue(msg, logOutput.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
@@ -127,11 +127,11 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
      * @param logOutput Log output.
      */
     protected  void checkMemoryMetrics(String logOutput) {
-        boolean fmtMatches = false;
+        boolean summaryFmtMatches = false;
 
         Set<String> regions = new HashSet<>();
 
-        Matcher matcher = Pattern.compile("(?m).*Off-heap ((?<name>.+) region )?" +
+        Matcher matcher = Pattern.compile("(?m).*(Data region: (?<name>.+), off-heap|Off-heap) " +
                 "\\[used=(?<used>[-.\\d]*).*, free=(?<free>[-.\\d]*).*, comm=(?<comm>[-.\\d]*).*].*")
             .matcher(logOutput);
 
@@ -147,18 +147,18 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
             double free = Double.parseDouble(matcher.group("free"));
 
             assertTrue(used + " should be non negative: " + subj, used >= 0);
-            assertTrue(comm + " is less then used=" + used + ": " + subj, comm >= used);
+            assertTrue(comm + " is less then " + used + ": " + subj, comm >= used);
             assertTrue(free + " is not between 0 and 100: " + subj, 0 <= free && free <= 100);
 
             String regName = matcher.group("name");
 
-            if (!F.isEmpty(regName))
+            if (F.isEmpty(regName))
+                summaryFmtMatches = true;
+            else
                 regions.add(regName.trim());
-
-            fmtMatches = true;
         }
 
-        assertTrue("Off-heap metrics have unexpected format.", fmtMatches);
+        assertTrue("Off-heap metrics have unexpected format.", summaryFmtMatches);
 
         Set<String> expRegions = grid(0)
             .context()
@@ -170,6 +170,6 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
             .map(v -> v.config().getName().trim())
             .collect(Collectors.toSet());
 
-        assertEquals(expRegions, regions);
+        assertEquals("Off-heap per-region metrics have unexpected format.", expRegions, regions);
     }
 }

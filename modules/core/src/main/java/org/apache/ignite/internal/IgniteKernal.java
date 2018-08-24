@@ -1299,8 +1299,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                     offHeapCommSummary += offHeapComm;
                                     loadedPages += pagesCnt;
 
-                                    dataRegionsInfo.append("    ^-- Off-heap ")
-                                        .append(region.config().getName()).append(" region")
+                                    dataRegionsInfo.append("    ^-- Data region: ")
+                                        .append(region.config().getName()).append(", off-heap")
                                         .append(" [used=").append(dblFmt.format(offHeapUsedInMBytes))
                                         .append("MB, free=").append(dblFmt.format(freeOffHeapPct))
                                         .append("%, comm=").append(dblFmt.format(offHeapCommInMBytes)).append("MB]")
@@ -1309,8 +1309,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                     if (region.config().isPersistenceEnabled() && region.config().isMetricsEnabled()) {
                                         long pdsUsedMBytes = region.memoryMetrics().getTotalAllocatedSize() / MByte;
 
-                                        pdsRegionsInfo.append("    ^-- Ignite persistence ")
-                                            .append(region.config().getName()).append(" region")
+                                        pdsRegionsInfo.append("    ^-- Ignite persistence region: ")
+                                            .append(region.config().getName()).append(", disk")
                                             .append(" [used=").append(dblFmt.format(pdsUsedMBytes)).append("MB]")
                                             .append(NL);
                                     }
