@@ -34,7 +34,7 @@ trait OffsetPolicy {
 }
 
 object OffsetPolicy {
-    def apply(tblName: String, ignite: Ignite, params: Map[String, String]): OffsetPolicy = {
+    def apply(tblName: String, cacheName: String, ignite: Ignite, params: Map[String, String]): OffsetPolicy = {
         val plcName = params.getOrElse(
             OPTION_OFFSET_POLICY,
             throw new IllegalArgumentException(
@@ -43,8 +43,8 @@ object OffsetPolicy {
         )
 
         plcName.toUpperCase match {
-            case "INCREMENTAL" => new IncrementalOffsetPolicy[Long](tblName, ignite, params)
-            case "TIMESTAMP" => new IncrementalOffsetPolicy[Timestamp](tblName, ignite, params)
+            case "INCREMENTAL" => new IncrementalOffsetPolicy[Long](tblName, cacheName, ignite, params)
+            case "TIMESTAMP" => new IncrementalOffsetPolicy[Timestamp](tblName, cacheName, ignite, params)
             case _ => throw new IllegalArgumentException(s"Offset policy '$plcName' is not supported.")
         }
     }
@@ -52,8 +52,8 @@ object OffsetPolicy {
 
 private case class IncrementalOffset(off: Any) extends Offset {
     override def json(): String = off match {
-        case n: Number => s"{${IncrementalOffset.INC_NAME}: $off}"
-        case t: Timestamp => s"{${IncrementalOffset.TS_NAME}: '$off'}"
+        case _: Number => s"{${IncrementalOffset.INC_NAME}: $off}"
+        case _: Timestamp => s"{${IncrementalOffset.TS_NAME}: '$off'}"
         case _ => throw new IllegalArgumentException(s"Unsupported offset policy type '${off.getClass}'")
     }
 }
@@ -86,6 +86,7 @@ private object IncrementalOffset {
 
 private class IncrementalOffsetPolicy[T](
     tblName: String,
+    cacheName: String,
     ignite: Ignite,
     params: Map[String, String]
 ) extends OffsetPolicy {
@@ -99,10 +100,13 @@ private class IncrementalOffsetPolicy[T](
 
     override def getOffset: Option[Offset] = {
         val qry = new SqlFieldsQuery(s"SELECT MAX($fldName) FROM $tblName")
-        val off = ignite.cache(s"SQL_PUBLIC_$tblName".toUpperCase).query(qry).getAll
+        val off = ignite.cache(cacheName).query(qry).getAll
         off.size() match {
             case 0 => None
-            case _ => Some(IncrementalOffset(off.get(0).get(0).asInstanceOf[T]))
+            case _ => off.get(0).get(0) match {
+                case null => None
+                case n => Some(IncrementalOffset(n.asInstanceOf[T]))
+            }
         }
     }
 

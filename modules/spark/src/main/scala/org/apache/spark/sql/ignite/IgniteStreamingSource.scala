@@ -38,16 +38,15 @@ class IgniteStreamingSource(
     params: Map[String, String]
 ) extends Source {
     private val ignite = igniteCtx.ignite()
-    private val offPlc = OffsetPolicy.apply(tblName, ignite, params)
+    private val tblInfo = sqlTableInfo[Any, Any](ignite, tblName).getOrElse(
+        throw new IllegalArgumentException(s"Table '$tblName' does not exist in source '$FORMAT_IGNITE'")
+    )
+    private val offPlc = OffsetPolicy.apply(tblName, tblInfo._1.getName, ignite, params)
 
     /** @inheritdoc */
     override def schema: StructType = userDefinedSchema match {
         case Some(s) => s
-        case None => igniteSQLTable(ignite, tblName)
-            .map(IgniteSQLRelation.schema)
-            .getOrElse(
-                throw new IllegalArgumentException(s"Table '$tblName' does not exist in source '$FORMAT_IGNITE'")
-            )
+        case None => IgniteSQLRelation.schema(tblInfo._2)
     }
 
     /** @inheritdoc */
@@ -55,10 +54,7 @@ class IgniteStreamingSource(
 
     /** @inheritdoc */
     override def getBatch(start: Option[Offset], end: Offset): DataFrame = {
-        val cacheName = sqlCacheName(ignite, tblName).getOrElse(
-            throw new IllegalArgumentException(s"Table '$tblName' does not exist in source '$FORMAT_IGNITE'")
-        )
-
+        val cacheName = tblInfo._1.getName
         val qry = offPlc.getQuery(start, end, schema.fields.map(f => f.name))
 
         val rdd = IgniteSQLDataFrameRDD(
