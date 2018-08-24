@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
@@ -63,6 +62,8 @@ import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
 import org.apache.ignite.util.mbeans.WorkersControlMXBeanTest;
+
+import java.util.Set;
 
 /**
  * Test suite for Ignite utility classes.

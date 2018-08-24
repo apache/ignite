@@ -18,16 +18,20 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRemoveDuringRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistenceSequentialCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimpleTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.IgniteMetaStorageBasicTest;
@@ -35,10 +39,12 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTree
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFactorMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IndexStoragePageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageIdDistributionTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryNoStoreLeakTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIOTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.CpTriggeredWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ExplicitWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;

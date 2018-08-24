@@ -21,7 +21,6 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCachePreloadingEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearEvictionSelfTest;
-import org.apache.ignite.internal.processors.cache.eviction.DhtAndNearEvictionTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEmptyEntriesLocalSelfTest;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearEvictionP
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearOnlyNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionDataStreamerTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMetricTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionPagesRecyclingAndReusingTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionReadThroughTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionTouchOrderTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruNearEnabledPageEvictionMultinodeTest;

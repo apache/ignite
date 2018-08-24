@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.concurrent.Callable;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -26,6 +24,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import javax.cache.CacheException;
+import java.util.concurrent.Callable;
 
 /**
  * Tests for illegal SQL schemas in node and cache configurations.
