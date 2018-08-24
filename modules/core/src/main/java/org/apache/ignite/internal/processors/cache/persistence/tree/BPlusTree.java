@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
@@ -87,6 +88,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlus
 public abstract class BPlusTree<L, T extends L> extends DataStructure implements IgniteTree<L, T> {
     /** */
     private static final Object[] EMPTY = {};
+
+    /** Wrapper for tree pages operations. Noop by default. Override for test purposes. */
+    public static volatile PageHandlerWrapper<Result> pageHndWrapper = (tree, hnd) -> hnd;
 
     /** */
     private static volatile boolean interrupted;
@@ -226,7 +230,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     };
 
     /** */
-    private final GetPageHandler<Get> askNeighbor = new AskNeighbor();
+    private final PageHandler<Get, Result> askNeighbor;
 
     /**
      *
@@ -257,12 +261,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** */
-    private final GetPageHandler<Get> search = new Search();
+    private final PageHandler<Get, Result> search;
 
     /**
      *
      */
-    private class Search extends GetPageHandler<Get> {
+    public class Search extends GetPageHandler<Get> {
         /** {@inheritDoc} */
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Get g, int lvl)
             throws IgniteCheckedException {
@@ -346,12 +350,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** */
-    private final GetPageHandler<Put> replace = new Replace();
+    private final PageHandler<Put, Result> replace;
 
     /**
      *
      */
-    private class Replace extends GetPageHandler<Put> {
+    public class Replace extends GetPageHandler<Put> {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
@@ -408,12 +412,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** */
-    private final GetPageHandler<Put> insert = new Insert();
+    private final PageHandler<Put, Result> insert;
 
     /**
      *
      */
-    private class Insert extends GetPageHandler<Put> {
+    public class Insert extends GetPageHandler<Put> {
         /** {@inheritDoc} */
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
             throws IgniteCheckedException {
@@ -457,7 +461,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** */
-    private final GetPageHandler<Remove> rmvFromLeaf = new RemoveFromLeaf();
+    private final PageHandler<Remove, Result> rmvFromLeaf;
 
     /**
      *
@@ -532,7 +536,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** */
-    private final GetPageHandler<Remove> lockBackAndRmvFromLeaf = new LockBackAndRmvFromLeaf();
+    private final PageHandler<Remove, Result> lockBackAndRmvFromLeaf;
 
     /**
      *
@@ -557,7 +561,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** */
-    private final GetPageHandler<Remove> lockBackAndTail = new LockBackAndTail();
+    private final PageHandler<Remove, Result> lockBackAndTail;
 
     /**
      *
@@ -581,7 +585,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** */
-    private final GetPageHandler<Remove> lockTailForward = new LockTailForward();
+    private final PageHandler<Remove, Result> lockTailForward;
 
     /**
      *
@@ -597,7 +601,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** */
-    private final GetPageHandler<Remove> lockTail = new LockTail();
+    private final PageHandler<Remove, Result> lockTail;
 
     /**
      *
@@ -782,6 +786,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         this.reuseList = reuseList;
         this.globalRmvId = globalRmvId;
         this.failureProcessor = failureProcessor;
+
+        // Initialize page handlers.
+        askNeighbor = (PageHandler<Get, Result>) pageHndWrapper.wrap(this, new AskNeighbor());
+        search = (PageHandler<Get, Result>) pageHndWrapper.wrap(this, new Search());
+        lockTail = (PageHandler<Remove, Result>) pageHndWrapper.wrap(this, new LockTail());
+        lockTailForward = (PageHandler<Remove, Result>) pageHndWrapper.wrap(this, new LockTailForward());
+        lockBackAndTail = (PageHandler<Remove, Result>) pageHndWrapper.wrap(this, new LockBackAndTail());
+        lockBackAndRmvFromLeaf = (PageHandler<Remove, Result>) pageHndWrapper.wrap(this, new LockBackAndRmvFromLeaf());
+        rmvFromLeaf = (PageHandler<Remove, Result>) pageHndWrapper.wrap(this, new RemoveFromLeaf());
+        insert = (PageHandler<Put, Result>) pageHndWrapper.wrap(this, new Insert());
+        replace = (PageHandler<Put, Result>) pageHndWrapper.wrap(this, new Replace());
     }
 
     /**
@@ -979,11 +994,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
-        catch (RuntimeException e) {
-            throw new IgniteException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
-        }
-        catch (AssertionError e) {
-            throw new AssertionError("Assertion error on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+        catch (RuntimeException | AssertionError e) {
+            throw new CorruptedTreeException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
         finally {
             checkDestroyed();
@@ -1031,11 +1043,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on first row lookup", e);
         }
-        catch (RuntimeException e) {
-            throw new IgniteException("Runtime failure on first row lookup", e);
-        }
-        catch (AssertionError e) {
-            throw new AssertionError("Assertion error on first row lookup", e);
+        catch (RuntimeException | AssertionError e) {
+            throw new CorruptedTreeException("Runtime failure on first row lookup", e);
         }
         finally {
             checkDestroyed();
@@ -1056,11 +1065,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on last row lookup", e);
         }
-        catch (RuntimeException e) {
+        catch (RuntimeException | AssertionError e) {
             throw new IgniteException("Runtime failure on last row lookup", e);
-        }
-        catch (AssertionError e) {
-            throw new AssertionError("Assertion error on last row lookup", e);
         }
         finally {
             checkDestroyed();
@@ -1087,11 +1093,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on lookup row: " + row, e);
         }
-        catch (RuntimeException e) {
-            throw new IgniteException("Runtime failure on lookup row: " + row, e);
-        }
-        catch (AssertionError e) {
-            throw new AssertionError("Assertion error on lookup row: " + row, e);
+        catch (RuntimeException | AssertionError e) {
+            throw new CorruptedTreeException("Runtime failure on lookup row: " + row, e);
         }
         finally {
             checkDestroyed();
@@ -1648,11 +1651,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
         }
-        catch (RuntimeException e) {
-            throw new IgniteException("Runtime failure on search row: " + row, e);
-        }
-        catch (AssertionError e) {
-            throw new AssertionError("Assertion error on search row: " + row, e);
+        catch (RuntimeException | AssertionError e) {
+            throw new CorruptedTreeException("Runtime failure on search row: " + row, e);
         }
         finally {
             x.releaseAll();
@@ -1808,11 +1808,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
         }
-        catch (RuntimeException e) {
-            throw new IgniteException("Runtime failure on search row: " + row, e);
-        }
-        catch (AssertionError e) {
-            throw new AssertionError("Assertion error on search row: " + row, e);
+        catch (RuntimeException | AssertionError e) {
+            throw new CorruptedTreeException("Runtime failure on search row: " + row, e);
         }
         finally {
             r.releaseAll();
@@ -2127,11 +2124,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on row: " + row, e);
         }
-        catch (RuntimeException e) {
-            throw new IgniteException("Runtime failure on row: " + row, e);
-        }
-        catch (AssertionError e) {
-            throw new AssertionError("Assertion error on row: " + row, e);
+        catch (RuntimeException | AssertionError e) {
+            throw new CorruptedTreeException("Runtime failure on row: " + row, e);
         }
         finally {
             checkDestroyed();
@@ -2422,7 +2416,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Get operation.
      */
-    private abstract class Get {
+    public abstract class Get {
         /** */
         long rmvId;
 
@@ -2537,7 +2531,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param lvl Level.
          * @return {@code true} If we can release the given page.
          */
-        boolean canRelease(long pageId, int lvl) {
+        public boolean canRelease(long pageId, int lvl) {
             return pageId != 0L;
         }
 
@@ -2586,6 +2580,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             }
 
             lockRetriesCnt--;
+        }
+
+        /**
+         * @return Operation row.
+         */
+        public L row() {
+            return row;
         }
     }
 
@@ -2660,11 +2661,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Put operation.
      */
-    private final class Put extends Get {
+    public final class Put extends Get {
         /** Mark of NULL value of page id. It means valid value can't be equal this value. */
         private static final long NULL_PAGE_ID = 0L;
+
         /** Mark of NULL value of page. */
         private static final long NULL_PAGE = 0L;
+
         /** Mark of NULL value of page address. */
         private static final long NULL_PAGE_ADDRESS = 0L;
 
@@ -2749,7 +2752,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean canRelease(long pageId, int lvl) {
+        @Override public boolean canRelease(long pageId, int lvl) {
             return pageId != NULL_PAGE_ID && tailId != pageId;
         }
 
@@ -3008,7 +3011,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Invoke operation.
      */
-    private final class Invoke extends Get {
+    public final class Invoke extends Get {
         /** */
         Object x;
 
@@ -3146,7 +3149,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean canRelease(long pageId, int lvl) {
+        @Override public boolean canRelease(long pageId, int lvl) {
             if (pageId == 0L)
                 return false;
 
@@ -4123,7 +4126,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override boolean canRelease(long pageId, int lvl) {
+        @Override public boolean canRelease(long pageId, int lvl) {
             return pageId != 0L && !isTail(pageId, lvl);
         }
 
@@ -4922,7 +4925,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Operation result.
      */
-    enum Result {
+    public enum Result {
         /** */
         GO_DOWN,
 
