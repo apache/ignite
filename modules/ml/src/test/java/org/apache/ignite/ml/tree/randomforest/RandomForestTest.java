@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.tree.randomforest;
 
 import java.util.Arrays;
@@ -16,6 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+/** */
 public class RandomForestTest {
     private final long seed = 0;
     private final int featuresPerTree = 4;
@@ -23,6 +41,7 @@ public class RandomForestTest {
     private final double minImpDelta = 1.0;
     private final int maxDepth = 1;
 
+    /** Meta. */
     private final List<FeatureMeta> meta = Arrays.asList(
         new FeatureMeta(0, false),
         new FeatureMeta(1, true),
@@ -33,6 +52,7 @@ public class RandomForestTest {
         new FeatureMeta(6, false)
     );
 
+    /** Rf. */
     private RandomForestClassifierTrainer rf = new RandomForestClassifierTrainer(meta)
         .withCountOfTrees(countOfTrees)
         .withSeed(seed)
@@ -41,12 +61,14 @@ public class RandomForestTest {
         .withMinImpurityDelta(minImpDelta)
         .withSubsampleSize(0.1);
 
+    /** */
     @Test
     public void testCreateFeaturesSubspace() {
         Set<Integer> subspace = rf.createFeaturesSubspace();
         assertEquals(featuresPerTree, subspace.size());
     }
 
+    /** */
     @Test(expected = RuntimeException.class)
     public void testCreateFeaturesSubspaceFail() {
         new RandomForestClassifierTrainer(meta)
@@ -59,6 +81,7 @@ public class RandomForestTest {
             .createFeaturesSubspace();
     }
 
+    /** Partition. */
     private BootstrappedDatasetPartition partition = new BootstrappedDatasetPartition(new BootstrappedVector[] {
         new BootstrappedVector(VectorUtils.of(0, 1, 2, 1, 4, 2, 6), 0., null),
         new BootstrappedVector(VectorUtils.of(1, 0, 3, 2, 5, 3, 7), 0., null),
@@ -72,6 +95,7 @@ public class RandomForestTest {
         new BootstrappedVector(VectorUtils.of(9, 0, 11, 2, 13, 3, 15), 0., null),
     });
 
+    /** */
     @Test
     public void testComputeStatsOnPartition() {
         List<RandomForestTrainer.NormalDistributionStats> result = rf.computeStatsOnPartition(partition, meta);
@@ -97,6 +121,7 @@ public class RandomForestTest {
         }
     }
 
+    /** */
     @Test
     public void testReduceStatistics() {
         List<RandomForestTrainer.NormalDistributionStats> left = Arrays.asList(
@@ -142,6 +167,7 @@ public class RandomForestTest {
         }
     }
 
+    /** */
     @Test
     public void testNeedSplit() {
         TreeNode node = new TreeNode(1, 1);

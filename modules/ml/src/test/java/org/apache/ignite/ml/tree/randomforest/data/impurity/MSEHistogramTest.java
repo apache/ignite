@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
@@ -7,16 +24,21 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Before;
 import org.junit.Test;
 
+/** */
 public class MSEHistogramTest extends ImpurityHistogramTest {
+    /** Feature 1 meta. */
     private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta(0, true));
+    /** Feature 2 meta. */
     private BucketMeta feature2Meta = new BucketMeta(new FeatureMeta(1, false));
 
+    /** */
     @Before
     public void setUp() throws Exception {
         feature2Meta.setMinValue(-5);
         feature2Meta.setBucketSize(1);
     }
 
+    /** */
     @Test
     public void testAdd() {
         MSEHistogram catHist1 = new MSEHistogram(0, feature1Meta);
@@ -56,6 +78,7 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
         checkCounters(contHist2.getY2s(), new double[]{ 2 * 5 * 5, 2 * 1 * 1, 1 * 4 * 4, 1 * 2 * 2, 0 * 3 * 3 });
     }
 
+    /** Dataset. */
     private BootstrappedVector[] dataset = new BootstrappedVector[] {
         new BootstrappedVector(VectorUtils.of(1, -4), 5, new int[] {1, 2}),
         new BootstrappedVector(VectorUtils.of(1, -1), 1, new int[] {1, 2}),
@@ -64,6 +87,7 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
         new BootstrappedVector(VectorUtils.of(0, 3), 3, new int[] {2, 0}),
     };
 
+    /** To split dataset. */
     private BootstrappedVector[] toSplitDataset = new BootstrappedVector[] {
         new BootstrappedVector(VectorUtils.of(0, -1), 1, new int[] {2}),
         new BootstrappedVector(VectorUtils.of(0, -1), 1, new int[] {1}),

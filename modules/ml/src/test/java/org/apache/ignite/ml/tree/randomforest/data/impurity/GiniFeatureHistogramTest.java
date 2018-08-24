@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
 import java.util.HashMap;
@@ -13,17 +30,23 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+/** */
 public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
+    /** Feature 1 meta. */
     private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta(0, true));
+    /** Feature 2 meta. */
     private BucketMeta feature2Meta = new BucketMeta(new FeatureMeta(1, false));
+    /** Feature 3 meta. */
     private BucketMeta feature3Meta = new BucketMeta(new FeatureMeta(2, true));
 
+    /** */
     @Before
     public void setUp() throws Exception {
         feature2Meta.setMinValue(-5);
         feature2Meta.setBucketSize(1);
     }
 
+    /** */
     @Test
     public void testAddVector() {
         Map<Double, Integer> lblMapping = new HashMap<>();
@@ -80,6 +103,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         checkBucketIds(contFeatureSmpl2.getHistForLabel(3.0).buckets(), new Integer[] {8});
     }
 
+    /** */
     @Test
     public void testSplit() {
         Map<Double, Integer> lblMapping = new HashMap<>();
@@ -108,6 +132,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         assertFalse(catFeatureSmpl2.findBestSplit().isPresent());
     }
 
+    /** */
     @Test
     public void testJoin() {
         Map<Double, Integer> lblMapping = new HashMap<>();
@@ -154,6 +179,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         checkBucketIds(contFeatureSmpl1.getHistForLabel(3.0).buckets(), new Integer[] {8});
     }
 
+    /** Dataset. */
     private BootstrappedVector[] dataset = new BootstrappedVector[] {
         new BootstrappedVector(VectorUtils.of(1, -1), 1, new int[] {1, 2}),
         new BootstrappedVector(VectorUtils.of(1, 2), 2, new int[] {2, 1}),
@@ -162,6 +188,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         new BootstrappedVector(VectorUtils.of(1, -4), 2, new int[] {1, 2}),
     };
 
+    /** To split dataset. */
     private BootstrappedVector[] toSplitDataset = new BootstrappedVector[] {
         new BootstrappedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {2}),
         new BootstrappedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {1}),

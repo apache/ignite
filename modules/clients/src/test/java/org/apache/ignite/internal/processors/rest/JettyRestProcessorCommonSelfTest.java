@@ -54,8 +54,6 @@ public abstract class JettyRestProcessorCommonSelfTest extends AbstractRestProce
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.clearProperty(IGNITE_JETTY_PORT);
     }
 
