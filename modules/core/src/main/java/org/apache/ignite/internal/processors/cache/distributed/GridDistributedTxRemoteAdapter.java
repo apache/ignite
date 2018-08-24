@@ -787,7 +787,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
-                            applyLocalUpdateCounters();
+                            applyLocalUpdateCounters(txCounters().updateCounters());
 
                             txCounters().updateLocalPartitionSizes();
 
@@ -834,18 +834,16 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** */
-    private void applyLocalUpdateCounters() {
-        Map<Integer, Map<Integer, Long>> updCntrs = txCounters().updateCounters();
-
+    private void applyLocalUpdateCounters(Map<Integer, PartitionUpdateCounters> updCntrs) {
         if (F.isEmpty(updCntrs))
             return;
 
-        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
+        for (Map.Entry<Integer, PartitionUpdateCounters> entry : updCntrs.entrySet()) {
             int cacheId = entry.getKey();
 
             GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
 
-            Map<Integer, Long> cacheUpdates = entry.getValue();
+            Map<Integer, Long> cacheUpdates = entry.getValue().updateCounters();
 
             assert cacheUpdates != null;
 

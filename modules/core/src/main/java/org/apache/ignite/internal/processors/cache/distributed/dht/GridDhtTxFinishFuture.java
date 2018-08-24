@@ -604,8 +604,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      * @return Partition counters map for the given backup node.
      */
     private Map<Integer, PartitionUpdateCounters> filterUpdateCountersForNode(ClusterNode node) {
-        // TODO possible duplication 1
-        Map<Integer, Map<Integer, Long>> updCntrs = tx.txCounters().updateCounters();
+        // t0d0 check me
+        Map<Integer, PartitionUpdateCounters> updCntrs = tx.txCounters().updateCounters();
 
         if (F.isEmpty(updCntrs))
             return null;
@@ -614,10 +614,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
         AffinityTopologyVersion top = tx.topologyVersionSnapshot();
 
-        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
+        for (Map.Entry<Integer, PartitionUpdateCounters> entry : updCntrs.entrySet()) {
             Integer cacheId = entry.getKey();
 
-            Map<Integer, Long> partsCntrs = entry.getValue();
+            Map<Integer, Long> partsCntrs = entry.getValue().updateCounters();
 
             assert !F.isEmpty(partsCntrs);
 

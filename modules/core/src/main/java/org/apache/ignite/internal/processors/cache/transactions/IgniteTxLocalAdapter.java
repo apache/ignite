@@ -917,11 +917,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                Map<Integer, Map<Integer, Long>> updCntrs = applyAndCollectLocalUpdateCounters();
-
-                txCounters().updateCounters(updCntrs);
-
                 txCounters().updateLocalPartitionSizes();
+
+                Map<Integer, PartitionUpdateCounters> updCntrs = applyAndCollectLocalUpdateCounters();
+
+                // remember counters for subsequent sending to backups
+                txCounters().updateCounters(updCntrs);
 
                 if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(ptr, false);
@@ -1650,12 +1651,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Merges mvcc update counters to the partition update counters. For mvcc transactions we update partitions
      * counters only on commit phase.
      */
-    private Map<Integer, Map<Integer, Long>> applyAndCollectLocalUpdateCounters() {
-        // TODO possible duplication 1
+    private Map<Integer, PartitionUpdateCounters> applyAndCollectLocalUpdateCounters() {
         if (F.isEmpty(txState.touchedCachePartitions()))
             return null;
 
-        HashMap<Integer, Map<Integer, Long>> updCntrs = new HashMap<>();
+        HashMap<Integer, PartitionUpdateCounters> updCntrs = new HashMap<>();
 
         for (Map.Entry<Integer, Set<Integer>> entry : txState.touchedCachePartitions().entrySet()) {
             Integer cacheId = entry.getKey();
@@ -1666,9 +1666,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
-            HashMap<Integer, Long> partCntrs;
-
-            updCntrs.put(cacheId, partCntrs = new HashMap<>());
+            HashMap<Integer, Long> partCntrs = new HashMap<>();
 
             for (int p : parts) {
                 GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(p);
@@ -1681,6 +1679,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 partCntrs.put(p, cntr);
             }
+
+            PartitionUpdateCounters pc = new PartitionUpdateCounters();
+
+            pc.updateCounters(partCntrs);
+
+            updCntrs.put(cacheId, pc);
         }
 
         return updCntrs;

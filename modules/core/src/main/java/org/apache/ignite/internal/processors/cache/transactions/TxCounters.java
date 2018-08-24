@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCounters;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -37,7 +38,7 @@ public class TxCounters {
     /** Size changes for cache partitions made by transaction */
     private final ConcurrentMap<Integer, ConcurrentMap<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
     /** Update counters for cache partitions in the end of transaction */
-    private Map<Integer, Map<Integer, Long>> updCntrs;
+    private Map<Integer, PartitionUpdateCounters> updCntrs;
 
     /**
      * @param cctx Cctx.
@@ -77,16 +78,16 @@ public class TxCounters {
     }
 
     /** */
-    public void updateCounters(Map<Integer, Map<Integer, Long>> updCntrs) {
+    public void updateCounters(Map<Integer, PartitionUpdateCounters> updCntrs) {
         this.updCntrs = updCntrs;
     }
 
     /** */
-    public Map<Integer, Map<Integer, Long>> updateCounters() {
+    public Map<Integer, PartitionUpdateCounters> updateCounters() {
         return updCntrs;
     }
 
-    // TODO extract from here?
+    // t0d0 extract from here?
     /**
      * Updates local partitions size metric.
      */
