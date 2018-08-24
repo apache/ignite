@@ -78,8 +78,8 @@ BOOST_AUTO_TEST_CASE(TestDayofmonth)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn DAYOFMONTH(dateField)} FROM TestType", 29);
-    CheckSingleResult<int32_t>("SELECT {fn DAY_OF_MONTH(dateField)} FROM TestType", 29);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn DAYOFMONTH(dateField)} FROM TestType", 29);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn DAY_OF_MONTH(dateField)} FROM TestType", 29);
 }
 
 BOOST_AUTO_TEST_CASE(TestDayofweek)
@@ -90,8 +90,8 @@ BOOST_AUTO_TEST_CASE(TestDayofweek)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn DAYOFWEEK(dateField)} FROM TestType", 2);
-    CheckSingleResult<int32_t>("SELECT {fn DAY_OF_WEEK(dateField)} FROM TestType", 2);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn DAYOFWEEK(dateField)} FROM TestType", 2);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn DAY_OF_WEEK(dateField)} FROM TestType", 2);
 }
 
 BOOST_AUTO_TEST_CASE(TestDayofyear)
@@ -102,8 +102,8 @@ BOOST_AUTO_TEST_CASE(TestDayofyear)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn DAYOFYEAR(dateField)} FROM TestType", 242);
-    CheckSingleResult<int32_t>("SELECT {fn DAY_OF_YEAR(dateField)} FROM TestType", 242);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn DAYOFYEAR(dateField)} FROM TestType", 242);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn DAY_OF_YEAR(dateField)} FROM TestType", 242);
 }
 
 BOOST_AUTO_TEST_CASE(TestExtract)
@@ -114,12 +114,12 @@ BOOST_AUTO_TEST_CASE(TestExtract)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn EXTRACT(YEAR FROM timestampField)} FROM TestType", 2016);
-    CheckSingleResult<int32_t>("SELECT {fn EXTRACT(MONTH FROM timestampField)} FROM TestType", 2);
-    CheckSingleResult<int32_t>("SELECT {fn EXTRACT(DAY FROM timestampField)} FROM TestType", 24);
-    CheckSingleResult<int32_t>("SELECT {fn EXTRACT(HOUR FROM timestampField)} FROM TestType", 13);
-    CheckSingleResult<int32_t>("SELECT {fn EXTRACT(MINUTE FROM timestampField)} FROM TestType", 45);
-    CheckSingleResult<int32_t>("SELECT {fn EXTRACT(SECOND FROM timestampField)} FROM TestType", 23);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn EXTRACT(YEAR FROM timestampField)} FROM TestType", 2016);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn EXTRACT(MONTH FROM timestampField)} FROM TestType", 2);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn EXTRACT(DAY FROM timestampField)} FROM TestType", 24);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn EXTRACT(HOUR FROM timestampField)} FROM TestType", 13);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn EXTRACT(MINUTE FROM timestampField)} FROM TestType", 45);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn EXTRACT(SECOND FROM timestampField)} FROM TestType", 23);
 }
 
 BOOST_AUTO_TEST_CASE(TestHour)
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(TestHour)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn HOUR(timestampField)} FROM TestType", 13);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn HOUR(timestampField)} FROM TestType", 13);
 }
 
 BOOST_AUTO_TEST_CASE(TestMinute)
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(TestMinute)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn MINUTE(timestampField)} FROM TestType", 45);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn MINUTE(timestampField)} FROM TestType", 45);
 }
 
 BOOST_AUTO_TEST_CASE(TestMonth)
@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(TestMonth)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn MONTH(timestampField)} FROM TestType", 2);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn MONTH(timestampField)} FROM TestType", 2);
 }
 
 BOOST_AUTO_TEST_CASE(TestMonthname)
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(TestQuarter)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn QUARTER(timestampField)} FROM TestType", 1);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn QUARTER(timestampField)} FROM TestType", 1);
 }
 
 BOOST_AUTO_TEST_CASE(TestSecond)
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(TestSecond)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn SECOND(timestampField)} FROM TestType", 23);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn SECOND(timestampField)} FROM TestType", 23);
 }
 
 BOOST_AUTO_TEST_CASE(TestWeek)
@@ -201,7 +201,7 @@ BOOST_AUTO_TEST_CASE(TestWeek)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn WEEK(timestampField)} FROM TestType", 9);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn WEEK(timestampField)} FROM TestType", 9);
 }
 
 BOOST_AUTO_TEST_CASE(TestYear)
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(TestYear)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn YEAR(timestampField)} FROM TestType", 2016);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn YEAR(timestampField)} FROM TestType", 2016);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

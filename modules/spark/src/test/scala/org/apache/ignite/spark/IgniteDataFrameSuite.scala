@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spark
 
+import org.apache.spark.sql.ignite.IgniteSparkSessionSpec
 import org.scalatest.Suites
 
 /**
@@ -36,5 +37,6 @@ class IgniteDataFrameSuite extends Suites (
     new IgniteOptimizationSystemFuncSpec,
     new IgniteOptimizationJoinSpec,
     new IgniteOptimizationDateFuncSpec,
-    new IgniteOptimizationDisableEnableSpec
+    new IgniteOptimizationDisableEnableSpec,
+    new IgniteSparkSessionSpec
 )

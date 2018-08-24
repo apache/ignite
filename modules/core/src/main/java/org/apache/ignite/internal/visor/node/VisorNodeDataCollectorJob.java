@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.node;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.ignite.DataRegionMetrics;
@@ -183,7 +184,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
             GridCacheProcessor cacheProc = ignite.context().cache();
 
-            String cacheGrpToCollect = arg.getCacheGroup();
+            Set<String> cacheGrps = arg.getCacheGroups();
+
+            boolean all = F.isEmpty(cacheGrps);
 
             int partitions = 0;
             double total = 0;
@@ -219,9 +222,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                         total += partTotal;
                         ready += partReady;
 
-                        String cacheGrp = ca.configuration().getGroupName();
-
-                        if (F.eq(cacheGrpToCollect, cacheGrp))
+                        if (all || cacheGrps.contains(ca.configuration().getGroupName()))
                             resCaches.add(new VisorCache(ignite, ca, arg.isCollectCacheMetrics()));
                     }
                     catch(IllegalStateException | IllegalArgumentException e) {
