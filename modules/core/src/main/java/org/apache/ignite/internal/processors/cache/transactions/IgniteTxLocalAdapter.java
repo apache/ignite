@@ -917,7 +917,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                txCounters().updateLocalPartitionSizes();
+                applyTxCounters();
 
                 Map<Integer, PartitionUpdateCounters> updCntrs = applyAndCollectLocalUpdateCounters();
 

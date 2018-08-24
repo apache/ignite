@@ -787,9 +787,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
-                            applyLocalUpdateCounters(txCounters().updateCounters());
-
-                            txCounters().updateLocalPartitionSizes();
+                            applyTxCounters();
 
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
                                 // Set new update counters for data entries received from persisted tx entries.
@@ -833,8 +831,15 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected void applyTxCounters() {
+        super.applyTxCounters();
+
+        applyUpdateCounters(txCounters().updateCounters());
+    }
+
     /** */
-    private void applyLocalUpdateCounters(Map<Integer, PartitionUpdateCounters> updCntrs) {
+    private void applyUpdateCounters(Map<Integer, PartitionUpdateCounters> updCntrs) {
         if (F.isEmpty(updCntrs))
             return;
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -32,19 +33,13 @@ import org.apache.ignite.internal.util.typedef.F;
  * Values which should be tracked during transaction execution and applied on commit.
  */
 public class TxCounters {
-    /** */
-    @GridToStringExclude
-    private final GridCacheSharedContext<?, ?> cctx;
     /** Size changes for cache partitions made by transaction */
     private final ConcurrentMap<Integer, ConcurrentMap<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
     /** Update counters for cache partitions in the end of transaction */
     private Map<Integer, PartitionUpdateCounters> updCntrs;
 
-    /**
-     * @param cctx Cctx.
-     */
-    public TxCounters(GridCacheSharedContext<?, ?> cctx) {
-        this.cctx = cctx;
+    /** */
+    public TxCounters() {
     }
 
     /**
@@ -84,35 +79,11 @@ public class TxCounters {
 
     /** */
     public Map<Integer, PartitionUpdateCounters> updateCounters() {
-        return updCntrs;
+        return Collections.unmodifiableMap(updCntrs);
     }
 
-    // t0d0 extract from here?
-    /**
-     * Updates local partitions size metric.
-     */
-    public void updateLocalPartitionSizes() {
-        if (F.isEmpty(sizeDeltas))
-            return;
-
-        for (Map.Entry<Integer, ConcurrentMap<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
-            Integer cacheId = entry.getKey();
-            Map<Integer, AtomicLong> partDeltas = entry.getValue();
-
-            assert !F.isEmpty(partDeltas);
-
-            GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
-
-            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
-                Integer p = e.getKey();
-                long delta = e.getValue().get();
-
-                GridDhtLocalPartition dhtPart = top.localPartition(p);
-
-                assert dhtPart != null;
-
-                dhtPart.dataStore().updateSize(cacheId, delta);
-            }
-        }
+    /** */
+    public Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas() {
+        return Collections.unmodifiableMap(sizeDeltas);
     }
 }
