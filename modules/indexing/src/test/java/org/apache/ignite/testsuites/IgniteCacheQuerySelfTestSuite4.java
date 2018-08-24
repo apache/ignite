@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxSelfTest;
+import org.apache.ignite.internal.processors.cache.transaction.DmlInsideTransactionTest;
 
 /**
  * Test suite for cache queries.
@@ -46,6 +47,8 @@ public class IgniteCacheQuerySelfTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxSelfTest.class);
+
+        suite.addTestSuite(DmlInsideTransactionTest.class);
 
         return suite;
     }
