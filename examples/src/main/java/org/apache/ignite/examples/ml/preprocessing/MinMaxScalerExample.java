@@ -23,19 +23,29 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
+import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
-
-import java.util.Arrays;
 
 /**
  * Example that shows how to use MinMaxScaler preprocessor to scale the given data.
- *
+ * <p>
  * Machine learning preprocessors are built as a chain. Most often a first preprocessor is a feature extractor as shown
  * in this example. The second preprocessor here is a MinMaxScaler preprocessor which is built on top of the feature
- * extractor and represents a chain of itself and the underlying feature extractor.
+ * extractor and represents a chain of itself and the underlying feature extractor.</p>
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
+ * <p>
+ * After that it defines preprocessors that extract features from an upstream data and normalize their values.</p>
+ * <p>
+ * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output
+ * various statistical metrics of the data.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
 public class MinMaxScalerExample {
     /** Run example. */
@@ -46,36 +56,18 @@ public class MinMaxScalerExample {
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
             // Defines first preprocessor that extracts features from an upstream data.
-            IgniteBiFunction<Integer, Person, double[]> featureExtractor = (k, v) -> new double[] {
+            IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
                 v.getAge(),
                 v.getSalary()
-            };
+            );
 
             // Defines second preprocessor that normalizes features.
-            IgniteBiFunction<Integer, Person, double[]> preprocessor = new MinMaxScalerTrainer<Integer, Person>()
+            IgniteBiFunction<Integer, Person, Vector> preprocessor = new MinMaxScalerTrainer<Integer, Person>()
                 .fit(ignite, persons, featureExtractor);
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
-                // Calculation of the mean value. This calculation will be performed in map-reduce manner.
-                double[] mean = dataset.mean();
-                System.out.println("Mean \n\t" + Arrays.toString(mean));
-
-                // Calculation of the standard deviation. This calculation will be performed in map-reduce manner.
-                double[] std = dataset.std();
-                System.out.println("Standard deviation \n\t" + Arrays.toString(std));
-
-                // Calculation of the covariance matrix.  This calculation will be performed in map-reduce manner.
-                double[][] cov = dataset.cov();
-                System.out.println("Covariance matrix ");
-                for (double[] row : cov)
-                    System.out.println("\t" + Arrays.toString(row));
-
-                // Calculation of the correlation matrix.  This calculation will be performed in map-reduce manner.
-                double[][] corr = dataset.corr();
-                System.out.println("Correlation matrix ");
-                for (double[] row : corr)
-                    System.out.println("\t" + Arrays.toString(row));
+                new DatasetHelper(dataset).describe();
             }
 
             System.out.println(">>> Normalization example completed.");

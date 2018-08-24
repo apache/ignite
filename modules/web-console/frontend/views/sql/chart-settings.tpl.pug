@@ -36,5 +36,5 @@
                 ul.chart-settings-columns-list(dnd-list='paragraph.chartValCols' dnd-drop='chartAcceptValColumn(paragraph, item)')
                     li(ng-repeat='col in paragraph.chartValCols track by $index')
                         .btn.btn-default.btn-chart-column(ng-style='chartColor($index)') {{col.label}}
-                            button.btn-chart-column-agg-fx.select-toggle(ng-change='applyChartSettings(paragraph)' ng-show='paragraphTimeSpanVisible(paragraph)' ng-style='chartColor($index)' ng-model='col.aggFx' placeholder='...' bs-select bs-options='item for item in aggregateFxs' data-container='false' tabindex='-1')
+                            button.btn-chart-column-agg-fx.select-toggle(ng-change='applyChartSettings(paragraph)' ng-show='paragraphTimeSpanVisible(paragraph)' ng-style='chartColor($index)' ng-model='col.aggFx' placeholder='...' bs-select bs-options='item for item in aggregateFxs' tabindex='-1')
                             i.fa.fa-close(ng-click='chartRemoveValColumn(paragraph, $index)')

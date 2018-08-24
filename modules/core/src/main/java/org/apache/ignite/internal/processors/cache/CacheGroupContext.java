@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsEvictor;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
@@ -126,10 +126,6 @@ public class CacheGroupContext {
 
     /** */
     private GridCachePreloader preldr;
-
-    /** Partition evictor. */
-    private GridDhtPartitionsEvictor evictor;
-
     /** */
     private final DataRegion dataRegion;
 
@@ -257,13 +253,6 @@ public class CacheGroupContext {
      */
     public GridCachePreloader preloader() {
         return preldr;
-    }
-
-    /**
-     * @return Partitions evictor.
-     */
-    public GridDhtPartitionsEvictor evictor() {
-        return evictor;
     }
 
     /**
@@ -733,7 +722,7 @@ public class CacheGroupContext {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
-        evictor.stop();
+        ctx.evict().onCacheGroupStopped(this);
 
         aff.cancelFutures(err);
 
@@ -909,8 +898,6 @@ public class CacheGroupContext {
         else
             preldr = new GridCachePreloaderAdapter(this);
 
-        evictor = new GridDhtPartitionsEvictor(this);
-
         if (persistenceEnabled()) {
             try {
                 offheapMgr = new GridCacheOffheapManager();
@@ -1059,18 +1046,28 @@ public class CacheGroupContext {
      * @param enabled Global WAL enabled flag.
      */
     public void globalWalEnabled(boolean enabled) {
-        persistGlobalWalState(enabled);
+        if (globalWalEnabled != enabled) {
+            log.info("Global WAL state for group=" + cacheOrGroupName() +
+                " changed from " + globalWalEnabled + " to " + enabled);
 
-        this.globalWalEnabled = enabled;
+            persistGlobalWalState(enabled);
+
+            globalWalEnabled = enabled;
+        }
     }
 
     /**
      * @param enabled Local WAL enabled flag.
      */
     public void localWalEnabled(boolean enabled) {
-        persistLocalWalState(enabled);
+        if (localWalEnabled != enabled){
+            log.info("Local WAL state for group=" + cacheOrGroupName() +
+                " changed from " + localWalEnabled + " to " + enabled);
 
-        this.localWalEnabled = enabled;
+            persistLocalWalState(enabled);
+
+            localWalEnabled = enabled;
+        }
     }
 
     /**

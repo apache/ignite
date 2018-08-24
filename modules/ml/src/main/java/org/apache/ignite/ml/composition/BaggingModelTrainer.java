@@ -22,25 +22,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.environment.logging.MLLogger;
+import org.apache.ignite.ml.environment.parallelism.Promise;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Abstract trainer implementing bagging logic.
+ * Abstract trainer implementing bagging logic. In each learning iteration the algorithm trains one model on subset of
+ * learning sample and subspace of features space. Each model is produced from same model-class [e.g. Decision Trees].
  */
-public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsComposition, Double> {
+public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsComposition, Double> {
     /**
      * Predictions aggregator.
      */
@@ -61,10 +64,6 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
      * Feature vector size.
      */
     private final int featureVectorSize;
-    /**
-     * Learning thread pool.
-     */
-    private final ExecutorService threadPool;
 
     /**
      * Constructs new instance of BaggingModelTrainer.
@@ -81,67 +80,35 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         int ensembleSize,
         double samplePartSizePerMdl) {
 
-        this(predictionsAggregator, featureVectorSize, maximumFeaturesCntPerMdl, ensembleSize,
-            samplePartSizePerMdl, null);
-    }
-
-    /**
-     * Constructs new instance of BaggingModelTrainer.
-     *
-     * @param predictionsAggregator Predictions aggregator.
-     * @param featureVectorSize Feature vector size.
-     * @param maximumFeaturesCntPerMdl Number of features to draw from original features vector to train each model.
-     * @param ensembleSize Ensemble size.
-     * @param samplePartSizePerMdl Size of sample part in percent to train one model.
-     * @param threadPool Learning thread pool.
-     */
-    public BaggingModelTrainer(PredictionsAggregator predictionsAggregator,
-        int featureVectorSize,
-        int maximumFeaturesCntPerMdl,
-        int ensembleSize,
-        double samplePartSizePerMdl,
-        ExecutorService threadPool) {
-
         this.predictionsAggregator = predictionsAggregator;
         this.maximumFeaturesCntPerMdl = maximumFeaturesCntPerMdl;
         this.ensembleSize = ensembleSize;
         this.samplePartSizePerMdl = samplePartSizePerMdl;
         this.featureVectorSize = featureVectorSize;
-        this.threadPool = threadPool;
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        List<ModelsComposition.ModelOnFeaturesSubspace> learnedModels = new ArrayList<>();
-        List<Future<ModelsComposition.ModelOnFeaturesSubspace>> futures = new ArrayList<>();
+        MLLogger log = environment.logger(getClass());
+        log.log(MLLogger.VerboseLevel.LOW, "Start learning");
 
-        for (int i = 0; i < ensembleSize; i++) {
-            if (threadPool == null)
-                learnedModels.add(learnModel(datasetBuilder, featureExtractor, lbExtractor));
-            else {
-                Future<ModelsComposition.ModelOnFeaturesSubspace> fut = threadPool.submit(() -> {
-                    return learnModel(datasetBuilder, featureExtractor, lbExtractor);
-                });
+        Long startTs = System.currentTimeMillis();
 
-                futures.add(fut);
-            }
-        }
+        List<IgniteSupplier<ModelOnFeaturesSubspace>> tasks = new ArrayList<>();
+        for(int i = 0; i < ensembleSize; i++)
+            tasks.add(() -> learnModel(datasetBuilder, featureExtractor, lbExtractor));
 
-        if (threadPool != null) {
-            for (Future<ModelsComposition.ModelOnFeaturesSubspace> future : futures) {
-                try {
-                    learnedModels.add(future.get());
-                }
-                catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+        List<Model<Vector, Double>> models = environment.parallelismStrategy().submit(tasks)
+            .stream().map(Promise::unsafeGet)
+            .collect(Collectors.toList());
 
-        return new ModelsComposition(learnedModels, predictionsAggregator);
+        double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+        log.log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
+        log.log(MLLogger.VerboseLevel.LOW, "Learning finished");
+        return new ModelsComposition(models, predictionsAggregator);
     }
 
     /**
@@ -151,9 +118,9 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    @NotNull private <K, V> ModelsComposition.ModelOnFeaturesSubspace learnModel(
+    @NotNull private <K, V> ModelOnFeaturesSubspace learnModel(
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         Random rnd = new Random();
@@ -162,12 +129,15 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
         Map<Integer, Integer> featuresMapping = createFeaturesMapping(featureExtractorSeed, featureVectorSize);
 
         //TODO: IGNITE-8867 Need to implement bootstrapping algorithm
+        Long startTs = System.currentTimeMillis();
         Model<Vector, Double> mdl = buildDatasetTrainerForModel().fit(
             datasetBuilder.withFilter((features, answer) -> sampleFilter.map(features, answer) < samplePartSizePerMdl),
             wrapFeatureExtractor(featureExtractor, featuresMapping),
             lbExtractor);
+        double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
+        environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH, "One model training time was %.2fs", learningTime);
 
-        return new ModelsComposition.ModelOnFeaturesSubspace(featuresMapping, mdl);
+        return new ModelOnFeaturesSubspace(featuresMapping, mdl);
     }
 
     /**
@@ -197,14 +167,14 @@ public abstract class BaggingModelTrainer implements DatasetTrainer<ModelsCompos
      * @param featureExtractor Feature extractor.
      * @param featureMapping Feature mapping.
      */
-    private <K, V> IgniteBiFunction<K, V, double[]> wrapFeatureExtractor(
-        IgniteBiFunction<K, V, double[]> featureExtractor,
+    private <K, V> IgniteBiFunction<K, V, Vector> wrapFeatureExtractor(
+        IgniteBiFunction<K, V, Vector> featureExtractor,
         Map<Integer, Integer> featureMapping) {
 
-        return featureExtractor.andThen((IgniteFunction<double[], double[]>)featureValues -> {
+        return featureExtractor.andThen((IgniteFunction<Vector, Vector>)featureValues -> {
             double[] newFeaturesValues = new double[featureMapping.size()];
-            featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues[featureValueId]);
-            return newFeaturesValues;
+            featureMapping.forEach((localId, featureValueId) -> newFeaturesValues[localId] = featureValues.get(featureValueId));
+            return VectorUtils.of(newFeaturesValues);
         });
     }
 }

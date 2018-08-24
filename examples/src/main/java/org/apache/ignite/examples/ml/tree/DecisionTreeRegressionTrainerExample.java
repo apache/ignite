@@ -22,13 +22,23 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example of using distributed {@link DecisionTreeRegressionTrainer}.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with generated test data points ({@code sin(x)}
+ * on interval {@code [0, 10)}).</p>
+ * <p>
+ * After that it creates classification trainer and uses it to train the model on the training set.</p>
+ * <p>
+ * Finally, this example loops over the test data points, applies the trained model, and compares prediction
+ * to expected outcome (ground truth).</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class DecisionTreeRegressionTrainerExample {
     /**
@@ -63,11 +73,11 @@ public class DecisionTreeRegressionTrainerExample {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     trainingSet,
-                    (k, v) -> new double[] {v.x},
+                    (k, v) -> VectorUtils.of(v.x),
                     (k, v) -> v.y
                 );
 
-                System.out.println(">>> Linear regression model: " + mdl);
+                System.out.println(">>> Decision tree regression model: " + mdl);
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> | Prediction\t| Ground Truth\t|");
@@ -75,7 +85,7 @@ public class DecisionTreeRegressionTrainerExample {
 
                 // Calculate score.
                 for (int x = 0; x < 10; x++) {
-                    double predicted = mdl.apply(new DenseLocalOnHeapVector(new double[] {x}));
+                    double predicted = mdl.apply(VectorUtils.of(x));
 
                     System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", predicted, Math.sin(x));
                 }
@@ -92,7 +102,7 @@ public class DecisionTreeRegressionTrainerExample {
     }
 
     /**
-     * Generates {@code sin(x)} on interval [0, 10) and loads into the specified cache.
+     * Generates {@code sin(x)} on interval {@code [0, 10)} and loads into the specified cache.
      */
     private static void generatePoints(IgniteCache<Integer, Point> trainingSet) {
         for (int i = 0; i < 1000; i++) {

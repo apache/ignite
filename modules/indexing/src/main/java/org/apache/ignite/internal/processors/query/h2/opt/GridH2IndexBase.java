@@ -361,7 +361,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             locNodeHnd,
             GridIoPolicy.IDX_POOL,
             false))
-            throw new GridH2RetryException("Failed to send message to nodes: " + nodes + ".");
+            throw retryException("Failed to send message to nodes: " + nodes);
     }
 
     /**
@@ -554,14 +554,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     ClusterNode node = ctx.discovery().node(nodeId);
 
                     if (node == null)
-                        throw new GridH2RetryException("Failed to find node.");
+                        throw retryException("Failed to get node by ID during broadcast [nodeId=" + nodeId + ']');
 
                     nodes.add(node);
                 }
             }
 
             if (F.isEmpty(nodes))
-                throw new GridH2RetryException("Failed to collect affinity nodes.");
+                throw retryException("Failed to collect affinity nodes during broadcast [" +
+                    "cacheName=" + cctx.name() + ']');
         }
 
         int segmentsCount = segmentsCount();
@@ -615,7 +616,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             node = cctx.affinity().primaryByKey(affKeyObj, qctx.topologyVersion());
 
             if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
-                throw new GridH2RetryException("Failed to find node.");
+                throw retryException("Failed to get primary node by key for range segment.");
         }
 
         return new SegmentKey(node, segmentForPartition(partition));
@@ -1317,10 +1318,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             for (int attempt = 0;; attempt++) {
                 if (qctx.isCleared())
-                    throw new GridH2RetryException("Query is cancelled.");
+                    throw retryException("Query is cancelled.");
 
                 if (kernalContext().isStopping())
-                    throw new GridH2RetryException("Stopping node.");
+                    throw retryException("Local node is stopping.");
 
                 GridH2IndexRangeResponse res;
 
@@ -1328,7 +1329,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     res = respQueue.poll(500, TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException ignored) {
-                    throw new GridH2RetryException("Interrupted.");
+                    throw retryException("Interrupted while waiting for reply.");
                 }
 
                 if (res != null) {
@@ -1355,10 +1356,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                         case STATUS_NOT_FOUND:
                             if (req == null || req.bounds() == null) // We have already received the first response.
-                                throw new GridH2RetryException("Failure on remote node.");
+                                throw retryException("Failure on remote node.");
 
                             if (U.currentTimeMillis() - start > 30_000)
-                                throw new GridH2RetryException("Timeout.");
+                                throw retryException("Timeout reached.");
 
                             try {
                                 U.sleep(20 * attempt);
@@ -1381,7 +1382,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 }
 
                 if (!kernalContext().discovery().alive(node))
-                    throw new GridH2RetryException("Node left: " + node);
+                    throw retryException("Node has left topology: " + node.id());
             }
         }
 
@@ -1582,6 +1583,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         for (int pos = 0; pos < columnIds.length; ++pos)
             columnIds[pos] = columns[pos].getColumnId();
+    }
+
+    /**
+     * Create retry exception for distributed join.
+     *
+     * @param msg Message.
+     * @return Exception.
+     */
+    private GridH2RetryException retryException(String msg) {
+        return new GridH2RetryException(msg);
     }
 
     /**

@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-export default ['igniteUiAceTabs', [() => {
+import _ from 'lodash';
+
+export default ['igniteUiAceTabs', [function() {
     return {
         scope: true,
         restrict: 'AE',

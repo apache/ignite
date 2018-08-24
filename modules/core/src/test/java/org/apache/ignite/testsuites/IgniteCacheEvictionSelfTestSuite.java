@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictableEn
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionLockUnlockSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionTouchSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.DhtAndNearEvictionTest;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolicyFactorySelfTest;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearEvictionP
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearOnlyNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionDataStreamerTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMetricTest;
-import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionPagesRecyclingAndReusingTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionReadThroughTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionTouchOrderTest;
@@ -91,11 +91,11 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(PageEvictionReadThroughTest.class));
         suite.addTest(new TestSuite(PageEvictionDataStreamerTest.class));
 
-        suite.addTest(new TestSuite(PageEvictionMultinodeMixedRegionsTest.class));
-
         suite.addTest(new TestSuite(PageEvictionMetricTest.class));
 
         suite.addTest(new TestSuite(PageEvictionPagesRecyclingAndReusingTest.class));
+
+        suite.addTest(new TestSuite(DhtAndNearEvictionTest.class));
 
         return suite;
     }

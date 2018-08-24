@@ -19,7 +19,7 @@ package org.apache.ignite.ml.nn;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 
 /**
  * State of MLP after computation.
