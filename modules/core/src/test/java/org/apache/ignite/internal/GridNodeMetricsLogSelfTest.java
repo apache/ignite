@@ -112,7 +112,8 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         assertTrue(msg, logOutput.matches("(?s).*CPU \\[cur=.*, avg=.*, GC=.*].*"));
         assertTrue(msg, logOutput.matches("(?s).*PageMemory \\[pages=.*].*"));
         assertTrue(msg, logOutput.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*Off-heap .+ \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*Off-heap \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*Off-heap .+ region \\[used=.*, free=.*, comm=.*].*"));
         assertTrue(msg, logOutput.matches("(?s).*Outbound messages queue \\[size=.*].*"));
         assertTrue(msg, logOutput.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
         assertTrue(msg, logOutput.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
@@ -130,7 +131,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
 
         Set<String> regions = new HashSet<>();
 
-        Matcher matcher = Pattern.compile("(?m).*Off-heap (?<name>.+) " +
+        Matcher matcher = Pattern.compile("(?m).*Off-heap ((?<name>.+) region )?" +
                 "\\[used=(?<used>[-.\\d]*).*, free=(?<free>[-.\\d]*).*, comm=(?<comm>[-.\\d]*).*].*")
             .matcher(logOutput);
 
@@ -149,7 +150,10 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
             assertTrue(comm + " is less then used=" + used + ": " + subj, comm >= used);
             assertTrue(free + " is not between 0 and 100: " + subj, 0 <= free && free <= 100);
 
-            regions.add(matcher.group("name"));
+            String regName = matcher.group("name");
+
+            if (!F.isEmpty(regName))
+                regions.add(regName.trim());
 
             fmtMatches = true;
         }

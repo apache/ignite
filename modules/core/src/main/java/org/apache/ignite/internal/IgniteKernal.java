@@ -1274,6 +1274,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             StringBuilder dataRegionsInfo = new StringBuilder();
                             StringBuilder pdsRegionsInfo = new StringBuilder();
 
+                            long offHeapUsedSummary = 0;
+                            long offHeapMaxSummary = 0;
+                            long offHeapCommSummary = 0;
+
                             int MByte = 1024 * 1024;
 
                             if (!F.isEmpty(regions)) {
@@ -1290,9 +1294,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                     double freeOffHeapPct = offHeapMax > 0 ?
                                         ((double)((offHeapMax - offHeapUsed) * 100)) / offHeapMax : -1;
 
+                                    offHeapUsedSummary += offHeapUsed;
+                                    offHeapMaxSummary += offHeapMax;
+                                    offHeapCommSummary += offHeapComm;
                                     loadedPages += pagesCnt;
 
-                                    dataRegionsInfo.append("    ^-- Off-heap ").append(region.config().getName())
+                                    dataRegionsInfo.append("    ^-- Off-heap ")
+                                        .append(region.config().getName()).append(" region")
                                         .append(" [used=").append(dblFmt.format(offHeapUsedInMBytes))
                                         .append("MB, free=").append(dblFmt.format(freeOffHeapPct))
                                         .append("%, comm=").append(dblFmt.format(offHeapCommInMBytes)).append("MB]")
@@ -1302,12 +1310,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                         long pdsUsedMBytes = region.memoryMetrics().getTotalAllocatedSize() / MByte;
 
                                         pdsRegionsInfo.append("    ^-- Ignite persistence ")
-                                            .append(region.config().getName())
+                                            .append(region.config().getName()).append(" region")
                                             .append(" [used=").append(dblFmt.format(pdsUsedMBytes)).append("MB]")
                                             .append(NL);
                                     }
                                 }
                             }
+
+                            long nonHeapUsedInMBytes = offHeapUsedSummary / MByte;
+                            long nonHeapCommInMBytes = offHeapCommSummary / MByte;
+
+                            double freeNonHeapPct = offHeapMaxSummary > 0 ?
+                                ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
 
                             String id = U.id8(localNode().id());
 
@@ -1321,6 +1335,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 "    ^-- PageMemory [pages=" + loadedPages + "]" + NL +
                                 "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
                                 dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
+                                "    ^-- Off-heap [used=" + dblFmt.format(nonHeapUsedInMBytes) + "MB, free=" +
+                                dblFmt.format(freeNonHeapPct) + "%, comm=" + dblFmt.format(nonHeapCommInMBytes) + "MB]" + NL +
                                 dataRegionsInfo.toString() +
                                 pdsRegionsInfo.toString() +
                                 "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]" + NL +
