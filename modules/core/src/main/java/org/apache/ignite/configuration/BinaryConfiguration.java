@@ -17,6 +17,7 @@
 
 package org.apache.ignite.configuration;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -29,7 +30,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Configuration object for Ignite Binary Objects.
  * @see org.apache.ignite.IgniteBinary
  */
-public class BinaryConfiguration {
+public class BinaryConfiguration implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Default compact footer flag setting. */
     public static final boolean DFLT_COMPACT_FOOTER = true;
 

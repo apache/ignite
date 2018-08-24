@@ -89,6 +89,6 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }

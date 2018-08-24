@@ -21,6 +21,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cache create with name request.
@@ -42,6 +43,8 @@ public class ClientCacheGetOrCreateWithNameRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        authorize(ctx, SecurityPermission.CACHE_CREATE);
+
         ctx.kernalContext().grid().getOrCreateCache(cacheName);
 
         return super.process(ctx);

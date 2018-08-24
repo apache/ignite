@@ -56,6 +56,8 @@
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
+    <Compile Include="Client\ISslStreamFactory.cs" />
+    <Compile Include="Client\SslStreamFactory.cs" />
     <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
     <Compile Include="Configuration\DataPageEvictionMode.cs" />
@@ -70,6 +72,7 @@
     <Compile Include="Client\IgniteClientException.cs" />
     <Compile Include="Client\IIgniteClient.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Ssl\ISslContextFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
     <Compile Include="Configuration\ClientConnectorConfiguration.cs" />
     <Compile Include="Datastream\DataStreamerDefaults.cs" />
@@ -93,6 +96,8 @@
     <Compile Include="Client\ClientStatusCode.cs" />
     <Compile Include="Events\LocalEventListener.cs" />
     <Compile Include="Impl\Cluster\BaselineNode.cs" />
+    <Compile Include="Ssl\SslContextFactory.cs" />
+    <Compile Include="Impl\Ssl\SslFactorySerializer.cs" />
     <Compile Include="Impl\DataStorageMetrics.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
     <Compile Include="Impl\Client\Cache\CacheClient.cs" />
@@ -103,6 +108,7 @@
     <Compile Include="Impl\IPlatformTargetInternal.cs" />
     <Compile Include="Impl\DataRegionMetrics.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
+    <Compile Include="Impl\Services\DynamicServiceProxy.cs" />
     <Compile Include="Impl\Services\ServiceMethodHelper.cs" />
     <Compile Include="Impl\Services\ServiceProxyFactory.cs" />
     <Compile Include="Impl\Services\ServiceProxyTypeGenerator.cs" />
@@ -566,15 +572,16 @@
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="NuGet\Uninstall.ps1" />
-    <None Include="NuGet\PostBuild.ps1" />
-    <None Include="NuGet\Install.ps1" />
-    <None Include="Apache.Ignite.Core.snk" />
     <None Include="IgniteConfigurationSection.xsd">
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="NuGet\Uninstall.ps1" />
+    <None Include="NuGet\PostBuild.ps1" />
+    <None Include="NuGet\Install.ps1" />
+    <None Include="Apache.Ignite.Core.snk" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

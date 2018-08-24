@@ -55,7 +55,7 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
 
     /** {@inheritDoc} */
     @Override protected void execute0(String sql, Boolean isQuery) throws SQLException {
-        assert isQuery != null && !isQuery;
+        assert isQuery == null || !isQuery;
 
         long updCnt = conn.ignite().context().query().streamUpdateQuery(conn.cacheName(), conn.schemaName(),
             streamer, sql, getArgs());

@@ -854,11 +854,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public long startVersion() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public CacheObject peek(boolean heap,
         boolean offheap,
         AffinityTopologyVersion topVer,
@@ -892,5 +887,10 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public boolean lockedByCurrentThread() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void touch(AffinityTopologyVersion topVer) {
+        context().evicts().touch(this, topVer);
     }
 }

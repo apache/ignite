@@ -51,7 +51,7 @@ module.exports.factory = (mongo, errors) => {
             return new Promise((resolve) => {
                 delete session.viewedUser;
 
-                resolve();
+                resolve(true);
             });
         }
     }

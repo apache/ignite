@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
+import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorMemoryLeakTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
@@ -130,6 +131,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
         suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
+        suite.addTestSuite(GridAffinityProcessorMemoryLeakTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
         suite.addTestSuite(GridClosureProcessorRemoteTest.class);
         suite.addTestSuite(GridClosureSerializationTest.class);

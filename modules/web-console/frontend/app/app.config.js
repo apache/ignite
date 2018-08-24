@@ -17,15 +17,17 @@
 
 import _ from 'lodash';
 import angular from 'angular';
+import negate from 'lodash/negate';
+import isNil from 'lodash/isNil';
+import isEmpty from 'lodash/isEmpty';
+import mixin from 'lodash/mixin';
 
-const nonNil = _.negate(_.isNil);
-const nonEmpty = _.negate(_.isEmpty);
-const id8 = (uuid) => uuid.substring(0, 8).toUpperCase();
+const nonNil = negate(isNil);
+const nonEmpty = negate(isEmpty);
 
-_.mixin({
+mixin({
     nonNil,
-    nonEmpty,
-    id8
+    nonEmpty
 });
 
 import alertTemplateUrl from 'views/templates/alert.tpl.pug';
@@ -36,12 +38,12 @@ const igniteConsoleCfg = angular.module('ignite-console.config', ['ngAnimate', '
 
 // Configure AngularJS animation: do not animate fa-spin.
 igniteConsoleCfg.config(['$animateProvider', ($animateProvider) => {
-    $animateProvider.classNameFilter(/^((?!(fa-spin)).)*$/);
+    $animateProvider.classNameFilter(/^((?!(fa-spin|ng-animate-disabled)).)*$/);
 }]);
 
 // AngularStrap modal popup configuration.
 igniteConsoleCfg.config(['$modalProvider', ($modalProvider) => {
-    angular.extend($modalProvider.defaults, {
+    Object.assign($modalProvider.defaults, {
         animation: 'am-fade-and-scale',
         placement: 'center',
         html: true
@@ -50,7 +52,7 @@ igniteConsoleCfg.config(['$modalProvider', ($modalProvider) => {
 
 // AngularStrap popover configuration.
 igniteConsoleCfg.config(['$popoverProvider', ($popoverProvider) => {
-    angular.extend($popoverProvider.defaults, {
+    Object.assign($popoverProvider.defaults, {
         trigger: 'manual',
         placement: 'right',
         container: 'body',
@@ -60,7 +62,7 @@ igniteConsoleCfg.config(['$popoverProvider', ($popoverProvider) => {
 
 // AngularStrap tooltips configuration.
 igniteConsoleCfg.config(['$tooltipProvider', ($tooltipProvider) => {
-    angular.extend($tooltipProvider.defaults, {
+    Object.assign($tooltipProvider.defaults, {
         container: 'body',
         delay: {show: 150, hide: 150},
         placement: 'right',
@@ -71,7 +73,7 @@ igniteConsoleCfg.config(['$tooltipProvider', ($tooltipProvider) => {
 
 // AngularStrap select (combobox) configuration.
 igniteConsoleCfg.config(['$selectProvider', ($selectProvider) => {
-    angular.extend($selectProvider.defaults, {
+    Object.assign($selectProvider.defaults, {
         container: 'body',
         maxLength: '5',
         allText: 'Select All',
@@ -85,7 +87,7 @@ igniteConsoleCfg.config(['$selectProvider', ($selectProvider) => {
 
 // AngularStrap alerts configuration.
 igniteConsoleCfg.config(['$alertProvider', ($alertProvider) => {
-    angular.extend($alertProvider.defaults, {
+    Object.assign($alertProvider.defaults, {
         container: 'body',
         placement: 'top-right',
         duration: '5',
@@ -97,7 +99,7 @@ igniteConsoleCfg.config(['$alertProvider', ($alertProvider) => {
 
 // AngularStrap dropdowns () configuration.
 igniteConsoleCfg.config(['$dropdownProvider', ($dropdownProvider) => {
-    angular.extend($dropdownProvider.defaults, {
+    Object.assign($dropdownProvider.defaults, {
         templateUrl: dropdownTemplateUrl,
         animation: ''
     });
@@ -105,7 +107,7 @@ igniteConsoleCfg.config(['$dropdownProvider', ($dropdownProvider) => {
 
 // AngularStrap dropdowns () configuration.
 igniteConsoleCfg.config(['$datepickerProvider', ($datepickerProvider) => {
-    angular.extend($datepickerProvider.defaults, {
+    Object.assign($datepickerProvider.defaults, {
         autoclose: true,
         iconLeft: 'icon-datepicker-left',
         iconRight: 'icon-datepicker-right'
@@ -115,3 +117,20 @@ igniteConsoleCfg.config(['$datepickerProvider', ($datepickerProvider) => {
 igniteConsoleCfg.config(['$translateProvider', ($translateProvider) => {
     $translateProvider.useSanitizeValueStrategy('sanitize');
 }]);
+
+// Restores pre 4.3.0 ui-grid getSelectedRows method behavior
+// ui-grid 4.4+ getSelectedRows additionally skips entries without $$hashKey,
+// which breaks most of out code that works with selected rows.
+igniteConsoleCfg.directive('uiGridSelection', function() {
+    function legacyGetSelectedRows() {
+        return this.rows.filter((row) => row.isSelected).map((row) => row.entity);
+    }
+    return {
+        require: '^uiGrid',
+        restrict: 'A',
+        link(scope, el, attr, ctrl) {
+            ctrl.grid.api.registerMethodsFromObject({selection: {legacyGetSelectedRows}});
+        }
+    };
+});
+
