@@ -816,6 +816,9 @@ public class GridMapQueryExecutor {
                 for (int i = 0; i < reserved.size(); i++)
                     reserved.get(i).release();
             }
+
+            if (MapQueryLazyWorker.currentWorker() == null && GridH2QueryContext.get() != null)
+                GridH2QueryContext.clearThreadLocal();
         }
     }
 
