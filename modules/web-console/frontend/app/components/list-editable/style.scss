@@ -53,7 +53,7 @@ list-editable {
     }
 
     .le-body {
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.2);
     }
 
     .le-row-sort {
@@ -112,10 +112,6 @@ list-editable {
                 display: flex;
                 min-height: 36px;
                 align-items: center;
-            }
-
-            &-edit {
-                margin-left: -11px;
             }
         }
 
