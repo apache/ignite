@@ -18,11 +18,10 @@
 -->
 
 <xs:schema id="IgniteConfigurationSection"
-    targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    elementFormDefault="qualified"
-    xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+           targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+           elementFormDefault="qualified"
+           xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
     <xs:simpleType name="cacheMode" final="restriction">
         <xs:restriction base="xs:string">
@@ -1373,7 +1372,7 @@
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
-                </xs:element>                
+                </xs:element>
                 <xs:element name="sqlConnectorConfiguration" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>SQL connector configuration (JDBC and ODBC).</xs:documentation>
@@ -1744,7 +1743,7 @@
                                                         <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
-                                            </xs:complexType>                                            
+                                            </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
                                 </xs:complexType>

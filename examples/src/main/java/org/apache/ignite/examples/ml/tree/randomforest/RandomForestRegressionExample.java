@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.ml.tree.randomforest;
 
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

@@ -18,16 +18,13 @@
 package org.apache.ignite.ml.tree.randomforest;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.ml.composition.ModelOnFeaturesSubspace;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -39,7 +36,7 @@ import static org.junit.Assert.assertTrue;
  * Tests for {@link RandomForestClassifierTrainer}.
  */
 @RunWith(Parameterized.class)
-public class RandomForestClassifierTrainerTrainerTest {
+public class RandomForestClassifierTrainerTest {
     /**
      * Number of parts to be tested.
      */

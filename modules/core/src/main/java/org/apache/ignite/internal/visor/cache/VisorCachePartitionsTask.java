@@ -38,8 +38,8 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.escapeName;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 
 /**
  * Task that collect keys distribution in partitions.

@@ -750,8 +750,6 @@ public abstract class RandomForestTrainer<LeafStatsAggregator, S extends Impurit
          * @param other Other instance.
          */
         public void addOtherStatistics(Map<Integer, S> other) {
-            assert other.keySet().containsAll(perFeatureStatistics.keySet());
-
             for (Integer featureId : other.keySet()) {
                 if (!perFeatureStatistics.containsKey(featureId))
                     perFeatureStatistics.put(featureId, other.get(featureId));

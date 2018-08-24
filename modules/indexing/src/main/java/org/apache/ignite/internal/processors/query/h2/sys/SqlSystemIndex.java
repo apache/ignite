@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.h2.engine.Session;
@@ -30,8 +31,6 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
-
-import java.util.HashSet;
 
 /**
  * Meta view H2 index.
