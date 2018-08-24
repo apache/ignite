@@ -376,7 +376,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Gets ignite configuration with persistance enabled.
+     * Gets ignite configuration with persistence enabled.
      */
     private IgniteConfiguration getPdsConfiguration(String consistentId) throws Exception {
         IgniteConfiguration cfg = getConfiguration();
