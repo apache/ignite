@@ -80,8 +80,6 @@ public class MaxAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vec
             return new MaxAbsScalerPreprocessor<>(maxAbs, basePreprocessor);
 
         }
-
-
         catch (Exception e) {
             throw new RuntimeException(e);
         }
