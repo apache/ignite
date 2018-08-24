@@ -226,6 +226,58 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
      * @throws Exception If failed.
      */
     @Test
+    public void testQueryReducerMergeSameKey() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
+
+        startGridsMultiThreaded(4);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        Ignite checkNode  = grid(rnd.nextInt(4));
+        Ignite updateNode = grid(rnd.nextInt(4));
+
+        IgniteCache<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> cache =
+            checkNode.cache(DEFAULT_CACHE_NAME);
+
+        cache.putAll(F.asMap(
+            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
+
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
+
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.timeout(TIMEOUT);
+
+            String sqlText = "MERGE INTO MvccTestSqlIndexValue (_key, idxVal1) " +
+                "SELECT 1, idxVal1 FROM (SELECT DISTINCT _key, idxVal1 FROM MvccTestSqlIndexValue ORDER BY _key)";
+
+            SqlFieldsQuery qry = new SqlFieldsQuery(sqlText);
+
+            qry.setDistributedJoins(true);
+
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(1L, cur.iterator().next().get(0));
+            }
+
+            tx.commit();
+        }
+
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testQueryReducerMultiBatchPerNodeServer() throws Exception {
         checkMultiBatchPerNode(false);
     }
