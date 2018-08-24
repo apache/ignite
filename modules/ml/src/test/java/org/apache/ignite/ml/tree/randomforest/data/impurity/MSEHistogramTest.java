@@ -2,8 +2,8 @@ package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedVector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -25,7 +25,7 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
         MSEHistogram catHist2 = new MSEHistogram(1, feature1Meta);
         MSEHistogram contHist2 = new MSEHistogram(1, feature2Meta);
 
-        for (BaggedVector vec : dataset) {
+        for (BootstrappedVector vec : dataset) {
             catHist1.addElement(vec);
             catHist2.addElement(vec);
             contHist1.addElement(vec);
@@ -56,29 +56,29 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
         checkCounters(contHist2.getY2s(), new double[]{ 2 * 5 * 5, 2 * 1 * 1, 1 * 4 * 4, 1 * 2 * 2, 0 * 3 * 3 });
     }
 
-    private BaggedVector[] dataset = new BaggedVector[] {
-        new BaggedVector(VectorUtils.of(1, -4), 5, new int[] {1, 2}),
-        new BaggedVector(VectorUtils.of(1, -1), 1, new int[] {1, 2}),
-        new BaggedVector(VectorUtils.of(0, 1), 4, new int[] {2, 1}),
-        new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {2, 1}),
-        new BaggedVector(VectorUtils.of(0, 3), 3, new int[] {2, 0}),
+    private BootstrappedVector[] dataset = new BootstrappedVector[] {
+        new BootstrappedVector(VectorUtils.of(1, -4), 5, new int[] {1, 2}),
+        new BootstrappedVector(VectorUtils.of(1, -1), 1, new int[] {1, 2}),
+        new BootstrappedVector(VectorUtils.of(0, 1), 4, new int[] {2, 1}),
+        new BootstrappedVector(VectorUtils.of(1, 2), 2, new int[] {2, 1}),
+        new BootstrappedVector(VectorUtils.of(0, 3), 3, new int[] {2, 0}),
     };
 
-    private BaggedVector[] toSplitDataset = new BaggedVector[] {
-        new BaggedVector(VectorUtils.of(0, -1), 1, new int[] {2}),
-        new BaggedVector(VectorUtils.of(0, -1), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(0, -1), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(0, 3), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(0, 1), 2, new int[] {0}),
-        new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(1, -4), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
+    private BootstrappedVector[] toSplitDataset = new BootstrappedVector[] {
+        new BootstrappedVector(VectorUtils.of(0, -1), 1, new int[] {2}),
+        new BootstrappedVector(VectorUtils.of(0, -1), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(0, -1), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(0, 3), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(0, 1), 2, new int[] {0}),
+        new BootstrappedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(1, 2), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(1, -4), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1), 1, new int[] {1}),
     };
 }

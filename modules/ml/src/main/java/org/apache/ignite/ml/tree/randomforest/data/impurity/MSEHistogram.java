@@ -23,18 +23,18 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-public class MSEHistogram implements ImpurityComputer<BaggedVector, MSEHistogram> {
+public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHistogram> {
     private final BucketMeta bucketMeta;
     private final int featureId;
     private final int sampleId;
     private final Set<Integer> bucketIds;
-    private final FeatureHistogram<BaggedVector> counters;
-    private final FeatureHistogram<BaggedVector> ys;
-    private final FeatureHistogram<BaggedVector> y2s;
+    private final FeatureHistogram<BootstrappedVector> counters;
+    private final FeatureHistogram<BootstrappedVector> ys;
+    private final FeatureHistogram<BootstrappedVector> y2s;
 
     public MSEHistogram(int sampleId, BucketMeta bucketMeta) {
         this.bucketMeta = bucketMeta;
@@ -47,7 +47,7 @@ public class MSEHistogram implements ImpurityComputer<BaggedVector, MSEHistogram
         bucketIds = new TreeSet<>();
     }
 
-    @Override public void addElement(BaggedVector vector) {
+    @Override public void addElement(BootstrappedVector vector) {
         counters.addElement(vector);
         ys.addElement(vector);
         y2s.addElement(vector);
@@ -127,33 +127,33 @@ public class MSEHistogram implements ImpurityComputer<BaggedVector, MSEHistogram
         return y2s - 2.0 * ys / count * ys + Math.pow(ys / count, 2) * count;
     }
 
-    private Integer bucketMap(BaggedVector vec) {
+    private Integer bucketMap(BootstrappedVector vec) {
         int bucketId = bucketMeta.getBucketId(vec.getFeatures().get(featureId));
         this.bucketIds.add(bucketId);
         return bucketId;
     }
 
-    private Double counterMap(BaggedVector vec) {
+    private Double counterMap(BootstrappedVector vec) {
         return (double)vec.getRepetitionsCounters()[sampleId];
     }
 
-    private Double ysMap(BaggedVector vec) {
+    private Double ysMap(BootstrappedVector vec) {
         return vec.getRepetitionsCounters()[sampleId] * vec.getLabel();
     }
 
-    private Double y2sMap(BaggedVector vec) {
+    private Double y2sMap(BootstrappedVector vec) {
         return vec.getRepetitionsCounters()[sampleId] * Math.pow(vec.getLabel(), 2);
     }
 
-    FeatureHistogram<BaggedVector> getCounters() {
+    FeatureHistogram<BootstrappedVector> getCounters() {
         return counters;
     }
 
-    FeatureHistogram<BaggedVector> getYs() {
+    FeatureHistogram<BootstrappedVector> getYs() {
         return ys;
     }
 
-    FeatureHistogram<BaggedVector> getY2s() {
+    FeatureHistogram<BootstrappedVector> getY2s() {
         return y2s;
     }
 }

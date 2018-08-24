@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedVector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.junit.Before;
@@ -37,7 +37,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         GiniHistogram contFeatureSmpl1 = new GiniHistogram(0, lblMapping, feature2Meta);
         GiniHistogram contFeatureSmpl2 = new GiniHistogram(1, lblMapping, feature2Meta);
 
-        for (BaggedVector vec : dataset) {
+        for (BootstrappedVector vec : dataset) {
             catFeatureSmpl1.addElement(vec);
             catFeatureSmpl2.addElement(vec);
             contFeatureSmpl1.addElement(vec);
@@ -94,7 +94,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         feature2Meta.setMinValue(-5);
         feature2Meta.setBucketSize(1);
 
-        for (BaggedVector vec : toSplitDataset) {
+        for (BootstrappedVector vec : toSplitDataset) {
             catFeatureSmpl1.addElement(vec);
             contFeatureSmpl1.addElement(vec);
             catFeatureSmpl2.addElement(vec);
@@ -121,12 +121,12 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         GiniHistogram contFeatureSmpl1 = new GiniHistogram(0, lblMapping, feature2Meta);
         GiniHistogram contFeatureSmpl2 = new GiniHistogram(0, lblMapping, feature2Meta);
 
-        for (BaggedVector vec : dataset) {
+        for (BootstrappedVector vec : dataset) {
             catFeatureSmpl1.addElement(vec);
             contFeatureSmpl1.addElement(vec);
         }
 
-        for (BaggedVector vec : toSplitDataset) {
+        for (BootstrappedVector vec : toSplitDataset) {
             catFeatureSmpl2.addElement(vec);
             contFeatureSmpl2.addElement(vec);
         }
@@ -154,29 +154,29 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         checkBucketIds(contFeatureSmpl1.getHistForLabel(3.0).buckets(), new Integer[] {8});
     }
 
-    private BaggedVector[] dataset = new BaggedVector[] {
-        new BaggedVector(VectorUtils.of(1, -1), 1, new int[] {1, 2}),
-        new BaggedVector(VectorUtils.of(1, 2), 2, new int[] {2, 1}),
-        new BaggedVector(VectorUtils.of(0, 3), 3, new int[] {2, 0}),
-        new BaggedVector(VectorUtils.of(0, 1), 1, new int[] {2, 1}),
-        new BaggedVector(VectorUtils.of(1, -4), 2, new int[] {1, 2}),
+    private BootstrappedVector[] dataset = new BootstrappedVector[] {
+        new BootstrappedVector(VectorUtils.of(1, -1), 1, new int[] {1, 2}),
+        new BootstrappedVector(VectorUtils.of(1, 2), 2, new int[] {2, 1}),
+        new BootstrappedVector(VectorUtils.of(0, 3), 3, new int[] {2, 0}),
+        new BootstrappedVector(VectorUtils.of(0, 1), 1, new int[] {2, 1}),
+        new BootstrappedVector(VectorUtils.of(1, -4), 2, new int[] {1, 2}),
     };
 
-    private BaggedVector[] toSplitDataset = new BaggedVector[] {
-        new BaggedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {2}),
-        new BaggedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(0, 3, 0, 0), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(0, 1, 0, 0), 2, new int[] {0}),
-        new BaggedVector(VectorUtils.of(1, 2, 0, 0), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(1, 2, 0, 0), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(1, 2, 0, 0), 2, new int[] {1}),
-        new BaggedVector(VectorUtils.of(1, -4, 0, 0), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
-        new BaggedVector(VectorUtils.of(2, 1, 0, 1), 1, new int[] {1}),
+    private BootstrappedVector[] toSplitDataset = new BootstrappedVector[] {
+        new BootstrappedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {2}),
+        new BootstrappedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(0, -1, 0, 0), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(0, 3, 0, 0), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(0, 1, 0, 0), 2, new int[] {0}),
+        new BootstrappedVector(VectorUtils.of(1, 2, 0, 0), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(1, 2, 0, 0), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(1, 2, 0, 0), 2, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(1, -4, 0, 0), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1, 0, 0), 1, new int[] {1}),
+        new BootstrappedVector(VectorUtils.of(2, 1, 0, 1), 1, new int[] {1}),
     };
 }

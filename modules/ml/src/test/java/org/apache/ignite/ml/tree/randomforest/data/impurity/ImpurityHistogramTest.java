@@ -19,7 +19,7 @@ package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
 import java.util.Set;
 import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedVector;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -30,7 +30,7 @@ public class ImpurityHistogramTest {
         assertArrayEquals(expected, bucketIds);
     }
 
-    protected void checkCounters(FeatureHistogram<BaggedVector> hist, double[] expected) {
+    protected void checkCounters(FeatureHistogram<BootstrappedVector> hist, double[] expected) {
         double[] counters = hist.buckets().stream().mapToDouble(x -> hist.get(x).get()).toArray();
         assertArrayEquals(expected, counters, 0.01);
     }

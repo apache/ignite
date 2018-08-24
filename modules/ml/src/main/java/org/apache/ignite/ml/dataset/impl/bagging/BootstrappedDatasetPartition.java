@@ -19,23 +19,27 @@ package org.apache.ignite.ml.dataset.impl.bagging;
 
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
 
-public class BaggedDatasetPartition implements AutoCloseable {
-    private BaggedVector[] dataset;
+/**
+ * Partition of bootstrapped vectors.
+ */
+public class BootstrappedDatasetPartition implements AutoCloseable {
+    /** Dataset. */
+    private BootstrappedVector[] vectors;
 
-    public BaggedDatasetPartition(BaggedVector[] dataset) {
-        this.dataset = dataset;
+    public BootstrappedDatasetPartition(BootstrappedVector[] vectors) {
+        this.vectors = vectors;
     }
 
-    public BaggedVector getRow(int rowId) {
-        return dataset[rowId];
+    public BootstrappedVector getRow(int rowId) {
+        return vectors[rowId];
     }
 
     public int getRowsCount() {
-        return dataset.length;
+        return vectors.length;
     }
 
-    public void foreach(IgniteConsumer<BaggedVector> consumer) {
-        for(BaggedVector vec : dataset)
+    public void foreach(IgniteConsumer<BootstrappedVector> consumer) {
+        for(BootstrappedVector vec : vectors)
             consumer.accept(vec);
     }
 

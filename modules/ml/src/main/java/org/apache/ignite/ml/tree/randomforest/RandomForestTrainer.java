@@ -38,22 +38,22 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedDatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedDatasetPartition;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedDatasetBuilder;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedDatasetPartition;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategy;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityComputer;
 
-public abstract class RandomForestTrainer<LeafStatsAggregator, S extends ImpurityComputer<BaggedVector, S>, T extends RandomForestTrainer<LeafStatsAggregator, S, T>>
+public abstract class RandomForestTrainer<LeafStatsAggregator, S extends ImpurityComputer<BootstrappedVector, S>, T extends RandomForestTrainer<LeafStatsAggregator, S, T>>
     extends DatasetTrainer<ModelsComposition, Double> {
 
     public static final double BUCKET_SIZE_FACTOR = (1 / 10.0);
@@ -82,9 +82,9 @@ public abstract class RandomForestTrainer<LeafStatsAggregator, S extends Impurit
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         List<TreeRoot> models = null;
-        try (Dataset<EmptyContext, BaggedDatasetPartition> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new BaggedDatasetBuilder<>(featureExtractor, lbExtractor, countOfTrees, subsampleSize))) {
+            new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, countOfTrees, subsampleSize))) {
 
             init(dataset);
             models = fit(dataset);
@@ -135,10 +135,10 @@ public abstract class RandomForestTrainer<LeafStatsAggregator, S extends Impurit
         return instance();
     }
 
-    protected void init(Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
+    protected void init(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
     }
 
-    private List<TreeRoot> fit(Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
+    private List<TreeRoot> fit(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
         Queue<TreeNode> treesQueue = createRootsQueue();
         ArrayList<TreeRoot> roots = initTrees(treesQueue);
         Map<Integer, BucketMeta> histMeta = computeHistogramMeta(meta, dataset);
@@ -178,7 +178,7 @@ public abstract class RandomForestTrainer<LeafStatsAggregator, S extends Impurit
     }
 
     protected void computeLeafValues(ArrayList<TreeRoot> roots,
-        Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
+        Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
 
         Map<NodeId, TreeNode> leafs = roots.stream().flatMap(r -> r.getLeafs().stream())
             .collect(Collectors.toMap(TreeNode::getId, n -> n));
@@ -228,7 +228,7 @@ public abstract class RandomForestTrainer<LeafStatsAggregator, S extends Impurit
         });
     }
 
-    protected abstract void addElementToLeafStat(LeafStatsAggregator leafStatAggr, BaggedVector vec, int sampleId);
+    protected abstract void addElementToLeafStat(LeafStatsAggregator leafStatAggr, BootstrappedVector vec, int sampleId);
 
     protected abstract LeafStatsAggregator mergeLeafStats(
         LeafStatsAggregator leafStatAggr1, LeafStatsAggregator leafStatAggr2);
@@ -314,7 +314,7 @@ public abstract class RandomForestTrainer<LeafStatsAggregator, S extends Impurit
     }
 
     private Map<Integer, BucketMeta> computeHistogramMeta(List<FeatureMeta> meta,
-        Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
+        Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
 
         List<NormalDistributionStats> stats = dataset.compute(
             x -> computeStatsOnPartition(x, meta),
@@ -334,7 +334,7 @@ public abstract class RandomForestTrainer<LeafStatsAggregator, S extends Impurit
         return bucketsMeta;
     }
 
-    List<NormalDistributionStats> computeStatsOnPartition(BaggedDatasetPartition part,
+    List<NormalDistributionStats> computeStatsOnPartition(BootstrappedDatasetPartition part,
         List<FeatureMeta> meta) {
 
         double[] sumOfValues = new double[meta.size()];
@@ -413,7 +413,7 @@ public abstract class RandomForestTrainer<LeafStatsAggregator, S extends Impurit
     protected abstract ModelsComposition buildComposition(List<TreeRoot> models);
 
     Map<NodeId, NodeStatistics> aggregateStatistics(
-        BaggedDatasetPartition dataset, ArrayList<TreeRoot> roots,
+        BootstrappedDatasetPartition dataset, ArrayList<TreeRoot> roots,
         Map<Integer, BucketMeta> histMeta,
         Map<NodeId, TreeNode> part) {
 

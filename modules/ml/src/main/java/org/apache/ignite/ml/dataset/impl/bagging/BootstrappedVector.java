@@ -19,12 +19,12 @@ package org.apache.ignite.ml.dataset.impl.bagging;
 
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
-public class BaggedVector {
+public class BootstrappedVector {
     private final Vector features;
     private final double label;
     private final int[] repetitionsCounters;
 
-    public BaggedVector(Vector features, double label, int[] repetitionsCounters) {
+    public BootstrappedVector(Vector features, double label, int[] repetitionsCounters) {
         this.features = features;
         this.label = label;
         this.repetitionsCounters = repetitionsCounters;

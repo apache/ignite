@@ -28,13 +28,37 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
-public class BaggedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V, EmptyContext, BaggedDatasetPartition> {
+/**
+ * Builder for bootstrapped dataset. Bootstrapped dataset consist of several subsamples created in according to random
+ * sampling with replacements selection of vectors from original dataset. This realization uses
+ * {@link BootstrappedVector} containing each vector from original sample with counters of repetitions
+ * for each subsample. As heuristic this implementation uses Poisson Distribution for generating counter values.
+ *
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
+ */
+public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V, EmptyContext, BootstrappedDatasetPartition> {
+    /** Feature extractor. */
     private final IgniteBiFunction<K, V, Vector> featureExtractor;
+
+    /** Label extractor. */
     private final IgniteBiFunction<K, V, Double> lbExtractor;
+
+    /** Samples count. */
     private final int samplesCount;
+
+    /** Subsample size. */
     private final double subsampleSize;
 
-    public BaggedDatasetBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
+    /**
+     * Creates an instance of BootstrappedDatasetBuilder.
+     *
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param samplesCount Samples count.
+     * @param subsampleSize Subsample size.
+     */
+    public BootstrappedDatasetBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor,
         int samplesCount, double subsampleSize) {
 
@@ -44,10 +68,11 @@ public class BaggedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V, Empt
         this.subsampleSize = subsampleSize;
     }
 
-    @Override public BaggedDatasetPartition build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
+    /** {@inheritDoc} */
+    @Override public BootstrappedDatasetPartition build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
         EmptyContext ctx) {
 
-        BaggedVector[] dataset = (BaggedVector[]) Array.newInstance(BaggedVector.class, Math.toIntExact(upstreamDataSize));
+        BootstrappedVector[] dataset = (BootstrappedVector[]) Array.newInstance(BootstrappedVector.class, Math.toIntExact(upstreamDataSize));
         AtomicInteger ptr = new AtomicInteger();
         PoissonDistribution poissonDistribution = new PoissonDistribution(subsampleSize);
         upstreamData.forEachRemaining(entry -> {
@@ -55,9 +80,9 @@ public class BaggedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V, Empt
             Double label = lbExtractor.apply(entry.getKey(), entry.getValue());
             int[] repetitionCounters = new int[samplesCount];
             Arrays.setAll(repetitionCounters, i -> poissonDistribution.sample());
-            dataset[ptr.getAndIncrement()] = new BaggedVector(features, label, repetitionCounters);
+            dataset[ptr.getAndIncrement()] = new BootstrappedVector(features, label, repetitionCounters);
         });
 
-        return new BaggedDatasetPartition(dataset);
+        return new BootstrappedDatasetPartition(dataset);
     }
 }

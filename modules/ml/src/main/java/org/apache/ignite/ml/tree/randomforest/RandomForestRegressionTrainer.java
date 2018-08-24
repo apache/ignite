@@ -23,7 +23,7 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogram;
 
 public class RandomForestRegressionTrainer extends RandomForestTrainer<IgniteBiTuple<Double, Integer>, MSEHistogram, RandomForestRegressionTrainer> {
@@ -43,7 +43,7 @@ public class RandomForestRegressionTrainer extends RandomForestTrainer<IgniteBiT
         return new MSEHistogram(sampleId, meta);
     }
 
-    @Override protected void addElementToLeafStat(IgniteBiTuple<Double, Integer> leafStatAggr, BaggedVector vec, int sampleId) {
+    @Override protected void addElementToLeafStat(IgniteBiTuple<Double, Integer> leafStatAggr, BootstrappedVector vec, int sampleId) {
         leafStatAggr.set1(leafStatAggr.get1() + vec.getLabel() * vec.getRepetitionsCounters()[sampleId]);
         leafStatAggr.set2(leafStatAggr.get2() + vec.getRepetitionsCounters()[sampleId]);
     }

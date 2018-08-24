@@ -29,12 +29,12 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedDatasetPartition;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedDatasetPartition;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogram;
 
-public class RandomForestClassifierTrainer extends RandomForestTrainer<FeatureHistogram<BaggedVector>, GiniHistogram, RandomForestClassifierTrainer> {
+public class RandomForestClassifierTrainer extends RandomForestTrainer<FeatureHistogram<BootstrappedVector>, GiniHistogram, RandomForestClassifierTrainer> {
     private Map<Double, Integer> lblMapping = new HashMap<>();
 
     public RandomForestClassifierTrainer(List<FeatureMeta> meta) {
@@ -45,7 +45,7 @@ public class RandomForestClassifierTrainer extends RandomForestTrainer<FeatureHi
         return this;
     }
 
-    @Override protected void init(Dataset<EmptyContext, BaggedDatasetPartition> dataset) {
+    @Override protected void init(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
         Set<Double> uniqLabels = dataset.compute(
             x -> {
                 Set<Double> labels = new HashSet<>();
@@ -80,25 +80,25 @@ public class RandomForestClassifierTrainer extends RandomForestTrainer<FeatureHi
         return new GiniHistogram(sampleId, lblMapping, meta);
     }
 
-    @Override protected void addElementToLeafStat(FeatureHistogram<BaggedVector> leafStatAggr, BaggedVector vec, int sampleId) {
+    @Override protected void addElementToLeafStat(FeatureHistogram<BootstrappedVector> leafStatAggr, BootstrappedVector vec, int sampleId) {
         leafStatAggr.addElement(vec);
     }
 
-    @Override protected FeatureHistogram<BaggedVector> mergeLeafStats(FeatureHistogram<BaggedVector> leafStatAggr1,
-        FeatureHistogram<BaggedVector> leafStatAggr2) {
+    @Override protected FeatureHistogram<BootstrappedVector> mergeLeafStats(FeatureHistogram<BootstrappedVector> leafStatAggr1,
+        FeatureHistogram<BootstrappedVector> leafStatAggr2) {
 
         leafStatAggr1.addHist(leafStatAggr2);
         return leafStatAggr1;
     }
 
-    @Override protected FeatureHistogram<BaggedVector> createLeafStatsAggregator(int sampleId) {
+    @Override protected FeatureHistogram<BootstrappedVector> createLeafStatsAggregator(int sampleId) {
         return new FeatureHistogram<>(
             x -> lblMapping.get(x.getLabel()),
             x -> (double)x.getRepetitionsCounters()[sampleId]
         );
     }
 
-    @Override protected double computeLeafValue(FeatureHistogram<BaggedVector> stat) {
+    @Override protected double computeLeafValue(FeatureHistogram<BootstrappedVector> stat) {
         Integer bucketId = stat.buckets().stream()
             .max(Comparator.comparing(b -> stat.get(b).orElse(0.0)))
             .get();

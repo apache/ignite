@@ -28,15 +28,15 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
-import org.apache.ignite.ml.dataset.impl.bagging.BaggedVector;
+import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogram> {
+public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniHistogram> {
     private final BucketMeta bucketMeta;
     private final int featureId;
     private final int sampleId;
-    private final ArrayList<FeatureHistogram<BaggedVector>> hists;
+    private final ArrayList<FeatureHistogram<BootstrappedVector>> hists;
     private final Map<Double, Integer> lblMapping;
     private final Set<Integer> bucketIds;
 
@@ -54,7 +54,7 @@ public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogr
         this.bucketIds = new TreeSet<>();
     }
 
-    @Override public void addElement(BaggedVector vector) {
+    @Override public void addElement(BootstrappedVector vector) {
         Integer lblId = lblMapping.get(vector.getLabel());
         hists.get(lblId).addElement(vector);
     }
@@ -144,15 +144,15 @@ public class GiniHistogram implements ImpurityComputer<BaggedVector, GiniHistogr
         return bucketIds;
     }
 
-    FeatureHistogram<BaggedVector> getHistForLabel(Double lbl) {
+    FeatureHistogram<BootstrappedVector> getHistForLabel(Double lbl) {
         return hists.get(lblMapping.get(lbl));
     }
 
-    private Double counterMap(BaggedVector vec) {
+    private Double counterMap(BootstrappedVector vec) {
         return (double)vec.getRepetitionsCounters()[sampleId];
     }
 
-    private Integer bucketMap(BaggedVector vec) {
+    private Integer bucketMap(BootstrappedVector vec) {
         int bucketId = bucketMeta.getBucketId(vec.getFeatures().get(featureId));
         this.bucketIds.add(bucketId);
         return bucketId;
