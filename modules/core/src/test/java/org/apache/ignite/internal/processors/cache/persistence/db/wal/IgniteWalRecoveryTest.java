@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -52,9 +53,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -93,6 +96,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
@@ -287,9 +291,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, EnumVal> cache = igniteEx.cache("partitioned");
 
-            // Creates LoadCacheJobV2
-//            cache.loadCache(null);
-
             final ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
             final ClassLoader newCl = getExternalClassLoader();
 
@@ -330,11 +331,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             info(" --> step1");
 
-            for (int i = 0; i < 10_000; i += 2) {
-//                X.println(" -> put: " + i);
-
+            for (int i = 0; i < 10_000; i += 2)
                 cache.put(i, new IndexedObject(i));
-            }
 
             info(" --> step2");
 
@@ -417,21 +415,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                 if (i % 1000 == 0)
                     X.println(" ---> put: " + i);
-
-//                Assert.assertArrayEquals(data, (byte[])cache.get(i));
             }
-
-//            info(" --> check1");
-//
-//            for (int i = 0; i < 25_000; i++) {
-//                final byte[] data = new byte[i];
-//
-//                Arrays.fill(data, (byte)i);
-//
-//                final byte[] loaded = (byte[]) cache.get(i);
-//
-//                Assert.assertArrayEquals(data, loaded);
-//            }
 
             stopGrid(1);
 
@@ -459,6 +443,62 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testBinaryRecoverBeforeExchange() throws Exception {
+        IgniteEx ig = (IgniteEx)startGrids(3);
+
+        ig.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ig.cache(cacheName);
+
+        for (int i = 1; i <= 4_000; i++)
+            cache.put(i, new BigObject(i));
+
+        stopAllGrids();
+
+        startGrids(2);
+
+        // Preprare Ignite instance configuration with additional Discovery checks.
+        final String ig2Name = getTestIgniteInstanceName(2);
+
+        final IgniteConfiguration onJoinCfg = optimize(getConfiguration(ig2Name));
+
+        // Check restore beeing called before PME and joining node to cluster.
+        ((IgniteDiscoverySpi)onJoinCfg.getDiscoverySpi())
+            .setInternalListener(new DiscoverySpiTestListener() {
+                @Override public void beforeJoin(ClusterNode locNode, IgniteLogger log) {
+                    String nodeName = locNode.attribute(ATTR_IGNITE_INSTANCE_NAME);
+
+                    IgniteEx locIg = (IgniteEx)ignite(getTestIgniteInstanceIndex(nodeName));
+
+                    if (nodeName.equals(ig2Name)) {
+                        GridCacheDatabaseSharedManager dbMgr =
+                            (GridCacheDatabaseSharedManager)locIg
+                                .context()
+                                .cache()
+                                .context()
+                                .database();
+
+                        // Memory restored to the last pointer.
+                        assertNotNull(GridTestUtils.getFieldValue(dbMgr,
+                            GridCacheDatabaseSharedManager.class,
+                            "lastRestored"));
+
+                        // Checkpoint history initialized on node start.
+                        assertFalse(dbMgr.checkpointHistory().checkpoints().isEmpty());
+                    }
+
+                    super.beforeJoin(locNode, log);
+                }
+            });
+
+        startGrid(ig2Name, onJoinCfg);
+
+        awaitPartitionMapExchange();
     }
 
     /**

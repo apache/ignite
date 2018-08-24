@@ -45,6 +45,7 @@ import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
@@ -89,6 +90,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** */
     private volatile boolean dataRegionsInitialized;
+
+    /** */
+    private volatile boolean dataRegionsStarted;
 
     /** */
     protected Map<String, DataRegionMetrics> memMetricsMap;
@@ -756,6 +760,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Handle {@link GridCacheProcessor} started event.
+     */
+    public void cacheProcessorStarted() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
      * Called when all partitions have been fully restored and pre-created on node start.
      *
      * @throws IgniteCheckedException If failed.
@@ -1028,17 +1039,28 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
             return;
 
-        DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
+        initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
+    }
 
-        assert memCfg != null;
+    /**
+     * Initialize and start CacheDatabaseSharedManager data regions.
+     *
+     * @param cfg Regions configuration.
+     */
+    protected void initAndStartRegions(DataStorageConfiguration cfg) throws IgniteCheckedException {
+        assert cfg != null;
 
-        initDataRegions(memCfg);
+        if (!dataRegionsStarted) {
+            initDataRegions(cfg);
 
-        registerMetricsMBeans();
+            registerMetricsMBeans();
 
-        startMemoryPolicies();
+            startMemoryPolicies();
 
-        initPageMemoryDataStructures(memCfg);
+            initPageMemoryDataStructures(cfg);
+
+            dataRegionsStarted = true;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1058,6 +1080,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             dataRegionsInitialized = false;
         }
+
+        dataRegionsStarted = false;
     }
 
     /**
