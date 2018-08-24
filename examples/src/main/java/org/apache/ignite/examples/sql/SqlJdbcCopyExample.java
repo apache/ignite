@@ -58,8 +58,8 @@ public class SqlJdbcCopyExample {
             print("Created database objects.");
 
             // Load data from CSV file.
-            executeCommand(conn, "COPY FROM \"" +
-                IgniteUtils.resolveIgnitePath("examples/src/main/resources/sql/city.csv") + "\" " +
+            executeCommand(conn, "COPY FROM '" +
+                IgniteUtils.resolveIgnitePath("examples/src/main/resources/sql/city.csv") + "' " +
                 "INTO City (ID, Name, CountryCode, District, Population) FORMAT CSV");
 
             // Read data.

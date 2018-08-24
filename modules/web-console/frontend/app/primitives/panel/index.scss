@@ -54,7 +54,7 @@
             padding: 22px 20px;
 
             background-color: initial;
-            border-bottom: 1px solid $ignite-brand-primary;
+            border-bottom: 1px solid $table-border-color;
 
             &:hover {
                 text-decoration: none;
@@ -71,6 +71,15 @@
                     cursor: default;
                 }
             }
+        }
+
+        & > header.header-with-selector {
+            margin: 0;
+            padding: 14px 20px;
+
+            border-bottom: 1px solid #ddd;
+
+            line-height: 36px;
         }
     }
 

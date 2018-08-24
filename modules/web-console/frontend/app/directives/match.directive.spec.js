@@ -56,7 +56,10 @@ suite('ignite-match', () => {
         $compile(el)($scope);
         $scope.$digest();
 
-        const [master, , slave] = el;
+        // const [master, , slave] = el;
+        // For some reason, this code not work after Babel, replaced with 'old' syntax.
+        const master = el[0];
+        const slave = el[2];
 
         setValue(slave, '123');
         $scope.$digest();

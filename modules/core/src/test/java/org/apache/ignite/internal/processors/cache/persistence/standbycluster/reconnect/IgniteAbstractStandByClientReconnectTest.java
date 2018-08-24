@@ -144,7 +144,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(100 * 1024 * 1024)
+                .setMaxSize(100L * 1024 * 1024)
                 .setPersistenceEnabled(true)));
 
         cfg.setConsistentId(name);
@@ -277,37 +277,45 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
     }
 
     /**
-     *
+     * @param checkClientCaches Check presence of client caches, false to skip.
      */
-    protected void checkOnlySystemCaches() {
+    protected void checkOnlySystemCaches(boolean checkClientCaches) {
         IgniteEx ig1 = grid(node1);
         IgniteEx ig2 = grid(node2);
         IgniteEx client = grid(nodeClient);
 
         Assert.assertNull(ig1.cache(ccfg1staticName));
         Assert.assertNull(ig1.cache(ccfg2staticName));
-        Assert.assertNull(ig1.cache(ccfg3staticName));
 
         Assert.assertNull(ig1.cache(ccfg1staticWithFilterName));
         Assert.assertNull(ig1.cache(ccfg2staticWithFilterName));
 
         Assert.assertNull(ig2.cache(ccfg1staticName));
         Assert.assertNull(ig2.cache(ccfg2staticName));
-        Assert.assertNull(ig2.cache(ccfg3staticName));
 
-        Assert.assertNull(ig2.cache(ccfg3staticWithFilterName));
         Assert.assertNull(ig2.cache(ccfg2staticWithFilterName));
 
         Assert.assertNull(client.cache(ccfg1staticName));
         Assert.assertNull(client.cache(ccfg2staticName));
-        Assert.assertNull(client.cache(ccfg3staticName));
 
-        Assert.assertNull(client.cache(ccfg3staticWithFilterName));
         Assert.assertNull(client.cache(ccfg1staticWithFilterName));
 
-        checkDescriptors(ig1,Collections.emptySet());
-        checkDescriptors(ig2,Collections.emptySet());
-        checkDescriptors(client, Collections.emptySet());
+        if (checkClientCaches) {
+            Assert.assertNull(ig1.cache(ccfg3staticName));
+
+            Assert.assertNull(ig2.cache(ccfg3staticName));
+            Assert.assertNull(ig2.cache(ccfg3staticWithFilterName));
+
+            Assert.assertNull(client.cache(ccfg3staticName));
+            Assert.assertNull(client.cache(ccfg3staticWithFilterName));
+        }
+
+        Set cachesToCheck = checkClientCaches ? Collections.emptySet()
+            : Sets.newHashSet(ccfg3staticName, ccfg3staticWithFilterName);
+
+        checkDescriptors(ig1, cachesToCheck);
+        checkDescriptors(ig2, cachesToCheck);
+        checkDescriptors(client, cachesToCheck);
     }
 
     /**

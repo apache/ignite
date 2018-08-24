@@ -69,11 +69,6 @@ public class IgniteCacheLargeResultSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      */
     public void testLargeResult() {

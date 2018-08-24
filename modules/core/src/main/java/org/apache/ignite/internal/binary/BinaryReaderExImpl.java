@@ -23,8 +23,10 @@ import java.io.ObjectInput;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryCollectionFactory;
@@ -263,7 +265,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 if (forUnmarshal) {
                     // Registers class by type ID, at least locally if the cache is not ready yet.
-                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false);
+                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false, false);
 
                     typeId = desc.typeId();
                 }
@@ -2004,21 +2006,36 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
                 BinaryTypeImpl type = (BinaryTypeImpl) ctx.metadata(typeId, schemaId);
 
-                if (type == null || type.metadata() == null)
+                BinaryMetadata meta = type != null ? type.metadata() : null;
+
+                if (type == null || meta == null)
                     throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
                         typeId);
 
-                for (BinarySchema typeSchema : type.metadata().schemas()) {
-                    if (schemaId == typeSchema.schemaId()) {
-                        schema = typeSchema;
+                Collection<BinarySchema> existingSchemas = meta.schemas();
+
+                for (BinarySchema existingSchema : existingSchemas) {
+                    if (schemaId == existingSchema.schemaId()) {
+                        schema = existingSchema;
 
                         break;
                     }
                 }
 
-                if (schema == null)
-                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
-                        "typeId=" + typeId + ", schemaId=" + schemaId + ']');
+                if (schema == null) {
+                    List<Integer> existingSchemaIds = new ArrayList<>(existingSchemas.size());
+
+                    for (BinarySchema existingSchema : existingSchemas)
+                        existingSchemaIds.add(existingSchema.schemaId());
+
+
+                    throw new BinaryObjectException("Cannot find schema for object with compact footer" +
+                        " [typeName=" + type.typeName() +
+                        ", typeId=" + typeId +
+                        ", missingSchemaId=" + schemaId +
+                        ", existingSchemaIds=" + existingSchemaIds + ']'
+                    );
+                }
             }
             else
                 schema = createSchema();

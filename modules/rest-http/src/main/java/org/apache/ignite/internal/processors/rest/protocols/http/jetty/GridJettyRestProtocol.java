@@ -63,13 +63,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      */
     static {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
-            Properties p = new Properties();
-
-            p.setProperty("org.eclipse.jetty.LEVEL", "WARN");
-            p.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
-            p.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
-
-            StdErrLog.setProperties(p);
+            // See also https://www.eclipse.org/jetty/documentation/9.4.x/configuring-logging.html
+            // It seems that using system properties should be fine.
+            System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+            System.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
+            System.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
 
             try {
                 Class<?> logCls = Class.forName("org.apache.log4j.Logger");
@@ -120,16 +118,14 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert ctx.config().getConnectorConfiguration() != null;
 
-        InetAddress locHost;
+        String jettyHost = System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost());
 
         try {
-            locHost = U.resolveLocalHost(ctx.config().getLocalHost());
+            System.setProperty(IGNITE_JETTY_HOST, U.resolveLocalHost(jettyHost).getHostAddress());
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to resolve local host to bind address: " + ctx.config().getLocalHost(), e);
+            throw new IgniteCheckedException("Failed to resolve host to bind address: " + jettyHost, e);
         }
-
-        System.setProperty(IGNITE_JETTY_HOST, locHost.getHostAddress());
 
         jettyHnd = new GridJettyRestHandler(hnd, new C1<String, Boolean>() {
             @Override public Boolean apply(String tok) {

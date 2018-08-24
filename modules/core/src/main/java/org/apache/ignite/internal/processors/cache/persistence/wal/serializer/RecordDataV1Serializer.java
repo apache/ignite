@@ -73,6 +73,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRec
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitForwardPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaRecord;
@@ -285,6 +286,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case PAGE_LIST_META_RESET_COUNT_RECORD:
                 return /*cacheId*/ 4 + /*pageId*/ 8;
+
+            case ROTATED_ID_PART_RECORD:
+                return 4 + 8 + 1;
 
             case SWITCH_SEGMENT_RECORD:
                 return 0;
@@ -835,6 +839,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 res = new PageListMetaResetCountRecord(cacheId, pageId);
                 break;
 
+            case ROTATED_ID_PART_RECORD:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                byte rotatedIdPart = in.readByte();
+
+                res = new RotatedIdPartRecord(cacheId, pageId, rotatedIdPart);
+
+                break;
+
             case SWITCH_SEGMENT_RECORD:
                 throw new EOFException("END OF SEGMENT");
 
@@ -1351,6 +1365,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case ROTATED_ID_PART_RECORD:
+                RotatedIdPartRecord rotatedIdPartRecord = (RotatedIdPartRecord) rec;
+
+                buf.putInt(rotatedIdPartRecord.groupId());
+                buf.putLong(rotatedIdPartRecord.pageId());
+
+                buf.put(rotatedIdPartRecord.rotatedIdPart());
+
+                break;
+
             case TX_RECORD:
                 txRecordSerializer.write((TxRecord)rec, buf);
 
@@ -1481,6 +1505,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             CacheObjectContext coCtx = cacheCtx.cacheObjectContext();
 
             KeyCacheObject key = co.toKeyCacheObject(coCtx, keyType, keyBytes);
+
+            if (key.partition() == -1)
+                key.partition(partId);
+
             CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
 
             return new DataEntry(

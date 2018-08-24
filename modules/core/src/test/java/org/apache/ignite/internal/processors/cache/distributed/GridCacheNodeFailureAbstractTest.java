@@ -90,7 +90,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         disco.setIpFinder(ipFinder);
 
-        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(disco);
 
         c.setDeploymentMode(DeploymentMode.SHARED);
@@ -110,8 +109,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         IGNITEs.clear();
     }
 

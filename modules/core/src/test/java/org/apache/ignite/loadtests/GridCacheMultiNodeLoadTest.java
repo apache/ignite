@@ -86,8 +86,6 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         ignite1 = null;
     }
 

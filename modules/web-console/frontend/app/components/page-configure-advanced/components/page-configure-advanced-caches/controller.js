@@ -168,7 +168,7 @@ export default class Controller {
         this.$state.go('base.configuration.edit.advanced.caches.cache', {cacheID});
     }
 
-    save(cache) {
-        this.ConfigureState.dispatchAction(advancedSaveCache(cache));
+    save({cache, download}) {
+        this.ConfigureState.dispatchAction(advancedSaveCache(cache, download));
     }
 }

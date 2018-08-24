@@ -78,8 +78,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         storeMap.clear();
     }
 
@@ -98,8 +96,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         MemoryEventStorageSpi evtSpi = new MemoryEventStorageSpi();
         evtSpi.setExpireCount(100);
-
-        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         cfg.setEventStorageSpi(evtSpi);
 

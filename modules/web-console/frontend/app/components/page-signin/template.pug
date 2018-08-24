@@ -20,164 +20,40 @@ web-console-header
     web-console-header-left
         ignite-header-title
 
-section
-    .container
-        .row
-            .col-lg-6.col-md-6.col-sm-6.col-xs-12
-                .row
-                    .col-xs-12.col-md-11
-                        -var form = '$ctrl.form_signup'
-                        h3 Don't Have An Account?
-                        form.ps-grid(name=form novalidate)
-                            .ps-grid-full-width
-                                +form-field__email({
-                                    label: 'Email:',
-                                    model: '$ctrl.data.signup.email',
-                                    name: '"signupEmail"',
-                                    placeholder: 'Input email',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='passwordInput'
-                                    ng-model-options='{allowInvalid: true}'
-                                )
-                                    +form-field__error({error: 'server', message: `{{$ctrl.serverErrors.signup}}`})
-                            div
-                                +form-field__password({
-                                    label: 'Password:',
-                                    model: '$ctrl.data.signup.password',
-                                    name: '"password"',
-                                    placeholder: 'Input password',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='confirmInput'
-                                )
-                            div
-                                +form-field__password({
-                                    label: 'Confirm:',
-                                    model: 'confirm',
-                                    name: '"confirm"',
-                                    placeholder: 'Confirm password',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='firstNameInput'
-                                    ignite-match='$ctrl.data.signup.password'
-                                )
-                            div
-                                +form-field__text({
-                                    label: 'First name:',
-                                    model: '$ctrl.data.signup.firstName',
-                                    name: '"firstName"',
-                                    placeholder: 'Input first name',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='lastNameInput'
-                                )
-                            div
-                                +form-field__text({
-                                    label: 'Last name:',
-                                    model: '$ctrl.data.signup.lastName',
-                                    name: '"lastName"',
-                                    placeholder: 'Input last name',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='companyInput'
-                                )
-                            .ps-grid-full-width
-                                +form-field__dropdown({
-                                    label: 'Country:',
-                                    model: '$ctrl.data.signup.country',
-                                    name: '"country"',
-                                    required: true,
-                                    placeholder: 'Choose your country',
-                                    options: '$ctrl.countries'
-                                })(
-                                    ignite-on-enter-focus-move='signup_submit'
-                                )
-                            .ps-grid-full-width
-                                +form-field__text({
-                                    label: 'Company:',
-                                    model: '$ctrl.data.signup.company',
-                                    name: '"company"',
-                                    placeholder: 'Input company name',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='countryInput'
-                                )
-                            .login-footer.ps-grid-full-width
-                                button#signup_submit.btn-ignite.btn-ignite--primary(
-                                    ng-click='$ctrl.signup()'
-                                    ng-disabled=`!$ctrl.canSubmitForm(${form})`
-                                ) Sign Up
-
-            .col-lg-6.col-md-6.col-sm-6.col-xs-12
-                .row
-                    .col-xs-12.col-md-11
-                        -var form = '$ctrl.form_signin'
-                        form.row(ng-show='$ctrl.isSigninOpened' name=form novalidate)
-                            .settings-row
-                                h3 Sign In
-                            .settings-row
-                                +form-field__email({
-                                    label: 'Email:',
-                                    model: '$ctrl.data.signin.email',
-                                    name: '"signinEmail"',
-                                    placeholder: 'Input email',
-                                    required: true
-                                })(
-                                    ignite-auto-focus
-                                    ignite-on-enter-focus-move='singinPasswordInput'
-                                    ng-model-options='{allowInvalid: true}'
-                                )
-                                    +form-field__error({error: 'server', message: `{{$ctrl.serverErrors.signin}}`})
-                            .settings-row
-                                +form-field__password({
-                                    label: 'Password:',
-                                    model: '$ctrl.data.signin.password',
-                                    name: '"signinPassword"',
-                                    placeholder: 'Input password',
-                                    required: true
-                                })(
-                                    ignite-on-enter='$ctrl.signin($ctrl.data.signin.email, $ctrl.data.signin.password)'
-                                    ng-model-options='{allowInvalid: true}'
-                                )
-                                    +form-field__error({error: 'server', message: `{{$ctrl.serverErrors.signin}}`})
-                            .login-footer
-                                a.labelField#forgot_show(
-                                    ng-click='$ctrl.toggleActiveForm()'
-                                    ignite-on-click-focus='forgot_email'
-                                ) Forgot password?
-                                button#signin_submit.btn-ignite.btn-ignite--primary(
-                                    ng-click='$ctrl.signin()'
-                                    ng-disabled=`!$ctrl.canSubmitForm(${form})`
-                                ) Sign In
-
-                        - var form = '$ctrl.form_forgot'
-                        form.row(ng-show='$ctrl.isRemindPasswordOpened' name=form novalidate)
-                            .settings-row
-                                h3 Forgot password?
-                            .settings-row
-                                p.col-xs-12.col-md-11 That's ok! Simply enter your email below and a reset password link will be sent to you via email. You can then follow that link and select a new password.
-                            .settings-row
-                                +form-field__email({
-                                    label: 'Email:',
-                                    model: '$ctrl.data.remindPassword.email',
-                                    name: '"forgotEmail"',
-                                    placeholder: 'Input email',
-                                    required: true
-                                })(
-                                    ignite-auto-focus
-                                    ng-model-options='{allowInvalid: true}'
-                                    ignite-on-enter='$ctrl.remindPassword()'
-                                )
-                                    +form-field__error({error: 'server', message: `{{$ctrl.serverErrors.remindPassword}}`})
-                            .login-footer
-                                a.labelField#forgot_signin(
-                                    ng-click='$ctrl.toggleActiveForm()'
-                                    ignite-on-click-focus='signin_email'
-                                ) Sign In
-                                button#forgot_submit.btn-ignite.btn-ignite--primary(
-                                    ng-click='$ctrl.remindPassword()'
-                                    ng-disabled=`!$ctrl.canSubmitForm(${form})`
-                                ) Send it to me
+.container--responsive.body-container
+    section
+        -var form = '$ctrl.form'
+        h3 Sign In
+        form(name=form novalidate ng-submit='$ctrl.signin()')
+            +form-field__email({
+                label: 'Email:',
+                model: '$ctrl.data.email',
+                name: '"email"',
+                placeholder: 'Input email',
+                required: true
+            })(
+                ng-model-options='{allowInvalid: true}'
+                autocomplete='email'
+                ignite-auto-focus
+            )
+                +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+            +form-field__password({
+                label: 'Password:',
+                model: '$ctrl.data.password',
+                name: '"password"',
+                placeholder: 'Input password',
+                required: true
+            })(
+                ng-model-options='{allowInvalid: true}'
+                autocomplete='current-password'
+            )
+                +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+            footer.form-footer
+                a(ui-sref='forgotPassword({email: $ctrl.data.email})') Forgot password?
+                button.btn-ignite.btn-ignite--primary(
+                    type='submit'
+                ) Sign In
+        footer.page-signin__no-account-message
+            | Don't have an account? #[a(ui-sref='signup') Get started]
 
 web-console-footer

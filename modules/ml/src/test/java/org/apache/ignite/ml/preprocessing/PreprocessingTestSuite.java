@@ -17,6 +17,15 @@
 
 package org.apache.ignite.ml.preprocessing;
 
+import org.apache.ignite.ml.preprocessing.binarization.BinarizationPreprocessorTest;
+import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainerTest;
+import org.apache.ignite.ml.preprocessing.encoding.OneHotEncoderPreprocessorTest;
+import org.apache.ignite.ml.preprocessing.encoding.StringEncoderPreprocessorTest;
+import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainerTest;
+import org.apache.ignite.ml.preprocessing.imputing.ImputerPreprocessorTest;
+import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainerTest;
+import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPreprocessorTest;
+import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainerTest;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainerTest;
 import org.junit.runner.RunWith;
@@ -27,8 +36,18 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    NormalizationPreprocessorTest.class,
-    NormalizationTrainerTest.class
+    MinMaxScalerPreprocessorTest.class,
+    MinMaxScalerTrainerTest.class,
+    BinarizationPreprocessorTest.class,
+    BinarizationTrainerTest.class,
+    ImputerPreprocessorTest.class,
+    ImputerTrainerTest.class,
+    EncoderTrainerTest.class,
+    OneHotEncoderPreprocessorTest.class,
+    StringEncoderPreprocessorTest.class,
+    NormalizationTrainerTest.class,
+    NormalizationPreprocessorTest.class
+
 })
 public class PreprocessingTestSuite {
     // No-op.

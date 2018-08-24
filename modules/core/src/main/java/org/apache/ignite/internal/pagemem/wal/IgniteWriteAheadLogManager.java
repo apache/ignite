@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
@@ -109,12 +110,14 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public int truncate(WALPointer low, WALPointer high);
 
     /**
-     * Gives a hint to WAL manager to compact WAL until given pointer (exclusively).
-     * Compaction implies filtering out physical records and ZIP compression.
+     * Notifies {@code this} about latest checkpoint pointer.
+     * <p>
+     * Current implementations, in fact, react by keeping all WAL segments uncompacted starting from index prior to
+     * the index of {@code ptr}. Compaction implies filtering out physical records and ZIP compression.
      *
      * @param ptr Pointer for which it is safe to compact the log.
      */
-    public void allowCompressionUntil(WALPointer ptr);
+    public void notchLastCheckpointPtr(WALPointer ptr);
 
     /**
      * @return Total number of segments in the WAL archive.
@@ -122,11 +125,31 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public int walArchiveSegments();
 
     /**
+     * @return Last archived segment index.
+     */
+    public long lastArchivedSegment();
+
+    /**
+     * @return Last compacted segment index.
+     */
+    public long lastCompactedSegment();
+
+    /**
      * Checks if WAL segment is under lock or reserved
+     *
      * @param ptr Pointer to check.
      * @return True if given pointer is located in reserved segment.
      */
     public boolean reserved(WALPointer ptr);
+
+    /**
+     * Checks if WAL segments is under lock or reserved.
+     *
+     * @param low Pointer since which WAL is locked or reserved. If {@code null}, checks from the oldest segment.
+     * @param high Pointer for which WAL is locked or reserved.
+     * @return Number of reserved WAL segments.
+     */
+    public int reserved(WALPointer low, WALPointer high);
 
     /**
      * Checks WAL disabled for cache group.
@@ -134,4 +157,9 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param grpId Group id.
      */
     public boolean disabled(int grpId);
+
+    /**
+     * Cleanup all directories relating to WAL (e.g. work WAL dir, archive WAL dir).
+     */
+    public void cleanupWalDirectories() throws IgniteCheckedException;
 }

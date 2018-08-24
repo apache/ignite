@@ -1394,7 +1394,8 @@ export default class IgniteConfigurationGenerator {
                     .longProperty('rateTimeInterval');
             }
 
-            if (plcBean.isEmpty()) return;
+            if (plcBean.isEmpty())
+                return;
 
             policies.push(plcBean);
         });
@@ -1423,8 +1424,10 @@ export default class IgniteConfigurationGenerator {
             .intProperty('metricsSubIntervalCount')
             .longProperty('metricsRateTimeInterval')
             .longProperty('checkpointPageBufferSize')
-            .boolProperty('metricsEnabled')
-            .boolProperty('persistenceEnabled');
+            .boolProperty('metricsEnabled');
+
+        if (!plcBean.valueOf('swapPath'))
+            plcBean.boolProperty('persistenceEnabled');
 
         return plcBean;
     }

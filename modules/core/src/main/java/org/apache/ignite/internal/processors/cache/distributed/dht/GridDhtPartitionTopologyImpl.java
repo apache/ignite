@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -60,6 +61,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -104,6 +107,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** Node to partition map. */
     private GridDhtPartitionFullMap node2part;
 
+    /** Partitions map for left nodes. */
+    private GridDhtPartitionFullMap leftNode2Part = new GridDhtPartitionFullMap();
+
     /** */
     private final Map<Integer, Set<UUID>> diffFromAffinity = new HashMap<>();
 
@@ -133,6 +139,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** Partition update counter. */
     private final CachePartitionFullCountersMap cntrMap;
+
+    /** */
+    private volatile Map<Integer, Long> globalPartSizes;
 
     /** */
     private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
@@ -229,6 +238,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean holdsLock() {
+        return lock.isWriteLockedByCurrentThread() || lock.getReadHoldCount() > 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public void updateTopologyVersion(
         GridDhtTopologyFuture exchFut,
         @NotNull DiscoCache discoCache,
@@ -240,11 +254,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             AffinityTopologyVersion exchTopVer = exchFut.initialVersion();
 
-            // Update is correct if topology version is newer or in case of newer discovery caches.
-            boolean isCorrectUpdate = exchTopVer.compareTo(readyTopVer) > 0
-                    || (exchTopVer.compareTo(readyTopVer) == 0 && this.discoCache != null && discoCache.version().compareTo(this.discoCache.version()) > 0);
-
-            assert isCorrectUpdate : "Invalid topology version [grp=" + grp.cacheOrGroupName() +
+            assert exchTopVer.compareTo(readyTopVer) > 0 : "Invalid topology version [grp=" + grp.cacheOrGroupName() +
                 ", topVer=" + readyTopVer +
                 ", exchTopVer=" + exchTopVer +
                 ", discoCacheVer=" + (this.discoCache != null ? this.discoCache.version() : "None") +
@@ -370,10 +380,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
                             if (shouldOwn) {
-                                boolean owned = locPart.own();
-
-                                assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
-                                    ", part=" + locPart + ']';
+                                locPart.own();
 
                                 if (log.isDebugEnabled())
                                     log.debug("Owned partition for oldest node [grp=" + grp.cacheOrGroupName() +
@@ -426,7 +433,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
 
-        updateRebalanceVersion(affAssignment);
+        updateRebalanceVersion(affVer, affAssignment);
 
         return needRefresh;
     }
@@ -466,8 +473,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         boolean affReady,
         boolean updateMoving)
         throws IgniteCheckedException {
-        ClusterNode loc = ctx.localNode();
-
         ctx.database().checkpointReadLock();
 
         try {
@@ -493,9 +498,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             ", evtsVer=" + evts.topologyVersion() + ']';
 
                         lastTopChangeVer = readyTopVer = evts.topologyVersion();
-                    }
 
-                    ClusterNode oldest = discoCache.oldestAliveServerNode();
+                        discoCache = evts.discoveryCache();
+                    }
 
                     if (log.isDebugEnabled()) {
                         log.debug("Partition map beforeExchange [grp=" + grp.cacheOrGroupName() +
@@ -506,46 +511,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     cntrMap.clear();
 
+                    initializeFullMap(updateSeq);
+
                     boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
-
-                    // If this is the oldest node.
-                    if (oldest != null && (loc.equals(oldest) || grpStarted)) {
-                        if (node2part == null) {
-                            node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
-
-                            if (log.isDebugEnabled()) {
-                                log.debug("Created brand new full topology map on oldest node [" +
-                                    "grp=" + grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
-                                    ", fullMap=" + fullMapString() + ']');
-                            }
-                        }
-                        else if (!node2part.valid()) {
-                            node2part = new GridDhtPartitionFullMap(oldest.id(),
-                                oldest.order(),
-                                updateSeq,
-                                node2part,
-                                false);
-
-                            if (log.isDebugEnabled()) {
-                                log.debug("Created new full topology map on oldest node [" +
-                                    "grp=" +  grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
-                                    ", fullMap=" + node2part + ']');
-                            }
-                        }
-                        else if (!node2part.nodeId().equals(loc.id())) {
-                            node2part = new GridDhtPartitionFullMap(oldest.id(),
-                                oldest.order(),
-                                updateSeq,
-                                node2part,
-                                false);
-
-                            if (log.isDebugEnabled()) {
-                                log.debug("Copied old map into new map on oldest node (previous oldest node left) [" +
-                                    "grp=" + grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
-                                    ", fullMap=" + fullMapString() + ']');
-                            }
-                        }
-                    }
 
                     if (evts.hasServerLeft()) {
                         List<DiscoveryEvent> evts0 = evts.events();
@@ -600,6 +568,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         log.debug("Partition map after beforeExchange [grp=" + grp.cacheOrGroupName() + ", " +
                             "exchId=" + exchFut.exchangeId() + ", fullMap=" + fullMapString() + ']');
                     }
+
+                    if (log.isTraceEnabled()) {
+                        log.trace("Partition states after beforeExchange [grp=" + grp.cacheOrGroupName()
+                            + ", exchId=" + exchFut.exchangeId() + ", states=" + dumpPartitionStates() + ']');
+                    }
                 }
                 finally {
                     lock.writeLock().unlock();
@@ -608,6 +581,61 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
         finally {
             ctx.database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * Initializes full map if current full map is empty or invalid in case of coordinator or cache groups start.
+     *
+     * @param updateSeq Update sequence to initialize full map.
+     */
+    private void initializeFullMap(long updateSeq) {
+        if (!(topReadyFut instanceof GridDhtPartitionsExchangeFuture))
+            return;
+
+        GridDhtPartitionsExchangeFuture exchFut = (GridDhtPartitionsExchangeFuture) topReadyFut;
+
+        boolean grpStarted = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
+
+        ClusterNode oldest = discoCache.oldestAliveServerNode();
+
+        // If this is the oldest node.
+        if (oldest != null && (ctx.localNode().equals(oldest) || grpStarted)) {
+            if (node2part == null) {
+                node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Created brand new full topology map on oldest node [" +
+                        "grp=" + grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
+                        ", fullMap=" + fullMapString() + ']');
+                }
+            }
+            else if (!node2part.valid()) {
+                node2part = new GridDhtPartitionFullMap(oldest.id(),
+                    oldest.order(),
+                    updateSeq,
+                    node2part,
+                    false);
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Created new full topology map on oldest node [" +
+                        "grp=" +  grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
+                        ", fullMap=" + node2part + ']');
+                }
+            }
+            else if (!node2part.nodeId().equals(ctx.localNode().id())) {
+                node2part = new GridDhtPartitionFullMap(oldest.id(),
+                    oldest.order(),
+                    updateSeq,
+                    node2part,
+                    false);
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Copied old map into new map on oldest node (previous oldest node left) [" +
+                        "grp=" + grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
+                        ", fullMap=" + fullMapString() + ']');
+                }
+            }
         }
     }
 
@@ -625,18 +653,24 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.writeLock().lock();
 
         try {
-            if (node2part == null)
-                return;
-
             long updateSeq = this.updateSeq.incrementAndGet();
+
+            initializeFullMap(updateSeq);
 
             for (int p = 0; p < grp.affinity().partitions(); p++) {
                 GridDhtLocalPartition locPart = locParts.get(p);
 
                 if (locPart == null)
                     updateLocal(p, EVICTED, updateSeq, topVer);
-                else
-                    updateLocal(p, locPart.state(), updateSeq, topVer);
+                else {
+                    GridDhtPartitionState state = locPart.state();
+
+                    updateLocal(p, state, updateSeq, topVer);
+
+                    // Restart cleaning.
+                    if (state == RENTING)
+                        locPart.clearAsync();
+                }
             }
         }
         finally {
@@ -677,6 +711,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         ", fullMap=" + fullMapString() + ']');
                 }
 
+                if (log.isTraceEnabled()) {
+                    log.trace("Partition states before afterExchange [grp=" + grp.cacheOrGroupName()
+                        + ", exchVer=" + exchFut.exchangeId() + ", states=" + dumpPartitionStates() + ']');
+                }
+
                 long updateSeq = this.updateSeq.incrementAndGet();
 
                 for (int p = 0; p < num; p++) {
@@ -693,35 +732,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (grp.rebalanceEnabled()) {
                                 Collection<ClusterNode> owners = owners(p);
 
-                                // If there are no other owners, then become an owner.
-                                if (F.isEmpty(owners)) {
-                                    boolean owned = locPart.own();
+                                // If an owner node left during exchange, then new exchange should be started with detecting lost partitions.
 
-                                    assert owned : "Failed to own partition [grp=" + grp.cacheOrGroupName() +
-                                        ", locPart=" + locPart + ']';
-
-                                    updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
-
-                                    changed = true;
-
-                                    if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                                        DiscoveryEvent discoEvt = exchFut.events().lastEvent();
-
-                                        grp.addRebalanceEvent(p,
-                                            EVT_CACHE_REBALANCE_PART_DATA_LOST,
-                                            discoEvt.eventNode(),
-                                            discoEvt.type(),
-                                            discoEvt.timestamp());
-                                    }
-
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Owned partition [grp=" + grp.cacheOrGroupName() +
-                                            ", part=" + locPart + ']');
-                                    }
+                                if (!F.isEmpty(owners)) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Will not own partition (there are owners to rebalance from) [grp=" + grp.cacheOrGroupName() +
+                                            ", locPart=" + locPart + ", owners = " + owners + ']');
                                 }
-                                else if (log.isDebugEnabled())
-                                    log.debug("Will not own partition (there are owners to rebalance from) [grp=" + grp.cacheOrGroupName() +
-                                        ", locPart=" + locPart + ", owners = " + owners + ']');
                             }
                             else
                                 updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
@@ -752,9 +769,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (node2part != null && node2part.valid())
                     changed |= checkEvictions(updateSeq, aff);
 
-                updateRebalanceVersion(aff.assignment());
+                updateRebalanceVersion(aff.topologyVersion(), aff.assignment());
 
                 consistencyCheck();
+
+                if (log.isTraceEnabled()) {
+                    log.trace("Partition states after afterExchange [grp=" + grp.cacheOrGroupName()
+                        + ", exchVer=" + exchFut.exchangeId() + ", states=" + dumpPartitionStates() + ']');
+                }
             }
             finally {
                 lock.writeLock().unlock();
@@ -1303,6 +1325,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap incomeCntrMap,
         Set<Integer> partsToReload,
+        @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer) {
         if (log.isDebugEnabled()) {
             log.debug("Updating full partition map [grp=" + grp.cacheOrGroupName() + ", exchVer=" + exchangeVer +
@@ -1317,6 +1340,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.writeLock().lock();
 
             try {
+                if (log.isTraceEnabled() && exchangeVer != null) {
+                    log.trace("Partition states before full update [grp=" + grp.cacheOrGroupName()
+                        + ", exchVer=" + exchangeVer + ", states=" + dumpPartitionStates() + ']');
+                }
+
                 if (stopping || !lastTopChangeVer.initialized() ||
                     // Ignore message not-related to exchange if exchange is in progress.
                     (exchangeVer == null && !lastTopChangeVer.equals(readyTopVer)))
@@ -1408,6 +1436,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 log.debug("Removing left node from full map update [grp=" + grp.cacheOrGroupName() +
                                     ", nodeId=" + nodeId + ", partMap=" + partMap + ']');
 
+                            if (node2part.containsKey(nodeId)) {
+                                GridDhtPartitionMap map = partMap.get(nodeId);
+
+                                if (map != null)
+                                    leftNode2Part.put(nodeId, map);
+                            }
+
                             it.remove();
                         }
                     }
@@ -1474,7 +1509,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 GridDhtPartitionMap nodeMap = partMap.get(ctx.localNodeId());
 
-                if (nodeMap != null && grp.persistenceEnabled() && readyTopVer.initialized()) {
+                // Only in real exchange occurred.
+                if (exchangeVer != null &&
+                    nodeMap != null &&
+                    grp.persistenceEnabled() &&
+                    readyTopVer.initialized()) {
                     for (Map.Entry<Integer, GridDhtPartitionState> e : nodeMap.entrySet()) {
                         int p = e.getKey();
                         GridDhtPartitionState state = e.getValue();
@@ -1510,14 +1549,22 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (exchangeVer == null)
                         changed |= checkEvictions(updateSeq, aff);
 
-                    updateRebalanceVersion(aff.assignment());
+                    updateRebalanceVersion(aff.topologyVersion(), aff.assignment());
                 }
+
+                if (partSizes != null)
+                    this.globalPartSizes = partSizes;
 
                 consistencyCheck();
 
                 if (log.isDebugEnabled()) {
                     log.debug("Partition map after full update [grp=" + grp.cacheOrGroupName() +
                         ", map=" + fullMapString() + ']');
+                }
+
+                if (log.isTraceEnabled() && exchangeVer != null) {
+                    log.trace("Partition states after full update [grp=" + grp.cacheOrGroupName()
+                        + ", exchVer=" + exchangeVer + ", states=" + dumpPartitionStates() + ']');
                 }
 
                 if (changed)
@@ -1624,16 +1671,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /**
      * Method checks is new partition map more stale than current partition map
-     * New partition map is stale if topology version or update sequence are less than of current map
+     * New partition map is stale if topology version or update sequence are less or equal than of current map
      *
      * @param currentMap Current partition map
      * @param newMap New partition map
      * @return True if new partition map is more stale than current partition map, false in other case
      */
     private boolean isStaleUpdate(GridDhtPartitionMap currentMap, GridDhtPartitionMap newMap) {
-        return currentMap != null &&
-            (newMap.topologyVersion().compareTo(currentMap.topologyVersion()) < 0 ||
-            newMap.topologyVersion().compareTo(currentMap.topologyVersion()) == 0 && newMap.updateSequence() <= currentMap.updateSequence());
+        return currentMap != null && newMap.compareTo(currentMap) <= 0;
     }
 
     /** {@inheritDoc} */
@@ -1689,11 +1734,22 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         parts.updateSequence(cur.updateSequence(), cur.topologyVersion());
                 }
                 else if (isStaleUpdate(cur, parts)) {
-                    U.warn(log, "Stale update for single partition map update (will ignore) [" +
-                        "grp=" + grp.cacheOrGroupName() +
+                    assert cur != null;
+
+                    String msg = "Stale update for single partition map update (will ignore) [" +
+                        "nodeId=" + parts.nodeId() +
+                        ", grp=" + grp.cacheOrGroupName() +
                         ", exchId=" + exchId +
                         ", curMap=" + cur +
-                        ", newMap=" + parts + ']');
+                        ", newMap=" + parts + ']';
+
+                    // This is usual situation when partition maps are equal, just print debug message.
+                    if (cur.compareTo(parts) == 0) {
+                        if (log.isDebugEnabled())
+                            log.debug(msg);
+                    }
+                    else
+                        U.warn(log, msg);
 
                     return false;
                 }
@@ -1762,7 +1818,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (exchId == null)
                         changed |= checkEvictions(updateSeq, aff);
 
-                    updateRebalanceVersion(aff.assignment());
+                    updateRebalanceVersion(aff.topologyVersion(), aff.assignment());
                 }
 
                 consistencyCheck();
@@ -1785,7 +1841,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment, boolean updateRebalanceVer) {
+    @Override public void onExchangeDone(@Nullable GridDhtPartitionsExchangeFuture fut,
+        AffinityAssignment assignment,
+        boolean updateRebalanceVer) {
         lock.writeLock().lock();
 
         try {
@@ -1793,6 +1851,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 assignment.topologyVersion().equals(((GridDhtPartitionsExchangeFuture)topReadyFut).context().events().topologyVersion());
 
             readyTopVer = lastTopChangeVer = assignment.topologyVersion();
+
+            if (fut != null)
+                discoCache = fut.events().discoveryCache();
 
             if (!grp.isReplicated()) {
                 boolean rebuildDiff = fut == null || fut.localJoinExchange() || fut.serverNodeDiscoveryEvent() ||
@@ -1804,10 +1865,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
                 else
                     diffFromAffinityVer = readyTopVer;
+
+                if (!updateRebalanceVer)
+                    updateRebalanceVersion(assignment.topologyVersion(), assignment.assignment());
             }
 
             if (updateRebalanceVer)
-                updateRebalanceVersion(assignment.assignment());
+                updateRebalanceVersion(assignment.topologyVersion(), assignment.assignment());
         }
         finally {
             lock.writeLock().unlock();
@@ -1934,6 +1998,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     assert plc != null;
 
+                    Set<Integer> recentlyLost = new HashSet<>();
+
+                    for (Map.Entry<UUID, GridDhtPartitionMap> leftEntry : leftNode2Part.entrySet()) {
+                        for (Map.Entry<Integer, GridDhtPartitionState> entry : leftEntry.getValue().entrySet()) {
+                            if (entry.getValue() == OWNING)
+                                recentlyLost.add(entry.getKey());
+                        }
+                    }
+
                     // Update partition state on all nodes.
                     for (Integer part : lost) {
                         long updSeq = updateSeq.incrementAndGet();
@@ -1941,6 +2014,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         GridDhtLocalPartition locPart = localPartition(part, resTopVer, false, true);
 
                         if (locPart != null) {
+                            if (locPart.state() == LOST)
+                                continue;
+
                             boolean marked = plc == PartitionLossPolicy.IGNORE ? locPart.own() : locPart.markLost();
 
                             if (marked)
@@ -1959,7 +2035,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                         }
 
-                        if (grp.eventRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                        if (recentlyLost.contains(part) && grp.eventRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
                             grp.addRebalanceEvent(part,
                                 EVT_CACHE_REBALANCE_PART_DATA_LOST,
                                 discoEvt.eventNode(),
@@ -1971,6 +2047,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (plc != PartitionLossPolicy.IGNORE)
                         grp.needsRecovery(true);
                 }
+
+                leftNode2Part.clear();
 
                 return changed;
             }
@@ -2055,8 +2133,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<UUID> setOwners(int p, Set<UUID> ownersByUpdCounters, boolean haveHistory, boolean updateSeq) {
-        Set<UUID> result = haveHistory ? Collections.<UUID>emptySet() : new HashSet<UUID>();
+    @Override public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory) {
+        Map<UUID, Set<Integer>> result = new HashMap<>();
 
         ctx.database().checkpointReadLock();
 
@@ -2064,50 +2142,73 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.writeLock().lock();
 
             try {
-                GridDhtLocalPartition locPart = locParts.get(p);
+                // First process local partitions.
+                for (Map.Entry<Integer, Set<UUID>> entry : ownersByUpdCounters.entrySet()) {
+                    int part = entry.getKey();
+                    Set<UUID> newOwners = entry.getValue();
 
-                if (locPart != null) {
-                    if (locPart.state() == OWNING && !ownersByUpdCounters.contains(ctx.localNodeId())) {
-                        rebalancePartition(p, haveHistory);
+                    GridDhtLocalPartition locPart = localPartition(part);
 
-                        if (!haveHistory)
-                            result.add(ctx.localNodeId());
-
-                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                            "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
-                            ", partId=" + p + ", haveHistory=" + haveHistory + "]");
-                    }
-                }
-
-                for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                    UUID remoteNodeId = e.getKey();
-                    GridDhtPartitionMap partMap = e.getValue();
-
-                    if (!partMap.containsKey(p))
+                    if (locPart == null || locPart.state() != OWNING)
                         continue;
 
-                    if (partMap.get(p) == OWNING && !ownersByUpdCounters.contains(remoteNodeId)) {
-                        partMap.put(p, MOVING);
+                    if (!newOwners.contains(ctx.localNodeId())) {
+                        rebalancePartition(part, haveHistory.contains(part));
 
-                        if (!haveHistory)
-                            result.add(remoteNodeId);
-
-                        partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
-
-                        if (partMap.nodeId().equals(ctx.localNodeId()))
-                            this.updateSeq.setIfGreater(partMap.updateSequence());
-
-                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                            "[nodeId=" + remoteNodeId + ", grp=" + grp.cacheOrGroupName() +
-                            ", partId=" + p + ", haveHistory=" + haveHistory + "]");
+                        result.computeIfAbsent(ctx.localNodeId(), n -> new HashSet<>());
+                        result.get(ctx.localNodeId()).add(part);
                     }
                 }
 
-                if (updateSeq) {
-                    long updSeq = this.updateSeq.incrementAndGet();
+                // Then process remote partitions.
+                for (Map.Entry<Integer, Set<UUID>> entry : ownersByUpdCounters.entrySet()) {
+                    int part = entry.getKey();
+                    Set<UUID> newOwners = entry.getValue();
 
-                    node2part = new GridDhtPartitionFullMap(node2part, updSeq);
+                    for (Map.Entry<UUID, GridDhtPartitionMap> remotes : node2part.entrySet()) {
+                        UUID remoteNodeId = remotes.getKey();
+                        GridDhtPartitionMap partMap = remotes.getValue();
+
+                        GridDhtPartitionState state = partMap.get(part);
+
+                        if (state == null || state != OWNING)
+                            continue;
+
+                        if (!newOwners.contains(remoteNodeId)) {
+                            partMap.put(part, MOVING);
+
+                            partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
+
+                            if (partMap.nodeId().equals(ctx.localNodeId()))
+                                updateSeq.setIfGreater(partMap.updateSequence());
+
+                            result.computeIfAbsent(remoteNodeId, n -> new HashSet<>());
+                            result.get(remoteNodeId).add(part);
+                        }
+                    }
                 }
+
+                for (Map.Entry<UUID, Set<Integer>> entry : result.entrySet()) {
+                    UUID nodeId = entry.getKey();
+                    Set<Integer> rebalancedParts = entry.getValue();
+
+                    if (!rebalancedParts.isEmpty()) {
+                        Set<Integer> historical = rebalancedParts.stream()
+                            .filter(haveHistory::contains)
+                            .collect(Collectors.toSet());
+
+                        // Filter out partitions having WAL history.
+                        rebalancedParts.removeAll(historical);
+
+                        U.warn(log, "Partitions have been scheduled for rebalancing due to outdated update counter "
+                            + "[grp=" + grp.cacheOrGroupName()
+                            + ", nodeId=" + nodeId
+                            + ", partsFull=" + S.compact(rebalancedParts)
+                            + ", partsHistorical=" + S.compact(historical) + "]");
+                    }
+                }
+
+                node2part = new GridDhtPartitionFullMap(node2part, updateSeq.incrementAndGet());
             } finally {
                 lock.writeLock().unlock();
             }
@@ -2189,12 +2290,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     // If all affinity nodes are owners, then evict partition from local node.
                     if (nodeIds.containsAll(F.nodeIds(affNodes))) {
-                        IgniteInternalFuture<?> rentFuture = part.rent(false);
-                        rentingFutures.add(rentFuture);
+                        GridDhtPartitionState state0 = part.state();
+
+                        IgniteInternalFuture<?> rentFut = part.rent(false);
+
+                        rentingFutures.add(rentFut);
 
                         updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
-                        changed = true;
+                        changed = state0 != part.state();
 
                         if (log.isDebugEnabled()) {
                             log.debug("Evicted local partition (all affinity nodes are owners) [grp=" + grp.cacheOrGroupName() +
@@ -2215,12 +2319,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 ClusterNode n = nodes.get(i);
 
                                 if (locId.equals(n.id())) {
-                                    IgniteInternalFuture<?> rentFuture = part.rent(false);
-                                    rentingFutures.add(rentFuture);
+                                    GridDhtPartitionState state0 = part.state();
+
+                                    IgniteInternalFuture<?> rentFut = part.rent(false);
+
+                                    rentingFutures.add(rentFut);
 
                                     updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
-                                    changed = true;
+                                    changed = state0 != part.state();
 
                                     if (log.isDebugEnabled()) {
                                         log.debug("Evicted local partition (this node is oldest non-affinity node) [" +
@@ -2367,6 +2474,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 node2part = new GridDhtPartitionFullMap(node2part, node2part.updateSequence());
 
             GridDhtPartitionMap parts = node2part.remove(nodeId);
+
+            if (parts != null)
+                leftNode2Part.put(nodeId, parts);
 
             if (!grp.isReplicated()) {
                 if (parts != null) {
@@ -2553,6 +2663,33 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public Map<Integer, Long> globalPartSizes() {
+        lock.readLock().lock();
+
+        try {
+            if (globalPartSizes == null)
+                return Collections.emptyMap();
+
+            return Collections.unmodifiableMap(globalPartSizes);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void globalPartSizes(@Nullable Map<Integer, Long> partSizes) {
+        lock.writeLock().lock();
+
+        try {
+            this.globalPartSizes = partSizes;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean rebalanceFinished(AffinityTopologyVersion topVer) {
         AffinityTopologyVersion curTopVer = this.readyTopVer;
 
@@ -2635,9 +2772,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /**
+     * @param affVer Affinity version.
      * @param aff Affinity assignments.
      */
-    private void updateRebalanceVersion(List<List<ClusterNode>> aff) {
+    private void updateRebalanceVersion(AffinityTopologyVersion affVer, List<List<ClusterNode>> aff) {
+        if (!grp.isReplicated() && !affVer.equals(diffFromAffinityVer))
+            return;
+
         if (!rebalancedTopVer.equals(readyTopVer)) {
             if (node2part == null || !node2part.valid())
                 return;
@@ -2722,6 +2863,31 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     private void consistencyCheck() {
         // no-op
+    }
+
+    /**
+     * Collects states of local partitions.
+     *
+     * @return String representation of all local partition states.
+     */
+    private String dumpPartitionStates() {
+        SB sb = new SB();
+
+        for (int p = 0; p < locParts.length(); p++) {
+            GridDhtLocalPartition part = locParts.get(p);
+
+            if (part == null)
+                continue;
+
+            sb.a("Part [");
+            sb.a("id=" + part.id() + ", ");
+            sb.a("state=" + part.state() + ", ");
+            sb.a("initCounter=" + part.initialUpdateCounter() + ", ");
+            sb.a("updCounter=" + part.updateCounter() + ", ");
+            sb.a("size=" + part.fullSize() + "] ");
+        }
+
+        return sb.toString();
     }
 
     /**

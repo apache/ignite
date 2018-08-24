@@ -18,7 +18,6 @@
 import 'mocha';
 import {assert} from 'chai';
 import angular from 'angular';
-import 'angular-mocks';
 import {spy} from 'sinon';
 import componentModule from './index.js';
 

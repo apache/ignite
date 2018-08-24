@@ -39,13 +39,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -72,6 +75,9 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
+    /** Statements modification mutex. */
+    final private Object stmtsMux = new Object();
+
     /** Schema name. */
     private String schema;
 
@@ -88,7 +94,7 @@ public class JdbcThinConnection implements Connection {
     private boolean readOnly;
 
     /** Streaming flag. */
-    private volatile boolean stream;
+    private volatile StreamState streamState;
 
     /** Current transaction holdability. */
     private int holdability;
@@ -105,20 +111,11 @@ public class JdbcThinConnection implements Connection {
     /** Connection properties. */
     private ConnectionProperties connProps;
 
-    /** Batch size for streaming. */
-    private int streamBatchSize;
-
-    /** Batch for streaming. */
-    private List<JdbcQuery> streamBatch;
-
-    /** Last added query to recognize batches. */
-    private String lastStreamQry;
-
     /** Connected. */
     private boolean connected;
 
     /** Tracked statements to close on disconnect. */
-    private ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
+    private final ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
 
     /**
      * Creates new connection.
@@ -148,6 +145,8 @@ public class JdbcThinConnection implements Connection {
             if (connected)
                 return;
 
+            assert !closed;
+
             cliIo.start();
 
             connected = true;
@@ -169,7 +168,7 @@ public class JdbcThinConnection implements Connection {
      * @return Whether this connection is streamed or not.
      */
     boolean isStream() {
-        return stream;
+        return streamState != null;
     }
 
     /**
@@ -179,24 +178,28 @@ public class JdbcThinConnection implements Connection {
      */
     void executeNative(String sql, SqlCommand cmd) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
-            // If streaming is already on, we have to disable it first.
-            if (stream) {
-                // We have to send request regardless of actual batch size.
-                executeBatch(true);
+            SqlSetStreamingCommand cmd0 = (SqlSetStreamingCommand)cmd;
 
-                stream = false;
+            // If streaming is already on, we have to close it first.
+            if (streamState != null) {
+                streamState.close();
+
+                streamState = null;
             }
 
             boolean newVal = ((SqlSetStreamingCommand)cmd).isTurnOn();
 
             // Actual ON, if needed.
             if (newVal) {
+                if (!cmd0.isOrdered()  && !cliIo.isUnorderedStreamSupported()) {
+                    throw new SQLException("Streaming without order doesn't supported by server [remoteNodeVer="
+                        + cliIo.igniteVersion() + ']', SqlStateCode.INTERNAL_ERROR);
+                }
+
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
                     schema, 1, 1, sql, null));
 
-                streamBatchSize = ((SqlSetStreamingCommand)cmd).batchSize();
-
-                stream = true;
+                streamState = new StreamState((SqlSetStreamingCommand)cmd);
             }
         }
         else
@@ -211,39 +214,9 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException On error.
      */
     void addBatch(String sql, List<Object> args) throws SQLException {
-        boolean newQry = (args == null || !F.eq(lastStreamQry, sql));
+        assert isStream();
 
-        // Providing null as SQL here allows for recognizing subbatches on server and handling them more efficiently.
-        JdbcQuery q  = new JdbcQuery(newQry ? sql : null, args != null ? args.toArray() : null);
-
-        if (streamBatch == null)
-            streamBatch = new ArrayList<>(streamBatchSize);
-
-        streamBatch.add(q);
-
-        // Null args means "addBatch(String)" was called on non-prepared Statement,
-        // we don't want to remember its query string.
-        lastStreamQry = (args != null ? sql : null);
-
-        if (streamBatch.size() == streamBatchSize)
-            executeBatch(false);
-    }
-
-    /**
-     * @param lastBatch Whether open data streamers must be flushed and closed after this batch.
-     * @throws SQLException if failed.
-     */
-    private void executeBatch(boolean lastBatch) throws SQLException {
-        JdbcBatchExecuteResult res = sendRequest(new JdbcBatchExecuteRequest(schema, streamBatch, lastBatch));
-
-        streamBatch = null;
-
-        lastStreamQry = null;
-
-        if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
-            throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
-                res.errorCode(), res.updateCounts());
-        }
+        streamState.addBatch(sql, args);
     }
 
     /** {@inheritDoc} */
@@ -268,7 +241,9 @@ public class JdbcThinConnection implements Connection {
         if (timeout > 0)
             stmt.timeout(timeout);
 
-        stmts.add(stmt);
+        synchronized (stmtsMux) {
+            stmts.add(stmt);
+        }
 
         return stmt;
     }
@@ -299,7 +274,9 @@ public class JdbcThinConnection implements Connection {
         if (timeout > 0)
             stmt.timeout(timeout);
 
-        stmts.add(stmt);
+        synchronized (stmtsMux) {
+            stmts.add(stmt);
+        }
 
         return stmt;
     }
@@ -392,13 +369,10 @@ public class JdbcThinConnection implements Connection {
         if (isClosed())
             return;
 
-        if (!F.isEmpty(streamBatch)) {
-            try {
-                executeBatch(true);
-            }
-            catch (SQLException e) {
-                LOG.log(Level.WARNING, "Exception during batch send on streamed connection close", e);
-            }
+        if (streamState != null) {
+            streamState.close();
+
+            streamState = null;
         }
 
         closed = true;
@@ -791,6 +765,28 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
+     * Send request for execution via {@link #cliIo}. Response is waited at the separate thread
+     *     (see {@link StreamState#asyncRespReaderThread}).
+     * @param req Request.
+     * @throws SQLException On any error.
+     */
+    private void sendRequestNotWaitResponse(JdbcOrderedBatchExecuteRequest req) throws SQLException {
+        ensureConnected();
+
+        try {
+            cliIo.sendBatchRequestNoWaitResponse(req);
+        }
+        catch (SQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            onDisconnect();
+
+            throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
+        }
+    }
+
+    /**
      * @return Connection URL.
      */
     public String url() {
@@ -808,14 +804,18 @@ public class JdbcThinConnection implements Connection {
 
         connected = false;
 
-        streamBatch = null;
+        if (streamState != null) {
+            streamState.close0();
 
-        lastStreamQry = null;
+            streamState = null;
+        }
 
-        for (JdbcThinStatement s : stmts)
-            s.closeOnDisconnect();
+        synchronized (stmtsMux) {
+            for (JdbcThinStatement s : stmts)
+                s.closeOnDisconnect();
 
-        stmts.clear();
+            stmts.clear();
+        }
     }
 
     /**
@@ -836,5 +836,204 @@ public class JdbcThinConnection implements Connection {
             res = schemaName.toUpperCase();
 
         return res;
+    }
+
+    /**
+     * Streamer state and
+     */
+    private class StreamState {
+        /** Maximum requests count that may be sent before any responses. */
+        private static final int MAX_REQUESTS_BEFORE_RESPONSE = 10;
+
+        /** Wait timeout. */
+        private static final long WAIT_TIMEOUT = 1;
+
+        /** Batch size for streaming. */
+        private int streamBatchSize;
+
+        /** Batch for streaming. */
+        private List<JdbcQuery> streamBatch;
+
+        /** Last added query to recognize batches. */
+        private String lastStreamQry;
+
+        /** Keep request order on execution. */
+        private long order;
+
+        /** Async response reader thread. */
+        private Thread asyncRespReaderThread;
+
+        /** Async response error. */
+        private volatile Exception err;
+
+        /** The order of the last batch request at the stream. */
+        private long lastRespOrder = -1;
+
+        /** Last response future. */
+        private final GridFutureAdapter<Void> lastRespFut = new GridFutureAdapter<>();
+
+        /** Response semaphore sem. */
+        private Semaphore respSem = new Semaphore(MAX_REQUESTS_BEFORE_RESPONSE);
+
+        /**
+         * @param cmd Stream cmd.
+         */
+        StreamState(SqlSetStreamingCommand cmd) {
+            streamBatchSize = cmd.batchSize();
+
+            asyncRespReaderThread = new Thread(this::readResponses);
+
+            asyncRespReaderThread.start();
+        }
+
+        /**
+         * Add another query for batched execution.
+         * @param sql Query.
+         * @param args Arguments.
+         * @throws SQLException On error.
+         */
+        void addBatch(String sql, List<Object> args) throws SQLException {
+            checkError();
+
+            boolean newQry = (args == null || !F.eq(lastStreamQry, sql));
+
+            // Providing null as SQL here allows for recognizing subbatches on server and handling them more efficiently.
+            JdbcQuery q  = new JdbcQuery(newQry ? sql : null, args != null ? args.toArray() : null);
+
+            if (streamBatch == null)
+                streamBatch = new ArrayList<>(streamBatchSize);
+
+            streamBatch.add(q);
+
+            // Null args means "addBatch(String)" was called on non-prepared Statement,
+            // we don't want to remember its query string.
+            lastStreamQry = (args != null ? sql : null);
+
+            if (streamBatch.size() == streamBatchSize)
+                executeBatch(false);
+        }
+
+        /**
+         * @param lastBatch Whether open data streamers must be flushed and closed after this batch.
+         * @throws SQLException if failed.
+         */
+        private void executeBatch(boolean lastBatch) throws SQLException {
+            checkError();
+
+            if (lastBatch)
+                lastRespOrder = order;
+
+            try {
+                respSem.acquire();
+
+                sendRequestNotWaitResponse(
+                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, lastBatch, order));
+
+                streamBatch = null;
+
+                lastStreamQry = null;
+
+                if (lastBatch) {
+                    try {
+                        lastRespFut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        // No-op.
+                        // No exceptions are expected here.
+                    }
+
+                    checkError();
+                }
+                else
+                    order++;
+            }
+            catch (InterruptedException e) {
+                throw new SQLException("Streaming operation was interrupted", SqlStateCode.INTERNAL_ERROR, e);
+            }
+        }
+
+        /**
+         * Throws at the user thread exception that was thrown at the {@link #asyncRespReaderThread} thread.
+         * @throws SQLException Saved exception.
+         */
+        void checkError() throws SQLException {
+            if (err != null) {
+                Exception err0 = err;
+
+                err = null;
+
+                if (err0 instanceof SQLException)
+                    throw (SQLException)err0;
+                else {
+                    onDisconnect();
+
+                    throw new SQLException("Failed to communicate with Ignite cluster on JDBC streaming.",
+                        SqlStateCode.CONNECTION_FAILURE, err0);
+                }
+            }
+        }
+
+        /**
+         * @throws SQLException On error.
+         */
+        void close() throws SQLException {
+            close0();
+
+            checkError();
+        }
+
+        /**
+         */
+        void close0() {
+            if (connected) {
+                try {
+                    executeBatch(true);
+                }
+                catch (SQLException e) {
+                    err = e;
+
+                    LOG.log(Level.WARNING, "Exception during batch send on streamed connection close", e);
+                }
+            }
+
+            if (asyncRespReaderThread != null)
+                asyncRespReaderThread.interrupt();
+        }
+
+        /**
+         *
+         */
+        void readResponses () {
+            try {
+                while (true) {
+                    JdbcResponse resp = cliIo.readResponse();
+
+                    if (resp.response() instanceof JdbcOrderedBatchExecuteResult) {
+                        JdbcOrderedBatchExecuteResult res = (JdbcOrderedBatchExecuteResult)resp.response();
+
+                        respSem.release();
+
+                        if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
+                            err = new BatchUpdateException(res.errorMessage(),
+                                IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
+                                res.errorCode(), res.updateCounts());
+                        }
+
+                        // Receive the response for the last request.
+                        if (res.order() == lastRespOrder) {
+                            lastRespFut.onDone();
+
+                            break;
+                        }
+                    }
+
+                    if (resp.status() != ClientListenerResponse.STATUS_SUCCESS)
+                        err = new SQLException(resp.error(), IgniteQueryErrorCode.codeToSqlState(resp.status()));
+                }
+            }
+            catch (Exception e) {
+                err = e;
+            }
+        }
     }
 }

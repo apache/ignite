@@ -47,6 +47,10 @@
         <string>-Xms1g</string>
         <string>-Xmx4g</string>
     </jvmOptions>
+    <sqlSchemas>
+        <string>SCHEMA_1</string>
+        <string>schema_2</string>
+    </sqlSchemas>
     <lifecycleHandlers>
         <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
     </lifecycleHandlers>
@@ -159,4 +163,5 @@
     <sslContextFactory type='SslContextFactory' protocol='SSL'
                        keyStoreFilePath='KeyStore/server.jks' keyStorePassword='123456' 
                        trustStoreFilePath='KeyStore/trust.jks' trustStorePassword='123456'/>
+    <failureHandler type="StopNodeOrHaltFailureHandler" tryStop="true" timeout="0:1:0"/>
 </igniteConfiguration>

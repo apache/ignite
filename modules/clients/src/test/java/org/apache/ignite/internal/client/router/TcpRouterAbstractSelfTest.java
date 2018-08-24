@@ -86,8 +86,6 @@ public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         router.stop();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */

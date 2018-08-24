@@ -23,20 +23,31 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example of using distributed {@link MultilayerPerceptron}.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
+ * <p>
+ * After that it defines a layered architecture and a neural network trainer, trains neural network
+ * and obtains multilayer perceptron model.</p>
+ * <p>
+ * Finally, this example loops over the test set, applies the trained model to predict the value and
+ * compares prediction to expected outcome.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
@@ -100,7 +111,7 @@ public class MLPTrainerExample {
                 MultilayerPerceptron mlp = trainer.fit(
                     ignite,
                     trainingSet,
-                    (k, v) -> new double[] {v.x, v.y},
+                    (k, v) -> VectorUtils.of(v.x, v.y),
                     (k, v) -> new double[] {v.lb}
                 );
 
@@ -110,8 +121,12 @@ public class MLPTrainerExample {
                 // Calculate score.
                 for (int i = 0; i < 4; i++) {
                     LabeledPoint pnt = trainingSet.get(i);
-                    Matrix predicted = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{pnt.x, pnt.y}}));
-                    failCnt += Math.abs(predicted.get(0, 0) - pnt.lb) < 0.5 ? 0 : 1;
+                    Matrix predicted = mlp.apply(new DenseMatrix(new double[][] {{pnt.x, pnt.y}}));
+
+                    double predictedVal = predicted.get(0, 0);
+                    double lbl = pnt.lb;
+                    System.out.printf(">>> key: %d\t\t predicted: %.4f\t\tlabel: %.4f\n", i, predictedVal, lbl);
+                    failCnt += Math.abs(predictedVal - lbl) < 0.5 ? 0 : 1;
                 }
 
                 double failRatio = (double)failCnt / totalCnt;

@@ -17,6 +17,10 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,12 +29,13 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.SecurityCredentialsAttrFilterPredicate;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.jetbrains.annotations.Nullable;
@@ -41,7 +46,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTE
 /**
  * Zookeeper Cluster Node.
  */
-public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Comparable<ZookeeperClusterNode> {
+public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, Comparable<ZookeeperClusterNode> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -98,6 +103,11 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
     /** Daemon node initialization flag. */
     @GridToStringExclude
     private transient volatile boolean daemonInit;
+
+    /** */
+    public ZookeeperClusterNode() {
+        //No-op
+    }
 
     /**
      * @param id Node ID.
@@ -156,11 +166,6 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
         map.put(ATTR_NODE_CONSISTENT_ID, consistentId);
 
         attrs = Collections.unmodifiableMap(map);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isCacheClient() {
-        return isClient();
     }
 
     /** {@inheritDoc} */
@@ -233,11 +238,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
     /** {@inheritDoc} */
     @Override public Map<String, Object> attributes() {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
-        return F.view(attrs, new IgnitePredicate<String>() {
-            @Override public boolean apply(String s) {
-                return !IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
-            }
-        });
+        return F.view(attrs, new SecurityCredentialsAttrFilterPredicate());
     }
 
     /** {@inheritDoc} */
@@ -323,6 +324,50 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Serializable, Co
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         return (CLIENT_NODE_MASK & flags) != 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeUuid(out, id);
+        out.writeObject(consistentId);
+        out.writeLong(internalId);
+        out.writeLong(order);
+        out.writeObject(ver);
+        U.writeMap(out, attrs);
+        U.writeCollection(out, addrs);
+        U.writeCollection(out, hostNames);
+        out.writeLong(sesTimeout);
+        out.writeByte(flags);
+
+        // Cluster metrics
+        byte[] mtr = null;
+
+        ClusterMetrics metrics = this.metrics;
+
+        if (metrics != null)
+            mtr = ClusterMetricsSnapshot.serialize(metrics);
+
+        U.writeByteArray(out, mtr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        id = U.readUuid(in);
+        consistentId = (Serializable) in.readObject();
+        internalId = in.readLong();
+        order = in.readLong();
+        ver = (IgniteProductVersion) in.readObject();
+        attrs = U.sealMap(U.readMap(in));
+        addrs = U.readCollection(in);
+        hostNames = U.readCollection(in);
+        sesTimeout = in.readLong();
+        flags = in.readByte();
+
+        // Cluster metrics
+        byte[] mtr = U.readByteArray(in);
+
+        if (mtr != null)
+            metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
     }
 
     /** {@inheritDoc} */

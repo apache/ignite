@@ -75,36 +75,39 @@ Instructions can be found at modules/platforms/cpp/DEVNOTES.txt.
 
 Apache Ignite RPM Package Build Instructions
 ============================================
-1) Install dependencies
+1) Build Apache Ignite binary archive (instructions above)
 
-        yum install -y rpmdevtools rpm-build
+2) Run packaging script and follow messages if they required interaction
 
-2) Create directory layout
+        packaging/package.sh --rpm
 
-        rpmdev-setuptree
-
-3) Copy build specification and additional sources required for build
-
-        cp -rfv packaging/rpm/* ~/rpmbuild
-
-4) Copy built binary from target/bin to sources directory
-
-        cp -rfv target/bin/apache-ignite-<version>-bin.zip ~/rpmbuild/SOURCES/apache-ignite.zip
-
-5) Run build process
-
-        rpmbuild -bb ~/rpmbuild/SPECS/apache-ignite.spec
-
-   NOTE: to build also SRPM package, run with -ba flag instead
-
-   Package will be available in ~/rpmbuild/RPMS/noarch
+   Packages will be available in packaging/ directory
 
 
-Install and Run Apache Ignite from RPM
-======================================
-1) Install package
+Apache Ignite DEB Package Build Instructions
+============================================
+1) Build Apache Ignite binary archive (instructions above)
 
-        yum localinstall -y apache-ignite-<version>.rpm
+2) Build Apache Ignite RPM package (also above)
+
+3) Run packaging script and follow messages if they required interaction
+
+        packaging/package.sh --deb
+
+   Packages will be available in packaging/ directory
+
+   NOTE: to build both packages type at once, run
+
+        packaging/package.sh --rpm --deb
+
+
+Install and Run Apache Ignite from packages
+===========================================
+1) Install package with YUM or APT respectively
+
+        yum localinstall -y apache-ignite-<version>.noarch.rpm
+            or
+        dpkg -i apache-ignite_<version>_all.deb
 
 2) Start Apache Ignite service
 

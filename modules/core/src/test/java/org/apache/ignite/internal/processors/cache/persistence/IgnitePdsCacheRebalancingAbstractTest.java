@@ -18,20 +18,25 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -47,7 +52,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -66,11 +70,20 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Cache name. */
-    private static final String cacheName = "cache";
+    /** Default cache. */
+    private static final String CACHE = "cache";
+
+    /** Cache with node filter. */
+    private static final String FILTERED_CACHE = "filtered";
+
+    /** Cache with enabled indexes. */
+    private static final String INDEXED_CACHE = "indexed";
 
     /** */
     protected boolean explicitTx;
+
+    /** Set to enable filtered cache on topology. */
+    private boolean filteredCacheEnabled;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -80,18 +93,19 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         cfg.setRebalanceThreadPoolSize(2);
 
-        CacheConfiguration ccfg1 = cacheConfiguration(cacheName)
+        CacheConfiguration ccfg1 = cacheConfiguration(CACHE)
             .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
-            .setBackups(1)
+            .setBackups(2)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setIndexedTypes(Integer.class, Integer.class)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setRebalanceBatchesPrefetchCount(2)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
-        CacheConfiguration ccfg2 = cacheConfiguration("indexed");
-        ccfg2.setBackups(1);
-        ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        CacheConfiguration ccfg2 = cacheConfiguration(INDEXED_CACHE)
+            .setBackups(2)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         QueryEntity qryEntity = new QueryEntity(Integer.class.getName(), TestValue.class.getName());
 
@@ -108,36 +122,33 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ccfg2.setQueryEntities(Collections.singleton(qryEntity));
 
-        // Do not start filtered cache on coordinator.
-        if (gridName.endsWith("0")) {
-            cfg.setCacheConfiguration(ccfg1, ccfg2);
+        List<CacheConfiguration> cacheCfgs = new ArrayList<>();
+        cacheCfgs.add(ccfg1);
+        cacheCfgs.add(ccfg2);
+
+        if (filteredCacheEnabled && !gridName.endsWith("0")) {
+            CacheConfiguration ccfg3 = cacheConfiguration(FILTERED_CACHE)
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+                .setBackups(2)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setNodeFilter(new CoordinatorNodeFilter());
+
+            cacheCfgs.add(ccfg3);
         }
-        else {
-            CacheConfiguration ccfg3 = cacheConfiguration("filtered");
-            ccfg3.setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE);
-            ccfg3.setBackups(1);
-            ccfg3.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-            ccfg3.setNodeFilter(new CoordinatorNodeFilter());
 
-            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
-        }
+        cfg.setCacheConfiguration(asArray(cacheCfgs));
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration();
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4)
+            .setCheckpointFrequency(checkpointFrequency())
+            .setWalMode(WALMode.LOG_ONLY)
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setName("dfltDataRegion")
+                .setPersistenceEnabled(true)
+                .setMaxSize(512 * 1024 * 1024)
+            );
 
-        memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-        memCfg.setPageSize(1024);
-        memCfg.setWalMode(WALMode.LOG_ONLY);
-
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setMaxSize(150 * 1024 * 1024);
-        memPlcCfg.setInitialSize(100 * 1024 * 1024);
-        memPlcCfg.setPersistenceEnabled(true);
-
-        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
-
-        cfg.setDataStorageConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(dsCfg);
 
         cfg.setDiscoverySpi(
             new TcpDiscoverySpi()
@@ -145,6 +156,24 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         );
 
         return cfg;
+    }
+
+    /**
+     * @param cacheCfgs Cache cfgs.
+     */
+    private static CacheConfiguration[] asArray(List<CacheConfiguration> cacheCfgs) {
+        CacheConfiguration[] res = new CacheConfiguration[cacheCfgs.size()];
+        for (int i = 0; i < res.length; i++)
+            res[i] = cacheCfgs.get(i);
+
+        return res;
+    }
+
+    /**
+     * @return Checkpoint frequency;
+     */
+    protected long checkpointFrequency() {
+        return DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
     }
 
     /** {@inheritDoc} */
@@ -185,15 +214,15 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     public void testRebalancingOnRestart() throws Exception {
         Ignite ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
-
         startGrid(1);
 
         IgniteEx ignite2 = startGrid(2);
 
+        ignite0.cluster().active(true);
+
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite0.cache(cacheName);
+        IgniteCache<Integer, Integer> cache1 = ignite0.cache(CACHE);
 
         for (int i = 0; i < 5000; i++)
             cache1.put(i, i);
@@ -222,7 +251,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache3 = ignite2.cache(cacheName);
+        IgniteCache<Integer, Integer> cache3 = ignite2.cache(CACHE);
 
         for (int i = 0; i < 100; i++)
             assertEquals(String.valueOf(i), (Integer)(i * 2), cache3.get(i));
@@ -243,27 +272,20 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ignite0.cluster().active(true);
 
-        ignite0.cache(cacheName).rebalance().get();
-        ignite1.cache(cacheName).rebalance().get();
-        ignite2.cache(cacheName).rebalance().get();
-        ignite3.cache(cacheName).rebalance().get();
-
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite0.cache(cacheName);
+        IgniteCache<Integer, Integer> cache1 = ignite0.cache(CACHE);
 
         for (int i = 0; i < 1000; i++)
             cache1.put(i, i);
 
-        ignite0.context().cache().context().database().waitForCheckpoint("test");
-        ignite1.context().cache().context().database().waitForCheckpoint("test");
+        forceCheckpoint(ignite0);
+        forceCheckpoint(ignite1);
 
         info("++++++++++ After checkpoint");
 
         ignite2.close();
         ignite3.close();
-
-        resetBaselineTopology();
 
         ignite0.resetLostPartitions(Collections.singletonList(cache1.getName()));
 
@@ -281,14 +303,16 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         info(">>> Done puts...");
 
-        ignite2 = startGrid(2);
-        ignite3 = startGrid(3);
+        startGrid(2);
+        startGrid(3);
 
-        ignite2.cache(cacheName).rebalance().get();
-        ignite3.cache(cacheName).rebalance().get();
+        awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
+        ignite2 = grid(2);
+        ignite3 = grid(3);
+
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(CACHE);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(CACHE);
 
         for (int i = 0; i < 100; i++) {
             assertEquals(String.valueOf(i), (Integer)(i * 2), cache2.get(i));
@@ -297,157 +321,87 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     }
 
     /**
-     * Test that all data is correctly restored after non-graceful restart.
-     *
-     * @throws Exception If fails.
-     */
-    public void testDataCorrectnessAfterRestart() throws Exception {
-        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
-
-        ignite1.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
-
-        for (int i = 0; i < 100; i++)
-            cache1.put(i, i);
-
-        ignite1.close();
-        ignite2.close();
-        ignite3.close();
-        ignite4.close();
-
-        ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-        ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
-
-        ignite1.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        cache1 = ignite1.cache(cacheName);
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache(cacheName);
-
-        for (int i = 0; i < 100; i++) {
-            assert cache1.get(i).equals(i);
-            assert cache2.get(i).equals(i);
-            assert cache3.get(i).equals(i);
-            assert cache4.get(i).equals(i);
-        }
-    }
-
-    /**
-     * Test that partitions are marked as lost when all owners leave cluster, but recover after nodes rejoin.
-     *
-     * @throws Exception If fails.
-     */
-    public void testPartitionLossAndRecover() throws Exception {
-        Ignite ignite1 = startGrid(0);
-        Ignite ignite2 = startGrid(1);
-        Ignite ignite3 = startGrid(2);
-        Ignite ignite4 = startGrid(3);
-
-        ignite1.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        IgniteCache<String, String> cache1 = ignite1.cache(cacheName);
-
-        final int offset = 10;
-
-        for (int i = 0; i < 100; i++)
-            cache1.put(String.valueOf(i), String.valueOf(i + offset));
-
-        ignite3.close();
-        ignite4.close();
-
-        awaitPartitionMapExchange();
-
-        assert !ignite1.cache(cacheName).lostPartitions().isEmpty();
-
-        ignite3 = startGrid(2);
-        ignite4 = startGrid(3);
-
-        ignite1.resetLostPartitions(Collections.singletonList(cacheName));
-
-        IgniteCache<String, String> cache2 = ignite2.cache(cacheName);
-        IgniteCache<String, String> cache3 = ignite3.cache(cacheName);
-        IgniteCache<String, String> cache4 = ignite4.cache(cacheName);
-
-        //Thread.sleep(5_000);
-
-        for (int i = 0; i < 100; i++) {
-            String key = String.valueOf(i);
-            String expected = String.valueOf(i + offset);
-
-            assertEquals(expected, cache1.get(key));
-            assertEquals(expected, cache2.get(key));
-            assertEquals(expected, cache3.get(key));
-            assertEquals(expected, cache4.get(key));
-        }
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testTopologyChangesWithConstantLoad() throws Exception {
-        final long timeOut = U.currentTimeMillis() + 10 * 60 * 1000;
+        final long timeOut = U.currentTimeMillis() + 5 * 60 * 1000;
 
         final int entriesCnt = 10_000;
-        int maxNodesCount = 4;
-        int topChanges = 20;
-        final String cacheName = "indexed";
+        final int maxNodesCnt = 4;
+        final int topChanges = 25;
+        final boolean allowRemoves = true;
 
+        final AtomicLong orderCounter = new AtomicLong();
         final AtomicBoolean stop = new AtomicBoolean();
+        final AtomicBoolean suspend = new AtomicBoolean();
+        final AtomicBoolean suspended = new AtomicBoolean();
 
         final ConcurrentMap<Integer, TestValue> map = new ConcurrentHashMap<>();
 
-        Ignite ignite = startGrid(0);
+        Ignite ignite = startGridsMultiThreaded(4);
 
         ignite.cluster().active(true);
 
-        IgniteCache<Integer, TestValue> cache = ignite.cache(cacheName);
+        IgniteCache<Integer, TestValue> cache = ignite.cache(INDEXED_CACHE);
 
         for (int i = 0; i < entriesCnt; i++) {
-            cache.put(i, new TestValue(i, i));
-            map.put(i, new TestValue(i, i));
+            long order = orderCounter.get();
+
+            cache.put(i, new TestValue(order, i, i));
+            map.put(i, new TestValue(order, i, i));
+
+            orderCounter.incrementAndGet();
         }
 
-        final AtomicInteger nodesCnt = new AtomicInteger();
+        final AtomicInteger nodesCnt = new AtomicInteger(4);
 
         IgniteInternalFuture fut = runMultiThreadedAsync(new Callable<Void>() {
+            /**
+             * @param chance Chance of remove operation in percents.
+             * @return {@code true} if it should be remove operation.
+             */
+            private boolean removeOp(int chance) {
+                return ThreadLocalRandom.current().nextInt(100) + 1 <= chance;
+            }
+
             @Override public Void call() throws Exception {
+                Random rnd = ThreadLocalRandom.current();
+
                 while (true) {
                     if (stop.get())
                         return null;
 
-                    int k = ThreadLocalRandom.current().nextInt(entriesCnt);
-                    int v1 = ThreadLocalRandom.current().nextInt();
-                    int v2 = ThreadLocalRandom.current().nextInt();
+                    if (suspend.get()) {
+                        suspended.set(true);
 
-                    int n = nodesCnt.get();
+                        U.sleep(10);
 
-                    if (n <= 0)
                         continue;
+                    }
+
+                    int k = rnd.nextInt(entriesCnt);
+                    long order = orderCounter.get();
+
+                    int v1 = 0, v2 = 0;
+                    boolean remove = false;
+
+                    if (removeOp(allowRemoves ? 20 : 0))
+                        remove = true;
+                    else {
+                        v1 = rnd.nextInt();
+                        v2 = rnd.nextInt();
+                    }
+
+                    int nodes = nodesCnt.get();
 
                     Ignite ignite;
 
                     try {
-                        ignite = grid(ThreadLocalRandom.current().nextInt(n));
+                        ignite = grid(rnd.nextInt(nodes));
                     }
                     catch (Exception ignored) {
                         continue;
                     }
-
-                    if (ignite == null)
-                        continue;
 
                     Transaction tx = null;
                     boolean success = true;
@@ -456,7 +410,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         tx = ignite.transactions().txStart();
 
                     try {
-                        ignite.cache(cacheName).put(k, new TestValue(v1, v2));
+                        IgniteCache<Object, Object> cache = ignite.cache(INDEXED_CACHE);
+
+                        if (remove)
+                            cache.remove(k);
+                        else
+                            cache.put(k, new TestValue(order, v1, v2));
                     }
                     catch (Exception ignored) {
                         success = false;
@@ -472,36 +431,83 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         }
                     }
 
-                    if (success)
-                        map.put(k, new TestValue(v1, v2));
+                    if (success) {
+                        map.put(k, new TestValue(order, v1, v2, remove));
+
+                        orderCounter.incrementAndGet();
+                    }
                 }
             }
         }, 1, "load-runner");
 
+        // "False" means stop last started node, "True" - start new node.
+        List<Boolean> predefinedChanges = Lists.newArrayList(false, false, true, true);
+
+        List<Boolean> topChangesHistory = new ArrayList<>();
+
         try {
-            for (int i = 0; i < topChanges; i++) {
+            for (int it = 0; it < topChanges; it++) {
                 if (U.currentTimeMillis() > timeOut)
                     break;
 
                 U.sleep(3_000);
 
-                boolean add;
+                boolean addNode;
 
-                if (nodesCnt.get() <= maxNodesCount / 2)
-                    add = true;
-                else if (nodesCnt.get() > maxNodesCount)
-                    add = false;
+                if (it < predefinedChanges.size())
+                    addNode = predefinedChanges.get(it);
+                else if (nodesCnt.get() <= maxNodesCnt / 2)
+                    addNode = true;
+                else if (nodesCnt.get() >= maxNodesCnt)
+                    addNode = false;
                 else // More chance that node will be added
-                    add = ThreadLocalRandom.current().nextInt(3) <= 1;
+                    addNode = ThreadLocalRandom.current().nextInt(3) <= 1;
 
-                if (add)
-                    startGrid(nodesCnt.incrementAndGet());
+                if (addNode)
+                    startGrid(nodesCnt.getAndIncrement());
                 else
-                    stopGrid(nodesCnt.getAndDecrement());
+                    stopGrid(nodesCnt.decrementAndGet());
+
+                topChangesHistory.add(addNode);
 
                 awaitPartitionMapExchange();
 
-                cache.rebalance().get();
+                if (fut.error() != null)
+                    break;
+
+                // Suspend loader and wait for last operation completion.
+                suspend.set(true);
+                GridTestUtils.waitForCondition(suspended::get, 5_000);
+
+                // Fix last successful cache operation to skip operations that can be performed during check.
+                long maxOrder = orderCounter.get();
+
+                for (Map.Entry<Integer, TestValue> entry : map.entrySet()) {
+                    final String assertMsg = "Iteration: " + it + ". Changes: " + Objects.toString(topChangesHistory)
+                            + ". Key: " + Integer.toString(entry.getKey());
+
+                    TestValue expected = entry.getValue();
+
+                    if (expected.order < maxOrder)
+                        continue;
+
+                    TestValue actual = cache.get(entry.getKey());
+
+                    if (expected.removed) {
+                        assertNull(assertMsg + " should be removed.", actual);
+
+                        continue;
+                    }
+
+                    if (entry.getValue().order < maxOrder)
+                        continue;
+
+                    assertEquals(assertMsg, expected, actual);
+                }
+
+                // Resume progress for loader.
+                suspend.set(false);
+                suspended.set(false);
             }
         }
         finally {
@@ -509,25 +515,27 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         }
 
         fut.get();
-
-        awaitPartitionMapExchange();
-
-        for (Map.Entry<Integer, TestValue> entry : map.entrySet())
-            assertEquals(Integer.toString(entry.getKey()), entry.getValue(), cache.get(entry.getKey()));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testForceRebalance() throws Exception {
-        testForceRebalance(cacheName);
+        testForceRebalance(CACHE);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testForceRebalanceClientTopology() throws Exception {
-        testForceRebalance("filtered");
+        filteredCacheEnabled = true;
+
+        try {
+            testForceRebalance(FILTERED_CACHE);
+        }
+        finally {
+            filteredCacheEnabled = false;
+        }
     }
 
     /**
@@ -579,63 +587,52 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ig.cluster().active(true);
 
-        int k = 0;
+        int keys = 0;
 
-        try (IgniteDataStreamer ds = ig.dataStreamer(cacheName)) {
+        try (IgniteDataStreamer<Object, Object> ds = ig.dataStreamer(CACHE)) {
             ds.allowOverwrite(true);
 
-            for (int k0 = k; k < k0 + 50_000; k++)
-                ds.addData(k, k);
+            for (; keys < 10_000; keys++)
+                ds.addData(keys, keys);
         }
 
-        for (int t = 0; t < 5; t++) {
-            int t0 = t;
+        for (int it = 0; it < 10; it++) {
+            final int it0 = it;
+
             IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
                 try {
                     stopGrid(3);
 
-                    forceCheckpoint();
+                    U.sleep(500); // Wait for data load.
+
+                    startGrid(3);
 
                     U.sleep(500); // Wait for data load.
 
-                    IgniteEx ig0 = startGrid(3);
-
-                    U.sleep(2000); // Wait for node join.
-
-                    if (t0 % 2 == 1) {
+                    if (it0 % 2 != 0) {
                         stopGrid(2);
 
-                        awaitPartitionMapExchange();
-
-                        forceCheckpoint();
+                        U.sleep(500); // Wait for data load.
 
                         startGrid(2);
-
-                        awaitPartitionMapExchange();
                     }
 
-                    ig0.cache(cacheName).rebalance().get();
+                    awaitPartitionMapExchange();
                 }
                 catch (Exception e) {
                     error("Unable to start/stop grid", e);
+
                     throw new RuntimeException(e);
                 }
             });
 
-            try (IgniteDataStreamer ds = ig.dataStreamer(cacheName)) {
-                ds.allowOverwrite(true);
+            IgniteCache<Object, Object> cache = ig.cache(CACHE);
 
-                while (!fut.isDone()) {
-                    int k0 = k;
+            while (!fut.isDone()) {
+                int nextKeys = keys + 10;
 
-                    for (;k < k0 + 3; k++)
-                        ds.addData(k, k);
-
-                    U.sleep(1);
-                }
-            }
-            catch (Exception e) {
-                log.error("Unable to write data", e);
+                for (;keys < nextKeys; keys++)
+                    cache.put(keys, keys);
             }
 
             fut.get();
@@ -647,18 +644,18 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             for (int g = 0; g < 4; g++) {
                 IgniteEx ig0 = grid(g);
 
-                for (GridDhtLocalPartition part : ig0.cachex(cacheName).context().topology().currentLocalPartitions()) {
+                for (GridDhtLocalPartition part : ig0.cachex(CACHE).context().topology().currentLocalPartitions()) {
                     if (cntrs.containsKey(part.id()))
                         assertEquals(String.valueOf(part.id()), (long) cntrs.get(part.id()), part.updateCounter());
                     else
                         cntrs.put(part.id(), part.updateCounter());
                 }
 
-                for (int k0 = 0; k0 < k; k0++)
-                    assertEquals(String.valueOf(k0) + " " + g, k0, ig0.cache(cacheName).get(k0));
+                for (int k0 = 0; k0 < keys; k0++)
+                    assertEquals(String.valueOf(k0) + " " + g, k0, ig0.cache(CACHE).get(k0));
             }
 
-            assertEquals(ig.affinity(cacheName).partitions(), cntrs.size());
+            assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
         }
     }
 
@@ -666,46 +663,52 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      *
      */
     private static class TestValue implements Serializable {
+        /** Operation order. */
+        private final long order;
+
         /** V 1. */
         private final int v1;
+
         /** V 2. */
         private final int v2;
 
-        /**
-         * @param v1 V 1.
-         * @param v2 V 2.
-         */
-        private TestValue(int v1, int v2) {
+        /** Flag indicates that value has removed. */
+        private final boolean removed;
+
+        private TestValue(long order, int v1, int v2) {
+            this(order, v1, v2, false);
+        }
+
+        private TestValue(long order, int v1, int v2, boolean removed) {
+            this.order = order;
             this.v1 = v1;
             this.v2 = v2;
+            this.removed = removed;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
+            if (this == o) return true;
 
-            TestValue val = (TestValue)o;
+            if (o == null || getClass() != o.getClass()) return false;
 
-            return v1 == val.v1 && v2 == val.v2;
+            TestValue testValue = (TestValue) o;
 
+            return order == testValue.order &&
+                v1 == testValue.v1 &&
+                v2 == testValue.v2;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int res = v1;
-
-            res = 31 * res + v2;
-
-            return res;
+            return Objects.hash(order, v1, v2);
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return "TestValue{" +
-                "v1=" + v1 +
+                "order=" + order +
+                ", v1=" + v1 +
                 ", v2=" + v2 +
                 '}';
         }

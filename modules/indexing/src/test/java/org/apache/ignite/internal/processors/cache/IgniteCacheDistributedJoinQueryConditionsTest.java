@@ -83,13 +83,6 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
         startGrid(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

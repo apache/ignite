@@ -26,8 +26,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -37,6 +39,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
+import org.apache.ignite.internal.processors.cache.persistence.file.AbstractFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -47,8 +51,10 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -63,6 +69,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /** */
     private static final AtomicReference<CountDownLatch> fileIOLatch = new AtomicReference<>();
 
+    /** Replicated cache name. */
+    private static final String REPL_CACHE = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -72,8 +81,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
-                        .setMaxSize(200 * 1024 * 1024)
-                        .setInitialSize(200 * 1024 * 1024)
+                        .setInitialSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                 )
                 // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
                 .setCheckpointFrequency(999_999_999_999L)
@@ -83,7 +92,11 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
                 // Test checks internal state before and after rebalance, so it is configured to be triggered manually
+                .setRebalanceDelay(-1),
+
+            new CacheConfiguration(REPL_CACHE)
                 .setRebalanceDelay(-1)
+                .setCacheMode(CacheMode.REPLICATED)
         );
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
@@ -174,6 +187,13 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     }
 
     /**
+     * @return Count of entries to be processed within test.
+     */
+    protected int getKeysCount() {
+        return 10_000;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testWalDisabledDuringRebalancing() throws Exception {
@@ -199,17 +219,19 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < 10_000; k++)
+        int keysCnt = getKeysCount();
+
+        for (int k = 0; k < keysCnt; k++)
             cache.put(k, k);
 
         IgniteEx newIgnite = startGrid(3);
 
-        final GridCacheDatabaseSharedManager.CheckpointHistory cpHistory =
+        final CheckpointHistory cpHist =
             ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return !cpHistory.checkpoints().isEmpty();
+                return !cpHist.checkpoints().isEmpty();
             }
         }, 10_000);
 
@@ -217,7 +239,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         long newIgniteStartedTimestamp = System.currentTimeMillis();
 
-        ignite.cluster().setBaselineTopology(4);
+        newIgnite.cluster().setBaselineTopology(4);
+
+        awaitExchange(newIgnite);
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
@@ -238,14 +262,14 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         long rebalanceFinishedTimestamp = System.currentTimeMillis();
 
-        for (Integer k = 0; k < 1000; k++)
+        for (Integer k = 0; k < keysCnt; k++)
             assertEquals("k=" + k, k, cache.get(k));
 
         int checkpointsBeforeNodeStarted = 0;
         int checkpointsBeforeRebalance = 0;
         int checkpointsAfterRebalance = 0;
 
-        for (Long timestamp : cpHistory.checkpoints()) {
+        for (Long timestamp : cpHist.checkpoints()) {
             if (timestamp < newIgniteStartedTimestamp)
                 checkpointsBeforeNodeStarted++;
             else if (timestamp >= newIgniteStartedTimestamp && timestamp < rebalanceStartedTimestamp)
@@ -269,12 +293,14 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < 10_000; k++)
+        for (int k = 0; k < getKeysCount(); k++)
             cache.put(k, k);
 
         IgniteEx newIgnite = startGrid(3);
 
-        ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
+        newIgnite.cluster().setBaselineTopology(ignite.cluster().nodes());
+
+        awaitExchange(newIgnite);
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
@@ -292,6 +318,61 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         ignite.cluster().enableWal(DEFAULT_CACHE_NAME);
 
         assertTrue(grpCtx.walEnabled());
+    }
+
+    /**
+     * Test that local WAL mode changing works well with exchanges merge.
+     *
+     * @throws Exception If failed.
+     */
+    public void testWithExchangesMerge() throws Exception {
+        final int nodeCnt = 4;
+        final int keyCnt = getKeysCount();
+
+        Ignite ignite = startGrids(nodeCnt);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(REPL_CACHE);
+
+        for (int k = 0; k < keyCnt; k++)
+            cache.put(k, k);
+
+        stopGrid(2);
+        stopGrid(3);
+
+        // Rewrite data to trigger further rebalance.
+        for (int k = 0; k < keyCnt; k++)
+            cache.put(k, k * 2);
+
+        // Start several grids in parallel to trigger exchanges merge.
+        startGridsMultiThreaded(2, 2);
+
+        for (int nodeIdx = 2; nodeIdx < nodeCnt; nodeIdx++) {
+            CacheGroupContext grpCtx = grid(nodeIdx).cachex(REPL_CACHE).context().group();
+
+            assertFalse(grpCtx.walEnabled());
+        }
+
+        // Invoke rebalance manually.
+        for (Ignite g : G.allGrids())
+            g.cache(REPL_CACHE).rebalance();
+
+        awaitPartitionMapExchange();
+
+        for (int nodeIdx = 2; nodeIdx < nodeCnt; nodeIdx++) {
+            CacheGroupContext grpCtx = grid(nodeIdx).cachex(REPL_CACHE).context().group();
+
+            assertTrue(grpCtx.walEnabled());
+        }
+
+        // Check no data loss.
+        for (int nodeIdx = 2; nodeIdx < nodeCnt; nodeIdx++) {
+            IgniteCache<Integer, Integer> cache0 = grid(nodeIdx).cache(REPL_CACHE);
+
+            for (int k = 0; k < keyCnt; k++)
+                Assert.assertEquals("nodeIdx=" + nodeIdx + ", key=" + k, (Integer)(2 * k), cache0.get(k));
+        }
     }
 
     /**
@@ -318,7 +399,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < 10_000; k++)
+        for (int k = 0; k < getKeysCount(); k++)
             cache.put(k, k);
 
         IgniteEx newIgnite = startGrid(3);
@@ -330,6 +411,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         latchRef.set(latch);
 
         ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
+
+        // Await fully exchange complete.
+        awaitExchange(newIgnite);
 
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).rebalance();
@@ -350,7 +434,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         awaitPartitionMapExchange();
 
-        assertTrue(grpCtx.walEnabled());
+        assertTrue(waitForCondition(grpCtx::walEnabled, 2_000));
     }
 
     /**
@@ -363,12 +447,17 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < 10_000; k++)
+        int keysCnt = getKeysCount();
+
+        for (int k = 0; k < keysCnt; k++)
             cache.put(k, k);
 
         IgniteEx newIgnite = startGrid(1);
 
-        ignite.cluster().setBaselineTopology(2);
+        newIgnite.cluster().setBaselineTopology(2);
+
+        // Await fully exchange complete.
+        awaitExchange(newIgnite);
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
@@ -385,7 +474,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         cache = newIgnite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < 10_000; k++)
+        for (int k = 0; k < keysCnt; k++)
             assertFalse("k=" + k +", v=" + cache.get(k), cache.containsKey(k));
     }
 
@@ -399,7 +488,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < 10_000; k++)
+        int keysCnt = getKeysCount();
+
+        for (int k = 0; k < keysCnt; k++)
             cache.put(k, k);
 
         for (Ignite g : G.allGrids()) {
@@ -411,6 +502,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         stopGrid(2);
 
         ignite.cluster().setBaselineTopology(5);
+
+        // Await fully exchange complete.
+        awaitExchange((IgniteEx)ignite);
 
         for (Ignite g : G.allGrids()) {
             CacheGroupContext grpCtx = ((IgniteEx)g).cachex(DEFAULT_CACHE_NAME).context().group();
@@ -427,6 +521,14 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
             assertTrue(grpCtx.walEnabled());
         }
+    }
+
+    /**
+     *
+     * @param ig Ignite.
+     */
+    private void awaitExchange(IgniteEx ig) throws IgniteCheckedException {
+        ig.context().cache().context().exchange().lastTopologyFuture().get();
     }
 
     /**
@@ -457,7 +559,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      *
      */
-    private static class TestFileIO implements FileIO {
+    private static class TestFileIO extends AbstractFileIO {
         /** */
         private final FileIO delegate;
 
@@ -524,7 +626,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void write(byte[] buf, int off, int len) throws IOException {
+        @Override public int write(byte[] buf, int off, int len) throws IOException {
             CountDownLatch latch = fileIOLatch.get();
 
             if (latch != null && Thread.currentThread().getName().contains("checkpoint"))
@@ -535,7 +637,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                     throw new IgniteException(ex);
                 }
 
-            delegate.write(buf, off, len);
+            return delegate.write(buf, off, len);
         }
 
         /** {@inheritDoc} */

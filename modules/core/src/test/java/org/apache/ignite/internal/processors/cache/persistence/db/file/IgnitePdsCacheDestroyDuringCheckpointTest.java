@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -28,10 +27,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test for cache creation/deletion with frequent checkpoints.
@@ -68,10 +64,11 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
         storageCfg.setCheckpointFrequency(300);
 
-        DataRegionConfiguration regionConfig = new DataRegionConfiguration();
-        regionConfig.setPersistenceEnabled(true);
-
-        storageCfg.setDefaultDataRegionConfiguration(regionConfig);
+        storageCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setPersistenceEnabled(true)
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+        );
 
         return storageCfg;
     }
@@ -85,8 +82,6 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         stopAllGrids();
 
         cleanPersistenceDir();

@@ -38,7 +38,7 @@ namespace ignite
             BinaryReaderImpl::BinaryReaderImpl(InteropInputStream* stream, BinaryIdResolver* idRslvr,
                 int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff,
                 int32_t footerBegin, int32_t footerEnd, BinaryOffsetType::Type schemaType) :
-                stream(stream), idRslvr(idRslvr), pos(pos), usrType(usrType), typeId(typeId), 
+                stream(stream), idRslvr(idRslvr), pos(pos), usrType(usrType), typeId(typeId),
                 hashCode(hashCode), len(len), rawOff(rawOff), rawMode(false), elemIdGen(0), elemId(0),
                 elemCnt(-1), elemRead(0), footerBegin(footerBegin), footerEnd(footerEnd), schemaType(schemaType)
             {
@@ -55,9 +55,9 @@ namespace ignite
 
             int8_t BinaryReaderImpl::ReadInt8()
             {
-                return ReadRaw<int8_t>(BinaryUtils::ReadInt8);                
+                return ReadRaw<int8_t>(BinaryUtils::ReadInt8);
             }
-            
+
             int32_t BinaryReaderImpl::ReadInt8Array(int8_t* res, const int32_t len)
             {
                 return ReadRawArray<int8_t>(res, len, BinaryUtils::ReadInt8Array, IGNITE_TYPE_ARRAY_BYTE);
@@ -445,6 +445,26 @@ namespace ignite
                 return ReadStringInternal(res, len);
             }
 
+            void BinaryReaderImpl::ReadString(std::string& res)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                int8_t hdr = stream->ReadInt8();
+
+                if (hdr == IGNITE_HDR_NULL)
+                    res.clear();
+
+                if (hdr != IGNITE_TYPE_STRING)
+                    ThrowOnInvalidHeader(IGNITE_TYPE_STRING, hdr);
+
+                int32_t realLen = stream->ReadInt32();
+
+                res.resize(static_cast<size_t>(realLen));
+
+                stream->ReadInt8Array(reinterpret_cast<int8_t*>(&res[0]), realLen);
+            }
+
             int32_t BinaryReaderImpl::ReadString(const char* fieldName, char* res, const int32_t len)
             {
                 CheckRawMode(false);
@@ -526,7 +546,7 @@ namespace ignite
                     return realLen;
                 }
                 else if (hdr != IGNITE_HDR_NULL)
-                    ThrowOnInvalidHeader(IGNITE_TYPE_ARRAY, hdr);
+                    ThrowOnInvalidHeader(IGNITE_TYPE_STRING, hdr);
 
                 return -1;
             }
@@ -650,7 +670,7 @@ namespace ignite
             CollectionType::Type BinaryReaderImpl::ReadCollectionType()
             {
                 InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
-                
+
                 return ReadCollectionTypeUnprotected();
             }
 
@@ -742,62 +762,62 @@ namespace ignite
                 rawMode = true;
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<int8_t>(int8_t& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int8_t>(int8_t& res)
             {
                 res = ReadTopObject0<int8_t>(IGNITE_TYPE_BYTE, BinaryUtils::ReadInt8);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<bool>(bool& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, bool>(bool& res)
             {
                 res = ReadTopObject0<bool>(IGNITE_TYPE_BOOL, BinaryUtils::ReadBool);
             }
 
             template <>
-            void BinaryReaderImpl::ReadTopObject0<int16_t>(int16_t& res)
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int16_t>(int16_t& res)
             {
                 res = ReadTopObject0<int16_t>(IGNITE_TYPE_SHORT, BinaryUtils::ReadInt16);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<uint16_t>(uint16_t& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, uint16_t>(uint16_t& res)
             {
                 res = ReadTopObject0<uint16_t>(IGNITE_TYPE_CHAR, BinaryUtils::ReadUInt16);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<int32_t>(int32_t& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int32_t>(int32_t& res)
             {
                 res = ReadTopObject0<int32_t>(IGNITE_TYPE_INT, BinaryUtils::ReadInt32);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<int64_t>(int64_t& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, int64_t>(int64_t& res)
             {
                 res = ReadTopObject0<int64_t>(IGNITE_TYPE_LONG, BinaryUtils::ReadInt64);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<float>(float& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, float>(float& res)
             {
                 res = ReadTopObject0<float>(IGNITE_TYPE_FLOAT, BinaryUtils::ReadFloat);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<double>(double& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, double>(double& res)
             {
                 res = ReadTopObject0<double>(IGNITE_TYPE_DOUBLE, BinaryUtils::ReadDouble);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<Guid>(Guid& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Guid>(Guid& res)
             {
                 res = ReadTopObject0<Guid>(IGNITE_TYPE_UUID, BinaryUtils::ReadGuid);
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<Date>(Date& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Date>(Date& res)
             {
                 int8_t typeId = stream->ReadInt8();
 
@@ -815,20 +835,20 @@ namespace ignite
                 }
             }
 
-            template <>
-            void BinaryReaderImpl::ReadTopObject0<Timestamp>(Timestamp& res)
+            template<>
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Timestamp>(Timestamp& res)
             {
                 res = ReadTopObject0<Timestamp>(IGNITE_TYPE_TIMESTAMP, BinaryUtils::ReadTimestamp);
             }
 
             template<>
-            void BinaryReaderImpl::ReadTopObject0<Time>(Time& res)
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, Time>(Time& res)
             {
                 res = ReadTopObject0<Time>(IGNITE_TYPE_TIME, BinaryUtils::ReadTime);
             }
 
             template<>
-            void BinaryReaderImpl::ReadTopObject0<std::string>(std::string& res)
+            void BinaryReaderImpl::ReadTopObject0<ignite::binary::BinaryReader, std::string>(std::string& res)
             {
                 int8_t typeId = stream->ReadInt8();
 
@@ -958,7 +978,7 @@ namespace ignite
                 {
                     int32_t cnt = stream->ReadInt32();
 
-                    if (cnt != 0) 
+                    if (cnt != 0)
                     {
                         elemId = ++elemIdGen;
                         elemCnt = cnt;

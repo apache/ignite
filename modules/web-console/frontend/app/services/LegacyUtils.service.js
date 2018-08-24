@@ -18,7 +18,7 @@
 import saver from 'file-saver';
 
 // TODO: Refactor this service for legacy tables with more than one input field.
-export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
+export default ['IgniteLegacyUtils', ['IgniteErrorPopover', function(ErrorPopover) {
     function isDefined(v) {
         return !_.isNil(v);
     }
@@ -183,7 +183,7 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
         'volatile',
         'while'
     ];
-    /*eslint-enable */
+    /* eslint-enable */
 
     const VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\\d_$]*$');
 

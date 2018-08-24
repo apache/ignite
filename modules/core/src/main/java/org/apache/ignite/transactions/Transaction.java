@@ -244,7 +244,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @return a Future representing pending completion of the commit.
      * @throws IgniteException If commit failed.
      * @throws TransactionTimeoutException If transaction is timed out.
-     * @throws TransactionRollbackException If transaction is automatically rolled back.
+     * @throws TransactionRollbackException If transaction is manually/automatically rolled back.
      * @throws TransactionOptimisticException If transaction concurrency is {@link TransactionConcurrency#OPTIMISTIC}
      * and commit is optimistically failed.
      * @throws TransactionHeuristicException If transaction has entered an unknown state.

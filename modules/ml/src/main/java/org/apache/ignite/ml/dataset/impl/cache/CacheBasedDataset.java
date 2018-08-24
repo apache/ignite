@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
@@ -55,6 +56,9 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** Ignite Cache with {@code upstream} data. */
     private final IgniteCache<K, V> upstreamCache;
 
+    /** Filter for {@code upstream} data. */
+    private final IgniteBiPredicate<K, V> filter;
+
     /** Ignite Cache with partition {@code context}. */
     private final IgniteCache<Integer, C> datasetCache;
 
@@ -70,15 +74,17 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      *
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
      * @param datasetCache Ignite Cache with partition {@code context}.
      * @param partDataBuilder Partition {@code data} builder.
      * @param datasetId Dataset ID.
      */
-    public CacheBasedDataset(Ignite ignite, IgniteCache<K, V> upstreamCache,
+    public CacheBasedDataset(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
         IgniteCache<Integer, C> datasetCache, PartitionDataBuilder<K, V, C, D> partDataBuilder,
         UUID datasetId) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
+        this.filter = filter;
         this.datasetCache = datasetCache;
         this.partDataBuilder = partDataBuilder;
         this.datasetId = datasetId;
@@ -95,6 +101,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
             D data = ComputeUtils.getData(
                 Ignition.localIgnite(),
                 upstreamCacheName,
+                filter,
                 datasetCacheName,
                 datasetId,
                 part,
@@ -123,6 +130,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
             D data = ComputeUtils.getData(
                 Ignition.localIgnite(),
                 upstreamCacheName,
+                filter,
                 datasetCacheName,
                 datasetId,
                 part,
@@ -136,6 +144,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** {@inheritDoc} */
     @Override public void close() {
         datasetCache.destroy();
+        ComputeUtils.removeData(ignite, datasetId);
     }
 
     /**
@@ -155,7 +164,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
 
         R res = identity;
         for (R partRes : results)
-            res = reduce.apply(res, partRes);
+            if (partRes != null)
+                res = reduce.apply(res, partRes);
 
         return res;
     }

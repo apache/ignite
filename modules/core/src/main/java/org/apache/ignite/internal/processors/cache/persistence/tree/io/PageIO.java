@@ -109,16 +109,25 @@ public abstract class PageIO {
     public static final int PAGE_ID_OFF = CRC_OFF + 4;
 
     /** */
-    private static final int RESERVED_1_OFF = PAGE_ID_OFF + 8;
+    public static final int ROTATED_ID_PART_OFF = PAGE_ID_OFF + 8;
 
     /** */
-    private static final int RESERVED_2_OFF = RESERVED_1_OFF + 8;
+    private static final int RESERVED_BYTE_OFF = ROTATED_ID_PART_OFF + 1;
+
+    /** */
+    private static final int RESERVED_SHORT_OFF = RESERVED_BYTE_OFF + 1;
+
+    /** */
+    private static final int RESERVED_INT_OFF = RESERVED_SHORT_OFF + 2;
+
+    /** */
+    private static final int RESERVED_2_OFF = RESERVED_INT_OFF + 4;
 
     /** */
     private static final int RESERVED_3_OFF = RESERVED_2_OFF + 8;
 
     /** */
-    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+reserved(3*8)
+    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+rotatedIdPart(1)+reserved(1+2+4+2*8)
 
     /* All the page types. */
 
@@ -191,7 +200,6 @@ public abstract class PageIO {
     /** */
     public static final short T_DATA_REF_METASTORAGE_LEAF = 23;
 
-
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
 
@@ -215,8 +223,8 @@ public abstract class PageIO {
      * @param ver Page format version.
      */
     protected PageIO(int type, int ver) {
-        assert ver > 0 && ver < 65535: ver;
-        assert type > 0 && type < 65535: type;
+        assert ver > 0 && ver < 65535 : ver;
+        assert type > 0 && type < 65535 : type;
 
         this.type = type;
         this.ver = ver;
@@ -245,7 +253,7 @@ public abstract class PageIO {
     public static void setType(long pageAddr, int type) {
         PageUtils.putShort(pageAddr, TYPE_OFF, (short)type);
 
-        assert getType(pageAddr) == type;
+        assert getType(pageAddr) == type : getType(pageAddr);
     }
 
     /**
@@ -268,7 +276,7 @@ public abstract class PageIO {
      * @param pageAddr Page address.
      * @param ver Version.
      */
-    private static void setVersion(long pageAddr, int ver) {
+    protected static void setVersion(long pageAddr, int ver) {
         PageUtils.putShort(pageAddr, VER_OFF, (short)ver);
 
         assert getVersion(pageAddr) == ver;
@@ -298,6 +306,24 @@ public abstract class PageIO {
         PageUtils.putLong(pageAddr, PAGE_ID_OFF, pageId);
 
         assert getPageId(pageAddr) == pageId;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Rotated page ID part.
+     */
+    public static int getRotatedIdPart(long pageAddr) {
+        return PageUtils.getUnsignedByte(pageAddr, ROTATED_ID_PART_OFF);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param rotatedIdPart Rotated page ID part.
+     */
+    public static void setRotatedIdPart(long pageAddr, int rotatedIdPart) {
+        PageUtils.putUnsignedByte(pageAddr, ROTATED_ID_PART_OFF, rotatedIdPart);
+
+        assert getRotatedIdPart(pageAddr) == rotatedIdPart;
     }
 
     /**
@@ -416,7 +442,7 @@ public abstract class PageIO {
         setPageId(pageAddr, pageId);
         setCrc(pageAddr, 0);
 
-        PageUtils.putLong(pageAddr, RESERVED_1_OFF, 0L);
+        PageUtils.putLong(pageAddr, ROTATED_ID_PART_OFF, 0L); // 1 + reserved(1+2+4)
         PageUtils.putLong(pageAddr, RESERVED_2_OFF, 0L);
         PageUtils.putLong(pageAddr, RESERVED_3_OFF, 0L);
     }
@@ -580,7 +606,7 @@ public abstract class PageIO {
      * @param pageSize Page size.
      * @param sb Sb.
      */
-    protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException ;
+    protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException;
 
     /**
      * @param addr Address.

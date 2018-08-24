@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.TreeMap;
 import java.util.UUID;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -117,5 +119,14 @@ class ZkDiscoveryEventsData implements Serializable {
         assert old == null : old;
 
         evt.initRemainingAcks(nodes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ZkDiscoveryEventsData.class, this,
+            "topVer", topVer,
+            "evtIdGen", evtIdGen,
+            "procCustEvt", procCustEvt,
+            "evts", evts);
     }
 }

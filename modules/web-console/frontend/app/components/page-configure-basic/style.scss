@@ -46,31 +46,6 @@ page-configure-basic {
         }
     }
 
-    .pcb-buttons-group {
-        display: flex;
-        flex-direction: row;
-
-        &>*+* {
-            margin-left: 10px;
-        }
-
-        .link-primary + .link-primary {
-            margin-left: 40px;
-        }
-    }
-
-    .pcb-select-existing-cache {
-        position: relative;
-
-        button {
-            background: none;
-            border: none;
-            padding: 0;
-            margin: 0;
-            outline: none !important;
-        }
-    }
-
     .pcb-section-notification {
         font-size: 14px;
         color: #757575;
@@ -82,33 +57,6 @@ page-configure-basic {
         margin-bottom: 7px;
         font-size: 16px;
         line-height: 19px;
-    }
-
-    .pcb-memory-size {
-        .input-tip {
-            display: flex;
-            flex-direction: row;
-
-            .form-control {
-                border-top-right-radius: 0;
-                border-bottom-right-radius: 0;
-            }
-
-            .btn-ignite {
-                border-top-left-radius: 0;
-                border-bottom-left-radius: 0;
-                padding-top: 0;
-                padding-bottom: 0;
-                flex: 0 0 auto;
-                width: 60px !important;
-            }
-        }
-    }
-
-    .pcb-form-field-size {
-        .form-field-feedback {
-            left: -63px;
-        }
     }
 
     .pcb-form-main-buttons {
@@ -126,7 +74,7 @@ page-configure-basic {
         box-shadow: 0px -2px 4px -1px rgba(0, 0, 0, 0.2);
     }
 
-    .form-field-checkbox {
+    .form-field__checkbox {
         margin-top: auto;
         margin-bottom: 8px;
     }
@@ -155,6 +103,9 @@ page-configure-basic {
             &>.pc-form-grid-col-120 {
                 flex: 0 0 100%;
             }
+            &>.pc-form-grid-col-free {
+                flex: 1;
+            }
         }
         @media(max-width: 992px) {
             &>.pc-form-grid-col-10 {
@@ -176,6 +127,9 @@ page-configure-basic {
             &>.pc-form-grid-col-60,
             &>.pc-form-grid-col-120 {
                 flex: 0 0 100%;
+            }
+            &>.pc-form-grid-col-free {
+                flex: 1;
             }
         }
     }

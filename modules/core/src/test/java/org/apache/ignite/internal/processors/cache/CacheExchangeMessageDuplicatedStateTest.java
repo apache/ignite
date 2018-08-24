@@ -143,13 +143,6 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

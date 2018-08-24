@@ -34,8 +34,6 @@ public class TxRollbackOnTimeoutNoDeadlockDetectionTest extends TxRollbackOnTime
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS);
     }
 
@@ -43,9 +41,5 @@ public class TxRollbackOnTimeoutNoDeadlockDetectionTest extends TxRollbackOnTime
     @Override protected void validateDeadlockException(Exception e) {
         assertEquals("TimeoutException is expected",
             TransactionTimeoutException.class, e.getCause().getClass());
-    }
-
-    @Override public void testRandomMixedTxConfigurations() throws Exception {
-        super.testRandomMixedTxConfigurations();
     }
 }

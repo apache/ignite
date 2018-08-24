@@ -72,6 +72,7 @@ import org.h2.value.DataType;
 /**
  * Tests for CREATE/DROP TABLE.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
     private static final int CLIENT = 2;
@@ -107,13 +108,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC));
 
         client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_BACKUPS).setBackups(DFLT_BACKUPS));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -717,6 +711,23 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, "Table already exists: Person");
+    }
+
+    /**
+     * Test that attempting to use a non-existing column name for the primary key when {@code CREATE TABLE}
+     * yields an error.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableWithWrongColumnNameAsKey() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
+                    ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"c_ity\")) WITH " +
+                    "\"template=cache\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "PRIMARY KEY column is not defined: c_ity");
     }
 
     /**
@@ -1412,24 +1423,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that {@code CREATE TABLE} in non-public schema causes an exception.
-     *
-     * @throws Exception if failed.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testCreateTableInNonPublicSchema() throws Exception {
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                execute("CREATE TABLE \"cache_idx\".\"Person\" (\"id\" int, \"city\" varchar," +
-                    " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-                    "\"template=cache\"");
-
-                return null;
-            }
-        }, IgniteSQLException.class, "CREATE TABLE can only be executed on PUBLIC schema.");
-    }
-
-    /**
      * Execute {@code CREATE TABLE} w/given params expecting a particular error.
      * @param params Engine parameters.
      * @param expErrMsg Expected error message.
@@ -1459,17 +1452,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, expErrMsg);
-    }
-
-    /**
-     * Test that {@code DROP TABLE} on non-public schema causes an exception.
-     *
-     * @throws Exception if failed.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testDropTableNotPublicSchema() throws Exception {
-       assertDdlCommandThrows("DROP TABLE \"cache_idx\".\"Person\"",
-           "DROP TABLE can only be executed on PUBLIC schema.");
     }
 
     /**

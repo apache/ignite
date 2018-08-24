@@ -17,11 +17,14 @@
 
 package org.apache.ignite.ml.tree.impurity.gini;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
@@ -29,7 +32,21 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for {@link GiniImpurityMeasureCalculator}.
  */
+@RunWith(Parameterized.class)
 public class GiniImpurityMeasureCalculatorTest {
+    /** Parameters. */
+    @Parameterized.Parameters(name = "Use index {0}")
+    public static Iterable<Boolean[]> data() {
+        return Arrays.asList(
+            new Boolean[] {true},
+            new Boolean[] {false}
+        );
+    }
+
+    /** Use index. */
+    @Parameterized.Parameter
+    public boolean useIndex;
+
     /** */
     @Test
     public void testCalculate() {
@@ -39,9 +56,9 @@ public class GiniImpurityMeasureCalculatorTest {
         Map<Double, Integer> encoder = new HashMap<>();
         encoder.put(0.0, 0);
         encoder.put(1.0, 1);
-        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder);
+        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIndex);
 
-        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels));
+        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIndex), fs -> true, 0);
 
         assertEquals(2, impurity.length);
 
@@ -71,9 +88,9 @@ public class GiniImpurityMeasureCalculatorTest {
         Map<Double, Integer> encoder = new HashMap<>();
         encoder.put(0.0, 0);
         encoder.put(1.0, 1);
-        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder);
+        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIndex);
 
-        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels));
+        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIndex), fs -> true, 0);
 
         assertEquals(1, impurity.length);
 
@@ -94,7 +111,7 @@ public class GiniImpurityMeasureCalculatorTest {
         encoder.put(1.0, 1);
         encoder.put(2.0, 2);
 
-        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder);
+        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIndex);
 
         assertEquals(0, calculator.getLabelCode(0.0));
         assertEquals(1, calculator.getLabelCode(1.0));

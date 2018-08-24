@@ -115,6 +115,12 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.AreEqual(1, ldr.PerNodeBufferSize);
                 ldr.PerNodeBufferSize = 2;
                 Assert.AreEqual(2, ldr.PerNodeBufferSize);
+                
+                Assert.AreEqual(DataStreamerDefaults.DefaultPerThreadBufferSize, ldr.PerThreadBufferSize);
+                ldr.PerThreadBufferSize = 1;
+                Assert.AreEqual(1, ldr.PerThreadBufferSize);
+                ldr.PerThreadBufferSize = 2;
+                Assert.AreEqual(2, ldr.PerThreadBufferSize);
 
                 Assert.AreEqual(0, ldr.PerNodeParallelOperations);
                 var ops = DataStreamerDefaults.DefaultParallelOperationsMultiplier *
@@ -271,6 +277,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.IsFalse(task.IsCompleted);
 
                 ldr.PerNodeBufferSize = 2;
+                ldr.PerThreadBufferSize = 1;
 
                 ldr.AddData(part2[0], part2[0]);
                 ldr.AddData(part1[1], part1[1]);
@@ -356,6 +363,8 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestFinalizer()
         {
+            Assert.Fail("https://issues.apache.org/jira/browse/IGNITE-8731");
+
             var streamer = _grid.GetDataStreamer<int, int>(CacheName);
             var streamerRef = new WeakReference(streamer);
 

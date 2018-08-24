@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import 'babel-polyfill';
 import 'jquery';
 import 'angular';
 import 'angular-acl';
@@ -24,7 +23,6 @@ import 'angular-sanitize';
 import 'angular-strap';
 import 'angular-strap/dist/angular-strap.tpl';
 import 'angular-socket-io';
-import 'angular-retina';
 
 import 'angular-messages';
 import '@uirouter/angularjs';
