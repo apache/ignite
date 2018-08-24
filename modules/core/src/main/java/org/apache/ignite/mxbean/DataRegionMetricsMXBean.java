@@ -58,6 +58,10 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     @Override public long getTotalAllocatedPages();
 
     /** {@inheritDoc} */
+    @MXBeanDescription("Total number of allocated bytes.")
+    @Override public long getTotalAllocatedSize();
+
+    /** {@inheritDoc} */
     @MXBeanDescription("Allocation rate (pages per second) averaged across rateTimeInternal.")
     @Override public float getAllocationRate();
 
@@ -88,6 +92,26 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Number of pages residing in physical RAM.")
     @Override public long getPhysicalMemoryPages();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Number of bytes residing in physical RAM.")
+    @Override public long getPhysicalMemorySize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Checkpoint buffer size in pages.")
+    @Override public long getUsedCheckpointBufferPages();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Checkpoint buffer size in bytes.")
+    @Override public long getUsedCheckpointBufferSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Checkpoint buffer size in bytes.")
+    @Override public long getCheckpointBufferSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Page size in bytes.")
+    @Override public int getPageSize();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Number of pages read from last restart.")
