@@ -1951,7 +1951,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
                         @Override public void onTimeout() {
                             depExe.execute(new Runnable() {
-                                public void run() {
+                                @Override public void run() {
                                     onReassignmentFailed(topVer, retries);
                                 }
                             });

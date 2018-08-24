@@ -138,7 +138,7 @@ class TestValue {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(TestValue.class, this);
     }
 

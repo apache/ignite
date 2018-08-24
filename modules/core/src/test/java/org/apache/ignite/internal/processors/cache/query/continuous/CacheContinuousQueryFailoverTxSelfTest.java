@@ -38,7 +38,7 @@ public class CacheContinuousQueryFailoverTxSelfTest extends CacheContinuousQuery
     }
 
     /** {@inheritDoc} */
-    public void testNoEventLossOnTopologyChange() throws Exception {
+    @Override public void testNoEventLossOnTopologyChange() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-4015");
     }
 }

@@ -1248,7 +1248,7 @@ public class GridDhtPartitionDemander {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(RebalanceFuture.class, this);
         }
     }

@@ -42,14 +42,14 @@ public class GridCacheReplicatedDataStructuresFailoverSelfTest
     /**
      * @throws Exception If failed.
      */
-    public void testFairReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
+    @Override public void testFairReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-6454");
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
+    @Override public void testReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-6454");
     }
 }

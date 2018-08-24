@@ -86,7 +86,7 @@ public class IgniteTxMappingsImpl implements IgniteTxMappings {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(IgniteTxMappingsImpl.class, this);
     }
 }

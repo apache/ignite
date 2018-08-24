@@ -382,12 +382,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /** {@inheritDoc} */
-    public void perThreadBufferSize(int size) {
+    @Override public void perThreadBufferSize(int size) {
         bufLdrSzPerThread = size;
     }
 
     /** {@inheritDoc} */
-    public int perThreadBufferSize() {
+    @Override public int perThreadBufferSize() {
         return bufLdrSzPerThread;
     }
 

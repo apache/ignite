@@ -74,7 +74,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    public V get(K key) throws ClientException {
+    @Override public V get(K key) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
 
@@ -89,7 +89,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    public void put(K key, V val) throws ClientException {
+    @Override public void put(K key, V val) throws ClientException {
         if (key == null)
             throw new NullPointerException("key");
 

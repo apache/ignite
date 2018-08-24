@@ -837,7 +837,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    public int checkpointBufferPagesCount() {
+    @Override public int checkpointBufferPagesCount() {
         return 0;
     }
 }

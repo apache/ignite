@@ -43,12 +43,12 @@ public interface CacheDataRow extends CacheSearchRow, Storable {
     /**
      * @return Partition for this key.
      */
-    public int partition();
+    @Override public int partition();
 
     /**
      * @param link Link for this row.
      */
-    public void link(long link);
+    @Override public void link(long link);
 
     /**
      * @param key Key.

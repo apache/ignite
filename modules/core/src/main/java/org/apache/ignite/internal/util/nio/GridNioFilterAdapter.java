@@ -47,7 +47,7 @@ public abstract class GridNioFilterAdapter implements GridNioFilter {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return name;
     }
 

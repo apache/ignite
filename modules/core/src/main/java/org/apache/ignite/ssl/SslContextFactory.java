@@ -477,7 +477,7 @@ public class SslContextFactory implements Factory<SSLContext> {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return getClass().getSimpleName() + parameters();
     }
 

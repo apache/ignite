@@ -224,7 +224,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /**
      * @param txNodes Transaction nodes.
      */
-    public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
+    @Override public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
         this.txNodes = txNodes;
     }
 

@@ -164,7 +164,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     }
 
     /** {@inheritDoc} */
-    public boolean equals(Object other) {
+    @Override public boolean equals(Object other) {
         if (other == this)
             return true;
 

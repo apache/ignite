@@ -380,7 +380,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(DirectMessageReader.class, this);
     }
 
@@ -420,7 +420,7 @@ public class DirectMessageReader implements MessageReader {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(StateItem.class, this);
         }
     }

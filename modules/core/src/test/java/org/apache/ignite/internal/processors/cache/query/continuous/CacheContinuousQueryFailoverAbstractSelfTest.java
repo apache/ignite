@@ -2341,7 +2341,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     private Thread nodeRestartThread(final int restartCycles, final long initDelay, final long restartDelay) {
         Thread t = new Thread(new Runnable() {
-            public void run() {
+            @Override public void run() {
                 sleep(initDelay);
 
                 try {

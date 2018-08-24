@@ -141,7 +141,7 @@ public class VisorSuppressedError extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(VisorSuppressedError.class, this);
     }
 }

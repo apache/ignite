@@ -1231,12 +1231,12 @@ public class GridClientNodeMetricsBean implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    public int hashCode() {
+    @Override public int hashCode() {
         return System.identityHashCode(this);
     }
 
     /** {@inheritDoc} */
-    public boolean equals(Object obj) {
+    @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;
 

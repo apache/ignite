@@ -339,12 +339,12 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
         }
 
         /** {@inheritDoc} */
-        public void onTimeout() {
+        @Override public void onTimeout() {
             cancel();
         }
 
         /** {@inheritDoc} */
-        public void onConnected(UUID rmtNodeId) {
+        @Override public void onConnected(UUID rmtNodeId) {
             finish(nodeId(nodeIdx).equals(rmtNodeId));
         }
 
