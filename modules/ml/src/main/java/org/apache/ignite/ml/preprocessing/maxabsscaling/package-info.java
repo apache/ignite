@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains Min Max Scaler preprocessor.
+ * Contains Max Abs Scaler preprocessor.
  */
 package org.apache.ignite.ml.preprocessing.maxabsscaling;
