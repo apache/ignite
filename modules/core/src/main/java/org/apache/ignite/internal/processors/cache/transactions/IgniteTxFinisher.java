@@ -7,6 +7,8 @@ import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -17,6 +19,8 @@ public class IgniteTxFinisher {
     private static final boolean TPP_ENABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ENABLE_THREAD_PER_PARTITION, true);
 
     private static final int DEDICATED_WORKER_IDX = 0;
+
+    private static final int REMOTE_TX_DEDICATED_WORKER_IDX = 1;
 
     private final IgniteLogger log;
 
@@ -44,10 +48,12 @@ public class IgniteTxFinisher {
             return;
         }
 
-        cctx.kernalContext().getStripedExecutorService().executeDedicated(DEDICATED_WORKER_IDX, () -> {
+        boolean remoteTx = (tx instanceof GridDhtTxRemote) || (tx instanceof GridNearTxRemote);
+
+        cctx.kernalContext().getStripedExecutorService().executeDedicated(remoteTx ? REMOTE_TX_DEDICATED_WORKER_IDX : DEDICATED_WORKER_IDX, () -> {
             GridCacheVersion txId = tx.xidVersion();
 
-            if (txId != null) {
+            if (!remoteTx) {
                 boolean isNew = !txOrdering.containsKey(txId);
 
                 if (!txOrdering.containsKey(txId)) {

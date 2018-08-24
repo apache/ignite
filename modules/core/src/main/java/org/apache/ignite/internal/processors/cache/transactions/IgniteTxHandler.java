@@ -69,6 +69,7 @@ import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedExceptio
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -1102,12 +1103,16 @@ public class IgniteTxHandler {
                 GridNearTxRemote nearRemoteTx = nearTx;
                 GridDhtTxPrepareResponse prepRes = res;
 
-                if (dhtTx != null)
+                if (dhtTx != null) {
                     ctx.tm().finisher().execute(dhtTx, () -> processPrepareOnPhase(nodeId, req, remoteTx, nearRemoteTx, prepRes));
-                else if (nearTx != null)
+
+                    return;
+                }
+                else if (nearTx != null) {
                     ctx.tm().finisher().execute(nearTx, () -> processPrepareOnPhase(nodeId, req, remoteTx, nearRemoteTx, prepRes));
 
-                return;
+                    return;
+                }
             }
         }
         catch (IgniteCheckedException e) {
@@ -1251,8 +1256,9 @@ public class IgniteTxHandler {
                     }
                 });
             }
-            else
+            else {
                 sendReply(nodeId, req, response, dhtTx, nearTx);
+            }
         }));
     }
 
@@ -1318,45 +1324,53 @@ public class IgniteTxHandler {
         final GridNearTxRemote nearTx0 = nearTx;
 
         ctx.tm().finisher().execute(dhtTx, () -> {
-            finish(nodeId, dhtTx, req);
+            GridCompoundFuture colocatedFut = new GridCompoundFuture();
+
+            colocatedFut.add(finish(nodeId, dhtTx, req));
 
             if (nearTx0 != null)
-                finish(nodeId, nearTx0, req);
+                colocatedFut.add(finish(nodeId, nearTx0, req));
+
+            colocatedFut.markInitialized();
 
             if (req.replyRequired()) {
-                IgniteInternalFuture completeFut;
+                colocatedFut.listen(f -> {
+                    IgniteInternalFuture completeFut;
 
-                IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ?
-                    null : dhtTx.done() ? null : dhtTx.finishFuture();
+                    IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ?
+                        null : dhtTx.done() ? null : dhtTx.finishFuture();
 
-                final IgniteInternalFuture<IgniteInternalTx> nearFin = nearTx0 == null ?
-                    null : nearTx0.done() ? null : nearTx0.finishFuture();
+                    final IgniteInternalFuture<IgniteInternalTx> nearFin = nearTx0 == null ?
+                        null : nearTx0.done() ? null : nearTx0.finishFuture();
 
-                if (dhtFin != null && nearFin != null) {
-                    GridCompoundFuture fut = new GridCompoundFuture();
+                    if (dhtFin != null && nearFin != null) {
+                        GridCompoundFuture fut = new GridCompoundFuture();
 
-                    fut.add(dhtFin);
-                    fut.add(nearFin);
+                        fut.add(dhtFin);
+                        fut.add(nearFin);
 
-                    fut.markInitialized();
+                        fut.markInitialized();
 
-                    completeFut = fut;
-                }
-                else
-                    completeFut = dhtFin != null ? dhtFin : nearFin;
+                        completeFut = fut;
+                    }
+                    else
+                        completeFut = dhtFin != null ? dhtFin : nearFin;
 
-                if (completeFut != null) {
-                    completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                            sendReply(nodeId, req, true, nearTxId);
-                        }
-                    });
-                }
-                else
-                    sendReply(nodeId, req, true, nearTxId);
+                    if (completeFut != null) {
+                        completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                            @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                sendReply(nodeId, req, true, nearTxId);
+                            }
+                        });
+                    }
+                    else {
+                        sendReply(nodeId, req, true, nearTxId);
+                    }
+                });
             }
-            else
+            else {
                 sendReply(nodeId, req, true, null);
+            }
 
             assert req.txState() != null || (dhtTx == null && nearTx0 == null) : req + " tx=" + dhtTx + " nearTx=" + nearTx0;
         });
@@ -1367,7 +1381,7 @@ public class IgniteTxHandler {
      * @param tx Transaction.
      * @param req Request.
      */
-    protected void finish(
+    protected IgniteInternalFuture finish(
         UUID nodeId,
         IgniteTxRemoteEx tx,
         GridDhtTxFinishRequest req
@@ -1387,7 +1401,7 @@ public class IgniteTxHandler {
                 log.debug("Received finish request for non-existing transaction (added to completed set) " +
                     "[senderNodeId=" + nodeId + ", res=" + req + ']');
 
-            return;
+            return new GridFinishedFuture<>();
         }
         else if (log.isDebugEnabled())
             log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
@@ -1409,9 +1423,13 @@ public class IgniteTxHandler {
 
                 IgniteTxCommitFuture commitFut = tx.startCommit();
 
+                GridFutureAdapter fut = new GridFutureAdapter();
+
                 commitFut.listen(f -> ctx.tm().finisher().execute(tx, () -> {
                     try {
                         tx.finishCommit(commitFut);
+
+                        fut.onDone();
                     }
                     catch (Throwable e) {
                         U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
@@ -1429,17 +1447,24 @@ public class IgniteTxHandler {
                             catch (IgniteCheckedException ex) {
                                 U.error(log, "Failed to invalidate transaction: " + tx, ex);
                             }
+                            finally {
+                                fut.onDone();
+                            }
                         }));
 
                         if (e instanceof Error)
                             throw (Error)e;
                     }
                 }));
+
+                return fut;
             }
             else {
                 tx.doneRemote(req.baseVersion(), null, null, null);
 
                 tx.rollbackRemoteTx();
+
+                return new GridFinishedFuture<>();
             }
         }
         catch (Throwable e) {
@@ -1448,6 +1473,8 @@ public class IgniteTxHandler {
             // Mark transaction for invalidate.
             tx.invalidate(true);
             tx.systemInvalidate(true);
+
+            GridFutureAdapter fut = new GridFutureAdapter();
 
             IgniteTxCommitFuture commitFut = tx.startCommit();
 
@@ -1458,10 +1485,15 @@ public class IgniteTxHandler {
                 catch (IgniteCheckedException ex) {
                     U.error(log, "Failed to invalidate transaction: " + tx, ex);
                 }
+                finally {
+                    fut.onDone();
+                }
             }));
 
             if (e instanceof Error)
                 throw (Error)e;
+
+            return fut;
         }
     }
 

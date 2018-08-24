@@ -1744,6 +1744,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
          */
         @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(GridDhtTxPrepareResponse res) {
+            log.warning("Responsed on -> " + this);
+
             if (res.error() != null)
                 // Fail the whole compound future.
                 onError(res.error());

@@ -1,6 +1,5 @@
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -11,7 +10,6 @@ public class CacheEntryExecutor {
     private final StripedExecutor executor;
 
     private final GridCacheSharedContext cctx;
-
 
     public CacheEntryExecutor(StripedExecutor executor, GridCacheSharedContext cctx) {
         this.executor = executor;
@@ -58,7 +56,7 @@ public class CacheEntryExecutor {
 
                             assert entry0 != null;
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (Throwable e) {
                             future.onDone(e);
 
                             break;
@@ -70,7 +68,7 @@ public class CacheEntryExecutor {
                         break;
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (Throwable e) {
                     future.onDone(e);
 
                     break;

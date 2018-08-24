@@ -1170,7 +1170,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** */
-    private void recordStateChangedEvent(TransactionState state){
+    private void recordStateChangedEvent(TransactionState state) {
         if (!near() || !local()) // Covers only GridNearTxLocal's state changes.
             return;
 
@@ -1534,7 +1534,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected IgniteBiTuple<GridCacheOperation, CacheObject> applyTransformClosures(
         IgniteTxEntry txEntry,
         boolean metrics,
-        @Nullable GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        @Nullable GridCacheReturn ret
+    ) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert txEntry.op() != TRANSFORM || !F.isEmpty(txEntry.entryProcessors()) : txEntry;
 
         GridCacheContext cacheCtx = txEntry.context();
@@ -1682,8 +1683,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         IgniteTxEntry txEntry,
         CacheObject newVal,
         GridCacheVersion newVer,
-        GridCacheEntryEx old)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        GridCacheEntryEx old
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert newVer != null;
 
         // 1. Calculate TTL and expire time.

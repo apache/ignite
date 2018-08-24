@@ -7,6 +7,18 @@ public class IgniteTxCommitEntriesFuture extends GridCompoundFuture<GridCacheUpd
 
     public static final IgniteTxCommitEntriesFuture FINISHED = finished();
 
+    public static final IgniteTxCommitEntriesFuture EMPTY = finished();
+
+    private static IgniteTxCommitEntriesFuture empty() {
+        IgniteTxCommitEntriesFuture fut = new IgniteTxCommitEntriesFuture();
+
+        fut.markInitialized();
+
+        fut.onDone();
+
+        return fut;
+    }
+
     public static IgniteTxCommitEntriesFuture finished() {
         IgniteTxCommitEntriesFuture fut = new IgniteTxCommitEntriesFuture();
 

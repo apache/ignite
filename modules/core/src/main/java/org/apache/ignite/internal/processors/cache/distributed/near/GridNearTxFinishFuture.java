@@ -411,9 +411,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
-/*
             log.warning("One-phase commit -> " + cctx.tm().finisher().order(tx) + " " + tx);
-*/
 
             checkBackup();
 
@@ -478,9 +476,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private void doFinish(boolean commit, boolean clearThreadMap) {
         IgniteTxCommitFuture commitFuture = tx.startLocalCommit(commit, clearThreadMap);
 
-/*
         log.warning("Local commit started " + cctx.tm().finisher().order(tx) + " " + commitFuture + " " + commitFuture.started() + " " + commitFuture.async() + " " + commitFuture.commitEntriesFuture());
-*/
 
         if (commitFuture.async())
             commitFuture.listen(f -> cctx.tm().finisher().execute(tx, () -> doFinishAsync(commitFuture, commit, clearThreadMap)));
@@ -496,6 +492,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      */
     private void doFinishAsync(IgniteTxCommitFuture commitFuture, boolean commit, boolean clearThreadMap) {
         try {
+            log.warning("Local commit finished -> " + cctx.tm().finisher().order(tx) + " " + commitFuture + " " + commitFuture.started());
+
             if (commitFuture.started()) {
                 tx.finishLocalCommit(commitFuture, commit, clearThreadMap);
 
@@ -521,6 +519,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         finish(mappings.mappings(), commit, !clearThreadMap);
                 }
 
+                cctx.tm().finisher().finishSend(tx);
+
                 markInitialized();
             }
             else
@@ -536,7 +536,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             onDone(e);
         }
         finally {
-            cctx.tm().finisher().finishSend(tx);
+            if (!initialized())
+                cctx.tm().finisher().finishSend(tx);
 
             if (commit &&
                 tx.onePhaseCommit() &&

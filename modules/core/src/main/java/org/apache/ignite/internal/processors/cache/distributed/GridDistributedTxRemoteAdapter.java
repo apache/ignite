@@ -331,23 +331,21 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         if (!hasWriteKey(entry.txKey()))
             return false;
 
-        cctx.tm().finisher().execute(this, () -> {
-            IgniteTxCommitFuture commitFut = startCommit();
+        IgniteTxCommitEntriesFuture commitFut = startCommitEntries();
 
-            commitFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
-                try {
-                    finishCommit(commitFut);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to commit remote transaction: " + this, e);
+        commitFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
+            try {
+                finishCommitEntries(commitFut);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to commit remote transaction: " + this, e);
 
-                    invalidate(true);
-                    systemInvalidate(true);
+                invalidate(true);
+                systemInvalidate(true);
 
-                    rollbackRemoteTx();
-                }
-            }));
-        });
+                rollbackRemoteTx();
+            }
+        }));
 
         return true;
     }
@@ -420,18 +418,31 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      */
     @SuppressWarnings({"CatchGenericClass"})
     private IgniteTxCommitEntriesFuture startCommitEntries() {
-        if (state() != COMMITTING)
-            return IgniteTxCommitEntriesFuture.FINISHED;
+        if (state() != COMMITTING) {
+//            U.dumpStack(log, "Start commit has end due to not COMMITING state -> " + this);
 
-        if (checkLocks())
             return IgniteTxCommitEntriesFuture.FINISHED;
+        }
+
+        if (checkLocks()) {
+            log.warning("Start commit has end due to locks -> " + this);
+
+            return IgniteTxCommitEntriesFuture.FINISHED;
+        }
 
         Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
 
-        if (F.isEmpty(writeMap))
-            return IgniteTxCommitEntriesFuture.FINISHED;
+        if (!COMMIT_ALLOWED_UPD.compareAndSet(this, 0, 1)) {
+            log.warning("Start commit has end due to twice entered -> " + this);
 
-        IgniteCheckedException err = null;
+            return IgniteTxCommitEntriesFuture.FINISHED;
+        }
+
+        if (F.isEmpty(writeMap)) {
+            log.warning("Write map is empty -> " + this);
+
+            return IgniteTxCommitEntriesFuture.EMPTY;
+        }
 
         GridCacheReturnCompletableWrapper wrapper = null;
 
@@ -662,6 +673,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 }
             }
             catch (Throwable t) {
+                commitEntriesFut.markInitialized();
+
                 commitEntriesFut.onDone(t);
 
                 return commitEntriesFut;
@@ -719,12 +732,20 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     private void finishCommitEntries(IgniteTxCommitEntriesFuture commitEntriesFuture) throws IgniteCheckedException {
         assert commitEntriesFuture.isDone();
 
-        if (state() == COMMITTED)
+        cctx.tm().finisher().check();
+
+        if (state() == COMMITTED) {
+            log.warning("Already committed");
+
             return;
+        }
 
         // Nothing to commit.
-        if (!commitEntriesFuture.initialized())
+        if (!commitEntriesFuture.initialized()) {
+            log.warning("Nothing to commit -> " + commitEntriesFuture);
+
             return;
+        }
 
         IgniteCheckedException err = null;
 
@@ -812,6 +833,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (optimistic())
                 state(PREPARED);
 
+            log.warning("I'm here 1");
+
             if (!state(COMMITTING)) {
                 TransactionState state = state();
 
@@ -832,6 +855,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 return new IgniteTxCommitFuture(true);
             }
 
+            log.warning("I'm here 2");
+
             return new IgniteTxCommitFuture(startCommitEntries(), true);
         }
         catch (Throwable t) {
@@ -839,13 +864,14 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         }
     }
 
-    @Override public void finishCommit(IgniteTxCommitFuture commitFuture) throws IgniteCheckedException {
-        assert commitFuture.isDone();
+    /** {@inheritDoc} */
+    @Override public void finishCommit(IgniteTxCommitFuture commitFut) throws IgniteCheckedException {
+        assert commitFut.isDone();
 
-        commitFuture.get(); // Check for errors.
+        commitFut.get(); // Check for errors.
 
-        if (commitFuture.commitEntriesFuture() != null)
-            finishCommitEntries(commitFuture.commitEntriesFuture());
+        if (commitFut.commitEntriesFuture() != null)
+            finishCommitEntries(commitFut.commitEntriesFuture());
     }
 
     /**
@@ -854,7 +880,23 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @throws IgniteCheckedException If commit failed.
      */
     public void forceCommit() throws IgniteCheckedException {
-        commitAsync();
+        log.warning("Commit forced");
+
+        IgniteTxCommitEntriesFuture commitFut = startCommitEntries();
+
+        commitFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
+            try {
+                finishCommitEntries(commitFut);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to commit remote transaction: " + this, e);
+
+                invalidate(true);
+                systemInvalidate(true);
+
+                rollbackRemoteTx();
+            }
+        }));
     }
 
     /** {@inheritDoc} */

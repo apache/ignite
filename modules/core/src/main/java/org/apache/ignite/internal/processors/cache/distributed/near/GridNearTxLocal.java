@@ -3296,27 +3296,34 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
 
-        prepareFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
-            try {
-                // Make sure that here are no exceptions.
-                prepareFut.get();
+        log.warning("I'm here 7 -> " + prepareFut);
 
-                fut0.finish(true, true, false);
-            }
-            catch (Error | RuntimeException e) {
-                COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
+        prepareFut.listen(f -> {
+            log.warning("I'm here 8");
 
-                fut0.finish(false, true, false);
+            cctx.tm().finisher().execute(this, () -> {
+                try {
+                    // Make sure that here are no exceptions.
+                    prepareFut.get();
 
-                throw e;
-            }
-            catch (IgniteCheckedException e) {
-                COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
+                    log.warning("I'm here 8");
 
-                if (!(e instanceof NodeStoppingException))
-                    fut0.finish(false, true, true);
-            }
-        }));
+                    fut0.finish(true, true, false);
+                } catch (Error | RuntimeException e) {
+                    COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
+
+                    fut0.finish(false, true, false);
+
+                    throw e;
+                } catch (IgniteCheckedException e) {
+                    COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
+
+                    if (!(e instanceof NodeStoppingException))
+                        fut0.finish(false, true, true);
+                }
+            });
+
+        });
 
         return fut0;
     }

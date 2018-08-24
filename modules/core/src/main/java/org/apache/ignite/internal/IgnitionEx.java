@@ -1831,7 +1831,7 @@ public class IgnitionEx {
                     }
                 },
                 workerRegistry,
-                1);
+                2);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
