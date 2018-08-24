@@ -21,12 +21,13 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Preprocessing function that makes maxabsscaling. From mathematical point of view it's the following function which
- * is applied to every element in dataset:
+ * The preprocessing function that makes maxabsscaling, transforms features to the scale {@code[-1,+1]}.
+ * From mathematical point of view it's the following function which
+ * is applied to every element in a dataset:
  *
  * {@code a_i = a_i / maxabs_i for all i},
  *
- * where {@code i} is a number of column, {@code maxabs_i} is the value of the absolute maximum element in this columns.
+ * where {@code i} is a number of column, {@code maxabs_i} is the value of the absolute maximum element in this column.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
