@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -171,7 +173,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
     private void assertColumnTypes(List<?> rowData, Class<?> ... colTypes) {
         for (int i = 0; i < colTypes.length; i++) {
             if (rowData.get(i) != null)
-                assertEquals("Column " + i + " type", rowData.get(i).getClass(), colTypes[i]);
+                assertEquals("Column " + i + " type", colTypes[i], rowData.get(i).getClass());
         }
     }
 
@@ -276,6 +278,58 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(0,
             execSql("SELECT NODE_ID FROM IGNITE.NODE_ATTRIBUTES WHERE NODE_ID = ? AND NAME = '-'",
                 cliNodeId).size());
+
+        // Check node metrics view.
+        List<List<?>> resMetrics = execSql("SELECT NODE_ID, LAST_UPDATE_TIME, " +
+            "MAX_ACTIVE_JOBS, CUR_ACTIVE_JOBS, AVG_ACTIVE_JOBS, " +
+            "MAX_WAITING_JOBS, CUR_WAITING_JOBS, AVG_WAITING_JOBS, " +
+            "MAX_REJECTED_JOBS, CUR_REJECTED_JOBS, AVG_REJECTED_JOBS, TOTAL_REJECTED_JOBS, " +
+            "MAX_CANCELED_JOBS, CUR_CANCELED_JOBS, AVG_CANCELED_JOBS, TOTAL_CANCELED_JOBS, " +
+            "MAX_JOBS_WAIT_TIME, CUR_JOBS_WAIT_TIME, AVG_JOBS_WAIT_TIME, " +
+            "MAX_JOBS_EXEC_TIME, CUR_JOBS_EXEC_TIME, AVG_JOBS_EXEC_TIME, TOTAL_JOBS_EXEC_TIME, " +
+            "TOTAL_EXECUTED_JOBS, TOTAL_EXECUTED_TASKS, " +
+            "TOTAL_BUSY_TIME, TOTAL_IDLE_TIME, CUR_IDLE_TIME, BUSY_TIME_PERCENTAGE, IDLE_TIME_PERCENTAGE, " +
+            "TOTAL_CPU, CUR_CPU_LOAD, AVG_CPU_LOAD, CUR_GC_CPU_LOAD, " +
+            "HEAP_MEMORY_INIT, HEAP_MEMORY_USED, HEAP_MEMORY_COMMITED, HEAP_MEMORY_MAX, HEAP_MEMORY_TOTAL, " +
+            "NONHEAP_MEMORY_INIT, NONHEAP_MEMORY_USED, NONHEAP_MEMORY_COMMITED, NONHEAP_MEMORY_MAX, NONHEAP_MEMORY_TOTAL, " +
+            "UPTIME, JVM_START_TIME, NODE_START_TIME, LAST_DATA_VERSION, " +
+            "CUR_THREAD_CNT, MAX_THREAD_CNT, TOTAL_THREAD_CNT, CUR_DAEMON_THREAD_CNT, " +
+            "SENT_MSG_CNT, SENT_BYTES_CNT, RECEIVED_MSG_CNT, RECEIVED_BYTES_CNT, " +
+            "OUTBOUND_MSG_QUEUE FROM IGNITE.NODE_METRICS");
+
+        assertColumnTypes(resMetrics.get(0), UUID.class, Timestamp.class,
+            Integer.class, Integer.class, Float.class, // Active jobs.
+            Integer.class, Integer.class, Float.class, // Waiting jobs.
+            Integer.class, Integer.class, Float.class, Integer.class, // Rejected jobs.
+            Integer.class, Integer.class, Float.class, Integer.class, // Canceled jobs.
+            Time.class, Time.class, Time.class, // Jobs wait time.
+            Time.class, Time.class, Time.class, Time.class, // Jobs execute time.
+            Integer.class, Integer.class, // Executed jobs/task.
+            Time.class, Time.class, Time.class, Float.class, Float.class, // Busy/idle time.
+            Integer.class, Double.class, Double.class, Double.class, // CPU.
+            Long.class, Long.class, Long.class, Long.class, Long.class, // Heap memory.
+            Long.class, Long.class, Long.class, Long.class, Long.class, // Nonheap memory.
+            Time.class, Timestamp.class, Timestamp.class, Long.class, // Uptime.
+            Integer.class, Integer.class, Long.class, Integer.class, // Threads.
+            Integer.class, Long.class, Integer.class, Long.class, // Sent/received messages.
+            Integer.class); // Outbound message queue.
+
+        assertEquals(3, resAll.size());
+
+        // Check join with nodes.
+        assertEquals(3, execSql("SELECT NM.LAST_UPDATE_TIME FROM IGNITE.NODES N " +
+            "JOIN IGNITE.NODE_METRICS NM ON N.ID = NM.NODE_ID").size());
+
+        // Check index on NODE_ID column.
+        assertEquals(1, execSql("SELECT LAST_UPDATE_TIME FROM IGNITE.NODE_METRICS WHERE NODE_ID = ?",
+            cliNodeId).size());
+
+        // Check malformed value for indexed column.
+        assertEquals(0, execSql("SELECT LAST_UPDATE_TIME FROM IGNITE.NODE_METRICS WHERE NODE_ID = ?",
+            "-").size());
+
+        // Check quick-count.
+        assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.NODE_METRICS").get(0).get(0));
     }
 
     /**
