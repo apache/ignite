@@ -425,6 +425,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /**
      * @param setId Set ID.
      * @param topVer Topology version.
+     * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")

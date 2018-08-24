@@ -128,7 +128,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         assertSetIteratorsCleared();
 
         for (int i = 0; i < gridCount(); i++) {
-            for (IgniteInternalCache cache : grid(i).context().cache().caches()) {
+            IgniteEx grid = grid(i);
+
+            for (IgniteInternalCache cache : grid.cachesx()) {
                 CacheDataStructuresManager dsMgr = cache.context().dataStructures();
 
                 Map map = GridTestUtils.getFieldValue(dsMgr, "setsMap");
