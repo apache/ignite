@@ -425,7 +425,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         }
 
         if (checkLocks()) {
-            log.warning("Start commit has end due to locks -> " + this);
+//            log.warning("Start commit has end due to locks -> " + this);
 
             return IgniteTxCommitEntriesFuture.FINISHED;
         }
@@ -433,13 +433,13 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
 
         if (!COMMIT_ALLOWED_UPD.compareAndSet(this, 0, 1)) {
-            log.warning("Start commit has end due to twice entered -> " + this);
+//            log.warning("Start commit has end due to twice entered -> " + this);
 
             return IgniteTxCommitEntriesFuture.FINISHED;
         }
 
         if (F.isEmpty(writeMap)) {
-            log.warning("Write map is empty -> " + this);
+//            log.warning("Write map is empty -> " + this);
 
             return IgniteTxCommitEntriesFuture.EMPTY;
         }
@@ -735,14 +735,14 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         cctx.tm().finisher().check();
 
         if (state() == COMMITTED) {
-            log.warning("Already committed");
+//            log.warning("Already committed");
 
             return;
         }
 
         // Nothing to commit.
         if (!commitEntriesFuture.initialized()) {
-            log.warning("Nothing to commit -> " + commitEntriesFuture);
+//            log.warning("Nothing to commit -> " + commitEntriesFuture);
 
             return;
         }
@@ -833,7 +833,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (optimistic())
                 state(PREPARED);
 
-            log.warning("I'm here 1");
+//            log.warning("I'm here 1");
 
             if (!state(COMMITTING)) {
                 TransactionState state = state();
@@ -855,7 +855,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 return new IgniteTxCommitFuture(true);
             }
 
-            log.warning("I'm here 2");
+//            log.warning("I'm here 2");
 
             return new IgniteTxCommitFuture(startCommitEntries(), true);
         }
@@ -880,7 +880,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @throws IgniteCheckedException If commit failed.
      */
     public void forceCommit() throws IgniteCheckedException {
-        log.warning("Commit forced");
+//        log.warning("Commit forced");
 
         IgniteTxCommitEntriesFuture commitFut = startCommitEntries();
 

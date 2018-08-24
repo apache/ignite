@@ -3296,17 +3296,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
 
-        log.warning("I'm here 7 -> " + prepareFut);
-
         prepareFut.listen(f -> {
-            log.warning("I'm here 8");
-
             cctx.tm().finisher().execute(this, () -> {
                 try {
                     // Make sure that here are no exceptions.
                     prepareFut.get();
-
-                    log.warning("I'm here 8");
 
                     fut0.finish(true, true, false);
                 } catch (Error | RuntimeException e) {

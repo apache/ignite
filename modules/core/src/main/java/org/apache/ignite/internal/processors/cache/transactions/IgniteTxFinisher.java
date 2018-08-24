@@ -42,6 +42,8 @@ public class IgniteTxFinisher {
     }
 
     public void execute(IgniteInternalTx tx, Runnable transactionOp) {
+        assert tx != null;
+
         if (!TPP_ENABLED) {
             transactionOp.run();
 

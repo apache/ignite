@@ -1323,7 +1323,18 @@ public class IgniteTxHandler {
 
         final GridNearTxRemote nearTx0 = nearTx;
 
-        ctx.tm().finisher().execute(dhtTx, () -> {
+        if (dhtTx == null && nearTx == null) {
+            if (req.replyRequired()) {
+                sendReply(nodeId, req, true, nearTxId);
+            }
+            else {
+                sendReply(nodeId, req, true, null);
+            }
+
+            return;
+        }
+
+        ctx.tm().finisher().execute(dhtTx != null ? dhtTx : nearTx, () -> {
             GridCompoundFuture colocatedFut = new GridCompoundFuture();
 
             colocatedFut.add(finish(nodeId, dhtTx, req));
