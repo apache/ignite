@@ -730,7 +730,7 @@ public class GridMapQueryExecutor {
             }
 
             // All request results are in the memory in result set already, so it's ok to release partitions.
-            if (!lazy && MapQueryLazyWorker.currentWorker() == null)
+            if (!lazy)
                 releaseReservations();
             else if (!qr.isAllClosed()) {
                 if (MapQueryLazyWorker.currentWorker() == null) {
