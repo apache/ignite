@@ -23,22 +23,54 @@ import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
+/**
+ * Decision tree node class.
+ */
 public class TreeNode implements Model<Vector, Double>, Serializable {
+    /**
+     * Type of node.
+     */
     public enum Type {
-        UNKNOWN, LEAF, CONDITIONAL
+        /** Unknown. */
+        UNKNOWN,
+
+        /** Leaf. */
+        LEAF,
+
+        /** Conditional. */
+        CONDITIONAL
     }
 
+    /** Id. */
     private final NodeId id;
+
+    /** Feature id. */
     private int featureId;
+
+    /** Value. */
     private double value;
+
+    /** Type. */
     private Type type;
+
+    /** Impurity. */
     private double impurity;
+
+    /** Depth. */
     private int depth;
 
-    private TreeNode parent;
+    /** Left branch. */
     private TreeNode left;
+
+    /** Right branch. */
     private TreeNode right;
 
+    /**
+     * Create an instance of TreeNode.
+     *
+     * @param id Id in according to breadth-first search ordering.
+     * @param treeId Tree id.
+     */
     public TreeNode(long id, int treeId) {
         this.id = new NodeId(treeId, id);
         this.value = -1;
@@ -47,6 +79,7 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         this.depth = 1;
     }
 
+    /** {@inheritDoc} */
     public Double apply(Vector features) {
         assert type != Type.UNKNOWN;
 
@@ -60,6 +93,12 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         }
     }
 
+    /**
+     * Returns leaf node for feature vector in according to decision tree.
+     *
+     * @param features Features.
+     * @return Node.
+     */
     public  NodeId predictNextNodeKey(Vector features) {
         switch (type) {
             case UNKNOWN:
@@ -74,10 +113,12 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         }
     }
 
-    public NodeId getId() {
-        return id;
-    }
-
+    /**
+     * Convert node to conditional node.
+     *
+     * @param featureId Feature id.
+     * @param value Value.
+     */
     public List<TreeNode> toConditional(int featureId, double value) {
         assert type == Type.UNKNOWN;
 
@@ -87,12 +128,15 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         this.type = Type.CONDITIONAL;
         this.featureId = featureId;
 
-        left.parent = right.parent = this;
         left.depth = right.depth = depth + 1;
-
         return Arrays.asList(left, right);
     }
 
+    /**
+     * Convert node to leaf.
+     *
+     * @param value Value.
+     */
     public void toLeaf(double value) {
         assert type == Type.UNKNOWN;
 
@@ -103,30 +147,42 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         this.right = null;
     }
 
+    /** */
+    public NodeId getId() {
+        return id;
+    }
+
+    /** */
     public void setValue(double value) {
         this.value = value;
     }
 
+    /** */
     public Type getType() {
         return type;
     }
 
+    /** */
     public void setImpurity(double impurity) {
         this.impurity = impurity;
     }
 
+    /** */
     public double getImpurity() {
         return impurity;
     }
 
+    /** */
     public int getDepth() {
         return depth;
     }
 
+    /** */
     public TreeNode getLeft() {
         return left;
     }
 
+    /** */
     public TreeNode getRight() {
         return right;
     }

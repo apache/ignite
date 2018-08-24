@@ -31,11 +31,11 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
-import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategy;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
+import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
+import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -67,7 +67,7 @@ public class RandomForestRegressionExample {
                 RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(
                     IntStream.range(0, data[0].length - 1).mapToObj(x -> new FeatureMeta(indx.getAndIncrement(), false)).collect(Collectors.toList())
                 ).withCountOfTrees(101)
-                    .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategy.ONE_THIRD)
+                    .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
                     .withMaxDepth(4)
                     .withMinImpurityDelta(0.)
                     .withSubsampleSize(0.3)

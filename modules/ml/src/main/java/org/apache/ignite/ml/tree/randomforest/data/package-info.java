@@ -15,26 +15,8 @@
  * limitations under the License.
  */
 
+/**
+ * <!-- Package description. -->
+ * Package contains helper data structures for random forest implementation.
+ */
 package org.apache.ignite.ml.tree.randomforest.data;
-
-import java.util.List;
-import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-
-public class FeaturesCountSelectionStrategy {
-    public static IgniteFunction<List<FeatureMeta>, Integer> SQRT = (List<FeatureMeta> meta) -> {
-        return (int)Math.sqrt(meta.size());
-    };
-
-    public static IgniteFunction<List<FeatureMeta>, Integer> ALL = (List<FeatureMeta> meta) -> {
-        return meta.size();
-    };
-
-    public static IgniteFunction<List<FeatureMeta>, Integer> LOG2 = (List<FeatureMeta> meta) -> {
-        return (int)(Math.log(meta.size()) / Math.log(2));
-    };
-
-    public static IgniteFunction<List<FeatureMeta>, Integer> ONE_THIRD = (List<FeatureMeta> meta) -> {
-        return (int)(meta.size() / 3);
-    };
-}

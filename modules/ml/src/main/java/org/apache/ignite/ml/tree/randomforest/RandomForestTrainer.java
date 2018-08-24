@@ -47,7 +47,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategy;
+import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
@@ -73,7 +73,7 @@ public abstract class RandomForestTrainer<LeafStatsAggregator, S extends Impurit
         this.subsampleSize = 1.0;
         this.maxDepth = 5;
         this.minImpurityDelta = 0.0;
-        this.featuresPerTree = FeaturesCountSelectionStrategy.ALL.apply(meta);
+        this.featuresPerTree = FeaturesCountSelectionStrategies.ALL.apply(meta);
         this.random = new Random(System.currentTimeMillis());
         this.nodesToLearnSelectionStrgy = this::defaultNodesToLearnSelectionStrgy;
     }
