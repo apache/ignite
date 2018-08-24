@@ -2,7 +2,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.StripedExecutor;
-import org.jetbrains.annotations.Nullable;
 
 public class CacheEntryExecutor {
     private static final boolean TPP_ENABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ENABLE_THREAD_PER_PARTITION, true);
@@ -21,52 +20,25 @@ public class CacheEntryExecutor {
     }
 
     public <R> CacheEntryOperationFuture<R> execute(
-        GridCacheEntryEx entry,
-        CacheEntryOperation<R> operationClojure,
-        @Nullable CacheEntryRefresh refreshClojure,
-        @Nullable CacheEntryOperationCallback<R> callbackClojure
+        int partitionId,
+        CacheEntryOperation<R> operationClojure
     ) {
-        assert entry.key() != null : "Entry key is null [entry=" + entry + "]";
-        assert entry.key().partition() != -1 : "Entry partition is undefined [entry=" + entry + "]";
+        assert partitionId >= 0 : "Entry partition is undefined [partId=" + partitionId + "]";
 
         CacheEntryOperationFuture<R> future = new CacheEntryOperationFuture<>();
 
         Runnable cmd = () -> {
-            GridCacheEntryEx entry0 = entry;
-
             R result;
 
             for (;;) {
                 cctx.database().checkpointReadLock();
 
                 try {
-                    result = operationClojure.invoke(entry0);
-
-                    if (callbackClojure != null)
-                        callbackClojure.invoke(entry0, result);
+                    result = operationClojure.invoke();
 
                     future.onDone(result);
 
                     break;
-                }
-                catch (GridCacheEntryRemovedException re) {
-                    if (refreshClojure != null) {
-                        try {
-                            entry0 = refreshClojure.refresh(entry0);
-
-                            assert entry0 != null;
-                        }
-                        catch (Throwable e) {
-                            future.onDone(e);
-
-                            break;
-                        }
-                    }
-                    else {
-                        future.onDone(re);
-
-                        break;
-                    }
                 }
                 catch (Throwable e) {
                     future.onDone(e);
@@ -80,7 +52,7 @@ public class CacheEntryExecutor {
         };
 
         if (TPP_ENABLED)
-            executor.execute(entry.key().partition(), cmd);
+            executor.execute(partitionId, cmd);
         else
             cmd.run();
 
