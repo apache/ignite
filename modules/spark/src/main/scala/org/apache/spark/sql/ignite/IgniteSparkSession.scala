@@ -21,6 +21,9 @@ import org.apache.ignite.IgniteException
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.IgniteContext
+
+import scala.collection.JavaConverters._
+import scala.reflect.runtime.universe.TypeTag
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession.Builder
@@ -36,9 +39,6 @@ import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.Utils
-
-import scala.collection.JavaConverters._
-import scala.reflect.runtime.universe.TypeTag
 
 /**
   * Implementation of Spark Session for Ignite.
