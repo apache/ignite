@@ -17,47 +17,73 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.IOException;
 import java.util.Collections;
-import junit.framework.TestCase;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Testing logging via {@link IgniteUtils#warnDevOnly(IgniteLogger, Object)}.
  */
-public class IgniteDevOnlyLogTest extends TestCase {
-    /** Check that dev-only messages appear in the log. */
-    public void testDevOnlyQuietMessage() throws IOException {
-        String oldQuietVal = System.setProperty(IgniteSystemProperties.IGNITE_QUIET, "true");
+public class IgniteDevOnlyLogTest extends GridCommonAbstractTest {
+    /** */
+    private List<String> additionalArgs;
 
-        try (Ignite ignite = startNode()) {
-            String msg = getMessage(ignite);
-            IgniteUtils.warnDevOnly(ignite.log(), msg);
-            assertTrue(readLog(ignite).contains(msg));
-        }
-        finally {
-            setOrClearProperty(IgniteSystemProperties.IGNITE_QUIET, oldQuietVal);
-        }
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isMultiJvm() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<String> additionalRemoteJvmArgs() {
+        return additionalArgs;
     }
 
     /** Check that dev-only messages appear in the log. */
-    public void testDevOnlyVerboseMessage() throws IOException {
-        String oldQuietVal = System.setProperty(IgniteSystemProperties.IGNITE_QUIET, "false");
+    public void testDevOnlyQuietMessage() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9328");
 
-        try (Ignite ignite = startNode()) {
-            String msg = getMessage(ignite);
-            IgniteUtils.warnDevOnly(ignite.log(), msg);
-            assertTrue(readLog(ignite).contains(msg));
-        }
-        finally {
-            setOrClearProperty(IgniteSystemProperties.IGNITE_QUIET, oldQuietVal);
-        }
+        additionalArgs = Collections.singletonList("-D" + IgniteSystemProperties.IGNITE_QUIET + "=true");
+
+        log = new GridStringLogger(false, grid(0).log());
+
+        Ignite ignite = startGrid(1);
+
+        String msg = getMessage(ignite);
+
+        warnDevOnly(msg);
+
+        assertTrue(log.toString().contains(msg));
+    }
+
+    /** Check that dev-only messages appear in the log. */
+    public void testDevOnlyVerboseMessage() throws Exception {
+        additionalArgs = Collections.singletonList("-D" + IgniteSystemProperties.IGNITE_QUIET + "=false");
+
+        log = new GridStringLogger(false, grid(0).log());
+
+        Ignite ignite = startGrid(1);
+
+        String msg = getMessage(ignite);
+
+        warnDevOnly(msg);
+
+        assertTrue(log.toString().contains(msg));
     }
 
     /**
@@ -65,44 +91,31 @@ public class IgniteDevOnlyLogTest extends TestCase {
      * doesn't print anything if {@link org.apache.ignite.IgniteSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED}
      * is set to {@code true}.
      */
-    public void testDevOnlyDisabledProperty() throws IOException {
-        String oldDevOnlyVal = System.setProperty(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED, "true");
+    public void testDevOnlyDisabledProperty() throws Exception {
+        additionalArgs = Collections.singletonList("-D" +
+            IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED + "=true");
 
-        try (Ignite ignite = startNode()) {
-            String msg = getMessage(ignite);
-            IgniteUtils.warnDevOnly(ignite.log(), msg);
-            assertFalse(readLog(ignite).contains(msg));
-        }
-        finally {
-            setOrClearProperty(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED, oldDevOnlyVal);
-        }
+        log = new GridStringLogger(false, grid(0).log());
 
+        Ignite ignite = startGrid(1);
+
+        String msg = getMessage(ignite);
+
+        warnDevOnly(msg);
+
+        assertFalse(log.toString().contains(msg));
     }
 
-    /** Sets a system property if the value is not null, or clears it if the value is null. */
-    private void setOrClearProperty(String key, String val) {
-        if (val != null)
-            System.setProperty(key, val);
-        else
-            System.clearProperty(IgniteSystemProperties.IGNITE_QUIET);
-    }
+    /** */
+    private void warnDevOnly(final String msg) {
+        grid(0).compute(grid(0).cluster().forRemotes()).broadcast(new IgniteRunnable() {
+            @IgniteInstanceResource
+            private Ignite ignite;
 
-    /** Starts an Ignite node. */
-    private Ignite startNode() throws IOException {
-        IgniteConfiguration configuration = new IgniteConfiguration()
-            .setIgniteInstanceName(IgniteDevOnlyLogTest.class.getName() + "Instance")
-            .setDiscoverySpi(new TcpDiscoverySpi()
-                .setIpFinder(new TcpDiscoveryVmIpFinder()
-                    .setAddresses(Collections.singletonList("127.0.0.1:47500..47509"))
-                )
-            );
-
-        return Ignition.start(configuration);
-    }
-
-    /** Reads log of the given node to a string. */
-    private String readLog(Ignite ignite) throws IOException {
-        return IgniteUtils.readFileToString(ignite.log().fileName(), "UTF-8");
+            @Override public void run() {
+                IgniteUtils.warnDevOnly(ignite.log(), msg);
+            }
+        });
     }
 
     /** Returns a test message. */

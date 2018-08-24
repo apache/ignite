@@ -16,7 +16,7 @@
  */
 
 // Directive to bind ESC key press with some user action.
-export default ['igniteOnEscape', ['$timeout', ($timeout) => {
+export default ['igniteOnEscape', ['$timeout', function($timeout) {
     return function(scope, elem, attrs) {
         elem.on('keydown keypress', (event) => {
             if (event.which === 27) {

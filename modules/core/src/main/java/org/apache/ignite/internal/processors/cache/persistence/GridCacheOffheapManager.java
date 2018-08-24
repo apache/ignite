@@ -35,7 +35,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -132,7 +131,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             PageIdAllocator.FLAG_IDX,
             reuseList,
             metastoreRoot.pageId().pageId(),
-            metastoreRoot.isAllocated());
+            metastoreRoot.isAllocated(),
+            ctx.kernalContext().failure());
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
     }

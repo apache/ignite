@@ -349,7 +349,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                         log.debug("Got removed entry when getting a DHT value: " + e);
                 }
                 finally {
-                    cctx.evicts().touch(e, topVer);
+                    e.touch(topVer);
                 }
             }
         }

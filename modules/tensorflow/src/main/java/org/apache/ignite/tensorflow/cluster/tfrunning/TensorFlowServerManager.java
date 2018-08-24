@@ -24,15 +24,16 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
+import org.apache.ignite.tensorflow.cluster.util.TensorFlowProcessBuilderSupplier;
 import org.apache.ignite.tensorflow.core.ProcessManager;
 import org.apache.ignite.tensorflow.core.ProcessManagerWrapper;
-import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcess;
-import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcessManager;
+import org.apache.ignite.tensorflow.core.nativerunning.NativeProcess;
+import org.apache.ignite.tensorflow.core.nativerunning.NativeProcessManager;
 
 /**
  * TensorFlow server manager that allows to start, stop and make other actions with TensorFlow servers.
  */
-public class TensorFlowServerManager extends ProcessManagerWrapper<PythonProcess, TensorFlowServer> {
+public class TensorFlowServerManager extends ProcessManagerWrapper<NativeProcess, TensorFlowServer> {
     /** TensorFlow server script formatter. */
     private static final TensorFlowServerScriptFormatter scriptFormatter = new TensorFlowServerScriptFormatter();
 
@@ -42,7 +43,7 @@ public class TensorFlowServerManager extends ProcessManagerWrapper<PythonProcess
      * @param ignite Ignite instance.
      */
     public TensorFlowServerManager(Ignite ignite) {
-        this(new PythonProcessManager(ignite));
+        this(new NativeProcessManager(ignite));
     }
 
     /**
@@ -50,17 +51,21 @@ public class TensorFlowServerManager extends ProcessManagerWrapper<PythonProcess
      *
      * @param delegate Delegate.
      */
-    public TensorFlowServerManager(ProcessManager<PythonProcess> delegate) {
+    public TensorFlowServerManager(ProcessManager<NativeProcess> delegate) {
         super(delegate);
     }
 
     /** {@inheritDoc} */
-    @Override protected PythonProcess transformSpecification(TensorFlowServer spec) {
-        return new PythonProcess(
+    @Override protected NativeProcess transformSpecification(TensorFlowServer spec) {
+        return new NativeProcess(
+            new TensorFlowProcessBuilderSupplier(
+                true,
+                spec.getTaskIdx(),
+                "job:" + spec.getJobName(),
+                "task:" + spec.getTaskIdx()
+            ),
             scriptFormatter.format(spec, true, Ignition.ignite()),
-            getNode(spec),
-            "job:" + spec.getJobName(),
-            "task:" + spec.getTaskIdx()
+            getNode(spec)
         );
     }
 

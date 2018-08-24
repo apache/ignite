@@ -21,7 +21,7 @@ import _ from 'lodash';
 angular
     .module('ignite-console.ace', [])
     .constant('igniteAceConfig', {})
-    .directive('igniteAce', ['igniteAceConfig', (aceConfig) => {
+    .directive('igniteAce', ['igniteAceConfig', function(aceConfig) {
         if (_.isUndefined(window.ace))
             throw new Error('ignite-ace need ace to work... (o rly?)');
 
