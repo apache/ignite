@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -84,6 +85,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -885,7 +887,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         assertTrue(crd.cluster().localNode().order() == 1);
 
         CountDownLatch txLatch = new CountDownLatch(1);
-        CountDownLatch stopLatch = new CountDownLatch(1);
+        CountDownLatch tx2Latch = new CountDownLatch(1);
         CountDownLatch commitLatch = new CountDownLatch(1);
 
         // Start tx holding topology.
@@ -917,7 +919,15 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 runAsync(new Runnable() {
                     @Override public void run() {
                         try(Transaction tx = crd.transactions().withLabel("testLbl").txStart()) {
-                            stopLatch.countDown();
+                            // Wait for node start.
+                            waitForCondition(new GridAbsPredicate() {
+                                @Override public boolean apply() {
+                                    return crd.cluster().topologyVersion() != GRID_CNT +
+                                        /** client node */ 1  + /** stop server node */ 1 + /** start server node */ 1;
+                                }
+                            }, 10_000);
+
+                            tx2Latch.countDown();
 
                             crd.cache(CACHE_NAME).put(keys.get(0), 0);
 
@@ -948,9 +958,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             }
         });
 
-        U.awaitQuiet(stopLatch);
-
-        doSleep(500);
+        U.awaitQuiet(tx2Latch);
 
         // Rollback tx using kill task.
         VisorTxTaskArg arg =
