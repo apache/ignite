@@ -153,11 +153,8 @@ class MapQueryResults {
             if (forceQryCancel) {
                 GridQueryCancel cancel = cancels[i];
 
-                if (cancel != null) {
-                    System.out.println("+++ " + Thread.currentThread().getName() + " MapQueryResults.cancel");
-
+                if (cancel != null)
                     cancel.cancel();
-                }
             }
         }
 

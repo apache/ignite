@@ -363,6 +363,9 @@ public class GridH2QueryContext {
                 res |= doClear(key, false);
         }
 
+        if (!res && !qctxs.isEmpty())
+            System.out.println("");
+
         return res;
     }
 

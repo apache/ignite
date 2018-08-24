@@ -84,7 +84,6 @@ class MapNodeResults {
      * @param reqId Request ID.
      */
     public void cancelRequest(long reqId) {
-        System.out.println("+++ " + Thread.currentThread().getName() + " cancelRequest. results=" + res.keySet().size());
         for (MapRequestKey key : res.keySet()) {
             if (key.requestId() == reqId) {
                 MapQueryResults removed = res.remove(key);

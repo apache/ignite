@@ -155,14 +155,10 @@ public class MapQueryLazyWorker extends GridWorker {
      * @param task Statement cancel task.
      */
     public void runStatementCancelTask(Runnable task) {
-        if (isStarted()) {
-            log.info("+++ runStatementCancelTask submit");
+        if (isStarted())
             submit(task);
-        }
-        else {
-            log.info("+++ runStatementCancelTask local");
+        else
             task.run();
-        }
     }
 
     /**
@@ -180,23 +176,21 @@ public class MapQueryLazyWorker extends GridWorker {
         if (stopped)
             return;
 
-        if (started && currentWorker() == null)
+        if (started && currentWorker() == null) {
             submit(new Runnable() {
                 @Override public void run() {
                     stop(nodeStop);
                 }
             });
+        }
         else {
-            if (stopped)
-                return;
-
-            GridH2QueryContext qctx = GridH2QueryContext.get();
-
-            if (qctx != null) {
+            if (qctx != null)
                 qctx.clearContext(nodeStop);
 
+            GridH2QueryContext qctxThreadLocal = GridH2QueryContext.get();
+
+            if (qctxThreadLocal != null)
                 GridH2QueryContext.clearThreadLocal();
-            }
 
             isCancelled = true;
 

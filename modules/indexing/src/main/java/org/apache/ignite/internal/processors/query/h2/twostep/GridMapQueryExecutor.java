@@ -667,6 +667,9 @@ public class GridMapQueryExecutor {
 
             GridH2QueryContext.set(qctx);
 
+            if (worker != null)
+                worker.queryContext(qctx);
+
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
 
@@ -735,8 +738,6 @@ public class GridMapQueryExecutor {
                         final ObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
 
                         worker.detachedConnection(detachedConn);
-
-                        worker.queryContext(qctx);
 
                         GridH2Table.detachReadLocksFromCurrentThread(H2Utils.session(conn));
 
