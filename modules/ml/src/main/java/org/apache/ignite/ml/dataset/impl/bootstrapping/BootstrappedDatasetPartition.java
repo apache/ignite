@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.impl.bagging;
+package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
 
@@ -23,26 +23,48 @@ import org.apache.ignite.ml.math.functions.IgniteConsumer;
  * Partition of bootstrapped vectors.
  */
 public class BootstrappedDatasetPartition implements AutoCloseable {
-    /** Dataset. */
+    /** Vectors. */
     private BootstrappedVector[] vectors;
 
+    /**
+     * Creates an instance of BootstrappedDatasetPartition.
+     *
+     * @param vectors Vectors.
+     */
     public BootstrappedDatasetPartition(BootstrappedVector[] vectors) {
         this.vectors = vectors;
     }
 
+    /**
+     * Returns vector from dataset in according to row id.
+     *
+     * @param rowId Row id.
+     * @return Vector.
+     */
     public BootstrappedVector getRow(int rowId) {
         return vectors[rowId];
     }
 
+    /**
+     * Returns rows count.
+     *
+     * @return rows count.
+     */
     public int getRowsCount() {
         return vectors.length;
     }
 
+    /**
+     * Iterate over partition using consumer.
+     *
+     * @param consumer Consumer.
+     */
     public void foreach(IgniteConsumer<BootstrappedVector> consumer) {
         for(BootstrappedVector vec : vectors)
             consumer.accept(vec);
     }
 
+    /** {@inheritDoc} */
     @Override public void close() throws Exception {
         //NOP
     }

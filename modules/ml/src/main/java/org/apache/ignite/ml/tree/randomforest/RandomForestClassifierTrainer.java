@@ -29,8 +29,8 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureHistogram;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedDatasetPartition;
-import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedVector;
+import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
+import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogram;
 

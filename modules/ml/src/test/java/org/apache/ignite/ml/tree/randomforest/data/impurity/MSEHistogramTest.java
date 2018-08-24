@@ -2,7 +2,7 @@ package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.dataset.impl.bagging.BootstrappedVector;
+import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Before;
 import org.junit.Test;

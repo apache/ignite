@@ -15,29 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.impl.bagging;
+package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
+/**
+ * Represents vector with repetitions counters for subsamples in bootstrapped dataset.
+ */
 public class BootstrappedVector {
+    /** Features. */
     private final Vector features;
+    /** Label. */
     private final double label;
+    /** Repetitions counters. */
     private final int[] repetitionsCounters;
 
+    /**
+     * Creates an instance of BootstrappedVector.
+     *
+     * @param features Features.
+     * @param label Label.
+     * @param repetitionsCounters Repetitions counters.
+     */
     public BootstrappedVector(Vector features, double label, int[] repetitionsCounters) {
         this.features = features;
         this.label = label;
         this.repetitionsCounters = repetitionsCounters;
     }
 
+    /**
+     * Returns features vector.
+     *
+     * @return Features.
+     */
     public Vector getFeatures() {
         return features;
     }
 
+    /**
+     * Returns label for features vector.
+     *
+     * @return Label.
+     */
     public double getLabel() {
         return label;
     }
 
+    /**
+     * Returns repetitions counters vector.
+     *
+     * @return repetitions counters vector.
+     */
     public int[] getRepetitionsCounters() {
         return repetitionsCounters;
     }

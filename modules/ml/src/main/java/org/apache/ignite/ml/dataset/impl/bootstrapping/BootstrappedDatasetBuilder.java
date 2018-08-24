@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.impl.bagging;
+package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
