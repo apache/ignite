@@ -124,7 +124,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     /**
      * Check memory metrics values.
      *
-     * @param logOutput Log output.
+     * @param logOutput Logging output.
      */
     protected  void checkMemoryMetrics(String logOutput) {
         boolean summaryFmtMatches = false;

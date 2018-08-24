@@ -1232,137 +1232,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 private final DecimalFormat dblFmt = new DecimalFormat("#.##");
 
                 @Override public void run() {
-                    if (log.isInfoEnabled()) {
-                        try {
-                            ClusterMetrics m = cluster().localNode().metrics();
-
-                            double cpuLoadPct = m.getCurrentCpuLoad() * 100;
-                            double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
-                            double gcPct = m.getCurrentGcCpuLoad() * 100;
-
-                            //Heap params
-                            long heapUsed = m.getHeapMemoryUsed();
-                            long heapMax = m.getHeapMemoryMaximum();
-
-                            long heapUsedInMBytes = heapUsed / 1024 / 1024;
-                            long heapCommInMBytes = m.getHeapMemoryCommitted() / 1024 / 1024;
-
-                            double freeHeapPct = heapMax > 0 ? ((double)((heapMax - heapUsed) * 100)) / heapMax : -1;
-
-                            int hosts = 0;
-                            int nodes = 0;
-                            int cpus = 0;
-
-                            try {
-                                ClusterMetrics metrics = cluster().metrics();
-
-                                Collection<ClusterNode> nodes0 = cluster().nodes();
-
-                                hosts = U.neighborhood(nodes0).size();
-                                nodes = metrics.getTotalNodes();
-                                cpus = metrics.getTotalCpus();
-                            }
-                            catch (IgniteException ignore) {
-                                // No-op.
-                            }
-
-                            int loadedPages = 0;
-
-                            // Off-heap params.
-                            Collection<DataRegion> regions = ctx.cache().context().database().dataRegions();
-
-                            StringBuilder dataRegionsInfo = new StringBuilder();
-                            StringBuilder pdsRegionsInfo = new StringBuilder();
-
-                            long offHeapUsedSummary = 0;
-                            long offHeapMaxSummary = 0;
-                            long offHeapCommSummary = 0;
-
-                            int MByte = 1024 * 1024;
-
-                            if (!F.isEmpty(regions)) {
-                                for (DataRegion region : regions) {
-                                    long pagesCnt = region.pageMemory().loadedPages();
-
-                                    long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
-                                    long offHeapMax = region.config().getMaxSize();
-                                    long offHeapComm = region.memoryMetrics().getOffHeapSize();
-
-                                    long offHeapUsedInMBytes = offHeapUsed / MByte;
-                                    long offHeapCommInMBytes = offHeapComm / MByte;
-
-                                    double freeOffHeapPct = offHeapMax > 0 ?
-                                        ((double)((offHeapMax - offHeapUsed) * 100)) / offHeapMax : -1;
-
-                                    offHeapUsedSummary += offHeapUsed;
-                                    offHeapMaxSummary += offHeapMax;
-                                    offHeapCommSummary += offHeapComm;
-                                    loadedPages += pagesCnt;
-
-                                    dataRegionsInfo.append("    ^-- Data region: ")
-                                        .append(region.config().getName()).append(", off-heap")
-                                        .append(" [used=").append(dblFmt.format(offHeapUsedInMBytes))
-                                        .append("MB, free=").append(dblFmt.format(freeOffHeapPct))
-                                        .append("%, comm=").append(dblFmt.format(offHeapCommInMBytes)).append("MB]")
-                                        .append(NL);
-
-                                    if (region.config().isPersistenceEnabled() && region.config().isMetricsEnabled()) {
-                                        long pdsUsedMBytes = region.memoryMetrics().getTotalAllocatedSize() / MByte;
-
-                                        pdsRegionsInfo.append("    ^-- Ignite persistence region: ")
-                                            .append(region.config().getName()).append(", disk")
-                                            .append(" [used=").append(dblFmt.format(pdsUsedMBytes)).append("MB]")
-                                            .append(NL);
-                                    }
-                                }
-                            }
-
-                            long nonHeapUsedInMBytes = offHeapUsedSummary / MByte;
-                            long nonHeapCommInMBytes = offHeapCommSummary / MByte;
-
-                            double freeNonHeapPct = offHeapMaxSummary > 0 ?
-                                ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
-
-                            String id = U.id8(localNode().id());
-
-                            String msg = NL +
-                                "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
-                                "    ^-- Node [id=" + id + (name() != null ? ", name=" + name() : "") + ", uptime=" +
-                                getUpTimeFormatted() + "]" + NL +
-                                "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
-                                "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
-                                dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
-                                "    ^-- PageMemory [pages=" + loadedPages + "]" + NL +
-                                "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
-                                dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
-                                "    ^-- Off-heap [used=" + dblFmt.format(nonHeapUsedInMBytes) + "MB, free=" +
-                                dblFmt.format(freeNonHeapPct) + "%, comm=" + dblFmt.format(nonHeapCommInMBytes) + "MB]" + NL +
-                                dataRegionsInfo.toString() +
-                                pdsRegionsInfo.toString() +
-                                "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]" + NL +
-                                "    ^-- " + createExecutorDescription("Public thread pool", execSvc) + NL +
-                                "    ^-- " + createExecutorDescription("System thread pool", sysExecSvc);
-
-                            if (customExecSvcs != null) {
-                                StringBuilder customSvcsMsg = new StringBuilder();
-
-                                for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet()) {
-                                    customSvcsMsg.append(NL).append("    ^-- ")
-                                        .append(createExecutorDescription(entry.getKey(), entry.getValue()));
-                                }
-
-                                msg = msg + customSvcsMsg;
-                            }
-
-                            if (log.isInfoEnabled())
-                                log.info(msg);
-
-                            ctx.cache().context().database().dumpStatistics(log);
-                        }
-                        catch (IgniteClientDisconnectedException ignore) {
-                            // No-op.
-                        }
-                    }
+                    ackNodeMetrics(dblFmt, execSvc, sysExecSvc, customExecSvcs);
                 }
             }, metricsLogFreq, metricsLogFreq);
         }
@@ -2061,6 +1931,152 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             log.info("Language runtime: " + getLanguage());
             log.info("VM information: " + U.jdkString());
             log.info("VM total memory: " + U.heapSize(2) + "GB");
+        }
+    }
+
+    /**
+     * Logs out node metrics.
+     *
+     * @param dblFmt Decimal format.
+     * @param execSvc Executor service.
+     * @param sysExecSvc System executor service.
+     * @param customExecSvcs Custom named executors.
+     */
+    private void ackNodeMetrics(DecimalFormat dblFmt,
+        ExecutorService execSvc,
+        ExecutorService sysExecSvc,
+        Map<String, ? extends ExecutorService> customExecSvcs
+    ) {
+        if (!log.isInfoEnabled())
+            return;
+
+        try {
+            ClusterMetrics m = cluster().localNode().metrics();
+
+            final int MByte = 1024 * 1024;
+
+            double cpuLoadPct = m.getCurrentCpuLoad() * 100;
+            double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
+            double gcPct = m.getCurrentGcCpuLoad() * 100;
+
+            //Heap params
+            long heapUsed = m.getHeapMemoryUsed();
+            long heapMax = m.getHeapMemoryMaximum();
+
+            long heapUsedInMBytes = heapUsed / MByte;
+            long heapCommInMBytes = m.getHeapMemoryCommitted() / MByte;
+
+            double freeHeapPct = heapMax > 0 ? ((double)((heapMax - heapUsed) * 100)) / heapMax : -1;
+
+            int hosts = 0;
+            int nodes = 0;
+            int cpus = 0;
+
+            try {
+                ClusterMetrics metrics = cluster().metrics();
+
+                Collection<ClusterNode> nodes0 = cluster().nodes();
+
+                hosts = U.neighborhood(nodes0).size();
+                nodes = metrics.getTotalNodes();
+                cpus = metrics.getTotalCpus();
+            }
+            catch (IgniteException ignore) {
+                // No-op.
+            }
+
+            int loadedPages = 0;
+
+            // Off-heap params.
+            Collection<DataRegion> regions = ctx.cache().context().database().dataRegions();
+
+            StringBuilder dataRegionsInfo = new StringBuilder();
+            StringBuilder pdsRegionsInfo = new StringBuilder();
+
+            long offHeapUsedSummary = 0;
+            long offHeapMaxSummary = 0;
+            long offHeapCommSummary = 0;
+
+            if (!F.isEmpty(regions)) {
+                for (DataRegion region : regions) {
+                    long pagesCnt = region.pageMemory().loadedPages();
+
+                    long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
+                    long offHeapMax = region.config().getMaxSize();
+                    long offHeapComm = region.memoryMetrics().getOffHeapSize();
+
+                    long offHeapUsedInMBytes = offHeapUsed / MByte;
+                    long offHeapCommInMBytes = offHeapComm / MByte;
+
+                    double freeOffHeapPct = offHeapMax > 0 ?
+                        ((double)((offHeapMax - offHeapUsed) * 100)) / offHeapMax : -1;
+
+                    offHeapUsedSummary += offHeapUsed;
+                    offHeapMaxSummary += offHeapMax;
+                    offHeapCommSummary += offHeapComm;
+                    loadedPages += pagesCnt;
+
+                    dataRegionsInfo.append("    ^-- Data region: ")
+                        .append(region.config().getName()).append(", off-heap")
+                        .append(" [used=").append(dblFmt.format(offHeapUsedInMBytes))
+                        .append("MB, free=").append(dblFmt.format(freeOffHeapPct))
+                        .append("%, comm=").append(dblFmt.format(offHeapCommInMBytes)).append("MB]")
+                        .append(NL);
+
+                    if (region.config().isPersistenceEnabled() && region.config().isMetricsEnabled()) {
+                        long pdsUsedMBytes = region.memoryMetrics().getTotalAllocatedSize() / MByte;
+
+                        pdsRegionsInfo.append("    ^-- Ignite persistence region: ")
+                            .append(region.config().getName()).append(", disk")
+                            .append(" [used=").append(dblFmt.format(pdsUsedMBytes)).append("MB]")
+                            .append(NL);
+                    }
+                }
+            }
+
+            long nonHeapUsedInMBytes = offHeapUsedSummary / MByte;
+            long nonHeapCommInMBytes = offHeapCommSummary / MByte;
+
+            double freeNonHeapPct = offHeapMaxSummary > 0 ?
+                ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
+
+            String id = U.id8(localNode().id());
+
+            String msg = NL +
+                "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
+                "    ^-- Node [id=" + id + (name() != null ? ", name=" + name() : "") + ", uptime=" +
+                getUpTimeFormatted() + "]" + NL +
+                "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
+                "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
+                dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
+                "    ^-- PageMemory [pages=" + loadedPages + "]" + NL +
+                "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
+                dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
+                "    ^-- Off-heap [used=" + dblFmt.format(nonHeapUsedInMBytes) + "MB, free=" +
+                dblFmt.format(freeNonHeapPct) + "%, comm=" + dblFmt.format(nonHeapCommInMBytes) + "MB]" + NL +
+                dataRegionsInfo.toString() +
+                pdsRegionsInfo.toString() +
+                "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]" + NL +
+                "    ^-- " + createExecutorDescription("Public thread pool", execSvc) + NL +
+                "    ^-- " + createExecutorDescription("System thread pool", sysExecSvc);
+
+            if (customExecSvcs != null) {
+                StringBuilder customSvcsMsg = new StringBuilder();
+
+                for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet()) {
+                    customSvcsMsg.append(NL).append("    ^-- ")
+                        .append(createExecutorDescription(entry.getKey(), entry.getValue()));
+                }
+
+                msg = msg + customSvcsMsg;
+            }
+
+            log.info(msg);
+
+            ctx.cache().context().database().dumpStatistics(log);
+        }
+        catch (IgniteClientDisconnectedException ignore) {
+            // No-op.
         }
     }
 
