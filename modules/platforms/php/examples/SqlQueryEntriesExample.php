@@ -72,15 +72,15 @@ class SqlQueryEntriesExample {
             $client->connect(new ClientConfiguration(self::ENDPOINT));
 
             $cacheCfg = (new CacheConfiguration())->
-            setQueryEntities(
-                (new QueryEntity())->
-                setValueTypeName('Person')->
-                setFields(
-                    new QueryField('id', 'java.lang.Integer'),
-                    new QueryField('firstName', 'java.lang.String'),
-                    new QueryField('lastName', 'java.lang.String'),
-                    new QueryField('salary', 'java.lang.Double')
-                ));
+                setQueryEntities(
+                    (new QueryEntity())->
+                    setValueTypeName('Person')->
+                    setFields(
+                        new QueryField('id', 'java.lang.Integer'),
+                        new QueryField('firstName', 'java.lang.String'),
+                        new QueryField('lastName', 'java.lang.String'),
+                        new QueryField('salary', 'java.lang.Double')
+                    ));
             $this->cache = $client->getOrCreateCache(self::PERSON_CACHE_NAME, $cacheCfg)->
                 setKeyType(ObjectType::INTEGER)->
                 setValueType((new ComplexObjectType())->
@@ -101,7 +101,7 @@ class SqlQueryEntriesExample {
 
             $client->destroyCache(self::PERSON_CACHE_NAME);
         } catch (ClientException $e) {
-            echo('ERROR: ' . $e->getMessage());
+            echo('ERROR: ' . $e->getMessage() . PHP_EOL);
         } finally {
             $client->disconnect();
         }

@@ -60,7 +60,7 @@ class TstComplObjectWithDefaultFieldTypes
 final class CachePutGetTestCase extends TestCase
 {
     const CACHE_NAME = '__php_test_cache';
-    
+
     private static $cache;
 
     public static function setUpBeforeClass(): void
@@ -75,7 +75,7 @@ final class CachePutGetTestCase extends TestCase
         self::cleanUp();
         TestingHelper::cleanUp();
     }
-    
+
     public function testPutGetPrimitiveValues(): void
     {
         foreach (TestingHelper::$primitiveValues as $typeCode1 => $typeInfo1) {
@@ -297,7 +297,7 @@ final class CachePutGetTestCase extends TestCase
                     $map->put($value1, $value2);
                 }
                 $array = array();
-                for ($i = 0; $i < 10; $i++) {
+                for ($i = 0; $i < 5; $i++) {
                     $map->reverse();
                     array_push($array, $map);
                 }
@@ -333,7 +333,7 @@ final class CachePutGetTestCase extends TestCase
             $primitiveType = $typeInfo['elemType'];
             $values = TestingHelper::$primitiveValues[$primitiveType]['values'];
             $array = [];
-            for ($i = 0; $i < 10; $i++) {
+            for ($i = 0; $i < 5; $i++) {
                 $values = array_reverse($values);
                 array_push($array, $values);
             }
@@ -351,7 +351,7 @@ final class CachePutGetTestCase extends TestCase
             $set = new Set();
             $values = $typeInfo['values'];
             $array = array();
-            for ($i = 0; $i < 10; $i++) {
+            for ($i = 0; $i < 5; $i++) {
                 $values = array_reverse($values);
                 array_push($array, new Set($values));
             }
@@ -371,7 +371,7 @@ final class CachePutGetTestCase extends TestCase
             $set = new Set();
             $values = $typeInfo['values'];
             $array = array();
-            for ($i = 0; $i < 10; $i++) {
+            for ($i = 0; $i < 5; $i++) {
                 $values = array_reverse($values);
                 array_push($array, $values);
             }
@@ -499,20 +499,13 @@ final class CachePutGetTestCase extends TestCase
         try {
             self::$cache->put($key, $value);
             $result = self::$cache->get($key);
-            $strResult = TestingHelper::printValue($result);
-            $strValue = TestingHelper::printValue($value);
-            $strValueType = TestingHelper::printValue($arrayType ? $arrayType->getElementType() : null);
-            $this->assertTrue(
-                is_array($result),
-                "result is not array: result={$strResult}");
-            $this->assertTrue(
-                TestingHelper::compare($value, $result),
-                "Arrays are not equal: valueType={$strValueType}, put value={$strValue}, get value={$strResult}");
+            $this->assertTrue(is_array($result));
+            $this->assertTrue(TestingHelper::compare($value, $result));
         } finally {
             self::$cache->removeAll();
         }
     }
-    
+
     private function putGetLists(?CollectionObjectType $listType, array $value): void
     {
         $key = microtime();
@@ -535,7 +528,7 @@ final class CachePutGetTestCase extends TestCase
             self::$cache->removeAll();
         }
     }
-    
+
     private function putGetSets(?CollectionObjectType $setType, Set $value): void
     {
         $key = microtime();
@@ -558,7 +551,7 @@ final class CachePutGetTestCase extends TestCase
             self::$cache->removeAll();
         }
     }
-    
+
     private function putGetArrayMaps(?MapObjectType $mapType, array $value): void
     {
         self::$cache->
@@ -581,7 +574,7 @@ final class CachePutGetTestCase extends TestCase
             self::$cache->removeAll();
         }
     }
-    
+
     private function putGetMaps(?MapObjectType $mapType, Map $value): void
     {
         self::$cache->
@@ -604,7 +597,7 @@ final class CachePutGetTestCase extends TestCase
             self::$cache->removeAll();
         }
     }
-    
+
     private function putGetPrimitiveValues(?int $typeCode1, ?int $typeCode2, $value1, $value2): void
     {
         self::$cache->
@@ -623,7 +616,7 @@ final class CachePutGetTestCase extends TestCase
             self::$cache->removeAll();
         }
     }
-    
+
     private function putGetArrays(int $keyType, int $valueType, $key, $value): void
     {
         self::$cache->
@@ -645,7 +638,7 @@ final class CachePutGetTestCase extends TestCase
             self::$cache->removeAll();
         }
     }
-    
+
     private static function cleanUp(): void
     {
         TestingHelper::destroyCache(self::CACHE_NAME);

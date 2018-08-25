@@ -369,7 +369,11 @@ class BinaryUtils
     
     public static function intVal32(int $value): int
     {
-        return (($value ^ 0x80000000) & 0xFFFFFFFF) - 0x80000000;
+        $value = ($value & 0xFFFFFFFF);
+        if ($value & 0x80000000) {
+            $value = -((~$value & 0xFFFFFFFF) + 1);
+        }
+        return $value;
     }
 
     public static function internalError(string $message = null): void

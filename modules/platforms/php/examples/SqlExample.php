@@ -65,7 +65,7 @@ class SqlExample {
             $this->deleteDatabaseObjects($cache);
             $client->destroyCache(SqlExample::DUMMY_CACHE_NAME);
         } catch (ClientException $e) {
-            echo('ERROR: ' . $e->getMessage());
+            echo('ERROR: ' . $e->getMessage() . PHP_EOL);
         } finally {
             $client->disconnect();
         }

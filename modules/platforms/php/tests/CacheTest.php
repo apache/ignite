@@ -33,6 +33,7 @@ final class CacheTestCase extends TestCase
     const CACHE_NAME = '__php_test_cache';
     const CACHE_NAME2 = '__php_test_cache2';
     const CACHE_NAME3 = '__php_test_cache3';
+    const CACHE_NAME4 = '__php_test_cache4';
 
     public static function setUpBeforeClass(): void
     {
@@ -134,6 +135,10 @@ final class CacheTestCase extends TestCase
         $cache = $client->createCache(self::CACHE_NAME3, $cacheCfg);
         $cfg = $client->getCacheConfiguration(self::CACHE_NAME3);
         $client->destroyCache(self::CACHE_NAME3);
+        $keyConfig = $cfg->getKeyConfigurations()[0];
+        $queryEntity = $cfg->getQueryEntities()[0];
+        $queryField = $queryEntity->getFields()[0];
+        $queryIndex = $queryEntity->getIndexes()[0];
         $cfg->
             setName($cfg->getName())->
             setAtomicityMode($cfg->getAtomicityMode())->
@@ -163,11 +168,36 @@ final class CacheTestCase extends TestCase
             setSqlIndexInlineMaxSize($cfg->getSqlIndexInlineMaxSize())->
             setSqlSchema($cfg->getSqlSchema())->
             setWriteSynchronizationMode($cfg->getWriteSynchronizationMode())->
-            setKeyConfigurations(...$cfg->getKeyConfigurations())->
-            setQueryEntities(...$cfg->getQueryEntities());
-        $cache = $client->getOrCreateCache(self::CACHE_NAME3, $cfg);
-        $cfg2 = $client->getCacheConfiguration(self::CACHE_NAME3);
-        $client->destroyCache(self::CACHE_NAME3);
+            setKeyConfigurations((new CacheKeyConfiguration())->
+                setTypeName($keyConfig->getTypeName())->
+                setAffinityKeyFieldName($keyConfig->getAffinityKeyFieldName()))->
+            setQueryEntities((new QueryEntity())->
+                setKeyTypeName($queryEntity->getKeyTypeName())->
+                setValueTypeName($queryEntity->getValueTypeName())->
+                setTableName($queryEntity->getTableName())->
+                setKeyFieldName($queryEntity->getKeyFieldName())->
+                setValueFieldName($queryEntity->getValueFieldName())->
+                setFields(
+                    (new QueryField())->
+                        setName($queryField->getName())->
+                        setTypeName($queryField->getTypeName())->
+                        setIsKeyField($queryField->getIsKeyField())->
+                        setIsNotNull($queryField->getIsNotNull())->
+                        setDefaultValue($queryField->getDefaultValue())->
+                        setPrecision($queryField->getPrecision())->
+                        setScale($queryField->getScale()),
+                    $queryEntity->getFields()[1],
+                    $queryEntity->getFields()[2],
+                    $queryEntity->getFields()[3])->
+                setAliases($queryEntity->getAliases())->
+                setIndexes((new QueryIndex())->
+                    setName($queryIndex->getName())->
+                    setType($queryIndex->getType())->
+                    setInlineSize($queryIndex->getInlineSize())->
+                    setFields($queryIndex->getFields())));
+        $cache = $client->getOrCreateCache(self::CACHE_NAME4, $cfg);
+        $cfg2 = $client->getCacheConfiguration(self::CACHE_NAME4);
+        $client->destroyCache(self::CACHE_NAME4);
         $this->assertTrue(true);
     }
     
@@ -205,5 +235,6 @@ final class CacheTestCase extends TestCase
         TestingHelper::destroyCache(self::CACHE_NAME);
         TestingHelper::destroyCache(self::CACHE_NAME2);
         TestingHelper::destroyCache(self::CACHE_NAME3);
+        TestingHelper::destroyCache(self::CACHE_NAME4);
     }
 }

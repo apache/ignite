@@ -209,7 +209,7 @@ final class ComplexObjectTestCase extends TestCase
                 setPhpClassName(Class2::class)->
                 setFieldType('field_2_1', new MapObjectType(MapObjectType::HASH_MAP, ObjectType::SHORT, ObjectType::SHORT))->
                 setFieldType('field_2_2', new MapObjectType(MapObjectType::HASH_MAP, ObjectType::INTEGER, ObjectType::INTEGER)))->
-            setFieldType('field_1_3', new MapObjectType(MapObjectType::HASH_MAP, ObjectType::LONG, ObjectType::LONG));
+            setFieldType('field_1_3', new MapObjectType(MapObjectType::HASH_MAP, ObjectType::STRING, ObjectType::LONG));
 
         $value2 = new SubClass1();
         $value2->field_1_1 = $this->getMapValue(ObjectType::FLOAT);

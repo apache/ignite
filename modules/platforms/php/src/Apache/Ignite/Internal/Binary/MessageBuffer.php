@@ -19,6 +19,7 @@
 namespace Apache\Ignite\Internal\Binary;
 
 use Apache\Ignite\Type\ObjectType;
+use Brick\Math\BigInteger;
 
 class MessageBuffer
 {
@@ -34,11 +35,13 @@ class MessageBuffer
 
     private static $isLittleEndian;
     private static $defaultEncoding;
+    private static $is32BitInt;
 
     public static function init(): void
     {
         MessageBuffer::$isLittleEndian = pack('L', 1) === pack('V', 1);
         MessageBuffer::$defaultEncoding = ini_get('default_charset');
+        MessageBuffer::$is32BitInt = PHP_INT_MAX === TypeInfo::getTypeInfo(ObjectType::INTEGER)->getMaxValue();
     }
     
     public function __construct(int $capacity = MessageBuffer::BUFFER_CAPACITY_DEFAULT)
@@ -113,12 +116,24 @@ class MessageBuffer
 
     public function writeNumber($value, int $type, bool $signed = true): void
     {
-        $format = $this->getNumberFormat($type, $signed);
-        $strValue = pack($format, $value);
-        if (strlen($strValue) !== TypeInfo::getTypeInfo($type)->getSize()) {
+        $size = TypeInfo::getTypeInfo($type)->getSize();
+        if ($type === ObjectType::LONG && MessageBuffer::$is32BitInt) {
+            // pack longs doesn't work on 32-bit versions of PHP
+            $isNegative = $value < 0;
+            $bigIntValue = BigInteger::of(abs($value));
+            if ($isNegative) {
+                $bigIntValue = BigInteger::parse(str_pad('1', $size * 2 + 1, '0'), 16)->minus($bigIntValue);
+            }
+            $hexValue = str_pad($bigIntValue->toBase(16), $size * 2, '0', STR_PAD_LEFT);
+            $strValue = strrev(hex2bin($hexValue));
+        } else {
+            $format = $this->getNumberFormat($type, $signed);
+            $strValue = pack($format, $value);
+            $this->convertEndianness($strValue, $type);
+        }
+        if (strlen($strValue) !== $size) {
             BinaryUtils::unsupportedType(BinaryUtils::getTypeName($type));
         }
-        $this->convertEndianness($strValue, $type);
         $this->writeStr($strValue);
     }
 
@@ -184,10 +199,26 @@ class MessageBuffer
         $size = BinaryUtils::getSize($type);
         $this->ensureSize($size);
         $strValue = substr($this->buffer, $this->position, $size);
-        $this->convertEndianness($strValue, $type);
-        $value = unpack($this->getNumberFormat($type, $signed), $strValue);
+        if ($type === ObjectType::LONG && MessageBuffer::$is32BitInt) {
+            // unpack longs doesn't work on 32-bit versions of PHP
+            $binValue = strrev($strValue);
+            $isNegative = ord($binValue[0]) & 0x80;
+            $hexValue = bin2hex($binValue);
+            $bigIntValue = BigInteger::parse($hexValue, 16);
+            if ($isNegative) {
+                $bigIntValue = BigInteger::parse(str_pad('1', $size * 2 + 1, '0'), 16)->minus($bigIntValue);
+            }
+            $value = $bigIntValue->toFloat();
+            if ($isNegative) {
+                $value = -$value;
+            }
+        } else {
+            $this->convertEndianness($strValue, $type);
+            $value = unpack($this->getNumberFormat($type, $signed), $strValue);
+            $value = $value[1];
+        }
         $this->position += $size;
-        return $value[1];
+        return $value;
     }
 
     public function readBoolean(): bool

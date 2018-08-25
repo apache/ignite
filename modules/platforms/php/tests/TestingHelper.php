@@ -245,7 +245,7 @@ class TestingHelper
             ],
             ObjectType::LONG => [
                 'values' => [12345678912345, 0, -98765432112345],
-                'isMapKey' => true,
+                'isMapKey' => false,
                 'isArrayKey' => false,
             ],
             ObjectType::FLOAT => [

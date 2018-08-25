@@ -37,9 +37,9 @@ function connectClient() {
         $clientConfiguration = new ClientConfiguration(ENDPOINT1, ENDPOINT2, ENDPOINT3);
         // connect to Ignite node
         $client->connect($clientConfiguration);
-        echo("Client connected successfully\n");
+        echo("Client connected successfully" . PHP_EOL);
     } catch (ClientException $e) {
-        echo('ERROR: ' . $e->getMessage());
+        echo('ERROR: ' . $e->getMessage() . PHP_EOL);
     } finally {
         $client->disconnect();
     }

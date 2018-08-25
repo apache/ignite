@@ -66,7 +66,7 @@ class AuthTlsExample
             $this->putGetData($cache);
             $client->destroyCache(AuthTlsExample::CACHE_NAME);
         } catch (ClientException $e) {
-            echo('ERROR: ' . $e->getMessage());
+            echo('ERROR: ' . $e->getMessage() . PHP_EOL);
         } finally {
             $client->disconnect();
         }
