@@ -92,6 +92,9 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
     /** Synchronization lock for local value updates. */
     private final Lock localUpdateLock = new ReentrantLock();
 
+    /** */
+    private final Callable<Void> reserveCallableWithZeroOffset = reserveCallable(0);
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -194,7 +197,6 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
      * @return Sequence value.
      * @throws IgniteCheckedException If update failed.
      */
-    @SuppressWarnings("SignalWithoutCorrespondingAwait")
     private long internalUpdate(long l, boolean updated) throws IgniteCheckedException {
         assert l > 0;
 
@@ -203,16 +205,18 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
 
             localUpdateLock.lock();
 
-            IgniteInternalFuture<?> reservation = reservationFut;
-
             try {
+                IgniteInternalFuture<?> reservation = reservationFut;
+
                 boolean reservationInProgress = reservation != null;
 
                 long newLocalVal = locVal + l;
 
                 // Reserve new interval if operation is not in progress.
-                if (newLocalVal >= newReservationLine && newLocalVal <= reservedUpBound && !reservationInProgress){
-                    reservationFut = runAsyncReservation(0);
+                if (newLocalVal >= newReservationLine && newLocalVal <= reservedUpBound && !reservationInProgress) {
+                    reservationFut = reservation = runAsyncReservation(0);
+
+                    reservationInProgress = true;
                 }
 
                 long locVal0 = locVal;
@@ -338,11 +342,11 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
 
         resFut.listen(f -> {
             if (f.error() == null)
-                reservationFut = null;
+                reservationFut = null; // Reset null only if there was not an error.
         });
 
         ctx.kernalContext().closure().runLocalSafe(() -> {
-            Callable<Void> reserveCall = reserveCallable(off);
+            Callable<Void> reserveCall = off == 0 ? reserveCallableWithZeroOffset: reserveCallable(off);
 
             try {
                 CU.retryTopologySafe(reserveCall);
@@ -375,11 +379,11 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
 
                     reservedBottomBound = curGlobalVal + off;
 
-                    reservedUpBound = reservedBottomBound + batchSize;
+                    reservedUpBound = reservedBottomBound + (batchSize > 1 ? batchSize - 1 : 1);
 
                     newReservationLine = calculateNewReservationLine(reservedBottomBound);
 
-                    seq.set(reservedUpBound);
+                    seq.set(reservedUpBound + 1);
 
                     cacheView.put(key, seq);
 
@@ -401,7 +405,7 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
      * @return New reservation line.
      */
     private long calculateNewReservationLine(long initialValue) {
-        return initialValue + (batchSize * reservePercentage / 100);
+        return initialValue + ((batchSize > 1 ? batchSize - 1 : 1) * reservePercentage / 100);
     }
 
     /** {@inheritDoc} */
