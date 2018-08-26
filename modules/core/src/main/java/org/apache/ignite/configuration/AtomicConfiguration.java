@@ -38,7 +38,7 @@ public class AtomicConfiguration {
     public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE = 1000;
 
     /** Default atomic sequence reservation size. */
-    public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_PERCENTAGE = 70;
+    public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_PERCENTAGE = 80;
 
     /** Default batch size for all cache's sequences. */
     private int seqReserveSize = DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
