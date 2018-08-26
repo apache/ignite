@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime, timedelta
+from decimal import Decimal
 from functools import wraps
 from typing import Any, Type, Union
 
@@ -55,30 +57,21 @@ def int_overflow(value: int) -> int:
     return ((value ^ 0x80000000) & 0xffffffff) - 0x80000000
 
 
-def unwrap_binary(client, wrapped: tuple, recurse: bool=True):
+def unwrap_binary(client, wrapped: tuple):
     """
     Unwrap wrapped BinaryObject and convert it to Python data.
 
     :param client: connection to Ignite cluster,
     :param wrapped: `WrappedDataObject` value,
-    :param recurse: unwrap recursively using a simple heuristic to detect
-     nested `WrappedDataObject`\ s,
     :return: dict representing wrapped BinaryObject.
     """
     from pyignite.datatypes import BinaryObject
 
     blob, offset = wrapped
-    mock_conn = client.mock(blob)
-    mock_conn.pos = offset
-    data_class, data_bytes = BinaryObject.parse(mock_conn)
-    result = BinaryObject.to_python(data_class.from_buffer_copy(data_bytes))
-
-    if recurse:
-        for key, value in result['fields'].items():
-            if is_wrapped(value):
-                result[key] = unwrap_binary(client, value, recurse)
-
-    return result
+    client_clone = client.clone(prefetch=blob)
+    client_clone.pos = offset
+    data_class, data_bytes = BinaryObject.parse(client_clone)
+    return BinaryObject.to_python(data_class.from_buffer_copy(data_bytes))
 
 
 def hashcode(string: Union[str, bytes]) -> int:
@@ -139,6 +132,57 @@ def schema_id(schema: Union[int, dict]) -> int:
         s_id ^= ((field_id >> 24) & 0xff)
         s_id = int_overflow(s_id * FNV1_PRIME)
     return s_id
+
+
+def get_default(key: Type) -> Any:
+    """
+    Produces a sensible default value for any Ignite data type: zero for
+    numeric data types, None for strings and some other standard types,
+    start of epoch for dates, et c.
+
+    :param key: parser/generator class,
+    :return: pythonic value. Defaults to None.
+    """
+    from pyignite.datatypes import (
+        ByteObject, ShortObject, IntObject, LongObject, FloatObject,
+        DoubleObject, CharObject, BoolObject, DecimalObject, DateObject,
+        TimestampObject, TimeObject, ByteArrayObject, ShortArrayObject,
+        IntArrayObject, LongArrayObject, FloatArrayObject, DoubleArrayObject,
+        CharArrayObject, BoolArrayObject, UUIDArrayObject, DateArrayObject,
+        TimestampArrayObject, TimeArrayObject, DecimalArrayObject,
+        StringArrayObject, CollectionObject, MapObject,
+    )
+
+    return {
+        ByteObject: 0,
+        ShortObject: 0,
+        IntObject: 0,
+        LongObject: 0,
+        FloatObject: 0.0,
+        DoubleObject: 0.0,
+        CharObject: ' ',
+        BoolObject: False,
+        DecimalObject: Decimal('0.00'),
+        DateObject: datetime(1970, 1, 1),
+        TimestampObject: (datetime(1970, 1, 1), 0),
+        TimeObject: timedelta(),
+        ByteArrayObject: [],
+        ShortArrayObject: [],
+        IntArrayObject: [],
+        LongArrayObject: [],
+        FloatArrayObject: [],
+        DoubleArrayObject: [],
+        CharArrayObject: [],
+        BoolArrayObject: [],
+        UUIDArrayObject: [],
+        DateArrayObject: [],
+        TimestampArrayObject: [],
+        TimeArrayObject: [],
+        DecimalArrayObject: [],
+        StringArrayObject: [],
+        CollectionObject: [],
+        MapObject: {},
+    }.get(key, None)
 
 
 def status_to_exception(exc: Type[Exception]):

@@ -289,7 +289,6 @@ class AnyDataObject:
             date: DateObject,
             timedelta: TimeObject,
             decimal.Decimal: DecimalObject,
-            object: BinaryObject,
         }
 
         python_array_map = {
@@ -331,6 +330,14 @@ class AnyDataObject:
             raise TypeError(
                 'Type `array of {}` is invalid'.format(value_subtype)
             )
+
+        if all([
+            hasattr(value, 'type_name'),
+            hasattr(value, 'type_id'),
+            hasattr(value, 'schema'),
+            hasattr(value, 'schema_id'),
+        ]):
+            return BinaryObject
 
         if value_type in python_map:
             return python_map[value_type]

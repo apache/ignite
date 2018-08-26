@@ -16,22 +16,17 @@
 from collections import OrderedDict
 from decimal import Decimal
 
-from pyignite.api import (
-    sql_fields, cache_create, scan, cache_create_with_config,
-    cache_get_configuration, put_binary_type, get_binary_type,
-    cache_get, cache_get_or_create, cache_put, cache_destroy,
-)
+from pyignite.client.binary import GenericObjectMeta
 from pyignite.datatypes import (
     BinaryObject, BoolObject, IntObject, DecimalObject, LongObject, String,
 )
 from pyignite.datatypes.prop_codes import *
-from pyignite.utils import unwrap_binary
 
 
 insert_data = [
-    [1, True, (42, IntObject), Decimal('2.4'), 'asdf'],
-    [2, False, (43, IntObject), Decimal('2.5'), 'zxcvb'],
-    [3, True, (44, IntObject), Decimal('2.6'), 'qwerty'],
+    [1, True, 'asdf', 42, Decimal('2.4')],
+    [2, False, 'zxcvb', 43, Decimal('2.5')],
+    [3, True, 'qwerty', 44, Decimal('2.6')],
 ]
 
 page_size = 100
@@ -48,80 +43,71 @@ create_query = '''
 CREATE TABLE {} (
   test_pk INTEGER(11) PRIMARY KEY,
   test_bool BOOLEAN,
+  test_str VARCHAR(24),
   test_int INTEGER(11),
   test_decimal DECIMAL(11, 5),
-  test_str VARCHAR(24),
 )
 '''.format(table_sql_name)
 
 insert_query = '''
 INSERT INTO {} (
-  test_pk, test_bool, test_int, test_decimal, test_str
+  test_pk, test_bool, test_str, test_int, test_decimal, 
 ) VALUES (?, ?, ?, ?, ?)'''.format(table_sql_name)
 
-select_query = '''
-SELECT (test_pk, test_bool, test_int, test_decimal, test_str) FROM {}
-'''.format(table_sql_name)
+select_query = '''SELECT * FROM {}'''.format(table_sql_name)
 
 drop_query = 'DROP TABLE {} IF EXISTS'.format(table_sql_name)
 
 
 def test_sql_read_as_binary(client):
 
-    cache_get_or_create(client, scheme_name)
-    sql_fields(client, scheme_name, drop_query, page_size)
+    client.sql(drop_query)
 
     # create table
-    result = sql_fields(
-        client,
-        scheme_name,
-        create_query,
-        page_size
-    )
-    assert result.status == 0, result.message
+    client.sql(create_query)
 
     # insert some rows
     for line in insert_data:
-        result = sql_fields(
-            client,
-            scheme_name,
-            insert_query,
-            page_size,
-            query_args=line
-        )
-        assert result.status == 0, result.message
+        client.sql(insert_query, query_args=line)
 
-    result = scan(client, table_cache_name, 100)
-    assert result.status == 0, result.message
+    table_cache = client.get_cache(table_cache_name)
+    result = table_cache.scan()
 
-    # now `data` is a dict of table rows with primary index column as a key
-    # and other columns as a value, represented as a BinaryObject
-    # wrapped in WrappedDataObject
-    for key, value in result.value['data'].items():
-        # we can't automagically unwind the contents of the WrappedDataObject
-        # the same way we do for Map or Collection, we got bytes instead
-        binary_obj = unwrap_binary(client, value)
-        assert len(binary_obj['fields']) == 4
+    # convert Binary object fields' values to a tuple
+    # to compare it with the initial data
+    for key, value in result:
+        assert key in {x[0] for x in insert_data}
+        assert (
+                   value.TEST_BOOL,
+                   value.TEST_STR,
+                   value.TEST_INT,
+                   value.TEST_DECIMAL
+               ) in {tuple(x[1:]) for x in insert_data}
 
-    result = cache_get_configuration(client, table_cache_name)
-    assert result.status == 0, result.message
-
-    # cleanup
-    result = sql_fields(client, scheme_name, drop_query, page_size)
-    assert result.status == 0, result.message
-
-    result = cache_destroy(client, scheme_name)
-    assert result.status == 0, result.message
+    client.sql(drop_query)
 
 
 def test_sql_write_as_binary(client):
 
-    cache_create(client, scheme_name)
+    client.get_or_create_cache(scheme_name)
 
     # configure cache as an SQL table
     type_name = table_cache_name
 
-    result = cache_create_with_config(client, {
+    # register binary type
+    class AllDataType(
+        metaclass=GenericObjectMeta,
+        type_name=type_name,
+        schema=OrderedDict([
+            ('TEST_BOOL', BoolObject),
+            ('TEST_STR', String),
+            ('TEST_INT', IntObject),
+            ('TEST_DECIMAL', DecimalObject),
+        ]),
+    ):
+        pass
+
+    table_cache = client.get_or_create_cache({
         PROP_NAME: table_cache_name,
         PROP_SQL_SCHEMA: scheme_name,
         PROP_QUERY_ENTITIES: [
@@ -173,209 +159,139 @@ def test_sql_write_as_binary(client):
             },
         ],
     })
-    assert result.status == 0, result.message
+    table_settings = table_cache.settings
+    assert table_settings, 'SQL table cache settings are empty'
 
-    result = cache_get_configuration(client, table_cache_name)
-    assert result.status == 0, result.message
-
-    # register binary type
-    result = put_binary_type(
-        client,
-        type_name,
-        schema=OrderedDict([
-            ('TEST_BOOL', BoolObject),
-            ('TEST_STR', String),
-            ('TEST_INT', IntObject),
-            ('TEST_DECIMAL', DecimalObject),
-        ])
-    )
-    assert result.status == 0, result.message
-
-    sql_type_id = result.value['type_id']
-    schema_id = result.value['schema_id']
-
-    # recheck
-    result = get_binary_type(client, sql_type_id)
-    assert result.status == 0, result.message
-    assert schema_id in result.value['schema'], (
-        'Client-side schema ID calculation is incorrect'
-    )
+    client.put_binary_type(data_class=AllDataType)
 
     # insert rows as k-v
     for row in insert_data:
-        result = cache_put(
-            client,
-            table_cache_name,
-            key=row[0],
-            key_hint=IntObject,
-            value={
-                'version': 1,
-                'type_id': sql_type_id,
-                'schema_id': schema_id,
-                'fields': OrderedDict([
-                    ('TEST_BOOL', row[1]),
-                    ('TEST_STR', row[4]),
-                    ('TEST_INT', row[2]),
-                    ('TEST_DECIMAL', row[3]),
-                ]),
-            },
-            value_hint=BinaryObject,
-        )
-        assert result.status == 0, result.message
+        value = AllDataType()
+        setattr(value, 'TEST_BOOL', row[1])
+        setattr(value, 'TEST_STR', row[2])
+        setattr(value, 'TEST_INT', row[3])
+        setattr(value, 'TEST_DECIMAL', row[4])
+        table_cache.put(row[0], value, key_hint=IntObject)
 
-    result = scan(client, table_cache_name, 100)
-    assert result.status == 0, result.message
+    data = table_cache.scan()
+    assert len(list(data)) == len(insert_data), (
+        'Not all data was read as key-value'
+    )
 
     # read rows as SQL
-    result = sql_fields(
-        client,
-        scheme_name,
-        select_query,
-        100,
-        include_field_names=True,
-    )
-    assert result.status == 0, result.message
-    assert len(result.value['data']) == len(insert_data)
+    data = client.sql(select_query, include_field_names=True)
+
+    header_row = next(data)
+    for field_name in AllDataType.schema.keys():
+        assert field_name in header_row, 'Not all field names in header row'
+
+    data = list(data)
+    assert len(data) == len(insert_data), 'Not all data was read as SQL rows'
 
     # cleanup
-    result = cache_destroy(client, table_cache_name)
-    assert result.status == 0, result.message
-
-    result = cache_destroy(client, scheme_name)
-    assert result.status == 0, result.message
+    table_cache.destroy()
 
 
 def test_nested_binary_objects(client):
 
-    cache_create(client, 'nested_binary')
+    nested_cache = client.get_or_create_cache('nested_binary')
 
-    inner_schema = OrderedDict([
-        ('inner_int', LongObject),
-        ('inner_str', String),
-    ])
+    class InnerType(
+        metaclass=GenericObjectMeta,
+        schema=OrderedDict([
+            ('inner_int', LongObject),
+            ('inner_str', String),
+        ]),
+    ):
+        pass
 
-    outer_schema = OrderedDict([
-        ('outer_int', LongObject),
-        ('nested_binary', BinaryObject),
-        ('outer_str', String),
-    ])
+    class OuterType(
+        metaclass=GenericObjectMeta,
+        schema=OrderedDict([
+            ('outer_int', LongObject),
+            ('nested_binary', BinaryObject),
+            ('outer_str', String),
+        ]),
+    ):
+        pass
 
-    result = put_binary_type(client, 'InnerType', schema=inner_schema)
-    inner_type_id = result.value['type_id']
-    inner_schema_id = result.value['schema_id']
+    client.put_binary_type(data_class=InnerType)
+    client.put_binary_type(data_class=OuterType)
 
-    result = put_binary_type(client, 'OuterType', schema=outer_schema)
-    outer_type_id = result.value['type_id']
-    outer_schema_id = result.value['schema_id']
+    inner = InnerType()
+    inner.inner_int = 42
+    inner.inner_str = 'This is a test string'
 
-    result = cache_put(
-        client,
-        'nested_binary',
-        1,
-        {
-            'version': 1,
-            'type_id': outer_type_id,
-            'schema_id': outer_schema_id,
-            'fields': OrderedDict([
-                ('outer_int', 42),
-                ('nested_binary', (
-                    {
-                        'version': 1,
-                        'type_id': inner_type_id,
-                        'schema_id': inner_schema_id,
-                        'fields': OrderedDict([
-                            ('inner_int', 24),
-                            ('inner_str', 'World'),
-                        ]),
-                    }, BinaryObject)),
-                ('outer_str', 'Hello'),
-            ])
-        },
-        value_hint=BinaryObject,
-    )
-    assert result.status == 0, result.message
+    outer = OuterType()
+    outer.outer_int = 43
+    outer.nested_binary = inner
+    outer.outer_str = 'This is another test string'
 
-    result = cache_get(client, 'nested_binary', 1)
-    assert result.status == 0, result.message
+    nested_cache.put(1, outer)
 
-    data = unwrap_binary(client, result.value, recurse=False)['fields']
-    assert data['outer_str'] == 'Hello'
-    assert data['outer_int'] == 42
+    result = nested_cache.get(1)
+    assert result.outer_int == 43
+    assert result.outer_str == 'This is another test string'
+    assert result.nested_binary.inner_int == 42
+    assert result.nested_binary.inner_str == 'This is a test string'
 
-    inner_data = data['nested_binary']['fields']
-    assert inner_data['inner_str'] == 'World'
-    assert inner_data['inner_int'] == 24
-
-    cache_destroy(client, 'nested_binary')
+    nested_cache.destroy()
 
 
 def test_add_schema_to_binary_object(client):
 
-    cache_create(client, 'migrate_binary')
+    migrate_cache = client.create_cache('migrate_binary')
 
-    original_schema = OrderedDict([
-        ('test_str', String),
-        ('test_int', LongObject),
-        ('test_bool', BoolObject),
-    ])
-    result = put_binary_type(client, 'MyBinaryType', schema=original_schema)
-    assert result.status == 0, result.message
-    type_id = result.value['type_id']
-    original_schema_id = result.value['schema_id']
+    class MyBinaryType(
+        metaclass=GenericObjectMeta,
+        schema=OrderedDict([
+            ('test_str', String),
+            ('test_int', LongObject),
+            ('test_bool', BoolObject),
+        ]),
+    ):
+        pass
 
-    result = cache_put(
-        client,
-        'migrate_binary',
-        1,
-        {
-            'version': 1,
-            'type_id': type_id,
-            'schema_id': original_schema_id,
-            'fields': OrderedDict([
-                ('test_str', 'Hello World'),
-                ('test_int', 42),
-                ('test_bool', True),
-            ]),
-        },
-        value_hint=BinaryObject,
-    )
-    assert result.status == 0, result.message
+    client.put_binary_type(data_class=MyBinaryType)
 
-    modified_schema = original_schema.copy()
+    binary_object = MyBinaryType()
+    binary_object.test_str = 'Test string'
+    binary_object.test_int = 42
+    binary_object.test_bool = True
+
+    migrate_cache.put(1, binary_object)
+
+    result = migrate_cache.get(1)
+    assert result.test_str == 'Test string'
+    assert result.test_int == 42
+    assert result.test_bool is True
+
+    modified_schema = MyBinaryType.schema.copy()
     modified_schema['test_decimal'] = DecimalObject
     del modified_schema['test_bool']
 
-    result = put_binary_type(client, 'MyBinaryType', schema=modified_schema)
-    assert result.status == 0, result.message
-    modified_schema_id = result.value['schema_id']
-    assert result.value['type_id'] == type_id
+    class MyBinaryTypeV2(
+        metaclass=GenericObjectMeta,
+        type_name='MyBinaryType',
+        schema=modified_schema,
+    ):
+        pass
 
-    assert original_schema_id != modified_schema_id
+    client.put_binary_type(data_class=MyBinaryTypeV2)
+    assert MyBinaryType.type_id == MyBinaryTypeV2.type_id
+    assert MyBinaryType.schema_id != MyBinaryTypeV2.schema_id
 
-    result = cache_put(
-        client,
-        'migrate_binary',
-        2,
-        {
-            'version': 1,
-            'type_id': type_id,
-            'schema_id': modified_schema_id,
-            'fields': OrderedDict([
-                ('test_str', 'Hello World'),
-                ('test_int', 42),
-                ('test_decimal', Decimal('3.45')),
-            ]),
-        },
-        value_hint=BinaryObject,
-    )
-    assert result.status == 0, result.message
+    binary_object_v2 = MyBinaryTypeV2()
+    binary_object_v2.test_str = 'Another test'
+    binary_object_v2.test_int = 43
+    binary_object_v2.test_decimal = Decimal('2.34')
 
-    result = cache_get(client, 'migrate_binary', 2)
-    assert result.status == 0, result.message
-    data = unwrap_binary(client, result.value)['fields']
-    assert len(data) == 3
-    assert 'test_str' in data
-    assert 'test_decimal' in data
-    assert 'test_bool' not in data
+    migrate_cache.put(2, binary_object_v2)
 
-    cache_destroy(client, 'migrate_binary')
+    result = migrate_cache.get(2)
+    assert result.test_str == 'Another test'
+    assert result.test_int == 43
+    assert result.test_decimal == Decimal('2.34')
+    assert not hasattr(result, 'test_bool')
+
+    migrate_cache.destroy()

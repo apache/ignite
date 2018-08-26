@@ -35,8 +35,9 @@ a generator with result rows.
 the registry for Ignite Complex Objects.
 """
 
+from collections import OrderedDict
 import socket
-from typing import Iterable, Union
+from typing import Iterable, Type, Union
 
 from pyignite.constants import *
 from pyignite.exceptions import (
@@ -46,6 +47,7 @@ from pyignite.exceptions import (
 from pyignite.utils import (
     entity_id, is_iterable, schema_id, status_to_exception,
 )
+from .binary import GenericObjectMeta
 from .handshake import HandshakeRequest, read_response
 from .ssl import wrap
 
@@ -234,16 +236,17 @@ class Client:
         to.password = self.password
         to.nodes = self.nodes
 
-    def clone(self) -> 'Client':
+    def clone(self, prefetch: bytes=b'') -> 'Client':
         """
         Clones this client in its current state.
 
         :return: `Client` object.
         """
-        clone = Client(**self.init_kwargs)
+        clone = Client(prefetch, **self.init_kwargs)
         self._transfer_params(to=clone)
         if self.port and self.host:
             clone._connect(self.host, self.port)
+        clone.prefetch = prefetch
         return clone
 
     def mock(self, buffer: bytes) -> 'MockClient':
@@ -351,8 +354,10 @@ class Client:
                 # we probably have a binary object type ID
                 return BinaryObject
 
-        def convert_schema(field_ids: list, binary_fields: list):
-            converted_schema = {}
+        def convert_schema(
+            field_ids: list, binary_fields: list
+        ) -> OrderedDict:
+            converted_schema = OrderedDict()
             for field_id in field_ids:
                 binary_field = [
                     x
@@ -364,9 +369,12 @@ class Client:
                 )
             return converted_schema
 
-        def one_schema_result(result_value: dict, schema: dict):
+        def one_schema_result(result_value: dict, schema: OrderedDict):
             result = result_value.copy()
             result['schemas'] = [schema]
+            result['data_class'] = GenericObjectMeta(
+                result['type_name'], (), {}, schema=schema,
+            )
             return result
 
         if schema is None:
@@ -379,15 +387,15 @@ class Client:
                 return result.value
 
             binary_fields = result.value.pop('binary_fields')
-            old_schemas = result.value.pop('schema')
-            new_schemas = []
-            for s_id, field_ids in old_schemas.items():
+            old_format_schemas = result.value.pop('schema')
+            schemas = []
+            for s_id, field_ids in old_format_schemas.items():
                 converted_schema = convert_schema(field_ids, binary_fields)
                 self.binary_registry[
                     (entity_id(binary_type), s_id)
                 ] = one_schema_result(result.value, converted_schema)
-                new_schemas.append(converted_schema)
-            result.value['schemas'] = new_schemas
+                schemas.append(converted_schema)
+            result.value['schemas'] = schemas
             return result.value
         else:
             # first look up the registry, then query the server
@@ -404,9 +412,9 @@ class Client:
                 return result.value
 
             binary_fields = result.value.pop('binary_fields')
-            old_schemas = result.value.pop('schema')
+            old_format_schemas = result.value.pop('schema')
             exact_result = {'type_exists': False}
-            for s_id, field_ids in old_schemas.items():
+            for s_id, field_ids in old_format_schemas.items():
                 converted_schema = convert_schema(field_ids, binary_fields)
                 result = one_schema_result(result.value, converted_schema)
                 self.binary_registry[(entity_id(binary_type), s_id)] = result
@@ -415,8 +423,8 @@ class Client:
             return exact_result
 
     def put_binary_type(
-        self, type_name: str, affinity_key_field: str=None,
-        is_enum=False, schema: dict=None,
+        self, type_name: str=None, affinity_key_field: str=None,
+        is_enum=False, schema: OrderedDict=None, data_class: Type=None,
     ) -> dict:
         """
         Registers binary type information in cluster. Refers to a local (one
@@ -431,13 +439,33 @@ class Client:
          of enumerated parameter names as keys and an integers as values.
          When register binary type, pass a dict of field names: field types.
          Binary type with no fields is OK,
-        :return: dict with type and schema IDs.
+        :param data_class: (optional) custom data class to associate with
+         given binary type and schema. If not provided, a minimal data class
+         will be created with a help of
+         :class:`~pyignite.client.binary.GenericObjectMeta`,
+        :return: dict with the following fields:
+
+        - `type_id` − binary type ID,
+        - `schema_id` − schema ID.
         """
         from pyignite.api.binary import put_binary_type
 
-        type_id = entity_id(type_name)
-        schema = schema or {}
-        s_id = schema_id(schema)
+        if data_class:
+            type_name = data_class.type_name
+            type_id = data_class.type_id
+            schema = data_class.schema
+            s_id = data_class.schema_id
+        else:
+            if not type_name:
+                raise ParameterError(
+                    'Please provide at least binary type name or dataclass '
+                    'to register Binary object'
+                )
+            type_id = entity_id(type_name)
+            schema = schema or OrderedDict()
+            s_id = schema_id(schema)
+            data_class = GenericObjectMeta(type_name, (), {}, schema=schema)
+
         if (type_id, s_id) in self.binary_registry:
             return {
                 'type_id': type_id,
@@ -454,9 +482,10 @@ class Client:
             ] = {
                 'type_exists': True,
                 'type_name': type_name,
-                'schema': schema,
+                'schemas': [schema],
                 'affinity_key_field': affinity_key_field,
                 'is_enum': is_enum,
+                'data_class': data_class,
             }
             return result.value
 
