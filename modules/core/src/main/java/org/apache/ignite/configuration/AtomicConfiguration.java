@@ -137,9 +137,12 @@ public class AtomicConfiguration {
      *
      * @param atomicSeqReservePercentage Atomic sequence reservation percentage.
      * @see #getAtomicSequenceReservePercentage()
+     * @return {@code this} for chaining.
      */
-    public void setAtomicSequenceReservePercentage(int atomicSeqReservePercentage) {
+    public AtomicConfiguration setAtomicSequenceReservePercentage(int atomicSeqReservePercentage) {
         this.atomicSeqReservePercentage = atomicSeqReservePercentage;
+
+        return this;
     }
 
     /**
