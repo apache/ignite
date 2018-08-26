@@ -43,6 +43,11 @@ import java.io.Closeable;
  * Method {@link #batchSize()} gets current batch size of atomic sequence.
  * </li>
  * <li>
+ * Method {@link #reservePercentage(int percentage)} set reserve percentage of current atomic sequence.
+ * </li>
+ * <li>
+ * Method {@link #reservePercentage()} gets current reserve percentage of atomic sequence.
+ * <li>
  * Method {@link #name()} gets name of atomic sequence.
  * </li>
  * </ul>
@@ -116,6 +121,21 @@ public interface IgniteAtomicSequence extends Closeable {
      * @param size Sequence batch size. Must be more then 0.
      */
     public void batchSize(int size);
+
+    /**
+     * Gets local reserve percentage for this atomic sequence. When a reserve percentage of a batch size
+     * is reached then sequence starts a new reservation in background.
+     *
+     * @return Sequence reserve pecentage.
+     */
+    public int reservePercentage();
+
+    /**
+     * Sets local reserve percentage for this atomic sequence.
+     *
+     * @param percentage Reserve pecentage. Must be between 0 and 100.
+     */
+    public void reservePercentage(int percentage);
 
     /**
      * Gets status of atomic sequence.

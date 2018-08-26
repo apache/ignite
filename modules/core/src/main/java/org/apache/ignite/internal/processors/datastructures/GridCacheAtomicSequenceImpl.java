@@ -261,6 +261,16 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
     }
 
     /** {@inheritDoc} */
+    @Override public int reservePercentage() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reservePercentage(int percentage) {
+
+    }
+
+    /** {@inheritDoc} */
     @Override protected void invalidateLocalState() {
         locVal = 0;
         upBound = -1;

@@ -377,8 +377,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         throws IgniteCheckedException
     {
         return getAtomic(new AtomicAccessor<GridCacheAtomicSequenceEx>() {
-            @Override public T2<GridCacheAtomicSequenceEx, AtomicDataStructureValue> get(GridCacheInternalKey key,
-                AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+            @Override public T2<GridCacheAtomicSequenceEx, AtomicDataStructureValue> get(
+                GridCacheInternalKey key,
+                AtomicDataStructureValue val, IgniteInternalCache cache
+            ) throws IgniteCheckedException {
                 GridCacheAtomicSequenceValue seqVal = cast(val, GridCacheAtomicSequenceValue.class);
 
                 // Check that sequence hasn't been created in other thread yet.
@@ -502,11 +504,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         awaitInitialization();
 
-        if (cfg == null) {
-            checkAtomicsConfiguration();
-
+        if (cfg == null)
             cfg = dfltAtomicCfg;
-        }
+
+        checkAtomicsConfiguration(cfg);
 
         final String grpName;
 
@@ -1633,10 +1634,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      * @throws IgniteException If atomics configuration is not provided.
      */
-    private void checkAtomicsConfiguration() throws IgniteException {
-        if (dfltAtomicCfg == null)
+    private void checkAtomicsConfiguration(AtomicConfiguration atomicCfg) throws IgniteException {
+        if (atomicCfg == null)
             throw new IgniteException("Atomic data structure can not be created, " +
                 "need to provide AtomicConfiguration.");
+
+        if (atomicCfg.getAtomicSequenceReserveSize() <= 0) {
+            throw new IgniteException(
+                "Atomic sequence can not be created, " +
+                    "reserve size must be more than 0, but atomicSequenceReserveSize: " + atomicCfg.getAtomicSequenceReserveSize()
+            );
+        }
+
+        if (atomicCfg.getAtomicSequenceReservePercentage() <= 0 || atomicCfg.getAtomicSequenceReservePercentage() > 100) {
+            throw new IgniteException(
+                "Atomic sequence can not be created, reserve percentage must have value " +
+                    "between 0 and 100, but atomicSequenceReservePercentage: " + atomicCfg.getAtomicSequenceReservePercentage()
+            );
+        }
     }
 
     /**
