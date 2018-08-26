@@ -120,7 +120,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
             assertEquals(BATCH_SIZE, seq.batchSize());
         }
 
-        assertEquals(1, G.allGrids().size());
+        assertEquals(gridCount(), G.allGrids().size());
     }
 
     /** {@inheritDoc} */
