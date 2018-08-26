@@ -25,39 +25,35 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
         | Cache key configuration allows to collocate objects in a partitioned cache based on field in cache key without explicit usage of annotations on user classes.
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6
-            mixin clusters-cache-key-cfg
-                .ignite-form-field
-                    +ignite-form-field__label('Cache key configuration:', '"cacheKeyConfiguration"')
-                    .ignite-form-field__control
-                        -let items = model
-                        list-editable.pc-list-editable-with-form-grid(ng-model=items name='cacheKeyConfiguration')
-                            list-editable-item-edit.pc-form-grid-row
-                                - form = '$parent.form'
-                                .pc-form-grid-col-60
-                                    +java-class-autofocus('Type name:', '$item.typeName', '"cacheKeyTypeName"', 'true', 'true', 'true', 'Type name')(
-                                        ignite-unique=items
-                                        ignite-unique-property='typeName'
-                                    )
-                                        +unique-feedback(`cacheKeyTypeName`, 'Type name should be unique.')
-                                .pc-form-grid-col-60
-                                    +sane-ignite-form-field-text({
-                                        label: 'Affinity key field name:',
-                                        model: '$item.affinityKeyFieldName',
-                                        name: '"affinityKeyFieldName"',
-                                        disabled: 'false',
-                                        placeholder: 'Enter field name',
-                                        tip: 'Affinity key field name',
-                                        required: true
-                                    })
+            .ignite-form-field
+                +form-field__label({ label: 'Cache key configuration:', name: '"cacheKeyConfiguration"' })
 
-                            list-editable-no-items
-                                list-editable-add-item-button(
-                                    add-item=`(${items} = ${items} || []).push({})`
-                                    label-single='configuration'
-                                    label-multiple='configurations'
-                                )
+                list-editable.pc-list-editable-with-form-grid(ng-model=model name='cacheKeyConfiguration')
+                    list-editable-item-edit.pc-form-grid-row
+                        - form = '$parent.form'
+                        .pc-form-grid-col-60
+                            +java-class-autofocus('Type name:', '$item.typeName', '"cacheKeyTypeName"', 'true', 'true', 'true', 'Type name')(
+                                ignite-unique=model
+                                ignite-unique-property='typeName'
+                            )
+                                +unique-feedback(`cacheKeyTypeName`, 'Type name should be unique.')
+                        .pc-form-grid-col-60
+                            +form-field__text({
+                                label: 'Affinity key field name:',
+                                model: '$item.affinityKeyFieldName',
+                                name: '"affinityKeyFieldName"',
+                                disabled: 'false',
+                                placeholder: 'Enter field name',
+                                tip: 'Affinity key field name',
+                                required: true
+                            })
 
-            +clusters-cache-key-cfg
+                    list-editable-no-items
+                        list-editable-add-item-button(
+                            add-item=`(${model} = ${model} || []).push({})`
+                            label-single='configuration'
+                            label-multiple='configurations'
+                        )
 
         .pca-form-column-6
             +preview-xml-java(model, 'clusterCacheKeyConfiguration')

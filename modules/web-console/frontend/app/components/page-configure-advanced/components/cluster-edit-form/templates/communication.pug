@@ -47,7 +47,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-30
                 +number('Local port range:', `${communication}.localPortRange`, '"comLocalPortRange"', 'true', '100', '1', 'Local port range for local host ports')
             .pc-form-grid-col-30
-                +sane-ignite-form-field-number({
+                +form-field__number({
                     label: 'Shared memory port:',
                     model: `${communication}.sharedMemoryPort`,
                     name: '"sharedMemoryPort"',
@@ -58,7 +58,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })(
                     pc-not-in-collection='::$ctrl.Clusters.sharedMemoryPort.invalidValues'
                 )
-                    +form-field-feedback('"sharedMemoryPort"', 'notInCollection', 'Shared memory port should be more than "{{ ::$ctrl.Clusters.sharedMemoryPort.invalidValues[0] }}" or equal to "{{ ::$ctrl.Clusters.sharedMemoryPort.min }}"')
+                    +form-field__error({ error: 'notInCollection', message: 'Shared memory port should be more than "{{ ::$ctrl.Clusters.sharedMemoryPort.invalidValues[0] }}" or equal to "{{ ::$ctrl.Clusters.sharedMemoryPort.min }}"' })
             .pc-form-grid-col-30
                 +number('Idle connection timeout:', `${communication}.idleConnectionTimeout`, '"idleConnectionTimeout"', 'true', '30000', '1',
                     'Maximum idle connection timeout upon which a connection to client will be closed')
@@ -76,7 +76,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-30
                 +number('Slow client queue limit:', `${communication}.slowClientQueueLimit`, '"slowClientQueueLimit"', 'true', '0', '0', 'Slow client queue limit')
             .pc-form-grid-col-30
-                +sane-ignite-form-field-number({
+                +form-field__number({
                     label: 'Ack send threshold:',
                     model: `${communication}.ackSendThreshold`,
                     name: '"ackSendThreshold"',
@@ -85,7 +85,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     tip: 'Number of received messages per connection to node after which acknowledgment message is sent'
                 })
             .pc-form-grid-col-30
-                +sane-ignite-form-field-number({
+                +form-field__number({
                     label: 'Message queue limit:',
                     model: `${communication}.messageQueueLimit`,
                     name: '"messageQueueLimit"',
@@ -95,7 +95,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })
             .pc-form-grid-col-30
                 //- allowInvalid: true prevents from infinite digest loop when old value was 0 and becomes less than allowed minimum
-                +sane-ignite-form-field-number({
+                +form-field__number({
                     label: 'Unacknowledged messages:',
                     model: `${communication}.unacknowledgedMessagesBufferSize`,
                     name: '"unacknowledgedMessagesBufferSize"',

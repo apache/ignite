@@ -26,57 +26,59 @@ import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
- * Terminate Condition implementation for OptimizeMakeChangeGATest <br/>
+ * Terminate Condition implementation for {@link OptimizeMakeChangeGAExample}.
  */
 public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
-    /** Ignite logger */
-    private IgniteLogger igniteLogger = null;
-    /** Ignite instance */
-    private Ignite ignite = null;
+    /** Ignite logger. */
+    private IgniteLogger igniteLog;
+    /** Ignite instance. */
+    private Ignite ignite;
 
     /**
-     * @param ignite Ignite
+     * Create class instance.
+     *
+     * @param ignite Ignite instance.
      */
     public OptimizeMakeChangeTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;
-        this.igniteLogger = ignite.log();
+        this.igniteLog = ignite.log();
     }
 
     /**
-     * @param fittestChromosome Most fit chromosome at for the nth generation
-     * @param averageFitnessScore Average fitness score as of the nth generation
-     * @param currentGeneration Current generation
-     * @return Boolean value
+     * Check whether termination condition is met.
+     *
+     * @param fittestChromosome Most fit chromosome at for the nth generation.
+     * @param averageFitnessScore Average fitness score as of the nth generation.
+     * @param currGeneration Current generation.
+     * @return Status whether condition is met or not.
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
-        int currentGeneration) {
+        int currGeneration) {
         boolean isTerminate = true;
 
-        igniteLogger.info("##########################################################################################");
-        igniteLogger.info("Generation: " + currentGeneration);
-        igniteLogger.info("Fittest is Chromosome Key: " + fittestChromosome);
-        igniteLogger.info("Chromsome: " + fittestChromosome);
+        igniteLog.info("##########################################################################################");
+        igniteLog.info("Generation: " + currGeneration);
+        igniteLog.info("Fittest is Chromosome Key: " + fittestChromosome);
+        igniteLog.info("Chromosome: " + fittestChromosome);
         printCoins(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
-        igniteLogger.info("Avg Chromsome Fitness: " + averageFitnessScore);
-        igniteLogger.info("##########################################################################################");
+        igniteLog.info("Avg Chromosome Fitness: " + averageFitnessScore);
+        igniteLog.info("##########################################################################################");
 
-        if (!(currentGeneration > 5)) {
+        if (!(currGeneration > 5))
             isTerminate = false;
-        }
 
         return isTerminate;
     }
 
     /**
-     * Helper to print change detail
+     * Helper to print change details.
      *
-     * @param genes List if Genes
+     * @param genes List if Genes.
      */
     private void printCoins(List<Gene> genes) {
         for (Gene gene : genes) {
-            igniteLogger.info("Coin Type: " + ((Coin)gene.getVal()).getCoinType().toString());
-            igniteLogger.info("Number of Coins: " + ((Coin)gene.getVal()).getNumberOfCoins());
+            igniteLog.info("Coin Type: " + ((Coin)gene.getVal()).getCoinType().toString());
+            igniteLog.info("Number of Coins: " + ((Coin)gene.getVal()).getNumOfCoins());
         }
-
     }
 }

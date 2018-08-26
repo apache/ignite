@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['hideOnStateChange', ['$transitions', ($transitions) => {
+export default ['hideOnStateChange', ['$transitions', function($transitions) {
     const link = (scope, element) => {
         $transitions.onSuccess({}, () => element.fadeOut('slow'));
     };
