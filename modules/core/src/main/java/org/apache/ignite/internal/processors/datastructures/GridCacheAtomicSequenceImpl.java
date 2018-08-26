@@ -66,11 +66,14 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
     @GridToStringInclude(sensitive = true)
     private volatile long locVal;
 
-    /**  Upper bound of local counter. */
+    /** Upper bound of local counter. */
     private long upBound;
 
-    /**  Sequence batch size */
+    /** Sequence batch size */
     private volatile int batchSize;
+
+    /** Reservation percentage. */
+    private int reservePercentage;
 
     /** Synchronization lock for local value updates. */
     private final Lock localUpdate = new ReentrantLock();
@@ -101,21 +104,25 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
      * @param key Sequence key.
      * @param seqView Sequence projection.
      * @param batchSize Sequence batch size.
+     * @param reservePercentage Reservation percentage.
      * @param locVal Local counter.
      * @param upBound Upper bound.
      */
-    public GridCacheAtomicSequenceImpl(String name,
+    public GridCacheAtomicSequenceImpl(
+        String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
         int batchSize,
+        int reservePercentage,
         long locVal,
-        long upBound)
-    {
+        long upBound
+    ) {
         super(name, key, seqView);
 
         assert locVal <= upBound;
 
         this.batchSize = batchSize;
+        this.reservePercentage = reservePercentage;
         this.upBound = upBound;
         this.locVal = locVal;
     }

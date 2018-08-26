@@ -403,6 +403,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 long upBound;
                 long locCntr;
 
+                // If not present, first initialization.
                 if (seqVal == null) {
                     locCntr = initVal;
 
@@ -411,6 +412,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     // Global counter must be more than reserved region.
                     seqVal = new GridCacheAtomicSequenceValue(upBound + 1);
                 }
+                // If present, start from exist seq value.
                 else {
                     locCntr = seqVal.get();
 
@@ -420,13 +422,18 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     seqVal.set(upBound + 1);
                 }
 
+                int reservePercentage = cfg0.getAtomicSequenceReservePercentage();
+
                 // Only one thread can be in the transaction scope and create sequence.
-                seq = new GridCacheAtomicSequenceImpl(name,
+                seq = new GridCacheAtomicSequenceImpl(
+                    name,
                     key,
                     cache,
                     cfg0.getAtomicSequenceReserveSize(),
+                    reservePercentage,
                     locCntr,
-                    upBound);
+                    upBound
+                );
 
                 return new T2<GridCacheAtomicSequenceEx, AtomicDataStructureValue>(seq, seqVal);
             }
@@ -1646,7 +1653,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             );
         }
 
-        if (atomicCfg.getAtomicSequenceReservePercentage() <= 0 || atomicCfg.getAtomicSequenceReservePercentage() > 100) {
+        if (atomicCfg.getAtomicSequenceReservePercentage() < 0 || atomicCfg.getAtomicSequenceReservePercentage() > 100) {
             throw new IgniteException(
                 "Atomic sequence can not be created, reserve percentage must have value " +
                     "between 0 and 100, but atomicSequenceReservePercentage: " + atomicCfg.getAtomicSequenceReservePercentage()
