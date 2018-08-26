@@ -40,4 +40,9 @@ public class GridCachePartitionedSequenceApiSelfTest extends GridCacheSequenceAp
 
         return atomicCfg;
     }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 3;
+    }
 }

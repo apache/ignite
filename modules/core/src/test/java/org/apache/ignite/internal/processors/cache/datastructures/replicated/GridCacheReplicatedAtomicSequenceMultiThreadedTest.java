@@ -18,21 +18,16 @@
 package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.datastructures.GridCacheSequenceApiSelfAbstractTest;
+import org.apache.ignite.internal.processors.cache.datastructures.GridCacheAtomicSequenceMultiThreadedAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Cache sequence basic tests.
+ * Cache partitioned multi-threaded tests.
  */
-public class GridCacheReplicatedSequenceApiSelfTest extends GridCacheSequenceApiSelfAbstractTest {
+public class GridCacheReplicatedAtomicSequenceMultiThreadedTest extends GridCacheAtomicSequenceMultiThreadedAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
         return REPLICATED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
     }
 }

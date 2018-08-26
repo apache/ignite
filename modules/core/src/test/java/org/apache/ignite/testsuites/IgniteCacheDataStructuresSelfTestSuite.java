@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Ig
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedSetNoBackupsSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicReferenceApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicReferenceMultiNodeTest;
+import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicSequenceMultiThreadedTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedAtomicStampedApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedDataStructuresFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedQueueApiSelfTest;
@@ -159,6 +160,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteReplicatedAtomicLongApiSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSequenceMultiThreadedTest.class));
+        suite.addTest(new TestSuite(GridCacheReplicatedAtomicSequenceMultiThreadedTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSequenceTxSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedAtomicStampedApiSelfTest.class));
