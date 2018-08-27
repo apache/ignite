@@ -514,7 +514,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public CacheClientConfiguration GetConfiguration()
         {
             return DoOutInOp(ClientOp.CacheGetConfiguration, null,
-                s => new CacheClientConfiguration(s, _ignite.serverVersion()));
+                s => new CacheClientConfiguration(s, _ignite.ServerVersion()));
         }
 
         /** <inheritDoc /> */

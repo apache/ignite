@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Client
             _socket = Connect(clientConfiguration);
             _stream = GetSocketStream(_socket, clientConfiguration);
 
-            ServerVersion = version.HasValue ? version.Value : CurrentProtocolVersion;
+            ServerVersion = version ?? CurrentProtocolVersion;
 
             Validate(clientConfiguration);
 

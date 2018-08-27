@@ -296,13 +296,16 @@ public class QueryEntity implements Serializable {
                     getFromMap(target.getFieldsScale(), targetFieldName));
             }
             else {
+                Integer precision = getFromMap(target.getFieldsPrecision(), targetFieldName);
+                Integer scale = getFromMap(target.getFieldsScale(), targetFieldName);
+
                 queryFieldsToAdd.add(new QueryField(
                     targetFieldName,
                     targetFieldType,
                     !contains(target.getNotNullFields(),targetFieldName),
                     getFromMap(target.getDefaultFieldValues(), targetFieldName),
-                    getFromMap(target.getFieldsPrecision(), targetFieldName),
-                    getFromMap(target.getFieldsScale(), targetFieldName)
+                    precision == null ? -1 : precision,
+                    scale == null ? -1 : scale
                 ));
             }
         }
