@@ -1054,8 +1054,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         if (DmlStatementsProcessor.isDmlStatement(p)) {
-            checkDmlOperationIsAllowed();
-
             SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
 
             if (params != null)
