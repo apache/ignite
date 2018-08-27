@@ -42,8 +42,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -56,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
@@ -910,18 +909,12 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                                 parent.remapFut = null;
                                             }
 
-                                            affFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                                                @Override public void apply(IgniteInternalFuture<?> affFut) {
-                                                    try {
-                                                        affFut.get();
+                                            parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), new IgniteBiInClosure<IgniteCheckedException, Boolean>() {
+                                                @Override public void apply(IgniteCheckedException e, Boolean timedOut) {
+                                                    if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
+                                                        return;
 
-                                                        remap(res);
-                                                    }
-                                                    catch (IgniteCheckedException e) {
-                                                        ERR_UPD.compareAndSet(parent, null, e);
-
-                                                        onDone(e);
-                                                    }
+                                                    remap(res);
                                                 }
                                             });
                                         }
