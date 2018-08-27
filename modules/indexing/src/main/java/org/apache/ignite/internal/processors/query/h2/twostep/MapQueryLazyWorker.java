@@ -186,7 +186,7 @@ public class MapQueryLazyWorker extends GridWorker {
             });
         }
         else {
-            if (qctx != null && qctx.distributedJoinMode() == OFF)
+            if (qctx != null && qctx.distributedJoinMode() == OFF && !qctx.isCleared())
                 qctx.clearContext(nodeStop);
 
             if (GridH2QueryContext.get() != null)
