@@ -412,13 +412,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
 
         if (!commit && !clearThreadMap)
-            rollbackAsyncSafe(onTimeout); // Asynchronous rollback.
+            rollbackAsyncSafe(onTimeout);
         else
             doFinish(commit, clearThreadMap);
     }
 
     /**
-     * Roll back tx when it's safe.
+     * Rollback tx when it's safe.
      * If current future is not lock future (enlist future) wait until completion and tries again.
      * Else cancel lock future (onTimeout=false) or wait for completion due to deadlock detection (onTimeout=true).
      *

@@ -312,7 +312,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
                 infos.add(new VisorTxInfo(locTx.xid(), locTx.startTime(), duration, locTx.isolation(), locTx.concurrency(),
                     locTx.timeout(), lb, mappings, locTx.state(),
-                    size, locTx.nearXidVersion().asGridUuid(), locTx.masterNodeIds()));
+                    size, locTx.nearXidVersion().asGridUuid(), locTx.masterNodeIds(), locTx.topologyVersionSnapshot()));
 
                 if (arg.getOperation() == VisorTxOperation.KILL)
                     killClo.apply(locTx, tm);

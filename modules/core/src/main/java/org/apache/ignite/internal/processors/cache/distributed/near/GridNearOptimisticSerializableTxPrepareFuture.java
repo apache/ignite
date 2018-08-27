@@ -45,7 +45,6 @@ import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedExceptio
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
@@ -913,8 +913,11 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                                 parent.remapFut = null;
                                             }
 
-                                            parent.applyWhenReady(affFut, new GridAbsClosureX() {
-                                                @Override public void applyx() throws IgniteCheckedException {
+                                            parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), new IgniteBiInClosure<IgniteCheckedException, Boolean>() {
+                                                @Override public void apply(IgniteCheckedException e, Boolean timedOut) {
+                                                    if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
+                                                        return;
+
                                                     remap(res);
                                                 }
                                             });
