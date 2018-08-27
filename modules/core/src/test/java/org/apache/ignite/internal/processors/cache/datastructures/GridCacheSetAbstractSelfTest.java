@@ -36,6 +36,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -48,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -68,7 +71,12 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 4;
+        return 5;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean addClient() {
+        return collectionCacheMode() != LOCAL && gridCount() > 1;
     }
 
     /** {@inheritDoc} */
@@ -128,9 +136,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         assertSetIteratorsCleared();
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteEx grid = grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
-            for (IgniteInternalCache cache : grid.cachesx()) {
+            for (IgniteInternalCache cache : grid.cachesx(null)) {
                 CacheDataStructuresManager dsMgr = cache.context().dataStructures();
 
                 Map map = GridTestUtils.getFieldValue(dsMgr, "setsMap");
@@ -720,23 +728,46 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @throws Exception If failed.
      */
     public void testCleanup() throws Exception {
-        testCleanup(false);
+        testCleanup(false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCleanupWithNodeFilter() throws Exception {
+        if (gridCount() > 1)
+            testCleanup(false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCleanupCollocated() throws Exception {
-        testCleanup(true);
+        testCleanup(true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCleanupCollocatedWithNodeFilter() throws Exception {
+        if (gridCount() > 1)
+            testCleanup(true, true);
     }
 
     /**
      * @param collocated Collocation flag.
+     * @param nodeFilter Use node filter to exclude affinity node.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("WhileLoopReplaceableByForEach")
-    private void testCleanup(boolean collocated) throws Exception {
+    private void testCleanup(boolean collocated, boolean nodeFilter) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
+
+        if (nodeFilter) {
+            IgnitePredicate<ClusterNode> filter = new CacheNodeFilter(grid(0).cluster().localNode());
+
+            colCfg.setNodeFilter(filter);
+            colCfg.setGroupName("withFilter");
+        }
 
         final IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg);
 
@@ -745,7 +776,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         final Collection<Set<Integer>> sets = new ArrayList<>();
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteSet<Integer> set = grid(i).set(SET_NAME, null);
+            IgniteSet<Integer> set = grid(i).set(SET_NAME, nodeFilter ? colCfg : null);
 
             assertNotNull(set);
 
@@ -841,7 +872,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < 10; i++)
             set.add(i);
 
-        Collection<Integer> c = grid(0).compute().broadcast(new IgniteCallable<Integer>() {
+        ClusterGroup allNodes = grid(0).cluster().forPredicate(n -> true);
+
+        Collection<Integer> c = grid(0).compute(allNodes).broadcast(new IgniteCallable<Integer>() {
             @Override public Integer call() throws Exception {
                 assertEquals(SET_NAME, set.name());
 
@@ -1159,6 +1192,27 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             }
 
             assertTrue(found);
+        }
+    }
+
+    /** */
+    private static class CacheNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final ClusterNode excludedNode;
+
+        /**
+         * @param excludedNode Node to be excluded.
+         */
+        private CacheNodeFilter(ClusterNode excludedNode) {
+            this.excludedNode = excludedNode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return !excludedNode.equals(node);
         }
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,6 +57,8 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         spi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(spi);
+
+        cfg.setClientMode(addClient() && getTestIgniteInstanceIndex(igniteInstanceName) == (gridCount() - 1));
 
         return cfg;
     }
@@ -155,5 +158,14 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
             set = ((GridCacheSetProxy)set).delegate();
 
         return GridTestUtils.getFieldValue(set, "separated");
+    }
+
+    /**
+     * Add client node to cluster.
+     *
+     * @return {@code True} If client node should be added to cluster.
+     */
+    protected boolean addClient() {
+        return false;
     }
 }

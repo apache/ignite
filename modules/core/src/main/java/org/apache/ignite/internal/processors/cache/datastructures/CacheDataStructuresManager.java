@@ -510,7 +510,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
                         new BlockSetCallable(cctx.name(), id),
-                        cctx.kernalContext().discovery().allNodes(),
+                        cctx.kernalContext().discovery().nodes(topVer),
                         true,
                         0, false).get();
 
@@ -681,11 +681,13 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         @Override public Void call() throws IgniteCheckedException {
             assert ignite != null;
 
+            assert ((IgniteKernal)ignite).context().cache().cacheDescriptor(cacheName) != null : cacheName;
+
             GridCacheAdapter cache = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
-            assert cache != null : cacheName;
-
-            cache.context().dataStructures().blockSet(setId);
+            // On non-affinity nodes cache can be stopped.
+            if (cache != null)
+                cache.context().dataStructures().blockSet(setId);
 
             return null;
         }
