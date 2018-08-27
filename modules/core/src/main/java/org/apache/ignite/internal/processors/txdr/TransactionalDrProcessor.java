@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.txdr;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
@@ -28,6 +29,7 @@ public interface TransactionalDrProcessor extends GridProcessor, IgniteChangeGlo
     /**
      * @param snapshotId Snapshot id.
      * @param ptr Pointer to the {@link SnapshotRecord}.
+     * @param snapshotOperation Snapshot operation.
      */
-    public void onMarkCheckPointBegin(long snapshotId, WALPointer ptr);
+    public void onMarkCheckPointBegin(long snapshotId, WALPointer ptr, SnapshotOperation snapshotOperation);
 }

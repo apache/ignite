@@ -20,6 +20,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 
 /**
  *
@@ -33,7 +34,7 @@ public class NoOpTransactionalDrProcessor extends GridProcessorAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public void onMarkCheckPointBegin(long snapshotId, WALPointer ptr) {
+    @Override public void onMarkCheckPointBegin(long snapshotId, WALPointer ptr, SnapshotOperation snapshotOperation) {
     }
 
     /** {@inheritDoc} */
