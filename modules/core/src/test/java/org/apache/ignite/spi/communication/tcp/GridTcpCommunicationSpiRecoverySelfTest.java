@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -367,6 +368,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                     }, 60_000);
 
                     assertEquals(expMsgs, lsnr1.rcvCnt.get());
+
+                    assertTrue(waitForSessionsCount(spi1, 1));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -499,6 +502,9 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     assertEquals(expMsgs0, lsnr0.rcvCnt.get());
                     assertEquals(expMsgs1, lsnr1.rcvCnt.get());
+
+                    if (spi1.isUsePairedConnections())
+                        assertTrue(waitForSessionsCount(spi1, 2));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -609,6 +615,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                     }, 60_000);
 
                     assertEquals(expMsgs, lsnr1.rcvCnt.get());
+
+                    assertTrue(waitForSessionsCount(spi1, 1));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -639,6 +647,22 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
         finally {
             stopSpis();
         }
+    }
+
+    /**
+     * @param spi Spi.
+     *
+     * @return {@code true} if sessions count was achieved, {@code false} otherwise.
+     */
+    private boolean waitForSessionsCount(TcpCommunicationSpi spi, int cnt) throws IgniteInterruptedCheckedException {
+        return GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Collection<? extends GridNioSession> sessions =
+                    GridTestUtils.getFieldValue(spi, "nioSrvr", "sessions");
+
+                return sessions.size() == cnt;
+            }
+        }, awaitForSocketWriteTimeout());
     }
 
     /**

@@ -896,7 +896,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         finally {
             if (touch)
-                cctx.evicts().touch(this, cctx.affinity().affinityTopologyVersion());
+                touch(cctx.affinity().affinityTopologyVersion());
         }
     }
 
@@ -1492,8 +1492,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                         updated = cctx.toCacheObject(updated0);
 
-                        if (updated != null) // no validation for remove case
-                            cctx.validateKeyAndValue(key, updated);
+                        cctx.validateKeyAndValue(key, updated);
                     }
                     else
                         updated = old;
@@ -4307,6 +4306,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public boolean lockedByCurrentThread() {
         return lock.isHeldByCurrentThread();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void touch(AffinityTopologyVersion topVer) {
+        context().evicts().touch(this, topVer);
     }
 
     /** {@inheritDoc} */

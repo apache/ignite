@@ -80,7 +80,7 @@
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
         <jetbrains.annotations.version>13.0</jetbrains.annotations.version>
-        <jetty.version>9.2.11.v20150529</jetty.version>
+        <jetty.version>9.4.11.v20180605</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jsch.bundle.version>0.1.53_1</jsch.bundle.version>
@@ -90,7 +90,7 @@
         <jtidy.version>r938</jtidy.version>
         <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
-        <log4j.version>2.8.1</log4j.version>
+        <log4j.version>2.11.0</log4j.version>
         <lucene.bundle.version>5.5.2_1</lucene.bundle.version>
         <lucene.version>5.5.2</lucene.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>

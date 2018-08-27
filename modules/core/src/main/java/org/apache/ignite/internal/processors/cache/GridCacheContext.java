@@ -1822,6 +1822,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException, If validation fails.
      */
     public void validateKeyAndValue(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+        // No validation for removal.
+        if (val == null)
+            return;
+
         if (!isQueryEnabled())
             return;
 

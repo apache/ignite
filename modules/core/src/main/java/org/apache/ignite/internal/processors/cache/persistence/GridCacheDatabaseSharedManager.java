@@ -741,7 +741,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             WALPointer restore = restoreMemory(status);
 
-            if (restore == null && status.endPtr != CheckpointStatus.NULL_PTR){
+            if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " + status.endPtr + ".Can't restore memory - critical part of WAL archive is missing.");
             }
 

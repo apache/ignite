@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core
 
         /** */
         private bool? _authenticationEnabled;
-        
+
         /** Local event listeners. Stored as array to ensure index access. */
         private LocalEventListener[] _localEventListenersInternal;
 
@@ -304,6 +304,19 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
             writer.WriteBooleanNullable(_authenticationEnabled);
+
+            if (SqlSchemas == null)
+                writer.WriteInt(-1);
+            else
+            {
+                writer.WriteInt(SqlSchemas.Count);
+
+                foreach (string sqlSchema in SqlSchemas)
+                {
+                    writer.WriteString(sqlSchema);
+                }
+            }
+
             writer.WriteObjectDetached(ConsistentId);
 
             // Thread pools
@@ -619,6 +632,19 @@ namespace Apache.Ignite.Core
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
             _authenticationEnabled = r.ReadBooleanNullable();
+
+            int sqlSchemasCnt = r.ReadInt();
+
+            if (sqlSchemasCnt == -1)
+                SqlSchemas = null;
+            else
+            {
+                SqlSchemas = new List<string>(sqlSchemasCnt);
+
+                for (int i = 0; i < sqlSchemasCnt; i++)
+                    SqlSchemas.Add(r.ReadString());
+            }
+
             ConsistentId = r.ReadObject<object>();
 
             // Thread pools
@@ -1445,5 +1471,13 @@ namespace Apache.Ignite.Core
             get { return _authenticationEnabled ?? DefaultAuthenticationEnabled; }
             set { _authenticationEnabled = value; }
         }
+
+        /// <summary>
+        /// Gets or sets SQL schemas to be created on node startup. Schemas are created on local node only and are not propagated.
+        /// to other cluster nodes. Created schemas cannot be dropped.
+        /// <para/>
+        /// By default schema names are case-insensitive. Use quotes to enforce case sensitivity.
+        /// </summary>
+        public ICollection<String> SqlSchemas { get; set; }
     }
 }

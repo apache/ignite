@@ -376,6 +376,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         JsonNode json = assertResponseSucceeded(ret, false);
         assertEquals(ref1.name, json.get("name").asText());
+        assertEquals(ref1.ref.toString(), json.get("ref").toString());
 
         ref2.ref(ref1);
 
@@ -2646,6 +2647,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
          */
         public void ref(CircularRef ref) {
             this.ref = ref;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            SB sb = new SB();
+
+            sb.a('{')
+                .a('"').a("id").a('"').a(':').a(id).a(',')
+                .a('"').a("name").a('"').a(':').a('"').a(name).a('"').a(',')
+                .a('"').a("ref").a('"').a(':').a(ref)
+                .a('}');
+
+            return sb.toString();
         }
     }
 

@@ -838,7 +838,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         continue;
                     }
                     finally {
-                        ctx0.evicts().touch(e, null);
+                        e.touch(null);
 
                         ctx.shared().database().checkpointReadUnlock();
                     }
@@ -893,7 +893,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return e.peek(heap, offheap, AffinityTopologyVersion.NONE, plc);
             }
             finally {
-                ctx.evicts().touch(e, null);
+                e.touch(null);
             }
         }
 
@@ -1999,7 +1999,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         readerArgs);
 
                                     if (res == null)
-                                        ctx.evicts().touch(entry, topVer);
+                                        entry.touch(topVer);
                                 }
                             }
 
@@ -2014,7 +2014,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     needVer);
 
                                 if (entry != null && (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED)))
-                                    ctx.evicts().touch(entry, topVer);
+                                    entry.touch(topVer);
 
                                 if (keysSize == 1)
                                     // Safe to return because no locks are required in READ_COMMITTED mode.
@@ -2096,7 +2096,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                                 if (tx0 == null || (!tx0.implicit() &&
                                                     tx0.isolation() == READ_COMMITTED))
-                                                    ctx.evicts().touch(entry, topVer);
+                                                    entry.touch(topVer);
 
                                                 break;
                                             }
@@ -2139,7 +2139,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         GridCacheEntryEx entry = peekEx(key);
 
                                         if (entry != null)
-                                            ctx.evicts().touch(entry, topVer);
+                                            entry.touch(topVer);
                                     }
                                 }
 
@@ -2166,8 +2166,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
             catch (RuntimeException | AssertionError e) {
                 if (misses != null) {
-                    for (KeyCacheObject key0 : misses.keySet())
-                        ctx.evicts().touch(peekEx(key0), topVer);
+                    for (KeyCacheObject key0 : misses.keySet()) {
+                        GridCacheEntryEx entry = peekEx(key0);
+                        if (entry != null)
+                            entry.touch(topVer);
+                    }
                 }
 
                 if (newLocalEntries != null) {
@@ -2227,7 +2230,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             entry.clearReserveForLoad(e.getValue().version());
 
                         if (needTouch)
-                            ctx.evicts().touch(entry, topVer);
+                            entry.touch(topVer);
                     }
                 }
             }
@@ -3528,7 +3531,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 log.debug("Got removed entry during loadCache (will ignore): " + entry);
         }
         finally {
-            ctx.evicts().touch(entry, topVer);
+            entry.touch(topVer);
         }
 
         CU.unwindEvicts(ctx);
