@@ -106,7 +106,13 @@ public class SVMLinearMultiClassClassificationTrainer
                 for (double lb : lbs) locClsLabels.add(lb);
 
                 return locClsLabels;
-            }, (a, b) -> a == null ? b : Stream.of(a, b).flatMap(Collection::stream).collect(Collectors.toSet()));
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? new HashSet<>() : b;
+                if (b == null)
+                    return a;
+                return Stream.of(a, b).flatMap(Collection::stream).collect(Collectors.toSet());
+            });
 
             res.addAll(clsLabels);
 

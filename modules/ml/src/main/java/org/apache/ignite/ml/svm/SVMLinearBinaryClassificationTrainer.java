@@ -50,9 +50,9 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     /**
      * Trains model based on the specified data.
      *
-     * @param datasetBuilder   Dataset builder.
+     * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
+     * @param lbExtractor Label extractor.
      * @return Model.
      */
     @Override public <K, V> SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -67,19 +67,28 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
         Vector weights;
 
-        try(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
+            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
+                if (a == null)
+                    return b == null ? 0 : b;
+                if (b == null)
+                    return a;
+                return b;
+            });
+
             final int weightVectorSizeWithIntercept = cols + 1;
+
             weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
 
             for (int i = 0; i < this.getAmountOfIterations(); i++) {
                 Vector deltaWeights = calculateUpdates(weights, dataset);
                 weights = weights.plus(deltaWeights); // creates new vector
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
         return new SVMLinearBinaryClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
@@ -87,11 +96,12 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /** */
     @NotNull private Vector initializeWeightsWithZeros(int vectorSize) {
-            return new DenseVector(vectorSize);
+        return new DenseVector(vectorSize);
     }
 
     /** */
-    private Vector calculateUpdates(Vector weights, Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
+    private Vector calculateUpdates(Vector weights,
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
         return dataset.compute(data -> {
             Vector copiedWeights = weights.copy();
             Vector deltaWeights = initializeWeightsWithZeros(weights.size());
@@ -112,12 +122,18 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
                 deltaAlphas.set(randomIdx, deltaAlphas.get(randomIdx) + deltas.deltaAlpha);
             }
             return deltaWeights;
-        }, (a, b) -> a == null ? b : a.plus(b));
+        }, (a, b) -> {
+            if (a == null)
+                return b == null ? new DenseVector() : b;
+            if (b == null)
+                return a;
+            return a.plus(b);
+        });
     }
 
     /** */
     private Deltas getDeltas(LabeledVectorSet data, Vector copiedWeights, int amountOfObservation, Vector tmpAlphas,
-                             int randomIdx) {
+        int randomIdx) {
         LabeledVector row = (LabeledVector)data.getRow(randomIdx);
         Double lb = (Double)row.label();
         Vector v = makeVectorWithInterceptElement(row);
@@ -191,6 +207,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /**
      * Set up the regularization parameter.
+     *
      * @param lambda The regularization parameter. Should be more than 0.0.
      * @return Trainer with new lambda parameter value.
      */
@@ -202,6 +219,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /**
      * Gets the regularization lambda.
+     *
      * @return The parameter value.
      */
     public double lambda() {
@@ -210,6 +228,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /**
      * Gets the amount of outer iterations of SCDA algorithm.
+     *
      * @return The parameter value.
      */
     public int getAmountOfIterations() {
@@ -218,6 +237,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /**
      * Set up the amount of outer iterations of SCDA algorithm.
+     *
      * @param amountOfIterations The parameter value.
      * @return Trainer with new amountOfIterations parameter value.
      */
@@ -228,6 +248,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /**
      * Gets the amount of local iterations of SCDA algorithm.
+     *
      * @return The parameter value.
      */
     public int getAmountOfLocIterations() {
@@ -236,6 +257,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /**
      * Set up the amount of local iterations of SCDA algorithm.
+     *
      * @param amountOfLocIterations The parameter value.
      * @return Trainer with new amountOfLocIterations parameter value.
      */
