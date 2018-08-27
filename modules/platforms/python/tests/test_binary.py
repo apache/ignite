@@ -165,10 +165,12 @@ def test_sql_write_as_binary(client):
     # insert rows as k-v
     for row in insert_data:
         value = AllDataType()
-        setattr(value, 'TEST_BOOL', row[1])
-        setattr(value, 'TEST_STR', row[2])
-        setattr(value, 'TEST_INT', row[3])
-        setattr(value, 'TEST_DECIMAL', row[4])
+        (
+            value.TEST_BOOL,
+            value.TEST_STR,
+            value.TEST_INT,
+            value.TEST_DECIMAL,
+        ) = row[1:]
         table_cache.put(row[0], value, key_hint=IntObject)
 
     data = table_cache.scan()
