@@ -435,6 +435,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param storedData Stored cache data.
+     * @param cacheInfo Static cache configuration.
+     * @throws IgniteCheckedException If some check failed.
+     */
+    private void validateStaticConfigAndStoredData(StoredCacheData storedData, CacheInfo cacheInfo)
+        throws IgniteCheckedException {
+        boolean staticCfgVal = cacheInfo.cacheData().config().isEncrypted();
+        boolean storedVal = storedData.config().isEncrypted();
+
+        if (storedVal != staticCfgVal) {
+            throw new IgniteCheckedException("Encrypted flag value differs. Static config value is '" + staticCfgVal +
+                "' and value stored on the disk is '" + storedVal + "'");
+        }
+    }
+
+    /**
      * @param c Ignite configuration.
      * @param cc Configuration to validate.
      * @param cacheType Cache type.
@@ -840,6 +856,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     //Ignore stored caches if it already added by static config(static config has higher priority).
                     if (!caches.containsKey(cacheName))
                         addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
+                    else
+                        validateStaticConfigAndStoredData(storedCacheData, caches.get(cacheName));
+
                 }
         }
     }

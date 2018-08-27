@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.encryption;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -38,7 +39,14 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     /** */
     private static final String GRID_4 = "grid-4";
 
+    /** */
+    private static final String GRID_5 = "grid-5";
+
+    /** */
     public static final String CLIENT = "client";
+
+    /** */
+    private boolean configureCache;
 
     /** */
     private static final String KEYSTORE_PATH_2 =
@@ -54,6 +62,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        configureCache = false;
     }
 
     /** {@inheritDoc} */
@@ -65,7 +75,8 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         if (grid.equals(GRID_0) ||
             grid.equals(GRID_2) ||
             grid.equals(GRID_3) ||
-            grid.equals(GRID_4)) {
+            grid.equals(GRID_4) ||
+            grid.equals(GRID_5)) {
             AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
 
             encSpi.setKeyStorePath(grid.equals(GRID_2) ? KEYSTORE_PATH_2 : KEYSTORE_PATH);
@@ -78,7 +89,20 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         cfg.setClientMode(grid.equals(CLIENT));
 
+        if (configureCache)
+            cfg.setCacheConfiguration(cacheConfiguration(grid));
+
         return cfg;
+    }
+
+    /** */
+    protected CacheConfiguration cacheConfiguration(String gridName) {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
+
+        ccfg.setName(cacheName());
+        ccfg.setEncrypted(gridName.equals(GRID_0));
+
+        return ccfg;
     }
 
     /** */
@@ -174,5 +198,41 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         IgniteEx client = startGrid(CLIENT);
 
         createEncCache(client, grid0, cacheName(), null);
+    }
+
+    /** */
+    public void testNodeCantJoinWithSameNameButNotEncCache() throws Exception {
+        configureCache = true;
+
+        IgniteEx grid0 = startGrid(GRID_0);
+
+        grid0.cluster().active(true);
+
+        assertThrowsWithCause(() -> {
+            try {
+                startGrid(GRID_5);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, IgniteCheckedException.class);
+    }
+
+    /** */
+    public void testNodeCantJoinWithSameNameButEncCache() throws Exception {
+        configureCache = true;
+
+        IgniteEx grid0 = startGrid(GRID_5);
+
+        grid0.cluster().active(true);
+
+        assertThrowsWithCause(() -> {
+            try {
+                startGrid(GRID_0);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, IgniteCheckedException.class);
     }
 }

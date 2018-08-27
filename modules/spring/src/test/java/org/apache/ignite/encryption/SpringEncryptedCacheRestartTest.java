@@ -28,7 +28,8 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.testframework.GridTestUtils;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
 public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
@@ -137,10 +138,48 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
             IgniteUtils.resolveIgnitePath(
                 "modules/spring/src/test/config/enc/enc-group.xml").getAbsolutePath(), "grid-0");
 
-        GridTestUtils.assertThrowsWithCause(() -> {
+        assertThrowsWithCause(() -> {
             try {
                 IgnitionEx.start(IgniteUtils.resolveIgnitePath(
                     "modules/spring/src/test/config/enc/not-encrypted-cache-in-group.xml").getAbsolutePath(), "grid-1");
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
+            }
+        }, IgniteCheckedException.class);
+    }
+
+    /** @throws Exception If failed. */
+    public void testStartWithEncryptedOnDiskPlainInCfg() throws Exception {
+        doTestDiffCfgAndPersistentFlagVal(
+            "modules/spring/src/test/config/enc/enc-cache.xml",
+            "modules/spring/src/test/config/enc/not-encrypted-cache.xml");
+    }
+
+    /** @throws Exception If failed. */
+    public void testStartWithPlainOnDiskEncryptedInCfg() throws Exception {
+        doTestDiffCfgAndPersistentFlagVal(
+            "modules/spring/src/test/config/enc/not-encrypted-cache.xml",
+            "modules/spring/src/test/config/enc/enc-cache.xml");
+    }
+
+    /** */
+    private void doTestDiffCfgAndPersistentFlagVal(String cfg1, String cfg2) throws Exception {
+        cleanPersistenceDir();
+
+        IgniteEx g = (IgniteEx)IgnitionEx.start(IgniteUtils.resolveIgnitePath(cfg1).getAbsolutePath(), "grid-0");
+
+        g.cluster().active(true);
+
+        IgniteCache c = g.cache("encrypted");
+
+        assertNotNull(c);
+
+        stopAllGrids(false);
+
+        assertThrowsWithCause(() -> {
+            try {
+                IgnitionEx.start(IgniteUtils.resolveIgnitePath(cfg2).getAbsolutePath(), "grid-0");
             }
             catch (IgniteCheckedException e) {
                 throw new RuntimeException(e);
