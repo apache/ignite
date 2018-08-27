@@ -102,14 +102,15 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
         this.evtBufTimeout = evtBufTimeout;
     }
 
+    /** Gets Local Task Listener */
+    public TaskLocalListener getLocLsnr() { return this.locLsnr; }
+
     /**
      * Default IgniteSource constructor.
      *
      * @param cacheName Cache name.
      */
-    public IgniteSource(String cacheName) {
-        this.cacheName = cacheName;
-    }
+    public IgniteSource(String cacheName) { this.cacheName = cacheName; }
 
     /**
      * Starts Ignite source.
@@ -128,7 +129,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
 
         try {
             rmtLsnrId = ignite.events(ignite.cluster().forCacheNodes(cacheName))
-                .remoteListen(locLsnr, rmtLsnr, cacheEvts);
+                 .remoteListen(locLsnr, rmtLsnr, cacheEvts);
         }
         catch (IgniteException e) {
             log.error("Failed to register event listener!", e);
@@ -184,7 +185,7 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
     /**
      * Local listener buffering cache events to be further sent to Flink.
      */
-    private class TaskLocalListener implements IgniteBiPredicate<UUID, CacheEvent> {
+    public class TaskLocalListener implements IgniteBiPredicate<UUID, CacheEvent> {
         /** {@inheritDoc} */
         @Override public boolean apply(UUID id, CacheEvent evt) {
             try {
