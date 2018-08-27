@@ -68,7 +68,15 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     private static final int REMOVE_OR_LOCK = PRIMARY << 1;
     /** */
     private static final int NEED_HISTORY = REMOVE_OR_LOCK << 1;
-    /** Visit mode when row visibility was not checked beforehand */
+    /**
+     * During mvcc transaction processing conflicting row version could be met in storage.
+     * Not all such cases should lead to transaction abort.
+     * E.g. if UPDATE for a row meets concurrent INSERT for the same row
+     * (and row did not exist before both operations) then it means that UPDATE does not see the row at all
+     * and can proceed.
+     * This flag enables such mode when conflicting version should not lead to abort immediately
+     * but more versions should be checked.
+     */
     private static final int FAST_UPDATE = NEED_HISTORY << 1;
     /** */
     private static final int FAST_MISMATCH = FAST_UPDATE << 1;

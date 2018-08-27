@@ -1984,8 +1984,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.timeout(),
             ctx,
             req.rows(),
-            req.operation(),
-            req.fastUpdate());
+            req.operation());
 
         fut.listen(NearTxQueryEnlistResultHandler.instance());
 

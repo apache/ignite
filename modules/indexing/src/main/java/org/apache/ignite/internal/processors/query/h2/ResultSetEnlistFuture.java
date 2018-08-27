@@ -22,11 +22,11 @@ import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.DhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.lang.IgniteUuid;
@@ -97,8 +97,8 @@ public interface ResultSetEnlistFuture extends DhtLockFuture<Long> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheOperation operation() {
-            return GridCacheOperation.READ;
+        @Override public EnlistOperation operation() {
+            return EnlistOperation.LOCK;
         }
 
         /** {@inheritDoc} */
