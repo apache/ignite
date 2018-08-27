@@ -35,7 +35,7 @@
             <Routes pattern="$${sys:nodeId}">
                 <Route>
                     <RollingFile name="Rolling-${sys:nodeId}" fileName="${env:JOBCASE_LOGS}/ignite-${sys:nodeId}.log"
-                                 filePattern="${env:JOBCASE_LOGS/ignite-${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
+                                 filePattern="${env:JOBCASE_LOGS}/ignite-${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
                         <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
                         <Policies>
                             <TimeBasedTriggeringPolicy interval="6" modulate="true" />
