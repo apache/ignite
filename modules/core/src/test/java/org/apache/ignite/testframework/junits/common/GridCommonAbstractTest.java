@@ -1995,4 +1995,27 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             new VisorTaskArgument<>(node.id(), taskArg, false)
         );
     }
+
+    /**
+     * Checks if all txs and mvcc futures are finished.
+     */
+    protected void checkFutures() {
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
+
+            for (GridCacheFuture<?> fut : futs)
+                log.info("Waiting for future: " + fut);
+
+            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
+
+            Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions();
+
+            for (IgniteInternalTx tx : txs)
+                log.info("Waiting for tx: " + tx);
+
+            assertTrue("Expecting no active transactions: node=" + ig.localNode().id(), txs.isEmpty());
+        }
+    }
 }
