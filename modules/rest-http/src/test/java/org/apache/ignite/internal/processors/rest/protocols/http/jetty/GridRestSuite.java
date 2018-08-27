@@ -14,20 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-package org.apache.ignite.internal.processors.cache.persistence;
+import junit.framework.TestSuite;
 
 /**
- * Tracks allocated pages.
+ * Integration tests for Grid REST functionality; Jetty is under the hood.
  */
-public interface AllocatedPageTracker {
-    /** No-op instance. */
-    public AllocatedPageTracker NO_OP = delta -> {};
-
+public class GridRestSuite extends TestSuite {
     /**
-     * Updates totalAllocatedPages counter.
-     *
-     * @param delta Value to increment by.
+     * @return Suite that contains all tests for REST.
      */
-    public void updateTotalAllocatedPages(long delta);
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite("Apache Ignite REST Api suite");
+
+        suite.addTest(new TestSuite(RestSetupSimpleTest.class));
+
+        return suite;
+    }
 }
