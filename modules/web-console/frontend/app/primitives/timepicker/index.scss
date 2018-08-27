@@ -17,6 +17,7 @@
 
 .timepicker.dropdown-menu {
     padding: 0 4px;
+    line-height: 30px;
 
     button {
         outline: none;
@@ -27,112 +28,61 @@
         height: 100%;
         padding: 6px;
     }
-}
 
-.timepicker--ignite {
-    $height: 36px;
+    thead, tfoot {
+        th {
+            text-align: center;
+            line-height: 0;
+        }
 
-    display: inline-block;
-    width: auto;
+        .btn.btn-default {
+            float: none !important;
+            display: inline-block;
+            margin-right: 0;
 
-    font-size: 14px;
+            &:active {
+                box-shadow: none;
+                background: none;
+            }
 
-    label.ignite-form-field__label {
-        width: auto;
-        max-width: initial;
+            &:before {
+                content: '';
 
-        font-size: inherit;
-        line-height: $height;
-    }
+                display: block;
+                width: 10px;
+                height: 10px;
 
-    .ignite-form-field__control {
-        @import "./../../../public/stylesheets/variables.scss";
+                border: 2px solid #757575;
+                transform: rotate(45deg);
+            }
 
-        width: auto;
-
-        input {
-            width: auto;
-            height: $height;
-            min-width: 40px;
-            max-width: 70px;
-            padding: 0;
-            padding-left: 5px;
-
-            cursor: pointer;
-            color: transparent;
-            font-size: inherit;
-            line-height: $height;
-            text-align: left;
-            text-shadow: 0 0 0 $ignite-brand-success;
-
-            border: none;
-            box-shadow: none;
-            background: none;
-
-            &:hover, &:focus {
-                text-shadow: 0 0 0 change-color($ignite-brand-success, $lightness: 26%);
+            &:hover {
+                background: none;
             }
         }
     }
 
-    .dropdown-menu {
-        line-height: 30px;
-
-        thead, tfoot {
-            th {
-                text-align: center;
-                line-height: 0;
-            }
-
-            .btn.btn-default {
-                float: none !important;
-                display: inline-block;
-                margin-right: 0;
-
-                &:active {
-                    box-shadow: none;
-                    background: none;
-                }
-
-                &:before {
-                    content: '';
-
-                    display: block;
-                    width: 10px;
-                    height: 10px;
-
-                    border: 2px solid #757575;
-                    transform: rotate(45deg);
-                }
-
-                &:hover {
-                    background: none;
-                }
-            }
+    thead {
+        th {
+            padding-top: 10px;
         }
 
-        thead {
-            th {
-                padding-top: 10px;
-            }
-
-            .btn.btn-default {
-                &:before {
-                    border-width: 2px 0 0 2px;
-                }
+        .btn.btn-default {
+            &:before {
+                border-width: 2px 0 0 2px;
             }
         }
+    }
 
-        tfoot {
-            th {
-                padding-top: 2px;
-                padding-bottom: 10px;
-            }
+    tfoot {
+        th {
+            padding-top: 2px;
+            padding-bottom: 10px;
+        }
 
-            .btn.btn-default {
-                &:before {
-                    border-width: 0 2px 2px 0;
-                }
+        .btn.btn-default {
+            &:before {
+                border-width: 0 2px 2px 0;
             }
         }
     }

@@ -783,6 +783,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
+    /** Property for setup Ignite WAL segment sync timeout. */
+    public static final String IGNITE_WAL_SEGMENT_SYNC_TIMEOUT = "IGNITE_WAL_SEGMENT_SYNC_TIMEOUT";
+
     /**
      * If the property is set Ignite will use legacy node comparator (based on node order) inste
      *
@@ -935,6 +938,16 @@ public final class IgniteSystemProperties {
      * Default is 500 ms.
      */
     public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
+
+    /**
+     * Threshold for throttling operations logging.
+     */
+    public static final String IGNITE_THROTTLE_LOG_THRESHOLD = "IGNITE_THROTTLE_LOG_THRESHOLD";
+
+    /**
+     * Number of concurrent operation for evict partitions.
+     */
+    public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
      * Enforces singleton.

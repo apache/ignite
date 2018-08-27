@@ -18,7 +18,7 @@
 import saver from 'file-saver';
 
 // TODO: Refactor this service for legacy tables with more than one input field.
-export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
+export default ['IgniteLegacyUtils', ['IgniteErrorPopover', function(ErrorPopover) {
     function isDefined(v) {
         return !_.isNil(v);
     }
