@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -83,13 +84,13 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration()
-                                .setInitialSize(INIT_REGION_SIZE)
-                                .setMaxSize(MAX_REGION_SIZE)
-                                .setPersistenceEnabled(true)
-                                .setMetricsEnabled(true))
-                .setCheckpointFrequency(1000);
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setInitialSize(INIT_REGION_SIZE)
+                    .setMaxSize(MAX_REGION_SIZE)
+                    .setPersistenceEnabled(true)
+                    .setMetricsEnabled(true))
+            .setCheckpointFrequency(1000);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -220,7 +221,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
-                .context().group().dataRegion().memoryMetrics();
+            .context().group().dataRegion().memoryMetrics();
 
         Assert.assertTrue(regionMetrics.getCheckpointBufferSize() != 0);
         Assert.assertTrue(regionMetrics.getCheckpointBufferSize() <= MAX_REGION_SIZE);
@@ -237,14 +238,14 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         final DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
-                .context().group().dataRegion().memoryMetrics();
+            .context().group().dataRegion().memoryMetrics();
 
         Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferPages());
         Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferSize());
 
         load(ig);
 
-        GridCacheDatabaseSharedManager psMgr = (GridCacheDatabaseSharedManager) ig.context().cache().context().database();
+        GridCacheDatabaseSharedManager psMgr = (GridCacheDatabaseSharedManager)ig.context().cache().context().database();
 
         GridFutureAdapter<T2<Long, Long>> metricsResult = new GridFutureAdapter<>();
 
@@ -268,7 +269,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     /**
      * @param ig Ignite.
      */
-    private void load(Ignite ig){
+    private void load(Ignite ig) {
         IgniteCache<Integer, byte[]> cache = ig.cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new Random();
@@ -293,18 +294,26 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
     /** */
     private void checkMetricsConsistency(final IgniteEx node, String cacheName) throws Exception {
-        FilePageStoreManager pageStoreManager = (FilePageStoreManager)node.context().cache().context().pageStore();
+        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)node.context().cache().context().pageStore();
 
-        long totalPersistenceSize = 0;
-        File cacheWorkDir = pageStoreManager.cacheWorkDir(
+        assert pageStoreMgr != null : "Persistence is not enabled";
+
+        File cacheWorkDir = pageStoreMgr.cacheWorkDir(
             node.getOrCreateCache(cacheName).getConfiguration(CacheConfiguration.class)
         );
+
+        long totalPersistenceSize = 0;
 
         try (DirectoryStream<Path> files = newDirectoryStream(
             cacheWorkDir.toPath(), entry -> entry.toFile().getName().endsWith(".bin"))
         ) {
-            for (Path path : files)
-                totalPersistenceSize += path.toFile().length();
+            for (Path path : files) {
+                File file = path.toFile();
+
+                FilePageStore store = (FilePageStore)pageStoreMgr.getStore(CU.cacheId(cacheName), partId(file));
+
+                totalPersistenceSize += path.toFile().length() - store.headerSize();
+            }
         }
 
         long totalAllocatedPagesFromMetrics = node.context().cache().context()
@@ -315,7 +324,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
             .getTotalAllocatedPages();
 
         assertEquals("Number of allocated pages is different than in metrics for [node=" + node.name() + ", cache=" + cacheName + "]",
-            totalPersistenceSize / pageStoreManager.pageSize(), totalAllocatedPagesFromMetrics);
+                totalPersistenceSize / pageStoreMgr.pageSize(), totalAllocatedPagesFromMetrics);
     }
 
     /**
