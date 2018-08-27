@@ -86,16 +86,6 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /**
-     *
-     */
-    private static class NoopAllocationTracker implements AllocatedPageTracker{
-        /** {@inheritDoc} */
-        @Override public void updateTotalAllocatedPages(long delta) {
-            // No-op.
-        }
-    }
-
-    /**
      * Creates Group metrics MBean.
      *
      * @param ctx Cache group context.
@@ -112,7 +102,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
             this.groupPageAllocationTracker = dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId());
         }
         else
-            this.groupPageAllocationTracker = new GroupAllocationTracker(new NoopAllocationTracker());
+            this.groupPageAllocationTracker = new GroupAllocationTracker(AllocatedPageTracker.NO_OP);
     }
 
     /** {@inheritDoc} */
