@@ -262,8 +262,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int grpId, int partId, byte flags) {
-        memMetrics.incrementTotalAllocatedPages();
-
         long relPtr = borrowFreePage();
         long absPtr = 0;
 
@@ -584,6 +582,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             if (freePageListHead.compareAndSet(freePageRelPtrMasked, relPtr)) {
                 allocatedPages.decrementAndGet();
 
+                memMetrics.updateTotalAllocatedPages(-1L);
+
                 return;
             }
         }
@@ -611,6 +611,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                     GridUnsafe.putLong(freePageAbsPtr, PAGE_MARKER);
 
                     allocatedPages.incrementAndGet();
+
+                    memMetrics.updateTotalAllocatedPages(1L);
 
                     return freePageRelPtr;
                 }
@@ -811,6 +813,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                     rwLock.init(absPtr + LOCK_OFFSET, tag);
 
                     allocatedPages.incrementAndGet();
+
+                    memMetrics.updateTotalAllocatedPages(1L);
 
                     return pageIdx;
                 }

@@ -280,9 +280,7 @@ public class FilePageStore implements PageStore {
             throw new StorageException("Failed to truncate partition file [file=" + cfgFile.getPath() + "]", e);
         }
         finally {
-            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.get() / pageSize);
-
-            allocated.set(0);
+            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.getAndSet(0) / pageSize);
 
             inited = false;
 
@@ -307,10 +305,9 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than
-            // header + page.
+            // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than page.
             if (inited) {
-                long newSize = Math.max(headerSize() + pageSize, fileIO.size());
+                long newSize = Math.max(pageSize, fileIO.size() - headerSize());
 
                 long delta = newSize - allocated.getAndSet(newSize);
 
@@ -340,8 +337,8 @@ public class FilePageStore implements PageStore {
             assert pageBuf.remaining() == pageSize;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
-            assert off <= (allocated.get() - headerSize()) : "calculatedOffset=" + off +
-                ", allocated=" + allocated.get() + ", headerSize="+headerSize();
+            assert off <= allocated.get() : "calculatedOffset=" + off +
+                ", allocated=" + allocated.get() + ", headerSize=" + headerSize();
 
             int n = readWithFailover(pageBuf, off);
 
@@ -416,7 +413,7 @@ public class FilePageStore implements PageStore {
                             try {
                                 this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
-                                newSize = cfgFile.length() == 0 ? initFile(fileIO) : checkFile(fileIO);
+                                newSize = (cfgFile.length() == 0 ? initFile(fileIO) : checkFile(fileIO)) - headerSize();
 
                                 if (interrupted)
                                     Thread.currentThread().interrupt();
@@ -432,11 +429,13 @@ public class FilePageStore implements PageStore {
 
                         assert allocated.get() == 0;
 
-                        allocatedTracker.updateTotalAllocatedPages(newSize / pageSize);
-
                         allocated.set(newSize);
 
                         inited = true;
+
+                        // Order is important, update of total allocated pages must be called after allocated update
+                        // and setting inited to true, because it affects pages() returned value.
+                        allocatedTracker.updateTotalAllocatedPages(pages());
                     }
                     catch (IOException e) {
                         err = new StorageException(
@@ -539,7 +538,7 @@ public class FilePageStore implements PageStore {
 
                     long off = pageOffset(pageId);
 
-                    assert (off >= 0 && off + headerSize() <= allocated.get()) || recover :
+                    assert (off >= 0 && off <= allocated.get()) || recover :
                         "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
 
                     assert pageBuf.capacity() == pageSize;
@@ -653,9 +652,7 @@ public class FilePageStore implements PageStore {
     @Override public long allocatePage() throws IgniteCheckedException {
         init();
 
-        long off = allocPage();
-
-        return (off - headerSize()) / pageSize;
+        return allocPage() / pageSize;
     }
 
     /**
@@ -683,7 +680,7 @@ public class FilePageStore implements PageStore {
         if (!inited)
             return 0;
 
-        return (int)((allocated.get() - headerSize()) / pageSize);
+        return (int)(allocated.get() / pageSize);
     }
 
     /**
