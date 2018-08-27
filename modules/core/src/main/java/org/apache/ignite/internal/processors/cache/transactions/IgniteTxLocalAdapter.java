@@ -31,7 +31,6 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -1652,12 +1650,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * counters only on commit phase.
      */
     private Map<Integer, PartitionUpdateCounters> applyAndCollectLocalUpdateCounters() {
-        if (F.isEmpty(txState.touchedCachePartitions()))
+        if (F.isEmpty(txState.updatedCachePartitions()))
             return null;
 
         HashMap<Integer, PartitionUpdateCounters> updCntrs = new HashMap<>();
 
-        for (Map.Entry<Integer, Set<Integer>> entry : txState.touchedCachePartitions().entrySet()) {
+        for (Map.Entry<Integer, Set<Integer>> entry : txState.updatedCachePartitions().entrySet()) {
             Integer cacheId = entry.getKey();
 
             Set<Integer> parts = entry.getValue();

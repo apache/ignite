@@ -652,7 +652,7 @@ public interface IgniteInternalTx {
     public MvccSnapshot mvccSnapshot();
 
     /**
-     * @return tx counters.
+     * @return Transaction counters.
      */
     public TxCounters txCounters();
 }

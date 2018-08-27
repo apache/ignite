@@ -79,9 +79,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /** Store write through flag. */
     private boolean storeWriteThrough;
 
-    /** */
-    private Map<Integer, PartitionUpdateCounters> updCntrs;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */

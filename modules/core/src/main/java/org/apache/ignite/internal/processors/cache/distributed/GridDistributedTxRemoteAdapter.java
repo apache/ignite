@@ -848,11 +848,11 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
             GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
 
-            Map<Integer, Long> cacheUpdates = entry.getValue().updateCounters();
+            Map<Integer, Long> cacheUpdCntrs = entry.getValue().updateCounters();
 
-            assert cacheUpdates != null;
+            assert cacheUpdCntrs != null;
 
-            for (Map.Entry<Integer, Long> e : cacheUpdates.entrySet()) {
+            for (Map.Entry<Integer, Long> e : cacheUpdCntrs.entrySet()) {
                 long updCntr = e.getValue();
 
                 GridDhtLocalPartition dhtPart = top.localPartition(e.getKey());

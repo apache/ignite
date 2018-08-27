@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**

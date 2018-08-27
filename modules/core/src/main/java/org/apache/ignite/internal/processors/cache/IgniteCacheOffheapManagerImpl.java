@@ -2276,7 +2276,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     first = false;
             }
 
-            // first == true means there was no row versions
+            // first == true means there were no row versions
             if (!first)
                 decrementSize(cctx.cacheId());
         }
