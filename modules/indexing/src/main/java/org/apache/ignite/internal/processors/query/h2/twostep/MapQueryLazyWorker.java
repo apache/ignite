@@ -34,6 +34,8 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
+
 /**
  * Worker for lazy query execution.
  */
@@ -184,7 +186,7 @@ public class MapQueryLazyWorker extends GridWorker {
             });
         }
         else {
-            if (qctx != null)
+            if (qctx != null && qctx.distributedJoinMode() == OFF)
                 qctx.clearContext(nodeStop);
 
             if (GridH2QueryContext.get() != null)
