@@ -338,8 +338,15 @@ class Client:
 
         :param binary_type: binary object type name or ID,
         :param schema: (optional) binary object schema or schema ID,
-        :return: binary type description with type ID and schema (or schemas,
-         if no schema ID is given).
+        :return: binary type description − a dict with the following fields:
+         - `type_exists`: True if the type is registered, False otherwise,
+         - `type_id`: Complex object type ID, integer value,
+         - `type name`: Complex object type name,
+         - `affinity_key_field`: string value or None,
+         - `is_enum`: False in case of Complex object registration,
+         - `schemas`: a list of schemas in format OrderedDict[field name:
+           field type hint]. Contains only one schema, if `schema` parameter
+           is provided. Schema can be empty.
         """
         from pyignite.api.binary import get_binary_type
         from pyignite.datatypes.internal import tc_map
@@ -373,8 +380,8 @@ class Client:
             result = result_value.copy()
             result['schemas'] = [schema]
             result['data_class'] = GenericObjectMeta(
-                result['type_name'], (), {}, schema=schema,
-            )
+                    result['type_name'], (), {}, schema=schema,
+                )
             return result
 
         if schema is None:
@@ -403,6 +410,13 @@ class Client:
                 (entity_id(binary_type), schema_id(schema)), None
             )
             if memoized:
+                if not memoized.get('data_class', None):
+                    memoized['data_class'] = GenericObjectMeta(
+                        memoized['type_name'],
+                        (),
+                        {},
+                        schema=memoized['schemas'][0],
+                    )
                 return memoized
 
             result = get_binary_type(self, binary_type)
@@ -443,10 +457,15 @@ class Client:
          given binary type and schema. If not provided, a minimal data class
          will be created with a help of
          :class:`~pyignite.client.binary.GenericObjectMeta`,
-        :return: dict with the following fields:
-
-        - `type_id` − binary type ID,
-        - `schema_id` − schema ID.
+        :return: binary type description − a dict with the following fields:
+         - `type_exists`: True if the type is registered, False otherwise,
+         - `type_id`: Complex object type ID, integer value,
+         - `type name`: Complex object type name,
+         - `affinity_key_field`: string value or None,
+         - `is_enum`: False in case of Complex object registration,
+         - `schemas`: a list, containing a current Complex object schema
+           in format: OrderedDict[field name: field type hint]. Schema can
+           be empty.
         """
         from pyignite.api.binary import put_binary_type
 
@@ -467,27 +486,31 @@ class Client:
             data_class = GenericObjectMeta(type_name, (), {}, schema=schema)
 
         if (type_id, s_id) in self.binary_registry:
-            return {
-                'type_id': type_id,
-                'schema_id': s_id,
-            }
+            result = self.binary_registry[(type_id, s_id)]
+            if not result.get('data_class', None):
+                result['dataclass'] = data_class
+            return result
         else:
-            result = put_binary_type(
+            binary_result = put_binary_type(
                 self, type_name, affinity_key_field, is_enum, schema
             )
-            if result.status != 0:
-                raise BinaryTypeError(result.message)
-            self.binary_registry[
-                (result.value['type_id'], result.value['schema_id'])
-            ] = {
+            if binary_result.status != 0:
+                raise BinaryTypeError(binary_result.message)
+
+            result = {
                 'type_exists': True,
                 'type_name': type_name,
+                'type_id': binary_result.value['type_id'],
                 'schemas': [schema],
                 'affinity_key_field': affinity_key_field,
                 'is_enum': is_enum,
                 'data_class': data_class,
             }
-            return result.value
+            self.binary_registry[(
+                binary_result.value['type_id'],
+                binary_result.value['schema_id']
+            )] = result
+            return result
 
     def create_cache(self, settings: Union[str, dict]) -> 'Cache':
         """

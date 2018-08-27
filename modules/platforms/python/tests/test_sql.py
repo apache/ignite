@@ -47,11 +47,8 @@ page_size = 4
 
 def test_sql(client):
 
-    cache_get_or_create(client, 'PUBLIC')
-
     # cleanup
-    result = sql_fields(client, 'PUBLIC', drop_query, page_size)
-    assert result.status == 0
+    client.sql(drop_query)
 
     result = sql_fields(
         client,
@@ -91,7 +88,7 @@ def test_sql(client):
 
     for wrapped_object in result.value['data'].values():
         data = unwrap_binary(client, wrapped_object)
-        assert data['type_id'] == entity_id(binary_type_name)
+        assert data.type_id == entity_id(binary_type_name)
 
     cursor = result.value['cursor']
 
@@ -101,7 +98,7 @@ def test_sql(client):
 
         for wrapped_object in result.value['data'].values():
             data = unwrap_binary(client, wrapped_object)
-            assert data['type_id'] == entity_id(binary_type_name)
+            assert data.type_id == entity_id(binary_type_name)
 
     # repeat cleanup
     result = sql_fields(client, 'PUBLIC', drop_query, page_size)
@@ -110,11 +107,8 @@ def test_sql(client):
 
 def test_sql_fields(client):
 
-    cache_get_or_create(client, 'PUBLIC')
-
     # cleanup
-    result = sql_fields(client, 'PUBLIC', drop_query, page_size)
-    assert result.status == 0
+    client.sql(drop_query)
 
     result = sql_fields(
         client,

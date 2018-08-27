@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from collections import OrderedDict
+from inspect import isclass
 from typing import Any
 
 from pyignite.datatypes import *
@@ -61,7 +62,8 @@ class GenericObjectPropsMixin:
 
     def __init__(self) -> None:
         super().__init__()
-        self.version = 1
+        if not isclass(self):
+            self.version = 1
 
 
 class GenericObjectMeta(type, GenericObjectPropsMixin):

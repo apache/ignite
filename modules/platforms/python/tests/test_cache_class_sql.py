@@ -92,7 +92,7 @@ def test_sql(client, page_size):
     result = student.select_row('TRUE', page_size)
     for k, v in result:
         assert k in range(1, 6)
-        assert v['fields']['FIRST_NAME'] in [
+        assert v.FIRST_NAME in [
             'John',
             'Jane',
             'Joe',

@@ -83,33 +83,25 @@ def test_cache_binary_get_put(client):
     binary_type = client.put_binary_type(
         'TestBinaryType',
         schema=OrderedDict([
-            ('TEST_BOOL', BoolObject),
-            ('TEST_STR', String),
-            ('TEST_INT', IntObject),
-            ('TEST_DECIMAL', DecimalObject),
+            ('test_bool', BoolObject),
+            ('test_str', String),
+            ('test_int', IntObject),
+            ('test_decimal', DecimalObject),
         ])
     )
     cache = client.create_cache('my_oop_cache')
-    cache.put(
-        'my_key',
-        {
-            'version': 1,
-            'type_id': binary_type['type_id'],
-            'schema_id': binary_type['schema_id'],
-            'fields': OrderedDict([
-                ('TEST_BOOL', True),
-                ('TEST_STR', 'This is a test'),
-                ('TEST_INT', (42, IntObject)),
-                ('TEST_DECIMAL', Decimal('34.56')),
-            ]),
-        },
-        value_hint=BinaryObject
-    )
+    my_value = binary_type['data_class']()
+    my_value.test_bool = True
+    my_value.test_str = 'This is a test'
+    my_value.test_int = 42
+    my_value.test_decimal = Decimal('34.56')
+    cache.put('my_key', my_value)
+
     value = cache.get('my_key')
-    assert value['fields']['TEST_BOOL'] is True
-    assert value['fields']['TEST_STR'] == 'This is a test'
-    assert value['fields']['TEST_INT'] == 42
-    assert value['fields']['TEST_DECIMAL'] == Decimal('34.56')
+    assert value.test_bool is True
+    assert value.test_str == 'This is a test'
+    assert value.test_int == 42
+    assert value.test_decimal == Decimal('34.56')
 
     cache.destroy()
 
