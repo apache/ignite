@@ -33,10 +33,6 @@ public class TxCounters {
     /** Update counters for cache partitions in the end of transaction */
     private Map<Integer, PartitionUpdateCounters> updCntrs;
 
-    /** */
-    public TxCounters() {
-    }
-
     /**
      * Accumulates size change for cache partition.
      *
@@ -76,7 +72,7 @@ public class TxCounters {
 
     /** */
     public Map<Integer, PartitionUpdateCounters> updateCounters() {
-        return Collections.unmodifiableMap(updCntrs);
+        return updCntrs != null ? Collections.unmodifiableMap(updCntrs) : null;
     }
 
     /** */

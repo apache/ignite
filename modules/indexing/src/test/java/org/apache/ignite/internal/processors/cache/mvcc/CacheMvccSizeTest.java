@@ -170,6 +170,23 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testSizeIsNotChangedByReader() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache<?, ?> tbl = createTable(ignite);
+
+        tbl.query(q("insert into person values(1, 'a')"));
+
+        assertEquals(1, tbl.size());
+
+        tbl.query(q("select * from person")).getAll();
+
+        assertEquals(1, tbl.size());
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testSizeIsConsistentAfterRebalance() throws Exception {
