@@ -99,6 +99,7 @@ public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
         assertTrue(Arrays.equals(bigArray(grid0), cache.get(1)));
     }
 
+    /** */
     private byte[] bigArray(IgniteEx grid) {
         int arrSz = grid.configuration().getDataStorageConfiguration().getPageSize() * 3;
 
