@@ -251,17 +251,19 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
                     return updated ? locVal : curVal;
                 }
                 // Switched to the next interval. New value more that upper reserved bound.
-                else if (!reservationInProgress) {
+                else  {
+                    assert !reservationInProgress;
+
                     long diff = newLocalVal - reservedUpBound;
 
                     // Calculate how many batch size included in l.
                     // It will our offset for global seq counter.
                     long off = (diff / batchSize) * batchSize;
 
-                    reservationFut = runAsyncReservation(off);
+                    reservationFut = reservation = runAsyncReservation(off);
 
                     // Can not wait async, should wait under lock until new interval reserved.
-                    reservationFut.get();
+                    reservation.get();
 
                     reservationFut = null;
                 }
