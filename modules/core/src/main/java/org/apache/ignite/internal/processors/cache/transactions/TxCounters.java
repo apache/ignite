@@ -69,7 +69,9 @@ public class TxCounters {
                 accDelta = accDelta0;
         }
 
-        accDelta.addAndGet(delta);
+        // here AtomicLong is used more as a container,
+        // every instance is assumed to be accessed in thread-confined manner
+        accDelta.set(accDelta.get() + delta);
     }
 
     /** */
