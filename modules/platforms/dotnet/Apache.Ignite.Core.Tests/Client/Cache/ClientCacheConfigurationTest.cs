@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 ClientCacheConfigurationSerializer.Write(stream, cfg, ClientSocket.CurrentProtocolVersion, true);
                 stream.Seek(0, SeekOrigin.Begin);
-                return new CacheClientConfiguration(stream);
+                return new CacheClientConfiguration(stream, ClientSocket.CurrentProtocolVersion);
             }
         }
 
