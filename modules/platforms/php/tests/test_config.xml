@@ -1,7 +1,0 @@
-<phpunit
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/6.3/phpunit.xsd"
-         timeoutForSmallTests="60"
-         timeoutForMediumTests="60"
-         timeoutForLargeTests="60">
-</phpunit>

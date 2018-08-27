@@ -416,22 +416,6 @@ abstract class ObjectType
     private $typeCode;
     
     /**
-     * @cond INTERNAL
-     */    
-    /**
-     * The class is abstract and has no public constructor. Only subclasses may be instantiated.
-     * 
-     * @param int $typeCode
-     */
-    protected function __construct(int $typeCode)
-    {
-        $this->typeCode = $typeCode;
-    }
-    /**
-     * @endcond INTERNAL
-     */
-    
-    /**
      * Gets Ignite type code of this Ignite object type.
      * 
      * @return int Ignite type code
@@ -439,5 +423,11 @@ abstract class ObjectType
     public function getTypeCode(): int
     {
         return $this->typeCode;
+    }
+
+    //The class is abstract and has no public constructor. Only subclasses may be instantiated.
+    protected function __construct(int $typeCode)
+    {
+        $this->typeCode = $typeCode;
     }
 }

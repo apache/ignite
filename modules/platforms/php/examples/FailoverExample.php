@@ -21,15 +21,21 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Apache\Ignite\Client;
 use Apache\Ignite\ClientConfiguration;
 use Apache\Ignite\Exception\ClientException;
+use Apache\Ignite\Exception\NoConnectionException;
+use Apache\Ignite\Exception\OperationStatusUnknownException;
 
 const ENDPOINT1 = 'localhost:10800';
 const ENDPOINT2 = 'localhost:10801';
 const ENDPOINT3 = 'localhost:10802';
 
+const CACHE_NAME = 'test_cache';
+
 // This example demonstrates failover behavior of the client
 // - configures the client to connect to a set of nodes
 // - connects to a node
+// - executes an operation with Ignite server in a cycle (10 operations with 5 seconds pause) and finishes
 // - if connection is broken, the client automatically tries to reconnect to another node
+// - if not possible to connect to any nodes, the example finishes
 function connectClient() {
     $client = new Client();
     $client->setDebug(true);
@@ -38,6 +44,19 @@ function connectClient() {
         // connect to Ignite node
         $client->connect($clientConfiguration);
         echo("Client connected successfully" . PHP_EOL);
+        for ($i = 0; $i < 10; $i++) {
+            try {
+                $client->getOrCreateCache(CACHE_NAME);
+                sleep(5);
+            } catch (OperationStatusUnknownException $e) {
+                // Status of the operation is unknown,
+                // a real application may repeat the operation if necessary
+            }
+        }
+    } catch (NoConnectionException $e) {
+        // The client is disconnected, all further operation with Ignite server fail till the client is connected again.
+        // A real application may recall $client->connect() with the same or different list of Ignite nodes.
+        echo('ERROR: ' . $e->getMessage() . PHP_EOL);
     } catch (ClientException $e) {
         echo('ERROR: ' . $e->getMessage() . PHP_EOL);
     } finally {
