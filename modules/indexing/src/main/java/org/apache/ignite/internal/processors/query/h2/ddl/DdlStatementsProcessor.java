@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -94,6 +95,10 @@ public class DdlStatementsProcessor {
 
     /** Indexing. */
     IgniteH2Indexing idx;
+
+    /** Is backward compatible handling of UUID through DDL enabled. */
+    private static final boolean handleUuidAsByte =
+            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_UUID_DDL_BYTE_FORMAT, false);
 
     /**
      * Initialize message handlers and this' fields needed for further operation.
@@ -726,7 +731,8 @@ public class DdlStatementsProcessor {
 
         switch (type) {
             case Value.UUID :
-                return UUID.class.getName();
+                if (!handleUuidAsByte)
+                    return UUID.class.getName();
 
             default:
                 return DataType.getTypeClassName(type);
