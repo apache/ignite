@@ -312,6 +312,7 @@ BOOST_AUTO_TEST_CASE(ParserSetStreamingOnOff)
     CheckSetStreamingCommand(parser, false, false, 2048, 0, 0, 0, false);
 
     std::auto_ptr<odbc::SqlCommand> cmd = parser.GetNextCommand();
+
     BOOST_CHECK(cmd.get() == 0);
 }
 

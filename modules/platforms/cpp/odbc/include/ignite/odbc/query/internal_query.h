@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_QUERY_QUERY
-#define _IGNITE_ODBC_QUERY_QUERY
+#ifndef _IGNITE_ODBC_QUERY_INTERNAL_QUERY
+#define _IGNITE_ODBC_QUERY_INTERNAL_QUERY
 
 #include <stdint.h>
 
@@ -25,7 +25,8 @@
 #include "ignite/odbc/diagnostic/diagnosable.h"
 #include "ignite/odbc/meta/column_meta.h"
 #include "ignite/odbc/common_types.h"
-#include "ignite/odbc/row.h"
+#include "ignite/odbc/query/query.h"
+#include "ignite/odbc/sql/sql_command.h"
 
 namespace ignite
 {
@@ -33,53 +34,29 @@ namespace ignite
     {
         namespace query
         {
-            /** Query type. */
-            struct QueryType
-            {
-                enum Type
-                {
-                    /** Column metadata query type. */
-                    COLUMN_METADATA,
-
-                    /** Data query type. */
-                    DATA,
-
-                    /** Batch query type. */
-                    BATCH,
-
-                    /** Streaming query type. */
-                    STREAMING,
-
-                    /** Foreign keys query type. */
-                    FOREIGN_KEYS,
-
-                    /** Primary keys query type. */
-                    PRIMARY_KEYS,
-
-                    /** Special columns query type. */
-                    SPECIAL_COLUMNS,
-
-                    /** Table metadata query type. */
-                    TABLE_METADATA,
-
-                    /** Type info query type. */
-                    TYPE_INFO,
-
-                    /** Internal query, that should be parsed by a driver itself. */
-                    INTERNAL
-                };
-            };
-
             /**
              * Query.
              */
-            class Query
+            class InternalQuery : public Query
             {
             public:
                 /**
+                 * Constructor.
+                 *
+                 * @param diag Diagnosable.
+                 * @param sql SQL command.
+                 */
+                InternalQuery(diagnostic::Diagnosable& diag, std::auto_ptr<SqlCommand> sql) :
+                    Query(diag, QueryType::INTERNAL),
+                    sql(sql)
+                {
+                    // No-op.
+                }
+
+                /**
                  * Destructor.
                  */
-                virtual ~Query()
+                virtual ~InternalQuery()
                 {
                     // No-op.
                 }
@@ -89,7 +66,12 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual SqlResult::Type Execute() = 0;
+                virtual SqlResult::Type Execute()
+                {
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Internal error.");
+
+                    return SqlResult::AI_ERROR;
+                }
 
                 /**
                  * Fetch next result row to application buffers.
@@ -97,7 +79,12 @@ namespace ignite
                  * @param columnBindings Application buffers to put data to.
                  * @return Operation result.
                  */
-                virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings) = 0;
+                virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings)
+                {
+                    (void) columnBindings;
+
+                    return SqlResult::AI_NO_DATA;
+                }
 
                 /**
                  * Get data of the specified column in the result set.
@@ -106,72 +93,84 @@ namespace ignite
                  * @param buffer Buffer to put column data to.
                  * @return Operation result.
                  */
-                virtual SqlResult::Type GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer) = 0;
+                virtual SqlResult::Type GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
+                {
+                    (void) columnIdx;
+                    (void) buffer;
+
+                    return SqlResult::AI_NO_DATA;
+                }
 
                 /**
                  * Close query.
                  *
                  * @return True on success.
                  */
-                virtual SqlResult::Type Close() = 0;
+                virtual SqlResult::Type Close()
+                {
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Internal error.");
+
+                    return SqlResult::AI_ERROR;
+                }
 
                 /**
                  * Get column metadata.
                  *
                  * @return Column metadata.
                  */
-                virtual const meta::ColumnMetaVector& GetMeta() const = 0;
+                virtual const meta::ColumnMetaVector& GetMeta() const
+                {
+                    static const meta::ColumnMetaVector empty;
+
+                    return empty;
+                }
 
                 /**
                  * Check if data is available.
                  *
                  * @return True if data is available.
                  */
-                virtual bool DataAvailable() const = 0;
+                virtual bool DataAvailable() const
+                {
+                    return false;
+                }
 
                 /**
                  * Get number of rows affected by the statement.
                  *
                  * @return Number of rows affected by the statement.
                  */
-                virtual int64_t AffectedRows() const = 0;
+                virtual int64_t AffectedRows() const
+                {
+                    return 0;
+                }
 
                 /**
                  * Move to the next result set.
                  *
                  * @return Operation result.
                  */
-                virtual SqlResult::Type NextResultSet() = 0;
+                virtual SqlResult::Type NextResultSet()
+                {
+                    return SqlResult::AI_NO_DATA;
+                }
 
                 /**
-                 * Get query type.
+                 * Get SQL query.
                  *
-                 * @return Query type.
+                 * @return SQL query.
                  */
-                QueryType::Type GetType() const
+                SqlCommand& GetCommand() const
                 {
-                    return type;
+                    return *sql;
                 }
 
             protected:
-                /**
-                 * Constructor.
-                 */
-                Query(diagnostic::Diagnosable& diag, QueryType::Type type) :
-                    diag(diag),
-                    type(type)
-                {
-                    // No-op.
-                }
-
-                /** Diagnostics collector. */
-                diagnostic::Diagnosable& diag;
-
-                /** Query type. */
-                QueryType::Type type;
+                /** SQL command. */
+                std::auto_ptr<SqlCommand> sql;
             };
         }
     }
 }
 
-#endif //_IGNITE_ODBC_QUERY_QUERY
+#endif //_IGNITE_ODBC_QUERY_INTERNAL_QUERY
