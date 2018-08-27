@@ -88,9 +88,14 @@ export default angular.module('ignite-console.sql', [
             });
     }])
     .service('QueriesNavbar', class {
-        constructor() {
+        static $inject = ['$rootScope'];
+        constructor($rootScope) {
+            this.$rootScope = $rootScope;
             this.text = 'Queries';
             this.sref = 'base.sql.tabs';
+        }
+        get hidden() {
+            return this.$rootScope.user && this.$rootScope.user.becomeUsed;
         }
     })
     .decorator('webConsoleNavbarDirective', ['$delegate', function($delegate) {
