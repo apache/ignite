@@ -26,12 +26,17 @@
 #include "ignite/odbc/query/primary_keys_query.h"
 #include "ignite/odbc/query/type_info_query.h"
 #include "ignite/odbc/query/special_columns_query.h"
+#include "ignite/odbc/query/streaming_query.h"
+#include "ignite/odbc/query/internal_query.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/odbc_error.h"
+#include "ignite/odbc/sql/sql_utils.h"
+#include "ignite/odbc/sql/sql_parser.h"
+#include "ignite/odbc/sql/sql_set_streaming_command.h"
 
 namespace ignite
 {
@@ -281,7 +286,17 @@ namespace ignite
 
                 case SQL_ATTR_PARAMSET_SIZE:
                 {
-                    parameters.SetParamSetSize(reinterpret_cast<SqlUlen>(value));
+                    SqlUlen size = reinterpret_cast<SqlUlen>(value);
+
+                    if (size > 1 && IsStreamingActive())
+                    {
+                        AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                            "Batching is not supported in streaming mode.");
+
+                        return SqlResult::AI_ERROR;
+                    }
+
+                    parameters.SetParamSetSize(size);
 
                     break;
                 }
@@ -558,8 +573,53 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalPrepareSqlQuery(query));
         }
 
+        SqlResult::Type Statement::ProcessInternalCommand(const std::string& query)
+        {
+            try
+            {
+                SqlParser parser(query);
+
+                std::auto_ptr<SqlCommand> cmd = parser.GetNextCommand();
+
+                assert(cmd.get() != 0);
+                assert(cmd->GetType() == SqlCommandType::SET_STREAMING);
+
+                if (IsStreamingActive())
+                    StopStreaming();
+
+                parameters.Prepare();
+
+                currentQuery.reset(new query::InternalQuery(*this, cmd));
+
+                return SqlResult::AI_SUCCESS;
+            }
+            catch (const OdbcError& err)
+            {
+                AddStatusRecord(err);
+
+                return SqlResult::AI_ERROR;
+            }
+        }
+
+        bool Statement::IsStreamingActive() const
+        {
+            return currentQuery.get() && currentQuery->GetType() == query::QueryType::STREAMING;
+        }
+
         SqlResult::Type Statement::InternalPrepareSqlQuery(const std::string& query)
         {
+            if (sql_utils::IsInternalCommand(query))
+                return ProcessInternalCommand(query);
+
+            if (IsStreamingActive())
+            {
+                query::StreamingQuery* currentQuery0 = static_cast<query::StreamingQuery*>(currentQuery.get());
+
+                currentQuery0->PrepareQuery(query);
+
+                return SqlResult::AI_SUCCESS;
+            }
+
             if (currentQuery.get())
                 currentQuery->Close();
 
@@ -600,6 +660,13 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
+            if (currentQuery->GetType() == query::QueryType::INTERNAL)
+            {
+                ProcessInternalQuery();
+
+                return SqlResult::AI_SUCCESS;
+            }
+
             if (parameters.GetParamSetSize() > 1 && currentQuery->GetType() == query::QueryType::DATA)
             {
                 query::DataQuery& qry = static_cast<query::DataQuery&>(*currentQuery);
@@ -613,12 +680,21 @@ namespace ignite
                 currentQuery.reset(new query::DataQuery(*this, connection, qry.GetSql(), parameters, timeout));
             }
 
+            if (parameters.GetParamSetSize() > 1 && currentQuery->GetType() == query::QueryType::STREAMING)
+            {
+                AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                    "Batching is not supported in streaming mode.");
+
+                return SqlResult::AI_ERROR;
+            }
+
             if (parameters.IsDataAtExecNeeded())
             {
-                if (currentQuery->GetType() == query::QueryType::BATCH)
+                if (currentQuery->GetType() == query::QueryType::BATCH ||
+                    currentQuery->GetType() == query::QueryType::STREAMING)
                 {
                     AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
-                        "Data-at-execution is not supported together with batching.");
+                        "Data-at-execution is not supported with batching.");
 
                     return SqlResult::AI_ERROR;
                 }
@@ -627,6 +703,28 @@ namespace ignite
             }
 
             return currentQuery->Execute();
+        }
+
+        void Statement::ProcessInternalQuery()
+        {
+            assert(currentQuery->GetType() == query::QueryType::INTERNAL);
+
+            query::InternalQuery* qry = static_cast<query::InternalQuery*>(currentQuery.get());
+
+            assert(qry->GetCommand().GetType() == SqlCommandType::SET_STREAMING);
+
+            SqlSetStreamingCommand& cmd = static_cast<SqlSetStreamingCommand&>(qry->GetCommand());
+
+            if (!cmd.IsEnabled())
+            {
+                currentQuery.reset();
+
+                return;
+            }
+
+            std::auto_ptr<query::Query> newQry(new query::StreamingQuery(*this, connection, parameters, cmd));
+
+            std::swap(currentQuery, newQry);
         }
 
         void Statement::ExecuteGetColumnsMetaQuery(const std::string& schema,
@@ -821,6 +919,19 @@ namespace ignite
                 return SqlResult::AI_SUCCESS;
 
             SqlResult::Type result = currentQuery->Close();
+
+            return result;
+        }
+
+        SqlResult::Type Statement::StopStreaming()
+        {
+            assert(IsStreamingActive());
+
+            query::StreamingQuery* currentQuery0 = static_cast<query::StreamingQuery*>(currentQuery.get());
+
+            SqlResult::Type result = currentQuery0->Flush();
+
+            currentQuery.reset();
 
             return result;
         }

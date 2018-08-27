@@ -15,25 +15,29 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_QUERY_COLUMN_METADATA_QUERY
-#define _IGNITE_ODBC_QUERY_COLUMN_METADATA_QUERY
+#ifndef _IGNITE_ODBC_QUERY_STREAMING_QUERY
+#define _IGNITE_ODBC_QUERY_STREAMING_QUERY
 
 #include "ignite/odbc/query/query.h"
-#include "ignite/odbc/meta/column_meta.h"
+#include "ignite/odbc/app/parameter_set.h"
+#include "ignite/odbc/cursor.h"
 
 namespace ignite
 {
     namespace odbc
     {
+        /** Set streaming forward-declaration. */
+        class SqlSetStreamingCommand;
+
         /** Connection forward-declaration. */
         class Connection;
 
         namespace query
         {
             /**
-             * Query.
+             * Streaming Query.
              */
-            class ColumnMetadataQuery : public Query
+            class StreamingQuery : public Query
             {
             public:
                 /**
@@ -41,18 +45,19 @@ namespace ignite
                  *
                  * @param diag Diagnostics collector.
                  * @param connection Associated connection.
-                 * @param schema Schema search pattern.
-                 * @param table Table search pattern.
-                 * @param column Column search pattern.
+                 * @param params SQL params.
+                 * @param cmd Set streaming command.
                  */
-                ColumnMetadataQuery(diagnostic::Diagnosable& diag,
-                    Connection& connection, const std::string& schema,
-                    const std::string& table, const std::string& column);
+                StreamingQuery(
+                    diagnostic::Diagnosable& diag,
+                    Connection& connection,
+                    const app::ParameterSet& params,
+                    const SqlSetStreamingCommand& cmd);
 
                 /**
                  * Destructor.
                  */
-                virtual ~ColumnMetadataQuery();
+                virtual ~StreamingQuery();
 
                 /**
                  * Execute query.
@@ -71,10 +76,11 @@ namespace ignite
                 /**
                  * Fetch next result row to application buffers.
                  *
+                 * @param columnBindings Application buffers to put data to.
                  * @return Operation result.
                  */
                 virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings);
-
+                
                 /**
                  * Get data of the specified column in the result set.
                  *
@@ -87,7 +93,7 @@ namespace ignite
                 /**
                  * Close query.
                  *
-                 * @return True on success.
+                 * @return Result.
                  */
                 virtual SqlResult::Type Close();
 
@@ -107,50 +113,72 @@ namespace ignite
 
                 /**
                  * Move to the next result set.
-                 *
-                 * @return Operation result.
+                 * 
+                 * @return Operaion result.
                  */
                 virtual SqlResult::Type NextResultSet();
 
-            private:
-                IGNITE_NO_COPY_ASSIGNMENT(ColumnMetadataQuery);
+                /**
+                 * Get SQL query string.
+                 *
+                 * @return SQL query string.
+                 */
+                const std::string& GetSql() const
+                {
+                    return sql;
+                }
 
                 /**
-                 * Make get columns metadata requets and use response to set internal state.
+                 * Flush collected streaming data to remote server.
                  *
                  * @return Operation result.
                  */
-                SqlResult::Type MakeRequestGetColumnsMeta();
+                SqlResult::Type Flush();
+
+                /**
+                 * Prepare query for execution in a streaming mode.
+                 *
+                 * @param query Query.
+                 */
+                void PrepareQuery(const std::string& query);
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(StreamingQuery);
+
+                /**
+                 * Make query execute request and use response to set internal
+                 * state.
+                 *
+                 * @param begin Paramset interval beginning.
+                 * @param end Paramset interval end.
+                 * @param last Last page flag.
+                 * @return Result.
+                 */
+                SqlResult::Type MakeRequestExecuteBatch(SqlUlen begin, SqlUlen end, bool last);
 
                 /** Connection associated with the statement. */
                 Connection& connection;
 
-                /** Schema search pattern. */
-                std::string schema;
+                /** SQL Query. */
+                std::string sql;
 
-                /** Table search pattern. */
-                std::string table;
+                /** Parameter bindings. */
+                const app::ParameterSet& params;
 
-                /** Column search pattern. */
-                std::string column;
+                /** Columns metadata. */
+                meta::ColumnMetaVector resultMeta;
+
+                /** Number of rows affected. */
+                std::vector<int64_t> rowsAffected;
+
+                /** Rows affected index. */
+                size_t rowsAffectedIdx;
 
                 /** Query executed. */
                 bool executed;
-
-                /** Fetched flag. */
-                bool fetched;
-
-                /** Fetched metadata. */
-                meta::ColumnMetaVector meta;
-
-                /** Metadata cursor. */
-                meta::ColumnMetaVector::iterator cursor;
-
-                /** Columns metadata. */
-                meta::ColumnMetaVector columnsMeta;
             };
         }
     }
 }
 
-#endif //_IGNITE_ODBC_QUERY_COLUMN_METADATA_QUERY
+#endif //_IGNITE_ODBC_QUERY_STREAMING_QUERY
