@@ -3868,7 +3868,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     }
                     catch (IgniteCheckedException e) {
                         if (!X.hasCause(e, IgniteNeedReconnectException.class,
-                            IgniteClientDisconnectedCheckedException.class)) {
+                            IgniteClientDisconnectedCheckedException.class,
+                            IgniteInterruptedCheckedException.class)) {
                             U.error(log, "Failed to reconnect, will stop node.", e);
 
                             reconnectState.firstReconnectFut.onDone(e);
@@ -3901,7 +3902,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (err != null) {
             U.error(log, "Failed to reconnect, will stop node", err);
 
-            close();
+            if (!X.hasCause(err, NodeStoppingException.class))
+                close();
         }
     }
 
