@@ -15,17 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
-
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+package org.apache.ignite.internal.processors.odbc.odbc;
 
 /**
- * JDBC response result sender.
+ * ODBC query execute with batch of parameters result.
  */
-public interface JdbcResponseSender {
+public class OdbcQueryExecuteOrderedBatchResult {
+    /** Rows affected. */
+    private final OdbcQueryExecuteBatchResult batchResult;
+
+    /** Order. */
+    private final long order;
+
     /**
-     * Send response to the client. Used for asynchronous result send.
-     * @param resp JDBC response.
+     * @param batchResult Execute batch result.
+     * @param order Order.
      */
-    public void send(ClientListenerResponse resp);
+    public OdbcQueryExecuteOrderedBatchResult(OdbcQueryExecuteBatchResult batchResult, long order) {
+        this.batchResult = batchResult;
+        this.order = order;
+    }
+
+    /**
+     * @return Batch result.
+     */
+    public OdbcQueryExecuteBatchResult batchResult() {
+        return batchResult;
+    }
+
+    /**
+     * @return Order.
+     */
+    public long order() {
+        return order;
+    }
 }

@@ -154,7 +154,7 @@ namespace ignite
                  * @param last Last page flag.
                  * @return Result.
                  */
-                SqlResult::Type MakeRequestExecuteBatch(SqlUlen begin, SqlUlen end, bool last);
+                //SqlResult::Type MakeRequestExecuteBatch(SqlUlen begin, SqlUlen end, bool last);
 
                 /** Connection associated with the statement. */
                 Connection& connection;
@@ -164,6 +164,9 @@ namespace ignite
 
                 /** Parameter bindings. */
                 const app::ParameterSet& params;
+
+                /** Command. */
+                const SqlSetStreamingCommand& cmd;
 
                 /** Columns metadata. */
                 meta::ColumnMetaVector resultMeta;
