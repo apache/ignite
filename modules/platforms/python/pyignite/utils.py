@@ -30,6 +30,18 @@ def is_iterable(value):
         return False
 
 
+def is_binary(value):
+    """
+    Check if a value is a pythonic representation of a Complex object.
+    """
+    return all([
+        hasattr(value, 'type_name'),
+        hasattr(value, 'type_id'),
+        hasattr(value, 'schema'),
+        hasattr(value, 'schema_id'),
+    ])
+
+
 def is_hinted(value):
     """
     Check if a value is a tuple of data item and its type hint.
@@ -57,7 +69,7 @@ def int_overflow(value: int) -> int:
     return ((value ^ 0x80000000) & 0xffffffff) - 0x80000000
 
 
-def unwrap_binary(client, wrapped: tuple):
+def unwrap_binary(client: 'Client', wrapped: tuple):
     """
     Unwrap wrapped BinaryObject and convert it to Python data.
 

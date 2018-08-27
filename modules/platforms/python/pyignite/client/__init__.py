@@ -47,7 +47,7 @@ from pyignite.exceptions import (
 from pyignite.utils import (
     entity_id, is_iterable, schema_id, status_to_exception,
 )
-from .binary import GenericObjectMeta
+from .binary import ensure_data_class, GenericObjectMeta
 from .handshake import HandshakeRequest, read_response
 from .ssl import wrap
 
@@ -242,7 +242,7 @@ class Client:
 
         :return: `Client` object.
         """
-        clone = Client(prefetch, **self.init_kwargs)
+        clone = Client(**self.init_kwargs)
         self._transfer_params(to=clone)
         if self.port and self.host:
             clone._connect(self.host, self.port)
@@ -330,6 +330,7 @@ class Client:
 
         return b''.join(chunks)
 
+    @ensure_data_class
     def get_binary_type(
         self, binary_type: Union[str, int], schema: Union[dict, int]=None
     ) -> dict:
@@ -379,12 +380,9 @@ class Client:
         def one_schema_result(result_value: dict, schema: OrderedDict):
             result = result_value.copy()
             result['schemas'] = [schema]
-            result['data_class'] = GenericObjectMeta(
-                    result['type_name'], (), {}, schema=schema,
-                )
             return result
 
-        if schema is None:
+        if type(schema) in [int, type(None)]:
             # do not look up the binary types registry! Do a server query
             # and update the registry with the returned results instead
             result = get_binary_type(self, binary_type)
@@ -401,7 +399,8 @@ class Client:
                 self.binary_registry[
                     (entity_id(binary_type), s_id)
                 ] = one_schema_result(result.value, converted_schema)
-                schemas.append(converted_schema)
+                if any([schema == s_id, schema is None]):
+                    schemas.append(converted_schema)
             result.value['schemas'] = schemas
             return result.value
         else:
@@ -410,13 +409,6 @@ class Client:
                 (entity_id(binary_type), schema_id(schema)), None
             )
             if memoized:
-                if not memoized.get('data_class', None):
-                    memoized['data_class'] = GenericObjectMeta(
-                        memoized['type_name'],
-                        (),
-                        {},
-                        schema=memoized['schemas'][0],
-                    )
                 return memoized
 
             result = get_binary_type(self, binary_type)
@@ -436,6 +428,7 @@ class Client:
                     exact_result = result
             return exact_result
 
+    @ensure_data_class
     def put_binary_type(
         self, type_name: str=None, affinity_key_field: str=None,
         is_enum=False, schema: OrderedDict=None, data_class: Type=None,
@@ -483,13 +476,9 @@ class Client:
             type_id = entity_id(type_name)
             schema = schema or OrderedDict()
             s_id = schema_id(schema)
-            data_class = GenericObjectMeta(type_name, (), {}, schema=schema)
 
         if (type_id, s_id) in self.binary_registry:
-            result = self.binary_registry[(type_id, s_id)]
-            if not result.get('data_class', None):
-                result['dataclass'] = data_class
-            return result
+            return self.binary_registry[(type_id, s_id)]
         else:
             binary_result = put_binary_type(
                 self, type_name, affinity_key_field, is_enum, schema

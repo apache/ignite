@@ -162,8 +162,6 @@ def test_sql_write_as_binary(client):
     table_settings = table_cache.settings
     assert table_settings, 'SQL table cache settings are empty'
 
-    client.put_binary_type(data_class=AllDataType)
-
     # insert rows as k-v
     for row in insert_data:
         value = AllDataType()
@@ -215,9 +213,6 @@ def test_nested_binary_objects(client):
     ):
         pass
 
-    client.put_binary_type(data_class=InnerType)
-    client.put_binary_type(data_class=OuterType)
-
     inner = InnerType()
     inner.inner_int = 42
     inner.inner_str = 'This is a test string'
@@ -252,8 +247,6 @@ def test_add_schema_to_binary_object(client):
     ):
         pass
 
-    client.put_binary_type(data_class=MyBinaryType)
-
     binary_object = MyBinaryType()
     binary_object.test_str = 'Test string'
     binary_object.test_int = 42
@@ -277,7 +270,6 @@ def test_add_schema_to_binary_object(client):
     ):
         pass
 
-    client.put_binary_type(data_class=MyBinaryTypeV2)
     assert MyBinaryType.type_id == MyBinaryTypeV2.type_id
     assert MyBinaryType.schema_id != MyBinaryTypeV2.schema_id
 

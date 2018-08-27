@@ -364,6 +364,8 @@ class BinaryObject:
         temp_conn = client.clone()
         result = temp_conn.get_binary_type(header.type_id, header.schema_id)
         temp_conn.close()
+        if not result['type_exists']:
+            raise ParseError('Binary type is not registered')
         return result['schemas'][0]
 
     @classmethod

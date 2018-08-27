@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from collections import OrderedDict
+from functools import wraps
 from inspect import isclass
 from typing import Any
 
@@ -33,6 +34,30 @@ ALLOWED_FIELD_TYPES = [
     DecimalObject, DecimalArrayObject, ObjectArrayObject, CollectionObject,
     MapObject, BinaryObject, WrappedDataObject,
 ]
+
+
+def ensure_data_class(fn):
+    """
+    Adds a data class to a Complex type memo.
+    """
+    @wraps(fn)
+    def data_class_wrapper(self, *args, **kwargs):
+        type_info = fn(self, *args, **kwargs)
+        if (
+            type_info['type_exists']
+            and not type_info.get('data_class', None)
+            and len(type_info['schemas']) == 1
+        ):
+            type_info['data_class'] = GenericObjectMeta(
+                type_info['type_name'], (), {}, schema=type_info['schemas'][0]
+            )
+            reg_key = (
+                type_info['type_id'], schema_id(type_info['schemas'][0])
+            )
+            if self.binary_registry.get(reg_key, None):
+                self.binary_registry[reg_key] = type_info['data_class']
+        return type_info
+    return data_class_wrapper
 
 
 class GenericObjectPropsMixin:

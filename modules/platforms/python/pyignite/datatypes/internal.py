@@ -24,7 +24,7 @@ import attr
 
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
-from pyignite.utils import is_hinted, is_iterable
+from pyignite.utils import is_binary, is_hinted, is_iterable
 from .type_codes import *
 
 
@@ -331,12 +331,7 @@ class AnyDataObject:
                 'Type `array of {}` is invalid'.format(value_subtype)
             )
 
-        if all([
-            hasattr(value, 'type_name'),
-            hasattr(value, 'type_id'),
-            hasattr(value, 'schema'),
-            hasattr(value, 'schema_id'),
-        ]):
+        if is_binary(value):
             return BinaryObject
 
         if value_type in python_map:
