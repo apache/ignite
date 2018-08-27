@@ -25,15 +25,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
@@ -43,6 +46,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -54,6 +59,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
@@ -101,10 +107,20 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Client version. */
     private ClientListenerProtocolVersion ver;
 
+    /** Ordered batches queue. */
+    private final PriorityQueue<OdbcQueryExecuteOrderedBatchRequest> orderedBatchesQueue = new PriorityQueue<>();
+
+    /** Ordered batches mutex. */
+    private final Object orderedBatchesMux = new Object();
+
+    /** Response sender. */
+    private final ClientListenerResponseSender sender;
+
     /**
      * Constructor.
      * @param ctx Context.
      * @param busyLock Shutdown latch.
+     * @param sender Results sender.
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
@@ -116,10 +132,25 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param actx Authentication context.
      * @param ver Client protocol version.
      */
-    public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly, boolean collocated, boolean lazy,
-        boolean skipReducerOnUpdate, AuthorizationContext actx, NestedTxMode nestedTxMode, ClientListenerProtocolVersion ver) {
+    public OdbcRequestHandler(
+        GridKernalContext ctx,
+        GridSpinBusyLock busyLock,
+        ClientListenerResponseSender sender,
+        int maxCursors,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean replicatedOnly,
+        boolean collocated,
+        boolean lazy,
+        boolean skipReducerOnUpdate,
+        AuthorizationContext actx, NestedTxMode nestedTxMode, ClientListenerProtocolVersion ver) {
         this.ctx = ctx;
+
+        Factory<GridWorker> orderedFactory = new Factory<GridWorker>() {
+            @Override public GridWorker create() {
+                return new OrderedBatchWorker();
+            }
+        };
 
         this.cliCtx = new SqlClientContext(
             ctx,
@@ -133,6 +164,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         );
 
         this.busyLock = busyLock;
+        this.sender = sender;
         this.maxCursors = maxCursors;
         this.actx = actx;
         this.nestedTxMode = nestedTxMode;
@@ -399,6 +431,55 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             return exceptionToBatchResult(e);
         }
+    }
+
+    /**
+     * @param req Ordered batch request.
+     * @return Response.
+     */
+    private ClientListenerResponse dispatchBatchOrdered(OdbcQueryExecuteOrderedBatchRequest req) {
+        synchronized (orderedBatchesMux) {
+            orderedBatchesQueue.add(req);
+
+            orderedBatchesMux.notify();
+        }
+
+        if (!cliCtx.isStreamOrdered())
+            executeBatchQueryOrdered(req);
+
+        return null;
+    }
+
+    /**
+     * @param req Ordered batch request.
+     * @return Response.
+     */
+    private ClientListenerResponse executeBatchQueryOrdered(OdbcQueryExecuteOrderedBatchRequest req) {
+        try {
+            if (req.last())
+                cliCtx.waitTotalProcessedOrderedRequests(req.order());
+
+            OdbcResponse resp = (OdbcResponse)executeBatchQuery(req);
+
+            if (resp.response() instanceof OdbcQueryExecuteBatchResult) {
+                resp = new OdbcResponse(
+                    new OdbcQueryExecuteOrderedBatchResult((OdbcQueryExecuteBatchResult)resp.response(), req.order()));
+            }
+
+            sender.send(resp);
+        } catch (Exception e) {
+            U.error(null, "Error processing file batch", e);
+
+            sender.send(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
+        }
+
+        synchronized (orderedBatchesMux) {
+            orderedBatchesQueue.poll();
+        }
+
+        cliCtx.orderedRequestProcessed();
+
+        return null;
     }
 
     /**
@@ -777,5 +858,43 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private OdbcResponse exceptionToResult(Exception e) {
         return new OdbcResponse(OdbcUtils.tryRetrieveSqlErrorCode(e), OdbcUtils.tryRetrieveH2ErrorMessage(e));
+    }
+
+    /**
+     * Ordered batch worker.
+     */
+    private class OrderedBatchWorker extends GridWorker {
+        /**
+         * Constructor.
+         */
+        OrderedBatchWorker() {
+            super(ctx.igniteInstanceName(), "ordered-batch", OdbcRequestHandler.this.log);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            long nextBatchOrder = 0;
+
+            while (true) {
+                if (!cliCtx.isStream())
+                    return;
+
+                OdbcQueryExecuteOrderedBatchRequest req;
+
+                synchronized (orderedBatchesMux) {
+                    req = orderedBatchesQueue.peek();
+
+                    if (req == null || req.order() != nextBatchOrder) {
+                        orderedBatchesMux.wait();
+
+                        continue;
+                    }
+                }
+
+                executeBatchQueryOrdered(req);
+
+                nextBatchOrder++;
+            }
+        }
     }
 }

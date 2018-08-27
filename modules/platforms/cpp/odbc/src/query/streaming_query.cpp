@@ -18,7 +18,6 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/log.h"
-#include "ignite/odbc/odbc_error.h"
 #include "ignite/odbc/query/streaming_query.h"
 
 namespace ignite
@@ -31,16 +30,15 @@ namespace ignite
                 diagnostic::Diagnosable& diag,
                 Connection& connection,
                 const app::ParameterSet& params,
-                const SqlSetStreamingCommand & cmd) :
+                const SqlSetStreamingCommand& cmd) :
                 Query(diag, QueryType::STREAMING),
                 connection(connection),
-                sql(sql),
                 params(params),
+                cmd(cmd),
                 resultMeta(),
                 rowsAffected(),
                 rowsAffectedIdx(0),
-                executed(false),
-                timeout(timeout)
+                executed(false)
             {
                 // No-op.
             }
@@ -149,76 +147,77 @@ namespace ignite
 
             void StreamingQuery::PrepareQuery(const std::string& query)
             {
+                sql = query;
             }
 
-            SqlResult::Type StreamingQuery::MakeRequestExecuteBatch(SqlUlen begin, SqlUlen end, bool last)
-            {
-                const std::string& schema = connection.GetSchema();
+            //SqlResult::Type StreamingQuery::MakeRequestExecuteBatch(SqlUlen begin, SqlUlen end, bool last)
+            //{
+            //    const std::string& schema = connection.GetSchema();
 
-                QueryExecuteBatchtRequest req(schema, sql, params, begin, end, last, timeout);
-                QueryExecuteBatchResponse rsp;
+            //    QueryExecuteBatchtRequest req(schema, sql, params, begin, end, last, timeout);
+            //    QueryExecuteBatchResponse rsp;
 
-                try
-                {
-                    // Setting connection timeout to 1 second more than query timeout itself.
-                    int32_t connectionTimeout = timeout ? timeout + 1 : 0;
+            //    try
+            //    {
+            //        // Setting connection timeout to 1 second more than query timeout itself.
+            //        int32_t connectionTimeout = timeout ? timeout + 1 : 0;
 
-                    bool success = connection.SyncMessage(req, rsp, connectionTimeout);
+            //        bool success = connection.SyncMessage(req, rsp, connectionTimeout);
 
-                    if (!success)
-                    {
-                        diag.AddStatusRecord(SqlState::SHYT00_TIMEOUT_EXPIRED, "Query timeout expired");
+            //        if (!success)
+            //        {
+            //            diag.AddStatusRecord(SqlState::SHYT00_TIMEOUT_EXPIRED, "Query timeout expired");
 
-                        return SqlResult::AI_ERROR;
-                    }
-                }
-                catch (const OdbcError& err)
-                {
-                    diag.AddStatusRecord(err);
+            //            return SqlResult::AI_ERROR;
+            //        }
+            //    }
+            //    catch (const OdbcError& err)
+            //    {
+            //        diag.AddStatusRecord(err);
 
-                    return SqlResult::AI_ERROR;
-                }
-                catch (const IgniteError& err)
-                {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+            //        return SqlResult::AI_ERROR;
+            //    }
+            //    catch (const IgniteError& err)
+            //    {
+            //        diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
-                    return SqlResult::AI_ERROR;
-                }
+            //        return SqlResult::AI_ERROR;
+            //    }
 
-                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-                {
-                    LOG_MSG("Error: " << rsp.GetError());
+            //    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+            //    {
+            //        LOG_MSG("Error: " << rsp.GetError());
 
-                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
+            //        diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
 
-                    return SqlResult::AI_ERROR;
-                }
+            //        return SqlResult::AI_ERROR;
+            //    }
 
-                const std::vector<int64_t>& rowsLastTime = rsp.GetAffectedRows();
+            //    const std::vector<int64_t>& rowsLastTime = rsp.GetAffectedRows();
 
-                for (size_t i = 0; i < rowsLastTime.size(); ++i)
-                {
-                    int64_t idx = static_cast<int64_t>(i + rowsAffected.size());
+            //    for (size_t i = 0; i < rowsLastTime.size(); ++i)
+            //    {
+            //        int64_t idx = static_cast<int64_t>(i + rowsAffected.size());
 
-                    params.SetParamStatus(idx, rowsLastTime[i] < 0 ? SQL_PARAM_ERROR : SQL_PARAM_SUCCESS);
-                }
+            //        params.SetParamStatus(idx, rowsLastTime[i] < 0 ? SQL_PARAM_ERROR : SQL_PARAM_SUCCESS);
+            //    }
 
-                rowsAffected.insert(rowsAffected.end(), rowsLastTime.begin(), rowsLastTime.end());
-                LOG_MSG("Affected rows list size: " << rowsAffected.size());
+            //    rowsAffected.insert(rowsAffected.end(), rowsLastTime.begin(), rowsLastTime.end());
+            //    LOG_MSG("Affected rows list size: " << rowsAffected.size());
 
-                if (!rsp.GetErrorMessage().empty())
-                {
-                    LOG_MSG("Error: " << rsp.GetErrorMessage());
-                    LOG_MSG("Sets Processed: " << rowsAffected.size());
+            //    if (!rsp.GetErrorMessage().empty())
+            //    {
+            //        LOG_MSG("Error: " << rsp.GetErrorMessage());
+            //        LOG_MSG("Sets Processed: " << rowsAffected.size());
 
-                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetErrorCode()), rsp.GetErrorMessage(),
-                        static_cast<int32_t>(rowsAffected.size()), 0);
+            //        diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetErrorCode()), rsp.GetErrorMessage(),
+            //            static_cast<int32_t>(rowsAffected.size()), 0);
 
-                    return SqlResult::AI_SUCCESS_WITH_INFO;
-                }
+            //        return SqlResult::AI_SUCCESS_WITH_INFO;
+            //    }
 
-                return SqlResult::AI_SUCCESS;
-            }
+            //    return SqlResult::AI_SUCCESS;
+            //}
         }
     }
 }
