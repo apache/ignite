@@ -40,19 +40,22 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for iterator data link erasure after closing or completing
  */
-public class H2ResultSetIteratorNullifyOnEnd extends GridCommonAbstractTest {
+public class H2ResultSetIteratorNullifyOnEndSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 2;
+
     /** */
     private static final int PERSON_COUNT = 20;
+
     /** */
     private static final String SELECT_ALL_SQL = "SELECT p.* FROM Person p ORDER BY p.salary";
+
     /** */
     private static final String SELECT_MAX_SAL_SQLF = "select max(salary) from Person";
+
     /** */
     private IgniteCache<String, Person> personCache;
-    /** */
-    private GridQueryProcessor qryProcessor;
+
     /** */
     private IgniteH2Indexing h2Idx;
 
@@ -208,7 +211,8 @@ public class H2ResultSetIteratorNullifyOnEnd extends GridCommonAbstractTest {
      * @param qryCurs source cursor
      * @return target iterator or null of not extracted
      */
-    private H2ResultSetIterator extractIteratorInnerGridIteratorInnerH2ResultSetIterator(QueryCursor<Cache.Entry<String, Person>> qryCurs) {
+    private H2ResultSetIterator extractIteratorInnerGridIteratorInnerH2ResultSetIterator(
+        QueryCursor<Cache.Entry<String, Person>> qryCurs) {
         if (QueryCursorImpl.class.isAssignableFrom(qryCurs.getClass())) {
             Iterator inner = GridTestUtils.getFieldValue(qryCurs, QueryCursorImpl.class, "iter");
 
@@ -223,11 +227,13 @@ public class H2ResultSetIteratorNullifyOnEnd extends GridCommonAbstractTest {
     }
 
     /**
-     * Extract H2ResultSetIterator by reflection for local SQL cases
+     * Extract H2ResultSetIterator by reflection for local SQL cases.
+     *
      * @param qryCurs source cursor
      * @return target iterator or null of not extracted
      */
-    private H2ResultSetIterator extractIterableInnerH2ResultSetIterator(QueryCursor<Cache.Entry<String, Person>> qryCurs) {
+    private H2ResultSetIterator extractIterableInnerH2ResultSetIterator(
+        QueryCursor<Cache.Entry<String, Person>> qryCurs) {
         if (QueryCursorImpl.class.isAssignableFrom(qryCurs.getClass())) {
             Iterable iterable = GridTestUtils.getFieldValue(qryCurs, QueryCursorImpl.class, "iterExec");
 
@@ -240,7 +246,8 @@ public class H2ResultSetIteratorNullifyOnEnd extends GridCommonAbstractTest {
     }
 
     /**
-     * Extract H2ResultSetIterator by reflection for SQL Fields cases
+     * Extract H2ResultSetIterator by reflection for SQL Fields cases.
+     *
      * @param qryCurs source cursor
      * @return target iterator or null of not extracted
      */
@@ -257,7 +264,7 @@ public class H2ResultSetIteratorNullifyOnEnd extends GridCommonAbstractTest {
     }
 
     /**
-     * on close should remove links to data
+     * "onClose" should remove links to data.
      */
     public void testOnClose() {
         try {
@@ -287,7 +294,7 @@ public class H2ResultSetIteratorNullifyOnEnd extends GridCommonAbstractTest {
     }
 
     /**
-     * complete iterate should remove links to data
+     * Complete iterate should remove links to data.
      */
     public void testOnComplete() {
         try {
@@ -320,7 +327,9 @@ public class H2ResultSetIteratorNullifyOnEnd extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         final Ignite ignite = startGridsMultiThreaded(NODES_COUNT, false);
-        qryProcessor = grid(ignite.name()).context().query();
+
+        GridQueryProcessor qryProcessor = grid(ignite.name()).context().query();
+
         h2Idx = GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
 
         personCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Person>("pers")
@@ -346,9 +355,12 @@ public class H2ResultSetIteratorNullifyOnEnd extends GridCommonAbstractTest {
 
         for (int j = 0; j < PERSON_COUNT; j++) {
             Person prsn = new Person();
+
             prsn.setId("pers" + personId);
             prsn.setName("Person name #" + personId);
+
             cache.put(prsn.getId(), prsn);
+
             personId++;
         }
     }
