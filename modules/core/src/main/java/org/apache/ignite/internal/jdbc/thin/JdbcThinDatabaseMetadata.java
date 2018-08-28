@@ -846,7 +846,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         row.add(colMeta.columnName());          // 4. COLUMN_NAME
         row.add(colMeta.dataType());            // 5. DATA_TYPE
         row.add(colMeta.dataTypeName());        // 6. TYPE_NAME
-        row.add(colMeta.precision() == -1 ? null : colMeta.precision());                 // 7. COLUMN_SIZE
+        row.add(colMeta.precision() == -1 ? null : colMeta.precision()); // 7. COLUMN_SIZE
         row.add((Integer)null);                 // 8. BUFFER_LENGTH
         row.add(colMeta.scale() == -1 ? null : colMeta.scale());           // 9. DECIMAL_DIGITS
         row.add(10);                            // 10. NUM_PREC_RADIX

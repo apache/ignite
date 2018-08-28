@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
@@ -32,31 +33,51 @@ public class OdbcColumnMeta {
     private final String tableName;
 
     /** Column name. */
-    private final String columnName;
+    public final String columnName;
 
     /** Data type. */
     private final Class<?> dataType;
+
+    /** Precision. */
+    public final int precision;
+
+    /** Scale. */
+    public final int scale;
+
+    /** Client version. */
+    private final ClientListenerProtocolVersion ver;
 
     /**
      * @param schemaName Cache name.
      * @param tableName Table name.
      * @param columnName Column name.
      * @param dataType Data type.
+     * @param precision Precision.
+     * @param scale Scale.
+     * @param ver Client version.
      */
-    public OdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType) {
+    public OdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType,
+        int precision, int scale, ClientListenerProtocolVersion ver) {
         this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(schemaName);
         this.tableName = tableName;
         this.columnName = columnName;
         this.dataType = dataType;
+        this.precision = precision;
+        this.scale = scale;
+        this.ver = ver;
     }
 
     /**
      * @param info Field metadata.
+     * @param ver Client version.
      */
-    public OdbcColumnMeta(GridQueryFieldMetadata info) {
+    public OdbcColumnMeta(GridQueryFieldMetadata info, ClientListenerProtocolVersion ver) {
         this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(info.schemaName());
         this.tableName = info.typeName();
         this.columnName = info.fieldName();
+        this.precision = info.precision();
+        this.scale = info.scale();
+        this.ver = ver;
 
         Class<?> type;
 
@@ -77,6 +98,8 @@ public class OdbcColumnMeta {
         hash = 31 * hash + tableName.hashCode();
         hash = 31 * hash + columnName.hashCode();
         hash = 31 * hash + dataType.hashCode();
+        hash = 31 * hash + Integer.hashCode(precision);
+        hash = 31 * hash + Integer.hashCode(scale);
 
         return hash;
     }
@@ -87,7 +110,8 @@ public class OdbcColumnMeta {
             OdbcColumnMeta other = (OdbcColumnMeta) o;
 
             return this == other || schemaName.equals(other.schemaName) && tableName.equals(other.tableName) &&
-                columnName.equals(other.columnName) && dataType.equals(other.dataType);
+                columnName.equals(other.columnName) && dataType.equals(other.dataType) &&
+                precision == other.precision && scale == other.scale;
         }
 
         return false;
@@ -106,5 +130,10 @@ public class OdbcColumnMeta {
         byte typeId = BinaryUtils.typeByClass(dataType);
 
         writer.writeByte(typeId);
+
+        if (ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0) {
+            writer.writeInt(precision);
+            writer.writeInt(scale);
+        }
     }
 }

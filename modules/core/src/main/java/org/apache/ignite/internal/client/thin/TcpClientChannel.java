@@ -69,6 +69,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
  * Implements {@link ClientChannel} over TCP.
  */
 class TcpClientChannel implements ClientChannel {
+    /** Protocol version: 1.2.0. */
+    private static final ProtocolVersion V1_2_0 = new ProtocolVersion((short)1, (short)2, (short)0);
+    
     /** Protocol version: 1.1.0. */
     private static final ProtocolVersion V1_1_0 = new ProtocolVersion((short)1, (short)1, (short)0);
 
@@ -76,10 +79,14 @@ class TcpClientChannel implements ClientChannel {
     private static final ProtocolVersion V1_0_0 = new ProtocolVersion((short)1, (short)0, (short)0);
 
     /** Supported protocol versions. */
-    private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(V1_1_0, V1_0_0);
+    private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
+        V1_2_0, 
+        V1_1_0, 
+        V1_0_0
+    );
 
     /** Protocol version agreed with the server. */
-    private ProtocolVersion ver = V1_1_0;
+    private ProtocolVersion ver = V1_2_0;
 
     /** Channel. */
     private final Socket sock;
@@ -180,6 +187,11 @@ class TcpClientChannel implements ClientChannel {
         BinaryInputStream payload = new BinaryHeapInputStream(read(resSize - MIN_RES_SIZE));
 
         return payloadReader.apply(payload);
+    }
+
+    /** {@inheritDoc} */
+    public ProtocolVersion serverVersion() {
+        return ver;
     }
 
     /** Validate {@link ClientConfiguration}. */

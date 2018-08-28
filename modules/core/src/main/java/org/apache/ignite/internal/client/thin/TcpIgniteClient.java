@@ -47,6 +47,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -112,7 +113,8 @@ public class TcpIgniteClient implements IgniteClient {
         ClientCacheConfiguration cfg) throws ClientException {
         ensureCacheConfiguration(cfg);
 
-        ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION, req -> serDes.cacheConfiguration(cfg, req));
+        ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION, 
+            req -> serDes.cacheConfiguration(cfg, req, toClientVersion(ch.serverVersion())));
 
         return new TcpClientCache<>(cfg.getName(), ch, marsh);
     }
@@ -149,9 +151,20 @@ public class TcpIgniteClient implements IgniteClient {
     @Override public <K, V> ClientCache<K, V> createCache(ClientCacheConfiguration cfg) throws ClientException {
         ensureCacheConfiguration(cfg);
 
-        ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION, req -> serDes.cacheConfiguration(cfg, req));
+        ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION, 
+            req -> serDes.cacheConfiguration(cfg, req, toClientVersion(ch.serverVersion())));
 
         return new TcpClientCache<>(cfg.getName(), ch, marsh);
+    }
+
+    /**
+     * Converts {@link ProtocolVersion} to {@link ClientListenerProtocolVersion}.
+     *
+     * @param srvVer Server protocol version.
+     * @return Client protocol version.
+     */
+    private ClientListenerProtocolVersion toClientVersion(ProtocolVersion srvVer) {
+        return ClientListenerProtocolVersion.create(srvVer.major(), srvVer.minor(), srvVer.patch());
     }
 
     /** {@inheritDoc} */
