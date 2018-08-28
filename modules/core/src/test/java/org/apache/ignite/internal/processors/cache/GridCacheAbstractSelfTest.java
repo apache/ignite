@@ -158,18 +158,23 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                         getTestTimeout());
 
                     if (!waitForCondition) {
-                        info("Entries for " + nodeId(fi));
+                        try {
+                            info("Entries for " + nodeId(fi));
 
-                        jcache(fi).localEntries().forEach(entry -> {
-                            String key = entry.getKey();
+                            jcache(fi).localEntries().forEach(entry -> {
+                                String key = entry.getKey();
 
-                            info("Key : " + key);
+                                info("Key : " + key);
 
-                            Affinity<String> affinity = affinity(jcache(fi));
+                                Affinity<String> affinity = affinity(jcache(fi));
 
-                            affinity.mapKeyToPrimaryAndBackups(key)
-                                .forEach(node -> info("Node id : " + node.id() + ", isPrimary : " + affinity.isPrimary(node, key)));
-                        });
+                                affinity.mapKeyToPrimaryAndBackups(key)
+                                    .forEach(node -> info("Node id : " + node.id() + ", isPrimary : " + affinity.isPrimary(node, key)));
+                            });
+                        }
+                        catch (Exception ex) {
+                            log.error("Can not check affinity ", ex);
+                        }
                     }
 
                     assertTrue(
