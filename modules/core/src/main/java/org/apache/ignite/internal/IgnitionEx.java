@@ -112,6 +112,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
+import org.apache.ignite.spi.encryption.AESEncryptionSpiImpl;
 import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
@@ -2436,8 +2437,22 @@ public class IgnitionEx {
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());
 
-            if (cfg.getEncryptionSpi() == null)
+            if (cfg.getEncryptionSpi() == null && CU.isPersistenceEnabled(cfg)) {
+                AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
+
+                encSpi.setKeyStorePath(this.getClass().getResource("/tde.jks").getPath());
+                encSpi.setKeyStorePassword("love_sex_god".toCharArray());
+
+                CacheConfiguration.encrypted = true;
+
+                cfg.setEncryptionSpi(encSpi);
+            }
+            else {
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+                CacheConfiguration.encrypted = false;
+            }
+
         }
 
         /**

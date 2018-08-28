@@ -563,6 +563,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception If fail.
      */
     public void testWalRenameDirSimple() throws Exception {
+        fail("Dir renaming doesn't supported for an encryption cache.");
+
         try {
             IgniteEx ignite = startGrid(1);
 

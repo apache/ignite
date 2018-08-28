@@ -587,11 +587,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cc.isEncrypted() && !ctx.clientNode()) {
-            if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration())) {
+/*            if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration())) {
                 throw new IgniteCheckedException("Using encryption is not allowed" +
                     " for not persistent cache  [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                     ", cacheType=" + cacheType + "]");
-            }
+            }*/
 
             EncryptionSpi encSpi = c.getEncryptionSpi();
 

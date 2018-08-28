@@ -52,6 +52,7 @@ import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.AESEncryptionSpiImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -382,7 +383,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see EncryptionSpi
      * @see AESEncryptionSpiImpl
      */
-    private boolean encrypted;
+    public static boolean encrypted = true;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -423,7 +424,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cpOnRead = cc.isCopyOnRead();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         eagerTtl = cc.isEagerTtl();
-        encrypted = cc.isEncrypted();
+        //encrypted = cc.isEncrypted();
         evictFilter = cc.getEvictionFilter();
         evictPlc = cc.getEvictionPolicy();
         evictPlcFactory = cc.getEvictionPolicyFactory();
@@ -2285,7 +2286,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code True} if this cache persistent data is encrypted.
      */
     public boolean isEncrypted() {
-        return encrypted;
+        return !CU.isSystemCache(name) && encrypted;
     }
 
     /**
@@ -2295,7 +2296,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setEncrypted(boolean encrypted) {
-        this.encrypted = encrypted;
+        //this.encrypted = encrypted;
         
         return this;
     }
