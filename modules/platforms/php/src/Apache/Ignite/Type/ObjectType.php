@@ -33,21 +33,20 @@ namespace Apache\Ignite\Type;
  * (eg. a kind of map or a kind of collection) should be specified.
  *
  * This class helps the Ignite client to make a mapping between PHP types
- * and types used by Ignite.
- *
- * In many methods the Ignite client does not require to directly specify a type of Ignite object.
- * In this case the Ignite client tries to make automatic mapping between PHP types
- * and Ignite object types according to the following mapping tables:
+ * and types used by Ignite according to the following mapping tables:
  *
  * ----------------------------------------------------------------------------
  *
- * COMMENTS TO ALL TABLES:
+ * COMMENTS TO ALL TABLES
+ * ----------------
  *
  * PHP type
  * ----------------
  * It is a PHP primitive or a PHP object: http://php.net/manual/en/language.types.intro.php
  *
- * Plus additional types:
+ * Associative and indexed PHP arrays: http://php.net/manual/en/language.types.array.php
+ *
+ * Additional types:
  *   - Ds\\Set, Ds\\Map - PHP Data Structures extension classes: http://php.net/manual/en/book.ds.php
  *   - Brick\\Math\\BigDecimal - PHP class from the extension library
  *                               to work with arbitrary precision numbers: https://github.com/brick/math
@@ -60,7 +59,66 @@ namespace Apache\Ignite\Type;
  *
  * ----------------------------------------------------------------------------
  *
- * DEFAULT MAPPING FROM PHP type TO Ignite type code:
+ * MAPPING FROM IGNITE TYPE CODE TO PHP TYPE WHEN READING DATA
+ * ----------------
+ *
+ * | Ignite type code             | PHP type                                      |
+ * | ---------------------------- | ----------------------------------------------|
+ * | BYTE                         | integer                                       |
+ * | SHORT                        | integer                                       |
+ * | INTEGER                      | integer                                       |
+ * | LONG                         | float                                         |
+ * | FLOAT                        | float                                         |
+ * | DOUBLE                       | float                                         |
+ * | DECIMAL                      | Brick\\Math\\BigDecimal                       |
+ * | BOOLEAN                      | boolean                                       |
+ * | STRING                       | string                                        |
+ * | CHAR                         | string (one character)                        |
+ * | UUID                         | indexed array of integers (16 items)          |
+ * | DATE                         | Date                                          |
+ * | TIME                         | Time                                          |
+ * | TIMESTAMP                    | Timestamp                                     |
+ * | ENUM                         | EnumItem                                      |
+ * | COMPLEX_OBJECT               | BinaryObject or PHP object*                   |
+ * | BYTE_ARRAY                   | indexed array of integer                      |
+ * | SHORT_ARRAY                  | indexed array of integer                      |
+ * | INTEGER_ARRAY                | indexed array of integer                      |
+ * | LONG_ARRAY                   | indexed array of float                        |
+ * | FLOAT_ARRAY                  | indexed array of float                        |
+ * | DOUBLE_ARRAY                 | indexed array of float                        |
+ * | DECIMAL_ARRAY                | indexed array of Brick\\Math\\BigDecimal      |
+ * | BOOLEAN_ARRAY                | indexed array of boolean                      |
+ * | STRING_ARRAY                 | indexed array of string                       |
+ * | CHAR_ARRAY                   | indexed array of string (one character)       |
+ * | UUID_ARRAY                   | indexed array of array of integers (16 items) |
+ * | DATE_ARRAY                   | indexed array of Date                         |
+ * | TIME_ARRAY                   | indexed array of Time                         |
+ * | TIMESTAMP_ARRAY              | indexed array of Timestamp                    |
+ * | ENUM_ARRAY                   | indexed array of EnumItem                     |
+ * | OBJECT_ARRAY                 | indexed array                                 |
+ * | COLLECTION (USER_COL)        | indexed array                                 |
+ * | COLLECTION (ARR_LIST)        | indexed array                                 |
+ * | COLLECTION (LINKED_LIST)     | indexed array                                 |
+ * | COLLECTION (SINGLETON_LIST)  | indexed array                                 |
+ * | COLLECTION (HASH_SET)        | Ds\\Set                                       |
+ * | COLLECTION (LINKED_HASH_SET) | Ds\\Set                                       |
+ * | COLLECTION (USER_SET)        | Ds\\Set                                       |
+ * | MAP (HASH_MAP)               | Ds\\Map                                       |
+ * | MAP (LINKED_HASH_MAP)        | Ds\\Map                                       |
+ * | NULL                         | null**                                        |
+ *
+ * (*) If an application does not explicitly specify an Ignite type for a field and
+ * COMPLEX_OBJECT is received, the Ignite client returns BinaryObject to the application.
+ * If an application explicitly specifies ComplexObjectType for a field,
+ * the Ignite client deserializes the received COMPLEX_OBJECT into PHP object
+ * specified by the ComplexObjectType.
+ *
+ * (**) NULL cannot be specified as an Ignite type of a field but PHP null may be returned
+ * as a value of a field.
+ *
+ * ----------------------------------------------------------------------------
+ *
+ * DEFAULT MAPPING FROM PHP TYPE TO IGNITE TYPE CODE WHEN WRITING DATA
  * ----------------
  *
  * This mapping is used when an application does not explicitly specify an Ignite type
@@ -78,9 +136,9 @@ namespace Apache\Ignite\Type;
  * | EnumItem                                    | ENUM                  |
  * | Brick\\Math\\BigDecimal                     | DECIMAL               |
  * | BinaryObject                                | COMPLEX_OBJECT        |
- * | any other PHP Object**                      | COMPLEX_OBJECT        |
- * | associative*** array of PHP supported type* | MAP (HASH_MAP)        |
- * | indexed*** array of boolean                 | BOOLEAN_ARRAY         |
+ * | any other PHP Object*                       | COMPLEX_OBJECT        |
+ * | associative array of PHP supported type**   | MAP (HASH_MAP)        |
+ * | indexed array of boolean***                 | BOOLEAN_ARRAY         |
  * | indexed array of integer                    | INTEGER_ARRAY         |
  * | indexed array of float                      | DOUBLE_ARRAY          |
  * | indexed array of string                     | STRING_ARRAY          |
@@ -90,126 +148,77 @@ namespace Apache\Ignite\Type;
  * | indexed array of EnumItem                   | ENUM_ARRAY            |
  * | indexed array of Brick\\Math\\BigDecimal    | DECIMAL_ARRAY         |
  * | indexed array of BinaryObject               | OBJECT_ARRAY          |
- * | indexed array of any other PHP Object**     | OBJECT_ARRAY          |
+ * | indexed array of any other PHP Object*      | OBJECT_ARRAY          |
  * | Ds\\Set                                     | COLLECTION (HASH_SET) |
  * | Ds\\Map                                     | MAP (HASH_MAP)        |
  *
  * All other PHP types have no default mapping to Ignite type codes.
  *
- * (*) PHP supported type - is any PHP type mentioned in the table.
+ * (*) Any other PHP Object - is any PHP class, not explicitly mentioned in the table.
  *
- * (**) Any other PHP Object - is any PHP class, not explicitly mentioned in the table.
- *
- * (***) Associative and indexed PHP arrays: http://php.net/manual/en/language.types.array.php
- *
- * Type of an array's value is determined by the value's type in the first element of the array.
+ * (**) PHP supported type - is any PHP type mentioned in the table.
+ * 
+ * (***) Type of an indexed array's value is determined by the value's type in the first element of the array.
  * Empty array has no default mapping.
  *
  * ----------------------------------------------------------------------------
  *
- * DEFAULT MAPPING FROM Ignite type code TO PHP type:
- * ----------------
- *
- * This mapping is used when an application does not explicitly specify an Ignite type
- * for a field and it is reading data from that field.
- *
- * | Ignite type code             | PHP type                              |
- * | ---------------------------- | --------------------------------------|
- * | BYTE                         | integer                               |
- * | SHORT                        | integer                               |
- * | INTEGER                      | integer                               |
- * | LONG                         | float                                 |
- * | FLOAT                        | float                                 |
- * | DOUBLE                       | float                                 |
- * | DECIMAL                      | Brick\\Math\\BigDecimal               |
- * | BOOLEAN                      | boolean                               |
- * | STRING                       | string                                |
- * | CHAR                         | string (one character)                |
- * | UUID                         | array of integers (16 items)          |
- * | DATE                         | Date                                  |
- * | TIME                         | Time                                  |
- * | TIMESTAMP                    | Timestamp                             |
- * | ENUM                         | EnumItem                              |
- * | COMPLEX_OBJECT               | BinaryObject                          |
- * | BYTE_ARRAY                   | array of integer                      |
- * | SHORT_ARRAY                  | array of integer                      |
- * | INTEGER_ARRAY                | array of integer                      |
- * | LONG_ARRAY                   | array of float                        |
- * | FLOAT_ARRAY                  | array of float                        |
- * | DOUBLE_ARRAY                 | array of float                        |
- * | DECIMAL_ARRAY                | array of Brick\\Math\\BigDecimal      |
- * | BOOLEAN_ARRAY                | array of boolean                      |
- * | STRING_ARRAY                 | array of string                       |
- * | CHAR_ARRAY                   | array of string (one character)       |
- * | UUID_ARRAY                   | array of array of integers (16 items) |
- * | DATE_ARRAY                   | array of Date                         |
- * | TIME_ARRAY                   | array of Time                         |
- * | TIMESTAMP_ARRAY              | array of Timestamp                    |
- * | ENUM_ARRAY                   | array of EnumItem                     |
- * | OBJECT_ARRAY                 | array                                 |
- * | COLLECTION (USER_COL)        | array                                 |
- * | COLLECTION (ARR_LIST)        | array                                 |
- * | COLLECTION (LINKED_LIST)     | array                                 |
- * | COLLECTION (SINGLETON_LIST)  | array                                 |
- * | COLLECTION (HASH_SET)        | Ds\\Set                               |
- * | COLLECTION (LINKED_HASH_SET) | Ds\\Set                               |
- * | COLLECTION (USER_SET)        | Ds\\Set                               |
- * | MAP (HASH_MAP)               | Ds\\Map                               |
- * | MAP (LINKED_HASH_MAP)        | Ds\\Map                               |
- * | NULL                         | null                                  |
- *
- * ----------------------------------------------------------------------------
- *
- * RETURNED PHP types WHEN READING DATA OF THE SPECIFIED Ignite type code:
- * ----------------
- *
- * When an application explicitly specifies an Ignite type for a field
- * and it is reading data from that field, the following PHP types
- * are returned for every concrete Ignite type code -
- * SEE THE PREVIOUS TABLE with the following additional comments:
- *
- * TO UPDATE ???
- *
- * - for COMPLEX_OBJECT the Ignite Client returns a PHP Object
- * which is defined by the specified ComplexObjectType.
- *
- * - the returned Map for MAP is defined by the specified MapObjectType.
- *
- * - the returned Set or Array for COLLECTION is defined by the specified CollectionObjectType.
- *
- * - the returned Array for OBJECT_ARRAY is defined by the specified ObjectArrayType.
- *
- * - NULL cannot be specified as a type of a field but PHP null may be returned
- * as a value of a field.
- *
- *
- * ----------------------------------------------------------------------------
- *
- * ALLOWED PHP types WHEN WRITING DATA OF THE SPECIFIED Ignite type code:
+ * ALLOWED PHP TYPES WHEN WRITING DATA OF THE SPECIFIED IGNITE TYPE CODE
  * ----------------
  *
  * When an application explicitly specifies an Ignite type for a field
  * and it is writing data to that field, the following PHP types
- * are allowed for every concrete Ignite type code -
- * SEE THE PREVIOUS TABLE with the following additional comments:
+ * are allowed for every concrete Ignite type code.
  *
- * TO UPDATE ???
+ * | Specified Ignite type code   | Allowed PHP types                             |
+ * | ---------------------------- | ----------------------------------------------|
+ * | BYTE                         | integer                                       |
+ * | SHORT                        | integer                                       |
+ * | INTEGER                      | integer                                       |
+ * | LONG                         | float, integer                                |
+ * | FLOAT                        | float, integer                                |
+ * | DOUBLE                       | float, integer                                |
+ * | DECIMAL                      | Brick\\Math\\BigDecimal                       |
+ * | BOOLEAN                      | boolean                                       |
+ * | STRING                       | string                                        |
+ * | CHAR                         | string (one character)                        |
+ * | UUID                         | indexed array of integers (16 items)          |
+ * | DATE                         | Date                                          |
+ * | TIME                         | Time                                          |
+ * | TIMESTAMP                    | Timestamp                                     |
+ * | ENUM                         | EnumItem                                      |
+ * | COMPLEX_OBJECT               | BinaryObject, any PHP object                  |
+ * | BYTE_ARRAY*                  | indexed array of integer                      |
+ * | SHORT_ARRAY                  | indexed array of integer                      |
+ * | INTEGER_ARRAY                | indexed array of integer                      |
+ * | LONG_ARRAY                   | indexed array of float/integer                |
+ * | FLOAT_ARRAY                  | indexed array of float/integer                |
+ * | DOUBLE_ARRAY                 | indexed array of float/integer                |
+ * | DECIMAL_ARRAY                | indexed array of Brick\\Math\\BigDecimal      |
+ * | BOOLEAN_ARRAY                | indexed array of boolean                      |
+ * | STRING_ARRAY                 | indexed array of string                       |
+ * | CHAR_ARRAY                   | indexed array of string (one character)       |
+ * | UUID_ARRAY                   | indexed array of array of integers (16 items) |
+ * | DATE_ARRAY                   | indexed array of Date                         |
+ * | TIME_ARRAY                   | indexed array of Time                         |
+ * | TIMESTAMP_ARRAY              | indexed array of Timestamp                    |
+ * | ENUM_ARRAY                   | indexed array of EnumItem                     |
+ * | OBJECT_ARRAY                 | indexed array                                 |
+ * | COLLECTION (USER_COL)        | indexed array                                 |
+ * | COLLECTION (ARR_LIST)        | indexed array                                 |
+ * | COLLECTION (LINKED_LIST)     | indexed array                                 |
+ * | COLLECTION (SINGLETON_LIST)  | indexed array                                 |
+ * | COLLECTION (HASH_SET)        | Ds\\Set                                       |
+ * | COLLECTION (LINKED_HASH_SET) | Ds\\Set                                       |
+ * | COLLECTION (USER_SET)        | Ds\\Set                                       |
+ * | MAP (HASH_MAP)               | Ds\\Map, associative array                    |
+ * | MAP (LINKED_HASH_MAP)        | Ds\\Map, associative array                    |
  *
- * - for COMPLEX_OBJECT the Ignite Client allows a PHP Object
- * which is defined by the specified ComplexObjectType.
+ * (*) For all *_ARRAY Ignite types an empty PHP indexed array is allowed.
  *
- * - the allowed Map for MAP is defined by the specified MapObjectType.
- *
- * - the allowed Set or Array for COLLECTION is defined by the specified CollectionObjectType.
- *
- * - the allowed Array for OBJECT_ARRAY is defined by the specified ObjectArrayType.
- *
- * - NULL cannot be specified as a type of a field but PHP null is allowed
- * as value of a field (but not as a key/value in a cache) or as a value of Array/Set/Map element
- * for all Ignite types, except BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, CHAR, BOOLEAN.
- *
- * - for all *_ARRAY Ignite types an empty PHP Array is allowed.
- *
+ * PHP null is allowed as value of a field (but not as a key/value in a cache)
+ * or as a value of Array/Set/Map element for all Ignite types,
+ * except BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, CHAR, BOOLEAN.
  *
  * ----------------------------------------------------------------------------
  * 
