@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
@@ -900,7 +901,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                     txLatch.countDown();
 
-                    U.awaitQuiet(commitLatch);
+                    assertTrue(U.await(commitLatch, 10, TimeUnit.SECONDS));
 
                     tx.commit();
 
@@ -930,6 +931,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                             tx2Latch.countDown();
 
                             crd.cache(CACHE_NAME).put(keys.get(0), 0);
+
+                            assertTrue(U.await(commitLatch, 10, TimeUnit.SECONDS));
 
                             tx.commit();
 
