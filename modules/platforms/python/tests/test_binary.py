@@ -215,14 +215,13 @@ def test_nested_binary_objects(client):
     ):
         pass
 
-    inner = InnerType()
-    inner.inner_int = 42
-    inner.inner_str = 'This is a test string'
+    inner = InnerType(inner_int=42, inner_str='This is a test string')
 
-    outer = OuterType()
-    outer.outer_int = 43
-    outer.nested_binary = inner
-    outer.outer_str = 'This is another test string'
+    outer = OuterType(
+        outer_int=43,
+        nested_binary=inner,
+        outer_str='This is another test string'
+    )
 
     nested_cache.put(1, outer)
 
@@ -249,11 +248,11 @@ def test_add_schema_to_binary_object(client):
     ):
         pass
 
-    binary_object = MyBinaryType()
-    binary_object.test_str = 'Test string'
-    binary_object.test_int = 42
-    binary_object.test_bool = True
-
+    binary_object = MyBinaryType(
+        test_str='Test string',
+        test_int=42,
+        test_bool=True,
+    )
     migrate_cache.put(1, binary_object)
 
     result = migrate_cache.get(1)
@@ -275,10 +274,11 @@ def test_add_schema_to_binary_object(client):
     assert MyBinaryType.type_id == MyBinaryTypeV2.type_id
     assert MyBinaryType.schema_id != MyBinaryTypeV2.schema_id
 
-    binary_object_v2 = MyBinaryTypeV2()
-    binary_object_v2.test_str = 'Another test'
-    binary_object_v2.test_int = 43
-    binary_object_v2.test_decimal = Decimal('2.34')
+    binary_object_v2 = MyBinaryTypeV2(
+        test_str='Another test',
+        test_int=43,
+        test_decimal=Decimal('2.34')
+    )
 
     migrate_cache.put(2, binary_object_v2)
 

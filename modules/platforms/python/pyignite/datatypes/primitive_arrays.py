@@ -137,6 +137,8 @@ class PrimitiveArrayObject(PrimitiveArray):
     """
     Base class for primitive array object. Type code plus payload.
     """
+    pythonic = list
+    default = []
 
     @classmethod
     def build_header_class(cls):

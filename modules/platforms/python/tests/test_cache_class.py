@@ -19,14 +19,14 @@ from decimal import Decimal
 import pytest
 
 from pyignite.datatypes import (
-    BinaryObject, BoolObject, DecimalObject, FloatObject, IntObject, String,
+    BoolObject, DecimalObject, FloatObject, IntObject, String,
 )
 from pyignite.datatypes.prop_codes import *
 from pyignite.exceptions import CacheError
 
 
 def test_cache_create(client):
-    cache = client.create_cache('my_oop_cache')
+    cache = client.get_or_create_cache('my_oop_cache')
     assert cache.name == cache.settings[PROP_NAME] == 'my_oop_cache'
     cache.destroy()
 
@@ -72,7 +72,7 @@ def test_cache_config(client):
 
 
 def test_cache_get_put(client):
-    cache = client.create_cache('my_oop_cache')
+    cache = client.get_or_create_cache('my_oop_cache')
     cache.put('my_key', 42)
     result = cache.get('my_key')
     assert result, 42
@@ -80,7 +80,7 @@ def test_cache_get_put(client):
 
 
 def test_cache_binary_get_put(client):
-    binary_type = client.put_binary_type(
+    type_info = client.put_binary_type(
         'TestBinaryType',
         schema=OrderedDict([
             ('test_bool', BoolObject),
@@ -90,11 +90,12 @@ def test_cache_binary_get_put(client):
         ])
     )
     cache = client.create_cache('my_oop_cache')
-    my_value = binary_type['data_class']()
-    my_value.test_bool = True
-    my_value.test_str = 'This is a test'
-    my_value.test_int = 42
-    my_value.test_decimal = Decimal('34.56')
+    my_value = type_info['data_class'](
+        test_bool=True,
+        test_str='This is a test',
+        test_int=42,
+        test_decimal=Decimal('34.56'),
+    )
     cache.put('my_key', my_value)
 
     value = cache.get('my_key')
@@ -162,7 +163,7 @@ def test_cache_scan(client, page_size):
         15: 'sollicitudin iaculis',
     }
 
-    cache = client.create_cache('my_oop_cache')
+    cache = client.get_or_create_cache('my_oop_cache')
     cache.put_all(test_data)
 
     gen = cache.scan(page_size=page_size)
@@ -177,7 +178,7 @@ def test_cache_scan(client, page_size):
 
 
 def test_get_and_put_if_absent(client):
-    cache = client.create_cache('my_oop_cache')
+    cache = client.get_or_create_cache('my_oop_cache')
 
     value = cache.get_and_put_if_absent('my_key', 42)
     assert value is None

@@ -19,7 +19,7 @@ from importlib import import_module
 
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
-from pyignite.utils import hashcode, is_hinted, get_default
+from pyignite.utils import hashcode, is_hinted
 from .internal import AnyDataObject
 from .type_codes import *
 
@@ -175,6 +175,8 @@ class CollectionObject(ObjectArrayObject):
     """
     type_code = TC_COLLECTION
     type_or_id_name = 'type'
+    pythonic = list
+    default = []
 
     @classmethod
     def build_header(cls):
@@ -294,6 +296,8 @@ class MapObject(Map):
     counts pairs. Very annoying.
     """
     type_code = TC_MAP
+    pythonic = dict
+    default = {}
 
     @classmethod
     def build_header(cls):
@@ -440,7 +444,9 @@ class BinaryObject:
         offsets = [ctypes.sizeof(header_class)]
         for field_name, field_type in value.schema.items():
             partial_buffer = field_type.from_python(
-                getattr(value, field_name, get_default(field_type))
+                getattr(
+                    value, field_name, getattr(field_type, 'default', None)
+                )
             )
             offsets.append(max(offsets) + len(partial_buffer))
             field_buffer += partial_buffer

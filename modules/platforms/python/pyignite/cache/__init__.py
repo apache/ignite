@@ -128,7 +128,7 @@ class Cache:
         Register any object as a Complex Object before saving any data.
         """
         if is_binary(value):
-            self.client.put_binary_type(data_class=value)
+            self.client.put_binary_type(data_class=value.__class__)
             for nested in [getattr(value, n, None) for n in value.schema]:
                 self._register_binary_objects(nested)
         elif is_iterable(value) and type(value) is not str:

@@ -75,31 +75,43 @@ class DataObject:
 class ByteObject(DataObject):
     c_type = ctypes.c_byte
     type_code = TC_BYTE
+    pythonic = int
+    default = 0
 
 
 class ShortObject(DataObject):
     c_type = ctypes.c_short
     type_code = TC_SHORT
+    pythonic = int
+    default = 0
 
 
 class IntObject(DataObject):
     c_type = ctypes.c_int
     type_code = TC_INT
+    pythonic = int
+    default = 0
 
 
 class LongObject(DataObject):
     c_type = ctypes.c_long
     type_code = TC_LONG
+    pythonic = int
+    default = 0
 
 
 class FloatObject(DataObject):
     c_type = ctypes.c_float
     type_code = TC_FLOAT
+    pythonic = float
+    default = 0.0
 
 
 class DoubleObject(DataObject):
     c_type = ctypes.c_double
     type_code = TC_DOUBLE
+    pythonic = float
+    default = 0.0
 
 
 class CharObject(DataObject):
@@ -111,6 +123,8 @@ class CharObject(DataObject):
     """
     c_type = ctypes.c_short
     type_code = TC_CHAR
+    pythonic = str
+    default = ' '
 
     @classmethod
     def to_python(cls, ctype_object):
@@ -136,3 +150,5 @@ class CharObject(DataObject):
 class BoolObject(DataObject):
     c_type = ctypes.c_bool
     type_code = TC_BOOL
+    pythonic = bool
+    default = False

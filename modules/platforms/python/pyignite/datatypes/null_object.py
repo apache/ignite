@@ -28,6 +28,8 @@ __all__ = ['Null']
 
 
 class Null:
+    default = None
+    pythonic = type(None)
 
     @classmethod
     def build_c_type(cls):

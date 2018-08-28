@@ -15,8 +15,9 @@
 
 from collections import OrderedDict
 from functools import wraps
-from inspect import isclass
 from typing import Any
+
+import attr
 
 from pyignite.datatypes import *
 from pyignite.exceptions import ParseError
@@ -38,7 +39,7 @@ ALLOWED_FIELD_TYPES = [
 
 def ensure_data_class(fn):
     """
-    Adds a data class to a Complex type memo.
+    Adds a data class to a Complex Object type memo, if absent.
     """
     @wraps(fn)
     def data_class_wrapper(self, *args, **kwargs):
@@ -55,7 +56,7 @@ def ensure_data_class(fn):
                 type_info['type_id'], schema_id(type_info['schemas'][0])
             )
             if self.binary_registry.get(reg_key, None):
-                self.binary_registry[reg_key] = type_info['data_class']
+                self.binary_registry[reg_key] = type_info
         return type_info
     return data_class_wrapper
 
@@ -85,10 +86,20 @@ class GenericObjectPropsMixin:
         """ Binary object schema ID. """
         return schema_id(self._schema)
 
-    def __init__(self) -> None:
-        super().__init__()
-        if not isclass(self):
-            self.version = 1
+    def __new__(cls, *args, **kwargs) -> Any:
+        # allow all items in Binary Object schema to be populated as optional
+        # arguments to `__init__()` with sensible defaults.
+        if cls is not GenericObjectMeta:
+            attributes = {
+                k: attr.ib(
+                    type=getattr(v, 'pythonic', type(None)),
+                    default=getattr(v, 'default', None),
+                ) for k, v in cls.schema.items()
+            }
+            attributes.update({'version': attr.ib(type=int, default=1)})
+            cls = attr.s(cls, these=attributes)
+        # skip parameters
+        return super().__new__(cls)
 
 
 class GenericObjectMeta(type, GenericObjectPropsMixin):

@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
-from decimal import Decimal
 from functools import wraps
 from typing import Any, Type, Union
 
@@ -144,57 +142,6 @@ def schema_id(schema: Union[int, dict]) -> int:
         s_id ^= ((field_id >> 24) & 0xff)
         s_id = int_overflow(s_id * FNV1_PRIME)
     return s_id
-
-
-def get_default(key: Type) -> Any:
-    """
-    Produces a sensible default value for any Ignite data type: zero for
-    numeric data types, None for strings and some other standard types,
-    start of epoch for dates, et c.
-
-    :param key: parser/generator class,
-    :return: pythonic value. Defaults to None.
-    """
-    from pyignite.datatypes import (
-        ByteObject, ShortObject, IntObject, LongObject, FloatObject,
-        DoubleObject, CharObject, BoolObject, DecimalObject, DateObject,
-        TimestampObject, TimeObject, ByteArrayObject, ShortArrayObject,
-        IntArrayObject, LongArrayObject, FloatArrayObject, DoubleArrayObject,
-        CharArrayObject, BoolArrayObject, UUIDArrayObject, DateArrayObject,
-        TimestampArrayObject, TimeArrayObject, DecimalArrayObject,
-        StringArrayObject, CollectionObject, MapObject,
-    )
-
-    return {
-        ByteObject: 0,
-        ShortObject: 0,
-        IntObject: 0,
-        LongObject: 0,
-        FloatObject: 0.0,
-        DoubleObject: 0.0,
-        CharObject: ' ',
-        BoolObject: False,
-        DecimalObject: Decimal('0.00'),
-        DateObject: datetime(1970, 1, 1),
-        TimestampObject: (datetime(1970, 1, 1), 0),
-        TimeObject: timedelta(),
-        ByteArrayObject: [],
-        ShortArrayObject: [],
-        IntArrayObject: [],
-        LongArrayObject: [],
-        FloatArrayObject: [],
-        DoubleArrayObject: [],
-        CharArrayObject: [],
-        BoolArrayObject: [],
-        UUIDArrayObject: [],
-        DateArrayObject: [],
-        TimestampArrayObject: [],
-        TimeArrayObject: [],
-        DecimalArrayObject: [],
-        StringArrayObject: [],
-        CollectionObject: [],
-        MapObject: {},
-    }.get(key, None)
 
 
 def status_to_exception(exc: Type[Exception]):
