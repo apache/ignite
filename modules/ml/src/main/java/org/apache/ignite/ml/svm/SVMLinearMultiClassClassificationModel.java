@@ -102,4 +102,8 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
     public void add(double clsLb, SVMLinearBinaryClassificationModel mdl) {
         models.put(clsLb, mdl);
     }
+
+    public SVMLinearBinaryClassificationModel getModelForClass(double clsLb) {
+        return models.get(clsLb);
+    }
 }

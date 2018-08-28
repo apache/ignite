@@ -28,6 +28,7 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * Interface for trainers. Trainer is just a function which produces model from the data.
@@ -63,8 +64,11 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public abstract <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor);
+    public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+
+        throw new NotImplementedException();
+    }
 
     /**
      * Trains model based on the specified data.

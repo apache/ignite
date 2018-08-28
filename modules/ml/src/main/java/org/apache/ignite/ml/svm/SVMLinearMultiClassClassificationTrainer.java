@@ -62,6 +62,38 @@ public class SVMLinearMultiClassClassificationTrainer
     @Override public <K, V> SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
                                                                 IgniteBiFunction<K, V, Vector> featureExtractor,
                                                                 IgniteBiFunction<K, V, Double> lbExtractor) {
+        return fit(datasetBuilder, featureExtractor, lbExtractor, this::learnNewModel);
+    }
+
+    /**
+     * Trains model based on the specified data.
+     *
+     * @param multiClsMdl Learning multi-class model.
+     * @param clsLb Current class label.
+     * @param svmTrainer Prepared SVM trainer.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     */
+    private <K,V> SVMLinearBinaryClassificationModel learnNewModel(SVMLinearMultiClassClassificationModel multiClsMdl,
+        Double clsLb, SVMLinearBinaryClassificationTrainer svmTrainer, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return svmTrainer.fit(datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /**
+     * Trains model based on the specified data.
+     *
+     * @param datasetBuilder   Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor      Label extractor.
+     * @return Model.
+     */
+    private <K, V> SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor,
+        OneModelSupplier<K,V> oneModelSupplier) {
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
 
         SVMLinearMultiClassClassificationModel multiClsMdl = new SVMLinearMultiClassClassificationModel();
@@ -80,10 +112,43 @@ public class SVMLinearMultiClassClassificationTrainer
                 else
                     return -1.0;
             };
-            multiClsMdl.add(clsLb, trainer.fit(datasetBuilder, featureExtractor, lbTransformer));
+
+            SVMLinearBinaryClassificationModel model = oneModelSupplier.apply(multiClsMdl, clsLb,
+                trainer, datasetBuilder, featureExtractor, lbTransformer);
+            multiClsMdl.add(clsLb, model);
         });
 
         return multiClsMdl;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> SVMLinearMultiClassClassificationModel update(SVMLinearMultiClassClassificationModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return fit(datasetBuilder, featureExtractor, lbExtractor, this::updateModel);
+    }
+
+    /**
+     * Updates already learned model or fit new model if there is no model for current class label.
+     *
+     * @param multiClsMdl Learning multi-class model.
+     * @param clsLb Current class label.
+     * @param svmTrainer Prepared SVM trainer.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     */
+    private <K,V> SVMLinearBinaryClassificationModel updateModel(SVMLinearMultiClassClassificationModel multiClsMdl,
+        Double clsLb, SVMLinearBinaryClassificationTrainer svmTrainer, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        SVMLinearBinaryClassificationModel learnedMdl = multiClsMdl.getModelForClass(clsLb);
+
+        if(learnedMdl != null)
+            return svmTrainer.update(learnedMdl, datasetBuilder, featureExtractor, lbExtractor);
+        else
+            return svmTrainer.fit(datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** Iterates among dataset and collects class labels. */
@@ -175,5 +240,14 @@ public class SVMLinearMultiClassClassificationTrainer
     public SVMLinearMultiClassClassificationTrainer  withAmountOfLocIterations(int amountOfLocIterations) {
         this.amountOfLocIterations = amountOfLocIterations;
         return this;
+    }
+
+    private interface OneModelSupplier<K,V> {
+        public SVMLinearBinaryClassificationModel apply(
+            SVMLinearMultiClassClassificationModel multiClsMdl, Double clsLb,
+            SVMLinearBinaryClassificationTrainer svmTrainer,
+            DatasetBuilder<K, V> datasetBuilder,
+            IgniteBiFunction<K, V, Vector> featureExtractor,
+            IgniteBiFunction<K, V, Double> lbExtractor);
     }
 }
