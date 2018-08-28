@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import javax.cache.CacheException;
@@ -23,8 +40,7 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 /**
  * Failed to reserve partitions for query (cache is not found on local node) Root cause test
  */
-public class DisappearedCacheCauseRetryMessageTest extends GridCommonAbstractTest {
-
+public class DisappearedCacheCauseRetryMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 2;
     /** */
@@ -34,12 +50,16 @@ public class DisappearedCacheCauseRetryMessageTest extends GridCommonAbstractTes
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Organization> orgCache;
 
+    /** */
     public void testDisappearedCacheCauseRetryMessage() {
 
         SqlQuery<String, JoinSqlTestHelper.Person> qry = new SqlQuery<String, JoinSqlTestHelper.Person>(JoinSqlTestHelper.Person.class, JoinSqlTestHelper.JOIN_SQL).setArgs("Organization #0");
+
         qry.setDistributedJoins(true);
+
         try {
             personCache.query(qry).getAll();
+
             fail("No CacheException emitted.");
         }
         catch (CacheException e) {
@@ -57,23 +77,27 @@ public class DisappearedCacheCauseRetryMessageTest extends GridCommonAbstractTes
             /** {@inheritDoc} */
             @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
                 assert msg != null;
+
                 if ( GridIoMessage.class.isAssignableFrom(msg.getClass())){
                     GridIoMessage gridMsg = (GridIoMessage)msg;
+
                     if ( GridH2QueryRequest.class.isAssignableFrom( gridMsg.message().getClass() ) ){
                         GridH2QueryRequest req = (GridH2QueryRequest) (gridMsg.message());
                         reqId = req.requestId();
                         orgCache.destroy();
-                    } else if ( GridQueryCancelRequest.class.isAssignableFrom( gridMsg.message().getClass() ) ){
+                    }
+                    else if ( GridQueryCancelRequest.class.isAssignableFrom( gridMsg.message().getClass() ) ){
                         GridQueryCancelRequest req = (GridQueryCancelRequest) (gridMsg.message());
 
                         if (reqId == req.queryRequestId())
-                            orgCache = DisappearedCacheCauseRetryMessageTest.this.ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
+                            orgCache = DisappearedCacheCauseRetryMessageSelfTest.this.ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
                                 .setCacheMode(CacheMode.REPLICATED)
                                 .setIndexedTypes(String.class, JoinSqlTestHelper.Organization.class)
                             );
 
                     }
                 }
+
                 super.sendMessage(node, msg, ackC);
             }
         });
@@ -84,11 +108,13 @@ public class DisappearedCacheCauseRetryMessageTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_SQL_RETRY_TIMEOUT, "5000");
+
         startGridsMultiThreaded(NODES_COUNT, false);
 
         personCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Person>("pers")
             .setIndexedTypes(String.class, JoinSqlTestHelper.Person.class)
         );
+
         orgCache = ignite(0).getOrCreateCache(new CacheConfiguration<String, Organization>(ORG)
             .setCacheMode(CacheMode.REPLICATED)
             .setIndexedTypes(String.class, JoinSqlTestHelper.Organization.class)
@@ -97,8 +123,10 @@ public class DisappearedCacheCauseRetryMessageTest extends GridCommonAbstractTes
         awaitPartitionMapExchange();
 
         JoinSqlTestHelper.populateDataIntoOrg(orgCache);
+
         JoinSqlTestHelper.populateDataIntoPerson(personCache);
     }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();

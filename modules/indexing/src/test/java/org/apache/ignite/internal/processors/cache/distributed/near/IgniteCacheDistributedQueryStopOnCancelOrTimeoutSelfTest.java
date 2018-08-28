@@ -216,6 +216,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
             try(QueryCursor<List<?>> ignored = cursor) {
                 cursor.iterator();
+                fail();
             }
             catch (CacheException ex) {
                 log().error("Got expected exception", ex);

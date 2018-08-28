@@ -38,7 +38,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.CacheException;
@@ -311,7 +310,7 @@ public class GridReduceQueryExecutor {
                 @Override public void fetchNextPage() {
 
                     if (r.hasError()) {
-                        CacheException err0 = r.cacheEx();
+                        CacheException err0 = r.cacheException();
 
                         if (err0 != null && err0.getCause() instanceof IgniteClientDisconnectedException)
                             throw err0;
@@ -350,7 +349,7 @@ public class GridReduceQueryExecutor {
         idx.addPage(page);
 
         if (msg.retry() != null)
-            r.stateWithMsg(msg, node.id());
+            r.stateWithMessage(msg, node.id());
         else if (msg.page() == 0) // Do count down on each first page received.
             r.latch().countDown();
     }
@@ -371,9 +370,8 @@ public class GridReduceQueryExecutor {
     private boolean isPreloadingActive(List<Integer> cacheIds) {
         for (Integer cacheId : cacheIds) {
 
-            // TODO: Reformulate, e.g. "Cache not found on local node [cacheName=name]"
             if (null == cacheContext(cacheId))
-                throw new CacheException(String.format("Grid cache context is not registered for cache id=%s",cacheId));
+                throw new CacheException(String.format("Cache not found on local node [cacheId=%d]",cacheId));
 
             if (hasMovingPartitions(cacheContext(cacheId)))
                 return true;
@@ -579,12 +577,11 @@ public class GridReduceQueryExecutor {
 
         final long startTime = U.currentTimeMillis();
 
-        // TODO: Better variable naming.
-        ReduceQueryRun prevR = null;
+        ReduceQueryRun lastRun = null;
 
         for (int attempt = 0;; attempt++) {
             if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout)) {
-                String rcValue = prevR.rootCause();
+                String rcValue = lastRun.rootCause();
                 throw new CacheException((!F.isEmpty(rcValue))?rcValue:("Failed to map SQL query to topology."));
             }
             if (attempt != 0) {
@@ -789,8 +786,8 @@ public class GridReduceQueryExecutor {
                     awaitAllReplies(r, nodes, cancel);
 
                     if (r.hasError()) {
-                        if (r.cacheEx() != null) {
-                            CacheException err = r.cacheEx();
+                        if (r.cacheException() != null) {
+                            CacheException err = r.cacheException();
 
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
@@ -803,7 +800,7 @@ public class GridReduceQueryExecutor {
                             retry = true;
 
                             // If remote node asks us to retry then we have outdated full partition map.
-                            h2.awaitForReadyTopologyVersion(r.atv());
+                            h2.awaitForReadyTopologyVersion(r.topVersion());
                         }
                     }
                 }
@@ -851,7 +848,7 @@ public class GridReduceQueryExecutor {
 
                 if (retry) {
                     assert r != null;
-                    prevR=r;
+                    lastRun=r;
 
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
