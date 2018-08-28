@@ -127,7 +127,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.CacheDataR
  * MVCC processor.
  */
 @SuppressWarnings("serial")
-public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, DatabaseLifecycleListener {
+class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, DatabaseLifecycleListener {
     /** */
     private static final Waiter LOCAL_TRANSACTION_MARKER = new LocalTransactionMarker();
 
@@ -975,7 +975,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /**
      * Stops vacuum worker and scheduler.
      */
-    public void stopVacuumWorkers() {
+    void stopVacuumWorkers() {
         if (!ctx.clientNode()) {
             List<GridWorker> workers;
             BlockingQueue<VacuumTask> queue;

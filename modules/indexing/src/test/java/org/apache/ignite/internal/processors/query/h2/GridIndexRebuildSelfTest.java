@@ -24,16 +24,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexAbstractSelfTest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.NoOpMvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -158,32 +153,9 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         srv = startServer(mvccEnabled);
 
-        if(mvccEnabled)
-            mvccProcessor(srv).stopVacuumWorkers();
-
         putData(srv, true);
 
         checkDataState(srv, mvccEnabled, true);
-    }
-
-    /**
-     * @param node Ignite node.
-     * @return Mvcc processor.
-     */
-    protected MvccProcessorImpl mvccProcessor(Ignite node) {
-        GridKernalContext ctx = ((IgniteEx)node).context();
-
-        MvccProcessor crd = ctx.coordinators();
-
-        assertNotNull(crd);
-
-        if (crd instanceof NoOpMvccProcessor) {
-            assertFalse(MvccUtils.mvccEnabled(ctx));
-
-            return null;
-        }
-
-        return (MvccProcessorImpl)crd;
     }
 
     /**
@@ -213,7 +185,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                     List<IgniteBiTuple<Object, MvccVersion>> vers = store.mvccFindAllVersions(icache.context(), row.key());
 
                     if (!afterRebuild || key <= AMOUNT / 2)
-                        assertEquals(key, vers.size());
+                        assertTrue(key >= vers.size() && vers.size() >= 1);
                     else {
                         // For keys affected by concurrent put there are two versions -
                         // -1 (concurrent put mark) and newest restored value as long as put cleans obsolete versions.
