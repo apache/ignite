@@ -1773,6 +1773,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return cp.wakeupForCheckpoint(0, reason);
     }
 
+    /** {@inheritDoc} */
+    public WALPointer lastCheckpointMarkWalPointer() {
+        CheckpointEntry lastCheckpointEntry = cpHistory.lastCheckpoint();
+
+        return lastCheckpointEntry == null ? null : lastCheckpointEntry.checkpointMark();
+    }
+
     /**
      * @return Checkpoint directory.
      */
