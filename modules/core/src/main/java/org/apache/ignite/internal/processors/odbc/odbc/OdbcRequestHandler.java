@@ -39,10 +39,12 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
@@ -110,6 +112,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Authentication context */
     private final AuthorizationContext actx;
 
+    /** Client version. */
+    private ClientListenerProtocolVersion ver;
+
     /**
      * Constructor.
      * @param ctx Context.
@@ -123,10 +128,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param nestedTxMode Nested transaction mode.
      * @param actx Authentication context.
+     * @param ver Client protocol version.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly, boolean collocated, boolean lazy,
-        boolean skipReducerOnUpdate, AuthorizationContext actx, NestedTxMode nestedTxMode) {
+        boolean skipReducerOnUpdate, AuthorizationContext actx, NestedTxMode nestedTxMode, ClientListenerProtocolVersion ver) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -138,6 +144,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.actx = actx;
         this.nestedTxMode = nestedTxMode;
+        this.ver = ver;
 
         log = ctx.log(getClass());
 
@@ -322,7 +329,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(qry, true, false);
 
-            OdbcQueryResults results = new OdbcQueryResults(cursors);
+            OdbcQueryResults results = new OdbcQueryResults(cursors, ver);
+
             Collection<OdbcColumnMeta> fieldsMeta;
 
             if (!results.hasUnfetchedRows()) {
@@ -333,6 +341,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 qryResults.put(qryId, results);
 
                 fieldsMeta = results.currentResultSet().fieldsMeta();
+
+                for (OdbcColumnMeta meta : fieldsMeta) {
+                    log.warning("Meta - " + meta.columnName + ", " + meta.precision + ", " + meta.scale);
+                }
             }
 
             OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());
@@ -497,8 +509,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                         if (!matches(field.getKey(), req.columnPattern()))
                             continue;
 
+                        GridQueryProperty prop = table.property(field.getKey());
+
                         OdbcColumnMeta columnMeta = new OdbcColumnMeta(table.schemaName(), table.tableName(),
-                            field.getKey(), field.getValue());
+                            field.getKey(), field.getValue(), prop.precision(), prop.scale(), ver);
 
                         if (!meta.contains(columnMeta))
                             meta.add(columnMeta);

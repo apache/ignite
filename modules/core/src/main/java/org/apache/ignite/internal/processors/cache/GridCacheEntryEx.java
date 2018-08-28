@@ -1172,4 +1172,11 @@ public interface GridCacheEntryEx {
         GridCacheOperation op,
         MvccSnapshot mvccVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * Touch this entry in its context's eviction manager.
+     *
+     * @param topVer Topology version.
+     */
+    public void touch(AffinityTopologyVersion topVer);
 }

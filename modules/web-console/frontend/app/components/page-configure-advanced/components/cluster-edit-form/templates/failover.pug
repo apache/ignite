@@ -39,48 +39,47 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-60
                 mixin clusters-failover-spi
                     .ignite-form-field
-                        +ignite-form-field__label('Failover SPI configurations:', '"failoverSpi"')
-                            +tooltip(`Failover SPI configurations`)
-                        .ignite-form-field__control
-                            -let items = failoverSpi
+                        +form-field__label({ label: 'Failover SPI configurations:', name: '"failoverSpi"' })
+                            +form-field__tooltip({ title: `Failover SPI configurations` })
+                        -let items = failoverSpi
 
-                            list-editable.pc-list-editable-with-form-grid(ng-model=items name='failoverSpi')
-                                list-editable-item-edit.pc-form-grid-row
-                                    .pc-form-grid-col-60
-                                        +sane-ignite-form-field-dropdown({
-                                            required: true,
-                                            label: 'Failover SPI:',
-                                            model: '$item.kind',
-                                            name: '"failoverKind"',
-                                            placeholder: 'Choose Failover SPI',
-                                            options: '::$ctrl.Clusters.failoverSpis',
-                                            tip: `
-                                            Provides ability to supply custom logic for handling failed execution of a grid job
-                                            <ul>
-                                                <li>Job stealing - Supports job stealing from over-utilized nodes to under-utilized nodes</li>
-                                                <li>Never - Jobs are ordered as they arrived</li>
-                                                <li>Always - Jobs are first ordered by their priority</li>
-                                                <li>Custom - Jobs are activated immediately on arrival to mapped node</li>
-                                                <li>Default - Default FailoverSpi implementation</li>
-                                            </ul>`
-                                        })
+                        list-editable.pc-list-editable-with-form-grid(ng-model=items name='failoverSpi')
+                            list-editable-item-edit.pc-form-grid-row
+                                .pc-form-grid-col-60
+                                    +form-field__dropdown({
+                                        required: true,
+                                        label: 'Failover SPI:',
+                                        model: '$item.kind',
+                                        name: '"failoverKind"',
+                                        placeholder: 'Choose Failover SPI',
+                                        options: '::$ctrl.Clusters.failoverSpis',
+                                        tip: `
+                                        Provides ability to supply custom logic for handling failed execution of a grid job
+                                        <ul>
+                                            <li>Job stealing - Supports job stealing from over-utilized nodes to under-utilized nodes</li>
+                                            <li>Never - Jobs are ordered as they arrived</li>
+                                            <li>Always - Jobs are first ordered by their priority</li>
+                                            <li>Custom - Jobs are activated immediately on arrival to mapped node</li>
+                                            <li>Default - Default FailoverSpi implementation</li>
+                                        </ul>`
+                                    })
 
-                                    .pc-form-grid-col-60(ng-show='$item.kind === "JobStealing"')
-                                        +number('Maximum failover attempts:', '$item.JobStealing.maximumFailoverAttempts', '"jsMaximumFailoverAttempts"', 'true', '5', '0',
-                                            'Maximum number of attempts to execute a failed job on another node')
-                                    .pc-form-grid-col-60(ng-show='$item.kind === "Always"')
-                                        +number('Maximum failover attempts:', '$item.Always.maximumFailoverAttempts', '"alwaysMaximumFailoverAttempts"', 'true', '5', '0',
-                                            'Maximum number of attempts to execute a failed job on another node')
-                                    .pc-form-grid-col-60(ng-show=failoverCustom)
-                                        +java-class('SPI implementation', '$item.Custom.class', '"failoverSpiClass"', 'true', failoverCustom,
-                                            'Custom FailoverSpi implementation class name.', failoverCustom)
+                                .pc-form-grid-col-60(ng-show='$item.kind === "JobStealing"')
+                                    +number('Maximum failover attempts:', '$item.JobStealing.maximumFailoverAttempts', '"jsMaximumFailoverAttempts"', 'true', '5', '0',
+                                        'Maximum number of attempts to execute a failed job on another node')
+                                .pc-form-grid-col-60(ng-show='$item.kind === "Always"')
+                                    +number('Maximum failover attempts:', '$item.Always.maximumFailoverAttempts', '"alwaysMaximumFailoverAttempts"', 'true', '5', '0',
+                                        'Maximum number of attempts to execute a failed job on another node')
+                                .pc-form-grid-col-60(ng-show=failoverCustom)
+                                    +java-class('SPI implementation', '$item.Custom.class', '"failoverSpiClass"', 'true', failoverCustom,
+                                        'Custom FailoverSpi implementation class name.', failoverCustom)
 
-                                list-editable-no-items
-                                    list-editable-add-item-button(
-                                        add-item=`(${items} = ${items} || []).push({})`
-                                        label-single='failover SPI'
-                                        label-multiple='failover SPIs'
-                                    )
+                            list-editable-no-items
+                                list-editable-add-item-button(
+                                    add-item=`(${items} = ${items} || []).push({})`
+                                    label-single='failover SPI'
+                                    label-multiple='failover SPIs'
+                                )
 
                 +clusters-failover-spi
 

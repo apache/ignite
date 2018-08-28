@@ -949,4 +949,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         MvccSnapshot mvccVer) throws IgniteCheckedException, GridCacheEntryRemovedException {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public void touch(AffinityTopologyVersion topVer) {
+        context().evicts().touch(this, topVer);
+    }
 }

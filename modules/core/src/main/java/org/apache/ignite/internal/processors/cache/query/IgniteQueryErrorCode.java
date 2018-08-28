@@ -100,6 +100,12 @@ public final class IgniteQueryErrorCode {
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
 
+    /** Attempt to INSERT, UPDATE or MERGE key that exceed maximum column length. */
+    public final static int TOO_LONG_KEY = 4007;
+
+    /** Attempt to INSERT, UPDATE or MERGE value that exceed maximum column length. */
+    public final static int TOO_LONG_VALUE = 4008;
+
     /* 5xxx - transactions related runtime errors. */
 
     /** Transaction is already open. */
@@ -140,6 +146,8 @@ public final class IgniteQueryErrorCode {
     public static String codeToSqlState(int statusCode) {
         switch (statusCode) {
             case DUPLICATE_KEY:
+            case TOO_LONG_KEY:
+            case TOO_LONG_VALUE:
                 return SqlStateCode.CONSTRAINT_VIOLATION;
 
             case NULL_KEY:
@@ -165,8 +173,10 @@ public final class IgniteQueryErrorCode {
             case KEY_UPDATE:
                 return SqlStateCode.PARSING_EXCEPTION;
 
-            case TRANSACTION_EXISTS:
             case MVCC_DISABLED:
+            case TRANSACTION_EXISTS:
+            case TRANSACTION_TYPE_MISMATCH:
+            case TRANSACTION_COMPLETED:
                 return SqlStateCode.TRANSACTION_STATE_EXCEPTION;
 
             default:

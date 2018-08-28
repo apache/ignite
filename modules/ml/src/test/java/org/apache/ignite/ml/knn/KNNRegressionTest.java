@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
@@ -77,7 +77,7 @@ public class KNNRegressionTest {
             (k, v) -> v[0]
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(KNNStrategy.SIMPLE);
+            .withStrategy(NNStrategy.SIMPLE);
 
         Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
         System.out.println(knnMdl.apply(vector));
@@ -87,17 +87,17 @@ public class KNNRegressionTest {
     /** */
     @Test
     public void testLongly() {
-        testLongly(KNNStrategy.SIMPLE);
+        testLongly(NNStrategy.SIMPLE);
     }
 
     /** */
     @Test
     public void testLonglyWithWeightedStrategy() {
-        testLongly(KNNStrategy.WEIGHTED);
+        testLongly(NNStrategy.WEIGHTED);
     }
 
     /** */
-    private void testLongly(KNNStrategy stgy) {
+    private void testLongly(NNStrategy stgy) {
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {60323, 83.0, 234289, 2356, 1590, 107608, 1947});
         data.put(1, new double[] {61122, 88.5, 259426, 2325, 1456, 108632, 1948});

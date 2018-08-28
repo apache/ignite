@@ -342,7 +342,7 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
                 else {
                     // Expect nodes are sorted by order.
                     for (ClusterNode node : nodes) {
-                        if (!CU.clientNode(node)) {
+                        if (!node.isClient()) {
                             crdNode = node;
 
                             break;

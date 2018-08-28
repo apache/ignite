@@ -31,86 +31,85 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
         .pca-form-column-6
             mixin clusters-load-balancing-spi
                 .ignite-form-field(ng-init='loadBalancingSpiTbl={type: "loadBalancingSpi", model: "loadBalancingSpi", focusId: "kind", ui: "load-balancing-table"}')
-                    +ignite-form-field__label('Load balancing configurations:', '"loadBalancingConfigurations"')
-                        +tooltip(`Load balancing component balances job distribution among cluster nodes`)
-                    .ignite-form-field__control
-                        -let items = loadBalancingSpi
+                    +form-field__label({ label: 'Load balancing configurations:', name: '"loadBalancingConfigurations"' })
+                        +form-field__tooltip(`Load balancing component balances job distribution among cluster nodes`)
 
-                        list-editable.pc-list-editable-with-legacy-settings-rows(
-                            ng-model=items
-                            name='loadBalancingConfigurations'
-                        )
-                            list-editable-item-edit
-                                - form = '$parent.form'
-                                .settings-row
-                                    +sane-ignite-form-field-dropdown({
-                                        label: 'Load balancing:',
-                                        model: '$item.kind',
-                                        name: '"loadBalancingKind"',
-                                        required: true,
-                                        options: '::$ctrl.Clusters.loadBalancingKinds',
-                                        tip: `Provides the next best balanced node for job execution
-                                        <ul>
-                                            <li>Round-robin - Iterates through nodes in round-robin fashion and pick the next sequential node</li>
-                                            <li>Adaptive - Adapts to overall node performance</li>
-                                            <li>Random - Picks a random node for job execution</li>
-                                            <li>Custom - Custom load balancing implementation</li>
-                                        </ul>`
-                                    })(
-                                        ignite-unique=`${loadBalancingSpi}`
-                                        ignite-unique-property='kind'
-                                    )
-                                        +unique-feedback('"loadBalancingKind"', 'Load balancing SPI of that type is already configured')
-                                .settings-row(ng-show='$item.kind === "RoundRobin"')
-                                    +checkbox('Per task', '$item.RoundRobin.perTask', '"loadBalancingRRPerTask"', 'A new round robin order should be created for every task flag')
-                                .settings-row(ng-show='$item.kind === "Adaptive"')
-                                    +dropdown('Load probe:', '$item.Adaptive.loadProbe.kind', '"loadBalancingAdaptiveLoadProbeKind"', 'true', 'Default', '[\
-                                            {value: "Job", label: "Job count"},\
-                                            {value: "CPU", label: "CPU load"},\
-                                            {value: "ProcessingTime", label: "Processing time"},\
-                                            {value: "Custom", label: "Custom"},\
-                                            {value: null, label: "Default"}\
-                                        ]', 'Implementation of node load probing\
-                                        <ul>\
-                                            <li>Job count - Based on active and waiting job count</li>\
-                                            <li>CPU load - Based on CPU load</li>\
-                                            <li>Processing time - Based on total job processing time</li>\
-                                            <li>Custom - Custom load probing implementation</li>\
-                                            <li>Default - Default load probing implementation</li>\
-                                        </ul>')
-                                .settings-row(ng-show='$item.kind === "Adaptive" && $item.Adaptive.loadProbe.kind')
-                                    .panel-details(ng-show='$item.Adaptive.loadProbe.kind === "Job"')
-                                        .details-row
-                                            +checkbox('Use average', '$item.Adaptive.loadProbe.Job.useAverage', '"loadBalancingAdaptiveJobUseAverage"', 'Use average CPU load vs. current')
-                                    .panel-details(ng-show='$item.Adaptive.loadProbe.kind === "CPU"')
-                                        .details-row
-                                            +checkbox('Use average', '$item.Adaptive.loadProbe.CPU.useAverage', '"loadBalancingAdaptiveCPUUseAverage"', 'Use average CPU load vs. current')
-                                        .details-row
-                                            +checkbox('Use processors', '$item.Adaptive.loadProbe.CPU.useProcessors', '"loadBalancingAdaptiveCPUUseProcessors"', "divide each node's CPU load by the number of processors on that node")
-                                        .details-row
-                                            +number-min-max-step('Processor coefficient:', '$item.Adaptive.loadProbe.CPU.processorCoefficient',
-                                                '"loadBalancingAdaptiveCPUProcessorCoefficient"', 'true', '1', '0.001', '1', '0.001', 'Coefficient of every CPU')
-                                    .panel-details(ng-show='$item.Adaptive.loadProbe.kind === "ProcessingTime"')
-                                        .details-row
-                                            +checkbox('Use average', '$item.Adaptive.loadProbe.ProcessingTime.useAverage', '"loadBalancingAdaptiveJobUseAverage"', 'Use average execution time vs. current')
-                                    .panel-details(ng-show=loadProbeCustom)
-                                        .details-row
-                                            +java-class('Load brobe implementation:', '$item.Adaptive.loadProbe.Custom.className', '"loadBalancingAdaptiveJobUseClass"', 'true', loadProbeCustom,
-                                                'Custom load balancing SPI implementation class name.', loadProbeCustom)
-                                .settings-row(ng-show='$item.kind === "WeightedRandom"')
-                                    +number('Node weight:', '$item.WeightedRandom.nodeWeight', '"loadBalancingWRNodeWeight"', 'true', 10, '1', 'Weight of node')
-                                .settings-row(ng-show='$item.kind === "WeightedRandom"')
-                                    +checkbox('Use weights', '$item.WeightedRandom.useWeights', '"loadBalancingWRUseWeights"', 'Node weights should be checked when doing random load balancing')
-                                .settings-row(ng-show=loadBalancingCustom)
-                                    +java-class('Load balancing SPI implementation:', '$item.Custom.className', '"loadBalancingClass"', 'true', loadBalancingCustom,
-                                        'Custom load balancing SPI implementation class name.', loadBalancingCustom)
-
-                            list-editable-no-items
-                                list-editable-add-item-button(
-                                    add-item=`$ctrl.Clusters.addLoadBalancingSpi(${model})`
-                                    label-single='load balancing configuration'
-                                    label-multiple='load balancing configurations'
+                    -let items = loadBalancingSpi
+                    list-editable.pc-list-editable-with-legacy-settings-rows(
+                        ng-model=items
+                        name='loadBalancingConfigurations'
+                    )
+                        list-editable-item-edit
+                            - form = '$parent.form'
+                            .settings-row
+                                +form-field__dropdown({
+                                    label: 'Load balancing:',
+                                    model: '$item.kind',
+                                    name: '"loadBalancingKind"',
+                                    required: true,
+                                    options: '::$ctrl.Clusters.loadBalancingKinds',
+                                    tip: `Provides the next best balanced node for job execution
+                                    <ul>
+                                        <li>Round-robin - Iterates through nodes in round-robin fashion and pick the next sequential node</li>
+                                        <li>Adaptive - Adapts to overall node performance</li>
+                                        <li>Random - Picks a random node for job execution</li>
+                                        <li>Custom - Custom load balancing implementation</li>
+                                    </ul>`
+                                })(
+                                    ignite-unique=`${loadBalancingSpi}`
+                                    ignite-unique-property='kind'
                                 )
+                                    +unique-feedback('"loadBalancingKind"', 'Load balancing SPI of that type is already configured')
+                            .settings-row(ng-show='$item.kind === "RoundRobin"')
+                                +checkbox('Per task', '$item.RoundRobin.perTask', '"loadBalancingRRPerTask"', 'A new round robin order should be created for every task flag')
+                            .settings-row(ng-show='$item.kind === "Adaptive"')
+                                +dropdown('Load probe:', '$item.Adaptive.loadProbe.kind', '"loadBalancingAdaptiveLoadProbeKind"', 'true', 'Default', '[\
+                                        {value: "Job", label: "Job count"},\
+                                        {value: "CPU", label: "CPU load"},\
+                                        {value: "ProcessingTime", label: "Processing time"},\
+                                        {value: "Custom", label: "Custom"},\
+                                        {value: null, label: "Default"}\
+                                    ]', 'Implementation of node load probing\
+                                    <ul>\
+                                        <li>Job count - Based on active and waiting job count</li>\
+                                        <li>CPU load - Based on CPU load</li>\
+                                        <li>Processing time - Based on total job processing time</li>\
+                                        <li>Custom - Custom load probing implementation</li>\
+                                        <li>Default - Default load probing implementation</li>\
+                                    </ul>')
+                            .settings-row(ng-show='$item.kind === "Adaptive" && $item.Adaptive.loadProbe.kind')
+                                .panel-details(ng-show='$item.Adaptive.loadProbe.kind === "Job"')
+                                    .details-row
+                                        +checkbox('Use average', '$item.Adaptive.loadProbe.Job.useAverage', '"loadBalancingAdaptiveJobUseAverage"', 'Use average CPU load vs. current')
+                                .panel-details(ng-show='$item.Adaptive.loadProbe.kind === "CPU"')
+                                    .details-row
+                                        +checkbox('Use average', '$item.Adaptive.loadProbe.CPU.useAverage', '"loadBalancingAdaptiveCPUUseAverage"', 'Use average CPU load vs. current')
+                                    .details-row
+                                        +checkbox('Use processors', '$item.Adaptive.loadProbe.CPU.useProcessors', '"loadBalancingAdaptiveCPUUseProcessors"', "divide each node's CPU load by the number of processors on that node")
+                                    .details-row
+                                        +number-min-max-step('Processor coefficient:', '$item.Adaptive.loadProbe.CPU.processorCoefficient',
+                                            '"loadBalancingAdaptiveCPUProcessorCoefficient"', 'true', '1', '0.001', '1', '0.05', 'Coefficient of every CPU')
+                                .panel-details(ng-show='$item.Adaptive.loadProbe.kind === "ProcessingTime"')
+                                    .details-row
+                                        +checkbox('Use average', '$item.Adaptive.loadProbe.ProcessingTime.useAverage', '"loadBalancingAdaptiveJobUseAverage"', 'Use average execution time vs. current')
+                                .panel-details(ng-show=loadProbeCustom)
+                                    .details-row
+                                        +java-class('Load brobe implementation:', '$item.Adaptive.loadProbe.Custom.className', '"loadBalancingAdaptiveJobUseClass"', 'true', loadProbeCustom,
+                                            'Custom load balancing SPI implementation class name.', loadProbeCustom)
+                            .settings-row(ng-show='$item.kind === "WeightedRandom"')
+                                +number('Node weight:', '$item.WeightedRandom.nodeWeight', '"loadBalancingWRNodeWeight"', 'true', 10, '1', 'Weight of node')
+                            .settings-row(ng-show='$item.kind === "WeightedRandom"')
+                                +checkbox('Use weights', '$item.WeightedRandom.useWeights', '"loadBalancingWRUseWeights"', 'Node weights should be checked when doing random load balancing')
+                            .settings-row(ng-show=loadBalancingCustom)
+                                +java-class('Load balancing SPI implementation:', '$item.Custom.className', '"loadBalancingClass"', 'true', loadBalancingCustom,
+                                    'Custom load balancing SPI implementation class name.', loadBalancingCustom)
+
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$ctrl.Clusters.addLoadBalancingSpi(${model})`
+                                label-single='load balancing configuration'
+                                label-multiple='load balancing configurations'
+                            )
 
             +clusters-load-balancing-spi
 
