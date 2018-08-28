@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -43,6 +44,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -1259,7 +1261,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws SQLException if failed.
      */
     public void testNoWrap() throws SQLException {
-        doTestKeyValueWrap(false, false);
+        doTestKeyValueWrap(false, false, false);
     }
 
     /**
@@ -1267,7 +1269,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws SQLException if failed.
      */
     public void testKeyWrap() throws SQLException {
-        doTestKeyValueWrap(true, false);
+        doTestKeyValueWrap(true, false, false);
     }
 
     /**
@@ -1275,7 +1277,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws SQLException if failed.
      */
     public void testValueWrap() throws SQLException {
-        doTestKeyValueWrap(false, true);
+        doTestKeyValueWrap(false, true, false);
     }
 
     /**
@@ -1283,29 +1285,73 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws SQLException if failed.
      */
     public void testKeyAndValueWrap() throws SQLException {
-        doTestKeyValueWrap(true, true);
+        doTestKeyValueWrap(true, true, false);
+    }
+
+    /**
+     * Test behavior when neither key nor value should be wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    public void testUuidNoWrap() throws SQLException {
+        doTestKeyValueWrap(false, false, true);
+    }
+
+    /**
+     * Test behavior when only key is wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    public void testUuidKeyWrap() throws SQLException {
+        doTestKeyValueWrap(true, false, true);
+    }
+
+    /**
+     * Test behavior when only value is wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    public void testUuidValueWrap() throws SQLException {
+        doTestKeyValueWrap(false, true, true);
+    }
+
+    /**
+     * Test behavior when both key and value is wrapped.
+     * Key and value are UUID.
+     * @throws SQLException if failed.
+     */
+    public void testUuidKeyAndValueWrap() throws SQLException {
+        doTestKeyValueWrap(true, true, true);
     }
 
     /**
      * Test behavior for given combination of wrap flags.
      * @param wrapKey Whether key wrap should be enforced.
      * @param wrapVal Whether value wrap should be enforced.
+     * @param testUuid Whether should test with UUID as key and value.
      * @throws SQLException if failed.
      */
-    private void doTestKeyValueWrap(boolean wrapKey, boolean wrapVal) throws SQLException {
+    private void doTestKeyValueWrap(boolean wrapKey, boolean wrapVal, boolean testUuid) throws SQLException {
         try {
-            String sql = String.format("CREATE TABLE T (\"id\" int primary key, \"x\" varchar) WITH " +
-                "\"wrap_key=%b,wrap_value=%b\"", wrapKey, wrapVal);
+            String sql = testUuid ? String.format("CREATE TABLE T (\"id\" UUID primary key, \"x\" UUID) WITH " +
+                            "\"wrap_key=%b,wrap_value=%b\"", wrapKey, wrapVal) :
+                    String.format("CREATE TABLE T (\"id\" int primary key, \"x\" varchar) WITH " +
+                            "\"wrap_key=%b,wrap_value=%b\"", wrapKey, wrapVal);
+
+            UUID guid = UUID.randomUUID();
 
             if (wrapKey)
-                sql += ",\"key_type=tkey\"";
+                sql += ",\"key_type=" + (testUuid ? "tkey_guid" : "tkey") + "\"";
 
             if (wrapVal)
-                sql += ",\"value_type=tval\"";
+                sql += ",\"value_type=" + (testUuid ? "tval_guid" : "tval") + "\"";
 
             execute(sql);
 
-            execute("INSERT INTO T(\"id\", \"x\") values(1, 'a')");
+            if(testUuid)
+                execute("INSERT INTO T(\"id\", \"x\") values('" + guid.toString() + "', '" + guid.toString() + "')");
+            else
+                execute("INSERT INTO T(\"id\", \"x\") values(1, 'a')");
 
             LinkedHashMap<String, String> resCols = new LinkedHashMap<>();
 
@@ -1331,20 +1377,27 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             LinkedHashMap<String, String> expCols = new LinkedHashMap<>();
 
-            expCols.put("id", Integer.class.getName());
-            expCols.put("x", String.class.getName());
+            if (testUuid) {
+                expCols.put("id", Object.class.getName());
+                expCols.put("x", Object.class.getName());
+            }
+            else {
+                expCols.put("id", Integer.class.getName());
+                expCols.put("x", String.class.getName());
+            }
 
             assertEquals(expCols, resCols);
 
-            assertEqualsCollections(Arrays.asList(1, "a"), resData);
+            assertEqualsCollections(testUuid ? Arrays.asList(guid, guid) : Arrays.asList(1, "a")
+                    , resData);
 
-            Object key = createKeyForWrapTest(1, wrapKey);
+            Object key = createKeyForWrapTest(testUuid ? guid : 1, wrapKey);
 
             Object val = client().cache(cacheName("T")).withKeepBinary().get(key);
 
             assertNotNull(val);
 
-            assertEquals(createValueForWrapTest("a", wrapVal), val);
+            assertEquals(createValueForWrapTest(testUuid ? guid : "a", wrapVal), val);
         }
         finally {
             execute("DROP TABLE IF EXISTS T");
@@ -1356,11 +1409,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param wrap Whether key should be wrapped.
      * @return (optionally wrapped) key.
      */
-    private Object createKeyForWrapTest(int key, boolean wrap) {
+    private Object createKeyForWrapTest(Object key, boolean wrap) {
         if (!wrap)
             return key;
 
-        return client().binary().builder("tkey").setField("id", key).build();
+        return client().binary().builder(key instanceof UUID ? "tkey_guid" : "tkey").setField("id", key).build();
     }
 
     /**
@@ -1368,11 +1421,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param wrap Whether value should be wrapped.
      * @return (optionally wrapped) value.
      */
-    private Object createValueForWrapTest(String val, boolean wrap) {
+    private Object createValueForWrapTest(Object val, boolean wrap) {
         if (!wrap)
             return val;
 
-        return client().binary().builder("tval").setField("x", val).build();
+        return client().binary().builder(val instanceof UUID ? "tval_guid" : "tval").setField("x", val).build();
     }
 
     /**
