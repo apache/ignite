@@ -65,13 +65,13 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     /**
      * Trains model based on the specified data.
      *
-     * @param datasetBuilder   Dataset builder.
+     * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
+     * @param lbExtractor Label extractor.
      * @return Model.
      */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-                                            IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
@@ -85,7 +85,14 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
+            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
+                if (a == null)
+                    return b == null ? 0 : b;
+                if (b == null)
+                    return a;
+                return b;
+            });
+
             centers = initClusterCentersRandomly(dataset, k);
 
             boolean converged = false;
@@ -113,7 +120,8 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
                         centers[i] = newCentroids[i];
                 }
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
         return new KMeansModel(centers, distance);
@@ -124,15 +132,14 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      *
      * @param centers Current centers on the current iteration.
      * @param dataset Dataset.
-     * @param cols    Amount of columns.
+     * @param cols Amount of columns.
      * @return Helper data to calculate the new centroids.
      */
     private TotalCostAndCounts calcDataForNewCentroids(Vector[] centers,
-                                                       Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset, int cols) {
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset, int cols) {
         final Vector[] finalCenters = centers;
 
         return dataset.compute(data -> {
-
             TotalCostAndCounts res = new TotalCostAndCounts();
 
             for (int i = 0; i < data.rowSize(); i++) {
@@ -147,20 +154,29 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
                 int finalI = i;
                 res.sums.compute(centroidIdx,
-                    (IgniteBiFunction<Integer, Vector, Vector>) (ind, v) -> v.plus(data.getRow(finalI).features()));
+                    (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> {
+                        Vector features = data.getRow(finalI).features();
+                        return v == null ? features : v.plus(features);
+                    });
 
                 res.counts.merge(centroidIdx, 1,
-                    (IgniteBiFunction<Integer, Integer, Integer>) (i1, i2) -> i1 + i2);
+                    (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
             }
             return res;
-        }, (a, b) -> a == null ? b : a.merge(b));
+        }, (a, b) -> {
+            if (a == null)
+                return b == null ? new TotalCostAndCounts() : b;
+            if (b == null)
+                return a;
+            return a.merge(b);
+        });
     }
 
     /**
      * Find the closest cluster center index and distance to it from a given point.
      *
      * @param centers Centers to look in.
-     * @param pnt     Point.
+     * @param pnt Point.
      */
     private IgniteBiTuple<Integer, Double> findClosestCentroid(Vector[] centers, LabeledVector pnt) {
         double bestDistance = Double.POSITIVE_INFINITY;
@@ -180,12 +196,11 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * K cluster centers are initialized randomly.
      *
      * @param dataset The dataset to pick up random centers.
-     * @param k       Amount of clusters.
+     * @param k Amount of clusters.
      * @return K cluster centers.
      */
     private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset,
-                                                int k) {
-
+        int k) {
         Vector[] initCenters = new DenseVector[k];
 
         // Gets k or less vectors from each partition.
@@ -211,12 +226,19 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
                         rndPnt.add(data.getRow(nextIdx));
                     }
-                } else // If it's not enough vectors to pick k vectors.
+                }
+                else // If it's not enough vectors to pick k vectors.
                     for (int i = 0; i < data.rowSize(); i++)
                         rndPnt.add(data.getRow(i));
             }
             return rndPnt;
-        }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
+        }, (a, b) -> {
+            if (a == null)
+                return b == null ? new ArrayList<>() : b;
+            if (b == null)
+                return a;
+            return Stream.concat(a.stream(), b.stream()).collect(Collectors.toList());
+        });
 
         // Shuffle them.
         Collections.shuffle(rndPnts);
@@ -228,7 +250,8 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
                 rndPnts.remove(rndPnt);
                 initCenters[i] = rndPnt.features();
             }
-        } else
+        }
+        else
             throw new RuntimeException("The KMeans Trainer required more than " + k + " vectors to find " + k + " clusters");
 
         return initCenters;
@@ -244,7 +267,6 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
         /** Count of points closest to the center with a given index. */
         ConcurrentHashMap<Integer, Integer> counts = new ConcurrentHashMap<>();
-
 
         /** Count of points closest to the center with a given index. */
         ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> centroidStat = new ConcurrentHashMap<>();
