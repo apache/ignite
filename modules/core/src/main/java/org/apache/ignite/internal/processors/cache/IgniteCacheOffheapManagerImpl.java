@@ -2564,7 +2564,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (compareNewVersion(row, crd, cntr, opCntr) != 0) // deleted row
                     res.add(F.t(null, row.newMvccVersion()));
 
-                res.add(F.t(row.value(), row.mvccVersion()));
+                res.add(F.t(row.value().value(cctx.cacheObjectContext(), false), row.mvccVersion()));
 
                 crd = row.mvccCoordinatorVersion(); cntr = row.mvccCounter(); opCntr = row.mvccOperationCounter();
             }

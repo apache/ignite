@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-class NoOpMvccProcessor extends GridProcessorAdapter implements MvccProcessor {
+public class NoOpMvccProcessor extends GridProcessorAdapter implements MvccProcessor {
     /**
      * @param ctx Kernal context.
      */
