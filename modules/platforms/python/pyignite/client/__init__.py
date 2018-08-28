@@ -235,6 +235,7 @@ class Client:
         to.username = self.username
         to.password = self.password
         to.nodes = self.nodes
+        to.binary_registry = self.binary_registry
 
     def clone(self, prefetch: bytes=b'') -> 'Client':
         """
@@ -340,6 +341,7 @@ class Client:
         :param binary_type: binary object type name or ID,
         :param schema: (optional) binary object schema or schema ID,
         :return: binary type description − a dict with the following fields:
+
          - `type_exists`: True if the type is registered, False otherwise,
          - `type_id`: Complex object type ID, integer value,
          - `type name`: Complex object type name,
@@ -451,6 +453,7 @@ class Client:
          will be created with a help of
          :class:`~pyignite.client.binary.GenericObjectMeta`,
         :return: binary type description − a dict with the following fields:
+
          - `type_exists`: True if the type is registered, False otherwise,
          - `type_id`: Complex object type ID, integer value,
          - `type name`: Complex object type name,
@@ -493,12 +496,13 @@ class Client:
                 'schemas': [schema],
                 'affinity_key_field': affinity_key_field,
                 'is_enum': is_enum,
-                'data_class': data_class,
             }
+            if data_class:
+                result['data_class'] = data_class
             self.binary_registry[(
                 binary_result.value['type_id'],
                 binary_result.value['schema_id']
-            )] = result
+            )].update(result)
             return result
 
     def create_cache(self, settings: Union[str, dict]) -> 'Cache':

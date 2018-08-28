@@ -177,17 +177,78 @@ Finally, delete the tables used in this example with the following queries:
 Complex objects
 ---------------
 
+`Complex object`_ (that is often called ‘Binary object’) is an Ignite data
+type, that is designed to represent a Java class. It have the following
+features:
+
+- have a unique ID (type id), which is derives from a class name (type name),
+- have one or more associated schemas, that describes its inner structure (the
+  order, names and types of its fields). Each schema have its own ID,
+- have an optional version number, that is aimed for the end user
+  to help them distinguish between objects of one type, serialized
+  with different schemas.
+
+Unfortunately, these distinctive features of the Complex Object have few to no
+meaning outside of the context of Java classes serializing. Python class can
+not be defined by its name (it is not unique), ID (it is just an address
+of the object in CPython process memory heap), or complex of its fields
+(they do not have an associated data types, moreover, they can be added
+or deleted in run-time). For the `pyignite` user it means that for all
+purposes of storing native Python data it is better to use Ignite
+:class:`~pyignite.datatypes.complex.CollectionObject`
+or :class:`~pyignite.datatypes.complex.MapObject` data types.
+
+However, for interoperability purposes, `pyignite` has a mechanism of creating
+special Python classes to read or write Complex Objects. These classes have
+an interface, that simulates all the features of the Complex Object: type name,
+type ID, schema, schema ID and version number.
+
+Assuming that one concrete class for representing one Complex Object can
+severely limit the user's data manipulation capabilities, all the
+functionality said above is implemented through the metaclass:
+:class:`~pyignite.client.binary.GenericObjectMeta`. This metaclass
+can be used directly when creating binary data:
+
+.. literalinclude:: ../examples/binary_types_basics.py
+  :language: python
+  :lines: 16-36
+
+Note how the `Person` class is defined. `schema` is a
+:class:`~pyignite.client.binary.GenericObjectMeta` metaclass parameter.
+Another important :class:`~pyignite.client.binary.GenericObjectMeta` parameter
+is a `type_name`, but it is optional and defaults to a class name (‘Person’
+in our example).
+
+Note also, that `Person` do not define its own attributes, methods and
+properties (`pass`), although it is completely possible.
+
+When reading Complex Object from cache, `pyignite` will create the `Person`
+class automatically.
+
+.. literalinclude:: ../examples/binary_types_basics.py
+  :language: python
+  :lines: 38-46
+
+If you intend to reuse your custom class for reading existing Complex Objects,
+you must register said class with your client:
+
+.. literalinclude:: ../examples/binary_types_basics.py
+  :language: python
+  :lines: 48
+
+Now the custom `Person` class is registered. Note the difference:
+
+.. literalinclude:: ../examples/binary_types_basics.py
+  :language: python
+  :lines: 50-58
+
+Now, when we dealt with the Complex Object basics, let us move on to more
+elaborate examples.
+
 .. _sql_cache_read:
 
 Read
 ====
-
-`Complex object`_ (that is often called ‘Binary object’) is used to represent
-user-defined complex data types. It have the following features:
-
-- have a unique ID,
-- have an associated schema, that describes its inner structure (the order
-  and types of its fields).
 
 The schemas are stored in Ignite metadata storage. That is why Complex object
 must be registered with the Ignite cluster before use.
