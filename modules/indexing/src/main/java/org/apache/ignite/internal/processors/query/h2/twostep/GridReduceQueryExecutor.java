@@ -371,6 +371,7 @@ public class GridReduceQueryExecutor {
     private boolean isPreloadingActive(List<Integer> cacheIds) {
         for (Integer cacheId : cacheIds) {
 
+            // TODO: Reformulate, e.g. "Cache not found on local node [cacheName=name]"
             if (null == cacheContext(cacheId))
                 throw new CacheException(String.format("Grid cache context is not registered for cache id=%s",cacheId));
 
@@ -578,6 +579,7 @@ public class GridReduceQueryExecutor {
 
         final long startTime = U.currentTimeMillis();
 
+        // TODO: Better variable naming.
         ReduceQueryRun prevR = null;
 
         for (int attempt = 0;; attempt++) {

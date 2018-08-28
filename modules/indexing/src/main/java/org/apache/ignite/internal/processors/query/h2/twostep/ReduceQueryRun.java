@@ -57,7 +57,6 @@ class ReduceQueryRun {
     /** */
     private final AtomicReference<State> state = new AtomicReference<>();
 
-
     /**
      * Constructor.
      *
@@ -85,6 +84,7 @@ class ReduceQueryRun {
      * @param o Fail state object.
      * @param nodeId Node ID.
      */
+    // TODO: Styling
     void state(Object o, @Nullable UUID nodeId) {
         assert o != null;
         assert o instanceof CacheException || o instanceof AffinityTopologyVersion : o.getClass();
@@ -99,6 +99,7 @@ class ReduceQueryRun {
      * @param msg corresponding response message
      * @param nodeId Node ID.
      */
+    // TODO: Styling, no abbreviations in method names
     void stateWithMsg(GridQueryNextPageResponse msg, @Nullable UUID nodeId) {
         assert msg != null;
         assert msg.retry() != null;
@@ -160,6 +161,7 @@ class ReduceQueryRun {
     }
 
     /** */
+    // TODO: atv -> topVer
     AffinityTopologyVersion atv(){
         State st = state.get();
         return st!=null ? st.atv : null;
@@ -205,6 +207,7 @@ class ReduceQueryRun {
         private final String rootCause;
 
         /** */
+        // TODO: atv -> topVer
         private final AffinityTopologyVersion atv;
 
         /** */
@@ -220,6 +223,7 @@ class ReduceQueryRun {
     }
 
     /** */
+    // TODO: We do not need this.
     private static class StateBuilder{
         /** */
         private CacheException ex = null;

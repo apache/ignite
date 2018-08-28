@@ -364,7 +364,9 @@ public class GridQueryNextPageResponse implements Message {
     /**
      * @return Retry Ccause message.
      */
-    public String retryCause() { return retryCause; }
+    public String retryCause() {
+        return retryCause;
+    }
 
     /**
      * @param retryCause Retry Ccause message.
