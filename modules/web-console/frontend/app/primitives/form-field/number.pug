@@ -14,23 +14,24 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__number({ label, model, name, disabled, required, placeholder, tip, min, max, step, postfix })
+mixin form-field__number({ label, model, name, disabled, required, placeholder, tip, min, max, step = '1', postfix })
     -var errLbl = label.substring(0, label.length - 1)
 
-    .form-field
-        +form-field__label({ label, name, required })
+    .form-field.ignite-form-field
+        +form-field__label({ label, name, required, disabled })
             +form-field__tooltip({ title: tip, options: tipOpts })
 
         .form-field__control(class=postfix && 'form-field__control--postfix' data-postfix=postfix)
             - attributes.type = 'number'
             - attributes.min = min ? min : '0'
             - attributes.max = max ? max : '{{ Number.MAX_VALUE }}'
-            - attributes.step = step ? step : '1'
+            - attributes.step = step
             +form-field__input({ name, model, disabled, required, placeholder })(attributes=attributes)
 
         .form-field__errors(
             data-postfix=postfix
-            ng-messages=`(${form}[${name}].$dirty || ${form}[${name}].$touched || ${form}[${name}].$submitted) && ${form}[${name}].$invalid ? ${form}[${name}].$error : {}`
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
             if block
                 block
@@ -38,10 +39,10 @@ mixin form-field__number({ label, model, name, disabled, required, placeholder, 
             if required
                 +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
 
-            if min
-                +form-field__error({ error: 'min', message: `${errLbl} is less than allowable minimum: ${ min || 0 }`})
+            +form-field__error({ error: 'min', message: `${errLbl} is less than allowable minimum: ${ min || 0 }`})
 
-            if max
-                +form-field__error({ error: 'max', message: `${errLbl} is more than allowable maximum: ${ max }`})
+            +form-field__error({ error: 'max', message: `${errLbl} is more than allowable maximum: ${ max }`})
+
+            +form-field__error({ error: 'step', message: `${errLbl} step should be ${step || 1}` })
 
             +form-field__error({ error: 'number', message: 'Only numbers allowed' })
