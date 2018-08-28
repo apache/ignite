@@ -152,9 +152,11 @@ public class CacheInvokeDirectResult implements Message {
      * @param ctx Cache context.
      */
     public void marshalResult(GridCacheContext ctx) {
-        if (unprepareRes != null) {
-            res = ctx.toCacheObject(unprepareRes);
-
+        try {
+            if (unprepareRes != null)
+                res = ctx.toCacheObject(unprepareRes);
+        }
+        finally {
             unprepareRes = null;
         }
     }
