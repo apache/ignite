@@ -29,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -38,20 +37,17 @@ import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOU
 
 /**
  * Workers registry. Maintains a set of workers currently running.
- * Can perform periodic health checks for these workers on behalf of any of them.
+ * Can perform periodic liveness checks for these workers on behalf of any of them.
  */
-public class WorkersRegistry implements GridWorkerListener, IgniteInClosure<GridWorker> {
-    /** */
-    private static final long serialVersionUID = 2243111922271300810L;
-
+public class WorkersRegistry implements GridWorkerListener {
     /** Time in milliseconds between successive workers checks. */
     private static final long CHECK_INTERVAL = 3_000;
 
     /** Registered workers. */
     private final ConcurrentMap<String, GridWorker> registeredWorkers = new ConcurrentHashMap<>();
 
-    /** Whether workers should check each other's health or not. */
-    private volatile boolean healthMonitoringEnabled = true;
+    /** Whether workers' liveness checking enabled or not. */
+    private volatile boolean livenessCheckEnabled = true;
 
     /** Points to the next worker to check. */
     private volatile Iterator<Map.Entry<String, GridWorker>> checkIter = registeredWorkers.entrySet().iterator();
@@ -113,13 +109,13 @@ public class WorkersRegistry implements GridWorkerListener, IgniteInClosure<Grid
     }
 
     /** */
-    boolean getHealthMonitoringEnabled() {
-        return healthMonitoringEnabled;
+    boolean livenessCheckEnabled() {
+        return livenessCheckEnabled;
     }
 
     /** */
-    void setHealthMonitoringEnabled(boolean val) {
-        healthMonitoringEnabled = val;
+    void livenessCheckEnabled(boolean val) {
+        livenessCheckEnabled = val;
     }
 
     /** {@inheritDoc} */
@@ -133,8 +129,8 @@ public class WorkersRegistry implements GridWorkerListener, IgniteInClosure<Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void apply(GridWorker w) {
-        if (!healthMonitoringEnabled)
+    @Override public void onIdle(GridWorker w) {
+        if (!livenessCheckEnabled)
             return;
 
         Thread prevCheckerThread = lastChecker.get();
@@ -156,6 +152,7 @@ public class WorkersRegistry implements GridWorkerListener, IgniteInClosure<Grid
                     checkIter = registeredWorkers.entrySet().iterator();
 
                 GridWorker worker;
+
                 try {
                     worker = checkIter.next().getValue();
                 }
@@ -178,7 +175,7 @@ public class WorkersRegistry implements GridWorkerListener, IgniteInClosure<Grid
                             workerFailedHnd.apply(worker, SYSTEM_WORKER_TERMINATION);
                     }
 
-                    if (U.currentTimeMillis() - worker.heartbeatTimeMillis() > HEARTBEAT_TIMEOUT) {
+                    if (U.currentTimeMillis() - worker.heartbeatTs() > HEARTBEAT_TIMEOUT) {
                         GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
                         if (worker0 != null && worker0 == worker)

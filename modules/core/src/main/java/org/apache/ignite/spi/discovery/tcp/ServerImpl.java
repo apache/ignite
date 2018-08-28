@@ -2655,8 +2655,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private RingMessageWorker(IgniteLogger log) {
-            super("tcp-disco-msg-worker", log, 10,
-                getWorkerRegistry(spi), getWorkerRegistry(spi));
+            super("tcp-disco-msg-worker", log, 10, getWorkerRegistry(spi));
 
             initConnectionCheckThreshold();
 
@@ -5783,7 +5782,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @throws IgniteSpiException In case of error.
          */
         TcpServer(IgniteLogger log) throws IgniteSpiException {
-            super(spi.ignite().name(), "tcp-disco-srvr", log, getWorkerRegistry(spi), getWorkerRegistry(spi));
+            super(spi.ignite().name(), "tcp-disco-srvr", log, getWorkerRegistry(spi));
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
@@ -5833,7 +5832,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 long lastOnIdleTs = U.currentTimeMillis();
 
                 while (!isCancelled()) {
-                    setHeartbeat(Long.MAX_VALUE);
+                    heartbeatTs(Long.MAX_VALUE);
 
                     Socket sock;
                     try {
@@ -6827,7 +6826,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
-            super("tcp-disco-client-message-worker", log, Math.max(spi.metricsUpdateFreq, 10), null, null);
+            super("tcp-disco-client-message-worker", log, Math.max(spi.metricsUpdateFreq, 10), null);
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
@@ -7151,16 +7150,14 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          * @param pollingTimeout Messages polling timeout.
          * @param lsnr Listener for life-cycle events.
-         * @param idleHnd Idleness handler.
          */
         protected MessageWorker(
             String name,
             IgniteLogger log,
             long pollingTimeout,
-            @Nullable GridWorkerListener lsnr,
-            @Nullable IgniteInClosure<GridWorker> idleHnd
+            @Nullable GridWorkerListener lsnr
         ) {
-            super(spi.ignite().name(), name, log, lsnr, idleHnd);
+            super(spi.ignite().name(), name, log, lsnr);
 
             this.pollingTimeout = pollingTimeout;
         }

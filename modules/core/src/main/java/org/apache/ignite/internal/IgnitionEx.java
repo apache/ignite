@@ -1842,7 +1842,6 @@ public class IgnitionEx {
                             grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                     }
                 },
-                workerRegistry,
                 workerRegistry);
 
             // Note that since we use 'LinkedBlockingQueue', number of
@@ -1892,7 +1891,6 @@ public class IgnitionEx {
                     }
                 },
                 true,
-                workerRegistry,
                 workerRegistry);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
@@ -1902,7 +1900,7 @@ public class IgnitionEx {
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(),
+                new LinkedBlockingQueue<>(),
                 new IgfsThreadFactory(cfg.getIgniteInstanceName(), "igfs"));
 
             igfsExecSvc.allowCoreThreadTimeOut(true);
@@ -1925,7 +1923,7 @@ public class IgnitionEx {
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     DFLT_THREAD_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(),
+                    new LinkedBlockingQueue<>(),
                     GridIoPolicy.UNDEFINED,
                     oomeHnd
                 );
@@ -1941,7 +1939,7 @@ public class IgnitionEx {
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheKeepAliveTime(),
-                new LinkedBlockingQueue<Runnable>(),
+                new LinkedBlockingQueue<>(),
                 GridIoPolicy.UTILITY_CACHE_POOL,
                 oomeHnd);
 
@@ -1953,7 +1951,7 @@ public class IgnitionEx {
                 1,
                 1,
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(),
+                new LinkedBlockingQueue<>(),
                 GridIoPolicy.AFFINITY_POOL,
                 oomeHnd);
 
@@ -1968,7 +1966,7 @@ public class IgnitionEx {
                     cpus,
                     cpus * 2,
                     3000L,
-                    new LinkedBlockingQueue<Runnable>(1000),
+                    new LinkedBlockingQueue<>(1000),
                     GridIoPolicy.IDX_POOL,
                     oomeHnd
                 );
@@ -1982,7 +1980,7 @@ public class IgnitionEx {
                 cfg.getQueryThreadPoolSize(),
                 cfg.getQueryThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(),
+                new LinkedBlockingQueue<>(),
                 GridIoPolicy.QUERY_POOL,
                 oomeHnd);
 
@@ -1994,7 +1992,7 @@ public class IgnitionEx {
                 2,
                 2,
                 DFLT_THREAD_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(),
+                new LinkedBlockingQueue<>(),
                 GridIoPolicy.SCHEMA_POOL,
                 oomeHnd);
 
@@ -2012,7 +2010,7 @@ public class IgnitionEx {
                         execCfg.getSize(),
                         execCfg.getSize(),
                         DFLT_THREAD_KEEP_ALIVE_TIME,
-                        new LinkedBlockingQueue<Runnable>(),
+                        new LinkedBlockingQueue<>(),
                         GridIoPolicy.UNDEFINED,
                         oomeHnd);
 

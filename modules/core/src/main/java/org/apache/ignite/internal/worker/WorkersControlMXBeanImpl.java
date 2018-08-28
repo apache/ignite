@@ -68,12 +68,12 @@ public class WorkersControlMXBeanImpl implements WorkersControlMXBean {
 
     /** {@inheritDoc} */
     @Override public boolean getHealthMonitoringEnabled() {
-        return workerRegistry.getHealthMonitoringEnabled();
+        return workerRegistry.livenessCheckEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public void setHealthMonitoringEnabled(boolean val) {
-        workerRegistry.setHealthMonitoringEnabled(val);
+        workerRegistry.livenessCheckEnabled(val);
     }
 
     /** {@inheritDoc} */

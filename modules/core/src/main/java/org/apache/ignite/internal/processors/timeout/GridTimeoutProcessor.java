@@ -200,8 +200,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker", GridTimeoutProcessor.this.log,
-                ctx.workersRegistry(), ctx.workersRegistry());
+            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker", GridTimeoutProcessor.this.log, ctx.workersRegistry());
         }
 
         /** {@inheritDoc} */
@@ -272,7 +271,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                                 long waitTime = first.endTime() - U.currentTimeMillis();
 
                                 if (waitTime > 0) {
-                                    setHeartbeat(Long.MAX_VALUE);
+                                    heartbeatTs(Long.MAX_VALUE);
 
                                     try {
                                         mux.wait(waitTime);
@@ -285,7 +284,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                                     break;
                             }
                             else {
-                                setHeartbeat(Long.MAX_VALUE);
+                                heartbeatTs(Long.MAX_VALUE);
 
                                 try {
                                     mux.wait(waitTimeout);

@@ -2969,7 +2969,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param log Logger.
          */
         protected Checkpointer(@Nullable String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log, cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry());
+            super(gridName, name, log, cctx.kernalContext().workersRegistry());
 
             scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
 
@@ -3426,7 +3426,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     long remaining;
 
                     while ((remaining = scheduledCp.nextCpTs - now) > 0 && !isCancelled()) {
-                        setHeartbeat(Long.MAX_VALUE);
+                        heartbeatTs(Long.MAX_VALUE);
 
                         try {
                             wait(remaining);

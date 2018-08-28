@@ -1458,7 +1458,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          */
         private FileArchiver(long lastAbsArchivedIdx, IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-archiver%" + cctx.igniteInstanceName(), log,
-                cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry());
+                cctx.kernalContext().workersRegistry());
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
         }
@@ -1553,7 +1553,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             try {
                 synchronized (this) {
                     while (curAbsWalIdx == -1 && !stopped) {
-                        setHeartbeat(Long.MAX_VALUE);
+                        heartbeatTs(Long.MAX_VALUE);
 
                         try {
                             wait();
@@ -1580,7 +1580,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             ", current=" + curAbsWalIdx;
 
                         while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
-                            setHeartbeat(Long.MAX_VALUE);
+                            heartbeatTs(Long.MAX_VALUE);
 
                             try {
                                 wait();
@@ -1606,7 +1606,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                     synchronized (this) {
                         while (locked.containsKey(toArchive) && !stopped) {
-                            setHeartbeat(Long.MAX_VALUE);
+                            heartbeatTs(Long.MAX_VALUE);
 
                             try {
                                 wait();

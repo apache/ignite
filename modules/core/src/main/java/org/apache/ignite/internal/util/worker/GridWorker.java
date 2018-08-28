@@ -26,7 +26,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.CRITICAL_WORKER_HEARTBEAT_TIMEOUT;
@@ -53,9 +52,6 @@ public abstract class GridWorker implements Runnable {
     private final GridWorkerListener lsnr;
 
     /** */
-    private final IgniteInClosure<GridWorker> idleHnd;
-
-    /** */
     private volatile boolean finished;
 
     /** Whether or not this runnable is cancelled. */
@@ -65,38 +61,10 @@ public abstract class GridWorker implements Runnable {
     private volatile Thread runner;
 
     /** Timestamp to be updated by this worker periodically to indicate it's up and running. */
-    private volatile long heartbeatTimeMillis;
+    private volatile long heartbeatTs;
 
     /** */
     private final Object mux = new Object();
-
-    /**
-     * Creates new grid worker with given parameters.
-     *
-     * @param igniteInstanceName Name of the Ignite instance this runnable is used in.
-     * @param name Worker name. Note that in general thread name and worker (runnable) name are two
-     *      different things. The same worker can be executed by multiple threads and therefore
-     *      for logging and debugging purposes we separate the two.
-     * @param log Grid logger to be used.
-     * @param lsnr Listener for life-cycle events.
-     * @param idleHnd Idleness handler.
-     */
-    protected GridWorker(
-        String igniteInstanceName,
-        String name,
-        IgniteLogger log,
-        @Nullable GridWorkerListener lsnr,
-        @Nullable IgniteInClosure<GridWorker> idleHnd
-    ) {
-        assert name != null;
-        assert log != null;
-
-        this.igniteInstanceName = igniteInstanceName;
-        this.name = name;
-        this.log = log;
-        this.lsnr = lsnr;
-        this.idleHnd = idleHnd;
-    }
 
     /**
      * Creates new grid worker with given parameters.
@@ -114,7 +82,13 @@ public abstract class GridWorker implements Runnable {
         IgniteLogger log,
         @Nullable GridWorkerListener lsnr
     ) {
-        this(igniteInstanceName, name, log, lsnr, null);
+        assert name != null;
+        assert log != null;
+
+        this.igniteInstanceName = igniteInstanceName;
+        this.name = name;
+        this.log = log;
+        this.lsnr = lsnr;
     }
 
     /**
@@ -127,7 +101,7 @@ public abstract class GridWorker implements Runnable {
      * @param log Grid logger to be used.
      */
     protected GridWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
-        this(igniteInstanceName, name, log, null, null);
+        this(igniteInstanceName, name, log, null);
     }
 
     /** {@inheritDoc} */
@@ -298,6 +272,31 @@ public abstract class GridWorker implements Runnable {
         return finished;
     }
 
+    /**
+     * Sets heartbeatTs timestamp to absolute value.
+     *
+     * @param ts Timestamp in terms of {@code U.currentTimeMillis()}.
+     */
+    public void heartbeatTs(long ts) {
+        heartbeatTs = ts;
+    }
+
+    /** */
+    public long heartbeatTs() {
+        return heartbeatTs;
+    }
+
+    /** */
+    public void updateHeartbeat() {
+        heartbeatTs = U.currentTimeMillis();
+    }
+
+    /** */
+    public void onIdle() {
+        if (lsnr != null)
+            lsnr.onIdle(this);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         Thread runner = this.runner;
@@ -306,30 +305,5 @@ public abstract class GridWorker implements Runnable {
             "hashCode", hashCode(),
             "interrupted", (runner != null ? runner.isInterrupted() : "unknown"),
             "runner", (runner == null ? "null" : runner.getName()));
-    }
-
-    /**
-     * Sets heartbeat timestamp to absolute value.
-     *
-     * @param ts Timestamp in terms of {@code U.currentTimeMillis()}.
-     */
-    public void setHeartbeat(long ts) {
-        heartbeatTimeMillis = ts;
-    }
-
-    /** */
-    public void updateHeartbeat() {
-        heartbeatTimeMillis = U.currentTimeMillis();
-    }
-
-    /** */
-    public long heartbeatTimeMillis() {
-        return heartbeatTimeMillis;
-    }
-
-    /** */
-    public void onIdle() {
-        if (idleHnd != null)
-            idleHnd.apply(this);
     }
 }

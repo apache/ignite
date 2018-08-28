@@ -1637,7 +1637,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private MessageWorker(IgniteLogger log) {
-            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, getWorkersRegistry(), getWorkersRegistry());
+            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, getWorkersRegistry());
         }
 
         /** {@inheritDoc} */
@@ -1655,7 +1655,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 while (true) {
                     Object msg;
 
-                    setHeartbeat(Long.MAX_VALUE);
+                    heartbeatTs(Long.MAX_VALUE);
 
                     try {
                         msg = queue.take();
@@ -1960,7 +1960,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 joinRes = joinTopology(null, spi.joinTimeout,
                     new Runnable() {
                         @Override public void run() {
-                            setHeartbeat(Long.MAX_VALUE);
+                            heartbeatTs(Long.MAX_VALUE);
                         }
                     },
                     new Runnable() {

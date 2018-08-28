@@ -106,7 +106,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -2391,7 +2390,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     IgniteEx igniteEx = (IgniteEx)ignite;
 
                     builder.workerListener(igniteEx.context().workersRegistry());
-                    builder.idlenessHandler(igniteEx.context().workersRegistry());
                 }
 
                 GridNioServer<Message> srvr = builder.build();
@@ -4250,7 +4248,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
          * @param log Logger.
          */
         private CommunicationWorker(String igniteInstanceName, IgniteLogger log) {
-            super(igniteInstanceName, "tcp-comm-worker", log, getWorkersRegistry(ignite), getWorkersRegistry(ignite));
+            super(igniteInstanceName, "tcp-comm-worker", log, getWorkersRegistry(ignite));
         }
 
         /** */
@@ -4262,7 +4260,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             try {
                 while (!isCancelled()) {
-                    setHeartbeat(Long.MAX_VALUE);
+                    heartbeatTs(Long.MAX_VALUE);
 
                     DisconnectedSessionInfo disconnectData;
                     try {
