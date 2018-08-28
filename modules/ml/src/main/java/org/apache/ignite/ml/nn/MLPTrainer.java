@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Function;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -111,12 +112,32 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
+        return fit(datasetBuilder, featureExtractor, lbExtractor, (dataset) -> {
+            MLPArchitecture arch = archSupplier.apply(dataset);
+            return new MultilayerPerceptron(arch, new RandomInitializer(seed));
+        });
+    }
+
+    /**
+     * Trains model based on the specified data with initial model state.
+     *
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @param mdlFactory Initial model factory.
+     * @return Model.
+     */
+    private <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor,
+        Function<Dataset<EmptyContext, SimpleLabeledDatasetData>, MultilayerPerceptron> mdlFactory) {
+
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
-            MLPArchitecture arch = archSupplier.apply(dataset);
-            MultilayerPerceptron mdl = new MultilayerPerceptron(arch, new RandomInitializer(seed));
+            MultilayerPerceptron mdl = mdlFactory.apply(dataset);
             ParameterUpdateCalculator<? super MultilayerPerceptron, P> updater = updatesStgy.getUpdatesCalculator();
 
             for (int i = 0; i < maxIterations; i += locIterations) {
@@ -187,6 +208,13 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> MultilayerPerceptron update(MultilayerPerceptron mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+
+        return fit(datasetBuilder, featureExtractor, lbExtractor, (dataset) -> mdl);
     }
 
     /**
