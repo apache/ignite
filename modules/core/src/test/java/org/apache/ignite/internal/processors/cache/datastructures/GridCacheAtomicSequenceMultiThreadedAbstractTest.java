@@ -28,6 +28,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+
 /**
  * Cache partitioned multi-threaded tests.
  */
@@ -53,11 +55,13 @@ public abstract class GridCacheAtomicSequenceMultiThreadedAbstractTest extends I
         return cfg;
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testValues() throws Exception {
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequenceImpl seq = (GridCacheAtomicSequenceImpl)grid(0).atomicSequence(seqName, 0, true);
+        IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0, true);
 
         // Local reservations.
         assertEquals(1, seq.incrementAndGet());
@@ -69,118 +73,116 @@ public abstract class GridCacheAtomicSequenceMultiThreadedAbstractTest extends I
         assertEquals(9, seq.addAndGet(2));
 
         assertEquals(new Long(9L), U.field(seq, "locVal"));
-        assertEquals(new Long(10L), U.field(seq, "upBound"));
+        assertEquals(new Long(9L), U.field(seq, "upBound"));
 
         // Cache calls.
         assertEquals(10, seq.incrementAndGet());
 
         assertEquals(new Long(10L), U.field(seq, "locVal"));
-        assertEquals(new Long(20L), U.field(seq, "upBound"));
+        assertEquals(new Long(19L), U.field(seq, "upBound"));
 
         seq.addAndGet(9);
 
         assertEquals(new Long(19L), U.field(seq, "locVal"));
-        assertEquals(new Long(20L), U.field(seq, "upBound"));
+        assertEquals(new Long(19L), U.field(seq, "upBound"));
 
         assertEquals(20L, seq.incrementAndGet());
 
         assertEquals(new Long(20L), U.field(seq, "locVal"));
-        assertEquals(new Long(30L), U.field(seq, "upBound"));
+        assertEquals(new Long(29L), U.field(seq, "upBound"));
 
         seq.addAndGet(9);
 
         assertEquals(new Long(29L), U.field(seq, "locVal"));
-        assertEquals(new Long(30L), U.field(seq, "upBound"));
+        assertEquals(new Long(29L), U.field(seq, "upBound"));
 
         assertEquals(29, seq.getAndIncrement());
 
         assertEquals(new Long(30L), U.field(seq, "locVal"));
-        assertEquals(new Long(40L), U.field(seq, "upBound"));
+        assertEquals(new Long(39L), U.field(seq, "upBound"));
 
         seq.addAndGet(9);
 
         assertEquals(new Long(39L), U.field(seq, "locVal"));
-        assertEquals(new Long(40L), U.field(seq, "upBound"));
+        assertEquals(new Long(39L), U.field(seq, "upBound"));
 
         assertEquals(39L, seq.getAndIncrement());
 
         assertEquals(new Long(40L), U.field(seq, "locVal"));
-        assertEquals(new Long(50L), U.field(seq, "upBound"));
+        assertEquals(new Long(49L), U.field(seq, "upBound"));
 
         seq.addAndGet(9);
 
         assertEquals(new Long(49L), U.field(seq, "locVal"));
-        assertEquals(new Long(50L), U.field(seq, "upBound"));
+        assertEquals(new Long(49L), U.field(seq, "upBound"));
 
         assertEquals(50, seq.addAndGet(1));
 
         assertEquals(new Long(50L), U.field(seq, "locVal"));
-        assertEquals(new Long(60L), U.field(seq, "upBound"));
+        assertEquals(new Long(59L), U.field(seq, "upBound"));
 
         seq.addAndGet(9);
 
         assertEquals(new Long(59L), U.field(seq, "locVal"));
-        assertEquals(new Long(60L), U.field(seq, "upBound"));
+        assertEquals(new Long(59L), U.field(seq, "upBound"));
 
         assertEquals(59, seq.getAndAdd(1));
 
         assertEquals(new Long(60L), U.field(seq, "locVal"));
-        assertEquals(new Long(70L), U.field(seq, "upBound"));
+        assertEquals(new Long(69L), U.field(seq, "upBound"));
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testValues2() throws Exception {
+        AtomicConfiguration acfg = atomicConfiguration();
+
+        acfg.setAtomicSequenceReservePercentage(80);
+
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequenceImpl seq = (GridCacheAtomicSequenceImpl)grid(0).atomicSequence(seqName, 10, true);
+        IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, acfg, 10, true);
 
-        assertSeqFields(seq, /*locVal*/ 10, /*upBound*/ 20, /*resBound*/ 18, /*resBottomBound*/ 0, /*resUpBound*/ 0);
+        assertSeqFields(seq, /*locVal*/ 10, /*upBound*/ 19, /*resBound*/ 17, /*resBottomBound*/ 10, /*resUpBound*/ 19);
 
-        assertEquals(17, seq.addAndGet(7));
+        assertEquals(16, seq.addAndGet(6));
 
-        assertSeqFields(seq, /*locVal*/ 17, /*upBound*/ 20, /*resBound*/ 18, /*resBottomBound*/ 0, /*resUpBound*/ 0);
+        assertSeqFields(seq, /*locVal*/ 16, /*upBound*/ 19, /*resBound*/ 17, /*resBottomBound*/ 10, /*resUpBound*/ 19);
+
+        assertEquals(17, seq.incrementAndGet());
 
         assertEquals(18, seq.incrementAndGet());
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return !F.eq(U.field(seq, "isReserveFutResultsProcessed"), true);
-            }
-        }, 1000);
-
-        assertSeqFields(seq, /*locVal*/ 18, /*upBound*/ 20, /*resBound*/ 28, /*resBottomBound*/ 20, /*resUpBound*/ 30);
+        assertSeqFields(seq, /*locVal*/ 18, /*upBound*/ 19, /*resBound*/ 17, /*resBottomBound*/ 10, /*resUpBound*/ 19);
 
         assertEquals(19, seq.incrementAndGet());
 
-        assertSeqFields(seq, /*locVal*/ 19, /*upBound*/ 20, /*resBound*/ 28, /*resBottomBound*/ 20, /*resUpBound*/ 30);
+        assertSeqFields(seq, /*locVal*/ 19, /*upBound*/ 19, /*resBound*/ 17, /*resBottomBound*/ 10, /*resUpBound*/ 19);
 
         assertEquals(20, seq.incrementAndGet());
 
-        assertSeqFields(seq, /*locVal*/ 20, /*upBound*/ 30, /*resBound*/ 28, /*resBottomBound*/ 20, /*resUpBound*/ 30);
+        assertSeqFields(seq, /*locVal*/ 20, /*upBound*/ 29, /*resBound*/ 27, /*resBottomBound*/ 20, /*resUpBound*/ 29);
     }
 
     /** @throws Exception If failed. */
     public void testValuesPercentage50() throws Exception {
+        AtomicConfiguration acfg = atomicConfiguration();
+
+        acfg.setAtomicSequenceReservePercentage(50);
+
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequenceImpl seq = (GridCacheAtomicSequenceImpl)grid(0).atomicSequence(seqName, 0, true);
+        IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, acfg, 0, true);
 
-        seq.reservePercentage(50);
-
-        assertSeqFields(seq, /*locVal*/ 0, /*upBound*/ 10, /*resBound*/ 8, /*resBottomBound*/ 0, /*resUpBound*/ 0);
+        assertSeqFields(seq, /*locVal*/ 0, /*upBound*/ 9, /*resBound*/ 4, /*resBottomBound*/ 0, /*resUpBound*/ 9);
 
         // Exhaust a first reserved range to get recalculated values according to new reserve percentage.
         assertEquals(10, seq.addAndGet(10));
 
-        assertSeqFields(seq, /*locVal*/ 10, /*upBound*/ 20, /*resBound*/ 15, /*resBottomBound*/ 10, /*resUpBound*/ 20);
+        assertSeqFields(seq, /*locVal*/ 10, /*upBound*/ 19, /*resBound*/ 14, /*resBottomBound*/ 10, /*resUpBound*/ 19);
 
         assertEquals(15, seq.addAndGet(5));
-
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return !F.eq(U.field(seq, "isReserveFutResultsProcessed"), true);
-            }
-        }, 1000);
 
         assertSeqFields(seq, /*locVal*/ 15, /*upBound*/ 20, /*resBound*/ 25, /*resBottomBound*/ 20, /*resUpBound*/ 30);
     }
@@ -202,7 +204,7 @@ public abstract class GridCacheAtomicSequenceMultiThreadedAbstractTest extends I
 
         assertEquals(11, seq.addAndGet(1));
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return !F.eq(U.field(seq, "isReserveFutResultsProcessed"), true);
             }
@@ -282,7 +284,7 @@ public abstract class GridCacheAtomicSequenceMultiThreadedAbstractTest extends I
             // New reservation (reverse order)
             assertEquals(18, seq2.incrementAndGet());
 
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            assertTrue(waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     return !F.eq(U.field(seq2, "isReserveFutResultsProcessed"), true);
                 }
@@ -290,7 +292,7 @@ public abstract class GridCacheAtomicSequenceMultiThreadedAbstractTest extends I
 
             assertEquals(8, seq1.incrementAndGet());
 
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            assertTrue(waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     return !F.eq(U.field(seq1, "isReserveFutResultsProcessed"), true);
                 }
@@ -318,13 +320,22 @@ public abstract class GridCacheAtomicSequenceMultiThreadedAbstractTest extends I
      * @param reservedBottomBound Reservation bottom bound.
      * @param reservedUpBound Reservation up bound.
      */
-    private void assertSeqFields(GridCacheAtomicSequenceImpl seq, long locVal, long upBound, long newReservationLine,
-        long reservedBottomBound, long reservedUpBound) {
+    private void assertSeqFields(
+        IgniteAtomicSequence seq,
+        long locVal,
+        long upBound,
+        long newReservationLine,
+        long reservedBottomBound,
+        long reservedUpBound
+    ) {
         assertEquals(new Long(locVal), U.field(seq, "locVal"));
         assertEquals(new Long(upBound), U.field(seq, "upBound"));
-        assertEquals(new Long(newReservationLine), U.field(seq, "newReservationLine"));
-        assertEquals(new Long(reservedBottomBound), U.field(seq, "reservedBottomBound"));
-        assertEquals(new Long(reservedUpBound), U.field(seq, "reservedUpBound"));
+
+        Object bounds = U.field(U.<Object>field(seq, "reservationCtx"), "bounds");
+
+        assertEquals(new Long(newReservationLine), U.field(bounds, "newReservationLine"));
+        assertEquals(new Long(reservedBottomBound), U.field(bounds, "reservedBottomBound"));
+        assertEquals(new Long(reservedUpBound), U.field(bounds, "reservedUpBound"));
     }
 
     /** @throws Exception If failed. */
