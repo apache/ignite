@@ -92,7 +92,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
 
     /** Optional affinity backups filter. The first node is a node being tested,
      *  the second is a list of nodes that are already assigned for a given partition (the first node in the list
-     *  is primary). */
+     *  is primary). 
+     *  
+     *  Use {@link ClusterNodeAttributeAffinityBackupFilter } to prevent a node with an identical 
+     *  attribute to be used as a backup.
+     */
     private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
 
     /** Logger instance. */

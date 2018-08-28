@@ -33,7 +33,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * with [ "availability_zone" ] as the {@link RendezvousAffinityFunction#affinityBackupFilter }.   This would only 
  * allow backup copies of a partition to be placed on nodes in different availability zones than the primary or other backups.
  */
-public class ClusterNodeAttributeAffinityFilter implements IgniteBiPredicate<ClusterNode, List<ClusterNode>>, Serializable {
+public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, List<ClusterNode>>, Serializable {
    /**
     * 
     */
@@ -45,7 +45,7 @@ public class ClusterNodeAttributeAffinityFilter implements IgniteBiPredicate<Clu
    /*
     * @param attributeNames - the list of attribute names for the set of attributes to compare. Must be at least one.
     */
-   ClusterNodeAttributeAffinityFilter(String[] attributeNames)
+   ClusterNodeAttributeAffinityBackupFilter(String[] attributeNames)
    {
       assert attributeNames.length > 0;
       
