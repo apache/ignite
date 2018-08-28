@@ -138,12 +138,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private IgniteTxMappings mappings;
 
     /** Prepare future. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile IgniteInternalFuture<?> prepFut;
 
     /** Commit future. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile NearTxFinishFuture finishFut;
 
@@ -3146,7 +3144,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
+    @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Finishing near local tx [tx=" + this + ", commit=" + commit + "]");
@@ -3386,7 +3384,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      *
      * @return Rollback future.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public IgniteInternalFuture<IgniteInternalTx> rollbackNearTxLocalAsync(final boolean clearThreadMap,
         final boolean onTimeout) {
         if (log.isDebugEnabled())
@@ -3945,7 +3942,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
         return prepFut;
     }

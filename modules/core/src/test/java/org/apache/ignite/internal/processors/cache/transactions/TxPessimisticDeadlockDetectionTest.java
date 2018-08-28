@@ -78,7 +78,6 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     private static boolean client;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

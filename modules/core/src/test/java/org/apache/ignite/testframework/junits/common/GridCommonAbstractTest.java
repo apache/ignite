@@ -537,7 +537,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
         awaitPartitionMapExchange(false, false, null);
     }
@@ -549,7 +548,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *      be filtered
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange(
         boolean waitEvicts,
         boolean waitNode2PartUpdate,

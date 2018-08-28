@@ -28,11 +28,10 @@ public class GridDsiRequest implements Serializable {
     private Long id;
 
     /** */
-    @SuppressWarnings({"UnusedDeclaration", "FieldCanBeLocal"})
+    @SuppressWarnings({"FieldCanBeLocal"})
     private long msgId;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private long txId;
 
     /**
@@ -66,7 +65,6 @@ public class GridDsiRequest implements Serializable {
         private Long key;
 
         /** */
-        @SuppressWarnings("UnusedDeclaration")
         @AffinityKeyMapped
         private String terminalId;
 

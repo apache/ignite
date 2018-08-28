@@ -677,7 +677,6 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         /**
          * Default constructor.
          */
-        @SuppressWarnings("UnusedDeclaration")
         public EnumHolder() {
             // No-op.
         }

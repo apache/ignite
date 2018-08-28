@@ -199,7 +199,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param writer Writer.
      * @param serializer Serializer.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
@@ -340,7 +339,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + BinaryUtils.length(reader, start));
             }
 
-            //noinspection NumberEquality
             writer.postWrite(true, registeredType);
 
             // Update metadata if needed.

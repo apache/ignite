@@ -42,7 +42,6 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * This class is not thread safe.
  */
-@SuppressWarnings({"FieldCanBeLocal"})
 public class PlatformFullJob extends PlatformAbstractJob {
     /** */
     private static final long serialVersionUID = 0L;
@@ -68,7 +67,6 @@ public class PlatformFullJob extends PlatformAbstractJob {
     /**
      * {@link Externalizable} support.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public PlatformFullJob() {
         // No-op.
     }

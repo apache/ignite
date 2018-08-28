@@ -61,7 +61,6 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public void testFailoverJobSession() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);

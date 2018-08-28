@@ -501,7 +501,6 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /** @throws Exception If test failed. */
-    @SuppressWarnings("StringEquality")
     public void testReload() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 

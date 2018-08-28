@@ -140,7 +140,6 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     public void testJtaTwoCaches() throws Exception {
         UserTransaction jtaTx = jotm.getUserTransaction();
 

@@ -47,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Checks basic node start/stop operations.
  */
-@SuppressWarnings({"CatchGenericClass", "InstanceofCatchParameter"})
+@SuppressWarnings({"InstanceofCatchParameter"})
 @GridCommonTest(group = "Kernal Self")
 public class GridStartStopSelfTest extends GridCommonAbstractTest {
     /** */

@@ -62,7 +62,6 @@ public class IgfsFileAffinityRange implements Message, Externalizable, Binaryliz
     private IgniteUuid affKey;
 
     /** {@code True} if currently being moved by fragmentizer. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private int status = RANGE_STATUS_INITIAL;
 
     /** Range start offset (divisible by block size). */

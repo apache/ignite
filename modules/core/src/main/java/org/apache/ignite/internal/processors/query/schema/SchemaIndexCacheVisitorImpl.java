@@ -46,7 +46,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Traversor operating all primary and backup partitions of given cache.
  */
-@SuppressWarnings("ForLoopReplaceableByForEach")
 public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Default degree of parallelism. */
     private static final int DFLT_PARALLELISM =

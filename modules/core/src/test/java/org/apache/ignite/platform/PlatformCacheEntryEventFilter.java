@@ -32,8 +32,8 @@ import java.util.UUID;
 /**
  * Test filter.
  */
-@SuppressWarnings({"FieldCanBeLocal", "FloatingPointEquality", "MismatchedReadAndWriteOfArray", "unused",
-    "SpellCheckingInspection"})
+@SuppressWarnings({"FieldCanBeLocal", "FloatingPointEquality", "MismatchedReadAndWriteOfArray", "unused"
+})
 public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializableFilter {
     /** Property to be set from platform. */
     private String startsWith = "-";

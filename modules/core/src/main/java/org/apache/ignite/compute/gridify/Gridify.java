@@ -156,7 +156,6 @@ public @interface Gridify {
      * be specified - but not both. If neither one is specified tasks' fully qualified name
      * will be used as a default name.
      */
-    @SuppressWarnings({"JavaDoc"})
     String taskName() default "";
 
     /**
@@ -164,21 +163,18 @@ public @interface Gridify {
      * be specified - but not both. If neither one is specified tasks' fully qualified name
      * will be used as a default name.
      */
-    @SuppressWarnings({"JavaDoc"})
     Class<? extends ComputeTask<GridifyArgument, ?>> taskClass() default GridifyDefaultTask.class;
 
     /**
      * Optional gridify task execution timeout. Default is {@code 0}
      * which indicates that task will not timeout.
      */
-    @SuppressWarnings({"JavaDoc"})
     long timeout() default 0;
 
     /**
      * Optional interceptor class. Since {@code null} are not supported the value of
      * {@code GridifyInterceptor.class} acts as a default value.
      */
-    @SuppressWarnings({"JavaDoc"})
     Class<? extends GridifyInterceptor> interceptor() default GridifyInterceptor.class;
 
     /**
@@ -187,7 +183,6 @@ public @interface Gridify {
      *
      * @deprecated Use {@link #igniteInstanceName()}. Nonempty {@link #igniteInstanceName()} takes precedence.
      */
-    @SuppressWarnings({"JavaDoc"})
     @Deprecated
     String gridName() default "";
 
@@ -195,6 +190,5 @@ public @interface Gridify {
      * Name of the Ignite instance to use. By default, no-name default Ignite instance is used.
      * Refer to {@link org.apache.ignite.Ignition} for information about named Ignite instances.
      */
-    @SuppressWarnings({"JavaDoc"})
     String igniteInstanceName() default "";
 }

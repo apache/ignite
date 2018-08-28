@@ -124,7 +124,6 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"SuspiciousMethodCalls"})
     public void testGetLocalNode() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
 
@@ -353,7 +352,6 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Nullable @Override public <T> T attribute(String name) {
             return null;
         }

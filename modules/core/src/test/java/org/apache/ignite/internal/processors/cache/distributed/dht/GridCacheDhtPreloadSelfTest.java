@@ -608,7 +608,6 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @param grids Grids
      * @return String representation of all partitions and their state.
      */
-    @SuppressWarnings({"ConstantConditions"})
     private String top2string(Iterable<Ignite> grids) {
         Map<String, String> map = new HashMap<>();
 

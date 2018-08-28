@@ -89,7 +89,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         AtomicReferenceFieldUpdater.newUpdater(GridDhtTxLocal.class, GridDhtTxPrepareFuture.class, "prepFut");
 
     /** Future. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile GridDhtTxPrepareFuture prepFut;
 
@@ -571,7 +570,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
+    @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
         assert nearFinFutId != null || isInvalidate() || !commit || isSystemInvalidate()
             || onePhaseCommit() || state() == PREPARED :

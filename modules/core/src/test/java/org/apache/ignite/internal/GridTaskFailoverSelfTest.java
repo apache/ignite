@@ -49,7 +49,6 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     public void testFailover() throws Exception {
         Ignite ignite = startGrid();
 

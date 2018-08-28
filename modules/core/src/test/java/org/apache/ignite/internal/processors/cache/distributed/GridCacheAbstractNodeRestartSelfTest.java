@@ -60,7 +60,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test node restart.
  */
-@SuppressWarnings({"PointlessArithmeticExpression"})
 public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     protected static final String CACHE_NAME = "TEST_CACHE";

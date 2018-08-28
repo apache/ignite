@@ -326,7 +326,6 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public void processMetadata(BinaryRawReaderEx reader) {
         Collection<BinaryMetadata> metas = PlatformUtils.readBinaryMetadataCollection(reader);
 

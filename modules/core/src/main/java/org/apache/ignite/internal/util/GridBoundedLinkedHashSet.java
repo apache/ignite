@@ -48,7 +48,7 @@ public class GridBoundedLinkedHashSet<E> extends GridSerializableSet<E> implemen
     private static final Object FAKE = Boolean.TRUE;
 
     /** */
-    @SuppressWarnings({"TransientFieldNotInitialized", "CollectionDeclaredAsConcreteClass"})
+    @SuppressWarnings({"TransientFieldNotInitialized"})
     private transient HashMap<E, Object> map;
 
     /**

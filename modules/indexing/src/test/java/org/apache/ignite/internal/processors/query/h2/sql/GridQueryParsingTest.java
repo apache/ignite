@@ -75,7 +75,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static Ignite ignite;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -697,7 +696,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @param exCls Exception class.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertParseThrows(final String sql, Class<? extends Exception> exCls, String msg) {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {

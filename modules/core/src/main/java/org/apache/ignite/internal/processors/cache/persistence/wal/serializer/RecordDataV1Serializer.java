@@ -1458,7 +1458,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param buf Buffer.
      * @param rowBytes Row bytes.
      */
-    @SuppressWarnings("unchecked")
     private static void putRow(ByteBuffer buf, byte[] rowBytes) {
         assert rowBytes.length > 0;
 

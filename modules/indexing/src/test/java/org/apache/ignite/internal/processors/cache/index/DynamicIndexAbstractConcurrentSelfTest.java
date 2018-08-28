@@ -979,7 +979,6 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      *
      * @param node Node.
      */
-    @SuppressWarnings("SuspiciousMethodCalls")
     private static CountDownLatch blockIndexing(Ignite node) {
         UUID nodeId = ((IgniteEx)node).localNode().id();
 

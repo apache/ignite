@@ -88,7 +88,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     private boolean commit;
 
     /** Error. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     private volatile Throwable err;
 
@@ -280,7 +279,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      *
      * @param commit Commit flag.
      */
-    @SuppressWarnings({"SimplifiableIfStatement", "IfMayBeConditional"})
+    @SuppressWarnings({"SimplifiableIfStatement"})
     public void finish(boolean commit) {
         boolean sync;
 

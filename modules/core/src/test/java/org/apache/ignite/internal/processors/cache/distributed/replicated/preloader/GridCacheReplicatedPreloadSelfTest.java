@@ -869,7 +869,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * Test affinity.
      */
-    @SuppressWarnings({"PublicInnerClass"})
     private static class TestAffinityFunction implements AffinityFunction {
         /** {@inheritDoc} */
         @Override public int partitions() {

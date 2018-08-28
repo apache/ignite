@@ -36,7 +36,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests for JdbcThinTcpIo.
  */
-@SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
     /** Server port range. */
     private static final int[] SERVER_PORT_RANGE = {59000, 59020};

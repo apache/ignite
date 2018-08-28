@@ -441,7 +441,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     /**
      * @param expVals Expected values in cache.
      */
-    @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
+    @SuppressWarnings({"ConstantIfStatement"})
     private void assertCacheContent(Map<Integer, GridTuple<Integer>> expVals) {
         assert !expVals.isEmpty();
 

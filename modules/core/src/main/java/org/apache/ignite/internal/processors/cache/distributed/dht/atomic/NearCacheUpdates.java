@@ -96,7 +96,6 @@ public class NearCacheUpdates implements Message {
      * @param ttl TTL for near cache update.
      * @param expireTime Expire time for near cache update.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     void addNearTtl(int keyIdx, long ttl, long expireTime) {
         if (ttl >= 0) {
             if (nearTtls == null) {

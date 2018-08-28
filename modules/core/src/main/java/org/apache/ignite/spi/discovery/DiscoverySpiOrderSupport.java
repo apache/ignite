@@ -47,6 +47,5 @@ public @interface DiscoverySpiOrderSupport {
     /**
      * Whether or not target SPI supports node startup order.
      */
-    @SuppressWarnings({"JavaDoc"})
     public boolean value();
 }

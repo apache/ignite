@@ -36,7 +36,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * TCP protocol test.
  */
-@SuppressWarnings("unchecked")
 public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

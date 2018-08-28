@@ -67,7 +67,6 @@ public class MemoryConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default memory policy start size (256 MB). */
-    @SuppressWarnings("UnnecessaryBoxing")
     public static final long DFLT_MEMORY_POLICY_INITIAL_SIZE = 256L * 1024 * 1024;
 
     /** Fraction of available memory to allocate for default DataRegion. */

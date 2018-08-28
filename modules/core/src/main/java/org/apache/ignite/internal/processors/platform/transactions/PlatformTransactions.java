@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Native transaction wrapper implementation.
  */
-@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources"})
+@SuppressWarnings({"unchecked", "TryFinallyCanBeTryWithResources"})
 public class PlatformTransactions extends PlatformAbstractTarget {
     /** */
     public static final int OP_CACHE_CONFIG_PARAMETERS = 1;

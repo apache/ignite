@@ -60,7 +60,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Multi-threaded tests for cache queries.
  */
-@SuppressWarnings("StatementWithEmptyBody")
 public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** */
     private static final boolean TEST_INFO = true;

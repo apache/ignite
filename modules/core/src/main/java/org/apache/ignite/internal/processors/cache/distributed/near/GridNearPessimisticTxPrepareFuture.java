@@ -134,7 +134,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {

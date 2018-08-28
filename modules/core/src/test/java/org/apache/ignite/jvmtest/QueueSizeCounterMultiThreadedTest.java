@@ -36,7 +36,6 @@ public class QueueSizeCounterMultiThreadedTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     public void testQueueSizeCounter() throws Exception {
         final ConcurrentLinkedQueue<Integer> q = new ConcurrentLinkedQueue<>();
 
@@ -50,7 +49,6 @@ public class QueueSizeCounterMultiThreadedTest extends TestCase {
 
         IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @SuppressWarnings( {"BusyWait"})
                 @Nullable @Override public Object call() throws Exception {
                     int cleanUps = 0;
 

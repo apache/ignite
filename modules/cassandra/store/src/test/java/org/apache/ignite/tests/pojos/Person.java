@@ -59,7 +59,6 @@ public class Person implements Externalizable {
     private List<String> phones;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public Person() {
     }
 
@@ -164,117 +163,98 @@ public class Person implements Externalizable {
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setPersonNumber(long personNum) {
         this.personNum = personNum;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public long getPersonNumber() {
         return personNum;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setFirstName(String name) {
         firstName = name;
         fullName = firstName + " " + lastName;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public String getFirstName() {
         return firstName;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setLastName(String name) {
         lastName = name;
         fullName = firstName + " " + lastName;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public String getLastName() {
         return lastName;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public String getFullName() {
         return fullName;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setAge(short age) {
         this.age = age;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public short getAge() {
         return age;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setMarried(boolean married) {
         this.married = married;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public boolean getMarried() {
         return married;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setHeight(long height) {
         this.height = height;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public long getHeight() {
         return height;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setWeight(float weight) {
         this.weight = weight;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public float getWeight() {
         return weight;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setBirthDate(Date date) {
         birthDate = date;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public Date getBirthDate() {
         return birthDate;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void setPhones(List<String> phones) {
         this.phones = phones;
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public List<String> getPhones() {
         return phones;
     }

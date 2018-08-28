@@ -47,7 +47,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 /**
  *
  */
-@SuppressWarnings({"CatchGenericClass"})
 @GridCommonTest(group = "Task Session")
 public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
     /** */

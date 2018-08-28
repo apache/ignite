@@ -852,7 +852,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         if (ctx.isDaemon())
             return;
@@ -938,7 +937,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopCaches(cancel);
 
@@ -987,7 +985,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onKernalStop(boolean cancel) {
         cacheStartedLatch.countDown();
 
@@ -1233,7 +1230,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cancel Cancel flag.
      * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
-    @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy) {
         GridCacheContext ctx = cache.context();
 
@@ -1327,7 +1324,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cache Cache.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private void onKernalStart(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
         GridCacheContext<?, ?> ctx = cache.context();
 
@@ -2347,7 +2343,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param exchActions Change requests.
      * @param err Error.
      */
-    @SuppressWarnings("unchecked")
     public void onExchangeDone(
         AffinityTopologyVersion cacheStartVer,
         @Nullable ExchangeActions exchActions,
@@ -3390,7 +3385,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param reqs Requests.
      * @return Collection of futures.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private Collection<DynamicCacheStartFuture> initiateCacheChanges(
         Collection<DynamicCacheChangeRequest> reqs
     ) {
@@ -3815,7 +3809,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalCache<K, V> getOrStartCache(String name) throws IgniteCheckedException {
         return getOrStartCache(name, null);
     }
@@ -4665,7 +4658,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private class DynamicCacheStartFuture extends GridFutureAdapter<Boolean> {
         /** */
         private UUID id;
@@ -4694,7 +4686,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private class TemplateConfigurationFuture extends GridFutureAdapter<Object> {
         /** Start ID. */
         @GridToStringInclude

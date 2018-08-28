@@ -302,7 +302,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test job to test possible indefinite recursion in detecting peer deploy aware.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     private class SelfReferencedJob extends ComputeJobAdapter implements GridPeerDeployAware {
         /** */
         private SelfReferencedJob ref;

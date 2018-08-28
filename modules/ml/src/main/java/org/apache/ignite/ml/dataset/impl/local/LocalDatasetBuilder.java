@@ -72,7 +72,6 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <C extends Serializable, D extends AutoCloseable> LocalDataset<C, D> build(
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
         List<C> ctxList = new ArrayList<>();

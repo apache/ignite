@@ -43,7 +43,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  * Test for task future when grid stops.
  */
 @GridCommonTest(group = "Kernal Self")
-@SuppressWarnings({"UnusedDeclaration"})
 public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int WAIT_TIME = 5000;
@@ -58,7 +57,6 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     private static final Object mux = new Object();
 
     /** */
-    @SuppressWarnings({"StaticNonFinalField"})
     private static int cnt;
 
     /** */
@@ -152,7 +150,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @SuppressWarnings({"PublicInnerClass", "UnusedDeclaration"})
+    @SuppressWarnings({"PublicInnerClass"})
     public static class GridStopTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @LoggerResource

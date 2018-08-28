@@ -26,7 +26,6 @@ import java.lang.annotation.Target;
 /**
  * Annotates a getter method value of which is used to configure implementation SPI.
  */
-@SuppressWarnings({"JavaDoc"})
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
@@ -45,7 +44,7 @@ public @interface GridSpiTestConfig {
     }
 
     /** */
-    @SuppressWarnings({"JavaDoc"}) ConfigType type() default ConfigType.SELF;
+    ConfigType type() default ConfigType.SELF;
 
     /** */
     String setterName() default "";

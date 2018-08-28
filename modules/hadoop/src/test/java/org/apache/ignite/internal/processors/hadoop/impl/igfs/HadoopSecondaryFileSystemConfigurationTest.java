@@ -538,7 +538,6 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
      * @param fs FileSystem to check.
      * @param path Path to check.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertPathDoesNotExist(final FileSystem fs, final Path path) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

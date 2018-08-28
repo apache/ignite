@@ -81,7 +81,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 

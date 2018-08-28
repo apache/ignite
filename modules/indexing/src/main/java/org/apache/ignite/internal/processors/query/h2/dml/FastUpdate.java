@@ -73,7 +73,7 @@ public final class FastUpdate {
      * @return 1 if an item was affected, 0 otherwise.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings({"unchecked"})
     public UpdateResult execute(GridCacheAdapter cache, Object[] args) throws IgniteCheckedException {
         Object key = keyArg.get(args);
 

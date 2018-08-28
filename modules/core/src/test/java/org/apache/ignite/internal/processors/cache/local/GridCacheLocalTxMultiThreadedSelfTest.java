@@ -34,7 +34,6 @@ public class GridCacheLocalTxMultiThreadedSelfTest extends IgniteTxMultiThreaded
     private static final boolean CACHE_DEBUG = false;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 

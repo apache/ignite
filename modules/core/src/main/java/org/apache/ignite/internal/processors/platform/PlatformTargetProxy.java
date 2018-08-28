@@ -22,7 +22,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Platform target that is invoked via JNI and propagates calls to underlying {@link PlatformTarget}.
  */
-@SuppressWarnings("UnusedDeclaration")
 public interface PlatformTargetProxy {
     /**
      * Operation accepting long value and returning long value.

@@ -446,7 +446,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     protected void uncommit() {
         for (IgniteTxEntry e : writeMap().values()) {
             try {
@@ -760,7 +759,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean ownsLock(GridCacheEntryEx entry) throws GridCacheEntryRemovedException {
         GridCacheContext<?, ?> cacheCtx = entry.context();
 
@@ -776,7 +774,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean ownsLockUnsafe(GridCacheEntryEx entry) {
         GridCacheContext cacheCtx = entry.context();
 
@@ -968,7 +965,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
         GridFutureAdapter<IgniteInternalTx> fut = finFut;
 
@@ -1311,7 +1307,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @param writeEntries Transaction write set.
      * @throws IgniteCheckedException If batch update failed.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     protected final void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
         if (!storeEnabled() || internal() ||
             (!local() && near())) // No need to work with local store at GridNearTxRemote.

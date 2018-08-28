@@ -102,7 +102,6 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
     public void testLock() throws Exception {
         final int kv = 1;
 

@@ -351,7 +351,6 @@ public class GridFunc {
      * @param <T> Type of the collection.
      * @return Random value from the input collection.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static <T> T rand(Collection<? extends T> c) {
         A.notNull(c, "c");
 
@@ -525,7 +524,6 @@ public class GridFunc {
      * @param iters Iterator over iterators.
      * @return Single iterator.
      */
-    @SuppressWarnings("unchecked")
     public static <T> Iterator<T> concat(final Iterator<Iterator<T>> iters) {
         if (!iters.hasNext())
             return Collections.<T>emptySet().iterator();
@@ -1130,7 +1128,6 @@ public class GridFunc {
      * @param <V> Value type.
      * @return Light-weight view on given map with provided predicates and mapping.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> viewAsMap(@Nullable final Set<K> c,
         final IgniteClosure<? super K, V> mapClo, @Nullable final IgnitePredicate<? super K>... p) {
         A.notNull(mapClo, "trans");
@@ -1415,7 +1412,7 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code true}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
+    @SuppressWarnings( {"unchecked"})
     public static <T> IgnitePredicate<T> alwaysTrue() {
         return (IgnitePredicate<T>)ALWAYS_TRUE;
     }
@@ -1427,7 +1424,7 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code false}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
+    @SuppressWarnings( {"unchecked"})
     public static <T> IgnitePredicate<T> alwaysFalse() {
         return (IgnitePredicate<T>)ALWAYS_FALSE;
     }
@@ -1649,7 +1646,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if each of its component predicates
      *      evaluates to {@code true}.
      */
-    @SuppressWarnings({"unchecked", "ConfusingArgumentToVarargsMethod"})
+    @SuppressWarnings({"unchecked"})
     public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
         if (isEmpty(ps))
             return F.alwaysTrue();

@@ -91,7 +91,6 @@ public abstract class GridSnapshotLock<X> {
     /**
      * Mix of CountDownLatch, ReadWriteLock and Future. Must be recreated after each {@link #flip()}.
      */
-    @SuppressWarnings("PackageVisibleInnerClass")
     private static class Sync<X> extends AbstractQueuedSynchronizer {
         /** */
         private static final long serialVersionUID = 0L;

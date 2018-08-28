@@ -242,7 +242,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIllegalArguments() throws Exception {
         final ContinuousQuery<Object, Object> q = new ContinuousQuery<>();
 

@@ -108,7 +108,7 @@ public class GridConcurrentSkipListSet<E> extends GridSerializableSet<E> impleme
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "OverriddenMethodCallDuringObjectConstruction", "CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
+    @SuppressWarnings({"unchecked", "CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
     @Override public GridConcurrentSkipListSet<E> clone() {
         try {
             GridConcurrentSkipListSet<E> clone = (GridConcurrentSkipListSet<E>)super.clone();

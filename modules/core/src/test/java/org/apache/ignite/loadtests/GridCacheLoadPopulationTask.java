@@ -87,7 +87,7 @@ public class GridCacheLoadPopulationTask extends ComputeTaskSplitAdapter<Void, V
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"unchecked", "ConstantConditions"})
+        @SuppressWarnings({"ConstantConditions"})
         @Override public Object execute() {
             Map<Object, TestValue> map = new TreeMap<>();
 

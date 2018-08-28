@@ -34,7 +34,6 @@ public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, 
     private static final long serialVersionUID = 172455091783232848L;
 
     /** */
-    @SuppressWarnings("unchecked")
     public GridUriDeploymentTestTask2() {
         XmlBeanFactory factory = new XmlBeanFactory(
             new ClassPathResource("org/apache/ignite/grid/spi/deployment/uri/tasks/spring2.xml",

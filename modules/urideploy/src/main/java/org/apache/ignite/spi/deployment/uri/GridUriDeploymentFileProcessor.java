@@ -328,7 +328,6 @@ final class GridUriDeploymentFileProcessor {
      * @throws org.apache.ignite.spi.IgniteSpiException Thrown if it's impossible to open file.
      * @return List of tasks from descriptor.
      */
-    @SuppressWarnings({"ClassLoader2Instantiation"})
     private static GridUriDeploymentFileProcessorResult processWithDescriptorFile(GridUriDeploymentSpringDocument doc,
         File file, String uri, IgniteLogger log) throws IgniteSpiException {
         ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);

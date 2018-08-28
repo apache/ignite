@@ -288,7 +288,6 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
         }.start();
 
         new Thread() {
-            @SuppressWarnings({"UnusedDeclaration"})
             @Override public void run() {
                 try {
                     start.await();

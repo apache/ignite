@@ -137,7 +137,7 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
      * @param gridName Grid name (can be {@code null} for default grid).
      * @param id8 Node ID.
      */
-    @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
+    @SuppressWarnings({"SimplifiableIfStatement"})
     public SensitiveInfoTestLoggerProxy(IgniteLogger impl,
         @Nullable Object ctgr,
         @Nullable String gridName,
@@ -454,7 +454,6 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         IgniteBiTuple<String, Object> t = stash.get();
 

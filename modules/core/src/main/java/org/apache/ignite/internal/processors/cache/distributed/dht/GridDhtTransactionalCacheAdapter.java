@@ -1513,7 +1513,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Sender ID.
      * @param req Request.
      */
-    @SuppressWarnings({"RedundantTypeArguments", "TypeMayBeWeakened"})
+    @SuppressWarnings({"RedundantTypeArguments"})
     private void processNearUnlockRequest(UUID nodeId, GridNearUnlockRequest req) {
         assert ctx.affinityNode();
         assert nodeId != null;
@@ -1576,7 +1576,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodes Nodes.
      * @param map Map.
      */
-    @SuppressWarnings( {"MismatchedQueryAndUpdateOfCollection"})
     private void map(GridCacheEntryEx entry,
         @Nullable Iterable<? extends ClusterNode> nodes,
         Map<ClusterNode, List<KeyCacheObject>> map) {

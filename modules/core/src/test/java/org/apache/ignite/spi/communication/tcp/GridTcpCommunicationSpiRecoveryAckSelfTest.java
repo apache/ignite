@@ -338,7 +338,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
      * @return Session.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private GridNioSession communicationSession(TcpCommunicationSpi spi) throws Exception {
         final GridNioServer srv = U.field(spi, "nioSrvr");
 

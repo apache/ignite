@@ -85,7 +85,6 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings("unchecked")
     public <K, V> void store(final String cacheName, final K key, final V val, long expirationTime)
         throws IgniteCheckedException {
         assert key != null;
@@ -111,7 +110,6 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings("unchecked")
     public void remove(String cacheName, Object key) throws IgniteCheckedException {
         assert key != null;
         assert enabled();
@@ -134,7 +132,6 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public IgniteSpiCloseableIterator<?> query(String cacheName, Collection<Object> params, IndexingQueryFilter filters)
         throws IgniteCheckedException {
         if (!enabled())

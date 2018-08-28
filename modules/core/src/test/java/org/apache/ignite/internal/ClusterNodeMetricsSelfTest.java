@@ -472,7 +472,6 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * Test message.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestMessage implements Serializable {
         /** */
         private final byte[] arr = new byte[MSG_SIZE];

@@ -494,7 +494,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      * @return {@code True} if check passed successfully.
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
+    @SuppressWarnings({"TooBroadScope"})
     private boolean compareCaches(Map<Integer, Integer> expVals) throws Exception {
         List<IgniteCache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
         List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;

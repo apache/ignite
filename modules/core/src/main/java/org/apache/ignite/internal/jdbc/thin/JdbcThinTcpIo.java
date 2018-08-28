@@ -481,7 +481,6 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      * @throws SQLException On concurrent access to JDBC connection.
      */
-    @SuppressWarnings("unchecked")
     JdbcResponse sendRequest(JdbcRequest req) throws SQLException, IOException {
         synchronized (mux) {
             if (ownThread != null) {
@@ -515,7 +514,6 @@ public class JdbcThinTcpIo {
      * @return Server response.
      * @throws IOException In case of IO error.
      */
-    @SuppressWarnings("unchecked")
     JdbcResponse readResponse() throws IOException {
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
 

@@ -114,7 +114,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert ctx.config().getConnectorConfiguration() != null;
 
@@ -210,7 +209,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if Jetty started.
      */
-    @SuppressWarnings("IfMayBeConditional")
     private boolean startJetty() throws IgniteCheckedException {
         try {
             httpSrv.start();

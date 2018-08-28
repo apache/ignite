@@ -149,7 +149,6 @@ public class GridIoManagerBenchmark {
      * @param duration Test duration.
      * @param outputFilename Output file name.
      */
-    @SuppressWarnings("deprecation")
     private static void sendMessages(IgniteKernal g, int threads, int duration, @Nullable final String outputFilename) {
         X.println(">>> Sending messages.");
 
@@ -231,7 +230,6 @@ public class GridIoManagerBenchmark {
     /**
      * @param g Kernal.
      */
-    @SuppressWarnings("deprecation")
     private static void receiveMessages(final IgniteKernal g) {
         X.println(">>> Receiving messages.");
 

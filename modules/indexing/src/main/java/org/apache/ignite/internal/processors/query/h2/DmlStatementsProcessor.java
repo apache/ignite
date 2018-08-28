@@ -392,7 +392,7 @@ public class DmlStatementsProcessor {
      * @return Number of rows in given INSERT statement.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings({"unchecked"})
     long streamUpdateQuery(String schemaName, IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args)
         throws IgniteCheckedException {
         idx.checkStatementStreamable(stmt);
@@ -477,7 +477,7 @@ public class DmlStatementsProcessor {
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    @SuppressWarnings({"ConstantConditions"})
     private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx, Connection c,
         Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
         GridQueryCancel cancel) throws IgniteCheckedException {
@@ -603,7 +603,7 @@ public class DmlStatementsProcessor {
      * @param loc Local query flag.
      * @return Update plan.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions"})
     UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
         boolean loc, @Nullable Integer errKeysPos) throws IgniteCheckedException {
         H2CachedStatementKey planKey = H2CachedStatementKey.forDmlStatement(schema, p.getSQL(), fieldsQry, loc);
@@ -650,7 +650,7 @@ public class DmlStatementsProcessor {
      * @param pageSize Batch size for streaming, anything <= 0 for single page operations.
      * @return Results of DELETE (number of items affected AND keys that failed to be updated).
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     private UpdateResult doDelete(GridCacheContext cctx, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
@@ -696,7 +696,7 @@ public class DmlStatementsProcessor {
      * @return Pair [cursor corresponding to results of UPDATE (contains number of items affected); keys whose values
      *     had been modified concurrently (arguments for a re-run)].
      */
-    @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     private UpdateResult doUpdate(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
@@ -789,7 +789,7 @@ public class DmlStatementsProcessor {
      * @return Number of items affected.
      * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings({"unchecked"})
     private long doInsert(UpdatePlan plan, Iterable<List<?>> cursor, int pageSize) throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
 

@@ -33,7 +33,6 @@ import java.util.concurrent.Callable;
 /**
  * Tests for query entity validation.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";

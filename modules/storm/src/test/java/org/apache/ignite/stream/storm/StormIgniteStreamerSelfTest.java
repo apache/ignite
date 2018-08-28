@@ -62,7 +62,6 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     private static final int STORM_EXECUTORS = 2;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         IgniteConfiguration cfg = loadConfiguration(GRID_CONF_FILE);
 

@@ -43,7 +43,6 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     private static final String CUSTOM_EXECUTOR_1 = "Custom executor 1";
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

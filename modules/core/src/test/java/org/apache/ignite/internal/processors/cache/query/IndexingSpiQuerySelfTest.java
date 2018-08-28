@@ -196,7 +196,6 @@ public class IndexingSpiQuerySelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testIndexingSpiFailure() throws Exception {
         IgniteConfiguration cfg = configuration();
 

@@ -748,7 +748,6 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     /**
      * Test object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {
         /** */
         @QuerySqlField(index = false)

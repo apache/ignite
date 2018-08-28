@@ -94,7 +94,6 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCacheInitializationFailure() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {

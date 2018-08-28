@@ -1033,7 +1033,6 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
      */
-    @SuppressWarnings("unchecked")
     public GridCacheLockImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView) {

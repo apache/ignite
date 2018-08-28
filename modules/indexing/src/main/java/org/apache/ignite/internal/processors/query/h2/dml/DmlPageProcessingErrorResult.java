@@ -41,7 +41,6 @@ public final class DmlPageProcessingErrorResult {
     private final SQLException ex;
 
     /** */
-    @SuppressWarnings("ConstantConditions")
     public DmlPageProcessingErrorResult(@NotNull Object[] errKeys, SQLException ex, int exCnt) {
         errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
         // When exceptions count must be zero, exceptions chain must be not null, and vice versa.

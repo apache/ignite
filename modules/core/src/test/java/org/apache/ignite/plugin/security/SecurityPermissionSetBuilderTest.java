@@ -43,7 +43,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
     /**
      */
-    @SuppressWarnings({"ThrowableNotThrown", "ArraysAsListWithZeroOrOneArgument"})
+    @SuppressWarnings({"ThrowableNotThrown"})
     public void testPermissionBuilder() {
         SecurityBasicPermissionSet exp = new SecurityBasicPermissionSet();
 

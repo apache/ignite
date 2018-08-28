@@ -83,7 +83,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  * Tests for {@link org.apache.ignite.Ignition}.
  * @see GridFactoryVmShutdownTest
  */
-@SuppressWarnings("UnusedDeclaration")
 @GridCommonTest(group = "NonDistributed Kernal Self")
 public class GridFactorySelfTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -373,7 +372,6 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     public void testStartMultipleGridsFromSpring() throws Exception {
         File cfgFile =
             GridTestUtils.resolveIgnitePath(GridTestProperties.getProperty("loader.self.multipletest.config"));

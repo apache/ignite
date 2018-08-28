@@ -28,7 +28,6 @@ import java.util.HashSet;
 /**
  * Wrapper type for primary key.
  */
-@SuppressWarnings("PackageVisibleInnerClass")
 public class GridH2PrimaryScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
     /** */
     static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";

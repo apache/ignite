@@ -67,7 +67,6 @@ public class DataStorageConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default data region start size (256 MB). */
-    @SuppressWarnings("UnnecessaryBoxing")
     public static final long DFLT_DATA_REGION_INITIAL_SIZE = 256L * 1024 * 1024;
 
     /** Fraction of available memory to allocate for default DataRegion. */

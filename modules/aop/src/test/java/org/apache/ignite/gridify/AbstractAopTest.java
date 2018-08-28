@@ -40,7 +40,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
 /**
  * Abstract AOP test.
  */
-@SuppressWarnings( {"OverlyStrongTypeCast", "JUnitAbstractTestClassNamingConvention", "ProhibitedExceptionDeclared", "IfMayBeConditional"})
+@SuppressWarnings( {"OverlyStrongTypeCast", "ProhibitedExceptionDeclared", "IfMayBeConditional"})
 public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -557,7 +557,6 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
      * @param depMode Deployment mode to use.
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void checkDefaultException(DeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 

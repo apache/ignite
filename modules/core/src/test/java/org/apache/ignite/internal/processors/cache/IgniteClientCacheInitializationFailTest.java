@@ -190,7 +190,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @param client Client.
      */
-    @SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ThrowableNotThrown"})
     private void checkFailedCache(final Ignite client, final String cacheName) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

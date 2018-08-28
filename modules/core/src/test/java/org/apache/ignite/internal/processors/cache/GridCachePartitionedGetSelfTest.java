@@ -204,7 +204,6 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
     private void prepare() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);

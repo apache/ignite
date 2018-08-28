@@ -800,7 +800,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Get columns metadata request.
      * @return Response.
      */
-    @SuppressWarnings("unchecked")
     private JdbcResponse getColumnsMeta(JdbcMetaColumnsRequest req) {
         try {
             Collection<JdbcColumnMeta> meta = new LinkedHashSet<>();

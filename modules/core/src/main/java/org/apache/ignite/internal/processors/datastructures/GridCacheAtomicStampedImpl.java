@@ -245,7 +245,6 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    @SuppressWarnings("unchecked")
     private Object readResolve() throws ObjectStreamException {
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();

@@ -377,7 +377,6 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * test parsing dump transaction arguments
      */
-    @SuppressWarnings("Null")
     public void testTransactionArguments() {
         CommandHandler hnd = new CommandHandler();
         Arguments args;

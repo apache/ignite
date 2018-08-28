@@ -476,7 +476,6 @@ public class GridCacheReturn implements Externalizable, Message {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         assert false;
     }

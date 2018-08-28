@@ -634,7 +634,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param ver Lock version.
      * @param keys Keys.
      */
-    @SuppressWarnings({"unchecked"})
     public void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
         if (keys.isEmpty())
             return;

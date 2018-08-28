@@ -43,7 +43,6 @@ public class PlatformBalancingMultiClosureTask extends PlatformAbstractTask {
     private Collection<PlatformJob> jobs;
 
     /** Load balancer. */
-    @SuppressWarnings("UnusedDeclaration")
     @LoadBalancerResource
     private ComputeLoadBalancer lb;
 

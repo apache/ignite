@@ -62,7 +62,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"UnusedCatchParameter", "ThrowableInstanceNeverThrown"})
+    @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     public void testFailoverTask() throws Exception {
         isFailoverCalled = false;
 
@@ -86,7 +86,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"UnusedCatchParameter", "ThrowableInstanceNeverThrown"})
+    @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     public void testNoneFailoverTask() throws Exception {
         isFailoverCalled = false;
 

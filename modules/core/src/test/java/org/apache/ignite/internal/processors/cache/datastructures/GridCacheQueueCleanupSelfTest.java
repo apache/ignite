@@ -178,7 +178,6 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
 
         // Check that items of removed queue are removed, items of new queue not.
         assertTrue(GridTestUtils.waitForCondition(new PAX() {
-            @SuppressWarnings("WhileLoopReplaceableByForEach")
             @Override public boolean applyx() throws IgniteCheckedException {
                 int cnt = 0;
 

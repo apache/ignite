@@ -66,7 +66,7 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 /**
  * Test fo regular igfs operations.
  */
-@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ConstantConditions"})
+@SuppressWarnings({"ConstantConditions"})
 public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     /**
      * Constructor.
@@ -908,7 +908,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ConstantConditions", "EmptyTryBlock", "UnusedDeclaration"})
+    @SuppressWarnings({"ConstantConditions", "EmptyTryBlock"})
     public void testCreate() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
@@ -1378,7 +1378,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TryFinallyCanBeTryWithResources", "EmptyTryBlock"})
+    @SuppressWarnings({"EmptyTryBlock"})
     public void testAppend() throws Exception {
         if (appendSupported()) {
             create(igfs, paths(DIR, SUBDIR), null);

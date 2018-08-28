@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Native cache wrapper implementation.
  */
-@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources"})
+@SuppressWarnings({"UnusedDeclaration", "TryFinallyCanBeTryWithResources"})
 public class PlatformAffinity extends PlatformAbstractTarget {
     /** */
     public static final int OP_AFFINITY_KEY = 1;
@@ -167,7 +167,7 @@ public class PlatformAffinity extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions"})
     @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {

@@ -82,7 +82,6 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
 /**
  * Thread pool for requesting partitions from other nodes and populating local cache.
  */
-@SuppressWarnings("NonConstantFieldWithUpperCaseName")
 public class GridDhtPartitionDemander {
     /** */
     private final GridCacheSharedContext<?, ?> ctx;

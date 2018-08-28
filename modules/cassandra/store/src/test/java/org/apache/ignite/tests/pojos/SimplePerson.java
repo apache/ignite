@@ -67,7 +67,6 @@ public class SimplePerson implements Externalizable {
     private List<String> phones;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public SimplePerson() {
     }
 

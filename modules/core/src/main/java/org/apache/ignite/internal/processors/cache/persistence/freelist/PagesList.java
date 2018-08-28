@@ -850,7 +850,6 @@ public abstract class PagesList extends DataStructure {
      * @return {@code true} If succeeded.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private boolean putReuseBag(
         final long pageId,
         final long page,

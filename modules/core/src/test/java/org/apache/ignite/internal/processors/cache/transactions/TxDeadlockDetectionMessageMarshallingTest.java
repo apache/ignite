@@ -45,7 +45,6 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
     private static boolean clientMode;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 

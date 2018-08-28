@@ -277,7 +277,6 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         final IgniteCache<Integer, String> cache = jcache();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
                 // Initialize key set for this thread.
                 Set<Integer> set = new HashSet<>();

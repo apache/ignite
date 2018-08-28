@@ -103,7 +103,6 @@ public class RestProcessorTest extends GridCommonAbstractTest {
      * @param cfg Initial configuration.
      * @return Final configuration.
      */
-    @SuppressWarnings({"unchecked"})
     private IgniteConfiguration cacheTestConfiguration(IgniteConfiguration cfg) {
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -211,7 +210,7 @@ public class RestProcessorTest extends GridCommonAbstractTest {
     /**
      * Simple bean.
      */
-    @SuppressWarnings( {"ReturnOfDateField", "AssignmentToDateFieldFromParameter", "PublicInnerClass"})
+    @SuppressWarnings( {"AssignmentToDateFieldFromParameter", "PublicInnerClass"})
     public static class SimpleBean implements Serializable {
         /** */
         private int intField = 12345;
@@ -300,7 +299,7 @@ public class RestProcessorTest extends GridCommonAbstractTest {
     /**
      * Simple bean.
      */
-    @SuppressWarnings( {"ReturnOfDateField", "PublicInnerClass"})
+    @SuppressWarnings( {"PublicInnerClass"})
     public static class ComplexBean extends SimpleBean {
         /** */
         private SimpleBean simpleBean = new SimpleBean(67890, "nestedTestString", new Date());

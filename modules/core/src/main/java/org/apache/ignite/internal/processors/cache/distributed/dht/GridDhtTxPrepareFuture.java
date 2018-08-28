@@ -159,15 +159,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     private Map<UUID, GridDistributedTxMapping> dhtMap;
 
     /** Error. */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile Throwable err;
 
     /** Replied flag. */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile int replied;
 
     /** All replies flag. */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile int mapped;
 
     /** Prepare request. */
@@ -576,7 +573,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -672,7 +668,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      * @return {@code True} if all locks are acquired, {@code false} otherwise.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private boolean mapIfLocked() {
         if (checkLocks()) {
             if (!MAPPED_UPD.compareAndSet(this, 0, 1))
@@ -1748,7 +1743,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         /**
          * @param res Result callback.
          */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(GridDhtTxPrepareResponse res) {
             if (res.error() != null)
                 // Fail the whole compound future.

@@ -335,7 +335,6 @@ abstract class GridCacheAbstractLoadTest {
      * @return Configuration.
      * @throws IgniteCheckedException If fails.
      */
-    @SuppressWarnings("unchecked")
     protected IgniteConfiguration configuration(String springCfgPath, String log) throws IgniteCheckedException {
         File path = GridTestUtils.resolveIgnitePath(springCfgPath);
 

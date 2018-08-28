@@ -515,7 +515,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      *
      * @param res Incoming response data.
      */
-    @SuppressWarnings({"unchecked", "TooBroadScope"})
+    @SuppressWarnings({"unchecked"})
     void handleResponse(GridClientMessage res) throws IOException {
         lastMsgRcvTime = System.currentTimeMillis();
 

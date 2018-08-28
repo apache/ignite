@@ -48,7 +48,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 /**
  * Interop compute.
  */
-@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored", "UnusedDeclaration"})
+@SuppressWarnings({"unchecked", "UnusedDeclaration"})
 public class PlatformCompute extends PlatformAbstractTarget {
     /** */
     private static final int OP_AFFINITY = 1;

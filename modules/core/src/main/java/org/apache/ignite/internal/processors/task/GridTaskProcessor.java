@@ -185,7 +185,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("TooBroadScope")
     @Override public void onKernalStop(boolean cancel) {
         lock.writeLock();
 

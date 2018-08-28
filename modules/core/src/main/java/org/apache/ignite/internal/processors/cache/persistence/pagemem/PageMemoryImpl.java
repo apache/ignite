@@ -116,7 +116,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
  * Note that first 8 bytes of page header are used either for page marker or for next relative pointer depending
  * on whether the page is in use or not.
  */
-@SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
+@SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
 public class PageMemoryImpl implements PageMemoryEx {
     /** */
     public static final long PAGE_MARKER = 0x0000000000000001L;
@@ -386,7 +386,6 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("OverlyStrongTypeCast")
     @Override public void stop() throws IgniteException {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");

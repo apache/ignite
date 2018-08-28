@@ -55,7 +55,6 @@ public class GridFutureQueueTest {
     /**
      *
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private static class Future<T> extends GridFutureAdapter<T> {
         /** */
         private Message msg;

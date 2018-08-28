@@ -381,7 +381,6 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @param depMode Deployment mode to use.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void checkTaskNameAndTaskClass(DeploymentMode depMode) {
         this.depMode = depMode;
 
@@ -407,7 +406,6 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @param depMode Deployment mode to use.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void checkDefaultException(DeploymentMode depMode) {
         this.depMode = depMode;
 

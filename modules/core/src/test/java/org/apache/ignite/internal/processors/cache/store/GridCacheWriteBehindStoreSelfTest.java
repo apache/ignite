@@ -197,7 +197,6 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      * @param writeCoalescing Write coalescing flag
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"NullableProblems"})
     private void testValuePropagation(boolean writeCoalescing) throws Exception {
         // Need to test size-based write.
         initStore(1, writeCoalescing);
@@ -262,7 +261,6 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
             final AtomicInteger actualPutCnt = new AtomicInteger();
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-                @SuppressWarnings({"NullableProblems"})
                 @Override public void run() {
                     try {
                         while (running.get()) {
@@ -348,7 +346,6 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
             final AtomicBoolean running = new AtomicBoolean(true);
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-                @SuppressWarnings({"NullableProblems"})
                 @Override public void run() {
                     try {
                         while (running.get()) {

@@ -237,7 +237,6 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     private void checkPartitionsWithAffinityBackupFilter() throws Exception {
         AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 

@@ -459,7 +459,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             try {
                 IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
-                    @SuppressWarnings("ConstantConditions")
                     @Override public void apply(Object k, Object val) {
                         if (convert) {
                             Object v = convert(val);

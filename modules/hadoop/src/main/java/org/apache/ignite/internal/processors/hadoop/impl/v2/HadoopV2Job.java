@@ -257,7 +257,7 @@ public class HadoopV2Job extends HadoopJobEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "MismatchedQueryAndUpdateOfCollection" })
+    @SuppressWarnings({"unchecked"})
     @Override public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException {
         T2<HadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
 

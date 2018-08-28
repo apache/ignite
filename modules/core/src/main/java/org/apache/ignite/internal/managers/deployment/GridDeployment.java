@@ -435,7 +435,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param alias Optional array of aliases.
      * @return Class for given name.
      */
-    @SuppressWarnings({"StringEquality", "UnusedCatchParameter"})
+    @SuppressWarnings({"StringEquality"})
     @Nullable public Class<?> deployedClass(String clsName, String... alias) {
         Class<?> cls = clss.get(clsName);
 

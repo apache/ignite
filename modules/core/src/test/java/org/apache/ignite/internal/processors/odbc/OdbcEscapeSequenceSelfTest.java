@@ -894,7 +894,6 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
      *
      * @param qry Query.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void checkFail(final String qry) {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {

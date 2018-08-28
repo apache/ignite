@@ -203,7 +203,6 @@ public class GridCacheMvccCandidate implements Externalizable,
     /**
      * @return Parent entry.
      */
-    @SuppressWarnings({"unchecked"})
     public <V> GridCacheEntryEx parent() {
         return parent;
     }
@@ -638,7 +637,6 @@ public class GridCacheMvccCandidate implements Externalizable,
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public boolean equals(Object o) {
         if (o == null)
             return false;

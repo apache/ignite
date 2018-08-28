@@ -333,7 +333,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param keys Keys to get.
      * @return Future for local get.
      */
-    @SuppressWarnings( {"unchecked", "IfMayBeConditional"})
+    @SuppressWarnings( {"IfMayBeConditional"})
     private IgniteInternalFuture<Collection<GridCacheEntryInfo>> getAsync(
         final Map<KeyCacheObject, Boolean> keys
     ) {

@@ -34,7 +34,7 @@ public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThread
     private static final boolean CACHE_DEBUG = false;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 

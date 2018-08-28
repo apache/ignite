@@ -71,7 +71,6 @@ import org.jetbrains.annotations.Nullable;
  * can be configured from Spring XML files (or other DI frameworks). <p> Note that absolutely all configuration
  * properties are optional, so users should only change what they need.
  */
-@SuppressWarnings("RedundantFieldInitialization")
 public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private static final long serialVersionUID = 0L;

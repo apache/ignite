@@ -81,7 +81,7 @@ import static org.apache.ignite.internal.processors.platform.client.ClientConnec
 /**
  * Native cache wrapper implementation.
  */
-@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources", "TypeMayBeWeakened", "WeakerAccess"})
+@SuppressWarnings({"unchecked", "TryFinallyCanBeTryWithResources", "TypeMayBeWeakened", "WeakerAccess"})
 public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_CLEAR = 1;

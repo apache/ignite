@@ -92,7 +92,6 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("NullableProblems")
     private void startUp() throws Exception {
         startUpSecondary();
 

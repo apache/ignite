@@ -52,7 +52,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 /**
  * Tests for dynamic index creation.
  */
-@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"unchecked"})
 public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

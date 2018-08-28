@@ -106,7 +106,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * Binary marshaller tests.
  */
-@SuppressWarnings({"OverlyStrongTypeCast", "ArrayHashCode", "ConstantConditions"})
+@SuppressWarnings({"OverlyStrongTypeCast", "ConstantConditions"})
 public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
@@ -3375,7 +3375,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
          * @param strArr Array.
          * @param shortVal Short value.
          */
-        @SuppressWarnings({"UnusedDeclaration"})
         private NonSerializableA(@Nullable String[] strArr, @Nullable Short shortVal) {
             // No-op.
         }
@@ -3472,7 +3471,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
          *
          * @param aVal Unused.
          */
-        @SuppressWarnings({"UnusedDeclaration"})
         private NonSerializable(NonSerializableA aVal) {
         }
 
@@ -4142,7 +4140,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private SimpleObject inner;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("FloatingPointEquality")
         @Override public boolean equals(Object other) {
             if (this == other)
                 return true;
@@ -4498,7 +4495,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("FloatingPointEquality")
         @Override public boolean equals(Object other) {
             if (this == other)
                 return true;
@@ -4889,7 +4885,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class CollectionFieldsObject {
         /** */
         private Object[] arr;

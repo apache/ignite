@@ -65,7 +65,6 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     protected static final long LATCH_TIMEOUT = 5000;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

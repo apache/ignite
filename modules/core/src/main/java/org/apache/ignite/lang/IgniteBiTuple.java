@@ -256,7 +256,7 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction", "CloneDoesntDeclareCloneNotSupportedException"})
+    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException"})
     @Override public Object clone() {
         try {
             return super.clone();
@@ -285,7 +285,6 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;

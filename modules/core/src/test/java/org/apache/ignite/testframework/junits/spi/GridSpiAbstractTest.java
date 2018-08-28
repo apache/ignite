@@ -171,7 +171,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked", "CastToIncompatibleInterface", "InstanceofIncompatibleInterface"})
+    @SuppressWarnings({"unchecked", "InstanceofIncompatibleInterface"})
     protected final void spiStart() throws Exception {
         GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 

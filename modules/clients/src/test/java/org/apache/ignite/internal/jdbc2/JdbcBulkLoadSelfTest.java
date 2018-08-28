@@ -142,7 +142,6 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     /**
      * A test class for creating a query entity.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

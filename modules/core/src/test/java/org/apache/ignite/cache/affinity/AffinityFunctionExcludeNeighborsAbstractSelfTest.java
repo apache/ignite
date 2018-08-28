@@ -42,7 +42,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  * Partitioned affinity test.
  */
-@SuppressWarnings({"PointlessArithmeticExpression", "FieldCanBeLocal"})
+@SuppressWarnings({"FieldCanBeLocal"})
 public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends GridCommonAbstractTest {
     /** Number of backups. */
     private int backups = 2;

@@ -480,7 +480,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * {@link org.apache.ignite.lang.IgniteInClosure} for calculating sum.
      */
-    @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static final class SumVisitor implements CI1<Cache.Entry<String, Integer>> {
         /** */
         private final AtomicInteger sum;
@@ -507,7 +506,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * {@link org.apache.ignite.lang.IgniteReducer} for calculating sum.
      */
-    @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static final class SumReducer implements R1<Cache.Entry<String, Integer>, Integer> {
         /** */
         private int sum;

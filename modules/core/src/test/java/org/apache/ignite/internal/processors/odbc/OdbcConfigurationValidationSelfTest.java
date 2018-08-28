@@ -153,7 +153,6 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
      * @param odbcCfg ODBC configuration.
      * @param success Success flag. * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void check(OdbcConfiguration odbcCfg, boolean success) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration();
 

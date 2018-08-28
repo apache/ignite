@@ -2570,7 +2570,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Result of task execution.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"Contract", "ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions"})
     private <T> T synchronizeAndExecute(SynchronizationTask<T> task, IgfsSecondaryFileSystem fs, boolean strict,
         @Nullable Collection<IgniteUuid> extraLockIds, IgfsPath... paths) throws IgniteCheckedException {
         assert task != null;

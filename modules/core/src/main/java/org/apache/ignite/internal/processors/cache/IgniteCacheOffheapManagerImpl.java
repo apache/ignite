@@ -84,7 +84,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  *
  */
-@SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
     /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind

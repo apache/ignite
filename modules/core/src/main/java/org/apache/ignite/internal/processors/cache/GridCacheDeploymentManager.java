@@ -790,7 +790,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
         @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
             // Try local deployment first.
             if (!isLocallyExcluded(name)) {

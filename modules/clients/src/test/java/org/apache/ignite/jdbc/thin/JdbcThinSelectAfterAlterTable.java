@@ -119,7 +119,7 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     public void testSelectAfterAlterTableSingleNode() throws Exception {
         stmt.executeUpdate("alter table person add age int");
 
@@ -129,7 +129,7 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     public void testSelectAfterAlterTableMultiNode() throws Exception {
         try (Connection conn2 = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:"
             + (ClientConnectorConfiguration.DFLT_PORT + 1))) {

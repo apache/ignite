@@ -185,7 +185,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param nodeId Sender.
      * @param res Result.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void onResult(UUID nodeId, GridNearTxFinishResponse res) {
         if (!isDone()) {
             FinishMiniFuture finishFut = null;
@@ -397,7 +396,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
      * @param onTimeout If {@code true} called from timeout handler.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void finish(final boolean commit, final boolean clearThreadMap, final boolean onTimeout) {
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();

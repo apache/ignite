@@ -103,7 +103,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -204,7 +204,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ErrorNotRethrown")
     private void checkDataStreamer() throws Exception {
         try {
             useCache = true;

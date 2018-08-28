@@ -73,7 +73,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
     protected boolean trackable;
 
     /** Remap count. */
-    @SuppressWarnings("UnusedDeclaration")
     protected volatile int remapCnt;
 
     /** Subject ID. */

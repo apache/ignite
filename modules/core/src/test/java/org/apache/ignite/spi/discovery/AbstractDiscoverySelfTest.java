@@ -53,7 +53,6 @@ import static org.apache.ignite.lang.IgniteProductVersion.fromString;
  * Base discovery self-test class.
  * @param <T> SPI implementation class.
  */
-@SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** */
     private static final String HTTP_ADAPTOR_MBEAN_NAME = "mbeanAdaptor:protocol=HTTP";

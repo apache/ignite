@@ -76,7 +76,7 @@ import static org.apache.ignite.internal.processors.platform.client.ClientConnec
 /**
  * GridGain platform processor.
  */
-@SuppressWarnings({"ConditionalExpressionWithIdenticalBranches", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class PlatformProcessorImpl extends GridProcessorAdapter implements PlatformProcessor, PlatformTarget {
     /** */
     private static final int OP_GET_CACHE = 1;

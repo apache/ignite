@@ -2766,7 +2766,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** @throws InterruptedException If interrupted. */
-        @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
             GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
                 DiscoveryCustomMessage> evt = evts.take();

@@ -533,7 +533,6 @@ public class BinaryClassDescriptor {
     /**
      * @return binaryReadResolve() method
      */
-    @SuppressWarnings("UnusedDeclaration")
     @Nullable Method getReadResolveMethod() {
         return readResolveMtd;
     }

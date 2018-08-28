@@ -74,11 +74,11 @@ public class GridBasicPerformanceTest {
     private static final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
     /** Test variable. */
-    @SuppressWarnings({"UnusedDeclaration", "FieldAccessedSynchronizedAndUnsynchronized"})
+    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private static int n;
 
     /** Volatile variable. */
-    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
+    @SuppressWarnings({"UnusedDeclaration"})
     private static volatile int v;
 
     /** Atomic integer. */
@@ -935,7 +935,6 @@ public class GridBasicPerformanceTest {
     /**
      * Test unsafe vs. new.
      */
-    @SuppressWarnings("JavaDoc")
     private static void testUnsafe() throws InterruptedException {
         X.println("Testing unsafe...");
 

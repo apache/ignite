@@ -31,7 +31,7 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class GridUriDeploymentTestTask1 extends ComputeTaskSplitAdapter<Object, Object> {
     /** */
-    @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
+    @SuppressWarnings({"TypeMayBeWeakened"})
     public GridUriDeploymentTestTask1() {
         XmlBeanFactory factory = new XmlBeanFactory(new ClassPathResource("spring1.xml", getClass().getClassLoader()));
 

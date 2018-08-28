@@ -214,7 +214,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      * @return Keys for which {@code MiniFuture} isn't completed.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     public Set<IgniteTxKey> requestedKeys() {
         synchronized (this) {
             int size = futuresCountNoLock();
@@ -246,7 +245,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param miniId Mini ID to find.
      * @return Mini future.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
@@ -726,7 +724,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      *
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private void onTimeout() {
         if (cctx.tm().deadlockDetectionEnabled()) {
             Set<IgniteTxKey> keys = null;
@@ -879,7 +876,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         private GridDistributedTxMapping m;
 
         /** Flag to signal some result being processed. */
-        @SuppressWarnings("UnusedDeclaration")
         private volatile int rcvRes;
 
         /** Mappings to proceed prepare. */
@@ -964,7 +960,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /**
          * @param res Result callback.
          */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void onResult(final GridNearTxPrepareResponse res) {
             if (isDone())
                 return;

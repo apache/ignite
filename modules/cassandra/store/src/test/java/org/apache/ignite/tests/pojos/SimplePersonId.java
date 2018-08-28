@@ -41,7 +41,6 @@ public class SimplePersonId implements Serializable {
     public long personNum;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public SimplePersonId() {
     }
 

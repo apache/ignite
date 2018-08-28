@@ -362,7 +362,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Tuple with version and value of this entry, or {@code null} if entry is new.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext"})
     @Nullable public IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(
         AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {

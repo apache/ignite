@@ -424,7 +424,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param sql SQL.
      * @return <b>Cached</b> prepared statement.
      */
-    @SuppressWarnings("ConstantConditions")
     @Nullable private PreparedStatement cachedStatement(Connection c, String sql) {
         try {
             return prepareStatement(c, sql, true, true);
@@ -894,7 +893,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override public void dynamicIndexDrop(final String schemaName, String idxName, boolean ifExists)
         throws IgniteCheckedException{
         String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
@@ -994,7 +992,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName,
         String cacheName, String qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
         H2TableDescriptor tbl = tableDescriptor(schemaName, cacheName, typeName);
@@ -1029,7 +1026,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     GridQueryFieldsResult queryLocalSqlFields(final String schemaName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
@@ -2566,7 +2562,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"NonThreadSafeLazyInitialization", "deprecation"})
+    @SuppressWarnings({"deprecation"})
     @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");

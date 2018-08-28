@@ -50,7 +50,7 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @SuppressWarnings("deprecation") // Suppress due to default constructor should never be used directly.
+            // Suppress due to default constructor should never be used directly.
             @Nullable @Override public Object call() throws IgniteCheckedException {
                 testSerialization(IgfsUtils.createDirectory(IgniteUuid.randomUuid()));
 

@@ -426,7 +426,6 @@ public final class UpdatePlanBuilder {
      * @return The update plan for this command.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, GridH2Table tbl) throws IgniteCheckedException {
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 

@@ -92,7 +92,6 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestAllMethodsTask extends ComputeTaskAdapter<Object, Object> {
         /** */
-        @SuppressWarnings({"UnusedDeclaration"})
         @TaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
 
@@ -226,7 +225,6 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestNegativeTask extends ComputeTaskAdapter<Object, Object> {
         /** */
-        @SuppressWarnings({"UnusedDeclaration"})
         @TaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
 

@@ -318,7 +318,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param cancel Cancel queries.
      * @param destroy Cache destroy flag..
      */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public final void stop0(boolean cancel, boolean destroy) {
         if (log.isDebugEnabled())
             log.debug("Stopped cache query manager.");
@@ -1594,8 +1593,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({
-        "SynchronizationOnLocalVariableOrMethodParameter",
-        "NonPrivateFieldAccessedInSynchronizedContext"})
+        "SynchronizationOnLocalVariableOrMethodParameter"
+    })
     private FieldsResult fieldsQueryResult(Map<Long, GridFutureAdapter<FieldsResult>> resMap,
         GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
         assert resMap != null;

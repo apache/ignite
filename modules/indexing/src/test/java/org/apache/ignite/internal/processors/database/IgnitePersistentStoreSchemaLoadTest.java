@@ -145,7 +145,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     }
 
     /** */
-    @SuppressWarnings("unchecked")
     public void testDynamicSchemaChangesPersistenceWithStaticCache() throws Exception {
         IgniteEx node = startGrid(getConfigurationWithStaticCache(getTestIgniteInstanceName(0)));
 

@@ -36,7 +36,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 /**
  * Consistent hash test.
  */
-@SuppressWarnings({"AssertWithSideEffects"})
 @GridCommonTest(group = "Lang")
 public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
     /** */

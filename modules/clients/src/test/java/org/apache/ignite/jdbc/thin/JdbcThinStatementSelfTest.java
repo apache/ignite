@@ -44,7 +44,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Statement test.
  */
-@SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"ThrowableNotThrown"})
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -1189,7 +1189,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

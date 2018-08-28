@@ -74,7 +74,6 @@ public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
     /**
      * Clears caches on all nodes.
      */
-    @SuppressWarnings("ConstantConditions")
     private void clearCaches() {
         for (int i = 0; i < NODES_CNT; i++)
             try {

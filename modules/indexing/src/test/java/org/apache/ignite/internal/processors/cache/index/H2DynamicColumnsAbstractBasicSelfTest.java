@@ -382,7 +382,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test that {@code ADD COLUMN} fails for non dynamic table that has flat value.
      */
-    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    @SuppressWarnings({"unchecked"})
     public void testTestAlterTableOnFlatValueNonDynamicTable() {
         CacheConfiguration c =
             new CacheConfiguration("ints").setIndexedTypes(Integer.class, Integer.class)
@@ -401,7 +401,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test that {@code ADD COLUMN} fails for dynamic table that has flat value.
      */
-    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    @SuppressWarnings({"ThrowFromFinallyBlock"})
     public void testTestAlterTableOnFlatValueDynamicTable() {
         try {
             run("CREATE TABLE TEST (id int primary key, x varchar) with \"wrap_value=false\"");
@@ -760,7 +760,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * @param sql Statement.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrows(final String sql, String msg) {
         assertThrows(grid(nodeIndex()), sql, msg);
     }
@@ -772,7 +771,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      * @param cls Expected exception class.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void assertThrowsAnyCause(final String sql, Class<? extends Throwable> cls, String msg) {
         assertThrowsAnyCause(grid(nodeIndex()), sql, cls, msg);
     }

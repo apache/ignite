@@ -38,7 +38,6 @@ public class GridTestEntity {
      * @param name Name.
      * @param date Date.
      */
-    @SuppressWarnings("AssignmentToDateFieldFromParameter")
     public GridTestEntity(String name, Date date) {
         this.name = name;
         this.date = date;

@@ -39,7 +39,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for replicated cache with one node.
  */
-@SuppressWarnings("Duplicates")
 public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

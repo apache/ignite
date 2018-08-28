@@ -59,7 +59,6 @@ class MapQueryResults {
      * @param cctx Cache context.
      * @param lazyWorker Lazy worker (if any).
      */
-    @SuppressWarnings("unchecked")
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
         @Nullable MapQueryLazyWorker lazyWorker) {
         this.h2 = h2;

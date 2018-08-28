@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests cache configuration with inlineSize property of the QuerySqlField annotation.
  */
-@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked", "unused"})
+@SuppressWarnings({"unchecked", "unused"})
 public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

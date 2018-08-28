@@ -186,7 +186,6 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

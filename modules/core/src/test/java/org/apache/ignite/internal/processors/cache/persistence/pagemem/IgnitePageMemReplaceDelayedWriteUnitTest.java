@@ -182,7 +182,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      * @param fullPageId page ID to determine segment for
      * @return segment related
      */
-    @SuppressWarnings("TypeMayBeWeakened") private ReentrantReadWriteLock getSegment(FullPageId fullPageId) {
+    private ReentrantReadWriteLock getSegment(FullPageId fullPageId) {
         ReentrantReadWriteLock[] segments = U.field(pageMemory, "segments");
 
         int idx = PageMemoryImpl.segmentIndex(fullPageId.groupId(), fullPageId.pageId(),

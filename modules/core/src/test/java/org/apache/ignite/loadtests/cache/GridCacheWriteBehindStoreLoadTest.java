@@ -157,7 +157,6 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
         long start = System.currentTimeMillis();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
 
                 Random rnd = new Random();

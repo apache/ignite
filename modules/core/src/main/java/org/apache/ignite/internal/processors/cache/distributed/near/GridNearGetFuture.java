@@ -410,7 +410,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param saved Reserved near cache entries.
      * @return Map.
      */
-    @SuppressWarnings("unchecked")
     private Map<KeyCacheObject, GridNearCacheEntry> map(
         KeyCacheObject key,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings,

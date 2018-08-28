@@ -3372,7 +3372,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          *
          */
-        @SuppressWarnings("WaitNotInLoop")
         private void waitCheckpointEvent() {
             boolean cancel = false;
 

@@ -609,7 +609,6 @@ public class WebSessionFilter implements Filter {
      * @param httpReq Request.
      * @return New session.
      */
-    @SuppressWarnings("unchecked")
     private WebSession createSession(HttpServletRequest httpReq) {
         HttpSession ses = httpReq.getSession(true);
 
@@ -625,7 +624,6 @@ public class WebSessionFilter implements Filter {
      * @param sesId Session id.
      * @return New session.
      */
-    @SuppressWarnings("unchecked")
     private WebSession createSession(HttpSession ses, String sesId) {
         WebSession cached = new WebSession(sesId, ses, true);
 
@@ -780,7 +778,6 @@ public class WebSessionFilter implements Filter {
      * @param updates Updates list.
      * @param maxInactiveInterval Max session inactive interval.
      */
-    @SuppressWarnings("unchecked")
     public void updateAttributes(String sesId, Collection<T2<String, Object>> updates, int maxInactiveInterval) {
         assert sesId != null;
         assert updates != null;
@@ -865,7 +862,6 @@ public class WebSessionFilter implements Filter {
      * Handles cache operation exception.
      * @param e Exception
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     void handleCacheOperationException(Exception e){
         IgniteFuture<?> retryFut = null;
 

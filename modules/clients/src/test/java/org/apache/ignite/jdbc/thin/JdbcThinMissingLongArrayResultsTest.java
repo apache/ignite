@@ -164,7 +164,7 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"EmptyTryBlock", "unused"})
+    @SuppressWarnings({"unused"})
     public void testDefaults() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema('"' + CACHE_NAME + '"');

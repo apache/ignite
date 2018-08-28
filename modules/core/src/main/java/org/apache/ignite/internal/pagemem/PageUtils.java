@@ -22,7 +22,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 /**
  *
  */
-@SuppressWarnings("deprecation")
 public class PageUtils {
     /**
      * @param addr Start address. 

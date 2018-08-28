@@ -564,7 +564,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @param keys Keys.
      * @return Node IDs.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private UUID[] idsForKeys(boolean primaryOnly, int... keys) {
         List<UUID> res = new ArrayList<>();
 

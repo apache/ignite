@@ -306,7 +306,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     /**
      * @param e Entry to notify eviction policy.
      */
-    @SuppressWarnings({"IfMayBeConditional", "RedundantIfStatement"})
+    @SuppressWarnings({"RedundantIfStatement"})
     private void notifyPolicy(GridCacheEntryEx e) {
         assert plcEnabled;
         assert plc != null;

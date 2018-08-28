@@ -160,7 +160,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "ConstantConditions", "unchecked"})
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
     @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {

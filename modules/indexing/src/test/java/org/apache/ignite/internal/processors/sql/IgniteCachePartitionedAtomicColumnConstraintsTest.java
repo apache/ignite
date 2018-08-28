@@ -369,7 +369,6 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** Name. */
         private final String name;
@@ -383,7 +382,6 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Address implements Serializable {
         /** Name. */
         private final String address;

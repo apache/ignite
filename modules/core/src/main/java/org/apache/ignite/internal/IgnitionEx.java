@@ -1742,7 +1742,7 @@ public class IgnitionEx {
          * @param startCtx Starting context.
          * @throws IgniteCheckedException If start failed.
          */
-        @SuppressWarnings({"unchecked", "TooBroadScope"})
+        @SuppressWarnings({"TooBroadScope"})
         private void start0(GridStartContext startCtx) throws IgniteCheckedException {
             assert grid == null : "Grid is already started: " + name;
 
@@ -2331,7 +2331,6 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 

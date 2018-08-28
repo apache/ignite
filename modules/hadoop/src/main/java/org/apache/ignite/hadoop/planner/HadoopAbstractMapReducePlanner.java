@@ -44,7 +44,6 @@ public abstract class HadoopAbstractMapReducePlanner implements HadoopMapReduceP
     protected Ignite ignite;
 
     /** Logger. */
-    @SuppressWarnings("UnusedDeclaration")
     @LoggerResource
     protected IgniteLogger log;
 

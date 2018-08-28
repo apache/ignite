@@ -370,7 +370,6 @@ public class GridServiceProxy<T> implements Serializable {
     private class ProxyInvocationHandler implements InvocationHandler {
 
         /** {@inheritDoc} */
-        @SuppressWarnings("BusyWait")
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
             return invokeMethod(mtd, args);
         }

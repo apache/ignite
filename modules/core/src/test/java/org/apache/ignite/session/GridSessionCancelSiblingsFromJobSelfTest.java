@@ -219,7 +219,6 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
                     private ComputeJobContext jobCtx;
 
                     /** {@inheritDoc} */
-                    @SuppressWarnings({"BusyWait"})
                     @Override public Object execute() {
                         assert taskSes != null;
 

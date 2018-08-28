@@ -48,7 +48,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Interop projection.
  */
-@SuppressWarnings({"UnusedDeclaration"})
 public class PlatformClusterGroup extends PlatformAbstractTarget {
     /** */
     private static final int OP_FOR_ATTRIBUTE = 2;
@@ -222,7 +221,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions", "deprecation"})
+    @SuppressWarnings({"deprecation"})
     @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
