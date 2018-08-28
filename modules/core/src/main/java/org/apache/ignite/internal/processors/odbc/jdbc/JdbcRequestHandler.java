@@ -32,7 +32,6 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
@@ -72,7 +71,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchR
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_5_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC_ORDERED;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BULK_LOAD_BATCH;
@@ -822,7 +821,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                         JdbcColumnMeta columnMeta;
 
-                        if (protocolVer.compareTo(VER_2_5_0) >= 0) {
+                        if (protocolVer.compareTo(VER_2_7_0) >= 0) {
                             GridQueryProperty prop = table.property(colName);
 
                             columnMeta = new JdbcColumnMetaV4(table.schemaName(), table.tableName(),
@@ -853,7 +852,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             JdbcMetaColumnsResult res;
 
-            if (protocolVer.compareTo(VER_2_5_0) >= 0)
+            if (protocolVer.compareTo(VER_2_7_0) >= 0)
                 res = new JdbcMetaColumnsResultV4(meta);
             else if (protocolVer.compareTo(VER_2_4_0) >= 0)
                 res = new JdbcMetaColumnsResultV3(meta);

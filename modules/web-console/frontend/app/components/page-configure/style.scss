@@ -130,29 +130,14 @@ page-configure {
         background: var(--pc-form-group-title-bg-color);
     }
 
-    &>.form-field-checkbox .ignite-form-field__control {
-        & > span {
-            position: relative;
-
-            &:after {
-                content: '';
-                display: block;
-                position: absolute;
-                background-color: var(--pc-form-group-title-bg-color);
-                z-index: -1;
-                top: 0;
-                bottom: 0;
-                left: -26px;
-                right: -5px;
-            }
-        }
-        [ignite-icon] {
-            background-color: var(--pc-form-group-title-bg-color);            
-        }
-    }
-
     &+.pc-form-group {
         padding-top: 10px;
+    }
+
+    .form-field__checkbox {
+        background-color: white;
+        padding: 0 5px;
+        margin: 0 -5px;
     }
 }
 

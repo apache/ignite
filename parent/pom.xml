@@ -80,7 +80,7 @@
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
         <jetbrains.annotations.version>13.0</jetbrains.annotations.version>
-        <jetty.version>9.2.11.v20150529</jetty.version>
+        <jetty.version>9.4.11.v20180605</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>

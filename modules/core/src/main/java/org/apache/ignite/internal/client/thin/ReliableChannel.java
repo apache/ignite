@@ -163,6 +163,13 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
+     * @return Server version.
+     */
+    public ProtocolVersion serverVersion() {
+        return ch.serverVersion();
+    }
+
+    /**
      * @return host:port_range address lines parsed as {@link InetSocketAddress}.
      */
     private static List<InetSocketAddress> parseAddresses(String[] addrs) throws ClientException {
