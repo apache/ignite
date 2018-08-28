@@ -52,6 +52,6 @@ public class TaskRemoteFilter implements IgnitePredicate<CacheEvent> {
 
         // Process this event. Ignored on backups.
         return affinity.isPrimary(ignite.cluster().localNode(), evt.key()) &&
-                !(filter != null && filter.apply(evt));
+                (filter == null || filter.apply(evt));
     }
 }

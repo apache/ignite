@@ -177,8 +177,6 @@ public class IgniteSource extends RichParallelSourceFunction<CacheEvent> {
                 .stopRemoteListen(rmtLsnrId);
 
             rmtLsnrId = null;
-
-            ignite.cache(cacheName).close();
         }
     }
 
