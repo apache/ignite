@@ -77,11 +77,15 @@ class ProtocolVersion {
 
 const PROTOCOL_VERSION_1_0_0 = new ProtocolVersion(1, 0, 0);
 const PROTOCOL_VERSION_1_1_0 = new ProtocolVersion(1, 1, 0);
+const PROTOCOL_VERSION_1_2_0 = new ProtocolVersion(1, 2, 0);
 
 const SUPPORTED_VERSIONS = [
     // PROTOCOL_VERSION_1_0_0, // Support for QueryField precision/scale fields breaks 1.0.0 compatibility
-    PROTOCOL_VERSION_1_1_0
+    PROTOCOL_VERSION_1_1_0,
+    PROTOCOL_VERSION_1_2_0
 ];
+
+const CURRENT_VERSION = PROTOCOL_VERSION_1_2_0;
 
 const STATE = Object.freeze({
     INITIAL : 0,
@@ -111,7 +115,7 @@ class ClientSocket {
     async connect() {
         return new Promise((resolve, reject) => {
             this._connectSocket(
-                this._getHandshake(PROTOCOL_VERSION_1_1_0, resolve, reject));
+                this._getHandshake(CURRENT_VERSION, resolve, reject));
         });
     }
 

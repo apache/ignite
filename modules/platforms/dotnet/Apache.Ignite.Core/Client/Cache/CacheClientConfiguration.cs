@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Client.Cache
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -115,12 +116,12 @@ namespace Apache.Ignite.Core.Client.Cache
             {
                 using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    ClientCacheConfigurationSerializer.Write(stream, other, true);
+                    ClientCacheConfigurationSerializer.Write(stream, other, ClientSocket.CurrentProtocolVersion, true);
 
                     stream.SynchronizeOutput();
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    ClientCacheConfigurationSerializer.Read(stream, this);
+                    ClientCacheConfigurationSerializer.Read(stream, this, ClientSocket.CurrentProtocolVersion);
                 }
 
                 CopyLocalProperties(other);
@@ -156,11 +157,11 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClientConfiguration"/> class.
         /// </summary>
-        internal CacheClientConfiguration(IBinaryStream stream)
+        internal CacheClientConfiguration(IBinaryStream stream, ClientProtocolVersion srvVer)
         {
             Debug.Assert(stream != null);
 
-            ClientCacheConfigurationSerializer.Read(stream, this);
+            ClientCacheConfigurationSerializer.Read(stream, this, srvVer);
         }
 
         /// <summary>
