@@ -42,6 +42,12 @@ class MessageBuffer {
         return buf;
     }
 
+    concat(source) {
+        this._buffer = Buffer.concat([this._buffer, source]);
+        this._length = this._buffer.length;
+        this._capacity = this._length;
+    }
+
     get position() {
         return this._position;
     }
