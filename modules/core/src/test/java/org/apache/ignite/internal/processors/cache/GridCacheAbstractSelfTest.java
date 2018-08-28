@@ -34,6 +34,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -140,24 +141,42 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 try {
                     final int fi = i;
 
+                    boolean waitForCondition = GridTestUtils.waitForCondition(
+                        // Preloading may happen as nodes leave, so we need to wait.
+                        new GridAbsPredicateX() {
+                            @Override public boolean applyx() throws IgniteCheckedException {
+                                jcache(fi).removeAll();
+
+                                if (jcache(fi).size(CachePeekMode.ALL) > 0) {
+                                    for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
+                                        jcache(fi).remove(k.getKey());
+                                }
+
+                                return jcache(fi).localSize(CachePeekMode.ALL) == 0;
+                            }
+                        },
+                        getTestTimeout());
+
+                    if (!waitForCondition) {
+                        info("Entries for " + nodeId(fi));
+
+                        jcache(fi).localEntries().forEach(entry -> {
+                            String key = entry.getKey();
+
+                            info("Key : " + key);
+
+                            Affinity<String> affinity = affinity(jcache(fi));
+
+                            affinity.mapKeyToPrimaryAndBackups(key)
+                                .forEach(node -> info("Node id : " + node.id() + ", isPrimary : " + affinity.isPrimary(node, key)));
+                        });
+                    }
+
                     assertTrue(
                         "Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
                             + ", local entries " + entrySet(jcache(fi).localEntries()),
-                        GridTestUtils.waitForCondition(
-                            // Preloading may happen as nodes leave, so we need to wait.
-                            new GridAbsPredicateX() {
-                                @Override public boolean applyx() throws IgniteCheckedException {
-                                    jcache(fi).removeAll();
-
-                                    if (jcache(fi).size(CachePeekMode.ALL) > 0) {
-                                        for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
-                                            jcache(fi).remove(k.getKey());
-                                    }
-
-                                    return jcache(fi).localSize(CachePeekMode.ALL) == 0;
-                                }
-                            },
-                            getTestTimeout()));
+                        waitForCondition
+                    );
 
                     int primaryKeySize = jcache(i).localSize(CachePeekMode.PRIMARY);
                     int keySize = jcache(i).localSize();

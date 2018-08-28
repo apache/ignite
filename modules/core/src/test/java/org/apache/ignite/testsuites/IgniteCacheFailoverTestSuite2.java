@@ -46,27 +46,29 @@ public class IgniteCacheFailoverTestSuite2 {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Failover Test Suite2");
 
-        suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
-        suite.addTestSuite(CacheGetFromJobTest.class);
+//        suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
+//        suite.addTestSuite(CacheGetFromJobTest.class);
+//
+//        suite.addTestSuite(GridCacheAtomicFailoverSelfTest.class);
+//        suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfTest.class);
+//
+//        suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
+//        suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
+//        suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
+//
+//        suite.addTestSuite(IgniteCacheCrossCacheTxFailoverTest.class);
 
-        suite.addTestSuite(GridCacheAtomicFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfTest.class);
-
-        suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
-
-        suite.addTestSuite(IgniteCacheCrossCacheTxFailoverTest.class);
-
-        suite.addTestSuite(CacheAsyncOperationsFailoverAtomicTest.class);
+//        suite.addTestSuite(CacheAsyncOperationsFailoverAtomicTest.class);
         suite.addTestSuite(CacheAsyncOperationsFailoverTxTest.class);
 
-        suite.addTestSuite(CachePutAllFailoverAtomicTest.class);
-        suite.addTestSuite(CachePutAllFailoverTxTest.class);
+//        suite.addTestSuite(CachePutAllFailoverAtomicTest.class);
+//        suite.addTestSuite(CachePutAllFailoverTxTest.class);
+
         //suite.addTestSuite(IgniteStableBaselineCachePutAllFailoverTest.class);
         //suite.addTestSuite(IgniteStableBaselineCacheRemoveFailoverTest.class);
-        suite.addTestSuite(IgniteChangingBaselineDownCachePutAllFailoverTest.class);
-        suite.addTestSuite(IgniteChangingBaselineUpCachePutAllFailoverTest.class);
+
+//        suite.addTestSuite(IgniteChangingBaselineDownCachePutAllFailoverTest.class);
+//        suite.addTestSuite(IgniteChangingBaselineUpCachePutAllFailoverTest.class);
 
         return suite;
     }
