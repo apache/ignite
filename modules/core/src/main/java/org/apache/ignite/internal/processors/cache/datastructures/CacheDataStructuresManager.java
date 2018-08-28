@@ -45,6 +45,7 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -53,6 +54,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
@@ -445,21 +448,28 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         if (part >= 0) {
             final int BATCH_SIZE = 100;
 
-            Collection<SetItemKey> keys = new ArrayList<>(BATCH_SIZE);
-
             assert !cctx.config().isOnheapCacheEnabled();
 
             try (GridCloseableIterator<KeyCacheObject> iter = cctx.offheap().cacheKeysIterator(cctx.cacheId(), part)) {
+                Collection<BinaryObjectImpl> keys = new ArrayList<>(BATCH_SIZE);
+
+                int keyTypeId = ((CacheObjectBinaryProcessorImpl)cctx.kernalContext().cacheObjects()).binaryContext()
+                    .descriptorForClass(CollocatedSetItemKey.class, false, false).typeId();
+
                 for (KeyCacheObject k : iter) {
-                    Object obj = cctx.unwrapBinaryIfNeeded(k, false);
+                    if (k instanceof BinaryObjectImpl) {
+                        BinaryObjectImpl obj = (BinaryObjectImpl)k;
 
-                    if (obj instanceof SetItemKey && setId.equals(((SetItemKey)obj).setId())) {
-                        keys.add((SetItemKey)obj);
+                        if (obj.typeId() == keyTypeId &&
+                            setId.equals(((BinaryObject)obj.field("setId")).deserialize())) {
 
-                        if (keys.size() == BATCH_SIZE) {
-                            retryRemoveAll(cache, keys);
+                            keys.add(obj);
 
-                            keys.clear();
+                            if (keys.size() == BATCH_SIZE) {
+                                retryRemoveAll(cache, keys);
+
+                                keys.clear();
+                            }
                         }
                     }
                 }
@@ -601,7 +611,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void retryRemoveAll(final IgniteInternalCache cache, final Collection<SetItemKey> keys)
+    private void retryRemoveAll(final IgniteInternalCache cache, final Collection<BinaryObjectImpl> keys)
         throws IgniteCheckedException {
         DataStructuresProcessor.retry(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
