@@ -22,34 +22,47 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
+/** */
 public class DataStreamProcessorMvccSeflTest extends DataStreamProcessorSelfTest {
-    @Override
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration igniteConfiguration = super.getConfiguration(igniteInstanceName);
+
         CacheConfiguration[] cacheConfigurations = igniteConfiguration.getCacheConfiguration();
+
         assert cacheConfigurations == null || cacheConfigurations.length == 0
                 || (cacheConfigurations.length == 1 && cacheConfigurations[0].getAtomicityMode() == TRANSACTIONAL);
+
         igniteConfiguration.setMvccEnabled(true);
+
         return igniteConfiguration;
     }
 
-    @Override
-    public void testPartitioned() throws Exception {
-        // TODO "https://issues.apache.org/jira/browse/IGNITE-8149"
+    /** {@inheritDoc} */
+    @Override public void testPartitioned() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8149");
+
+        super.testPartitioned();
     }
 
-    @Override
-    public void testColocated() throws Exception {
-        // TODO "https://issues.apache.org/jira/browse/IGNITE-8149"
+    /** {@inheritDoc} */
+    @Override public void testColocated() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8149");
+
+        super.testColocated();
     }
 
-    @Override
-    public void testReplicated() throws Exception {
-        // TODO "https://issues.apache.org/jira/browse/IGNITE-8149"
+    /** {@inheritDoc} */
+    @Override public void testReplicated() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8149");
+
+        super.testReplicated();
     }
 
-    @Override
-    public void testUpdateStore() throws Exception {
-        // TODO https://issues.apache.org/jira/browse/IGNITE-8582
+    /** {@inheritDoc} */
+    @Override public void testUpdateStore() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8582");
+
+        super.testUpdateStore();
     }
 }
