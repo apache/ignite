@@ -765,7 +765,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     topSnap.set(new Snapshot(nextTopVer, discoCache));
 
-                    log.info("[TIME] Creating disco cache for: " + (customMsg.id() != null ? customMsg.id() : "null") + " took " + (System.currentTimeMillis() - time) + " ms.");
+                    log.info("[TIME] Creating disco cache for: " + (customMsg != null ? customMsg.id() : "null") + " took " + (System.currentTimeMillis() - time) + " ms.");
                 }
                 else
                     // Current version.

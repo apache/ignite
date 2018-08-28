@@ -3421,7 +3421,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (log.isInfoEnabled())
-                log.info("[TIME] Send message " + (msg.id() != null ? msg.id() : "null") + " across ring took " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TIME] Send message " + (msg != null ? msg.id() : "null") + " across ring took " + (System.currentTimeMillis() - time) + " ms.");
         }
 
         /**
