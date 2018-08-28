@@ -225,7 +225,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             log.debug("Activate page store manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
+        long time = System.currentTimeMillis();
+
         start0();
+
+        if (log.isInfoEnabled())
+            log.info("File page store manager activated in: " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /** {@inheritDoc} */

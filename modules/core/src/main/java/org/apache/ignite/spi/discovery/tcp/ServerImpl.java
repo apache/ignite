@@ -2932,6 +2932,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         @SuppressWarnings({"BreakStatementWithLabel", "LabeledStatement", "ContinueStatementWithLabel"})
         private void sendMessageAcrossRing(TcpDiscoveryAbstractMessage msg) {
+            long time = System.currentTimeMillis();
+
             assert msg != null;
 
             assert ring.hasRemoteNodes();
@@ -3417,6 +3419,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         "To speed up failure detection please see 'Failure Detection' section under javadoc" +
                         " for 'TcpDiscoverySpi'");
             }
+
+            if (log.isInfoEnabled())
+                log.info("[TIME] Send message " + (msg.id() != null ? msg.id() : "null") + " across ring took " + (System.currentTimeMillis() - time) + " ms.");
         }
 
         /**
@@ -5531,6 +5536,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Custom message.
          */
         private void notifyDiscoveryListener(TcpDiscoveryCustomEventMessage msg) {
+            long time = System.currentTimeMillis();
+
             DiscoverySpiListener lsnr = spi.lsnr;
 
             TcpDiscoverySpiState spiState = spiStateCopy();
@@ -5566,6 +5573,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
             }
+
+            if (log.isInfoEnabled())
+                log.info("[TIME] Notifying about message " + msg.id() + " took " + (System.currentTimeMillis() - time) + " ms.");
         }
 
         /**

@@ -260,6 +260,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             log.debug("Activating data structure processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
 
+        long time = System.currentTimeMillis();
+
         initFailed = false;
 
         qryIdMap.clear();
@@ -269,6 +271,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         restoreStructuresState(ctx);
 
         onKernalStart0();
+
+        if (log.isInfoEnabled())
+            log.info("Data structures processor activated in: " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**

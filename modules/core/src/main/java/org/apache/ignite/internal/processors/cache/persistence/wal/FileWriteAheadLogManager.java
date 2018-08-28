@@ -71,7 +71,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -575,6 +574,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             log.debug("Activated file write ahead log manager [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
+        long time = System.currentTimeMillis();
+
         start0();
 
         if (!cctx.kernalContext().clientNode()) {
@@ -587,6 +588,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (compressor != null)
                 compressor.start();
         }
+
+        if (log.isInfoEnabled())
+            log.info("WAL manager activated in: " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /** {@inheritDoc} */
@@ -3038,9 +3042,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             this.end = end;
             this.decompressor = decompressor;
 
+            long time = System.currentTimeMillis();
+
             init();
 
+            if (log.isInfoEnabled())
+                log.info("Records iterator init finished in " + (System.currentTimeMillis() - time) + " ms.");
+
+            time = System.currentTimeMillis();
+
             advance();
+
+            if (log.isInfoEnabled())
+                log.info("Records iterator first advance finished in " + (System.currentTimeMillis() - time) + " ms.");
         }
 
         /** {@inheritDoc} */

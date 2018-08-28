@@ -657,12 +657,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     boolean incMinorTopVer;
 
                     if (customMsg instanceof ChangeGlobalStateMessage) {
+                        long time = System.currentTimeMillis();
+
                         incMinorTopVer = ctx.state().onStateChangeMessage(
                             new AffinityTopologyVersion(topVer, minorTopVer),
                             (ChangeGlobalStateMessage)customMsg,
                             discoCache());
+
+                        if (log.isInfoEnabled())
+                            log.info("[TIME] On state change message took " + (System.currentTimeMillis() - time) + " ms.");
                     }
                     else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
+                        long time = System.currentTimeMillis();
+
                         ctx.state().onStateFinishMessage((ChangeGlobalStateFinishMessage)customMsg);
 
                         Snapshot snapshot = topSnap.get();
@@ -673,6 +680,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         topSnap.set(new Snapshot(snapshot.topVer, discoCache));
 
                         incMinorTopVer = false;
+
+                        if (log.isInfoEnabled())
+                            log.info("[TIME] On state change finish message took " + (System.currentTimeMillis() - time) + " ms.");
                     }
                     else {
                         incMinorTopVer = ctx.cache().onCustomEvent(
@@ -704,12 +714,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         if (list != null) {
                             for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
+                                long time = System.currentTimeMillis();
+
                                 try {
                                     lsnr.onCustomEvent(nextTopVer, node, customMsg);
                                 }
                                 catch (Exception e) {
                                     U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
                                 }
+
+                                if (log.isInfoEnabled())
+                                    log.info("[TIME] Notifying custom message listener " + lsnr + " took " + (System.currentTimeMillis() - time) + " ms.");
                             }
                         }
                     }
@@ -722,6 +737,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 // event notifications, since SPI notifies manager about all events from this listener.
                 if (verChanged) {
                     Snapshot snapshot = topSnap.get();
+
+                    long time = System.currentTimeMillis();
 
                     if (customMsg == null) {
                         discoCache = createDiscoCache(
@@ -747,6 +764,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", evt=" + U.gridEventName(type) + ']';
 
                     topSnap.set(new Snapshot(nextTopVer, discoCache));
+
+                    log.info("[TIME] Creating disco cache for: " + (customMsg.id() != null ? customMsg.id() : "null") + " took " + (System.currentTimeMillis() - time) + " ms.");
                 }
                 else
                     // Current version.

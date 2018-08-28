@@ -1055,13 +1055,33 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         assert memCfg != null;
 
+        long time = System.currentTimeMillis();
+
         initDataRegions(memCfg);
+
+        if (log.isInfoEnabled())
+            log.info("Data regions activation finished in " + (System.currentTimeMillis() - time) + " ms.");
+
+        time = System.currentTimeMillis();
 
         registerMetricsMBeans();
 
+        if (log.isInfoEnabled())
+            log.info("Mbeans activation finished in " + (System.currentTimeMillis() - time) + " ms.");
+
+        time = System.currentTimeMillis();
+
         startMemoryPolicies();
 
+        if (log.isInfoEnabled())
+            log.info("Memory policies finished in " + (System.currentTimeMillis() - time) + " ms.");
+
+        time = System.currentTimeMillis();
+
         initPageMemoryDataStructures(memCfg);
+
+        if (log.isInfoEnabled())
+            log.info("Page memory datastructures in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /** {@inheritDoc} */

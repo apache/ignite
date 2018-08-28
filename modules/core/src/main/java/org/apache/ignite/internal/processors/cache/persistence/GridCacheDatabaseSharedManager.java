@@ -384,8 +384,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private void notifyMetastorageReadyForReadWrite() throws IgniteCheckedException {
-        for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
+        for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs) {
+            long time = System.currentTimeMillis();
+
             lsnr.onReadyForReadWrite(metaStorage);
+
+            if (log.isInfoEnabled())
+                log.info(lsnr + " listener metastorage read-write invoked in " + (System.currentTimeMillis() - time) + " ms.");
+        }
     }
 
     /**
@@ -688,6 +694,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.debug("Activate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
+        long time = System.currentTimeMillis();
+
         snapshotMgr = cctx.snapshot();
 
         if (!cctx.localNode().isClient()) {
@@ -700,6 +708,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
 
         super.onActivate(ctx);
+
+        if (log.isInfoEnabled())
+            log.info("Database shared manager activated in: " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /** {@inheritDoc} */
@@ -830,16 +841,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
             );
 
+            long time = System.currentTimeMillis();
+
             WALPointer restore = restoreMemory(status);
+
+            if (log.isInfoEnabled())
+                log.info("Restore memory finished in " + (System.currentTimeMillis() - time) + " ms.");
 
             if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
                     status.endPtr + ". Can't restore memory - critical part of WAL archive is missing.");
             }
 
+
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
             cctx.wal().resumeLogging(restore);
+
+            time = System.currentTimeMillis();
 
             WALPointer ptr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
@@ -850,6 +869,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             metaStorage.init(this);
+
+            if (log.isInfoEnabled())
+                log.info("Finished node start marker finished in " + (System.currentTimeMillis() - time) + " ms.");
 
             notifyMetastorageReadyForReadWrite();
         }

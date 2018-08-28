@@ -273,8 +273,14 @@ public class GridCacheSharedContext<K, V> {
         boolean success = false;
 
         try {
-            for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
+            for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs) {
+                long time = System.currentTimeMillis();
+
                 mgr.onActivate(kernalCtx);
+
+                if (msgLog.isInfoEnabled())
+                    msgLog.info(mgr + " activated in " + (System.currentTimeMillis() - time) + " ms.");
+            }
 
             success = true;
         }

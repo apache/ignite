@@ -478,6 +478,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
         else {
             if (isApplicable(msg, state)) {
+                long time = System.currentTimeMillis();
+
                 ExchangeActions exchangeActions;
 
                 try {
@@ -528,6 +530,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 exchangeActions.stateChangeRequest(req);
 
                 msg.exchangeActions(exchangeActions);
+
+                if (log.isInfoEnabled())
+                    log.info("[TIME] On state change request actions performed " + (System.currentTimeMillis() - time) + " ms.");
 
                 return true;
             }
