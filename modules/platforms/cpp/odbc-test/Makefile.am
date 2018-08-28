@@ -58,6 +58,7 @@ ignite_odbc_tests_SOURCES = \
     src/parser_test.cpp \
     src/cursor_test.cpp \
     src/connection_info_test.cpp \
+    src/connection_test.cpp \
     src/application_data_buffer_test.cpp \
     src/column_test.cpp \
     src/configuration_test.cpp \

@@ -617,6 +617,9 @@ namespace ignite
 
             CollectAddresses(config, addrs);
 
+            if (socket.get() == 0)
+                socket.reset(new system::TcpSocketClient());
+
             bool connected = false;
 
             while (!addrs.empty() && !connected)

@@ -25,6 +25,9 @@
     <ClCompile Include="..\..\src\connection_info_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\connection_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\parser_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
