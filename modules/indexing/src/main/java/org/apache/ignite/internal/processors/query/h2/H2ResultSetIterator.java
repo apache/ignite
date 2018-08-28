@@ -56,32 +56,26 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final ResultInterface res;
+    private ResultInterface res;
 
     /** */
-    private final ResultSet data;
+    private ResultSet data;
 
     /** */
     protected final Object[] row;
-
-    /** */
-    private final boolean closeStmt;
 
     /** */
     private boolean hasRow;
 
     /**
      * @param data Data array.
-     * @param closeStmt If {@code true} closes result set statement when iterator is closed.
-     * @param needCpy {@code True} if need copy cache object's value.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2ResultSetIterator(ResultSet data, boolean closeStmt, boolean needCpy) throws IgniteCheckedException {
+    protected H2ResultSetIterator(ResultSet data) throws IgniteCheckedException {
         this.data = data;
-        this.closeStmt = closeStmt;
 
         try {
-            res = needCpy ? (ResultInterface)RESULT_FIELD.get(data) : null;
+            res = (ResultInterface)RESULT_FIELD.get(data);
         }
         catch (IllegalAccessException e) {
             throw new IllegalStateException(e); // Must not happen.
@@ -107,8 +101,11 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
             return false;
 
         try {
-            if (!data.next())
+            if (!data.next()){
+                onClose();
+
                 return false;
+            }
 
             if (res != null) {
                 Value[] values = res.currentRow();
@@ -164,21 +161,15 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose() throws IgniteCheckedException {
+    @Override public void onClose(){
         if (data == null)
             // Nothing to close.
             return;
 
-        if (closeStmt) {
-            try {
-                U.closeQuiet(data.getStatement());
-            }
-            catch (SQLException e) {
-                throw new IgniteCheckedException(e);
-            }
-        }
-
         U.closeQuiet(data);
+
+        res = null;
+        data = null;
     }
 
     /** {@inheritDoc} */

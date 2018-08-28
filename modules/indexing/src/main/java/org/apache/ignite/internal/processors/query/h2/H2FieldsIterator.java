@@ -36,7 +36,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
      * @throws IgniteCheckedException If failed.
      */
     public H2FieldsIterator(ResultSet data) throws IgniteCheckedException {
-        super(data, false, true);
+        super(data);
     }
 
     /** {@inheritDoc} */
