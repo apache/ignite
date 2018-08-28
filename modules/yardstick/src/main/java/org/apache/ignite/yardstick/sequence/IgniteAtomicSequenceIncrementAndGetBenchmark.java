@@ -15,29 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+package org.apache.ignite.yardstick.sequence;
 
 import java.util.Map;
 import org.apache.ignite.IgniteAtomicSequence;
-import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- * Ignite atomic sequence benchmark.
+ * {@link IgniteAtomicSequence#incrementAndGet()} benchmark.
  */
-public class IgniteAtomicSequenceBenchmark extends IgniteAbstractBenchmark {
-    /** Cache. */
-    private IgniteAtomicSequence seq;
-
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        seq = ignite().atomicSequence("benchSequence", 0, true);
-
-        seq.batchSize(args.batch());
-    }
-
+public class IgniteAtomicSequenceIncrementAndGetBenchmark extends IgniteAtomicSequenceAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         seq.incrementAndGet();

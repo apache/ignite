@@ -137,6 +137,10 @@ public class IgniteBenchmarkArguments {
     private int batch = 500;
 
     /** */
+    @Parameter(names = {"-p", "--percentage"}, description = "Reservation percentage")
+    private int percentage = 100;
+
+    /** */
     @Parameter(names = {"-col", "--collocated"}, description = "Collocated")
     private boolean collocated;
 
@@ -496,6 +500,13 @@ public class IgniteBenchmarkArguments {
      */
     public int batch() {
         return batch;
+    }
+
+    /**
+     * @return Reservation percentage.
+     */
+    public int percentage(){
+        return percentage;
     }
 
     /**
