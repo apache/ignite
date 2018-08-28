@@ -149,9 +149,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-
             return dataset.compute(data -> {
-
                 CentroidStat res = new CentroidStat();
 
                 for (int i = 0; i < data.rowSize(); i++) {
@@ -171,7 +169,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                         centroidStat.put(lb, 1);
                         res.centroidStat.put(centroidIdx, centroidStat);
                     } else {
-                        int cnt = centroidStat.containsKey(lb) ? centroidStat.get(lb) : 0;
+                        int cnt = centroidStat.getOrDefault(lb, 0);
                         centroidStat.put(lb, cnt + 1);
                     }
 
@@ -179,7 +177,13 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                         (IgniteBiFunction<Integer, Integer, Integer>) (i1, i2) -> i1 + i2);
                 }
                 return res;
-            }, (a, b) -> a == null ? b : a.merge(b));
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? new CentroidStat() : b;
+                if (b == null)
+                    return a;
+                return a.merge(b);
+            });
 
         } catch (Exception e) {
             throw new RuntimeException(e);
