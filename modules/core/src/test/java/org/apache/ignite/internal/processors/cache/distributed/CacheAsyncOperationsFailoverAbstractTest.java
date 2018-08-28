@@ -59,8 +59,6 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        cfg.setTransactionConfiguration(new TransactionConfiguration().setDefaultTxTimeout(5_000));
-
         return cfg;
     }
 

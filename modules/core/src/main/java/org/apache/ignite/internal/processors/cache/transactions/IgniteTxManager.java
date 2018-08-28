@@ -648,7 +648,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public boolean needWaitTransaction(IgniteInternalTx tx, AffinityTopologyVersion topVer) {
         AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
 
-        return txTopVer != null && txTopVer.compareTo(topVer) < 0;
+        return txTopVer != null && (!txTopVer.equals(AffinityTopologyVersion.NONE)) && txTopVer.compareTo(topVer) < 0;
     }
 
     /**
