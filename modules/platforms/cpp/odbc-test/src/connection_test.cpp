@@ -28,7 +28,6 @@
 #   define BOOST_TEST_DYN_LINK
 #endif
 
-#include <boost/regex.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -90,12 +89,10 @@ struct ConnectionTestSuiteFixture: odbc::OdbcTestSuite
     {
         std::string code;
 
-        boost::regex expr("([^\\:]+)\\:");
+        int idx = err.find(':');
 
-        boost::smatch matches;
-
-        if (boost::regex_search(err, matches, expr))
-            code = matches[1];
+        if ((idx != std::string::npos) && (idx > 0))
+            code = err.substr(0, idx);
 
         return code;
     }
