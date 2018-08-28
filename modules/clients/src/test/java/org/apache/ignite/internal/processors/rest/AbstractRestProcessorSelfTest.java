@@ -43,6 +43,8 @@ public abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        cleanPersistenceDir();
+
         startGrids(gridCount());
     }
 
@@ -56,6 +58,13 @@ public abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTe
         jcache().clear();
 
         assertEquals(0, jcache().localSize());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */

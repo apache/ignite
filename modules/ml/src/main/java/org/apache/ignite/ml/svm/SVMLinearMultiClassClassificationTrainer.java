@@ -24,14 +24,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
  * Base class for a soft-margin SVM linear multiclass-classification trainer based on the communication-efficient
@@ -40,7 +41,7 @@ import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
  * All common parameters are shared with bunch of binary classification trainers.
  */
 public class SVMLinearMultiClassClassificationTrainer
-    implements SingleLabelDatasetTrainer<SVMLinearMultiClassClassificationModel> {
+    extends SingleLabelDatasetTrainer<SVMLinearMultiClassClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
     private int amountOfIterations = 20;
 
@@ -49,6 +50,9 @@ public class SVMLinearMultiClassClassificationTrainer
 
     /** Regularization parameter. */
     private double lambda = 0.2;
+
+    /** The seed number. */
+    private long seed;
 
     /**
      * Trains model based on the specified data.
@@ -59,7 +63,7 @@ public class SVMLinearMultiClassClassificationTrainer
      * @return Model.
      */
     @Override public <K, V> SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-                                                                IgniteBiFunction<K, V, double[]> featureExtractor,
+                                                                IgniteBiFunction<K, V, Vector> featureExtractor,
                                                                 IgniteBiFunction<K, V, Double> lbExtractor) {
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
 
@@ -69,7 +73,8 @@ public class SVMLinearMultiClassClassificationTrainer
             SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
                 .withAmountOfIterations(this.amountOfIterations())
                 .withAmountOfLocIterations(this.amountOfLocIterations())
-                .withLambda(this.lambda());
+                .withLambda(this.lambda())
+                .withSeed(this.seed);
 
             IgniteBiFunction<K, V, Double> lbTransformer = (k, v) -> {
                 Double lb = lbExtractor.apply(k, v);
@@ -105,7 +110,13 @@ public class SVMLinearMultiClassClassificationTrainer
                 for (double lb : lbs) locClsLabels.add(lb);
 
                 return locClsLabels;
-            }, (a, b) -> a == null ? b : Stream.of(a, b).flatMap(Collection::stream).collect(Collectors.toSet()));
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? new HashSet<>() : b;
+                if (b == null)
+                    return a;
+                return Stream.of(a, b).flatMap(Collection::stream).collect(Collectors.toSet());
+            });
 
             res.addAll(clsLabels);
 
@@ -173,6 +184,26 @@ public class SVMLinearMultiClassClassificationTrainer
      */
     public SVMLinearMultiClassClassificationTrainer  withAmountOfLocIterations(int amountOfLocIterations) {
         this.amountOfLocIterations = amountOfLocIterations;
+        return this;
+    }
+
+    /**
+     * Gets the seed number.
+     *
+     * @return The parameter value.
+     */
+    public long getSeed() {
+        return seed;
+    }
+
+    /**
+     * Set up the seed.
+     *
+     * @param seed The parameter value.
+     * @return Model with new seed parameter value.
+     */
+    public SVMLinearMultiClassClassificationTrainer withSeed(long seed) {
+        this.seed = seed;
         return this;
     }
 }

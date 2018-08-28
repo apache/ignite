@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * ODBC Connection Context.
@@ -49,8 +48,11 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.5.0: added authentication. */
     public static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
+    /** Version 2.7.0: added precision and scale. */
+    public static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_7_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -69,6 +71,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_5_0);
         SUPPORTED_VERS.add(VER_2_3_0);
         SUPPORTED_VERS.add(VER_2_3_2);
         SUPPORTED_VERS.add(VER_2_1_5);
@@ -79,10 +82,11 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
      * Constructor.
      * @param ctx Kernal Context.
      * @param busyLock Shutdown busy lock.
+     * @param connId
      * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
-        super(ctx);
+    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId, int maxCursors) {
+        super(ctx, connId);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -128,7 +132,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         AuthorizationContext actx = authenticate(user, passwd);
 
         handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate, actx);
+                enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate, actx, ver);
 
         parser = new OdbcMessageParser(ctx, ver);
     }

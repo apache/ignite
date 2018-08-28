@@ -412,19 +412,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
 
         if (!commit && !clearThreadMap)
-            tryRollbackAsync(onTimeout); // Asynchronous rollback.
+            rollbackAsyncSafe(onTimeout);
         else
             doFinish(commit, clearThreadMap);
     }
 
     /**
-     * Does async rollback when it's safe.
-     * If current future is not lock future (enlist future) waits until completion and tries again.
-     * Else terminates or waits for lock future depending on rollback mode.
+     * Rollback tx when it's safe.
+     * If current future is not lock future (enlist future) wait until completion and tries again.
+     * Else cancel lock future (onTimeout=false) or wait for completion due to deadlock detection (onTimeout=true).
      *
      * @param onTimeout If {@code true} called from timeout handler.
      */
-    private void tryRollbackAsync(boolean onTimeout) {
+    private void rollbackAsyncSafe(boolean onTimeout) {
         IgniteInternalFuture<?> curFut = tx.tryRollbackAsync();
 
         if (curFut == null) { // Safe to rollback.
@@ -447,7 +447,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 try {
                     fut.get();
 
-                    tryRollbackAsync(onTimeout);
+                    rollbackAsyncSafe(onTimeout);
                 }
                 catch (IgniteCheckedException e) {
                     doFinish(false, false);
@@ -757,9 +757,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         if (m.explicitLock())
             syncMode = FULL_SYNC;
 
-        // Version to be added in completed versions on primary node.
-        GridCacheVersion completedVer = !commit && useCompletedVer ? tx.xidVersion() : null;
-
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
             tx.xidVersion(),
@@ -772,7 +769,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             m.explicitLock(),
             tx.storeEnabled(),
             tx.topologyVersion(),
-            completedVer, // Reuse 'baseVersion' to do not add new fields in message.
+            null,
             null,
             null,
             tx.size(),

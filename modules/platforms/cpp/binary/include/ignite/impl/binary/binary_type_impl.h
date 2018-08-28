@@ -66,7 +66,7 @@ namespace ignite
             template<typename W>
             static void Write(W& writer, const T& val)
             {
-                writer.WriteTopObject0(val);
+                writer.template WriteTopObject0<BinaryWriter>(val);
             }
         };
 
@@ -82,7 +82,7 @@ namespace ignite
                 if (!val)
                     writer.WriteNull0();
                 else
-                    writer.WriteTopObject0(*val);
+                    writer.template WriteTopObject0<BinaryWriter>(*val);
             }
         };
 
@@ -97,7 +97,7 @@ namespace ignite
             {
                 T res;
 
-                reader.template ReadTopObject0<T>(res);
+                reader.template ReadTopObject0<ignite::binary::BinaryReader, T>(res);
 
                 return res;
             }
@@ -117,7 +117,7 @@ namespace ignite
 
                 std::auto_ptr<T> res(new T());
 
-                reader.template ReadTopObject0<T>(*res);
+                reader.template ReadTopObject0<ignite::binary::BinaryReader, T>(*res);
 
                 return res.release();
             }

@@ -61,7 +61,7 @@ export default class UserNotificationsService {
             .finally(modalHide)
             .then(({ message, isShown }) => {
                 this.$http.put('/api/v1/admin/notifications', { message, isShown })
-                    .catch((err) => this.Messages.showError(err));
+                    .catch(this.Messages.showError);
             });
     }
 }

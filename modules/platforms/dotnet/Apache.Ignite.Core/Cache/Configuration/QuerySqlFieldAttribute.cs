@@ -35,6 +35,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public QuerySqlFieldAttribute()
         {
             IndexInlineSize = QueryIndex.DefaultInlineSize;
+            Precision = -1;
+            Scale = -1;
         }
 
         /// <summary>

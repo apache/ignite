@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -64,6 +63,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         super(cctx, tx);
 
         assert tx.pessimistic() : tx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onNearTxLocalTimeout() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

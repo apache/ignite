@@ -17,20 +17,32 @@
 
 package org.apache.ignite.examples.ml.preprocessing;
 
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
+import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 
 /**
- * Example that shows how to use Imputing preprocessor to impute the missing value in the given data.
+ * Example that shows how to use <a href="https://en.wikipedia.org/wiki/Imputation_(statistics)">Imputing</a>
+ * preprocessor to impute the missing value in the given data.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
+ * <p>
+ * After that it defines preprocessors that extract features from an upstream data and impute missing values.</p>
+ * <p>
+ * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output
+ * various statistical metrics of the data.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
 public class ImputingExample {
     /** Run example. */
@@ -41,36 +53,18 @@ public class ImputingExample {
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
             // Defines first preprocessor that extracts features from an upstream data.
-            IgniteBiFunction<Integer, Person, double[]> featureExtractor = (k, v) -> new double[] {
+            IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
                 v.getAge(),
                 v.getSalary()
-            };
+            );
 
             // Defines second preprocessor that imputing features.
-            IgniteBiFunction<Integer, Person, double[]> preprocessor = new ImputerTrainer<Integer, Person>()
+            IgniteBiFunction<Integer, Person, Vector> preprocessor = new ImputerTrainer<Integer, Person>()
                 .fit(ignite, persons, featureExtractor);
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
-                // Calculation of the mean value. This calculation will be performed in map-reduce manner.
-                double[] mean = dataset.mean();
-                System.out.println("Mean \n\t" + Arrays.toString(mean));
-
-                // Calculation of the standard deviation. This calculation will be performed in map-reduce manner.
-                double[] std = dataset.std();
-                System.out.println("Standard deviation \n\t" + Arrays.toString(std));
-
-                // Calculation of the covariance matrix.  This calculation will be performed in map-reduce manner.
-                double[][] cov = dataset.cov();
-                System.out.println("Covariance matrix ");
-                for (double[] row : cov)
-                    System.out.println("\t" + Arrays.toString(row));
-
-                // Calculation of the correlation matrix.  This calculation will be performed in map-reduce manner.
-                double[][] corr = dataset.corr();
-                System.out.println("Correlation matrix ");
-                for (double[] row : corr)
-                    System.out.println("\t" + Arrays.toString(row));
+                new DatasetHelper(dataset).describe();
             }
 
             System.out.println(">>> Imputing example completed.");
