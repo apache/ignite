@@ -2230,50 +2230,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     Set<Integer> closeCaches(Set<String> cachesToClose, boolean retClientCaches) {
         Set<Integer> ids = null;
 
-        boolean locked = false;
+        for (String cacheName : cachesToClose) {
+            blockGateway(cacheName, false, false);
 
-        try {
-            for (String cacheName : cachesToClose) {
-                blockGateway(cacheName, false, false);
+            GridCacheContext ctx = sharedCtx.cacheContext(CU.cacheId(cacheName));
 
-                GridCacheContext ctx = sharedCtx.cacheContext(CU.cacheId(cacheName));
+            if (ctx == null)
+                continue;
 
-                if (ctx == null)
-                    continue;
+            if (retClientCaches && !ctx.affinityNode()) {
+                if (ids == null)
+                    ids = U.newHashSet(cachesToClose.size());
 
-                if (retClientCaches && !ctx.affinityNode()) {
-                    if (ids == null)
-                        ids = U.newHashSet(cachesToClose.size());
-
-                    ids.add(ctx.cacheId());
-                }
-
-                if (!ctx.affinityNode() && !locked) {
-                    // Do not close client cache while requests processing is in progress.
-                    sharedCtx.io().writeLock();
-
-                    locked = true;
-                }
-
-                if (!ctx.affinityNode() && ctx.transactional())
-                    sharedCtx.tm().rollbackTransactionsForCache(ctx.cacheId());
-
-                closeCache(ctx, false);
+                ids.add(ctx.cacheId());
             }
 
-            return ids;
+            closeCache(ctx);
         }
-        finally {
-            if (locked)
-                sharedCtx.io().writeUnlock();
-        }
+
+        return ids;
     }
 
     /**
      * @param cctx Cache context.
-     * @param destroy Destroy flag.
      */
-    private void closeCache(GridCacheContext cctx, boolean destroy) {
+    private void closeCache(GridCacheContext cctx) {
         if (cctx.affinityNode()) {
             GridCacheAdapter<?, ?> cache = caches.get(cctx.name());
 
@@ -2282,21 +2263,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
         }
         else {
-            jCacheProxies.remove(cctx.name());
-
             cctx.gate().onStopped();
 
-            sharedCtx.database().checkpointReadLock();
+            // Do not close client cache while requests processing is in progress.
+            sharedCtx.io().writeLock();
 
             try {
-                prepareCacheStop(cctx.name(), destroy);
+                if (!cctx.affinityNode() && cctx.transactional())
+                    sharedCtx.tm().rollbackTransactionsForCache(cctx.cacheId());
+
+                jCacheProxies.remove(cctx.name());
+
+                sharedCtx.database().checkpointReadLock();
+
+                try {
+                    prepareCacheStop(cctx.name(), false);
+                }
+                finally {
+                    sharedCtx.database().checkpointReadUnlock();
+                }
+
+                if (!cctx.group().hasCaches())
+                    stopCacheGroup(cctx.group().groupId());
             }
             finally {
-                sharedCtx.database().checkpointReadUnlock();
+                sharedCtx.io().writeUnlock();
             }
-
-            if (!cctx.group().hasCaches())
-                stopCacheGroup(cctx.group().groupId());
         }
     }
 
