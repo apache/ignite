@@ -36,13 +36,9 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.Config;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.client.Person;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Thin client functional tests.
@@ -157,6 +153,52 @@ public class FunctionalQueryTest {
             ).getAll().iterator().next().iterator().next();
 
             assertEquals(val.getName(), cachedName);
+        }
+    }
+
+    /** */
+    @Test
+    public void testGettingEmptyResultWhenQueryingEmptyTable() throws Exception {
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+        ) {
+            final String TBL = "Person";
+
+            client.query(
+                new SqlFieldsQuery(String.format(
+                    "CREATE TABLE IF NOT EXISTS " + TBL + " (id INT PRIMARY KEY, name VARCHAR) WITH \"VALUE_TYPE=%s\"",
+                    Person.class.getName()
+                )).setSchema("PUBLIC")
+            ).getAll();
+
+            // IgniteClient#query() API
+            List<List<?>> res = client.query(new SqlFieldsQuery("SELECT * FROM " + TBL)).getAll();
+
+            assertNotNull(res);
+            assertEquals(0, res.size());
+
+            // ClientCache#query(SqlFieldsQuery) API
+            ClientCache<Integer, Person> cache = client.cache("SQL_PUBLIC_" + TBL.toUpperCase());
+
+            res = cache.query(new SqlFieldsQuery("SELECT * FROM " + TBL)).getAll();
+
+            assertNotNull(res);
+            assertEquals(0, res.size());
+
+            // ClientCache#query(ScanQuery) and ClientCache#query(SqlQuery) API
+            Collection<Query<Cache.Entry<Integer, Person>>> queries = Arrays.asList(
+                new ScanQuery<>(),
+                new SqlQuery<>(Person.class, "1 = 1")
+            );
+
+            for (Query<Cache.Entry<Integer, Person>> qry : queries) {
+                try (QueryCursor<Cache.Entry<Integer, Person>> cur = cache.query(qry)) {
+                    List<Cache.Entry<Integer, Person>> res2 = cur.getAll();
+
+                    assertNotNull(res2);
+                    assertEquals(0, res2.size());
+                }
+            }
         }
     }
 

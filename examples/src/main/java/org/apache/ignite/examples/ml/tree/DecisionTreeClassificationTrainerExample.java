@@ -17,19 +17,28 @@
 
 package org.apache.ignite.examples.ml.tree;
 
+import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
-import java.util.Random;
-
 /**
  * Example of using distributed {@link DecisionTreeClassificationTrainer}.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with pseudo random training data points.</p>
+ * <p>
+ * After that it creates classification trainer and uses it to train the model on the training set.</p>
+ * <p>
+ * Finally, this example loops over the pseudo randomly generated test set of data points, applies the trained model,
+ * and compares prediction to expected outcome.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class DecisionTreeClassificationTrainerExample {
     /**
@@ -67,18 +76,24 @@ public class DecisionTreeClassificationTrainerExample {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     trainingSet,
-                    (k, v) -> new double[]{v.x, v.y},
+                    (k, v) -> VectorUtils.of(v.x, v.y),
                     (k, v) -> v.lb
                 );
+
+                System.out.println(">>> Decision tree classification model: " + mdl);
 
                 // Calculate score.
                 int correctPredictions = 0;
                 for (int i = 0; i < 1000; i++) {
                     LabeledPoint pnt = generatePoint(rnd);
 
-                    double prediction = mdl.apply(new double[]{pnt.x, pnt.y});
+                    double prediction = mdl.apply(VectorUtils.of(pnt.x, pnt.y));
+                    double lbl = pnt.lb;
 
-                    if (prediction == pnt.lb)
+                    if (i %50 == 1)
+                        System.out.printf(">>> test #: %d\t\t predicted: %.4f\t\tlabel: %.4f\n", i, prediction, lbl);
+
+                    if (prediction == lbl)
                         correctPredictions++;
                 }
 

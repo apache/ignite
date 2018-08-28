@@ -87,6 +87,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
@@ -412,10 +413,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             txEntry.oldValueOnPrimary(val != null);
 
                             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val,
-                                     txEntry.cached().version(), keepBinary, txEntry.cached());
+                                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val,
+                                    txEntry.cached().version(), keepBinary, txEntry.cached());
 
-                                 try {
+                                IgniteThread.onEntryProcessorEntered(false);
+
+                                try {
                                     EntryProcessor<Object, Object, Object> processor = t.get1();
 
                                     procRes = processor.process(invokeEntry, t.get2());
@@ -430,8 +433,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                                     break;
                                 }
+                                finally {
+                                    IgniteThread.onEntryProcessorLeft();
+                                }
 
-                                 modified |= invokeEntry.modified();
+                                modified |= invokeEntry.modified();
                             }
 
                             if (modified)
@@ -440,6 +446,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
 
                             if (op == NOOP) {
+                                GridCacheAdapter<?, ?> cache = writeEntry.context().cache();
+
+                                if (cache.context().statisticsEnabled())
+                                    cache.metrics0().onReadOnlyInvoke(oldVal != null);
+
                                 if (expiry != null) {
                                     long ttl = CU.toTtl(expiry.getExpiryForAccess());
 
@@ -1292,9 +1303,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                 continue;
 
-            if (tx.remainingTime() == -1)
-                return;
-
             MiniFuture fut = new MiniFuture(n.id(), ++miniId, dhtMapping, nearMapping);
 
             add(fut); // Append new future.
@@ -1385,23 +1393,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 fut.onNodeLeft();
             }
             catch (IgniteCheckedException e) {
-                if (!cctx.kernalContext().isStopping()) {
-                    if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("DHT prepare fut, failed to send request dht [txId=" + tx.nearXidVersion() +
-                            ", dhtTxId=" + tx.xidVersion() +
-                            ", node=" + n.id() + ']');
-                    }
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("DHT prepare fut, failed to send request dht [txId=" + tx.nearXidVersion() +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + n.id() + ']');
+                }
 
-                    fut.onResult(e);
-                }
-                else {
-                    if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("DHT prepare fut, failed to send request dht, ignore [txId=" + tx.nearXidVersion() +
-                            ", dhtTxId=" + tx.xidVersion() +
-                            ", node=" + n.id() +
-                            ", err=" + e + ']');
-                    }
-                }
+                fut.onResult(e);
             }
         }
 

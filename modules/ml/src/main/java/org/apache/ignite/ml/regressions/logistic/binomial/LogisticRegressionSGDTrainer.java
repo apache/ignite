@@ -17,13 +17,16 @@
 
 package org.apache.ignite.ml.regressions.logistic.binomial;
 
+import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
@@ -32,13 +35,10 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
-import java.io.Serializable;
-import java.util.Arrays;
-
 /**
  * Trainer of the logistic regression model based on stochastic gradient descent algorithm.
  */
-public class LogisticRegressionSGDTrainer<P extends Serializable> implements SingleLabelDatasetTrainer<LogisticRegressionModel> {
+public class LogisticRegressionSGDTrainer<P extends Serializable> extends SingleLabelDatasetTrainer<LogisticRegressionModel> {
     /** Update strategy. */
     private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
@@ -64,7 +64,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> implements Sin
      * @param seed Seed for random generator.
      */
     public LogisticRegressionSGDTrainer(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations,
-                                        int batchSize, int locIterations, long seed) {
+        int batchSize, int locIterations, long seed) {
         this.updatesStgy = updatesStgy;
         this.maxIterations = maxIterations;
         this.batchSize = batchSize;
@@ -74,7 +74,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> implements Sin
 
     /** {@inheritDoc} */
     @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
 
@@ -82,7 +82,13 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> implements Sin
                 if (data.getFeatures() == null)
                     return null;
                 return data.getFeatures().length / data.getRows();
-            }, (a, b) -> a == null ? b : a);
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? 0 : b;
+                if (b == null)
+                    return a;
+                return b;
+            });
 
             MLPArchitecture architecture = new MLPArchitecture(cols);
             architecture = architecture.withAddedLayer(1, true, Activators.SIGMOID);
@@ -100,11 +106,11 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> implements Sin
             seed
         );
 
-        MultilayerPerceptron mlp = trainer.fit(datasetBuilder, featureExtractor, (k, v) -> new double[]{lbExtractor.apply(k, v)});
+        MultilayerPerceptron mlp = trainer.fit(datasetBuilder, featureExtractor, (k, v) -> new double[] {lbExtractor.apply(k, v)});
 
         double[] params = mlp.parameters().getStorage().data();
 
-        return new LogisticRegressionModel(new DenseLocalOnHeapVector(Arrays.copyOf(params, params.length - 1)),
+        return new LogisticRegressionModel(new DenseVector(Arrays.copyOf(params, params.length - 1)),
             params[params.length - 1]
         );
     }

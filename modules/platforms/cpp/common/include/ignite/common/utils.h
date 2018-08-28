@@ -23,6 +23,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <iterator>
 
 #include <ignite/common/common.h>
 #include <ignite/common/platform_utils.h>
@@ -70,6 +71,67 @@ namespace ignite
          * @param str String to be transformed.
          */
         IGNITE_IMPORT_EXPORT void StripSurroundingWhitespaces(std::string& str);
+
+        /**
+         * Skip leading spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return Iterator to first non-blanc character.
+         */
+        template<typename Iterator>
+        Iterator SkipLeadingSpaces(Iterator begin, Iterator end)
+        {
+            Iterator res = begin;
+
+            while (isspace(*res) && res != end)
+                ++res;
+
+            return res;
+        }
+
+        /**
+         * Skip trailing spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return Iterator to last non-blanc character.
+         */
+        template<typename Iterator>
+        Iterator SkipTrailingSpaces(Iterator begin, Iterator end)
+        {
+            Iterator res = end - 1;
+
+            while (isspace(*res) && res != begin - 1)
+                --res;
+
+            return res + 1;
+        }
+
+        /**
+         * Remove leading and trailing spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return String without leading and trailing spaces.
+         */
+        template<typename Iterator>
+        std::string StripSurroundingWhitespaces(Iterator begin, Iterator end)
+        {
+            std::string res;
+
+            if (begin >= end)
+                return res;
+
+            Iterator skipped_leading = SkipLeadingSpaces(begin, end);
+            Iterator skipped_trailing = SkipTrailingSpaces(skipped_leading, end);
+
+            res.reserve(skipped_trailing - skipped_leading);
+
+            std::copy(skipped_leading, skipped_trailing, std::back_inserter(res));
+
+            return res;
+        }
 
         /**
          * Get string representation of long in decimal form.

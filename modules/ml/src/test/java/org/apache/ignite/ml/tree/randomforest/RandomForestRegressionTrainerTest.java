@@ -21,8 +21,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.ml.composition.ModelOnFeaturesSubspace;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,6 +33,9 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link RandomForestRegressionTrainer}.
+ */
 @RunWith(Parameterized.class)
 public class RandomForestRegressionTrainerTest {
     /**
@@ -54,7 +59,8 @@ public class RandomForestRegressionTrainerTest {
     }
 
     /** */
-    @Test public void testFit() {
+    @Test
+    public void testFit() {
         int sampleSize = 1000;
         Map<Double, double[]> sample = new HashMap<>();
         for (int i = 0; i < sampleSize; i++) {
@@ -66,15 +72,17 @@ public class RandomForestRegressionTrainerTest {
             sample.put(x1 * x2 + x3 * x4, new double[] {x1, x2, x3, x4});
         }
 
-        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4, 3, 5, 0.3, 4, 0.1);
-        ModelsComposition model = trainer.fit(sample, parts, (k, v) -> v, (k, v) -> k);
+        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4, 3, 5, 0.3, 4, 0.1)
+            .withUseIndex(false);
 
-        assertTrue(model.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
-        assertEquals(5, model.getModels().size());
+        ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(v), (k, v) -> k);
 
-        for (ModelsComposition.ModelOnFeaturesSubspace tree : model.getModels()) {
-            assertTrue(tree.getModel() instanceof DecisionTreeConditionalNode);
-            assertEquals(3, tree.getFeaturesMapping().size());
-        }
+        mdl.getModels().forEach(m -> {
+            assertTrue(m instanceof ModelOnFeaturesSubspace);
+            assertTrue(((ModelOnFeaturesSubspace) m).getMdl() instanceof DecisionTreeConditionalNode);
+        });
+
+        assertTrue(mdl.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
+        assertEquals(5, mdl.getModels().size());
     }
 }

@@ -2259,8 +2259,7 @@ public class IgnitionEx {
                         "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
                         "Switching to standard JDK marshalling - " +
-                        "object serialization performance will be significantly slower.",
-                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
+                        "object serialization performance will be significantly slower.");
 
                     marsh = new JdkMarshaller();
                 }
@@ -2604,15 +2603,12 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                if (!grid0.context().invalid())
+                if (grid0.context().segmented())
+                    state = STOPPED_ON_SEGMENTATION;
+                else if (grid0.context().invalid())
+                    state = STOPPED_ON_FAILURE;
+                else
                     state = STOPPED;
-                else {
-                    FailureContext failure = grid0.context().failure().failureContext();
-
-                    state = failure.type() == FailureType.SEGMENTATION ?
-                        STOPPED_ON_SEGMENTATION :
-                        STOPPED_ON_FAILURE;
-                }
 
                 grid = null;
 

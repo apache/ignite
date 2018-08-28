@@ -33,7 +33,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-60(
                 ng-if=igfsFilter
             )
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'IGFS:',
                     model: `${nodeFilter}.IGFS.igfs`,
                     name: '"igfsNodeFilter"',
@@ -45,7 +45,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })(
                     pc-is-in-collection='$ctrl.igfsIDs'
                 )
-                    +form-field-feedback(_, 'isInCollection', `Cluster doesn't have such an IGFS`)
+                    +form-field__error({ error: 'isInCollection',  message: `Cluster doesn't have such an IGFS` })
             .pc-form-grid-col-60(ng-show=customFilter)
                 +java-class('Class name:', `${nodeFilter}.Custom.className`, '"customNodeFilter"',
                     'true', customFilter, 'Class name of custom node filter implementation', customFilter)

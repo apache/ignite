@@ -20,14 +20,17 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -51,6 +54,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
@@ -231,6 +235,21 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public void dumpRingStructure(IgniteLogger log) {
+        ClusterNode[] serverNodes = getRemoteNodes().stream()
+                .filter(node -> !node.isClient())
+                .sorted(Comparator.comparingLong(ClusterNode::order))
+                .toArray(ClusterNode[]::new);
+
+        U.quietAndInfo(log, Arrays.toString(serverNodes));
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentTopologyVersion() {
+        return topVer;
+    }
+
+    /** {@inheritDoc} */
     @Override public String getSpiState() {
 
         if (sockWriter.isOnline())
@@ -326,7 +345,10 @@ class ClientImpl extends TcpDiscoveryImpl {
             U.join(msgWorker.runner(), log);
 
         U.join(sockWriter, log);
-        U.join(sockReader, log);
+
+        // SocketReader may loose interruption, this hack is made to overcome that case.
+        while (!U.join(sockReader, log, 200))
+            U.interrupt(sockReader);
 
         timer.cancel();
 
@@ -1070,6 +1092,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                             if (log.isDebugEnabled())
                                 U.error(log, "Failed to read message [sock=" + sock + ", " +
                                     "locNodeId=" + getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']', e);
+
+                            // Exists possibility that exception raised on interruption.
+                            if (X.hasCause(e, InterruptedException.class, InterruptedIOException.class,
+                                IgniteInterruptedCheckedException.class, IgniteInterruptedException.class))
+                                interrupt();
 
                             IOException ioEx = X.cause(e, IOException.class);
 

@@ -23,6 +23,7 @@ export default class AgentModal {
     constructor($root, $state, $modal, Messages) {
         const self = this;
 
+        this.$root = $root;
         self.$state = $state;
         self.Messages = Messages;
 
@@ -32,7 +33,7 @@ export default class AgentModal {
             show: false,
             backdrop: 'static',
             keyboard: false,
-            controller: () => self,
+            controller() { return self;},
             controllerAs: 'ctrl'
         });
 
@@ -85,5 +86,9 @@ export default class AgentModal {
         self.status = 'nodeMissing';
 
         self.modal.$promise.then(self.modal.show);
+    }
+
+    get securityToken() {
+        return this.$root.user.becameToken || this.$root.user.token;
     }
 }

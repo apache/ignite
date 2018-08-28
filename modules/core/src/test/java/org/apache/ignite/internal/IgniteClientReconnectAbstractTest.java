@@ -305,26 +305,32 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
             }
         };
 
-        for (Ignite client : clients)
-            client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+        try {
+            for (Ignite client : clients)
+                client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
 
-        for (Ignite client : clients)
-            srvSpi.failNode(client.cluster().localNode().id(), null);
+            for (Ignite client : clients)
+                srvSpi.failNode(client.cluster().localNode().id(), null);
 
-        waitReconnectEvent(log, disconnectLatch);
+            waitReconnectEvent(log, disconnectLatch);
 
-        if (disconnectedC != null)
-            disconnectedC.run();
+            if (disconnectedC != null)
+                disconnectedC.run();
 
-        log.info("Allow reconnect.");
+            log.info("Allow reconnect.");
 
-        for (DiscoverySpiTestListener blockLsnr : blockLsnrs)
-            blockLsnr.stopBlockJoin();
+            for (DiscoverySpiTestListener blockLsnr : blockLsnrs)
+                blockLsnr.stopBlockJoin();
 
-        waitReconnectEvent(log, reconnectLatch);
+            waitReconnectEvent(log, reconnectLatch);
 
-        for (Ignite client : clients)
-            client.events().stopLocalListen(p);
+            for (Ignite client : clients)
+                client.events().stopLocalListen(p);
+        }
+        finally {
+            for (DiscoverySpiTestListener blockLsnr : blockLsnrs)
+                blockLsnr.stopBlockJoin();
+        }
     }
 
     /**

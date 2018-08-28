@@ -28,54 +28,54 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
         .pca-form-column-6
             mixin clusters-service-configurations
                 .ignite-form-field(ng-init='serviceConfigurationsTbl={type: "serviceConfigurations", model: "serviceConfigurations", focusId: "kind", ui: "failover-table"}')
-                    +ignite-form-field__label('Service configurations:', '"serviceConfigurations"')
-                    .ignite-form-field__control
-                        -let items = model
+                    +form-field__label({ label: 'Service configurations:', name: '"serviceConfigurations"' })
 
-                        list-editable.pc-list-editable-with-form-grid(ng-model=items name='serviceConfigurations')
-                            list-editable-item-edit.pc-form-grid-row
-                                .pc-form-grid-col-60
-                                    +sane-ignite-form-field-text({
-                                        label: 'Name:',
-                                        model: '$item.name',
-                                        name: '"serviceName"',
-                                        required: true,
-                                        placeholder: 'Input service name'
-                                    })(
-                                        ui-validate=`{
-                                            uniqueName: '$ctrl.Clusters.serviceConfigurations.serviceConfiguration.name.customValidators.uniqueName($item, ${items})'
-                                        }`
-                                        ui-validate-watch=`"${items}"`
-                                        ui-validate-watch-object-equality='true'
-                                        ng-model-options='{allowInvalid: true}'
-                                    )
-                                        +form-field-feedback('"serviceName', 'uniqueName', 'Service with that name is already configured')
-                                .pc-form-grid-col-60
-                                    +java-class('Service class', '$item.service', '"serviceService"', 'true', 'true', 'Service implementation class name')
-                                .pc-form-grid-col-60
-                                    +number('Max per node count:', '$item.maxPerNodeCount', '"ServiceMaxPerNodeCount"', 'true', 'Unlimited', '0',
-                                        'Maximum number of deployed service instances on each node.<br/>' +
-                                        'Zero for unlimited')
-                                .pc-form-grid-col-60
-                                    +number('Total count:', '$item.totalCount', '"serviceTotalCount"', 'true', 'Unlimited', '0',
-                                        'Total number of deployed service instances in the cluster.<br/>' +
-                                        'Zero for unlimited')
-                                .pc-form-grid-col-60
-                                    +dropdown-required-empty('Cache:', '$item.cache', '"serviceCache"', 'true', 'false',
-                                        'Choose cache', 'No caches configured for current cluster', '$ctrl.cachesMenu', 'Cache name used for key-to-node affinity calculation')(
-                                        pc-is-in-collection='$ctrl.clonedCluster.caches'
-                                    )
-                                        +form-field-feedback(_, 'isInCollection', `Cluster doesn't have such a cache`)
-                                .pc-form-grid-col-60
-                                    +text('Affinity key:', '$item.affinityKey', '"serviceAffinityKey"', 'false', 'Input affinity key',
-                                        'Affinity key used for key-to-node affinity calculation')
+                    -let items = model
 
-                            list-editable-no-items
-                                list-editable-add-item-button(
-                                    add-item=`$ctrl.Clusters.addServiceConfiguration($ctrl.clonedCluster)`
-                                    label-single='service configuration'
-                                    label-multiple='service configurations'
+                    list-editable.pc-list-editable-with-form-grid(ng-model=items name='serviceConfigurations')
+                        list-editable-item-edit.pc-form-grid-row
+                            .pc-form-grid-col-60
+                                +form-field__text({
+                                    label: 'Name:',
+                                    model: '$item.name',
+                                    name: '"serviceName"',
+                                    required: true,
+                                    placeholder: 'Input service name'
+                                })(
+                                    ui-validate=`{
+                                        uniqueName: '$ctrl.Clusters.serviceConfigurations.serviceConfiguration.name.customValidators.uniqueName($item, ${items})'
+                                    }`
+                                    ui-validate-watch=`"${items}"`
+                                    ui-validate-watch-object-equality='true'
+                                    ng-model-options='{allowInvalid: true}'
                                 )
+                                    +form-field__error({ error: 'uniqueName', message: 'Service with that name is already configured' })
+                            .pc-form-grid-col-60
+                                +java-class('Service class', '$item.service', '"serviceService"', 'true', 'true', 'Service implementation class name')
+                            .pc-form-grid-col-60
+                                +number('Max per node count:', '$item.maxPerNodeCount', '"ServiceMaxPerNodeCount"', 'true', 'Unlimited', '0',
+                                    'Maximum number of deployed service instances on each node.<br/>' +
+                                    'Zero for unlimited')
+                            .pc-form-grid-col-60
+                                +number('Total count:', '$item.totalCount', '"serviceTotalCount"', 'true', 'Unlimited', '0',
+                                    'Total number of deployed service instances in the cluster.<br/>' +
+                                    'Zero for unlimited')
+                            .pc-form-grid-col-60
+                                +dropdown-required-empty('Cache:', '$item.cache', '"serviceCache"', 'true', 'false',
+                                    'Choose cache', 'No caches configured for current cluster', '$ctrl.cachesMenu', 'Cache name used for key-to-node affinity calculation')(
+                                    pc-is-in-collection='$ctrl.clonedCluster.caches'
+                                )
+                                    +form-field__error({ error: 'isInCollection', message: `Cluster doesn't have such a cache` })
+                            .pc-form-grid-col-60
+                                +text('Affinity key:', '$item.affinityKey', '"serviceAffinityKey"', 'false', 'Input affinity key',
+                                    'Affinity key used for key-to-node affinity calculation')
+
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$ctrl.Clusters.addServiceConfiguration($ctrl.clonedCluster)`
+                                label-single='service configuration'
+                                label-multiple='service configurations'
+                            )
 
             +clusters-service-configurations
 

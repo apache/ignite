@@ -2226,6 +2226,26 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Checks if the address is local.
+     *
+     * @param addr Address for check.
+     * @return true if address is local, otherwise false
+     */
+    public static boolean isLocalAddress(InetAddress addr) {
+        // Check if the address is a valid special local or loop back
+        if (addr.isAnyLocalAddress() || addr.isLoopbackAddress())
+            return true;
+
+        // Check if the address is defined on any interface
+        try {
+            return NetworkInterface.getByInetAddress(addr) != null;
+        }
+        catch (SocketException e) {
+            return false;
+        }
+    }
+
+    /**
      * Gets a list of all local enabled MACs known to this JVM. It
      * is using hardware address of the network interface that is not guaranteed to be
      * MAC addresses (but in most cases it is).
@@ -4210,7 +4230,7 @@ public abstract class IgniteUtils {
 
         String s = msg.toString();
 
-        warn(log, s, s);
+        warn(log, s, null);
     }
 
     /**
@@ -4266,18 +4286,23 @@ public abstract class IgniteUtils {
      * or in QUIET mode it will add {@code (wrn)} prefix to the message.
      *
      * @param log Optional logger to use when QUIET mode is not enabled.
-     * @param longMsg Message to log using normal logger.
-     * @param shortMsg Message to log using quiet logger.
+     * @param msg Message to log using normal logger.
+     * @param e Optional exception.
      */
-    public static void warn(@Nullable IgniteLogger log, Object longMsg, Object shortMsg) {
-        assert longMsg != null;
-        assert shortMsg != null;
+    public static void warn(@Nullable IgniteLogger log, Object msg, @Nullable Throwable e) {
+        assert msg != null;
 
         if (log != null)
-            log.warning(compact(longMsg.toString()));
-        else
+            log.warning(compact(msg.toString()), e);
+        else {
             X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
-                compact(shortMsg.toString()));
+                    compact(msg.toString()));
+
+            if (e != null)
+                e.printStackTrace(System.err);
+            else
+                X.printerrln();
+        }
     }
 
     /**
@@ -4603,11 +4628,24 @@ public abstract class IgniteUtils {
      * @return {@code true} if thread has finished, {@code false} otherwise.
      */
     public static boolean join(@Nullable Thread t, @Nullable IgniteLogger log) {
-        if (t != null)
-            try {
-                t.join();
+        return join(t, log, 0);
+    }
 
-                return true;
+    /**
+     * Waits for completion of a given thread. If thread is {@code null} then
+     * this method returns immediately returning {@code true}
+     *
+     * @param t Thread to join.
+     * @param log Logger for logging errors.
+     * @param timeout Join timeout.
+     * @return {@code true} if thread has finished, {@code false} otherwise.
+     */
+    public static boolean join(@Nullable Thread t, @Nullable IgniteLogger log, long timeout) {
+        if (t != null) {
+            try {
+                t.join(timeout);
+
+                return !t.isAlive();
             }
             catch (InterruptedException ignore) {
                 warn(log, "Got interrupted while waiting for completion of a thread: " + t);
@@ -4616,6 +4654,7 @@ public abstract class IgniteUtils {
 
                 return false;
             }
+        }
 
         return true;
     }
@@ -10398,6 +10437,22 @@ public abstract class IgniteUtils {
      */
     public static BaselineTopology getBaselineTopology(@NotNull GridCacheContext cctx) {
         return getBaselineTopology(cctx.kernalContext());
+    }
+
+    /**
+     * Check that node Ignite product version is not less then specified.
+     *
+     * @param ver Target Ignite product version.
+     * @param nodes Cluster nodes.
+     * @return {@code True} if ignite product version of all nodes is not less then {@code ver}.
+     */
+    public static boolean isOldestNodeVersionAtLeast(IgniteProductVersion ver, Iterable<ClusterNode> nodes) {
+        for (ClusterNode node : nodes) {
+            if (node.version().compareToIgnoreTimestamp(ver) < 0)
+                return false;
+        }
+
+        return true;
     }
 
     /**
