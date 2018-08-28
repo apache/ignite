@@ -25,11 +25,15 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 /**
  * Failed to execute non-collocated query root cause message test
  */
+// TODO: Test -> SelfTest
+// TODO: Add to suite.
 public class NonCollocatedRetryMessageTest  extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 3;
+
     /** */
     private static final String ORG = "org";
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Person> personCache;
 
@@ -58,11 +62,14 @@ public class NonCollocatedRetryMessageTest  extends GridCommonAbstractTest {
                     GridIoMessage gridMsg = (GridIoMessage)msg;
                     if ( GridH2QueryRequest.class.isAssignableFrom( gridMsg.message().getClass() ) ){
                         GridH2QueryRequest req = (GridH2QueryRequest) (gridMsg.message());
-                        if ( reqId < 0 ) {
+                        if (reqId < 0) {
                             reqId = req.requestId();
+
                             String shutName = getTestIgniteInstanceName(1);
+
                             stopGrid(shutName, true, false);
-                        } else if( reqId != req.requestId() ){
+                        }
+                        else if( reqId != req.requestId() ){
                             try {
                                 U.sleep(IgniteSystemProperties.getLong(IGNITE_SQL_RETRY_TIMEOUT, GridReduceQueryExecutor.DFLT_RETRY_TIMEOUT));
                             }

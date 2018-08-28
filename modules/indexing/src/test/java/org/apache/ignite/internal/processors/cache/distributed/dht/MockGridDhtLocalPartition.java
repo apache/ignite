@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wrapper around GridDhtLocalPartition to be extended in test cases
  */
+// TODO: Move to H2 tests
 public abstract class MockGridDhtLocalPartition extends GridDhtLocalPartition{
     /**
      * fake id generator in order to bypass construction stage failure (if invoked with real id)
