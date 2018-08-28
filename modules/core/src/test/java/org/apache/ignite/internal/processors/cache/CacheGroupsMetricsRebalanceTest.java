@@ -172,6 +172,8 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRebalanceEstimateFinishTime() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9391");
+
         System.setProperty(IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, String.valueOf(1000));
 
         Ignite ig1 = startGrid(1);
