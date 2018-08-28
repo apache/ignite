@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -93,6 +94,20 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
         return null;
     }
 
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        //restart node if needed.
+        for (int i = 1; i < NODE_CNT; i++) {
+            try {
+                ignite(i);
+            }
+            catch (IgniteIllegalStateException e) {
+                startGrid(i);
+            }
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -103,14 +118,14 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
-    public void ignoreTestPutAllAsyncFailoverManyThreads() throws Exception {
+    public void testPutAllAsyncFailoverManyThreads() throws Exception {
         putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void ignoreTestAsyncFailover() throws Exception {
+    public void testAsyncFailover() throws Exception {
         IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         int ops = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
