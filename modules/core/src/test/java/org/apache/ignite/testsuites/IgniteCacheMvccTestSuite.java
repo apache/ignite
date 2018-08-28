@@ -18,8 +18,19 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.mvcc.*;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClusterRestartTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccConfigurationValidationTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccLocalEntriesWithConcurrentTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccOperationChecksTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedCoordinatorFailoverTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccProcessorTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedCoordinatorFailoverTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithConcurrentTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurrentTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccVacuumTest;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSeflTest;
 
 /**
  *
@@ -43,7 +54,7 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         suite.addTestSuite(CacheMvccVacuumTest.class);
         suite.addTestSuite(CacheMvccPartitionedCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheMvccReplicatedCoordinatorFailoverTest.class);
-        suite.addTestSuite(DataStreamProcessorSelfTest.class);
+        suite.addTestSuite(DataStreamProcessorMvccSeflTest.class);
 
         return suite;
     }
