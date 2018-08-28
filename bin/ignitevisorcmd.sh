@@ -108,14 +108,16 @@ trap restoreSttySettings INT
 #
 # Final JVM_OPTS for Java 9 compatibility
 #
-${JAVA_HOME}/bin/java -version 2>&1 | grep -qE 'java version "9.*"' && {
-JVM_OPTS="--add-exports java.base/jdk.internal.misc=ALL-UNNAMED \
+javaMajorVersion "${JAVA_HOME}/bin/java"
+
+if [ $version -gt 8 ]; then
+    JVM_OPTS="--add-exports java.base/jdk.internal.misc=ALL-UNNAMED \
           --add-exports java.base/sun.nio.ch=ALL-UNNAMED \
           --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
           --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
           --add-modules java.xml.bind \
       ${JVM_OPTS}"
-} || true
+fi
 
 #
 # Start Visor console.

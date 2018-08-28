@@ -82,7 +82,13 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
                 if (data.getFeatures() == null)
                     return null;
                 return data.getFeatures().length / data.getRows();
-            }, (a, b) -> a == null ? b : a);
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? 0 : b;
+                if (b == null)
+                    return a;
+                return b;
+            });
 
             MLPArchitecture architecture = new MLPArchitecture(cols);
             architecture = architecture.withAddedLayer(1, true, Activators.LINEAR);
@@ -100,7 +106,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
             seed
         );
 
-        IgniteBiFunction<K, V, double[]> lbE = (IgniteBiFunction<K, V, double[]>)(k, v) -> new double[]{lbExtractor.apply(k, v)};
+        IgniteBiFunction<K, V, double[]> lbE = (IgniteBiFunction<K, V, double[]>)(k, v) -> new double[] {lbExtractor.apply(k, v)};
 
         MultilayerPerceptron mlp = trainer.fit(datasetBuilder, featureExtractor, lbE);
 

@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
@@ -251,8 +252,8 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 // ReSharper disable once ObjectCreationAsStatement
                 var ex = Assert.Throws<IgniteClientException>(() =>
-                    new Impl.Client.ClientSocket(GetClientConfiguration(),
-                    new Impl.Client.ClientProtocolVersion(-1, -1, -1)));
+                    new ClientSocket(GetClientConfiguration(),
+                    new ClientProtocolVersion(-1, -1, -1)));
 
                 Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
 

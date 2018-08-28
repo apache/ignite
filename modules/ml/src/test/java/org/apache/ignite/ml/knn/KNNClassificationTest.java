@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.KNNStrategy;
+import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -58,6 +58,12 @@ public class KNNClassificationTest {
     }
 
     /** */
+    @Test(expected = IllegalStateException.class)
+    public void testNullDataset() {
+        new KNNClassificationModel(null).apply(null);
+    }
+
+    /** */
     @Test
     public void testBinaryClassification() {
         Map<Integer, double[]> data = new HashMap<>();
@@ -70,14 +76,14 @@ public class KNNClassificationTest {
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-        KNNClassificationModel knnMdl = trainer.fit(
+        NNClassificationModel knnMdl = trainer.fit(
             data,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(KNNStrategy.SIMPLE);
+            .withStrategy(NNStrategy.SIMPLE);
 
         assertTrue(knnMdl.toString().length() > 0);
         assertTrue(knnMdl.toString(true).length() > 0);
@@ -102,14 +108,14 @@ public class KNNClassificationTest {
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-        KNNClassificationModel knnMdl = trainer.fit(
+        NNClassificationModel knnMdl = trainer.fit(
             data,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(KNNStrategy.SIMPLE);
+            .withStrategy(NNStrategy.SIMPLE);
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
         assertEquals(knnMdl.apply(firstVector), 1.0);
@@ -130,14 +136,14 @@ public class KNNClassificationTest {
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-        KNNClassificationModel knnMdl = trainer.fit(
+        NNClassificationModel knnMdl = trainer.fit(
             data,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(KNNStrategy.SIMPLE);
+            .withStrategy(NNStrategy.SIMPLE);
 
         Vector vector = new DenseVector(new double[] {-1.01, -1.01});
         assertEquals(knnMdl.apply(vector), 2.0);
@@ -156,14 +162,14 @@ public class KNNClassificationTest {
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
-        KNNClassificationModel knnMdl = trainer.fit(
+        NNClassificationModel knnMdl = trainer.fit(
             data,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(KNNStrategy.WEIGHTED);
+            .withStrategy(NNStrategy.WEIGHTED);
 
         Vector vector = new DenseVector(new double[] {-1.01, -1.01});
         assertEquals(knnMdl.apply(vector), 1.0);

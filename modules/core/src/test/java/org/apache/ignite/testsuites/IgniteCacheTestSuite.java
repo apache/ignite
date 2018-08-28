@@ -45,6 +45,7 @@ import org.apache.ignite.internal.managers.communication.IgniteCommunicationBala
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationSslBalanceTest;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessagesTest;
 import org.apache.ignite.internal.managers.communication.IgniteVariousConnectionNumberTest;
+import org.apache.ignite.internal.processors.cache.BinaryMetadataRegistrationInsideEntryProcessorTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheAtomicSingleMessageCountSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
@@ -387,6 +388,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         //suite.addTestSuite(IgniteOnePhaseCommitNearSelfTest.class);
         //suite.addTestSuite(IgniteStaticCacheStartSelfTest.class);
         //suite.addTestSuite(InterceptorWithKeepBinaryCacheFullApiTest.class);
+
+        suite.addTestSuite(BinaryMetadataRegistrationInsideEntryProcessorTest.class);
 
         return suite;
     }
