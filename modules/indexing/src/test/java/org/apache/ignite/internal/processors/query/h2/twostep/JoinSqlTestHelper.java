@@ -26,7 +26,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 public class JoinSqlTestHelper {
     /** */
     private static final int ORG_COUNT = 100;
-
     /** */
     private static final int PERSON_PER_ORG_COUNT = 10;
 
