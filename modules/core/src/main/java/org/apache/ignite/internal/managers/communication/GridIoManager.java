@@ -158,10 +158,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** */
     private static final long IGNITE_STAT_TOO_LONG_PROCESSING =
         IgniteSystemProperties.getLong(
-            IgniteSystemProperties.IGNITE_STAT_TOO_LONG_PROCESSING, TimeUnit.MILLISECONDS.toNanos(1000));
+            IgniteSystemProperties.IGNITE_STAT_TOO_LONG_PROCESSING, TimeUnit.MILLISECONDS.toNanos(500));
 
     /** */
-    private static final int[] BUCKET_THRESHOLDS = new int[] {1, 10, 30, 50, 100, 200, 400, 750, 1000, 0};
+    private static final int[] BUCKET_THRESHOLDS = new int[] {1, 10, 30, 50, 100, 250, 500, 750, 1000, 0};
 
     /** */
     private static final long BILLION = 1_000_000;
@@ -1139,18 +1139,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final byte plc,
         final IgniteRunnable msgC
     ) throws IgniteCheckedException {
-        final long enqueueTime = System.nanoTime();
+        final long startWait = System.nanoTime();
 
-        final long startTime = U.currentTimeMillis();
+        final long enqueueTs = U.currentTimeMillis();
 
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
                     threadProcessingMessage(true, msgC);
 
+                    long startProc = System.nanoTime();
+
                     processRegularMessage0(msg, nodeId);
 
-                    logMessageProcessingTime(msg, System.nanoTime() - enqueueTime, startTime);
+                    logMessageProcessingTime(msg, startWait, startProc, System.nanoTime(), enqueueTs);
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1318,7 +1320,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 .a(" [total=").a(entry.getValue().total)
                 .a(", average=").a(entry.getValue().rollingAvg / 1000/ 1000.);
 
-            sb.a(',').a(" buckets=[");
+            sb.a(", buckets=[");
 
             for (int i = 0; i < entry.getValue().buckets.length; i++) {
                 long t = entry.getValue().buckets[i];
@@ -1326,6 +1328,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 sb.a(t);
 
                 if (i < entry.getValue().buckets.length - 1)
+                    sb.a(", ");
+            }
+
+            sb.a("], waitBuckets=[");
+
+            for (int i = 0; i < entry.getValue().waitBuckets.length; i++) {
+                long t = entry.getValue().waitBuckets[i];
+
+                sb.a(t);
+
+                if (i < entry.getValue().waitBuckets.length - 1)
                     sb.a(", ");
             }
 
@@ -1395,9 +1408,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /**
      * @param msg Message.
-     * @param duration Duration.
+     * @param startWait Start waiting in queue timestamp.
+     * @param startProc Start processing timestamp.
+     * @param finishProc Finish processing timestamp.
+     * @param enqueueTs enqueue UNIX timestamp (10ms resolution)
      */
-    private void logMessageProcessingTime(GridIoMessage msg, long duration, long startTime) {
+    private void logMessageProcessingTime(GridIoMessage msg, long startWait, long startProc, long finishProc, long enqueueTs) {
         if (ctx.clientNode())
             return;
 
@@ -1427,17 +1443,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         ProcessMessageStatsClosure<Message> clo = handlers.get(msg0.getClass().getSimpleName());
 
+        long procTime = finishProc - startProc;
+        long waitTime = startProc - startWait;
+
         synchronized (statMap) {
             MessageStat stat = statMap.get(msgCls);
 
             if (stat == null)
                 statMap.put(msgCls, (stat = new MessageStat(ctx)));
 
-            stat.increment(duration);
+            stat.increment(procTime, waitTime);
 
             if (clo != null)
                 try {
-                    clo.apply(stat, msg0, duration);
+                    clo.apply(stat, msg0, procTime + waitTime);
                 }
                 catch (Throwable e) {
                     log.error("Failed to apply stat closure: msgCls=" + msgCls.getSimpleName(), e);
@@ -1445,9 +1464,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         synchronized (messages) {
-            if (duration > IGNITE_STAT_TOO_LONG_PROCESSING) {
+            if (procTime > IGNITE_STAT_TOO_LONG_PROCESSING) {
                 try {
-                    messages.add(new T3<>(startTime, duration, msg0.toString()));
+                    messages.add(new T3<>(enqueueTs, procTime, msg0.toString()));
                 }
                 catch (Throwable e) {
                     log.error("Failed to add slow message: msgCls=" + msgCls.getSimpleName(), e);
@@ -3442,6 +3461,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final long[] buckets = new long[10];
 
         /** */
+        final long[] waitBuckets = new long[10];
+
+        /** */
         final Map<T2<KeyCacheObject, Integer>, Long> hotKeys = new HashMap<>();
 
         /** */
@@ -3459,14 +3481,30 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** */
         private final GridKernalContext ctx;
 
+        /**
+         * @param ctx Context.
+         */
         public MessageStat(GridKernalContext ctx) {
             this.ctx = ctx;
         }
 
         /**
+         * @param procTime Duration.
+         */
+        public void increment(long procTime, long waitTime) {
+            updateBucket(buckets, procTime);
+            updateBucket(waitBuckets, waitTime);
+
+            rollingAvg = (rollingAvg * total + procTime)/(total + 1);
+
+            total++;
+        }
+
+        /**
+         * @param buckets Buckets.
          * @param duration Duration.
          */
-        public void increment(long duration) {
+        private static void updateBucket(long[] buckets, long duration) {
             if (duration <= BUCKET_THRESHOLDS[0] * BILLION)
                 buckets[0]++;
             else if (duration <= BUCKET_THRESHOLDS[1] * BILLION)
@@ -3487,15 +3525,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 buckets[8]++;
             else
                 buckets[9]++;
-
-            rollingAvg = (rollingAvg * total + duration)/(total + 1);
-
-            total++;
         }
 
         /** */
         public void merge(MessageStat dst, int n) {
             Arrays.setAll(dst.buckets, value -> dst.buckets[value] + buckets[value]);
+            Arrays.setAll(dst.waitBuckets, value -> dst.waitBuckets[value] + waitBuckets[value]);
 
             dst.rollingAvg = (dst.rollingAvg * (n - 1) + rollingAvg) / n;
 
@@ -3581,15 +3616,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             for (int i = 0; i < 10; i++)
                 stat1.addKey(new KeyCacheObjectImpl("k" + i, new byte[0], 0), -100000);
 
-            stat1.increment(50);
-            stat1.increment(100);
-            stat1.increment(200);
+            stat1.increment(50, 0);
+            stat1.increment(100, 0);
+            stat1.increment(200, 0);
 
             MessageStat stat2 = new MessageStat(null);
 
-            stat2.increment(100);
-            stat2.increment(100);
-            stat2.increment(200);
+            stat2.increment(100, 0);
+            stat2.increment(100, 0);
+            stat2.increment(200, 0);
 
             System.out.println(stat1.rollingAvg);
             System.out.println(stat1.total);
@@ -3608,3 +3643,4 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 }
+
