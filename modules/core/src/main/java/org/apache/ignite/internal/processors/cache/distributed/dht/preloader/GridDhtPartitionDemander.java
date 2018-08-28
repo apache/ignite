@@ -443,13 +443,6 @@ public class GridDhtPartitionDemander {
             return;
         }
 
-        synchronized (fut) { // Synchronized to prevent consistency issues in case of parallel cancellation.
-            if (fut.isDone())
-                return;
-
-            fut.remaining.forEach((key, value) -> value.set1(U.currentTimeMillis()));
-        }
-
         final CacheConfiguration cfg = grp.config();
 
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assignments.entrySet()) {
@@ -462,7 +455,7 @@ public class GridDhtPartitionDemander {
                 if (fut.isDone())
                     break;
 
-                parts = fut.remaining.get(node.id()).get2();
+                parts = fut.remaining.get(node.id());
 
                 U.log(log, "Starting rebalancing [grp=" + grp.cacheOrGroupName()
                         + ", mode=" + cfg.getRebalanceMode() + ", fromNode=" + node.id() + ", partitionsCount=" + parts.size()
@@ -948,7 +941,7 @@ public class GridDhtPartitionDemander {
         private final IgniteLogger log;
 
         /** Remaining. T2: startTime, partitions */
-        private final Map<UUID, T2<Long, IgniteDhtDemandedPartitionsMap>> remaining = new HashMap<>();
+        private final Map<UUID, IgniteDhtDemandedPartitionsMap> remaining = new HashMap<>();
 
         /** Missed. */
         private final Map<UUID, Collection<Integer>> missed = new HashMap<>();
@@ -983,7 +976,7 @@ public class GridDhtPartitionDemander {
                 assert v.partitions() != null :
                     "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
 
-                remaining.put(k.id(), new T2<>(U.currentTimeMillis(), v.partitions()));
+                remaining.put(k.id(), v.partitions());
             });
 
             this.grp = grp;
@@ -1062,7 +1055,7 @@ public class GridDhtPartitionDemander {
 
                 U.log(log, ("Cancelled rebalancing [cache=" + grp.cacheOrGroupName() +
                     ", fromNode=" + nodeId + ", topology=" + topologyVersion() +
-                    ", time=" + (U.currentTimeMillis() - remaining.get(nodeId).get1()) + " ms]"));
+                    "]"));
 
                 cleanupRemoteContexts(nodeId);
 
@@ -1136,12 +1129,10 @@ public class GridDhtPartitionDemander {
                 if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_LOADED))
                     rebalanceEvent(p, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
-                T2<Long, IgniteDhtDemandedPartitionsMap> t = remaining.get(nodeId);
+                IgniteDhtDemandedPartitionsMap parts = remaining.get(nodeId);
 
-                assert t != null : "Remaining not found [grp=" + grp.cacheOrGroupName() + ", fromNode=" + nodeId +
-                    ", part=" + p + "]";
-
-                IgniteDhtDemandedPartitionsMap parts = t.get2();
+                assert parts != null : "Remaining not found [grp=" + grp.cacheOrGroupName() + ", fromNode=" + nodeId +
+                        ", part=" + p + "]";
 
                 boolean rmvd = parts.remove(p);
 
@@ -1153,7 +1144,7 @@ public class GridDhtPartitionDemander {
                             "rebalancing [fromNode=" + nodeId +
                             ", cacheOrGroup=" + grp.cacheOrGroupName() +
                             ", topology=" + topologyVersion() +
-                        ", time=" + (U.currentTimeMillis() - t.get1()) + " ms]"));
+                            "]"));
 
                     remaining.remove(nodeId);
                 }
