@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(TestSystemFunctionUser)
 
 BOOST_AUTO_TEST_CASE(TestSystemFunctionIfnull)
 {
-    CheckSingleResult<int32_t>("SELECT {fn IFNULL(NULL, 42)}", 42);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn IFNULL(NULL, 42)}", 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

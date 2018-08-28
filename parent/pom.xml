@@ -53,7 +53,7 @@
         <aspectj.version>1.8.13</aspectj.version>
         <aws.sdk.bundle.version>1.10.12_1</aws.sdk.bundle.version>
         <aws.sdk.version>1.11.75</aws.sdk.version>
-        <camel.version>2.16.0</camel.version>
+        <camel.version>2.22.0</camel.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.3</commons.beanutils.version>
         <commons.codec.version>1.11</commons.codec.version>
@@ -80,7 +80,7 @@
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
         <jetbrains.annotations.version>13.0</jetbrains.annotations.version>
-        <jetty.version>9.2.11.v20150529</jetty.version>
+        <jetty.version>9.4.11.v20180605</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
@@ -943,8 +943,6 @@
                                         <exclude>**/web-console/frontend/**/*.svg</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
-                                        <!--Kubernetes -->
-                                        <exclude>config/gce/*.yaml</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
