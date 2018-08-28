@@ -55,6 +55,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
 
 /**
  * Tests node recovering after disk errors during interaction with persistent storage.
@@ -321,6 +322,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      * Test node stopping & recovering on WAL writing fail with disabled MMAP.
      */
     public void testRecoveringOnWALWritingFail2() throws Exception {
+        System.setProperty(IGNITE_WAL_SEGMENT_SYNC_TIMEOUT, "100");
         // Fail somewhere on the second wal segment.
         ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE)));
         System.setProperty(IGNITE_WAL_MMAP, "false");
