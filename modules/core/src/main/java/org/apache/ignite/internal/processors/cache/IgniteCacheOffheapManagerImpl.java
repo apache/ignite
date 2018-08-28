@@ -890,7 +890,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /**
-     *
      * @param cacheId Cache ID.
      * @param dataIt Data store iterator.
      * @param mvccSnapshot Mvcc snapshot.
@@ -960,7 +959,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param dataIt Data store iterator.
      * @return Rows iterator
      */
-    private GridCloseableIterator<CacheDataRow> evictionSafeIterator(final int cacheId, final Iterator<CacheDataStore> dataIt) {
+    private GridCloseableIterator<CacheDataRow> evictionSafeIterator(final int cacheId,
+        final Iterator<CacheDataStore> dataIt) {
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */
             private GridCursor<? extends CacheDataRow> cur;
@@ -2202,7 +2202,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-                dataTree.iterate(new MvccMaxSearchRow(cacheId, key) , new MvccMinSearchRow(cacheId, key), updateRow);
+                dataTree.iterate(new MvccMaxSearchRow(cacheId, key), new MvccMinSearchRow(cacheId, key), updateRow);
 
                 ResultType res = updateRow.resultType();
 
@@ -2428,8 +2428,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @throws IgniteCheckedException If failed.
          */
         private void updatePendingEntries(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
-            throws IgniteCheckedException
-        {
+            throws IgniteCheckedException {
             long expireTime = newRow.expireTime();
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
@@ -2449,7 +2448,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException {
+        @Override public void remove(GridCacheContext cctx, KeyCacheObject key,
+            int partId) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
@@ -2556,7 +2556,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             List<IgniteBiTuple<Object, MvccVersion>> res = new ArrayList<>();
 
-            long crd = MVCC_CRD_COUNTER_NA, cntr = MVCC_COUNTER_NA; int opCntr = MVCC_OP_COUNTER_NA;
+            long crd = MVCC_CRD_COUNTER_NA;
+            long cntr = MVCC_COUNTER_NA;
+            int opCntr = MVCC_OP_COUNTER_NA;
 
             while (cur.next()) {
                 CacheDataRow row = cur.get();
@@ -2566,7 +2568,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 res.add(F.t(row.value().value(cctx.cacheObjectContext(), false), row.mvccVersion()));
 
-                crd = row.mvccCoordinatorVersion(); cntr = row.mvccCounter(); opCntr = row.mvccOperationCounter();
+                crd = row.mvccCoordinatorVersion();
+                cntr = row.mvccCounter();
+                opCntr = row.mvccOperationCounter();
             }
 
             return res;
@@ -2645,8 +2649,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return cursor(cacheId, null, null);
         }
 
-        /** {@inheritDoc}
-         * @param cacheId*/
+        /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
             MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
             return cursor(cacheId, null, null, null, mvccSnapshot);
@@ -2861,7 +2864,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             private final MvccSnapshot snapshot;
 
             /**
-             *
              * @param cctx Cache context.
              * @param snapshot MVCC snapshot.
              */
