@@ -31,7 +31,7 @@ panel-collapsible(opened=`::true` ng-form=form)
             .pc-form-grid-col-60
                 +checkbox('Generate POJO classes', generatePojo, '"generatePojo"', 'If selected then POJO classes will be generated from database tables')
             .pc-form-grid-col-30
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Caches:',
                     model: `${model}.caches`,
                     name: '"caches"',

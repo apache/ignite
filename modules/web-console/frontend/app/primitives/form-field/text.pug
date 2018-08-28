@@ -15,9 +15,9 @@
     limitations under the License.
 
 mixin form-field__text({ label, model, name, disabled, required, placeholder, tip })
-    -var errLbl = label.substring(0, label.length - 1)
+    -let errLbl = label[label.length - 1] === ':' ? label.substring(0, label.length - 1) : label
 
-    .form-field(id=`{{ ${name} }}Field`)
+    .form-field.form-field__text.ignite-form-field(id=`{{ ${name} }}Field`)
         +form-field__label({ label, name, required, disabled })
             +form-field__tooltip({ title: tip, options: tipOpts })
 
@@ -26,10 +26,11 @@ mixin form-field__text({ label, model, name, disabled, required, placeholder, ti
             +form-field__input({ name, model, disabled, required, placeholder })(attributes=attributes)
 
         .form-field__errors(
-            ng-messages=`(${form}[${name}].$dirty || ${form}[${name}].$touched || ${form}[${name}].$submitted) && ${form}[${name}].$invalid ? ${form}[${name}].$error : {}`
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
             if block
                 block
 
             if required
-                +form-field__error({ name, error: 'required', message: `${errLbl} could not be empty!` })
+                +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
