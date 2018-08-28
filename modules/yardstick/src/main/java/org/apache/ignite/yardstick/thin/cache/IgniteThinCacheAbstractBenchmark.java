@@ -15,19 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.yardstick.thin.cache;
+
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.yardstick.IgniteThinAbstractBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- * Tracks allocated pages.
+ *
+ * Abstract class for thin client benchmarks which use cache.
  */
-public interface AllocatedPageTracker {
-    /** No-op instance. */
-    public AllocatedPageTracker NO_OP = delta -> {};
+public abstract class IgniteThinCacheAbstractBenchmark<K, V> extends IgniteThinAbstractBenchmark {
+    /** Cache. */
+    protected ClientCache<K, V> cache;
+
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        cache = cache();
+    }
 
     /**
-     * Updates totalAllocatedPages counter.
+     * Each benchmark must determine which cache will be used.
      *
-     * @param delta Value to increment by.
+     * @return ClientCache Cache to use.
      */
-    public void updateTotalAllocatedPages(long delta);
+    protected abstract ClientCache<K, V> cache();
 }

@@ -15,19 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.yardstick.thin.cache;
+
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.client.ClientCache;
 
 /**
- * Tracks allocated pages.
+ * Thin client benchmark that performs putAll operations.
  */
-public interface AllocatedPageTracker {
-    /** No-op instance. */
-    public AllocatedPageTracker NO_OP = delta -> {};
+public class IgniteThinPutAllBenchmark extends IgniteThinCacheAbstractBenchmark<Integer, Object> {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        Map<Integer, Integer> vals = new HashMap<>();
 
-    /**
-     * Updates totalAllocatedPages counter.
-     *
-     * @param delta Value to increment by.
-     */
-    public void updateTotalAllocatedPages(long delta);
+        for (int i = 0; i < 500; i++ )
+            vals.put(i, nextRandom(1000));
+
+        cache().putAll(vals);
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ClientCache<Integer, Object> cache() {
+        return client().cache("atomic");
+    }
 }

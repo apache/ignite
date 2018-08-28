@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.yardstick.thin.cache;
+
+import org.apache.ignite.client.ClientCache;
 
 /**
- * Tracks allocated pages.
+ * Thin client benchmark that performs putAll operations.
  */
-public interface AllocatedPageTracker {
-    /** No-op instance. */
-    public AllocatedPageTracker NO_OP = delta -> {};
-
-    /**
-     * Updates totalAllocatedPages counter.
-     *
-     * @param delta Value to increment by.
-     */
-    public void updateTotalAllocatedPages(long delta);
+public class IgniteThinPutAllTxBenchmark extends IgniteThinPutAllBenchmark {
+    /** {@inheritDoc} */
+    @Override protected ClientCache<Integer, Object> cache() {
+        return client().cache("tx");
+    }
 }

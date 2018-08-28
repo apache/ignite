@@ -15,19 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.yardstick.thin.cache;
+
+import java.util.Map;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.yardstick.cache.model.SampleValue;
 
 /**
- * Tracks allocated pages.
+ * Thin client benchmark that performs put and get operations.
  */
-public interface AllocatedPageTracker {
-    /** No-op instance. */
-    public AllocatedPageTracker NO_OP = delta -> {};
+public class IgniteThinPutGetBenchmark extends IgniteThinCacheAbstractBenchmark<Integer, Object> {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        int key = nextRandom(args.range());
 
-    /**
-     * Updates totalAllocatedPages counter.
-     *
-     * @param delta Value to increment by.
-     */
-    public void updateTotalAllocatedPages(long delta);
+        Object val = cache().get(key);
+
+        if (val != null)
+            key = nextRandom(args.range());
+
+        cache().put(key, new SampleValue(key));
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ClientCache<Integer, Object> cache() {
+        return client().cache("atomic");
+    }
 }
