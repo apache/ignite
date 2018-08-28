@@ -93,6 +93,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -474,36 +475,27 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /**
      * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
-     *
-     * @param nodeStopping {@code True} if tx was cancelled during node stop.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected void uncommit(boolean nodeStopping) {
-        try {
-            if (!nodeStopping) {
-                for (IgniteTxEntry e : writeMap().values()) {
-                    try {
-                        GridCacheEntryEx entry = e.cached();
+    protected void uncommit() {
+        for (IgniteTxEntry e : writeMap().values()) {
+            try {
+                GridCacheEntryEx entry = e.cached();
 
-                        if (e.op() != NOOP)
-                            entry.invalidate(xidVer);
-                    }
-                    catch (Throwable t) {
-                        U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+                if (e.op() != NOOP)
+                    entry.invalidate(xidVer);
+            }
+            catch (Throwable t) {
+                U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
 
-                        if (t instanceof Error)
-                            throw (Error)t;
+                if (t instanceof Error)
+                    throw (Error)t;
 
-                        break;
-                    }
-                }
-
-                cctx.tm().uncommitTx(this);
+                break;
             }
         }
-        catch (Exception ex) {
-            U.error(log, "Failed to do uncommit.", ex);
-        }
+
+        cctx.tm().uncommitTx(this);
     }
 
     /** {@inheritDoc} */
@@ -1705,6 +1697,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 Object procRes = null;
                 Exception err = null;
 
+                IgniteThread.onEntryProcessorEntered(true);
+
                 try {
                     EntryProcessor<Object, Object, Object> processor = t.get1();
 
@@ -1716,6 +1710,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
                 catch (Exception e) {
                     err = e;
+                }
+                finally {
+                    IgniteThread.onEntryProcessorLeft();
                 }
 
                 if (ret != null) {

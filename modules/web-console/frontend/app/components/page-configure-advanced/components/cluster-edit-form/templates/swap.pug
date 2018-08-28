@@ -46,7 +46,7 @@ panel-collapsible(
                     +text('Base directory:', `${fileSwapModel}.baseDirectory`, '"baseDirectory"', 'false', 'swapspace',
                         'Base directory where to write files')
                 .pc-form-grid-col-30
-                    +sane-ignite-form-field-number({
+                    +form-field__number({
                         label: 'Read stripe size:',
                         model: `${fileSwapModel}.readStripesNumber`,
                         name: '"readStripesNumber"',
@@ -57,7 +57,7 @@ panel-collapsible(
                             powerOfTwo: '$ctrl.Clusters.swapSpaceSpi.readStripesNumber.customValidators.powerOfTwo($value)'
                         }`
                     )
-                        +form-field-feedback('"readStripesNumber"', 'powerOfTwo', 'Read stripe size must be positive and power of two')
+                        +form-field__error({ error: 'powerOfTwo', message: 'Read stripe size must be positive and power of two' })
                 .pc-form-grid-col-30
                     +number-min-max-step('Maximum sparsity:', `${fileSwapModel}.maximumSparsity`, '"maximumSparsity"', 'true', '0.5', '0', '0.999', '0.001',
                         'This property defines maximum acceptable wasted file space to whole file size ratio<br/>\

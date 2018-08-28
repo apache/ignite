@@ -2167,7 +2167,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         @Override public ClusterNode apply(Collection<ClusterNode> clusterNodes) {
             for (ClusterNode node : clusterNodes) {
                 if (node.attribute(CRD_ATTR) != null) {
-                    assert !CU.clientNode(node) : node;
+                    assert !node.isClient() : node;
 
                     return node;
                 }

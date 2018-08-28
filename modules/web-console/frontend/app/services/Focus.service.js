@@ -16,7 +16,7 @@
  */
 
 // Service to transfer focus for specified element.
-export default ['IgniteFocus', ['$timeout', ($timeout) => {
+export default ['IgniteFocus', ['$timeout', function($timeout) {
     return {
         move(id) {
             // Timeout makes sure that is invoked after any other event has been triggered.

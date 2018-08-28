@@ -483,6 +483,9 @@ public final class IgniteSystemProperties {
     /** SQL retry timeout. */
     public static final String IGNITE_SQL_RETRY_TIMEOUT = "IGNITE_SQL_RETRY_TIMEOUT";
 
+    /** Enable backward compatible handling of UUID through DDL. */
+    public static final String IGNITE_SQL_UUID_DDL_BYTE_FORMAT = "IGNITE_SQL_UUID_DDL_BYTE_FORMAT";
+
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
 
@@ -782,6 +785,9 @@ public final class IgniteSystemProperties {
      * Property for setup WAL serializer version.
      */
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
+
+    /** Property for setup Ignite WAL segment sync timeout. */
+    public static final String IGNITE_WAL_SEGMENT_SYNC_TIMEOUT = "IGNITE_WAL_SEGMENT_SYNC_TIMEOUT";
 
     /**
      * If the property is set Ignite will use legacy node comparator (based on node order) inste

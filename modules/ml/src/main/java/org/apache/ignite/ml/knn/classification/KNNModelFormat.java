@@ -27,13 +27,13 @@ import org.apache.ignite.ml.math.distances.DistanceMeasure;
  */
 public class KNNModelFormat implements Serializable {
     /** Amount of nearest neighbors. */
-    private int k;
+    protected int k;
 
     /** Distance measure. */
-    private DistanceMeasure distanceMeasure;
+    protected DistanceMeasure distanceMeasure;
 
     /** kNN strategy. */
-    private KNNStrategy stgy;
+    protected NNStrategy stgy;
 
     /** Gets amount of nearest neighbors.*/
     public int getK() {
@@ -46,8 +46,12 @@ public class KNNModelFormat implements Serializable {
     }
 
     /** Gets kNN strategy.*/
-    public KNNStrategy getStgy() {
+    public NNStrategy getStgy() {
         return stgy;
+    }
+
+    /** */
+    public KNNModelFormat() {
     }
 
     /**
@@ -56,7 +60,7 @@ public class KNNModelFormat implements Serializable {
      * @param measure Distance measure.
      * @param stgy kNN strategy.
      */
-    public KNNModelFormat(int k, DistanceMeasure measure, KNNStrategy stgy) {
+    public KNNModelFormat(int k, DistanceMeasure measure, NNStrategy stgy) {
         this.k = k;
         this.distanceMeasure = measure;
         this.stgy = stgy;
