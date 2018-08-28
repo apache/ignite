@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.tree.randomforest;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,25 +25,31 @@ import java.util.Set;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
-import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogram;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniHistogramsComputer;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityHistogramsComputer;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.ClassifierLeafValuesComputer;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.LeafValuesComputer;
 
 /**
  * Classifier trainer based on RandomForest algorithm.
  */
-public class RandomForestClassifierTrainer extends RandomForestTrainer<ObjectHistogram<BootstrappedVector>, GiniHistogram, RandomForestClassifierTrainer> {
+public class RandomForestClassifierTrainer
+    extends RandomForestTrainer<ObjectHistogram<BootstrappedVector>, GiniHistogram, RandomForestClassifierTrainer> {
+
     /** Label mapping. */
     private Map<Double, Integer> lblMapping = new HashMap<>();
 
     /**
      * Constructs an instance of RandomForestClassifierTrainer.
      *
-     * @param meta Meta.
+     * @param meta Features meta.
      */
     public RandomForestClassifierTrainer(List<FeatureMeta> meta) {
         super(meta);
@@ -55,13 +60,18 @@ public class RandomForestClassifierTrainer extends RandomForestTrainer<ObjectHis
         return this;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Aggregates all unique labels from dataset and assigns integer id value for each label.
+     * This id can be used as index in arrays or lists.
+     *
+     * @param dataset Dataset.
+     */
     @Override protected void init(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
         Set<Double> uniqLabels = dataset.compute(
             x -> {
                 Set<Double> labels = new HashSet<>();
                 for (int i = 0; i < x.getRowsCount(); i++)
-                    labels.add(x.getRow(i).getLabel());
+                    labels.add(x.getRow(i).label());
                 return labels;
             },
             (l, r) -> {
@@ -84,45 +94,16 @@ public class RandomForestClassifierTrainer extends RandomForestTrainer<ObjectHis
     }
 
     /** {@inheritDoc} */
-    @Override protected ModelsComposition buildComposition(List<RandomForestTrainer.TreeRoot> models) {
+    @Override protected ModelsComposition buildComposition(List<TreeRoot> models) {
         return new ModelsComposition(models, new OnMajorityPredictionsAggregator());
     }
 
     /** {@inheritDoc} */
-    @Override protected GiniHistogram createImpurityComputer(int sampleId, BucketMeta meta) {
-        return new GiniHistogram(sampleId, lblMapping, meta);
+    @Override protected ImpurityHistogramsComputer<GiniHistogram> createImpurityHistogramsComputer() {
+        return new GiniHistogramsComputer(lblMapping);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void addElementToLeafStatistic(ObjectHistogram<BootstrappedVector> leafStatAggr, BootstrappedVector vec, int sampleId) {
-        leafStatAggr.addElement(vec);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected ObjectHistogram<BootstrappedVector> mergeLeafStats(ObjectHistogram<BootstrappedVector> leafStatAggr1,
-        ObjectHistogram<BootstrappedVector> leafStatAggr2) {
-
-        leafStatAggr1.addHist(leafStatAggr2);
-        return leafStatAggr1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected ObjectHistogram<BootstrappedVector> createLeafStatsAggregator(int sampleId) {
-        return new ObjectHistogram<>(
-            x -> lblMapping.get(x.getLabel()),
-            x -> (double)x.getRepetitionsCounters()[sampleId]
-        );
-    }
-
-    /** {@inheritDoc} */
-    @Override protected double computeLeafValue(ObjectHistogram<BootstrappedVector> stat) {
-        Integer bucketId = stat.buckets().stream()
-            .max(Comparator.comparing(b -> stat.get(b).orElse(0.0)))
-            .get();
-
-        return lblMapping.entrySet().stream()
-            .filter(x -> x.getValue().equals(bucketId))
-            .findFirst()
-            .get().getKey();
+    @Override protected LeafValuesComputer<ObjectHistogram<BootstrappedVector>> createLeafStatisticsAggregator() {
+        return new ClassifierLeafValuesComputer(lblMapping);
     }
 }

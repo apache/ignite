@@ -62,13 +62,12 @@ public class RandomForestClassificationExample {
 
                 AtomicInteger indx = new AtomicInteger(0);
                 RandomForestClassifierTrainer classifier = new RandomForestClassifierTrainer(
-                    IntStream.range(0, 13).mapToObj(x -> new FeatureMeta(indx.getAndIncrement(), false)).collect(Collectors.toList()))
+                    IntStream.range(0, 13).mapToObj(x -> new FeatureMeta("", indx.getAndIncrement(), false)).collect(Collectors.toList()))
                     .withCountOfTrees(101)
                     .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.SQRT)
                     .withMaxDepth(3)
                     .withMinImpurityDelta(0.)
-                    .withSubsampleSize(0.3)
-                    .withSeed(0);
+                    .withSubsampleSize(0.3);
 
                 ModelsComposition randomForest = classifier.fit(ignite, dataCache,
                     (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -222,7 +221,7 @@ public class RandomForestClassificationExample {
         {2, 11.41, .74, 2.5, 21, 88, 2.48, 2.01, .42, 1.44, 3.08, 1.1, 2.31, 434},
         {2, 12.08, 1.39, 2.5, 22.5, 84, 2.56, 2.29, .43, 1.04, 2.9, .93, 3.19, 385},
         {2, 11.03, 1.51, 2.2, 21.5, 85, 2.46, 2.17, .52, 2.01, 1.9, 1.71, 2.87, 407},
-        {2, 11.82, 1.47, 1.99, 20.8, 86, 1.98, 1.6, .3, 1.53, 1.95, .95, 3.33, 495},
+        {2, 11.82, 1.47, 1.99, 20.8, 86, 1.98, 1.6, .3, 1.53, 1.95, .95, 3.3423, 495},
         {2, 12.42, 1.61, 2.19, 22.5, 108, 2, 2.09, .34, 1.61, 2.06, 1.06, 2.96, 345},
         {2, 12.77, 3.43, 1.98, 16, 80, 1.63, 1.25, .43, .83, 3.4, .7, 2.12, 372},
         {2, 12, 3.43, 2, 19, 87, 2, 1.64, .37, 1.87, 1.28, .93, 3.05, 564},

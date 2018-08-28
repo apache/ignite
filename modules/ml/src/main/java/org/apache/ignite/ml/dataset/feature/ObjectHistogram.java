@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset.feature;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -29,11 +30,14 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <T> Type of object for histogram.
  */
 public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, DistributionComputer {
+    /** Serial version uid. */
+    private static final long serialVersionUID = -2708731174031404487L;
+
     /** Bucket mapping. */
     private final IgniteFunction<T, Integer> bucketMapping;
 
     /** Mapping to counter. */
-    private final IgniteFunction<T, Double> mappingToCounter;
+    private final IgniteFunction<T, Double> mappingToCntr;
 
     /** Histogram. */
     private final Map<Integer, Double> hist;
@@ -42,32 +46,24 @@ public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, Dis
      * Create an instance of ObjectHistogram.
      *
      * @param bucketMapping Bucket mapping.
-     * @param mappingToCounter Mapping to counter.
+     * @param mappingToCntr Mapping to counter.
      */
     public ObjectHistogram(IgniteFunction<T, Integer> bucketMapping,
-        IgniteFunction<T, Double> mappingToCounter) {
+        IgniteFunction<T, Double> mappingToCntr) {
 
         this.bucketMapping = bucketMapping;
-        this.mappingToCounter = mappingToCounter;
+        this.mappingToCntr = mappingToCntr;
         this.hist = new TreeMap<>(Integer::compareTo);
     }
 
     /** {@inheritDoc} */
     @Override public void addElement(T value) {
         Integer bucket = bucketMapping.apply(value);
-        Double counterValue = mappingToCounter.apply(value);
+        Double cntrVal = mappingToCntr.apply(value);
 
-        assert counterValue >= 0;
-        Double bucketValue = hist.getOrDefault(bucket, 0.0);
-        hist.put(bucket, bucketValue + counterValue);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addHist(ObjectHistogram<T> other) {
-        other.hist.forEach((bucket, counter) -> {
-            Double bucketValue = hist.getOrDefault(bucket, 0.0);
-            hist.put(bucket, bucketValue + counter);
-        });
+        assert cntrVal >= 0;
+        Double bucketVal = hist.getOrDefault(bucket, 0.0);
+        hist.put(bucket, bucketVal + cntrVal);
     }
 
     /** {@inheritDoc} */
@@ -76,8 +72,8 @@ public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, Dis
     }
 
     /** {@inheritDoc} */
-    @Override public Optional<Double> get(Integer bucket) {
-        return Optional.ofNullable(hist.get(bucket));
+    @Override public Optional<Double> getValue(Integer bucketId) {
+        return Optional.ofNullable(hist.get(bucketId));
     }
 
     /** {@inheritDoc} */
@@ -91,5 +87,43 @@ public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, Dis
         }
 
         return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ObjectHistogram<T> plus(ObjectHistogram<T> other) {
+        ObjectHistogram<T> res = new ObjectHistogram<>(bucketMapping, mappingToCntr);
+        addTo(this.hist, res.hist);
+        addTo(other.hist, res.hist);
+        return res;
+    }
+
+    /**
+     * Adds bucket values to target histogram.
+     *
+     * @param from From.
+     * @param to To.
+     */
+    private void addTo(Map<Integer, Double> from, Map<Integer, Double> to) {
+        from.forEach((bucket, value) -> {
+            Double putValue = to.getOrDefault(bucket, 0.0);
+            to.put(bucket, putValue + value);
+        });
+    }
+
+    /** {@inheritDoc} */
+    public boolean isEqualTo(ObjectHistogram<T> other) {
+        Set<Integer> totalBuckets = new HashSet<>(buckets());
+        totalBuckets.addAll(other.buckets());
+        if(totalBuckets.size() != buckets().size())
+            return false;
+
+        for(Integer bucketId : totalBuckets) {
+            double leftVal = hist.get(bucketId);
+            double rightVal = other.hist.get(bucketId);
+            if(Math.abs(leftVal - rightVal) > 0.001)
+                return false;
+        }
+
+        return true;
     }
 }

@@ -17,56 +17,71 @@
 
 package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Arrays;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Represents vector with repetitions counters for subsamples in bootstrapped dataset.
+ * Each counter shows the number of repetitions of the vector for the n-th sample.
  */
-public class BootstrappedVector {
-    /** Features. */
-    private final Vector features;
-    /** Label. */
-    private final double label;
-    /** Repetitions counters. */
-    private final int[] repetitionsCounters;
+public class BootstrappedVector extends LabeledVector<Vector, Double> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = -4583008673032917259L;
+
+    /** Counters show the number of repetitions of the vector for the n-th sample. */
+    private int[] counters;
 
     /**
      * Creates an instance of BootstrappedVector.
      *
      * @param features Features.
-     * @param label Label.
-     * @param repetitionsCounters Repetitions counters.
+     * @param lb Label.
+     * @param counters Repetitions counters.
      */
-    public BootstrappedVector(Vector features, double label, int[] repetitionsCounters) {
-        this.features = features;
-        this.label = label;
-        this.repetitionsCounters = repetitionsCounters;
+    public BootstrappedVector(Vector features, double lb, int[] counters) {
+        super(features, lb);
+        this.counters = counters;
     }
 
     /**
-     * Returns features vector.
-     *
-     * @return Features.
-     */
-    public Vector getFeatures() {
-        return features;
-    }
-
-    /**
-     * Returns label for features vector.
-     *
-     * @return Label.
-     */
-    public double getLabel() {
-        return label;
-    }
-
-    /**
-     * Returns repetitions counters vector.
-     *
      * @return repetitions counters vector.
      */
-    public int[] getRepetitionsCounters() {
-        return repetitionsCounters;
+    public int[] counters() {
+        return counters;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
+        BootstrappedVector vector = (BootstrappedVector)o;
+        return Arrays.equals(counters, vector.counters);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + Arrays.hashCode(counters);
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+        out.writeObject(counters);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+        counters = (int[]) in.readObject();
     }
 }

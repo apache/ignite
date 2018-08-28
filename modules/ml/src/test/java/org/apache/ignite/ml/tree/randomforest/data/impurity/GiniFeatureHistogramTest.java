@@ -17,7 +17,9 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
@@ -29,15 +31,16 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /** */
 public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
     /** Feature 1 meta. */
-    private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta(0, true));
+    private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta("", 0, true));
     /** Feature 2 meta. */
-    private BucketMeta feature2Meta = new BucketMeta(new FeatureMeta(1, false));
+    private BucketMeta feature2Meta = new BucketMeta(new FeatureMeta("", 1, false));
     /** Feature 3 meta. */
-    private BucketMeta feature3Meta = new BucketMeta(new FeatureMeta(2, true));
+    private BucketMeta feature3Meta = new BucketMeta(new FeatureMeta("", 2, true));
 
     /** */
     @Before
@@ -132,6 +135,48 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         assertFalse(catFeatureSmpl2.findBestSplit().isPresent());
     }
 
+    @Test
+    public void testOfSums() {
+        int sampleId = 0;
+        BucketMeta bucketMeta1 = new BucketMeta(new FeatureMeta("", 0, false));
+        bucketMeta1.setMinValue(0.);
+        bucketMeta1.setBucketSize(0.1);
+        BucketMeta bucketMeta2 = new BucketMeta(new FeatureMeta("", 1, true));
+
+        GiniHistogram forAllHist1 = new GiniHistogram(sampleId, lblMapping, bucketMeta1);
+        GiniHistogram forAllHist2 = new GiniHistogram(sampleId, lblMapping, bucketMeta2);
+
+        List<GiniHistogram> partitions1 = new ArrayList<>();
+        List<GiniHistogram> partitions2 = new ArrayList<>();
+        int countOfPartitions = rnd.nextInt(1000);
+        for(int i = 0; i < countOfPartitions; i++) {
+            partitions1.add(new GiniHistogram(sampleId,lblMapping, bucketMeta1));
+            partitions2.add(new GiniHistogram(sampleId,lblMapping, bucketMeta2));
+        }
+
+        int datasetSize = rnd.nextInt(10000);
+        for(int i = 0; i < datasetSize; i++) {
+            BootstrappedVector vec = randomVector(2, 1, true);
+            vec.features().set(1, (vec.features().get(1) * 100) % 100);
+
+            forAllHist1.addElement(vec);
+            forAllHist2.addElement(vec);
+            int partitionId = rnd.nextInt(countOfPartitions);
+            partitions1.get(partitionId).addElement(vec);
+            partitions2.get(partitionId).addElement(vec);
+        }
+
+        checkSums(forAllHist1, partitions1);
+        checkSums(forAllHist2, partitions2);
+
+        GiniHistogram emptyHist1 = new GiniHistogram(sampleId, lblMapping, bucketMeta1);
+        GiniHistogram emptyHist2 = new GiniHistogram(sampleId, lblMapping, bucketMeta2);
+        assertTrue(forAllHist1.isEqualTo(forAllHist1.plus(emptyHist1)));
+        assertTrue(forAllHist2.isEqualTo(forAllHist2.plus(emptyHist2)));
+        assertTrue(forAllHist1.isEqualTo(emptyHist1.plus(forAllHist1)));
+        assertTrue(forAllHist2.isEqualTo(emptyHist2.plus(forAllHist2)));
+    }
+
     /** */
     @Test
     public void testJoin() {
@@ -156,27 +201,27 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
             contFeatureSmpl2.addElement(vec);
         }
 
-        catFeatureSmpl1.addHist(catFeatureSmpl2);
-        contFeatureSmpl1.addHist(contFeatureSmpl2);
+        GiniHistogram res1 = catFeatureSmpl1.plus(catFeatureSmpl2);
+        GiniHistogram res2 = contFeatureSmpl1.plus(contFeatureSmpl2);
 
-        checkBucketIds(catFeatureSmpl1.buckets(), new Integer[] {0, 1, 2});
-        checkBucketIds(contFeatureSmpl1.buckets(), new Integer[] {1, 4, 6, 7, 8});
+        checkBucketIds(res1.buckets(), new Integer[] {0, 1, 2});
+        checkBucketIds(res2.buckets(), new Integer[] {1, 4, 6, 7, 8});
 
         //categorical feature
-        checkCounters(catFeatureSmpl1.getHistForLabel(1.0), new double[] {3, 2, 6}); //for feature values 0 and 1
-        checkBucketIds(catFeatureSmpl1.getHistForLabel(1.0).buckets(), new Integer[] {0, 1, 2});
-        checkCounters(catFeatureSmpl1.getHistForLabel(2.0), new double[] {4, 6});    //for feature value 1
-        checkBucketIds(catFeatureSmpl1.getHistForLabel(2.0).buckets(), new Integer[] {0, 1});
-        checkCounters(catFeatureSmpl1.getHistForLabel(3.0), new double[] {2});    //for feature value 0
-        checkBucketIds(catFeatureSmpl1.getHistForLabel(3.0).buckets(), new Integer[] {0});
+        checkCounters(res1.getHistForLabel(1.0), new double[] {3, 2, 6}); //for feature values 0 and 1
+        checkBucketIds(res1.getHistForLabel(1.0).buckets(), new Integer[] {0, 1, 2});
+        checkCounters(res1.getHistForLabel(2.0), new double[] {4, 6});    //for feature value 1
+        checkBucketIds(res1.getHistForLabel(2.0).buckets(), new Integer[] {0, 1});
+        checkCounters(res1.getHistForLabel(3.0), new double[] {2});    //for feature value 0
+        checkBucketIds(res1.getHistForLabel(3.0).buckets(), new Integer[] {0});
 
         //continuous feature
-        checkCounters(contFeatureSmpl1.getHistForLabel(1.0), new double[] {1, 1, 8, 1}); //for feature values 0 and 1
-        checkBucketIds(contFeatureSmpl1.getHistForLabel(1.0).buckets(), new Integer[] {1, 4, 6, 8});
-        checkCounters(contFeatureSmpl1.getHistForLabel(2.0), new double[] {1, 4, 0, 5});    //for feature value 1
-        checkBucketIds(contFeatureSmpl1.getHistForLabel(2.0).buckets(), new Integer[] {1, 4, 6, 7});
-        checkCounters(contFeatureSmpl1.getHistForLabel(3.0), new double[] {2});    //for feature value 0
-        checkBucketIds(contFeatureSmpl1.getHistForLabel(3.0).buckets(), new Integer[] {8});
+        checkCounters(res2.getHistForLabel(1.0), new double[] {1, 1, 8, 1}); //for feature values 0 and 1
+        checkBucketIds(res2.getHistForLabel(1.0).buckets(), new Integer[] {1, 4, 6, 8});
+        checkCounters(res2.getHistForLabel(2.0), new double[] {1, 4, 0, 5});    //for feature value 1
+        checkBucketIds(res2.getHistForLabel(2.0).buckets(), new Integer[] {1, 4, 6, 7});
+        checkCounters(res2.getHistForLabel(3.0), new double[] {2});    //for feature value 0
+        checkBucketIds(res2.getHistForLabel(3.0).buckets(), new Integer[] {8});
     }
 
     /** Dataset. */

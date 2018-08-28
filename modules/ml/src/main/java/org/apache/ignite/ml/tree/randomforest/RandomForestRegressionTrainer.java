@@ -18,22 +18,27 @@
 package org.apache.ignite.ml.tree.randomforest;
 
 import java.util.List;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
-import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
-import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
+import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.ImpurityHistogramsComputer;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogram;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogramComputer;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.LeafValuesComputer;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.MeanValueStatistic;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.RegressionLeafValuesComputer;
 
 /**
  * Regression trainer based on RandomForest algorithm.
  */
-public class RandomForestRegressionTrainer extends RandomForestTrainer<IgniteBiTuple<Double, Integer>, MSEHistogram, RandomForestRegressionTrainer> {
+public class RandomForestRegressionTrainer
+    extends RandomForestTrainer<MeanValueStatistic, MSEHistogram, RandomForestRegressionTrainer> {
+
     /**
      * Constructs an instance of RandomForestRegressionTrainer.
      *
-     * @param meta Meta.
+     * @param meta Features meta.
      */
     public RandomForestRegressionTrainer(List<FeatureMeta> meta) {
         super(meta);
@@ -50,32 +55,11 @@ public class RandomForestRegressionTrainer extends RandomForestTrainer<IgniteBiT
     }
 
     /** {@inheritDoc} */
-    @Override protected MSEHistogram createImpurityComputer(int sampleId, BucketMeta meta) {
-        return new MSEHistogram(sampleId, meta);
+    @Override protected ImpurityHistogramsComputer<MSEHistogram> createImpurityHistogramsComputer() {
+        return new MSEHistogramComputer();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void addElementToLeafStatistic(IgniteBiTuple<Double, Integer> leafStatAggr, BootstrappedVector vec, int sampleId) {
-        leafStatAggr.set1(leafStatAggr.get1() + vec.getLabel() * vec.getRepetitionsCounters()[sampleId]);
-        leafStatAggr.set2(leafStatAggr.get2() + vec.getRepetitionsCounters()[sampleId]);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteBiTuple<Double, Integer> mergeLeafStats(IgniteBiTuple<Double, Integer> leafStatAggr1,
-        IgniteBiTuple<Double, Integer> leafStatAggr2) {
-
-        leafStatAggr1.set1(leafStatAggr1.get1() + leafStatAggr2.get1());
-        leafStatAggr1.set2(leafStatAggr1.get2() + leafStatAggr2.get2());
-        return leafStatAggr1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteBiTuple<Double, Integer> createLeafStatsAggregator(int sampleId) {
-        return new IgniteBiTuple<>(0.0, 0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected double computeLeafValue(IgniteBiTuple<Double, Integer> stat) {
-        return stat.get1() / stat.get2();
+    @Override protected LeafValuesComputer<MeanValueStatistic> createLeafStatisticsAggregator() {
+        return new RegressionLeafValuesComputer();
     }
 }

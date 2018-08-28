@@ -27,6 +27,9 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * Decision tree node class.
  */
 public class TreeNode implements Model<Vector, Double>, Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = -8546263332508653661L;
+
     /**
      * Type of node.
      */

@@ -63,7 +63,7 @@ public class RandomForestRegressionExample {
 
                 AtomicInteger indx = new AtomicInteger(0);
                 RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(
-                    IntStream.range(0, data[0].length - 1).mapToObj(x -> new FeatureMeta(indx.getAndIncrement(), false)).collect(Collectors.toList())
+                    IntStream.range(0, data[0].length - 1).mapToObj(x -> new FeatureMeta("", indx.getAndIncrement(), false)).collect(Collectors.toList())
                 ).withCountOfTrees(101)
                     .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
                     .withMaxDepth(4)

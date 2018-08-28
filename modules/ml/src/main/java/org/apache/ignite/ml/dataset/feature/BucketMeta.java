@@ -17,10 +17,12 @@
 
 package org.apache.ignite.ml.dataset.feature;
 
+import java.io.Serializable;
+
 /**
  * Bucket meta-information for feature histogram.
  */
-public class BucketMeta {
+public class BucketMeta implements Serializable {
     /** Feature meta. */
     private final FeatureMeta featureMeta;
 

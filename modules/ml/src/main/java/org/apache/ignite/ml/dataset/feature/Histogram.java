@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset.feature;
 
+import java.io.Serializable;
 import java.util.Optional;
 import java.util.Set;
 
@@ -26,20 +27,13 @@ import java.util.Set;
  * @param <T> Type of object for histogram.
  * @param <H> Type of histogram that can be used in math operations with this histogram.
  */
-public interface Histogram<T, H extends Histogram<T, H>> {
+public interface Histogram<T, H extends Histogram<T, H>> extends Serializable {
     /**
      * Add object to histogram.
      *
      * @param value Value.
      */
     public void addElement(T value);
-
-    /**
-     * Accumulate values from other histogram.
-     *
-     * @param other Other histogram.
-     */
-    public void addHist(H other);
 
     /**
      *
@@ -49,8 +43,22 @@ public interface Histogram<T, H extends Histogram<T, H>> {
 
     /**
      *
-     * @param bucket Bucket id.
+     * @param bucketId Bucket id.
      * @return value in according to bucket id.
      */
-    public Optional<Double> get(Integer bucket);
+    public Optional<Double> getValue(Integer bucketId);
+
+    /**
+     * @param other Other histogram.
+     * @return sum of this and other histogram.
+     */
+    public H plus(H other);
+
+    /**
+     * Compares histogram with other and returns true if they are equals
+     *
+     * @param other Other histogram.
+     * @return true if histograms are equal.
+     */
+    public boolean isEqualTo(H other);
 }

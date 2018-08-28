@@ -76,7 +76,7 @@ public class RandomForestClassifierTrainerTest {
 
         ArrayList<FeatureMeta> meta = new ArrayList<>();
         for(int i = 0; i < 4; i++)
-            meta.add(new FeatureMeta(i, false));
+            meta.add(new FeatureMeta("", i, false));
         RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
             .withCountOfTrees(5)
             .withFeaturesCountSelectionStrgy(x -> 2);

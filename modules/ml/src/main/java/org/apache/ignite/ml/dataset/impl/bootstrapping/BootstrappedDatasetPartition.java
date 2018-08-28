@@ -17,14 +17,16 @@
 
 package org.apache.ignite.ml.dataset.impl.bootstrapping;
 
-import org.apache.ignite.ml.math.functions.IgniteConsumer;
+import java.util.Arrays;
+import java.util.Iterator;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Partition of bootstrapped vectors.
  */
-public class BootstrappedDatasetPartition implements AutoCloseable {
+public class BootstrappedDatasetPartition implements AutoCloseable, Iterable<BootstrappedVector> {
     /** Vectors. */
-    private BootstrappedVector[] vectors;
+    private final BootstrappedVector[] vectors;
 
     /**
      * Creates an instance of BootstrappedDatasetPartition.
@@ -54,14 +56,9 @@ public class BootstrappedDatasetPartition implements AutoCloseable {
         return vectors.length;
     }
 
-    /**
-     * Iterate over partition using consumer.
-     *
-     * @param consumer Consumer.
-     */
-    public void foreach(IgniteConsumer<BootstrappedVector> consumer) {
-        for(BootstrappedVector vec : vectors)
-            consumer.accept(vec);
+    /** {@inheritDoc} */
+    @NotNull @Override public Iterator<BootstrappedVector> iterator() {
+        return Arrays.stream(vectors).iterator();
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,10 +34,13 @@ import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
- * Class contains implementation of splitting point finding algorithm based on Gini metric (see https://en.wikipedia.org/wiki/Gini_coefficient)
- * and represents * a set of histograms in according to this metric.
+ * Class contains implementation of splitting point finding algorithm based on Gini metric
+ * (see https://en.wikipedia.org/wiki/Gini_coefficient) and represents a set of histograms in according to this metric.
  */
 public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniHistogram> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 5780670356098827667L;
+
     /** Bucket meta. */
     private final BucketMeta bucketMeta;
 
@@ -77,23 +81,23 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
 
     /** {@inheritDoc} */
     @Override public void addElement(BootstrappedVector vector) {
-        Integer lblId = lblMapping.get(vector.getLabel());
+        Integer lblId = lblMapping.get(vector.label());
         hists.get(lblId).addElement(vector);
     }
 
     /** {@inheritDoc} */
-    @Override public Optional<Double> get(Integer bucket) {
+    @Override public Optional<Double> getValue(Integer bucketId) {
         throw new NotImplementedException();
     }
 
     /** {@inheritDoc} */
-    @Override public void addHist(GiniHistogram other) {
-        assert featureId == other.featureId;
-        assert sampleId == other.sampleId;
-
-        bucketIds.addAll(other.bucketIds);
-        for (int i = 0; i < hists.size(); i++)
-            hists.get(i).addHist(other.hists.get(i));
+    @Override public GiniHistogram plus(GiniHistogram other) {
+        GiniHistogram res = new GiniHistogram(sampleId, lblMapping, bucketMeta);
+        res.bucketIds.addAll(this.bucketIds);
+        res.bucketIds.addAll(other.bucketIds);
+        for(int i = 0; i < hists.size(); i++)
+            res.hists.set(i, this.hists.get(i).plus(other.hists.get(i)));
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -187,7 +191,7 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
      * @return Counter value.
      */
     private Double counterMap(BootstrappedVector vec) {
-        return (double)vec.getRepetitionsCounters()[sampleId];
+        return (double)vec.counters()[sampleId];
     }
 
     /**
@@ -197,9 +201,32 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
      * @return Bucket id.
      */
     private Integer bucketMap(BootstrappedVector vec) {
-        int bucketId = bucketMeta.getBucketId(vec.getFeatures().get(featureId));
+        int bucketId = bucketMeta.getBucketId(vec.features().get(featureId));
         this.bucketIds.add(bucketId);
         return bucketId;
     }
 
+    @Override public boolean isEqualTo(GiniHistogram other) {
+        HashSet<Integer> unionBuckets = new HashSet<>(buckets());
+        unionBuckets.addAll(other.bucketIds);
+        if(unionBuckets.size() != bucketIds.size())
+            return false;
+
+        HashSet<Double> unionMappings = new HashSet<>(lblMapping.keySet());
+        unionMappings.addAll(other.lblMapping.keySet());
+        if(unionMappings.size() != lblMapping.size())
+            return false;
+
+        for(Double lbl : unionMappings) {
+            if (lblMapping.get(lbl) != other.lblMapping.get(lbl))
+                return false;
+
+            ObjectHistogram<BootstrappedVector> thisHist = getHistForLabel(lbl);
+            ObjectHistogram<BootstrappedVector> otherHist = other.getHistForLabel(lbl);
+            if(!thisHist.isEqualTo(otherHist))
+                return false;
+        }
+
+        return true;
+    }
 }

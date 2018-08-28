@@ -17,8 +17,12 @@
 
 package org.apache.ignite.ml.dataset.feature;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.TreeMap;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,7 +83,7 @@ public class ObjectHistogramTest {
         int[] counters = new int[size];
         int ptr = 0;
         for (int bucket : hist.buckets()) {
-            counters[ptr] = hist.get(bucket).get().intValue();
+            counters[ptr] = hist.getValue(bucket).get().intValue();
             buckets[ptr++] = bucket;
         }
 
@@ -94,7 +98,7 @@ public class ObjectHistogramTest {
     public void testAdd() {
         double value = 100.;
         hist1.addElement(value);
-        Optional<Double> counter = hist1.get(computeBucket(value));
+        Optional<Double> counter = hist1.getValue(computeBucket(value));
 
         assertTrue(counter.isPresent());
         assertEquals(1, counter.get().intValue());
@@ -105,8 +109,8 @@ public class ObjectHistogramTest {
      */
     @Test
     public void testAddHist() {
-        hist1.addHist(hist2);
-        testBuckets(hist1, new int[] {0, 1, 2, 3, 4, 5, 6}, new int[] {10, 8, 2, 1, 1, 2, 1});
+        ObjectHistogram<Double> result = hist1.plus(hist2);
+        testBuckets(result, new int[] {0, 1, 2, 3, 4, 5, 6}, new int[] {10, 8, 2, 1, 1, 2, 1});
     }
 
     /**
@@ -127,6 +131,34 @@ public class ObjectHistogramTest {
 
         assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5}, buckets);
         assertArrayEquals(new double[] {4., 7., 9., 10., 11., 12.}, sums, 0.01);
+    }
+
+    @Test
+    public void testOfSum() {
+        IgniteFunction<Double, Integer> bucketMap = x -> (int) (Math.ceil(x * 100) % 100);
+        IgniteFunction<Double, Double> counterMap = x -> Math.pow(x, 2);
+
+        ObjectHistogram<Double> forAllHistogram = new ObjectHistogram<>(bucketMap, counterMap);
+        Random rnd = new Random();
+        List<ObjectHistogram<Double>> partitions = new ArrayList<>();
+        int cntOfPartitions = rnd.nextInt(100);
+        int sizeOfDataset = rnd.nextInt(10000);
+        for(int i = 0; i < cntOfPartitions; i++)
+            partitions.add(new ObjectHistogram<>(bucketMap, counterMap));
+
+        for(int i = 0; i < sizeOfDataset; i++) {
+            double objVal = rnd.nextDouble();
+            forAllHistogram.addElement(objVal);
+            partitions.get(rnd.nextInt(partitions.size())).addElement(objVal);
+        }
+
+        Optional<ObjectHistogram<Double>> leftSum = partitions.stream().reduce((x,y) -> x.plus(y));
+        Optional<ObjectHistogram<Double>> rightSum = partitions.stream().reduce((x,y) -> y.plus(x));
+        assertTrue(leftSum.isPresent());
+        assertTrue(rightSum.isPresent());
+        assertTrue(forAllHistogram.isEqualTo(leftSum.get()));
+        assertTrue(forAllHistogram.isEqualTo(rightSum.get()));
+        assertTrue(leftSum.get().isEqualTo(rightSum.get()));
     }
 
     /**

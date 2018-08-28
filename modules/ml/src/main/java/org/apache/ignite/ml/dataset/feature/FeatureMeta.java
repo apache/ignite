@@ -17,10 +17,18 @@
 
 package org.apache.ignite.ml.dataset.feature;
 
+import java.io.Serializable;
+
 /**
  * Feature meta class.
  */
-public class FeatureMeta {
+public class FeatureMeta implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = -2990950807063111877L;
+
+    /** Name. */
+    private final String name;
+
     /** Id of feature in feature vector. */
     private final int featureId;
 
@@ -30,10 +38,12 @@ public class FeatureMeta {
     /**
      * Create an instance of Feature meta.
      *
+     * @param name
      * @param featureId Feature id.
      * @param isCategoricalFeature Is categorical feature.
      */
-    public FeatureMeta(int featureId, boolean isCategoricalFeature) {
+    public FeatureMeta(String name, int featureId, boolean isCategoricalFeature) {
+        this.name = name;
         this.featureId = featureId;
         this.isCategoricalFeature = isCategoricalFeature;
     }
@@ -46,5 +56,10 @@ public class FeatureMeta {
     /** */
     public boolean isCategoricalFeature() {
         return isCategoricalFeature;
+    }
+
+    /** */
+    public String getName() {
+        return name;
     }
 }

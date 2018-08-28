@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -32,6 +33,9 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  * and represents a set of histograms in according to this metric.
  */
 public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHistogram> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 9175485616887867623L;
+
     /** Bucket meta. */
     private final BucketMeta bucketMeta;
 
@@ -45,13 +49,13 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
     private final Set<Integer> bucketIds;
 
     /** Counters. */
-    private final ObjectHistogram<BootstrappedVector> counters;
+    private ObjectHistogram<BootstrappedVector> counters;
 
-    /** Sums of Ys. */
-    private final ObjectHistogram<BootstrappedVector> ys;
+    /** Sums of label values. */
+    private ObjectHistogram<BootstrappedVector> sumOfLabels;
 
-    /** Sums of Y^2s. */
-    private final ObjectHistogram<BootstrappedVector> y2s;
+    /** Sums of squared label values. */
+    private ObjectHistogram<BootstrappedVector> sumOfSquaredLabels;
 
     /**
      * Creates an instance of MSEHistogram.
@@ -65,27 +69,27 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
         this.sampleId = sampleId;
 
         counters = new ObjectHistogram<>(this::bucketMap, this::counterMap);
-        ys = new ObjectHistogram<>(this::bucketMap, this::ysMap);
-        y2s = new ObjectHistogram<>(this::bucketMap, this::y2sMap);
+        sumOfLabels = new ObjectHistogram<>(this::bucketMap, this::ysMap);
+        sumOfSquaredLabels = new ObjectHistogram<>(this::bucketMap, this::y2sMap);
         bucketIds = new TreeSet<>();
     }
 
     /** {@inheritDoc} */
     @Override public void addElement(BootstrappedVector vector) {
         counters.addElement(vector);
-        ys.addElement(vector);
-        y2s.addElement(vector);
+        sumOfLabels.addElement(vector);
+        sumOfSquaredLabels.addElement(vector);
     }
 
     /** {@inheritDoc} */
-    @Override public void addHist(MSEHistogram other) {
-        assert featureId == other.featureId;
-        assert sampleId == other.sampleId;
-
-        bucketIds.addAll(other.bucketIds);
-        counters.addHist(other.counters);
-        ys.addHist(other.ys);
-        y2s.addHist(other.y2s);
+    @Override public MSEHistogram plus(MSEHistogram other) {
+        MSEHistogram res = new MSEHistogram(sampleId, bucketMeta);
+        res.counters = this.counters.plus(other.counters);
+        res.sumOfLabels = this.sumOfLabels.plus(other.sumOfLabels);
+        res.sumOfSquaredLabels = this.sumOfSquaredLabels.plus(other.sumOfSquaredLabels);
+        res.bucketIds.addAll(this.bucketIds);
+        res.bucketIds.addAll(bucketIds);
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -94,7 +98,7 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
     }
 
     /** {@inheritDoc} */
-    @Override public Optional<Double> get(Integer bucket) {
+    @Override public Optional<Double> getValue(Integer bucketId) {
         throw new NotImplementedException();
     }
 
@@ -105,8 +109,8 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
         int bestBucketId = -1;
 
         TreeMap<Integer, Double> counterDistrib = counters.computeDistributionFunction();
-        TreeMap<Integer, Double> ysDistrib = ys.computeDistributionFunction();
-        TreeMap<Integer, Double> y2sDistrib = y2s.computeDistributionFunction();
+        TreeMap<Integer, Double> ysDistrib = sumOfLabels.computeDistributionFunction();
+        TreeMap<Integer, Double> y2sDistrib = sumOfSquaredLabels.computeDistributionFunction();
 
         double cntrMax = counterDistrib.lastEntry().getValue();
         double ysMax = ysDistrib.lastEntry().getValue();
@@ -155,8 +159,8 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
      * Computes impurity function value.
      *
      * @param count Counter value.
-     * @param ys sum of Ys.
-     * @param y2s sum of Y^2 s.
+     * @param ys plus of Ys.
+     * @param y2s plus of Y^2 s.
      * @return impurity value.
      */
     private double impurity(double count, double ys, double y2s) {
@@ -170,7 +174,7 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
      * @return Bucket id.
      */
     private Integer bucketMap(BootstrappedVector vec) {
-        int bucketId = bucketMeta.getBucketId(vec.getFeatures().get(featureId));
+        int bucketId = bucketMeta.getBucketId(vec.features().get(featureId));
         this.bucketIds.add(bucketId);
         return bucketId;
     }
@@ -182,7 +186,7 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
      * @return Counter value.
      */
     private Double counterMap(BootstrappedVector vec) {
-        return (double)vec.getRepetitionsCounters()[sampleId];
+        return (double)vec.counters()[sampleId];
     }
 
     /**
@@ -192,7 +196,7 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
      * @return Y value.
      */
     private Double ysMap(BootstrappedVector vec) {
-        return vec.getRepetitionsCounters()[sampleId] * vec.getLabel();
+        return vec.counters()[sampleId] * vec.label();
     }
 
     /**
@@ -202,12 +206,10 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
      * @return Y^2 value.
      */
     private Double y2sMap(BootstrappedVector vec) {
-        return vec.getRepetitionsCounters()[sampleId] * Math.pow(vec.getLabel(), 2);
+        return vec.counters()[sampleId] * Math.pow(vec.label(), 2);
     }
 
     /**
-     * Returns counters histogram.
-     *
      * @return Counters histogram.
      */
     ObjectHistogram<BootstrappedVector> getCounters() {
@@ -215,20 +217,31 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
     }
 
     /**
-     * Returns Ys histogram.
-     *
      * @return Ys histogram.
      */
-    ObjectHistogram<BootstrappedVector> getYs() {
-        return ys;
+    ObjectHistogram<BootstrappedVector> getSumOfLabels() {
+        return sumOfLabels;
     }
 
     /**
-     * Returns Y^2s histogram.
-     *
      * @return Y^2s histogram.
      */
-    ObjectHistogram<BootstrappedVector> getY2s() {
-        return y2s;
+    ObjectHistogram<BootstrappedVector> getSumOfSquaredLabels() {
+        return sumOfSquaredLabels;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEqualTo(MSEHistogram other) {
+        HashSet<Integer> unionBuckets = new HashSet<>(buckets());
+        unionBuckets.addAll(other.bucketIds);
+        if(unionBuckets.size() != bucketIds.size())
+            return false;
+
+        if(!this.counters.isEqualTo(other.counters))
+            return false;
+        if(!this.sumOfLabels.isEqualTo(other.sumOfLabels))
+            return false;
+
+        return this.sumOfSquaredLabels.isEqualTo(other.sumOfSquaredLabels);
     }
 }

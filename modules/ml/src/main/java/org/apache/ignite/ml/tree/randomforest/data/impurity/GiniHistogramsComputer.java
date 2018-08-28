@@ -15,41 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.randomforest.data;
+package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
-import org.apache.ignite.lang.IgniteBiTuple;
+import java.util.Map;
+import org.apache.ignite.ml.dataset.feature.BucketMeta;
 
 /**
- * Class represents Node id in Random Forest consisting of tree id and node id in tree in according to
- * breadth-first search in tree.
+ * Implementation of {@link ImpurityHistogramsComputer} for classification task.
  */
-public class NodeId extends IgniteBiTuple<Integer, Long> {
+public class GiniHistogramsComputer extends ImpurityHistogramsComputer<GiniHistogram> {
     /** Serial version uid. */
-    private static final long serialVersionUID = 4400852013136423333L;
+    private static final long serialVersionUID = 3672921182944932748L;
+
+    /** Label mapping. */
+    private final Map<Double, Integer> lblMapping;
 
     /**
-     * Create an instance of NodeId.
+     * Creates an instance of GiniHistogramsComputer.
      *
-     * @param treeId Tree id.
-     * @param nodeId Node id.
+     * @param lblMapping Lbl mapping.
      */
-    public NodeId(Integer treeId, Long nodeId) {
-        super(treeId, nodeId);
+    public GiniHistogramsComputer(Map<Double, Integer> lblMapping) {
+        this.lblMapping = lblMapping;
     }
 
-    /**
-     *
-     * @return Tree id.
-     */
-    public int treeId() {
-        return get1();
-    }
-
-    /**
-     *
-     * @return Node id.
-     */
-    public long nodeId() {
-        return get2();
+    /** {@inheritDoc} */
+    @Override protected GiniHistogram createImpurityComputerForFeature(int sampleId, BucketMeta meta) {
+        return new GiniHistogram(sampleId, lblMapping, meta);
     }
 }
