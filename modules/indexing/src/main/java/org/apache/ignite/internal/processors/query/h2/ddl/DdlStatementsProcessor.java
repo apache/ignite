@@ -25,8 +25,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -93,6 +95,10 @@ public class DdlStatementsProcessor {
 
     /** Indexing. */
     IgniteH2Indexing idx;
+
+    /** Is backward compatible handling of UUID through DDL enabled. */
+    private static final boolean handleUuidAsByte =
+            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_UUID_DDL_BYTE_FORMAT, false);
 
     /**
      * Initialize message handlers and this' fields needed for further operation.
@@ -401,7 +407,7 @@ public class DdlStatementsProcessor {
                         }
 
                         QueryField field = new QueryField(col.columnName(),
-                            DataType.getTypeClassName(col.column().getType()),
+                            getTypeClassName(col),
                             col.column().isNullable(), col.defaultValue(),
                             col.precision(), col.scale());
 
@@ -625,14 +631,15 @@ public class DdlStatementsProcessor {
 
         HashMap<String, Object> dfltValues = new HashMap<>();
 
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+        Map<String, Integer> precision = new HashMap<>();
+        Map<String, Integer> scale = new HashMap<>();
 
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
 
             Column col = gridCol.column();
 
-            res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
+            res.addQueryField(e.getKey(), getTypeClassName(gridCol), null);
 
             if (!col.isNullable()) {
                 if (notNullFields == null)
@@ -646,15 +653,27 @@ public class DdlStatementsProcessor {
             if (dfltVal != null)
                 dfltValues.put(e.getKey(), dfltVal);
 
-            if (col.getType() == Value.DECIMAL)
-                decimalInfo.put(e.getKey(), F.t((int)col.getPrecision(), col.getScale()));
+            if (col.getType() == Value.DECIMAL) {
+                precision.put(e.getKey(), (int)col.getPrecision());
+
+                scale.put(e.getKey(), col.getScale());
+            }
+
+            if (col.getType() == Value.STRING || 
+                col.getType() == Value.STRING_FIXED || 
+                col.getType() == Value.STRING_IGNORECASE) {
+                precision.put(e.getKey(), (int)col.getPrecision());
+            }
         }
 
         if (!F.isEmpty(dfltValues))
             res.setDefaultFieldValues(dfltValues);
 
-        if (!F.isEmpty(decimalInfo))
-            res.setDecimalInfo(decimalInfo);
+        if (!F.isEmpty(precision))
+            res.setFieldsPrecision(precision);
+
+        if (!F.isEmpty(scale))
+            res.setFieldsScale(scale);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
@@ -671,7 +690,7 @@ public class DdlStatementsProcessor {
         if (!createTbl.wrapKey()) {
             GridSqlColumn pkCol = createTbl.columns().get(createTbl.primaryKeyColumns().iterator().next());
 
-            keyTypeName = DataType.getTypeClassName(pkCol.column().getType());
+            keyTypeName = getTypeClassName(pkCol);
 
             res.setKeyFieldName(pkCol.columnName());
         }
@@ -691,7 +710,7 @@ public class DdlStatementsProcessor {
 
             assert valCol != null;
 
-            valTypeName = DataType.getTypeClassName(valCol.column().getType());
+            valTypeName = getTypeClassName(valCol);
 
             res.setValueFieldName(valCol.columnName());
         }
@@ -717,5 +736,24 @@ public class DdlStatementsProcessor {
     public static boolean isDdlStatement(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
             cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
+    }
+
+    /**
+     * Helper function for obtaining type class name for H2.
+     *
+     * @param col Column.
+     * @return Type class name.
+     */
+    private static String getTypeClassName(GridSqlColumn col) {
+        int type = col.column().getType();
+
+        switch (type) {
+            case Value.UUID :
+                if (!handleUuidAsByte)
+                    return UUID.class.getName();
+
+            default:
+                return DataType.getTypeClassName(type);
+        }
     }
 }
