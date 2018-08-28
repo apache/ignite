@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -48,6 +49,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -349,6 +351,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         CountDownLatch waitCommit = new CountDownLatch(1);
 
+        // Used for passing tx instance to rollback thread.
         IgniteInternalFuture<?> lockFut = lockInTx(holdLockNode, keyLocked, waitCommit, 0);
 
         U.awaitQuiet(keyLocked);
@@ -415,7 +418,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                         if (tx == null)
                             break;
 
-                        doSleep(r.nextInt(5)); // Wait a bit to prevent rolling back empty transactions.
+                        doSleep(r.nextInt(15)); // Wait a bit to reduce chance of rolling back empty transactions.
 
                         if (rolledBackVers.contains(tx.xid()))
                             fail("Rollback version is expected");
@@ -667,7 +670,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 TransactionConcurrency conc = TC_VALS[r.nextInt(TC_VALS.length)];
                 TransactionIsolation isolation = TI_VALS[r.nextInt(TI_VALS.length)];
 
-                long timeout = r.nextInt(50) + 50; // Timeout is necessary to prevent deadlocks.
+                // Timeout is necessary otherwise deadlock is possible due to randomness of lock acquisition.
+                long timeout = r.nextInt(50) + 50;
 
                 try (Transaction tx = node.transactions().txStart(conc, isolation, timeout, txSize)) {
                     BlockingQueue<Transaction> nodeQ = perNodeTxs.get(node);
@@ -780,6 +784,14 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         rollbackFut.cancel();
 
+        try {
+            rollbackFut.get();
+        }
+        catch (IgniteFutureCancelledCheckedException e) {
+            // Expected.
+        }
+
+        // Rollback remaining transactions.
         for (BlockingQueue<Transaction> queue : perNodeTxs.values()) {
             Transaction tx;
 
