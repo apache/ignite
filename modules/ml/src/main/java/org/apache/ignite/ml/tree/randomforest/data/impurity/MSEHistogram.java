@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
@@ -32,21 +31,15 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  * Class contains implementation of splitting point finding algorithm based on MSE metric (see https://en.wikipedia.org/wiki/Mean_squared_error)
  * and represents a set of histograms in according to this metric.
  */
-public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHistogram> {
+public class MSEHistogram extends ImpurityHistogram implements ImpurityComputer<BootstrappedVector, MSEHistogram> {
     /** Serial version uid. */
     private static final long serialVersionUID = 9175485616887867623L;
 
     /** Bucket meta. */
     private final BucketMeta bucketMeta;
 
-    /** Feature id. */
-    private final int featureId;
-
     /** Sample id. */
     private final int sampleId;
-
-    /** Bucket ids. */
-    private final Set<Integer> bucketIds;
 
     /** Counters. */
     private ObjectHistogram<BootstrappedVector> counters;
@@ -64,14 +57,13 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
      * @param bucketMeta Bucket meta.
      */
     public MSEHistogram(int sampleId, BucketMeta bucketMeta) {
+        super(bucketMeta.getFeatureMeta().getFeatureId());
         this.bucketMeta = bucketMeta;
-        this.featureId = bucketMeta.getFeatureMeta().getFeatureId();
         this.sampleId = sampleId;
 
         counters = new ObjectHistogram<>(this::bucketMap, this::counterMap);
         sumOfLabels = new ObjectHistogram<>(this::bucketMap, this::ysMap);
         sumOfSquaredLabels = new ObjectHistogram<>(this::bucketMap, this::y2sMap);
-        bucketIds = new TreeSet<>();
     }
 
     /** {@inheritDoc} */
@@ -108,11 +100,14 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
         double bestSplitValue = Double.NEGATIVE_INFINITY;
         int bestBucketId = -1;
 
-        TreeMap<Integer, Double> counterDistrib = counters.computeDistributionFunction();
+        //counter corresponds to number of samples
+        //ys corresponds to sumOfLabels
+        //y2s corresponds to sumOfSquaredLabels
+        TreeMap<Integer, Double> cntrDistrib = counters.computeDistributionFunction();
         TreeMap<Integer, Double> ysDistrib = sumOfLabels.computeDistributionFunction();
         TreeMap<Integer, Double> y2sDistrib = sumOfSquaredLabels.computeDistributionFunction();
 
-        double cntrMax = counterDistrib.lastEntry().getValue();
+        double cntrMax = cntrDistrib.lastEntry().getValue();
         double ysMax = ysDistrib.lastEntry().getValue();
         double y2sMax = y2sDistrib.lastEntry().getValue();
 
@@ -121,11 +116,14 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
         double lastLeftY2Val = 0.0;
 
         for (Integer bucketId : bucketIds) {
-            double leftCnt = counterDistrib.getOrDefault(bucketId, lastLeftCntrVal);
-            double rightCnt = cntrMax - leftCnt;
+            //values for impurity computing to the left of bucket value
+            double leftCnt = cntrDistrib.getOrDefault(bucketId, lastLeftCntrVal);
             double leftY = ysDistrib.getOrDefault(bucketId, lastLeftYVal);
-            double rightY = ysMax - leftY;
             double leftY2 = y2sDistrib.getOrDefault(bucketId, lastLeftY2Val);
+
+            //values for impurity computing to the right of bucket value
+            double rightCnt = cntrMax - leftCnt;
+            double rightY = ysMax - leftY;
             double rightY2 = y2sMax - leftY2;
 
             double impurity = 0.0;
@@ -142,17 +140,7 @@ public class MSEHistogram implements ImpurityComputer<BootstrappedVector, MSEHis
             }
         }
 
-        int minBucketId = Integer.MAX_VALUE;
-        int maxBucketId = Integer.MIN_VALUE;
-        for (Integer bucketId : bucketIds) {
-            minBucketId = Math.min(minBucketId, bucketId);
-            maxBucketId = Math.max(maxBucketId, bucketId);
-        }
-
-        if (bestBucketId == minBucketId || bestBucketId == maxBucketId)
-            return Optional.empty();
-        else
-            return Optional.of(new NodeSplit(featureId, bestSplitValue, bestImpurity));
+        return checkAndReturnSplitValue(bestBucketId, bestSplitValue, bestImpurity);
     }
 
     /**

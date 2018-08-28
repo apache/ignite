@@ -34,18 +34,15 @@ import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
- * Class contains implementation of splitting point finding algorithm based on Gini metric
- * (see https://en.wikipedia.org/wiki/Gini_coefficient) and represents a set of histograms in according to this metric.
+ * Class contains implementation of splitting point finding algorithm based on Gini metric (see
+ * https://en.wikipedia.org/wiki/Gini_coefficient) and represents a set of histograms in according to this metric.
  */
-public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniHistogram> {
+public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer<BootstrappedVector, GiniHistogram> {
     /** Serial version uid. */
     private static final long serialVersionUID = 5780670356098827667L;
 
     /** Bucket meta. */
     private final BucketMeta bucketMeta;
-
-    /** Feature id. */
-    private final int featureId;
 
     /** Sample id. */
     private final int sampleId;
@@ -67,8 +64,8 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
      * @param bucketMeta Bucket meta.
      */
     public GiniHistogram(int sampleId, Map<Double, Integer> lblMapping, BucketMeta bucketMeta) {
+        super(bucketMeta.getFeatureMeta().getFeatureId());
         this.hists = new ArrayList<>(lblMapping.size());
-        this.featureId = bucketMeta.getFeatureMeta().getFeatureId();
         this.sampleId = sampleId;
         this.bucketMeta = bucketMeta;
         this.lblMapping = lblMapping;
@@ -95,23 +92,25 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
         GiniHistogram res = new GiniHistogram(sampleId, lblMapping, bucketMeta);
         res.bucketIds.addAll(this.bucketIds);
         res.bucketIds.addAll(other.bucketIds);
-        for(int i = 0; i < hists.size(); i++)
+        for (int i = 0; i < hists.size(); i++)
             res.hists.set(i, this.hists.get(i).plus(other.hists.get(i)));
         return res;
     }
 
     /** {@inheritDoc} */
     @Override public Optional<NodeSplit> findBestSplit() {
-        if(bucketIds.size() < 2)
+        if (bucketIds.size() < 2)
             return Optional.empty();
 
         double bestImpurity = Double.POSITIVE_INFINITY;
         double bestSplitValue = Double.NEGATIVE_INFINITY;
         int bestBucketId = -1;
 
-        List<TreeMap<Integer, Double>> distributions = hists.stream().map(ObjectHistogram::computeDistributionFunction)
+        List<TreeMap<Integer, Double>> countersDistribPerCls = hists.stream()
+            .map(ObjectHistogram::computeDistributionFunction)
             .collect(Collectors.toList());
-        double[] totalCounts = distributions.stream()
+
+        double[] totalSampleCntPerLb = countersDistribPerCls.stream()
             .mapToDouble(x -> x.isEmpty() ? 0.0 : x.lastEntry().getValue())
             .toArray();
 
@@ -126,24 +125,27 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
             double leftImpurity = 0;
             double rightImpurity = 0;
 
+            //Compute number of samples left and right in according to split by bucketId
             for (int lbId = 0; lbId < lblMapping.size(); lbId++) {
-                Double left = distributions.get(lbId).get(bucketId);
+                Double left = countersDistribPerCls.get(lbId).get(bucketId);
                 if (left == null)
                     left = lastLeftValues.get(lbId);
 
                 totalToleftCnt += left;
-                totalToRightCnt += totalCounts[lbId] - left;
+                totalToRightCnt += totalSampleCntPerLb[lbId] - left;
 
                 lastLeftValues.put(lbId, left);
             }
 
             for (int lbId = 0; lbId < lblMapping.size(); lbId++) {
-                Double toLeftCnt = distributions.get(lbId).getOrDefault(bucketId, lastLeftValues.get(lbId));
+                //count of samples with label [corresponding lblId] to the left of bucket
+                Double toLeftCnt = countersDistribPerCls.get(lbId).getOrDefault(bucketId, lastLeftValues.get(lbId));
 
                 if (toLeftCnt > 0)
                     leftImpurity += Math.pow(toLeftCnt, 2) / totalToleftCnt;
 
-                double toRightCnt = totalCounts[lbId] - toLeftCnt;
+                //number of samples to the right of bucket = total samples count - toLeftCnt
+                double toRightCnt = totalSampleCntPerLb[lbId] - toLeftCnt;
                 if (toRightCnt > 0)
                     rightImpurity += (Math.pow(toRightCnt, 2)) / totalToRightCnt;
             }
@@ -156,17 +158,7 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
             }
         }
 
-        int minBucketId = Integer.MAX_VALUE;
-        int maxBucketId = Integer.MIN_VALUE;
-        for (Integer bucketId : bucketIds) {
-            minBucketId = Math.min(minBucketId, bucketId);
-            maxBucketId = Math.max(maxBucketId, bucketId);
-        }
-
-        if (bestBucketId == maxBucketId)
-            return Optional.empty();
-        else
-            return Optional.of(new NodeSplit(featureId, bestSplitValue, bestImpurity));
+        return checkAndReturnSplitValue(bestBucketId, bestSplitValue, bestImpurity);
     }
 
     /** {@inheritDoc} */
@@ -209,21 +201,21 @@ public class GiniHistogram implements ImpurityComputer<BootstrappedVector, GiniH
     @Override public boolean isEqualTo(GiniHistogram other) {
         HashSet<Integer> unionBuckets = new HashSet<>(buckets());
         unionBuckets.addAll(other.bucketIds);
-        if(unionBuckets.size() != bucketIds.size())
+        if (unionBuckets.size() != bucketIds.size())
             return false;
 
         HashSet<Double> unionMappings = new HashSet<>(lblMapping.keySet());
         unionMappings.addAll(other.lblMapping.keySet());
-        if(unionMappings.size() != lblMapping.size())
+        if (unionMappings.size() != lblMapping.size())
             return false;
 
-        for(Double lbl : unionMappings) {
+        for (Double lbl : unionMappings) {
             if (lblMapping.get(lbl) != other.lblMapping.get(lbl))
                 return false;
 
             ObjectHistogram<BootstrappedVector> thisHist = getHistForLabel(lbl);
             ObjectHistogram<BootstrappedVector> otherHist = other.getHistForLabel(lbl);
-            if(!thisHist.isEqualTo(otherHist))
+            if (!thisHist.isEqualTo(otherHist))
                 return false;
         }
 
