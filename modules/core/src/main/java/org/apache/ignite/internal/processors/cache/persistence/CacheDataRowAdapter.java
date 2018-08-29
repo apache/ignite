@@ -296,7 +296,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             byte[] bytes = PageUtils.getBytes(addr, off, len);
             off += len;
 
-            key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
+            completeReadingKey(coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes));
 
             if (rowData == RowData.KEY_ONLY)
                 return;
@@ -379,7 +379,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         incomplete = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, buf, incomplete);
 
         if (incomplete.isReady()) {
-            key = (KeyCacheObject)incomplete.object();
+            completeReadingKey((KeyCacheObject)incomplete.object());
 
             assert key != null;
         }
@@ -387,6 +387,17 @@ public class CacheDataRowAdapter implements CacheDataRow {
             assert !buf.hasRemaining();
 
         return incomplete;
+    }
+
+    /**
+     * Do some actions for completion reading key.
+     *
+     * @param readKey Read key.
+     */
+    private void completeReadingKey(KeyCacheObject readKey) {
+        key = readKey;
+
+        key.partition(partition());
     }
 
     /**
