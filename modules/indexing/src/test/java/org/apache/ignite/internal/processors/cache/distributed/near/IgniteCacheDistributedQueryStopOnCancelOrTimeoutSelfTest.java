@@ -35,6 +35,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -46,7 +47,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends GridCommonAbstractTest {
     /** Grids count. */
-    private static final int GRIDS_CNT = 3;
+    private static final int GRIDS_CNT = 4;
 
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -65,6 +66,12 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
     /** */
     private static final String QRY_3 = "select a._val from String a";
+
+    /** */
+    private static final String CANCELLED_BY_CLIENT = "reason=Cancelled by client";
+
+    /** */
+    private static final String WITH_TIMEOUT_WAS_CANCELLED = "reason=Statement with timeout was cancelled";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -100,82 +107,96 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
     /** */
     public void testRemoteQueryExecutionTimeout() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 500, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 10, TimeUnit.MILLISECONDS, true,
+            WITH_TIMEOUT_WAS_CANCELLED);
     }
 
     /** */
-    public void testRemoteQueryWithMergeTableTimeout() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 500, TimeUnit.MILLISECONDS, true);
+    public void testRemoteQueryWithMergeTableTimeout0() throws Exception {
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 3, TimeUnit.MILLISECONDS, true,
+            WITH_TIMEOUT_WAS_CANCELLED);
+    }
+
+    /** Query possibly could be executed faster than timeout*/
+    public void testRemoteQueryWithMergeTableTimeout1() throws Exception {
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 25, TimeUnit.MILLISECONDS, true,
+            WITH_TIMEOUT_WAS_CANCELLED);
     }
 
     /** */
     public void testRemoteQueryExecutionCancel0() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 1, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 1, TimeUnit.MILLISECONDS, false,
+            CANCELLED_BY_CLIENT);
     }
 
     /** */
     public void testRemoteQueryExecutionCancel1() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 500, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 10, TimeUnit.MILLISECONDS, false,
+            CANCELLED_BY_CLIENT);
     }
 
     /** */
     public void testRemoteQueryExecutionCancel2() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 1, TimeUnit.SECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 1, TimeUnit.SECONDS, false,
+            CANCELLED_BY_CLIENT);
     }
 
     /** */
     public void testRemoteQueryExecutionCancel3() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 3, TimeUnit.SECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_1, 3, TimeUnit.SECONDS, false,
+            CANCELLED_BY_CLIENT);
     }
 
     /** */
     public void testRemoteQueryWithMergeTableCancel0() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 1, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 1, TimeUnit.MILLISECONDS, false,
+            CANCELLED_BY_CLIENT);
     }
 
-    /** */
+    /** Query with far less complex sql and expected to be executed faster than timeout*/
     public void testRemoteQueryWithMergeTableCancel1() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 500, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 500, TimeUnit.MILLISECONDS, false, null);
     }
 
-    /** */
+    /** Query with far less complex sql and expected to be executed faster than timeout*/
     public void testRemoteQueryWithMergeTableCancel2() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 1_500, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 1_500, TimeUnit.MILLISECONDS, false, null);
     }
 
-    /** */
+    /** Query with far less complex sql and expected to be executed faster than timeout*/
     public void testRemoteQueryWithMergeTableCancel3() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 3, TimeUnit.SECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_2, 3, TimeUnit.SECONDS, false, null);
     }
 
-    /** */
+    /** Query possibly could be executed faster than timeout*/
     public void testRemoteQueryWithoutMergeTableCancel0() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 1, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(2*CACHE_SIZE, VAL_SIZE, QRY_3, 1, TimeUnit.MILLISECONDS, false,
+            CANCELLED_BY_CLIENT);
     }
 
-    /** */
+    /** Query with far less complex sql and expected to be executed faster than timeout*/
     public void testRemoteQueryWithoutMergeTableCancel1() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 500, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 500, TimeUnit.MILLISECONDS, false, null);
     }
 
-    /** */
+    /** Query with far less complex sql and expected to be executed faster than timeout*/
     public void testRemoteQueryWithoutMergeTableCancel2() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 1_000, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 1_000, TimeUnit.MILLISECONDS, false, null);
     }
 
-    /** */
+    /** Query with far less complex sql and expected to be executed faster than timeout*/
     public void testRemoteQueryWithoutMergeTableCancel3() throws Exception {
-        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 3, TimeUnit.SECONDS, false);
+        testQueryCancel(CACHE_SIZE, VAL_SIZE, QRY_3, 3, TimeUnit.SECONDS, false, null);
     }
 
-    /** */
+    /** Query with far less complex sql and expected to be executed faster than timeout*/
     public void testRemoteQueryAlreadyFinishedStop() throws Exception {
-        testQueryCancel(100, VAL_SIZE, QRY_3, 3, TimeUnit.SECONDS, false);
+        testQueryCancel(100, VAL_SIZE, QRY_3, 3, TimeUnit.SECONDS, false, null);
     }
 
     /** */
     private void testQueryCancel(int keyCnt, int valSize, String sql, int timeoutUnits, TimeUnit timeUnit,
-                                 boolean timeout) throws Exception {
+                                 boolean timeout, String cause) throws Exception {
         try (Ignite client = startGrid("client")) {
 
             IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
@@ -216,18 +237,25 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
             try(QueryCursor<List<?>> ignored = cursor) {
                 cursor.iterator();
-                fail();
+
+                if (!F.isEmpty(cause))
+                    fail("No exception caught");
             }
             catch (CacheException ex) {
-                log().error("Got expected exception", ex);
+                log().error("Got exception", ex);
+
+                log().error( "Cause of exception", ex.getCause());
 
                 assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
+
+                assertTrue( "Cause message "+ex.getCause().getMessage(), ex.getCause().getMessage().contains(cause));
+            }finally {
+
+                // Give some time to clean up.
+                Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 3_000);
+
+                checkCleanState();
             }
-
-            // Give some time to clean up.
-            Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 3_000);
-
-            checkCleanState();
         }
     }
 
