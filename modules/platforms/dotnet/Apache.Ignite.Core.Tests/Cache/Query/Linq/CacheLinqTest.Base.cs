@@ -54,8 +54,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /** Cache schema. */
         private const string PersonSecondCacheSchema = "\"person_cache_SCHEMA\"";
 
-        /** Role cache name. */
-        private const string RoleCacheName = "role_cache";
+        /** Role cache name: uses invalid characters to test name escaping. */
+        private const string RoleCacheName = "role$ cache.";
 
         /** */
         private const int RoleCount = 3;
