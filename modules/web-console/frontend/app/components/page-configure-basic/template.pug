@@ -28,7 +28,6 @@ include ./../page-configure-advanced/components/cluster-edit-form/templates/gene
 - const model = '$ctrl.clonedCluster'
 - const modelDiscoveryKind = `${model}.discovery.kind`
 - let form = '$ctrl.form'
-- const tipOpts = {placement: 'top'}
 
 form(novalidate name=form)
     h2.pcb-section-header.pcb-inner-padding Step 1. Cluster Configuration
@@ -41,11 +40,10 @@ form(novalidate name=form)
 
     .pc-form-grid-row.pcb-form-grid-row
         .pc-form-grid-col-60
-            +sane-ignite-form-field-text({
+            +form-field__text({
                 label: 'Name:',
                 model: `${model}.name`,
                 name: '"clusterName"',
-                disabled: 'false',
                 placeholder: 'Input name',
                 required: true,
                 tip: 'Instance name allows to indicate to what grid this particular grid instance belongs to'
@@ -58,19 +56,25 @@ form(novalidate name=form)
 
         .pc-form-grid__break
         .pc-form-grid-col-60
-            +dropdown('Discovery:', modelDiscoveryKind, '"discovery"', 'true', 'Choose discovery', '$ctrl.Clusters.discoveries',
-            'Discovery allows to discover remote nodes in grid\
-            <ul>\
-                <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
-                <li>Multicast - Multicast based IP finder</li>\
-                <li>AWS S3 - AWS S3 based IP finder that automatically discover cluster nodes on Amazon EC2 cloud</li>\
-                <li>Apache jclouds - Apache jclouds multi cloud toolkit based IP finder for cloud platforms with unstable IP addresses</li>\
-                <li>Google cloud storage - Google Cloud Storage based IP finder that automatically discover cluster nodes on Google Compute Engine cluster</li>\
-                <li>JDBC - JDBC based IP finder that use database to store node IP address</li>\
-                <li>Shared filesystem - Shared filesystem based IP finder that use file to store node IP address</li>\
-                <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
-                <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
-            </ul>')
+            +form-field__dropdown({
+                label: 'Discovery:',
+                model: modelDiscoveryKind,
+                name: '"discovery"',
+                placeholder: 'Choose discovery',
+                options: '$ctrl.Clusters.discoveries',
+                tip: 'Discovery allows to discover remote nodes in grid\
+                <ul>\
+                    <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
+                    <li>Multicast - Multicast based IP finder</li>\
+                    <li>AWS S3 - AWS S3 based IP finder that automatically discover cluster nodes on Amazon EC2 cloud</li>\
+                    <li>Apache jclouds - Apache jclouds multi cloud toolkit based IP finder for cloud platforms with unstable IP addresses</li>\
+                    <li>Google cloud storage - Google Cloud Storage based IP finder that automatically discover cluster nodes on Google Compute Engine cluster</li>\
+                    <li>JDBC - JDBC based IP finder that use database to store node IP address</li>\
+                    <li>Shared filesystem - Shared filesystem based IP finder that use file to store node IP address</li>\
+                    <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
+                    <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
+                </ul>'
+            })
         .pc-form-grid__break
         .pc-form-group
             +discovery-vm(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'Vm'`)
@@ -93,7 +97,7 @@ form(novalidate name=form)
                 $ctrl.memorySizeInputVisible$|async:this
             `
         )
-            pc-form-field-size(
+            form-field-size(
                 ng-model='$ctrl.defaultMemoryPolicy.maxSize'
                 ng-model-options='{allowInvalid: true}'
                 id='memory'
@@ -106,10 +110,10 @@ form(novalidate name=form)
                 tip='“default” cluster memory policy off-heap max memory size. Leave empty to use 80% of physical memory available on current machine. Should be at least 10Mb.'
                 on-scale-change='scale = $event'
             )
-                +form-field-feedback('"memory"', 'min', 'Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.memoryPolicy.maxSize.min($ctrl.defaultMemoryPolicy) / scale.value}} {{scale.label}}).')
+                +form-field__error({ error: 'min', message: 'Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.memoryPolicy.maxSize.min($ctrl.defaultMemoryPolicy) / scale.value}} {{scale.label}}).' })
 
         .pc-form-grid-col-60(ng-if=`$ctrl.IgniteVersion.available('2.3.0')`)
-            pc-form-field-size(
+            form-field-size(
                 ng-model=`${model}.dataStorageConfiguration.defaultDataRegionConfiguration.maxSize`
                 ng-model-options='{allowInvalid: true}'
                 id='memory'
@@ -122,11 +126,7 @@ form(novalidate name=form)
                 tip='Default data region off-heap max memory size. Leave empty to use 20% of physical memory available on current machine. Should be at least 10Mb.'
                 on-scale-change='scale = $event'
             )
-                +form-field-feedback(
-                    _,
-                    'min',
-                    `Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.dataRegion.maxSize.min(${model}.dataStorageConfiguration.defaultDataRegionConfiguration) / scale.value}} {{scale.label}}).`
-                )
+                +form-field__error({ error: 'min', message: `Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.dataRegion.maxSize.min(${model}.dataStorageConfiguration.defaultDataRegionConfiguration) / scale.value}} {{scale.label}}).` })
         .pc-form-grid-col-120
             .ignite-form-field
                 list-editable.pcb-caches-list(
@@ -144,16 +144,26 @@ form(novalidate name=form)
                         div {{ $ctrl.Caches.getCacheBackupsCount($item) }}
                     list-editable-item-edit
                         div
-                            +ignite-form-field-text('Name', '$item.name', '"name"', false, true)(
+                            +form-field__text({
+                                label: 'Name',
+                                model: '$item.name',
+                                name: '"name"',
+                                required: true
+                            })(
                                 ignite-unique='$ctrl.shortCaches'
                                 ignite-unique-property='name'
                                 ignite-form-field-input-autofocus='true'
                             )
                                 +unique-feedback('"name"', 'Cache name should be unqiue')
                         div
-                            +cacheMode('Mode:', '$item.cacheMode', '"cacheMode"', 'PARTITIONED')
+                            +form-field__cache-modes({
+                                label: 'Mode:',
+                                model: '$item.cacheMode',
+                                name: '"cacheMode"',
+                                placeholder: 'PARTITIONED'
+                            })
                         div
-                            +sane-ignite-form-field-dropdown({
+                            +form-field__dropdown({
                                 label: 'Atomicity:',
                                 model: '$item.atomicityMode',
                                 name: '"atomicityMode"',
@@ -161,7 +171,13 @@ form(novalidate name=form)
                                 options: '::$ctrl.Caches.atomicityModes'
                             })
                         div(ng-show='$ctrl.Caches.shouldShowCacheBackupsCount($item)')
-                            +number('Backups:', '$item.backups', '"backups"', 'true', '0', '0')
+                            +form-field__number({ 
+                                label: 'Backups:',
+                                model: '$item.backups',
+                                name: '"backups"',
+                                placeholder: '0',
+                                min: 0
+                            })
                     list-editable-no-items
                         list-editable-add-item-button(
                             add-item='$ctrl.addCache()'

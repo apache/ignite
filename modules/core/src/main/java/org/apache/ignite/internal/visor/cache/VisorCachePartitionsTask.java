@@ -63,7 +63,7 @@ public class VisorCachePartitionsTask extends VisorMultiNodeTask<VisorCacheParti
             if (res.getException() != null)
                 throw res.getException();
 
-            parts.put(res.getNode().id(), (VisorCachePartitions)res.getData());
+            parts.put(res.getNode().id(), res.getData());
         }
 
         return parts;

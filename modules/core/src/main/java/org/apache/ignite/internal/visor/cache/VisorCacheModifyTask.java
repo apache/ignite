@@ -41,7 +41,7 @@ public class VisorCacheModifyTask extends VisorOneNodeTask<VisorCacheModifyTaskA
     }
 
     /**
-     * Job that clear specified caches.
+     * Job that modify value in specified cache.
      */
     private static class VisorCacheModifyJob extends VisorJob<VisorCacheModifyTaskArg, VisorCacheModifyTaskResult> {
         /** */
@@ -88,18 +88,18 @@ public class VisorCacheModifyTask extends VisorOneNodeTask<VisorCacheModifyTaskA
                         VisorQueryUtils.convertValue(old));
 
                 case GET:
-                    Object value = cache.get(key);
+                    Object val = cache.get(key);
 
-                    return new VisorCacheModifyTaskResult(nid, VisorTaskUtils.compactClass(value),
-                        VisorQueryUtils.convertValue(value));
+                    return new VisorCacheModifyTaskResult(nid, VisorTaskUtils.compactClass(val),
+                        VisorQueryUtils.convertValue(val));
 
                 case REMOVE:
-                    Object removed = cache.get(key);
+                    Object rmv = cache.get(key);
 
                     cache.remove(key);
 
-                    return new VisorCacheModifyTaskResult(nid, VisorTaskUtils.compactClass(removed),
-                        VisorQueryUtils.convertValue(removed));
+                    return new VisorCacheModifyTaskResult(nid, VisorTaskUtils.compactClass(rmv),
+                        VisorQueryUtils.convertValue(rmv));
             }
 
             return new VisorCacheModifyTaskResult(nid, null, null);

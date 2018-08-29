@@ -695,6 +695,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 final IgniteThread thread = (IgniteThread)curThread;
 
                 if (thread.cachePoolThread()) {
+                    // Near transaction's finish on timeout will unlock topFut if it was held for too long,
+                    // so need to listen with timeout. This is not true for optimistic transactions.
                     topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, new Runnable() {
@@ -1493,7 +1495,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     "(added to cancelled locks set): " + req);
                         }
 
-                        ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
+                        entry.touch(ctx.affinity().affinityTopologyVersion());
 
                         break;
                     }
@@ -1681,7 +1683,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (created && entry.markObsolete(dhtVer))
                         removeEntry(entry);
 
-                    ctx.evicts().touch(entry, topVer);
+                    entry.touch(topVer);
 
                     break;
                 }
