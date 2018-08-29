@@ -322,7 +322,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      * Test node stopping & recovering on WAL writing fail with disabled MMAP.
      */
     public void testRecoveringOnWALWritingFail2() throws Exception {
-        System.setProperty(IGNITE_WAL_SEGMENT_SYNC_TIMEOUT, "100");
         // Fail somewhere on the second wal segment.
         ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE)));
         System.setProperty(IGNITE_WAL_MMAP, "false");
@@ -375,7 +374,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             Arrays.fill(data, payload);
 
             byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
-            Assert.assertArrayEquals(data, actualData);
+            Assert.assertArrayEquals("Total number : " + failedPosition + ", Null number : " + i, data, actualData);
         }
     }
 
