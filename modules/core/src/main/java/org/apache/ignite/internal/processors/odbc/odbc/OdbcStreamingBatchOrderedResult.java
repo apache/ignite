@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 /**
  * ODBC query execute with batch of parameters result.
  */
-public class OdbcQueryExecuteOrderedBatchResult {
+public class OdbcStreamingBatchOrderedResult {
     /** Rows affected. */
-    private final OdbcQueryExecuteBatchResult batchResult;
+    private final OdbcStreamingBatchResult batchResult;
 
     /** Order. */
     private final long order;
@@ -31,7 +31,7 @@ public class OdbcQueryExecuteOrderedBatchResult {
      * @param batchResult Execute batch result.
      * @param order Order.
      */
-    public OdbcQueryExecuteOrderedBatchResult(OdbcQueryExecuteBatchResult batchResult, long order) {
+    public OdbcStreamingBatchOrderedResult(OdbcStreamingBatchResult batchResult, long order) {
         this.batchResult = batchResult;
         this.order = order;
     }
@@ -39,7 +39,7 @@ public class OdbcQueryExecuteOrderedBatchResult {
     /**
      * @return Batch result.
      */
-    public OdbcQueryExecuteBatchResult batchResult() {
+    public OdbcStreamingBatchResult batchResult() {
         return batchResult;
     }
 

@@ -17,6 +17,7 @@ package org.apache.ignite.internal.processors.odbc.odbc;
  * limitations under the License.
  */
 
+import java.util.List;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -24,22 +25,20 @@ import org.jetbrains.annotations.Nullable;
 /**
  * ODBC query execute request with the batch of parameters.
  */
-public class OdbcQueryExecuteOrderedBatchRequest extends OdbcQueryExecuteBatchRequest {
+public class OdbcStreamingBatchOrderedRequest extends OdbcStreamingBatchRequest {
     /** Order. */
     @GridToStringInclude(sensitive = true)
     private long order;
 
     /**
      * @param schema Schema.
-     * @param sqlQry SQL query.
+     * @param queries SQL queries list.
      * @param last Last page flag.
-     * @param args Arguments list.
-     * @param timeout Timeout in seconds.
      * @param order Order.
      */
-    public OdbcQueryExecuteOrderedBatchRequest(@Nullable String schema, String sqlQry, boolean last, Object[][] args,
-        int timeout, long order) {
-        super(schema, sqlQry, last, args, timeout);
+    public OdbcStreamingBatchOrderedRequest(@Nullable String schema, List<OdbcQuery> queries, boolean last,
+        long order) {
+        super(STREAMING_BATCH_ORDERED, schema, queries, last);
 
         this.order = order;
     }
@@ -53,6 +52,6 @@ public class OdbcQueryExecuteOrderedBatchRequest extends OdbcQueryExecuteBatchRe
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OdbcQueryExecuteOrderedBatchRequest.class, this);
+        return S.toString(OdbcStreamingBatchOrderedRequest.class, this);
     }
 }
