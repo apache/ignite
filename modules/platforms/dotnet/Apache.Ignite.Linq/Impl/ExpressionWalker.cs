@@ -21,7 +21,6 @@ namespace Apache.Ignite.Linq.Impl
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -261,11 +260,51 @@ namespace Apache.Ignite.Linq.Impl
                 tableName = string.Format("{0}{1}{0}", SqlQuote, tableName);
             }
 
-            // TODO: Handle weird characters in cache.Name, see org.apache.ignite.internal.processors.query.QueryUtils#normalizeSchemaName
-            var schemaName = cacheCfg.SqlSchema ??
-                             string.Format("{0}{1}{0}", SqlQuote, cacheCfg.Name);
+            var schemaName = NormalizeSchemaName(cacheCfg.Name, cacheCfg.SqlSchema);
 
             return string.Format("{0}.{1}", schemaName, tableName);
+        }
+
+        /// <summary>
+        /// Normalizes SQL schema name, see
+        /// <c>org.apache.ignite.internal.processors.query.QueryUtils#normalizeSchemaName</c>
+        /// </summary>
+        private static string NormalizeSchemaName(string cacheName, string schemaName)
+        {
+            if (schemaName == null)
+            {
+                // If schema name is not set explicitly, we will use escaped cache name. The reason is that cache name
+                // could contain weird characters, such as underscores, dots or non-Latin stuff, which are invalid from
+                // SQL syntax perspective. We do not want node to fail on startup due to this.
+                return string.Format("{0}{1}{0}", cacheName, SqlQuote);
+            }
+
+            if (schemaName.StartsWith(SqlQuote, StringComparison.Ordinal)
+                && schemaName.EndsWith(SqlQuote, StringComparison.Ordinal))
+            {
+                return schemaName;
+            }
+
+            return NormalizeObjectName(schemaName, false);
+        }
+
+        /// <summary>
+        /// Normalizes SQL object name, see
+        /// <c>org.apache.ignite.internal.processors.query.QueryUtils#normalizeObjectName</c>
+        /// </summary>
+        private static string NormalizeObjectName(string name, bool replace)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return name;
+            }
+
+            if (replace)
+            {
+                name = name.Replace('.', '_').Replace('$', '_');
+            }
+
+            return name.ToUpperInvariant();
         }
     }
 }
