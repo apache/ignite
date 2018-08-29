@@ -276,7 +276,7 @@ namespace Apache.Ignite.Linq.Impl
                 // If schema name is not set explicitly, we will use escaped cache name. The reason is that cache name
                 // could contain weird characters, such as underscores, dots or non-Latin stuff, which are invalid from
                 // SQL syntax perspective. We do not want node to fail on startup due to this.
-                return string.Format("{0}{1}{0}", cacheName, SqlQuote);
+                return string.Format("{0}{1}{0}", SqlQuote, cacheName);
             }
 
             if (schemaName.StartsWith(SqlQuote, StringComparison.Ordinal)
