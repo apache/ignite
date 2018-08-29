@@ -468,6 +468,10 @@
                                 <packages>org.apache.ignite.springdata.repository*</packages>
                             </group>
                             <group>
+                                <title>SpringData 2.0 integration</title>
+                                <packages>org.apache.ignite.springdata20.repository*</packages>
+                            </group>
+                            <group>
                                 <title>RocketMQ integration</title>
                                 <packages>org.apache.ignite.stream.rocketmq*</packages>
                             </group>
