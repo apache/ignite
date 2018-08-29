@@ -25,7 +25,6 @@ import java.io.ObjectOutput;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
@@ -42,10 +41,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -53,9 +51,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
@@ -70,9 +66,9 @@ import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -443,51 +439,37 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             cctx.preloader().syncFuture().get();
         }
 
-        IgniteInternalCache<Object, Object> cache = cctx.cache();
+        IgniteInternalCache cache = cctx.cache();
 
-        if (part >= 0) {
-            final int BATCH_SIZE = 100;
+        final int BATCH_SIZE = 100;
 
-            assert !cctx.config().isOnheapCacheEnabled();
+        Collection<SetItemKey> keys = new ArrayList<>(BATCH_SIZE);
 
-            try (GridCloseableIterator<KeyCacheObject> iter = cctx.offheap().cacheKeysIterator(cctx.cacheId(), part)) {
-                Collection<BinaryObjectImpl> keys = new ArrayList<>(BATCH_SIZE);
-
-                int keyTypeId = ((CacheObjectBinaryProcessorImpl)cctx.kernalContext().cacheObjects()).binaryContext()
-                    .descriptorForClass(CollocatedSetItemKey.class, false, false).typeId();
-
-                for (KeyCacheObject k : iter) {
-                    if (k instanceof BinaryObjectImpl) {
-                        BinaryObjectImpl obj = (BinaryObjectImpl)k;
-
-                        if (obj.typeId() == keyTypeId &&
-                            setId.equals(((BinaryObject)obj.field("setId")).deserialize())) {
-
-                            keys.add(obj);
-
-                            if (keys.size() == BATCH_SIZE) {
-                                retryRemoveAll(cache, keys);
-
-                                keys.clear();
-                            }
-                        }
-                    }
+        CacheQuery<Cache.Entry<SetItemKey, ?>> qry = cctx.queries().createScanQuery(
+            new IgniteBiPredicate() {
+                @Override public boolean apply(Object k, Object v) {
+                    return k instanceof SetItemKey &&
+                        setId.equals(((SetItemKey)k).setId());
                 }
+            },
+            part >= 0 ? part : null,
+            false);
 
-                if (!keys.isEmpty())
+        ClusterGroup locNode = cctx.kernalContext().cluster().get().forLocal();
+
+        try (GridCloseableIterator<Cache.Entry<SetItemKey, ?>> iter = qry.projection(locNode).executeScanQuery()) {
+            while (iter.hasNext()) {
+                keys.add(iter.next().getKey());
+
+                if (keys.size() == BATCH_SIZE) {
                     retryRemoveAll(cache, keys);
+
+                    keys.clear();
+                }
             }
 
-            return;
-        }
-
-        for (Cache.Entry<Object, Object> e : cache.localEntries(new CachePeekMode[] {})) {
-            if (e.getKey() instanceof SetItemKey) {
-                SetItemKey key = (SetItemKey)e.getKey();
-
-                if (setId.equals(key.setId()))
-                    cctx.cache().remove(key);
-            }
+            if (!keys.isEmpty())
+                retryRemoveAll(cache, keys);
         }
     }
 
@@ -500,22 +482,13 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     public void removeSetData(String name, GridCacheSetHeader hdr) throws IgniteCheckedException {
         IgniteUuid id = hdr.id();
 
-        int hdrPart = hdr.collocated() ? cctx.affinity().partition(new GridCacheSetHeaderKey(name)) : -1;
+        int part = hdr.collocated() ? cctx.affinity().partition(new GridCacheSetHeaderKey(name)) : -1;
 
         if (!cctx.isLocal()) {
             while (true) {
                 AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
 
-                Collection<ClusterNode> nodes;
-
-                if (hdr.collocated()) {
-                    Collection<ClusterNode> nodes0 = cctx.affinity().nodesByPartition(hdrPart, topVer);
-
-                    nodes =
-                        Collections.singleton(nodes0.contains(cctx.localNode()) ? cctx.localNode() : F.first(nodes0));
-                }
-                else
-                    nodes = CU.affinityNodes(cctx, topVer);
+                Collection<ClusterNode> nodes = CU.affinityNodes(cctx, topVer);
 
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
@@ -546,7 +519,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
-                        new RemoveSetDataCallable(cctx.name(), id, topVer, hdrPart),
+                        new RemoveSetDataCallable(cctx.name(), id, topVer, part),
                         nodes,
                         true,
                         0, false).get();
@@ -576,7 +549,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             blockSet(id);
 
             if (!hdr.separated())
-                cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO, hdrPart);
+                cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO, part);
         }
     }
 
@@ -611,7 +584,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void retryRemoveAll(final IgniteInternalCache cache, final Collection<BinaryObjectImpl> keys)
+    private void retryRemoveAll(final IgniteInternalCache cache, final Collection<SetItemKey> keys)
         throws IgniteCheckedException {
         DataStructuresProcessor.retry(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
