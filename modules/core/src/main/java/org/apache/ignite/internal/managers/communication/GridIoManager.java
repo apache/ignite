@@ -1396,7 +1396,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     a(", duration=").
                     a(TimeUnit.NANOSECONDS.toMillis(message.get2())).
                     a("ms, message=").
-                    a(message.get3()).a(U.nl());
+                    a(message.get3().replace("\n", " ")).a(U.nl());
 
             }
         }
