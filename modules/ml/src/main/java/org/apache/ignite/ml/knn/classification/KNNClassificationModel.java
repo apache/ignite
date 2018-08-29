@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.knn.classification;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -41,24 +42,27 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
     /** */
     private static final long serialVersionUID = -127386523291350345L;
 
-    /** Dataset. */
-    private Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset;
+    /** Datasets. */
+    private List<Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>>> datasets;
 
     /**
      * Builds the model via prepared dataset.
+     *
      * @param dataset Specially prepared object to run algorithm over it.
      */
     public KNNClassificationModel(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
-        this.dataset = dataset;
+        this.datasets = new ArrayList<>();
+        datasets.add(dataset);
     }
 
     /** {@inheritDoc} */
     @Override public Double apply(Vector v) {
-        if(dataset != null) {
+        if (!datasets.isEmpty()) {
             List<LabeledVector> neighbors = findKNearestNeighbors(v);
 
             return classify(neighbors, v, stgy);
-        } else
+        }
+        else
             throw new IllegalStateException("The train kNN dataset is null");
     }
 
@@ -76,16 +80,22 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
      * @return K-nearest neighbors.
      */
     protected List<LabeledVector> findKNearestNeighbors(Vector v) {
-        List<LabeledVector> neighborsFromPartitions = dataset.compute(data -> {
-            TreeMap<Double, Set<Integer>> distanceIdxPairs = getDistances(v, data);
-            return Arrays.asList(getKClosestVectors(data, distanceIdxPairs));
-        }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
+        List<LabeledVector> neighborsFromPartitions = datasets.stream()
+            .flatMap(dataset -> findKNearestNeighborsInDataset(v, dataset).stream())
+            .collect(Collectors.toList());
 
         LabeledVectorSet<Double, LabeledVector> neighborsToFilter = buildLabeledDatasetOnListOfVectors(neighborsFromPartitions);
 
         return Arrays.asList(getKClosestVectors(neighborsToFilter, getDistances(v, neighborsToFilter)));
     }
 
+    private List<LabeledVector> findKNearestNeighborsInDataset(Vector v,
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
+        return dataset.compute(data -> {
+            TreeMap<Double, Set<Integer>> distanceIdxPairs = getDistances(v, data);
+            return Arrays.asList(getKClosestVectors(data, distanceIdxPairs));
+        }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
+    }
 
     /** */
     private double classify(List<LabeledVector> neighbors, Vector v, NNStrategy stgy) {
@@ -109,5 +119,13 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
         return getClassWithMaxVotes(clsVotes);
     }
 
-
+    /**
+     * Copy parameters from other model and save all datasets from it.
+     *
+     * @param model Model.
+     */
+    public void copyStateFrom(KNNClassificationModel model) {
+        this.copyParametersFrom(model);
+        datasets.addAll(model.datasets);
+    }
 }

@@ -212,6 +212,17 @@ public abstract class NNClassificationModel implements Model<Vector, Double>, Ex
             .toString();
     }
 
+    /**
+     * Sets parameters from other model to this model.
+     *
+     * @param mdl Model.
+     */
+    protected void copyParametersFrom(NNClassificationModel mdl) {
+        this.k = mdl.k;
+        this.distanceMeasure = mdl.distanceMeasure;
+        this.stgy = mdl.stgy;
+    }
+
     /** */
     public abstract <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path);
 }
