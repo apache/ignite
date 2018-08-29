@@ -19,7 +19,7 @@ from importlib import import_module
 
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
-from pyignite.utils import hashcode, is_hinted
+from pyignite.utils import hashcode, is_hinted, schema_id
 from .internal import AnyDataObject
 from .type_codes import *
 
@@ -370,7 +370,9 @@ class BinaryObject:
         temp_conn.close()
         if not result['type_exists']:
             raise ParseError('Binary type is not registered')
-        return result['schemas'][0]
+        return next(iter([
+            s for s in result['schemas'] if schema_id(s) == header.schema_id
+        ]))
 
     @classmethod
     def parse(cls, client: 'Client'):
@@ -406,11 +408,17 @@ class BinaryObject:
 
     @classmethod
     def to_python(cls, ctype_object):
+        from pyignite.client.binary import GenericObjectMeta
+
         type_info = ctype_object.client.get_binary_type(
             ctype_object.type_id,
             ctype_object.schema_id
         )
-        result = type_info['data_class']()
+        data_class = type_info.get('data_class', None) or GenericObjectMeta(
+            type_info['type_name'], (), {}, schema=type_info['schemas'][0]
+        )
+        ctype_object.client.put_binary_type(data_class=data_class)
+        result = data_class()
         setattr(result, 'version', ctype_object.version)
 
         # hack, but robust

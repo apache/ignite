@@ -35,7 +35,7 @@ a generator with result rows.
 the registry for Ignite Complex Objects.
 """
 
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 import socket
 from typing import Iterable, Type, Union
 
@@ -47,7 +47,7 @@ from pyignite.exceptions import (
 from pyignite.utils import (
     entity_id, is_iterable, schema_id, status_to_exception,
 )
-from .binary import ensure_data_class, GenericObjectMeta
+from .binary import GenericObjectMeta
 from .handshake import HandshakeRequest, read_response
 from .ssl import wrap
 
@@ -77,6 +77,8 @@ class Client:
     prefetch = None
     username = None
     password = None
+
+    binary_registry = defaultdict(dict)
 
     @staticmethod
     def _check_kwargs(kwargs):
@@ -147,7 +149,6 @@ class Client:
 
     read_response = read_response
     _wrap = wrap
-    binary_registry = {}
 
     @property
     def socket(self) -> socket.socket:
@@ -331,7 +332,6 @@ class Client:
 
         return b''.join(chunks)
 
-    @ensure_data_class
     def get_binary_type(
         self, binary_type: Union[str, int], schema: Union[dict, int]=None
     ) -> dict:
@@ -398,9 +398,10 @@ class Client:
             schemas = []
             for s_id, field_ids in old_format_schemas.items():
                 converted_schema = convert_schema(field_ids, binary_fields)
-                self.binary_registry[
-                    (entity_id(binary_type), s_id)
-                ] = one_schema_result(result.value, converted_schema)
+                reg_key = (entity_id(binary_type), s_id)
+                self.binary_registry[reg_key].update(
+                    one_schema_result(result.value, converted_schema)
+                )
                 if any([schema == s_id, schema is None]):
                     schemas.append(converted_schema)
             result.value['schemas'] = schemas
@@ -430,7 +431,6 @@ class Client:
                     exact_result = result
             return exact_result
 
-    @ensure_data_class
     def put_binary_type(
         self, type_name: str=None, affinity_key_field: str=None,
         is_enum=False, schema: OrderedDict=None, data_class: Type=None,
@@ -503,7 +503,10 @@ class Client:
                 binary_result.value['type_id'],
                 binary_result.value['schema_id']
             )].update(result)
-            return result
+            return self.binary_registry[(
+                binary_result.value['type_id'],
+                binary_result.value['schema_id']
+            )]
 
     def create_cache(self, settings: Union[str, dict]) -> 'Cache':
         """

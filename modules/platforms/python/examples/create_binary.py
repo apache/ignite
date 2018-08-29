@@ -13,8 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyignite import Client
-from pyignite.datatypes import BinaryObject, DoubleObject, IntObject, String
+from collections import OrderedDict
+
+from pyignite import Client, GenericObjectMeta
+from pyignite.datatypes import DoubleObject, IntObject, String
 from pyignite.datatypes.prop_codes import *
 
 client = Client()
@@ -73,31 +75,24 @@ student_cache = client.create_cache({
         ],
     })
 
-student_type = client.put_binary_type(
-    'SQL_PUBLIC_STUDENT_TYPE',
-    schema={
-        'NAME': String,
-        'LOGIN': String,
-        'AGE': IntObject,
-        'GPA': DoubleObject,
-    }
-)
+
+class Student(
+    metaclass=GenericObjectMeta,
+    type_name='SQL_PUBLIC_STUDENT_TYPE',
+    schema=OrderedDict([
+        ('NAME', String),
+        ('LOGIN', String),
+        ('AGE', IntObject),
+        ('GPA', DoubleObject),
+    ])
+):
+    pass
+
 
 student_cache.put(
     1,
-    value={
-        'version': 1,
-        'type_id': student_type['type_id'],
-        'schema_id': student_type['schema_id'],
-        'fields': {
-            'LOGIN': 'jdoe',
-            'NAME': 'John Doe',
-            'AGE': (17, IntObject),
-            'GPA': 4.25,
-        },
-    },
-    key_hint=IntObject,
-    value_hint=BinaryObject,
+    Student(LOGIN='jdoe', NAME='John Doe', AGE=17, GPA=4.25),
+    key_hint=IntObject
 )
 
 result = client.sql(

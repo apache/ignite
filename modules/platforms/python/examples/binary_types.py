@@ -302,27 +302,17 @@ print(result)
 result = city_cache.scan()
 print(next(result))
 # (
-#     {
-#         'fields': {
-#             'ID': 1890,
-#             'COUNTRYCODE': 'CHN',
-#         },
-#         'schema_id': 415955900,
-#         'hash_code': -146319126,
-#         'version': 1,
-#         'type_id': -1360544090
-#     },
-#     {
-#         'fields': {
-#             'NAME': 'Shanghai',
-#             'DISTRICT': 'Shanghai',
-#             'POPULATION': 9696300,
-#         },
-#         'schema_id': 275495165,
-#         'hash_code': 819840247,
-#         'version': 1,
-#         'type_id': -1992793082
-#     }
+#     SQL_PUBLIC_CITY_6fe650e1_700f_4e74_867d_58f52f433c43_KEY(
+#         ID=1890,
+#         COUNTRYCODE='CHN',
+#         version=1
+#     ),
+#     SQL_PUBLIC_CITY_6fe650e1_700f_4e74_867d_58f52f433c43(
+#         NAME='Shanghai',
+#         DISTRICT='Shanghai',
+#         POPULATION=9696300,
+#         version=1
+#     )
 # )
 
 # clean up

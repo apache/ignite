@@ -17,11 +17,10 @@ from collections import OrderedDict
 from datetime import date
 from decimal import Decimal
 
-from pyignite import Client
+from pyignite import Client, GenericObjectMeta
 from pyignite.datatypes import (
-    BinaryObject, BoolObject, DateObject, DecimalObject, LongObject, String,
+    BoolObject, DateObject, DecimalObject, LongObject, String,
 )
-from pyignite.datatypes.internal import tc_map
 
 
 # prepare old data
@@ -35,54 +34,54 @@ old_schema = OrderedDict([
 ])
 
 old_data = [
-    (1, OrderedDict([
-        ('date', date(2017, 9, 21)),
-        ('reported', True),
-        ('purpose', 'Praesent eget fermentum massa'),
-        ('sum', Decimal('666.67')),
-        ('recipient', 'John Doe'),
-        ('cachier_id', 8),
-    ])),
-    (2, OrderedDict([
-        ('date', date(2017, 10, 11)),
-        ('reported', True),
-        ('purpose', 'Proin in bibendum nulla'),
-        ('sum', Decimal('333.33')),
-        ('recipient', 'Jane Roe'),
-        ('cachier_id', 9),
-    ])),
-    (3, OrderedDict([
-        ('date', date(2017, 10, 11)),
-        ('reported', True),
-        ('purpose', 'Suspendisse nec dolor auctor, scelerisque ex eu, iaculis odio'),
-        ('sum', Decimal('400.0')),
-        ('recipient', 'Jane Roe'),
-        ('cachier_id', 8),
-    ])),
-    (4, OrderedDict([
-        ('date', date(2017, 10, 24)),
-        ('reported', False),
-        ('purpose', 'Quisque ut leo ligula'),
-        ('sum', Decimal('1234.5')),
-        ('recipient', 'Joe Bloggs'),
-        ('cachier_id', 10),
-    ])),
-    (5, OrderedDict([
-        ('date', date(2017, 12, 1)),
-        ('reported', True),
-        ('purpose', 'Quisque ut leo ligula'),
-        ('sum', Decimal('800.0')),
-        ('recipient', 'Richard Public'),
-        ('cachier_id', 12),
-    ])),
-    (6, OrderedDict([
-        ('date', date(2017, 12, 1)),
-        ('reported', True),
-        ('purpose', 'Aenean eget bibendum lorem, a luctus libero'),
-        ('sum', Decimal('135.79')),
-        ('recipient', 'Joe Bloggs'),
-        ('cachier_id', 10),
-    ])),
+    (1, {
+        'date': date(2017, 9, 21),
+        'reported': True,
+        'purpose': 'Praesent eget fermentum massa',
+        'sum': Decimal('666.67'),
+        'recipient': 'John Doe',
+        'cashier_id': 8,
+    }),
+    (2, {
+        'date': date(2017, 10, 11),
+        'reported': True,
+        'purpose': 'Proin in bibendum nulla',
+        'sum': Decimal('333.33'),
+        'recipient': 'Jane Roe',
+        'cashier_id': 9,
+    }),
+    (3, {
+        'date': date(2017, 10, 11),
+        'reported': True,
+        'purpose': 'Suspendisse nec dolor auctor, scelerisque ex eu, iaculis odio',
+        'sum': Decimal('400.0'),
+        'recipient': 'Jane Roe',
+        'cashier_id': 8,
+    }),
+    (4, {
+        'date': date(2017, 10, 24),
+        'reported': False,
+        'purpose': 'Quisque ut leo ligula',
+        'sum': Decimal('1234.5'),
+        'recipient': 'Joe Bloggs',
+        'cashier_id': 10,
+    }),
+    (5, {
+        'date': date(2017, 12, 1),
+        'reported': True,
+        'purpose': 'Quisque ut leo ligula',
+        'sum': Decimal('800.0'),
+        'recipient': 'Richard Public',
+        'cashier_id': 12,
+    }),
+    (6, {
+        'date': date(2017, 12, 1),
+        'reported': True,
+        'purpose': 'Aenean eget bibendum lorem, a luctus libero',
+        'sum': Decimal('135.79'),
+        'recipient': 'Joe Bloggs',
+        'cashier_id': 10,
+    }),
 ]
 
 # - add `report_date`
@@ -95,66 +94,47 @@ old_data = [
 #     'purpose': String,
 #     'sum': DecimalObject,
 #     'recipient': String,
-#     'cashier': LongObject,
+#     'cashier_id': LongObject,
 # }
+
+
+class ExpenseVoucher(
+    metaclass=GenericObjectMeta,
+    schema=old_schema,
+):
+    pass
+
 
 client = Client()
 client.connect('127.0.0.1', 10800)
 
-accounting = client.create_cache('accounting')
-
-result = client.put_binary_type(
-    'ExpenseVoucher',
-    schema=old_schema,
-)
-
-type_id = result['type_id']
-old_schema_id = result['schema_id']
+accounting = client.get_or_create_cache('accounting')
 
 for key, value in old_data:
-    accounting.put(
-        key,
-        {
-            'version': 1,
-            'type_id': type_id,
-            'schema_id': old_schema_id,
-            'fields': value,
-        },
-        value_hint=BinaryObject,
-    )
+    accounting.put(key, ExpenseVoucher(**value))
 
-result = client.get_binary_type('ExpenseVoucher')
-print(result)
+type_info = client.get_binary_type('ExpenseVoucher')
+print(type_info)
 # {
-#     'type_id': -1171639466,
-#     'type_name': 'ExpenseVoucher',
 #     'is_enum': False,
-#     'affinity_key_field': None,
-#     'binary_fields': [
-#         {'type_id': 11, 'field_id': 3076014, 'field_name': 'date'},
-#         {'type_id': 8, 'field_id': -427039533, 'field_name': 'reported'},
-#         {'type_id': 9, 'field_id': -220463842, 'field_name': 'purpose'},
-#         {'type_id': 30, 'field_id': 114251, 'field_name': 'sum'},
-#         {'type_id': 9, 'field_id': 820081177, 'field_name': 'recipient'},
-#         {'type_id': 4, 'field_id': -2030736361, 'field_name': 'cashier_id'},
+#     'schemas': [
+#         OrderedDict([
+#             ('date', DateObject),
+#             ('reported', BoolObject),
+#             ('purpose', String),
+#             ('sum', DecimalObject),
+#             ('recipient', String),
+#             ('cashier_id', LongObject),
+#         ]),
 #     ],
-#     'schema': {
-#         -231598180: [
-#             3076014,
-#             -427039533,
-#             -220463842,
-#             114251,
-#             820081177,
-#             -2030736361,
-#         ],
-#     },
+#     'data_class': ExpenseVoucher,
+#     'type_id': -1171639466,
+#     'affinity_key_field': None,
+#     'type_name': 'ExpenseVoucher',
 #     'type_exists': True,
 # }
 
-schema = OrderedDict([
-    (field['field_name'], tc_map(bytes([field['type_id']])))
-    for field in result['binary_fields']
-])
+schema = type_info['schemas'][0]
 
 schema['expense_date'] = schema['date']
 del schema['date']
@@ -162,91 +142,62 @@ schema['report_date'] = DateObject
 del schema['reported']
 schema['sum'] = DecimalObject
 
-result = client.put_binary_type(
-    'ExpenseVoucher',
+
+# define new data class
+class ExpenseVoucherV2(
+    metaclass=GenericObjectMeta,
+    type_name='ExpenseVoucher',
     schema=schema,
-)
-new_schema_id = result['schema_id']
-
-result = client.get_binary_type(type_id)
-print(result)
-# {
-#     'type_id': -1171639466,
-#     'type_name': 'ExpenseVoucher',
-#     'is_enum': False,
-#     'affinity_key_field': None,
-#     'binary_fields': [
-#         {'type_id': 11, 'field_id': 3076014, 'field_name': 'date'},
-#         {'type_id': 8, 'field_id': -427039533, 'field_name': 'reported'},
-#         {'type_id': 9, 'field_id': -220463842, 'field_name': 'purpose'},
-#         {'type_id': 30, 'field_id': 114251, 'field_name': 'sum'},
-#         {'type_id': 9, 'field_id': 820081177, 'field_name': 'recipient'},
-#         {'type_id': 4, 'field_id': -2030736361, 'field_name': 'cashier_id'},
-#         {'type_id': 11, 'field_id': 1264342837, 'field_name': 'expense_date'},
-#         {'type_id': 11, 'field_id': -247041063, 'field_name': 'report_date'},
-#     ], 'schema': {
-#         -231598180: [
-#             3076014,
-#             -427039533,
-#             -220463842,
-#             114251,
-#             820081177,
-#             -2030736361,
-#         ],
-#         547629991: [
-#             -220463842,
-#             114251,
-#             820081177,
-#             -2030736361,
-#             1264342837,
-#             -247041063,
-#         ]
-#     },
-#     'type_exists': True,
-# }
+):
+    pass
 
 
-def migrate(cache, data):
+def migrate(cache, data, new_class):
     """ Migrate given data pages. """
-    for key, value in data:
+    for key, old_value in data:
         # read data
-        print(value)
-        # {
-        #     'cashier_id': 8,
-        #     'date': datetime.datetime(2017, 9, 21, 0, 0),
-        #     'sum': Decimal('666.67'),
-        #     'reported': True,
-        #     'purpose': 'Praesent eget fermentum massa',
-        #     'recipient': 'John Doe',
-        # }
+        print(old_value)
+        # ExpenseVoucher(
+        #     date=datetime(2017, 9, 21, 0, 0),
+        #     reported=True,
+        #     purpose='Praesent eget fermentum massa',
+        #     sum=Decimal('666.67'),
+        #     recipient='John Doe',
+        #     cashier_id=8,
+        #     version=1
+        # )
+
+        # create new binary object
+        new_value = new_class()
 
         # process data
-        fields = value['fields']
-        fields['expense_date'] = fields['date']
-        del fields['date']
-        fields['report_date'] = date.today() if fields['reported'] else None
-        del fields['reported']
-        value['schema_id'] = new_schema_id
+        new_value.sum = old_value.sum
+        new_value.purpose = old_value.purpose
+        new_value.recipient = old_value.recipient
+        new_value.cashier_id = old_value.cashier_id
+        new_value.expense_date = old_value.date
+        new_value.report_date = date.today() if old_value.reported else None
 
         # replace data
-        cache.put(key, value, value_hint=BinaryObject)
+        cache.put(key, new_value)
 
         # verify data
         verify = cache.get(key)
-        print(verify['fields'])
-        # {
-        #     'cashier_id': 8,
-        #     'sum': Decimal('666.67'),
-        #     'report_date': datetime.datetime(2018, 7, 24, 0, 0),
-        #     'expense_date': datetime.datetime(2017, 9, 21, 0, 0),
-        #     'recipient': 'John Doe',
-        #     'purpose': 'Praesent eget fermentum massa',
-        # }
+        print(verify)
+        # ExpenseVoucherV2(
+        #     purpose='Praesent eget fermentum massa',
+        #     sum=Decimal('666.67'),
+        #     recipient='John Doe',
+        #     cashier_id=8,
+        #     expense_date=datetime(2017, 9, 21, 0, 0),
+        #     report_date=datetime(2018, 8, 29, 0, 0),
+        #     version=1,
+        # )
 
 
 # migrate data
 result = accounting.scan()
-migrate(accounting, result)
+migrate(accounting, result, ExpenseVoucherV2)
 
 # cleanup
 accounting.destroy()

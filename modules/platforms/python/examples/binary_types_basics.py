@@ -40,19 +40,11 @@ print(person.__class__.__name__)
 # Person
 
 print(person.__class__ is Person)
-# False
+# True
 
 print(person.first_name)
 # Ivan
 
 client.put_binary_type(data_class=Person)
 
-person = person_cache.get(1)
-print(person.__class__.__name__)
-# Person
-
-print(person.__class__ is Person)
-# True
-
-print(person.first_name)
-# Ivan
+Person = person.__class__
