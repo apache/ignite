@@ -370,8 +370,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             persistenceCfg.getMetricsSubIntervalCount()
         );
 
-        metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
-
         ioFactory = persistenceCfg.getFileIOFactory();
     }
 
@@ -488,9 +486,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cleanupTempCheckpointDirectory();
 
             persStoreMetrics.wal(cctx.wal());
-
-            // Here we can get data from metastorage
-            readMetastore();
         }
     }
 
@@ -4321,6 +4316,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public MetaStorage metaStorage() {
         return metaStorage;
+    }
+
+    /** {@inheritDoc} */
+    public void notifyMetaStorageSubscribersOnReadyForRead() throws IgniteCheckedException {
+        metastorageLifecycleLsnrs = cctx.kernalContext().internalSubscriptionProcessor().getMetastorageSubscribers();
+
+        readMetastore();
     }
 
     /** {@inheritDoc} */
