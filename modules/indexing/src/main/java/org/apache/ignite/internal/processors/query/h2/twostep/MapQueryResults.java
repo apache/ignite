@@ -31,10 +31,11 @@ import org.jetbrains.annotations.Nullable;
  * Mapper query results.
  */
 class MapQueryResults {
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** H2 indexing. */
     private final IgniteH2Indexing h2;
-
-    private final IgniteLogger log;
 
     /** */
     private final long qryReqId;
@@ -65,6 +66,7 @@ class MapQueryResults {
     @SuppressWarnings("unchecked")
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
         @Nullable MapQueryLazyWorker lazyWorker) {
+        this.log = cctx.logger(MapQueryResults.class);
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
@@ -72,8 +74,6 @@ class MapQueryResults {
 
         results = new AtomicReferenceArray<>(qrys);
         cancels = new GridQueryCancel[qrys];
-
-        log = cctx.logger(MapQueryResults.class);
 
         for (int i = 0; i < cancels.length; i++)
             cancels[i] = new GridQueryCancel();

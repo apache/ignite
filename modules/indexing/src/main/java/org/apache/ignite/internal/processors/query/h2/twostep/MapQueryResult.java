@@ -61,6 +61,9 @@ class MapQueryResult {
         }
     }
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Indexing. */
     private final IgniteH2Indexing h2;
 
@@ -97,9 +100,6 @@ class MapQueryResult {
     /** */
     private final Object[] params;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /**
      * @param h2 H2 indexing.
      * @param rs Result set.
@@ -110,13 +110,13 @@ class MapQueryResult {
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
         UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params) {
+        this.log = cctx.logger(MapQueryResult.class);
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
-        log = cctx.logger(MapQueryResult.class);
 
         if (rs != null) {
             this.rs = rs;
