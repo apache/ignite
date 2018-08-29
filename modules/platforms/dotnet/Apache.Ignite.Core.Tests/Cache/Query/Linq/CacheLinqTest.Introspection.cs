@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             fq = fieldsQuery.GetFieldsQuery();
             Assert.AreEqual(GetSqlEscapeAll()
-                    ? "select _T0.\"Name\" from \"person_org\".\"Person\" as _T0"
+                    ? "select _T0.\"Name\" from PERSON_ORG_SCHEMA.\"Person\" as _T0"
                     : "select _T0.NAME from PERSON_ORG_SCHEMA.Person as _T0",
                 fq.Sql);
 
