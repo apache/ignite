@@ -52,7 +52,8 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
      */
     public KNNClassificationModel(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
         this.datasets = new ArrayList<>();
-        datasets.add(dataset);
+        if (dataset != null)
+            datasets.add(dataset);
     }
 
     /** {@inheritDoc} */

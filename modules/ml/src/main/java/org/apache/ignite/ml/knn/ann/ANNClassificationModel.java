@@ -44,17 +44,27 @@ public class ANNClassificationModel extends NNClassificationModel  {
     /** The labeled set of candidates. */
     private final LabeledVectorSet<ProbableLabel, LabeledVector> candidates;
 
+    /** Centroid statistics. */
+    private final ANNClassificationTrainer.CentroidStat candidatesStat;
+
     /**
      * Build the model based on a candidates set.
      * @param centers The candidates set.
+     * @param candidatesStat
      */
-    public ANNClassificationModel(LabeledVectorSet<ProbableLabel, LabeledVector> centers) {
+    public ANNClassificationModel(LabeledVectorSet<ProbableLabel, LabeledVector> centers,
+        ANNClassificationTrainer.CentroidStat candidatesStat) {
        this.candidates = centers;
+       this.candidatesStat = candidatesStat;
     }
 
     /** */
     public LabeledVectorSet<ProbableLabel, LabeledVector> getCandidates() {
         return candidates;
+    }
+
+    public ANNClassificationTrainer.CentroidStat getCandiatesStat() {
+        return candidatesStat;
     }
 
     /** {@inheritDoc} */
@@ -65,7 +75,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
 
     /** */
     @Override public <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path) {
-        ANNModelFormat mdlData = new ANNModelFormat(k, distanceMeasure, stgy, candidates);
+        ANNModelFormat mdlData = new ANNModelFormat(k, distanceMeasure, stgy, candidates, candidatesStat);
         exporter.save(mdlData, path);
     }
 
