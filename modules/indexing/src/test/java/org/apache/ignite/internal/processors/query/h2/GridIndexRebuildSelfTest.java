@@ -54,7 +54,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
-        IgniteConfiguration cfg =  super.commonConfiguration(idx);
+        IgniteConfiguration cfg =  super.commonConfiguration(idx)
+            .setMvccVacuumTimeInterval(Integer.MAX_VALUE);
 
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration()
             .setMaxSize(300*1024L*1024L)
@@ -185,7 +186,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                     List<IgniteBiTuple<Object, MvccVersion>> vers = store.mvccFindAllVersions(icache.context(), row.key());
 
                     if (!afterRebuild || key <= AMOUNT / 2)
-                        assertTrue(key >= vers.size() && vers.size() >= 1);
+                        assertEquals(key, vers.size());
                     else {
                         // For keys affected by concurrent put there are two versions -
                         // -1 (concurrent put mark) and newest restored value as long as put cleans obsolete versions.
