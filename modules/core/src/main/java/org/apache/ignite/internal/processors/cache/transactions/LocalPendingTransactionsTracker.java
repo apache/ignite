@@ -206,7 +206,7 @@ public class LocalPendingTransactionsTracker {
         }
 
         /**
-         *
+         * @return {@code true} if the set of committing transactions {@code committingTxs} is empty.
          */
         boolean allCommittingIsFinished() {
             committingTxs.retainAll(notCommittedInTimeoutTxs.keySet());
@@ -263,6 +263,7 @@ public class LocalPendingTransactionsTracker {
      */
     public void startTrackingPrepared() {
         assert stateLock.writeLock().isHeldByCurrentThread();
+        assert !trackPrepared.get(): "Tracking prepared transactions is already initialized.";
 
         trackPrepared.set(true);
     }
@@ -272,6 +273,7 @@ public class LocalPendingTransactionsTracker {
      */
     public Map<GridCacheVersion, WALPointer> stopTrackingPrepared() {
         assert stateLock.writeLock().isHeldByCurrentThread();
+        assert trackPrepared.get(): "Tracking prepared transactions is not initialized yet.";
 
         trackPrepared.set(false);
 
@@ -287,6 +289,7 @@ public class LocalPendingTransactionsTracker {
      */
     public void startTrackingCommitted() {
         assert stateLock.writeLock().isHeldByCurrentThread();
+        assert !trackCommitted.get() : "Tracking committed transactions is already initialized.";
 
         trackCommitted.set(true);
     }
@@ -296,6 +299,7 @@ public class LocalPendingTransactionsTracker {
      */
     public TrackCommittedResult stopTrackingCommitted() {
         assert stateLock.writeLock().isHeldByCurrentThread();
+        assert trackCommitted.get() : "Tracking committed transactions is not initialized yet.";
 
         trackCommitted.set(false);
 
@@ -544,23 +548,17 @@ public class LocalPendingTransactionsTracker {
         try {
             txFinishAwaiting = null;
 
-            trackPrepared.set(false);
-
-            trackedPreparedTxs.clear();
-
-            currentlyPreparedTxs.clear();
-
             trackCommitted.set(false);
 
-            trackedCommittedTxs.clear();
+            trackedCommittedTxs = new ConcurrentHashMap<>();
 
-            currentlyCommittingTxs.clear();
+            trackPrepared.set(false);
 
-            preparedCommittedTxsCounters.clear();
+            trackedPreparedTxs = new ConcurrentHashMap<>();
 
-            writtenKeysToNearXidVer.clear();
+            writtenKeysToNearXidVer = new ConcurrentHashMap<>();
 
-            dependentTransactionsGraph.clear();
+            dependentTransactionsGraph = new ConcurrentHashMap<>();
         }
         finally {
             stateLock.writeLock().unlock();

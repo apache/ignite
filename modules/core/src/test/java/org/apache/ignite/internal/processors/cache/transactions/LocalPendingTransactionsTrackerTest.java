@@ -250,7 +250,7 @@ public class LocalPendingTransactionsTrackerTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     @Test(timeout = 10_000)
     public void testAwaitFinishOfPreparedTxs() throws Exception {
@@ -319,7 +319,7 @@ public class LocalPendingTransactionsTrackerTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     @Test(timeout = 10_000)
     public void testAwaitFinishOfPreparedTxsTimeouts() throws Exception {
@@ -499,7 +499,7 @@ public class LocalPendingTransactionsTrackerTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     @Test(timeout = 10_000)
     public void testConsistentCutUseCase() throws Exception {
@@ -655,6 +655,7 @@ public class LocalPendingTransactionsTrackerTest {
 
     /**
      * Transaction tracker memory leak test.
+     * @throws Exception If failed.
      */
     @Test
     public void testTrackerMemoryLeak() throws Exception {
@@ -673,6 +674,8 @@ public class LocalPendingTransactionsTrackerTest {
     /**
      * @param iterationsCnt Iterations count.
      * @param threadsCnt Threads count.
+     * @return Length of dump file.
+     * @throws Exception If failed.
      */
     private long memoryFootprintForTransactionTracker(int iterationsCnt, int threadsCnt) throws Exception {
         AtomicInteger txCnt = new AtomicInteger();
@@ -743,8 +746,26 @@ public class LocalPendingTransactionsTrackerTest {
         tracker.writeLockState();
 
         try {
-            tracker.stopTrackingPrepared();
-            tracker.stopTrackingCommitted();
+            int state = trackerState.get();
+
+            switch (state % 4) {
+                case 0:
+                    break;
+                case 1:
+                    tracker.stopTrackingPrepared();
+                    tracker.startTrackingCommitted();
+                    tracker.stopTrackingCommitted();
+
+                    break;
+                case 2:
+                    tracker.startTrackingCommitted();
+                    tracker.stopTrackingCommitted();
+
+                    break;
+                case 3:
+                    tracker.stopTrackingCommitted();
+            }
+
         }
         finally {
             tracker.writeUnlockState();
@@ -802,6 +823,7 @@ public class LocalPendingTransactionsTrackerTest {
 
     /**
      * @param txId Test transaction ID.
+     * @return Version of transaction for the given {@code txId}.
      */
     private GridCacheVersion nearXidVersion(int txId) {
         return new GridCacheVersion(0, txId, 0);
@@ -810,6 +832,8 @@ public class LocalPendingTransactionsTrackerTest {
     /**
      * @param preparedTxsTimeout Prepared transactions timeout.
      * @param committingTxsTimeout Committing transactions timeout.
+     * @return Collection of local transactions in committing state.
+     * @throws IgniteCheckedException If failed.
      */
     private Map<GridCacheVersion, WALPointer> awaitFinishOfPreparedTxs(long preparedTxsTimeout,
         long committingTxsTimeout) throws IgniteCheckedException {
