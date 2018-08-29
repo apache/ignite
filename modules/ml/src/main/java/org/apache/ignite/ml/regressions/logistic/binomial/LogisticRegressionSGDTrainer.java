@@ -80,19 +80,6 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
         return update(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
-    @NotNull private MLPTrainer<?> createMLPTrainer(
-        IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier) {
-        return new MLPTrainer<>(
-                archSupplier,
-                LossFunctions.L2,
-                updatesStgy,
-                maxIterations,
-                batchSize,
-                locIterations,
-                seed
-            );
-    }
-
     /** {@inheritDoc} */
     @Override public <K, V> LogisticRegressionModel update(LogisticRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
@@ -111,7 +98,15 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
             return architecture;
         };
 
-        MLPTrainer<?> trainer = createMLPTrainer(archSupplier);
+        MLPTrainer<?> trainer = new MLPTrainer<>(
+            archSupplier,
+            LossFunctions.L2,
+            updatesStgy,
+            maxIterations,
+            batchSize,
+            locIterations,
+            seed
+        );
 
         IgniteBiFunction<K, V, double[]> lbExtractorWrapper = (k, v) -> new double[] {lbExtractor.apply(k, v)};
         MultilayerPerceptron mlp;
@@ -128,6 +123,10 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
         );
     }
 
+    /**
+     * @param mdl Model.
+     * @return state of MLP from last learning.
+     */
     @NotNull private MultilayerPerceptron restoreMLPState(LogisticRegressionModel mdl) {
         Vector weights = mdl.weights();
         double intercept = mdl.intercept();
@@ -142,5 +141,4 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
         perceptron.setParameters(mlpState);
         return perceptron;
     }
-
 }

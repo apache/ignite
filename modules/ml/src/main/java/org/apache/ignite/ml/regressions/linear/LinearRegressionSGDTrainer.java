@@ -19,6 +19,7 @@ package org.apache.ignite.ml.regressions.linear;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Optional;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -34,6 +35,7 @@ import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Trainer of the linear regression model based on stochastic gradient descent algorithm.
@@ -76,6 +78,13 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
+        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> LinearRegressionModel update(LinearRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
 
             int cols = dataset.compute(data -> {
@@ -102,7 +111,10 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
 
         IgniteBiFunction<K, V, double[]> lbE = (IgniteBiFunction<K, V, double[]>)(k, v) -> new double[]{lbExtractor.apply(k, v)};
 
-        MultilayerPerceptron mlp = trainer.fit(datasetBuilder, featureExtractor, lbE);
+        MultilayerPerceptron mlp = Optional.ofNullable(mdl)
+            .map(this::restoreMLPState)
+            .map(m -> trainer.update(m, datasetBuilder, featureExtractor, lbE))
+            .orElse(trainer.fit(datasetBuilder, featureExtractor, lbE));
 
         double[] p = mlp.parameters().getStorage().data();
 
@@ -110,5 +122,24 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
             Arrays.copyOf(p, p.length - 1)),
             p[p.length - 1]
         );
+    }
+
+    /**
+     * @param mdl Model.
+     * @return state of MLP from last learning.
+     */
+    @NotNull private MultilayerPerceptron restoreMLPState(LinearRegressionModel mdl) {
+        Vector weights = mdl.getWeights();
+        double intercept = mdl.getIntercept();
+        MLPArchitecture architecture1 = new MLPArchitecture(weights.size());
+        architecture1 = architecture1.withAddedLayer(1, true, Activators.LINEAR);
+        MLPArchitecture architecture = architecture1;
+        MultilayerPerceptron perceptron = new MultilayerPerceptron(architecture);
+
+        Vector mlpState = weights.like(weights.size() + 1);
+        weights.nonZeroes().forEach(ith -> mlpState.set(ith.index(), ith.get()));
+        mlpState.set(mlpState.size() - 1, intercept);
+        perceptron.setParameters(mlpState);
+        return perceptron;
     }
 }
