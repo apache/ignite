@@ -198,39 +198,35 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
             SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-            while (true) {
-                log.info("+++ ITERATION ");
+            final QueryCursor<List<?>> cursor;
+            if (timeout) {
+                qry.setTimeout(timeoutUnits, timeUnit);
 
-                final QueryCursor<List<?>> cursor;
-                if (timeout) {
-                    qry.setTimeout(timeoutUnits, timeUnit);
-
-                    cursor = cache.query(qry);
-                }
-                else {
-                    cursor = cache.query(qry);
-
-                    client.scheduler().runLocal(new Runnable() {
-                        @Override public void run() {
-                            cursor.close();
-                        }
-                    }, timeoutUnits, timeUnit);
-                }
-
-                try (QueryCursor<List<?>> ignored = cursor) {
-                    cursor.iterator();
-                }
-                catch (CacheException ex) {
-                    log().error("Got expected exception", ex);
-
-                    assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
-                }
-
-                // Give some time to clean up.
-                Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 3_000);
-
-                checkCleanState();
+                cursor = cache.query(qry);
             }
+            else {
+                cursor = cache.query(qry);
+
+                client.scheduler().runLocal(new Runnable() {
+                    @Override public void run() {
+                        cursor.close();
+                    }
+                }, timeoutUnits, timeUnit);
+            }
+
+            try (QueryCursor<List<?>> ignored = cursor) {
+                cursor.iterator();
+            }
+            catch (CacheException ex) {
+                log().error("Got expected exception", ex);
+
+                assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
+            }
+
+            // Give some time to clean up.
+            Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 3_000);
+
+            checkCleanState();
         }
     }
 

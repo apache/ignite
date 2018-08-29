@@ -1095,42 +1095,50 @@ public class GridMapQueryExecutor {
 
         List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
-        boolean last = res.fetchNextPage(rows, pageSize);
+        try {
+            boolean last = res.fetchNextPage(rows, pageSize);
 
-        if (last) {
-            res.close();
+            if (last) {
+                res.close();
 
-            if (qryResults.isAllClosed()) {
-                nodeRess.remove(qryResults.queryRequestId(), segmentId, qryResults);
+                if (qryResults.isAllClosed()) {
+                    nodeRess.remove(qryResults.queryRequestId(), segmentId, qryResults);
 
-                // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
-                if (qryResults.lazyWorker() != null) {
-                    releaseReservations();
+                    // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
+                    if (qryResults.lazyWorker() != null) {
+                        releaseReservations();
 
-                    qryResults.lazyWorker().stop(false);
+                        qryResults.lazyWorker().stop(false);
+                    }
                 }
             }
+
+            try {
+                boolean loc = node.isLocal();
+
+                GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qryResults.queryRequestId(), segmentId, qry, page,
+                    page == 0 ? res.rowCount() : -1,
+                    res.columnCount(),
+                    loc ? null : toMessages(rows, new ArrayList<Message>(res.columnCount())),
+                    loc ? rows : null,
+                    last);
+
+                if (loc)
+                    h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+                else
+                    ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to send message.", e);
+
+                throw new IgniteException(e);
+            }
         }
+        catch (Throwable e) {
+            JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
-        try {
-            boolean loc = node.isLocal();
-
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qryResults.queryRequestId(), segmentId, qry, page,
-                page == 0 ? res.rowCount() : -1,
-                res.columnCount(),
-                loc ? null : toMessages(rows, new ArrayList<Message>(res.columnCount())),
-                loc ? rows : null,
-                last);
-
-            if (loc)
-                h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
-            else
-                ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send message.", e);
-
-            throw new IgniteException(e);
+            if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                sendError(node, qryResults.queryRequestId(), new QueryCancelledException());
         }
     }
 
