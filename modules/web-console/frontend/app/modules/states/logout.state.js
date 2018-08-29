@@ -25,7 +25,7 @@ angular.module('ignite-console.states.logout', [
     $stateProvider.state('logout', {
         url: '/logout',
         permission: 'logout',
-        controller: ['Auth', (Auth) => Auth.logout()],
+        controller: ['Auth', function(Auth) {Auth.logout();}],
         tfMetaTags: {
             title: 'Logout'
         }

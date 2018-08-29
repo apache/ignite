@@ -43,6 +43,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Ssl;
     using Apache.Ignite.Core.Lifecycle;
@@ -252,13 +253,13 @@ namespace Apache.Ignite.Core
             {
                 var marsh = BinaryUtils.Marshaller;
 
-                configuration.Write(marsh.StartMarshal(stream));
+                configuration.Write(marsh.StartMarshal(stream), ClientSocket.CurrentProtocolVersion);
 
                 stream.SynchronizeOutput();
 
                 stream.Seek(0, SeekOrigin.Begin);
 
-                ReadCore(marsh.StartUnmarshal(stream));
+                ReadCore(marsh.StartUnmarshal(stream), ClientSocket.CurrentProtocolVersion);
             }
 
             CopyLocalProperties(configuration);
@@ -269,12 +270,14 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
         /// <param name="baseConfig">The base configuration.</param>
-        internal IgniteConfiguration(BinaryReader binaryReader, IgniteConfiguration baseConfig)
+        /// <param name="srvVer">Server version.</param>
+        internal IgniteConfiguration(BinaryReader binaryReader, IgniteConfiguration baseConfig,
+            ClientProtocolVersion srvVer)
         {
             Debug.Assert(binaryReader != null);
             Debug.Assert(baseConfig != null);
 
-            Read(binaryReader);
+            Read(binaryReader, srvVer);
             CopyLocalProperties(baseConfig);
         }
 
@@ -282,7 +285,8 @@ namespace Apache.Ignite.Core
         /// Writes this instance to a writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        internal void Write(BinaryWriter writer)
+        /// <param name="srvVer">Server version.</param>
+        internal void Write(BinaryWriter writer, ClientProtocolVersion srvVer)
         {
             Debug.Assert(writer != null);
 
@@ -305,6 +309,19 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
             writer.WriteBooleanNullable(_authenticationEnabled);
+
+            if (SqlSchemas == null)
+                writer.WriteInt(-1);
+            else
+            {
+                writer.WriteInt(SqlSchemas.Count);
+
+                foreach (string sqlSchema in SqlSchemas)
+                {
+                    writer.WriteString(sqlSchema);
+                }
+            }
+
             writer.WriteObjectDetached(ConsistentId);
 
             // Thread pools
@@ -319,7 +336,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
-            writer.WriteCollectionRaw(CacheConfiguration);
+            writer.WriteCollectionRaw(CacheConfiguration, srvVer);
 
             // Discovery config
             var disco = DiscoverySpi;
@@ -637,7 +654,8 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
-        private void ReadCore(BinaryReader r)
+        /// <param name="srvVer">Server version.</param>
+        private void ReadCore(BinaryReader r, ClientProtocolVersion srvVer)
         {
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
@@ -657,6 +675,19 @@ namespace Apache.Ignite.Core
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
             _authenticationEnabled = r.ReadBooleanNullable();
+
+            int sqlSchemasCnt = r.ReadInt();
+
+            if (sqlSchemasCnt == -1)
+                SqlSchemas = null;
+            else
+            {
+                SqlSchemas = new List<string>(sqlSchemasCnt);
+
+                for (int i = 0; i < sqlSchemasCnt; i++)
+                    SqlSchemas.Add(r.ReadString());
+            }
+
             ConsistentId = r.ReadObject<object>();
 
             // Thread pools
@@ -671,7 +702,7 @@ namespace Apache.Ignite.Core
             _queryThreadPoolSize = r.ReadIntNullable();
 
             // Cache config
-            CacheConfiguration = r.ReadCollectionRaw(x => new CacheConfiguration(x));
+            CacheConfiguration = r.ReadCollectionRaw(x => new CacheConfiguration(x, srvVer));
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
@@ -812,9 +843,10 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        private void Read(BinaryReader binaryReader)
+        /// <param name="srvVer">Server version.</param>
+        private void Read(BinaryReader binaryReader, ClientProtocolVersion srvVer)
         {
-            ReadCore(binaryReader);
+            ReadCore(binaryReader, srvVer);
 
             // Misc
             IgniteHome = binaryReader.ReadString();
@@ -1529,5 +1561,13 @@ namespace Apache.Ignite.Core
         /// <see cref="NoOpFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>, <see cref="StopNodeFailureHandler"/>.
         /// </summary>
         public IFailureHandler FailureHandler { get; set; }
+
+        /// <summary>
+        /// Gets or sets SQL schemas to be created on node startup. Schemas are created on local node only and are not propagated.
+        /// to other cluster nodes. Created schemas cannot be dropped.
+        /// <para/>
+        /// By default schema names are case-insensitive. Use quotes to enforce case sensitivity.
+        /// </summary>
+        public ICollection<String> SqlSchemas { get; set; }
     }
 }

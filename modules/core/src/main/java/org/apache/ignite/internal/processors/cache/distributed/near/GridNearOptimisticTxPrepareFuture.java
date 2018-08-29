@@ -52,7 +52,6 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -989,22 +988,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         IgniteInternalFuture<?> affFut =
                             parent.cctx.exchange().affinityReadyFuture(res.clientRemapVersion());
 
-                        if (affFut != null && !affFut.isDone()) {
-                            affFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> fut) {
-                                    try {
-                                        fut.get();
+                        parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), (e, timedOut) -> {
+                            if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
+                                return;
 
-                                        remap();
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        onDone(e);
-                                    }
-                                }
-                            });
-                        }
-                        else
                             remap();
+                        });
                     }
                     else {
                         parent.onPrepareResponse(m, res, m.hasNearCacheEntries());

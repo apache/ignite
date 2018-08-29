@@ -3513,7 +3513,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         if (!commErrResolve && enableForcibleNodeKill) {
             if (ctx.node(node.id()) != null
-                && (CU.clientNode(node) ||  !CU.clientNode(getLocalNode())) &&
+                && (node.isClient() || !getLocalNode().isClient()) &&
                 connectionError(errs)) {
                 String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
                     "cluster [" + "rmtNode=" + node + ']';

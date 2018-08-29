@@ -26,8 +26,7 @@ const Errors = require('../Errors');
 const IgniteClientConfiguration = require('../IgniteClientConfiguration');
 const MessageBuffer = require('./MessageBuffer');
 const BinaryUtils = require('./BinaryUtils');
-const BinaryReader = require('./BinaryReader');
-const BinaryWriter = require('./BinaryWriter');
+const BinaryCommunicator = require('./BinaryCommunicator');
 const ArgumentChecker = require('./ArgumentChecker');
 const Logger = require('./Logger');
 
@@ -78,11 +77,15 @@ class ProtocolVersion {
 
 const PROTOCOL_VERSION_1_0_0 = new ProtocolVersion(1, 0, 0);
 const PROTOCOL_VERSION_1_1_0 = new ProtocolVersion(1, 1, 0);
+const PROTOCOL_VERSION_1_2_0 = new ProtocolVersion(1, 2, 0);
 
 const SUPPORTED_VERSIONS = [
     // PROTOCOL_VERSION_1_0_0, // Support for QueryField precision/scale fields breaks 1.0.0 compatibility
-    PROTOCOL_VERSION_1_1_0
+    PROTOCOL_VERSION_1_1_0,
+    PROTOCOL_VERSION_1_2_0
 ];
+
+const CURRENT_VERSION = PROTOCOL_VERSION_1_2_0;
 
 const STATE = Object.freeze({
     INITIAL : 0,
@@ -112,7 +115,7 @@ class ClientSocket {
     async connect() {
         return new Promise((resolve, reject) => {
             this._connectSocket(
-                this._getHandshake(PROTOCOL_VERSION_1_1_0, resolve, reject));
+                this._getHandshake(CURRENT_VERSION, resolve, reject));
         });
     }
 
@@ -240,7 +243,7 @@ class ClientSocket {
             const serverVersion = new ProtocolVersion();
             serverVersion.read(buffer);
             // Error message
-            const errMessage = await BinaryReader.readObject(buffer);
+            const errMessage = BinaryCommunicator.readString(buffer);
 
             if (!this._protocolVersion.equals(serverVersion)) {
                 if (!this._isSupportedVersion(serverVersion) ||
@@ -271,7 +274,7 @@ class ClientSocket {
     async _finalizeResponse(buffer, request, isSuccess) {
         if (!isSuccess) {
             // Error message
-            const errMessage = await BinaryReader.readObject(buffer);
+            const errMessage = BinaryCommunicator.readString(buffer);
             request.reject(new Errors.OperationError(errMessage));
         }
         else {
@@ -295,8 +298,8 @@ class ClientSocket {
         // Client code
         payload.writeByte(2);
         if (this._config._userName) {
-            await BinaryWriter.writeString(payload, this._config._userName);
-            await BinaryWriter.writeString(payload, this._config._password);
+            BinaryCommunicator.writeString(payload, this._config._userName);
+            BinaryCommunicator.writeString(payload, this._config._password);
         }
     }
 

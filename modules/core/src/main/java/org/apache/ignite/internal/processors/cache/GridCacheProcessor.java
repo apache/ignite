@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
@@ -540,6 +541,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Using cache group names reserved for datastructures is not allowed for " +
                 "other cache types [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                 ", cacheType=" + cacheType + "]");
+
+        // Make sure we do not use sql schema for system views.
+        if (ctx.query().moduleEnabled()) {
+            String schema = QueryUtils.normalizeSchemaName(cc.getName(), cc.getSqlSchema());
+
+            if (F.eq(schema, QueryUtils.SCHEMA_SYS)) {
+                if (cc.getSqlSchema() == null) {
+                    // Conflict on cache name.
+                    throw new IgniteCheckedException("SQL schema name derived from cache name is reserved (" +
+                        "please set explicit SQL schema name through CacheConfiguration.setSqlSchema() or choose " +
+                        "another cache name) [cacheName=" + cc.getName() + ", schemaName=" + cc.getSqlSchema() + "]");
+                }
+                else {
+                    // Conflict on schema name.
+                    throw new IgniteCheckedException("SQL schema name is reserved (please choose another one) [" +
+                        "cacheName=" + cc.getName() + ", schemaName=" + cc.getSqlSchema() + ']');
+                }
+            }
+        }
     }
 
     /**
@@ -2162,50 +2182,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     Set<Integer> closeCaches(Set<String> cachesToClose, boolean retClientCaches) {
         Set<Integer> ids = null;
 
-        boolean locked = false;
+        for (String cacheName : cachesToClose) {
+            blockGateway(cacheName, false, false);
 
-        try {
-            for (String cacheName : cachesToClose) {
-                blockGateway(cacheName, false, false);
+            GridCacheContext ctx = sharedCtx.cacheContext(CU.cacheId(cacheName));
 
-                GridCacheContext ctx = sharedCtx.cacheContext(CU.cacheId(cacheName));
+            if (ctx == null)
+                continue;
 
-                if (ctx == null)
-                    continue;
+            if (retClientCaches && !ctx.affinityNode()) {
+                if (ids == null)
+                    ids = U.newHashSet(cachesToClose.size());
 
-                if (retClientCaches && !ctx.affinityNode()) {
-                    if (ids == null)
-                        ids = U.newHashSet(cachesToClose.size());
-
-                    ids.add(ctx.cacheId());
-                }
-
-                if (!ctx.affinityNode() && !locked) {
-                    // Do not close client cache while requests processing is in progress.
-                    sharedCtx.io().writeLock();
-
-                    locked = true;
-                }
-
-                if (!ctx.affinityNode() && ctx.transactional())
-                    sharedCtx.tm().rollbackTransactionsForCache(ctx.cacheId());
-
-                closeCache(ctx, false);
+                ids.add(ctx.cacheId());
             }
 
-            return ids;
+            closeCache(ctx);
         }
-        finally {
-            if (locked)
-                sharedCtx.io().writeUnlock();
-        }
+
+        return ids;
     }
 
     /**
      * @param cctx Cache context.
-     * @param destroy Destroy flag.
      */
-    private void closeCache(GridCacheContext cctx, boolean destroy) {
+    private void closeCache(GridCacheContext cctx) {
         if (cctx.affinityNode()) {
             GridCacheAdapter<?, ?> cache = caches.get(cctx.name());
 
@@ -2214,21 +2215,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             jCacheProxies.put(cctx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
         }
         else {
-            jCacheProxies.remove(cctx.name());
-
             cctx.gate().onStopped();
 
-            sharedCtx.database().checkpointReadLock();
+            // Do not close client cache while requests processing is in progress.
+            sharedCtx.io().writeLock();
 
             try {
-                prepareCacheStop(cctx.name(), destroy);
+                if (!cctx.affinityNode() && cctx.transactional())
+                    sharedCtx.tm().rollbackTransactionsForCache(cctx.cacheId());
+
+                jCacheProxies.remove(cctx.name());
+
+                sharedCtx.database().checkpointReadLock();
+
+                try {
+                    prepareCacheStop(cctx.name(), false);
+                }
+                finally {
+                    sharedCtx.database().checkpointReadUnlock();
+                }
+
+                if (!cctx.group().hasCaches())
+                    stopCacheGroup(cctx.group().groupId());
             }
             finally {
-                sharedCtx.database().checkpointReadUnlock();
+                sharedCtx.io().writeUnlock();
             }
-
-            if (!cctx.group().hasCaches())
-                stopCacheGroup(cctx.group().groupId());
         }
     }
 
@@ -2463,6 +2475,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheIoManager ioMgr = new GridCacheIoManager();
         CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();
         GridCacheSharedTtlCleanupManager ttl = new GridCacheSharedTtlCleanupManager();
+        PartitionsEvictManager evict = new PartitionsEvictManager();
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
 
@@ -2481,6 +2494,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             topMgr,
             ioMgr,
             ttl,
+            evict,
             jta,
             storeSesLsnrs
         );
@@ -3627,7 +3641,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
-        if (!CU.clientNode(node)) {
+        if (!node.isClient()) {
             for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
 

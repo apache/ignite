@@ -38,7 +38,7 @@ public class TitanicUtils {
      *
      * @param ignite The ignite.
      * @return The filled cache.
-     * @throws FileNotFoundException
+     * @throws FileNotFoundException If data file is not found.
      */
     public static IgniteCache<Integer, Object[]> readPassengers(Ignite ignite)
         throws FileNotFoundException {
