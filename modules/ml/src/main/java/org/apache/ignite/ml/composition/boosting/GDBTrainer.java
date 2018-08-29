@@ -119,6 +119,15 @@ public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, D
         };
     }
 
+
+    /** {@inheritDoc} */
+    //TODO: This method will be implemented in IGNITE-9412
+    @Override public <K, V> Model<Vector, Double> update(Model<Vector, Double> mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Defines unique labels in dataset if need (useful in case of classification).
      *
