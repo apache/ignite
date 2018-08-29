@@ -150,11 +150,7 @@ class MapNodeResults {
         for (MapQueryResults ress : res.values()) {
             ress.cancel();
 
-            if (ress.lazyWorker() == null)
-                ress.close();
-            else {
-
-            }
+            ress.close();
         }
 
         // Cancel update requests

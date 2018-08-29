@@ -204,8 +204,6 @@ public class GridMapQueryExecutor {
      * Stop query map executor, cleanup resources.
      */
     public void stop() {
-        cancelLazyWorkers();
-
         for (MapNodeResults res : qryRess.values())
             res.cancelAll();
     }
@@ -1106,8 +1104,11 @@ public class GridMapQueryExecutor {
                 nodeRess.remove(qryResults.queryRequestId(), segmentId, qryResults);
 
                 // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
-                if (qryResults.lazyWorker() != null)
+                if (qryResults.lazyWorker() != null) {
                     releaseReservations();
+
+                    qryResults.lazyWorker().stop(false);
+                }
             }
         }
 

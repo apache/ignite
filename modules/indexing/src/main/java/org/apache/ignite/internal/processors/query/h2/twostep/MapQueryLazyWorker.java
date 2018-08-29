@@ -117,14 +117,11 @@ public class MapQueryLazyWorker extends GridWorker {
                 Runnable task = tasks.take();
 
                 if (task != null) {
-                    if (!exec.busyLock().enterBusy())
-                        return;
-
                     try {
                         task.run();
                     }
-                    finally {
-                        exec.busyLock().leaveBusy();
+                    catch (Throwable t) {
+                        log.warning("Lazy task error", t);
                     }
                 }
             }
@@ -144,17 +141,9 @@ public class MapQueryLazyWorker extends GridWorker {
      * @param task Task to be executed.
      */
     public void submit(Runnable task) {
-        tasks.add(task);
-    }
+        assert !stopped;
 
-    /**
-     * @param task Statement cancel task.
-     */
-    public void runStatementCancelTask(Runnable task) {
-        if (isStarted())
-            submit(task);
-        else
-            task.run();
+        tasks.add(task);
     }
 
     /**
