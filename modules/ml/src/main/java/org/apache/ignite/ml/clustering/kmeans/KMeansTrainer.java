@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,6 +73,14 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
                                             IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> KMeansModel update(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
@@ -86,7 +95,9 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
             partDataBuilder
         )) {
             final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
-            centers = initClusterCentersRandomly(dataset, k);
+            centers = Optional.ofNullable(mdl)
+                .map(KMeansModel::centers)
+                .orElseGet(() -> initClusterCentersRandomly(dataset, k));
 
             boolean converged = false;
             int iteration = 0;
