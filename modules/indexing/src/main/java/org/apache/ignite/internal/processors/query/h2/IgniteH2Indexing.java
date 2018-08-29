@@ -1231,7 +1231,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (SQLException e) {
             // Throw special exception.
             if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
-                throw new QueryCancelledException();
+                throw new CacheException(new QueryCancelledException(String.format(
+                    "The query was cancelled while executing. [query=%s, localNodeId=%s, reason=%s, timeout=%s ms]",
+                    stmt,
+                    ctx.localNodeId(),
+                    timeoutMillis>0 ? "Statement with timeout was cancelled" : "Cancelled by client",
+                    timeoutMillis
+                )));
 
             throw new IgniteCheckedException("Failed to execute SQL query. " + e.getMessage(), e);
         }

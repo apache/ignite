@@ -42,6 +42,12 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
     /** */
     private static final String QUERY = "select a._val, b._val from String a, String b";
 
+    /** */
+    private static final String CANCELLED_BY_CLIENT = "reason=Cancelled by client";
+
+    /** */
+    private static final String WITH_TIMEOUT_WAS_CANCELLED = "reason=Statement with timeout was cancelled";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -93,27 +99,27 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
      * Tests cancellation.
      */
     public void testQueryCancel() {
-        testQuery(false, 1, TimeUnit.SECONDS);
+        testQuery(false, 1, TimeUnit.SECONDS, CANCELLED_BY_CLIENT);
     }
 
     /**
      * Tests cancellation with zero timeout.
      */
     public void testQueryCancelZeroTimeout() {
-        testQuery(false, 1, TimeUnit.MILLISECONDS);
+        testQuery(false, 1, TimeUnit.MILLISECONDS, CANCELLED_BY_CLIENT);
     }
 
     /**
      * Tests timeout.
      */
     public void testQueryTimeout() {
-        testQuery(true, 1, TimeUnit.SECONDS);
+        testQuery(true, 1, TimeUnit.SECONDS, WITH_TIMEOUT_WAS_CANCELLED);
     }
 
     /**
      * Tests cancellation.
      */
-    private void testQuery(boolean timeout, int timeoutUnits, TimeUnit timeUnit) {
+    private void testQuery(boolean timeout, int timeoutUnits, TimeUnit timeUnit, String cause) {
         Ignite ignite = grid(0);
 
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -143,7 +149,14 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
             fail("Expecting timeout");
         }
         catch (Exception e) {
+            log().error("Got exception", e);
+
+            log().error( "Cause of exception", e.getCause());
+
             assertTrue("Must throw correct exception", e.getCause() instanceof QueryCancelledException);
+
+            assertTrue( "Cause message "+e.getCause().getMessage(), e.getCause().getMessage().contains(cause));
+
         }
 
         // Test must exit gracefully.

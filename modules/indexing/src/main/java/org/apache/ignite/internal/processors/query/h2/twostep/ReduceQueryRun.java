@@ -83,16 +83,16 @@ class ReduceQueryRun {
      * @param o Fail state object.
      * @param nodeId Node ID.
      */
-    void state(Object o, @Nullable UUID nodeId) {
+    void state(String msg, Object o, @Nullable UUID nodeId) {
         assert o != null;
 
         assert o instanceof CacheException || o instanceof AffinityTopologyVersion : o.getClass();
 
         if ( o instanceof  CacheException )
-            state(new State((CacheException)o, null, null, nodeId));
+            state(new State((CacheException)o, msg, null, nodeId));
 
         else
-            state(new State(null, null, (AffinityTopologyVersion)o, nodeId));
+            state(new State(null, msg, (AffinityTopologyVersion)o, nodeId));
     }
 
     /**
@@ -126,7 +126,7 @@ class ReduceQueryRun {
      * @param e Error.
      */
     void disconnected(CacheException e) {
-        state(e, null);
+        state("", e, null);
     }
 
     /**

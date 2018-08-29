@@ -726,7 +726,14 @@ public class GridMapQueryExecutor {
 
                     nodeRess.cancelRequest(reqId);
 
-                    throw new QueryCancelledException();
+                    throw new QueryCancelledException(String.format(
+                        "The query request (could be more than 1 query) was cancelled while executing. " +
+                            "[reqId=%s, firstQuery=%s, localNodeId=%s, reason=%s]",
+                        reqId,
+                        qrys.isEmpty() ? "no queries" : qrys.iterator().next().query(),
+                        ctx.localNodeId(),
+                        "Cancelled by client"
+                    ));
                 }
 
                 // Run queries.
@@ -811,7 +818,9 @@ public class GridMapQueryExecutor {
             else {
                 U.error(log, "Failed to execute local query.", e);
 
-                sendError(node, reqId, e);
+                Exception cancelled = X.cause(e,QueryCancelledException.class);
+
+                sendError(node, reqId, (cancelled != null) ? cancelled : e);
 
                 if (e instanceof Error)
                     throw (Error)e;
