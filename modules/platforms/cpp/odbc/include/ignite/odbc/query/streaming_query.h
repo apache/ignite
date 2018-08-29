@@ -80,7 +80,7 @@ namespace ignite
                  * @return Operation result.
                  */
                 virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings);
-                
+
                 /**
                  * Get data of the specified column in the result set.
                  *
