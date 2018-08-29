@@ -114,7 +114,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
         MultilayerPerceptron mlp = Optional.ofNullable(mdl)
             .map(this::restoreMLPState)
             .map(m -> trainer.update(m, datasetBuilder, featureExtractor, lbE))
-            .orElse(trainer.fit(datasetBuilder, featureExtractor, lbE));
+            .orElseGet(() -> trainer.fit(datasetBuilder, featureExtractor, lbE));
 
         double[] p = mlp.parameters().getStorage().data();
 

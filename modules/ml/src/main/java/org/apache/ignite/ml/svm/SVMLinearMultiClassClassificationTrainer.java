@@ -143,12 +143,9 @@ public class SVMLinearMultiClassClassificationTrainer
         Double clsLb, SVMLinearBinaryClassificationTrainer svmTrainer, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        SVMLinearBinaryClassificationModel learnedMdl = multiClsMdl.getModelForClass(clsLb);
-
-        if(learnedMdl != null)
-            return svmTrainer.update(learnedMdl, datasetBuilder, featureExtractor, lbExtractor);
-        else
-            return svmTrainer.fit(datasetBuilder, featureExtractor, lbExtractor);
+        return multiClsMdl.getModelForClass(clsLb)
+            .map(learnedModel -> svmTrainer.update(learnedModel, datasetBuilder, featureExtractor, lbExtractor))
+            .orElseGet(() -> svmTrainer.fit(datasetBuilder, featureExtractor, lbExtractor));
     }
 
     /** Iterates among dataset and collects class labels. */

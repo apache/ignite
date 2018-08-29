@@ -102,7 +102,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
             LogisticRegressionModel model = Optional.ofNullable(mdl)
                 .flatMap(multiClassModel -> multiClassModel.getModel(clsLb))
                 .map(learnedModel -> trainer.update(learnedModel, datasetBuilder, featureExtractor, lbTransformer))
-                .orElse(trainer.fit(datasetBuilder, featureExtractor, lbTransformer));
+                .orElseGet(() -> trainer.fit(datasetBuilder, featureExtractor, lbTransformer));
 
             multiClsMdl.add(clsLb, model);
         });
