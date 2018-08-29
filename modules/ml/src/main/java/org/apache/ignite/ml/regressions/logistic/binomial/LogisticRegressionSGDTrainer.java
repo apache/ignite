@@ -34,6 +34,7 @@ import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Trainer of the logistic regression model based on stochastic gradient descent algorithm.
@@ -64,7 +65,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
      * @param seed Seed for random generator.
      */
     public LogisticRegressionSGDTrainer(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations,
-                                        int batchSize, int locIterations, long seed) {
+        int batchSize, int locIterations, long seed) {
         this.updatesStgy = updatesStgy;
         this.maxIterations = maxIterations;
         this.batchSize = batchSize;
@@ -76,8 +77,28 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
     @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
+        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
 
+    @NotNull private MLPTrainer<?> createMLPTrainer(
+        IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier) {
+        return new MLPTrainer<>(
+                archSupplier,
+                LossFunctions.L2,
+                updatesStgy,
+                maxIterations,
+                batchSize,
+                locIterations,
+                seed
+            );
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> LogisticRegressionModel update(LogisticRegressionModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
             int cols = dataset.compute(data -> {
                 if (data.getFeatures() == null)
                     return null;
@@ -90,17 +111,15 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
             return architecture;
         };
 
-        MLPTrainer<?> trainer = new MLPTrainer<>(
-            archSupplier,
-            LossFunctions.L2,
-            updatesStgy,
-            maxIterations,
-            batchSize,
-            locIterations,
-            seed
-        );
+        MLPTrainer<?> trainer = createMLPTrainer(archSupplier);
 
-        MultilayerPerceptron mlp = trainer.fit(datasetBuilder, featureExtractor, (k, v) -> new double[]{lbExtractor.apply(k, v)});
+        IgniteBiFunction<K, V, double[]> lbExtractorWrapper = (k, v) -> new double[] {lbExtractor.apply(k, v)};
+        MultilayerPerceptron mlp;
+        if(mdl != null) {
+            mlp = restoreMLPState(mdl);
+            mlp = trainer.update(mlp, datasetBuilder, featureExtractor, lbExtractorWrapper);
+        } else
+            mlp = trainer.fit(datasetBuilder, featureExtractor, lbExtractorWrapper);
 
         double[] params = mlp.parameters().getStorage().data();
 
@@ -108,4 +127,20 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
             params[params.length - 1]
         );
     }
+
+    @NotNull private MultilayerPerceptron restoreMLPState(LogisticRegressionModel mdl) {
+        Vector weights = mdl.weights();
+        double intercept = mdl.intercept();
+        MLPArchitecture architecture1 = new MLPArchitecture(weights.size());
+        architecture1 = architecture1.withAddedLayer(1, true, Activators.SIGMOID);
+        MLPArchitecture architecture = architecture1;
+        MultilayerPerceptron perceptron = new MultilayerPerceptron(architecture);
+
+        Vector mlpState = weights.like(weights.size() + 1);
+        weights.nonZeroes().forEach(ith -> mlpState.set(ith.index(), ith.get()));
+        mlpState.set(mlpState.size() - 1, intercept);
+        perceptron.setParameters(mlpState);
+        return perceptron;
+    }
+
 }
