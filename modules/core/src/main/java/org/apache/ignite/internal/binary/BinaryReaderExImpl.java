@@ -240,7 +240,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 footerStart = start + offset;
 
                 if (BinaryUtils.hasRaw(flags)) {
-                    footerLen = len - offset - 4;
+                    footerLen = len - offset;
                     rawOff = start + in.readIntPositioned(start + len - 4);
                 }
                 else {
