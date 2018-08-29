@@ -21,6 +21,7 @@ namespace Apache\Ignite\Internal\Binary;
 use Ds\Map;
 use Ds\Set;
 use Brick\Math\BigDecimal;
+use Brick\Math\BigInteger;
 use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Type\MapObjectType;
@@ -37,7 +38,8 @@ use Apache\Ignite\Internal\Utils\ArgumentChecker;
 class BinaryUtils
 {
     const FLOAT_EPSILON = 0.00001;
-    
+    public static $is32BitInt = PHP_INT_MAX === TypeInfo::MAX_INT_VALUE;
+
     public static function getSize(int $typeCode): int
     {
         return TypeInfo::getTypeInfo($typeCode)->getSize();
@@ -72,7 +74,7 @@ class BinaryUtils
 
     public static function checkStandardTypeCompatibility($value, $typeCode, $type = null, $signed = true)
     {
-        $valueType = gettype($value);
+        $valueType = BinaryUtils::getPhpTypeName($value);
         switch ($typeCode) {
             case ObjectType::BYTE:
             case ObjectType::SHORT:
@@ -111,7 +113,7 @@ class BinaryUtils
                 }
                 return;
             case ObjectType::UUID:
-                if (!is_array($value) ||
+                if (!BinaryUtils::isIndexedArray($value) ||
                     count($value) !== BinaryUtils::getSize(ObjectType::UUID)) {
                     BinaryUtils::valueCastError($value, $typeCode);
                 }
@@ -160,7 +162,7 @@ class BinaryUtils
             case ObjectType::DECIMAL_ARRAY:
             case ObjectType::TIMESTAMP_ARRAY:
             case ObjectType::TIME_ARRAY:
-                if (!is_array($value)) {
+                if (!BinaryUtils::isIndexedArray($value)) {
                     BinaryUtils::typeCastError($valueType, $typeCode);
                 }
                 return;
@@ -171,7 +173,7 @@ class BinaryUtils
                 return;
             case ObjectType::COLLECTION:
                 $isSet = $type && CollectionObjectType::isSet($type->getSubType());
-                if (!($isSet && $value instanceof Set || is_array($value))) {
+                if (!($isSet && $value instanceof Set || BinaryUtils::isIndexedArray($value))) {
                     BinaryUtils::typeCastError($valueType, $isSet ? 'set' : $typeCode);
                 }
                 return;
@@ -220,17 +222,17 @@ class BinaryUtils
             return ObjectType::BOOLEAN;
         } elseif (is_array($object)) {
             if (count($object) > 0) {
-                $values = array_values($object);
-                $firstElem = $values[0];
-                if ($firstElem !== null) {
-                    if ($values === $object) {
+                if (BinaryUtils::isIndexedArray($object)) {
+                    if ($object[0] !== null) {
                         // indexed array
-                        return BinaryUtils::getArrayType(BinaryUtils::calcObjectType($firstElem));
-                    } else {
-                        // associative array
-                        return new MapObjectType();
+                        return BinaryUtils::getArrayType(BinaryUtils::calcObjectType($object[0]));
                     }
+                } else {
+                    // associative array
+                    return new MapObjectType();
                 }
+            } else {
+                BinaryUtils::unsupportedType("empty array");
             }
         } elseif ($object instanceof Time) {
             return ObjectType::TIME;
@@ -251,7 +253,7 @@ class BinaryUtils
         } elseif (is_object($object)) {
             return new ComplexObjectType();
         }
-        BinaryUtils::unsupportedType(gettype($object));
+        BinaryUtils::unsupportedType(BinaryUtils::getPhpTypeName($object));
         return null;
     }
 
@@ -324,6 +326,14 @@ class BinaryUtils
         return $info ? $info->getName() : 'type code ' . $typeCode;
     }
 
+    public static function getPhpTypeName($object): string
+    {
+        if (is_array($object) && !BinaryUtils::isIndexedArray($object)) {
+            return 'associative array';
+        }
+        return gettype($object);
+    }
+
     public static function checkObjectType($type, string $argName): void
     {
         if ($type === null || $type instanceof ObjectType) {
@@ -336,7 +346,16 @@ class BinaryUtils
     {
         return abs($val1 - $val2) < BinaryUtils::FLOAT_EPSILON;
     }
-    
+
+    public static function getLongHex(BigInteger $value, bool $isNegative): string
+    {
+        $size = TypeInfo::getTypeInfo(ObjectType::LONG)->getSize();
+        if ($isNegative) {
+            $value = BigInteger::parse(str_pad('1', $size * 2 + 1, '0'), 16)->minus($value);
+        }
+        return str_pad($value->toBase(16), $size * 2, '0', STR_PAD_LEFT);
+    }
+
     public static function hashCode(?string $str): int
     {
         $hash = 0;
@@ -369,9 +388,11 @@ class BinaryUtils
     
     public static function intVal32(int $value): int
     {
-        $value = ($value & 0xFFFFFFFF);
-        if ($value & 0x80000000) {
-            $value = -((~$value & 0xFFFFFFFF) + 1);
+        if (!BinaryUtils::$is32BitInt) {
+            $value = ($value & 0xFFFFFFFF);
+            if ($value & 0x80000000) {
+                $value = -((~$value & 0xFFFFFFFF) + 1);
+            }
         }
         return $value;
     }
@@ -405,5 +426,10 @@ class BinaryUtils
     {
         throw new ClientException(sprintf('Value "%s" can not be cast to %s',
             print_r($value, true), BinaryUtils::getTypeName($toType)));
+    }
+
+    private static function isIndexedArray(array $object): bool
+    {
+        return $object === array_values($object);
     }
 }

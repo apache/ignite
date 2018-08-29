@@ -18,6 +18,9 @@
 
 namespace Apache\Ignite\Internal\Binary;
 
+use Brick\Math\BigInteger;
+use Apache\Ignite\Type\ObjectType;
+
 class BinarySchema
 {
     /** FNV1 hash offset basis. */
@@ -94,19 +97,26 @@ class BinarySchema
 
     private function updateSchemaId(int $fieldId): void
     {
-        $this->id = $this->id ^ ($fieldId & 0xFF);
-        $this->id = $this->id * BinarySchema::FNV1_PRIME;
-        $this->id &= 0xFFFFFFFF; // Convert to 32bit integer
-        $this->id = $this->id ^ (($fieldId >> 8) & 0xFF);
-        $this->id = $this->id * BinarySchema::FNV1_PRIME;
-        $this->id &= 0xFFFFFFFF; // Convert to 32bit integer
-        $this->id = $this->id ^ (($fieldId >> 16) & 0xFF);
-        $this->id = $this->id * BinarySchema::FNV1_PRIME;
-        $this->id &= 0xFFFFFFFF; // Convert to 32bit integer
-        $this->id = $this->id ^ (($fieldId >> 24) & 0xFF);
-        $this->id = $this->id * BinarySchema::FNV1_PRIME;
-        $this->id &= 0xFFFFFFFF; // Convert to 32bit integer
+        $this->updateSchemaIdPart($fieldId & 0xFF);
+        $this->updateSchemaIdPart(($fieldId >> 8) & 0xFF);
+        $this->updateSchemaIdPart(($fieldId >> 16) & 0xFF);
+        $this->updateSchemaIdPart(($fieldId >> 24) & 0xFF);
         $this->id = BinaryUtils::intVal32($this->id);
+    }
+
+    private function updateSchemaIdPart(int $fieldIdPart): void
+    {
+        $this->id = $this->id ^ $fieldIdPart;
+        if (BinaryUtils::$is32BitInt) {
+            $hexValue = BinaryUtils::getLongHex(BigInteger::of(abs($this->id))->multipliedBy(BinarySchema::FNV1_PRIME), $this->id < 0);
+            $len = strlen($hexValue);
+            $size = TypeInfo::getTypeInfo(ObjectType::INTEGER)->getSize() * 2;
+            $this->id = hexdec($len > $size ? substr($hexValue, $len - $size) : $hexValue);
+        }
+        else {
+            $this->id = $this->id * BinarySchema::FNV1_PRIME;
+        }
+        $this->id &= 0xFFFFFFFF; // Convert to 32bit integer
     }
 
     public function write(MessageBuffer $buffer): void

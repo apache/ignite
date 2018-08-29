@@ -29,6 +29,7 @@ class TypeInfo
     const NULLABLE = 'nullable';
     const ELEMENT_TYPE_CODE = 'element_type';
     const KEEP_ELEMENT_TYPE = 'keep_element_type';
+    const MAX_INT_VALUE = 2147483647;
     
     private $properties;
     
@@ -54,7 +55,7 @@ class TypeInfo
                 TypeInfo::NAME => 'integer',
                 TypeInfo::SIZE => 4,
                 TypeInfo::MIN_VALUE => -2147483648,
-                TypeInfo::MAX_VALUE => 2147483647,
+                TypeInfo::MAX_VALUE => TypeInfo::MAX_INT_VALUE,
             ]),
             ObjectType::LONG => new TypeInfo([
                 TypeInfo::NAME => 'long',

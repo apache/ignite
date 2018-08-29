@@ -35,13 +35,11 @@ class MessageBuffer
 
     private static $isLittleEndian;
     private static $defaultEncoding;
-    private static $is32BitInt;
 
     public static function init(): void
     {
         MessageBuffer::$isLittleEndian = pack('L', 1) === pack('V', 1);
         MessageBuffer::$defaultEncoding = ini_get('default_charset');
-        MessageBuffer::$is32BitInt = PHP_INT_MAX === TypeInfo::getTypeInfo(ObjectType::INTEGER)->getMaxValue();
     }
     
     public function __construct(int $capacity = MessageBuffer::BUFFER_CAPACITY_DEFAULT)
@@ -117,15 +115,9 @@ class MessageBuffer
     public function writeNumber($value, int $type, bool $signed = true): void
     {
         $size = TypeInfo::getTypeInfo($type)->getSize();
-        if ($type === ObjectType::LONG && MessageBuffer::$is32BitInt) {
+        if ($type === ObjectType::LONG && BinaryUtils::$is32BitInt) {
             // pack longs doesn't work on 32-bit versions of PHP
-            $isNegative = $value < 0;
-            $bigIntValue = BigInteger::of(abs($value));
-            if ($isNegative) {
-                $bigIntValue = BigInteger::parse(str_pad('1', $size * 2 + 1, '0'), 16)->minus($bigIntValue);
-            }
-            $hexValue = str_pad($bigIntValue->toBase(16), $size * 2, '0', STR_PAD_LEFT);
-            $strValue = strrev(hex2bin($hexValue));
+            $strValue = strrev(hex2bin(BinaryUtils::getLongHex(BigInteger::of(abs($value)), $value < 0)));
         } else {
             $format = $this->getNumberFormat($type, $signed);
             $strValue = pack($format, $value);
@@ -199,7 +191,7 @@ class MessageBuffer
         $size = BinaryUtils::getSize($type);
         $this->ensureSize($size);
         $strValue = substr($this->buffer, $this->position, $size);
-        if ($type === ObjectType::LONG && MessageBuffer::$is32BitInt) {
+        if ($type === ObjectType::LONG && BinaryUtils::$is32BitInt) {
             // unpack longs doesn't work on 32-bit versions of PHP
             $binValue = strrev($strValue);
             $isNegative = ord($binValue[0]) & 0x80;

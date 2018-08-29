@@ -37,7 +37,8 @@ class ClientSocket
     const SOCKET_CHUNK_SIZE_DEFAULT = 8192;
     const HANDSHAKE_CODE = 1;
     const CLIENT_CODE = 2;
-    
+
+    private static $currentVersion;
     private static $supportedVersions;
 
     private $endpoint;
@@ -68,8 +69,9 @@ class ClientSocket
     
     public static function init(): void
     {
+        ClientSocket::$currentVersion = ProtocolVersion::$V_1_2_0;
         ClientSocket::$supportedVersions = [
-            ProtocolVersion::$V_1_1_0
+            ProtocolVersion::$V_1_2_0
         ];
     }
     
@@ -102,7 +104,7 @@ class ClientSocket
             stream_set_timeout($this->socket, intdiv($timeout, 1000), $timeout % 1000);
         }
         // send handshake
-        $this->processRequest($this->getHandshakeRequest(ProtocolVersion::$V_1_1_0));
+        $this->processRequest($this->getHandshakeRequest(ClientSocket::$currentVersion));
     }
 
     public function disconnect(): void
@@ -213,7 +215,7 @@ class ClientSocket
         // Error message
         $errMessage = BinaryCommunicator::readString($buffer);
 
-        if (!$this->protocolVersion->equals($serverVersion)) {
+        if (!$this->isSupportedVersion($serverVersion)) {
             throw new OperationException(
                 sprintf('Protocol version mismatch: client %s / server %s. Server details: %s',
                     $this->protocolVersion->toString(), $serverVersion->toString(), $errMessage));
@@ -221,6 +223,16 @@ class ClientSocket
             $this->disconnect();
             throw new OperationException($errMessage);
         }
+    }
+
+    private function isSupportedVersion(ProtocolVersion $version): bool
+    {
+        foreach (ClientSocket::$supportedVersions as $supportedVersion) {
+            if ($supportedVersion->equals($version)) {
+                return true;
+            }
+        }
+        return false;
     }
     
     private function logMessage(int $requestId, bool $isRequest, MessageBuffer $buffer): void

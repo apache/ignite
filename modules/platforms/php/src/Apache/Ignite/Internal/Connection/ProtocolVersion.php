@@ -22,8 +22,7 @@ use Apache\Ignite\Internal\Binary\MessageBuffer;
 
 class ProtocolVersion
 {
-    public static $V_1_0_0;
-    public static $V_1_1_0;
+    public static $V_1_2_0;
 
     private $major;
     private $minor;
@@ -31,8 +30,7 @@ class ProtocolVersion
 
     public static function init(): void
     {
-        ProtocolVersion::$V_1_0_0 = new ProtocolVersion(1, 0, 0);
-        ProtocolVersion::$V_1_1_0 = new ProtocolVersion(1, 1, 0);
+        ProtocolVersion::$V_1_2_0 = new ProtocolVersion(1, 2, 0);
     }
 
     public function __construct(int $major = 0, int $minor = 0, int $patch = 0)
