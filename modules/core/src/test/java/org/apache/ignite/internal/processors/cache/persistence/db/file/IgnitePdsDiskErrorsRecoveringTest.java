@@ -350,6 +350,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
                 grid.cache(CACHE_NAME).put(i, data);
             }
             catch (Exception e) {
+                log.error("Failed put : ", e);
                 failedPosition = i;
 
                 break;
