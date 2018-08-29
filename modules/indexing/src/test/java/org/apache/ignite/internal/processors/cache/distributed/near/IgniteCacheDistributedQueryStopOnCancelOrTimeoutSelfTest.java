@@ -177,7 +177,6 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     private void testQueryCancel(int keyCnt, int valSize, String sql, int timeoutUnits, TimeUnit timeUnit,
                                  boolean timeout) throws Exception {
         try (Ignite client = startGrid("client")) {
-
             IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(0, cache.localSize());
@@ -199,34 +198,39 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
             SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-            final QueryCursor<List<?>> cursor;
-            if (timeout) {
-                qry.setTimeout(timeoutUnits, timeUnit);
+            while (true) {
+                log.info("+++ ITERATION ");
 
-                cursor = cache.query(qry);
-            } else {
-                cursor = cache.query(qry);
+                final QueryCursor<List<?>> cursor;
+                if (timeout) {
+                    qry.setTimeout(timeoutUnits, timeUnit);
 
-                client.scheduler().runLocal(new Runnable() {
-                    @Override public void run() {
-                        cursor.close();
-                    }
-                }, timeoutUnits, timeUnit);
+                    cursor = cache.query(qry);
+                }
+                else {
+                    cursor = cache.query(qry);
+
+                    client.scheduler().runLocal(new Runnable() {
+                        @Override public void run() {
+                            cursor.close();
+                        }
+                    }, timeoutUnits, timeUnit);
+                }
+
+                try (QueryCursor<List<?>> ignored = cursor) {
+                    cursor.iterator();
+                }
+                catch (CacheException ex) {
+                    log().error("Got expected exception", ex);
+
+                    assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
+                }
+
+                // Give some time to clean up.
+                Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 3_000);
+
+                checkCleanState();
             }
-
-            try(QueryCursor<List<?>> ignored = cursor) {
-                cursor.iterator();
-            }
-            catch (CacheException ex) {
-                log().error("Got expected exception", ex);
-
-                assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
-            }
-
-            // Give some time to clean up.
-            Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 3_000);
-
-            checkCleanState();
         }
     }
 

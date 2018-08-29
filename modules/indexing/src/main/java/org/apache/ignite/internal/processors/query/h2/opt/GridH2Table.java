@@ -56,6 +56,7 @@ import org.h2.result.SortOrder;
 import org.h2.schema.SchemaObject;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
@@ -503,7 +504,7 @@ public class GridH2Table extends TableBase {
             if (qctx != null)
                 qctx.lockedTables().remove(this);
 
-            if (!exclusive && !readLockWasAttached.get()) {
+            if (!exclusive && readLockWasAttached.get() != null && !readLockWasAttached.get()) {
                 readLockWasAttached.set(null);
 
                 readLockCnt.decrementAndGet();

@@ -61,9 +61,6 @@ public class MapQueryLazyWorker extends GridWorker {
     /** Latch decremented when worker finishes. */
     private GridH2QueryContext qctx;
 
-    /** Map query result. */
-    private volatile MapQueryResult res;
-
     /** Worker is started. */
     private volatile boolean started;
 
@@ -133,9 +130,6 @@ public class MapQueryLazyWorker extends GridWorker {
             }
         }
         finally {
-            if (res != null)
-                res.close();
-
             LAZY_WORKER.set(null);
 
             ACTIVE_CNT.decrement();
@@ -185,7 +179,7 @@ public class MapQueryLazyWorker extends GridWorker {
                 }
             });
         }
-        else {
+        else if(currentWorker() != null) {
             if (qctx != null && qctx.distributedJoinMode() == OFF && !qctx.isCleared())
                 qctx.clearContext(nodeStop);
 
@@ -213,13 +207,6 @@ public class MapQueryLazyWorker extends GridWorker {
         catch (IgniteInterruptedCheckedException e) {
             throw new IgniteException("Failed to wait for lazy worker stop (interrupted): " + name(), e);
         }
-    }
-
-    /**
-     * @param res Map query result.
-     */
-    public void result(MapQueryResult res) {
-        this.res = res;
     }
 
     /**

@@ -33,6 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test for distributed queries with node restarts.
@@ -263,7 +264,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
             }
         }, restartThreadsNum, "restart-thread");
 
-        Thread.sleep(duration);
+        GridTestUtils.waitForCondition(() -> fail.get(), duration);
 
         info("Stopping...");
 

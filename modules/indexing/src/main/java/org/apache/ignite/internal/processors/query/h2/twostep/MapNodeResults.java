@@ -86,10 +86,14 @@ class MapNodeResults {
     public void cancelRequest(long reqId) {
         for (MapRequestKey key : res.keySet()) {
             if (key.requestId() == reqId) {
-                MapQueryResults removed = res.remove(key);
+                final MapQueryResults removed = res.remove(key);
 
-                if (removed != null)
-                    removed.cancel(true);
+                if (removed != null) {
+                    removed.cancel();
+
+                    if (removed.lazyWorker() == null || removed.lazyWorker().isStarted())
+                        removed.close();
+                }
             }
         }
 
@@ -143,8 +147,15 @@ class MapNodeResults {
      * Cancel all node queries.
      */
     public void cancelAll() {
-        for (MapQueryResults ress : res.values())
-            ress.cancel(true);
+        for (MapQueryResults ress : res.values()) {
+            ress.cancel();
+
+            if (ress.lazyWorker() == null)
+                ress.close();
+            else {
+
+            }
+        }
 
         // Cancel update requests
         for (GridQueryCancel upd: updCancels.values())

@@ -1317,8 +1317,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
             final long start = U.currentTimeMillis();
 
             for (int attempt = 0;; attempt++) {
-                if (qctx.isCleared())
+                if (qctx.isCleared()) {
+                    log.info("+++ Query is cancelled");
                     throw retryException("Query is cancelled.");
+                }
 
                 if (kernalContext().isStopping())
                     throw retryException("Local node is stopping.");

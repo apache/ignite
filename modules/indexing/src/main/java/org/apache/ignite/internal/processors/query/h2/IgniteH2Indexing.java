@@ -1245,24 +1245,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private ResultSet executeSqlQuery(final Connection conn, final PreparedStatement stmt,
         int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
-        final MapQueryLazyWorker lazyWorker = GridH2QueryContext.get() == null ?
-            null : GridH2QueryContext.get().lazyWorker();
-
-        if (cancel != null) {
-            cancel.set(new Runnable() {
-                @Override public void run() {
-                    if (lazyWorker != null) {
-                        lazyWorker.runStatementCancelTask(new Runnable() {
-                            @Override public void run() {
-                                cancelStatement(stmt);
-                            }
-                        });
-                    }
-                    else
-                        cancelStatement(stmt);
-                }
-            });
-        }
+        if (cancel != null)
+            cancel.set(() -> cancelStatement(stmt));
 
         Session ses = H2Utils.session(conn);
 
