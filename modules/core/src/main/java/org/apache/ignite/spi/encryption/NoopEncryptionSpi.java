@@ -17,21 +17,20 @@
 
 package org.apache.ignite.spi.encryption;
 
+import java.io.Serializable;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * No operation {@code EncryptionSPI} implementation.
  *
  * @see EncryptionSpi
- * @see EncryptionKey
- * @see AESEncryptionSpiImpl
- * @see AESEncryptionKeyImpl
+ * @see AESEncryptionSpi
  */
 @IgniteSpiNoop
 public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi {
@@ -41,37 +40,37 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKey create() throws IgniteException {
+    @Override public Serializable create() throws IgniteException {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encrypt(byte[] data, EncryptionKey key, int start, int length) {
+    @Override public byte[] encrypt(byte[] data, Serializable key, int start, int length) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encryptNoPadding(byte[] data, EncryptionKey key, int start, int length) {
+    @Override public byte[] encryptNoPadding(byte[] data, Serializable key, int start, int length) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] decrypt(byte[] data, EncryptionKey key) {
+    @Override public byte[] decrypt(byte[] data, Serializable key) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] decryptNoPadding(byte[] data, EncryptionKey key) {
+    @Override public byte[] decryptNoPadding(byte[] data, Serializable key) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encryptKey(EncryptionKey key) {
+    @Override public byte[] encryptKey(Serializable key) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public EncryptionKey decryptKey(byte[] key) {
+    @Override public Serializable decryptKey(byte[] key) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 

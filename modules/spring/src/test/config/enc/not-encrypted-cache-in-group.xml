@@ -24,7 +24,7 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean id="cache.cfg" class="org.apache.ignite.configuration.CacheConfiguration">
         <property name="name" value="encrypted-2"/>
-        <property name="encrypted" value="false"/>
+        <property name="encryptionEnabled" value="false"/>
         <property name="groupName" value="encrypted-group"/>
     </bean>
 

@@ -494,7 +494,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             grpDesc.groupId(),
             grpDesc.config().getAffinity().partitions(),
             allocatedTracker,
-            ccfg.isEncrypted()
+            ccfg.isEncryptionEnabled()
         );
     }
 

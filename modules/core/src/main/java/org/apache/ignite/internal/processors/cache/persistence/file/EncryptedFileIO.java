@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -64,7 +64,7 @@ public class EncryptedFileIO implements FileIO {
     /**
      * Encryption key.
      */
-    private EncryptionKey key;
+    private Serializable encKey;
 
     /**
      * Extra bytes added by encryption.
@@ -237,11 +237,11 @@ public class EncryptedFileIO implements FileIO {
     /**
      * @return Encryption key.
      */
-    private EncryptionKey key() {
-        if (key == null)
-            return key = encMgr.groupKey(groupId);
+    private Serializable key() {
+        if (encKey == null)
+            return encKey = encMgr.groupKey(groupId);
 
-        return key;
+        return encKey;
     }
 
     /** {@inheritDoc} */

@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.encryption;
+package org.apache.ignite.spi.encryption.aes;
 
+import java.io.Serializable;
 import java.security.Key;
-import org.apache.ignite.encryption.EncryptionKey;
+import java.util.Arrays;
+import java.util.Objects;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * {@code EncryptionKey} implementation based on java security.
  *
  * @see Key
- * @see AESEncryptionSpiImpl
+ * @see AESEncryptionSpi
  */
-public final class AESEncryptionKeyImpl implements EncryptionKey {
+public final class AESEncryptionKey implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,13 +47,38 @@ public final class AESEncryptionKeyImpl implements EncryptionKey {
      * @param k Encryption key.
      * @param digest Message digest.
      */
-    AESEncryptionKeyImpl(Key k, byte[] digest) {
+    AESEncryptionKey(Key k, @Nullable byte[] digest) {
         this.k = k;
         this.digest = digest;
     }
 
-    /** {@inheritDoc} */
-    @Override public Key key() {
+    /**
+     * Encryption key.
+     */
+    public Key key() {
         return k;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        AESEncryptionKey key = (AESEncryptionKey)o;
+
+        return Objects.equals(k, key.k) &&
+            Arrays.equals(digest, key.digest);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = Objects.hash(k);
+
+        result = 31 * result + Arrays.hashCode(digest);
+
+        return result;
     }
 }

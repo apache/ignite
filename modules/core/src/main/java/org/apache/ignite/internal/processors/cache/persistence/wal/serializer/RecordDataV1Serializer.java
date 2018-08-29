@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
@@ -243,7 +243,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         in.readFully(encData);
 
-        EncryptionKey key = cctx.kernalContext().encryption().groupKey(grpId);
+        Serializable key = cctx.kernalContext().encryption().groupKey(grpId);
 
         if (key == null)
             return new T3<>(null, grpId, plainRecType);
@@ -294,7 +294,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (plainRecType != null)
             putRecordType(dst, plainRecType);
 
-        EncryptionKey key = cctx.kernalContext().encryption().groupKey(grpId);
+        Serializable key = cctx.kernalContext().encryption().groupKey(grpId);
 
         assert key != null;
 

@@ -351,7 +351,7 @@ public class GridCacheAttributes implements Serializable {
      * @return Is cache encrypted.
      */
     public boolean isEncrypted() {
-        return ccfg.isEncrypted();
+        return ccfg.isEncryptionEnabled();
     }
 
     /**

@@ -15,22 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.encryption;
-
-import java.io.Serializable;
-import org.apache.ignite.configuration.CacheConfiguration;
-
-/**
- * Interface for a encryption key.
- * Implementations should be used with corresponding implementation of {@code EncryptionSPI}.
- *
- * @see EncryptionSpi
- * @see CacheConfiguration#setEncrypted(boolean)
- * @see CacheConfiguration#isEncrypted()
- */
-public interface EncryptionKey extends Serializable {
-    /**
-     * @return Encryption key.
-     */
-    Object key();
+namespace Apache.Ignite.Core.Encryption
+{
+    public interface IEncryptionSpi
+    {
+        
+    }
 }

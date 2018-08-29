@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -58,7 +59,6 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -163,7 +163,6 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
-import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -441,8 +440,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void validateStaticConfigAndStoredData(StoredCacheData storedData, CacheInfo cacheInfo)
         throws IgniteCheckedException {
-        boolean staticCfgVal = cacheInfo.cacheData().config().isEncrypted();
-        boolean storedVal = storedData.config().isEncrypted();
+        boolean staticCfgVal = cacheInfo.cacheData().config().isEncryptionEnabled();
+        boolean storedVal = storedData.config().isEncryptionEnabled();
 
         if (storedVal != staticCfgVal) {
             throw new IgniteCheckedException("Encrypted flag value differs. Static config value is '" + staticCfgVal +
@@ -586,7 +585,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (cc.isEncrypted() && !ctx.clientNode()) {
+        if (cc.isEncryptionEnabled() && !ctx.clientNode()) {
             if (!CU.isPersistentCache(cc, c.getDataStorageConfiguration())) {
                 throw new IgniteCheckedException("Using encryption is not allowed" +
                     " for not persistent cache  [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
@@ -595,7 +594,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             EncryptionSpi encSpi = c.getEncryptionSpi();
 
-            if (encSpi == null || encSpi instanceof NoopEncryptionSpi) {
+            if (encSpi == null) {
                 throw new IgniteCheckedException("EncryptionSpi should be configured to use encrypted cache " +
                     "[cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                     ", cacheType=" + cacheType + "]");
@@ -2088,7 +2087,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             exchTopVer,
             persistenceEnabled,
             desc.walEnabled(),
-            desc.config().isEncrypted()
+            desc.config().isEncryptionEnabled()
         );
 
         for (Object obj : grp.configuredUserObjects())
@@ -3067,7 +3066,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridPlainClosure<Map<Integer, byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
             int grpId = cacheGroupId(cacheName, ccfg);
 
-            assert ccfg == null || !ccfg.isEncrypted() || grpKeys.containsKey(grpId);
+            assert ccfg == null || !ccfg.isEncryptionEnabled() || grpKeys.containsKey(grpId);
 
             DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                 ccfg,
@@ -3092,7 +3091,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         };
 
         try {
-            if (ccfg != null && ccfg.isEncrypted()) {
+            if (ccfg != null && ccfg.isEncryptionEnabled()) {
                 ctx.encryption().checkEncryptedCacheSupported();
 
                 int grpId = cacheGroupId(cacheName, ccfg);
@@ -3102,7 +3101,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 else {
                     EncryptionSpi encSpi = ctx.config().getEncryptionSpi();
 
-                    EncryptionKey grpKey = ctx.encryption().groupKey(grpId);
+                    Serializable grpKey = ctx.encryption().groupKey(grpId);
 
                     if (grpKey == null)
                         grpKey = encSpi.create();
@@ -3259,7 +3258,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (StoredCacheData ccfg : storedCacheDataList) {
                 int grpId = cacheGroupId(ccfg.config().getName(), ccfg.config());
 
-                assert !ccfg.config().isEncrypted() || grpKeys.containsKey(grpId);
+                assert !ccfg.config().isEncryptionEnabled() || grpKeys.containsKey(grpId);
 
                 DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                     ccfg.config(),
@@ -3315,7 +3314,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             List<Integer> encGrps = new ArrayList<>();
 
             for (StoredCacheData ccfg : storedCacheDataList) {
-                if (ccfg.config().isEncrypted())
+                if (ccfg.config().isEncryptionEnabled())
                     encGrps.add(cacheGroupId(ccfg.config().getName(), ccfg.config()));
             }
 
@@ -3328,7 +3327,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 Map<Integer, byte[]> encKeys = new HashMap<>(encGrps.size());
 
                 for (Integer grpId : encGrps) {
-                    EncryptionKey encKey = ctx.encryption().groupKey(grpId);
+                    Serializable encKey = ctx.encryption().groupKey(grpId);
 
                     if (encKey == null)
                         encKey = ctx.config().getEncryptionSpi().create();
@@ -4847,7 +4846,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             Map<Integer, byte[]> encGrpKeys = new HashMap<>();
 
             for (Integer grpId : req.grpIds()) {
-                EncryptionKey grpKey = encMgr.groupKey(grpId);
+                Serializable grpKey = encMgr.groupKey(grpId);
 
                 if (grpKey == null)
                     grpKey = encSpi.create();

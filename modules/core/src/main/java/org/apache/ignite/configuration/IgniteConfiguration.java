@@ -101,6 +101,7 @@ public class IgniteConfiguration {
     /**
      * Default flag for peer class loading. By default the value is {@code false}
      * which means that peer class loading is disabled.
+     * which means that peer class loading is disabled.
      */
     public static final boolean DFLT_P2P_ENABLED = false;
 

@@ -22,10 +22,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /** */
@@ -71,7 +71,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     public void testCreateEncryptedCache() throws Exception {
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(ENCRYPTED_CACHE);
 
-        ccfg.setEncrypted(true);
+        ccfg.setEncryptionEnabled(true);
 
         IgniteEx grid = grid(0);
 
@@ -79,7 +79,10 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         IgniteInternalCache<Object, Object> enc = grid.cachex(ENCRYPTED_CACHE);
 
-        EncryptionKey key = grid.context().encryption().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
+        assertNotNull(enc);
+
+        AESEncryptionKey key =
+            (AESEncryptionKey)grid.context().encryption().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
 
         assertNotNull(key);
         assertNotNull(key.key());
@@ -92,7 +95,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
         GridTestUtils.assertThrowsWithCause(() -> {
             CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(NO_PERSISTENCE_REGION);
 
-            ccfg.setEncrypted(true);
+            ccfg.setEncryptionEnabled(true);
             ccfg.setDataRegionName(NO_PERSISTENCE_REGION);
 
             grid(0).createCache(ccfg);

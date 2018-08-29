@@ -19,13 +19,13 @@ package org.apache.ignite.internal.encryption;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
-
-import static org.junit.Assert.assertNotEquals;
+import sun.security.krb5.EncryptionKey;
 
 /**
  */
@@ -55,11 +55,11 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     public void testCreateEncryptedCacheGroup() throws Exception {
-        EncryptionKey key = createEncryptedCache(ENCRYPTED_CACHE, ENCRYPTED_GROUP);
+        AESEncryptionKey key = createEncryptedCache(ENCRYPTED_CACHE, ENCRYPTED_GROUP);
 
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(ENCRYPTED_CACHE + "2");
 
-        ccfg.setEncrypted(true);
+        ccfg.setEncryptionEnabled(true);
         ccfg.setGroupName(ENCRYPTED_GROUP);
 
         IgniteEx grid = grid(0);
@@ -68,8 +68,9 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
 
         IgniteInternalCache<Object, Object> encrypted2 = grid.cachex(ENCRYPTED_CACHE + "2");
 
-        EncryptionKey key2 =
-            encrypted2.context().kernalContext().encryption().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, ENCRYPTED_GROUP));
+        GridEncryptionManager encMgr = encrypted2.context().kernalContext().encryption();
+
+        AESEncryptionKey key2 = (AESEncryptionKey)encMgr.groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, ENCRYPTED_GROUP));
 
         assertNotNull(key2);
         assertNotNull(key2.key());
@@ -85,25 +86,28 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
 
         GridTestUtils.assertThrowsWithCause(() -> {
             grid.createCache(new CacheConfiguration<>(ENCRYPTED_CACHE + "4")
-                .setEncrypted(false)
+                .setEncryptionEnabled(false)
                 .setGroupName(ENCRYPTED_GROUP + "3"));
         }, IgniteCheckedException.class);
     }
 
     /** */
-    private EncryptionKey createEncryptedCache(String cacheName, String grpName) {
+    private AESEncryptionKey createEncryptedCache(String cacheName, String grpName) {
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(cacheName);
 
-        ccfg.setEncrypted(true);
+        ccfg.setEncryptionEnabled(true);
         ccfg.setGroupName(grpName);
 
         IgniteEx grid = grid(0);
 
         grid.createCache(ccfg);
 
-        IgniteInternalCache<Object, Object> encrypted = grid.cachex(cacheName);
+        IgniteInternalCache<Object, Object> enc = grid.cachex(cacheName);
 
-        EncryptionKey key = grid.context().encryption().groupKey(CU.cacheGroupId(cacheName, grpName));
+        assertNotNull(enc);
+
+        AESEncryptionKey key =
+            (AESEncryptionKey)grid.context().encryption().groupKey(CU.cacheGroupId(cacheName, grpName));
 
         assertNotNull(key);
         assertNotNull(key.key());

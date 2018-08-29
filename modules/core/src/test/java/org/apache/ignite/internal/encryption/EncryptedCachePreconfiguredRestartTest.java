@@ -61,7 +61,7 @@ public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestar
         String cacheName = ENCRYPTED_CACHE + (differentCachesOnNodes ? "." + igniteInstanceName : "");
 
         CacheConfiguration ccfg = new CacheConfiguration(cacheName)
-            .setEncrypted(true);
+            .setEncryptionEnabled(true);
 
         cfg.setCacheConfiguration(ccfg);
 

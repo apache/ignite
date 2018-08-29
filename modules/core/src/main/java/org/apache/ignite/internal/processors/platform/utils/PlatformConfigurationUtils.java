@@ -69,6 +69,7 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
@@ -99,6 +100,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
@@ -220,7 +223,7 @@ public class PlatformConfigurationUtils {
         ccfg.setQueryDetailMetricsSize(in.readInt());
         ccfg.setQueryParallelism(in.readInt());
         ccfg.setSqlSchema(in.readString());
-        ccfg.setEncrypted(in.readBoolean());
+        ccfg.setEncryptionEnabled(in.readBoolean());
 
         int qryEntCnt = in.readInt();
 
@@ -699,6 +702,7 @@ public class PlatformConfigurationUtils {
 
         readCacheConfigurations(in, cfg, ver);
         readDiscoveryConfiguration(in, cfg);
+        readEncryptionConfiguration(in, cfg, ver);
 
         if (in.readBoolean()) {
             TcpCommunicationSpi comm = new TcpCommunicationSpi();
@@ -940,6 +944,30 @@ public class PlatformConfigurationUtils {
     }
 
     /**
+     * Reads encryption configuration
+     * @param in Reader.
+     * @param cfg Configuration.
+     * @param ver Client version.
+     */
+    private static void readEncryptionConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg,
+        ClientListenerProtocolVersion ver) {
+        if (ver.compareTo(VER_1_2_0) < 0 || !in.readBoolean()) {
+            cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+            return;
+        }
+
+        AESEncryptionSpi enc = new AESEncryptionSpi();
+
+        enc.setMasterKeyName(in.readString());
+        enc.setKeySize(in.readInt());
+        enc.setKeyStorePath(in.readString());
+        enc.setKeyStorePassword(in.readCharArray());
+
+        cfg.setEncryptionSpi(enc);
+    }
+
+    /**
      * Writes cache configuration.
      *
      * @param writer Writer.
@@ -1000,7 +1028,7 @@ public class PlatformConfigurationUtils {
         writer.writeInt(ccfg.getQueryDetailMetricsSize());
         writer.writeInt(ccfg.getQueryParallelism());
         writer.writeString(ccfg.getSqlSchema());
-        writer.writeBoolean(ccfg.isEncrypted());
+        writer.writeBoolean(ccfg.isEncryptionEnabled());
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
@@ -1247,6 +1275,7 @@ public class PlatformConfigurationUtils {
             w.writeInt(0);
 
         writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
+        writeEncryptionConfiguration(w, cfg.getEncryptionSpi(), ver);
 
         CommunicationSpi comm = cfg.getCommunicationSpi();
 
@@ -1453,6 +1482,34 @@ public class PlatformConfigurationUtils {
         w.writeLong(tcp.getIpFinderCleanFrequency());
         w.writeInt(tcp.getThreadPriority());
         w.writeInt((int)tcp.getTopHistorySize());
+    }
+
+    /**
+     * Writes encryption configuration.
+     *
+     * @param w Writer.
+     * @param enc Encryption Spi.
+     * @param ver Client version.
+     */
+    private static void writeEncryptionConfiguration(BinaryRawWriter w, EncryptionSpi enc,
+        ClientListenerProtocolVersion ver) {
+        if (ver.compareTo(VER_1_2_0) < 0)
+            return;
+
+        if (enc instanceof NoopEncryptionSpi) {
+            w.writeBoolean(false);
+
+            return;
+        }
+
+        AESEncryptionSpi aesEnc = (AESEncryptionSpi)enc;
+
+        w.writeBoolean(true);
+
+        w.writeString(aesEnc.getMasterKeyName());
+        w.writeInt(aesEnc.getKeySize());
+        w.writeString(aesEnc.getKeyStorePath());
+        w.writeCharArray(aesEnc.getKeyStorePwd());
     }
 
     /**
