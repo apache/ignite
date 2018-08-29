@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.regressions.linear;
 
 import java.util.Arrays;
+import java.util.function.Supplier;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -38,16 +39,24 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
     @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
+        return fit(datasetBuilder, featureExtractor, lbExtractor, () -> null);
+    }
+
+    private <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor,
+        Supplier<double[]> firstApproximationSupplier) {
+
         LSQRResult res;
 
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             new SimpleLabeledDatasetDataBuilder<>(
                 new FeatureExtractorWrapper<>(featureExtractor),
-                lbExtractor.andThen(e -> new double[]{e})
+                lbExtractor.andThen(e -> new double[] {e})
             )
         )) {
-            res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
+            double[] x0 = firstApproximationSupplier.get();
+            res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, x0);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -57,5 +66,17 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
         Vector weights = new DenseVector(Arrays.copyOfRange(x, 0, x.length - 1));
 
         return new LinearRegressionModel(weights, x[x.length - 1]);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> LinearRegressionModel update(LinearRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        int x0Size = mdl.getWeights().size() + 1;
+        Vector x0 = mdl.getWeights().like(x0Size);
+        mdl.getWeights().nonZeroes().forEach(ith -> x0.set(ith.index(), ith.get()));
+        x0.set(x0.size() - 1, mdl.getIntercept());
+
+        return fit(datasetBuilder, featureExtractor, lbExtractor, x0::asArray);
     }
 }
