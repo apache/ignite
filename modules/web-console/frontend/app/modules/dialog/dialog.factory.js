@@ -17,7 +17,7 @@
 
 import templateUrl from './dialog.tpl.pug';
 
-export default ['IgniteDialog', ['$modal', ($modal) => {
+export default ['IgniteDialog', ['$modal', function($modal) {
     const defaults = {
         templateUrl,
         show: false

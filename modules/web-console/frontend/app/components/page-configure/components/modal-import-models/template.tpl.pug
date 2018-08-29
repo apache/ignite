@@ -16,17 +16,14 @@
 
 include /app/helpers/jade/mixins
 
-mixin chk(mdl, change, tip)
-    input(type='checkbox' ng-model=mdl ng-change=change bs-tooltip='' data-title=tip data-trigger='hover' data-placement='top')
-
 mixin td-ellipses-lbl(w, lbl)
     td.td-ellipsis(width=`${w}` style=`min-width: ${w}; max-width: ${w}`)
         label #{lbl}
 
-.modal--ignite.modal.modal-domain-import.center(role='dialog')
+.modal--ignite.modal--wide.modal.modal-domain-import.center(role='dialog')
     -var tipOpts = {};
     - tipOpts.container = '.modal-content'
-    - tipOpts.placement = 'top'
+    - tipOpts.placement = 'right'
     .modal-dialog
         .modal-content(ignite-loading='importDomainFromDb' ignite-loading-text='{{importDomain.loadingOptions.text}}')
             #errors-container.modal-header.header
@@ -61,26 +58,59 @@ mixin td-ellipses-lbl(w, lbl)
                                 li Copy h2-x.x.x.jar into agent 'jdbc-drivers' folder and try again
                                 li Refer to agent README.txt for more information
                 .import-domain-model-wizard-page(ng-if='importDomain.action == "connect" && !importDomain.demo')
-                    -var form = 'connectForm'
-
                     form.pc-form-grid-row(name=form novalidate)
                         .pc-form-grid-col-30
-                            +ignite-form-field-dropdown('Driver JAR:', 'ui.selectedJdbcDriverJar', '"jdbcDriverJar"', false, true, false,
-                                'Choose JDBC driver', '', 'jdbcDriverJars',
-                                'Select appropriate JAR with JDBC driver<br> To add another driver you need to place it into "/jdbc-drivers" folder of Ignite Web Agent<br> Refer to Ignite Web Agent README.txt for for more information'
+                            +form-field__dropdown({
+                                label: 'Driver JAR:',
+                                model: 'ui.selectedJdbcDriverJar',
+                                name: '"jdbcDriverJar"',
+                                required: true,
+                                placeholder: 'Choose JDBC driver',
+                                options: 'jdbcDriverJars',
+                                tip: 'Select appropriate JAR with JDBC driver<br> To add another driver you need to place it into "/jdbc-drivers" folder of Ignite Web Agent<br> Refer to Ignite Web Agent README.txt for for more information'
+                            })
+                        .pc-form-grid-col-30
+                            +form-field__java-class({
+                                label: 'JDBC driver:',
+                                model: 'selectedPreset.jdbcDriverClass',
+                                name: '"jdbcDriverClass"',
+                                enabled: true,
+                                required: true,
+                                tip: 'Fully qualified class name of JDBC driver that will be used to connect to database'
+                            })
+                        .pc-form-grid-col-60
+                            +form-field__text--autofocus({
+                                label: 'JDBC URL:',
+                                model: 'selectedPreset.jdbcUrl',
+                                name: '"jdbcUrl"',
+                                required: true,
+                                placeholder: 'JDBC URL',
+                                tip: 'JDBC URL for connecting to database<br>Refer to your database documentation for details'
+                            })
+                        .pc-form-grid-col-30
+                            +form-field__text({
+                                label: 'User:',
+                                model: 'selectedPreset.user',
+                                name: '"jdbcUser"',
+                                tip: 'User name for connecting to database'
+                            })
+                        .pc-form-grid-col-30
+                            +form-field__password({
+                                label: 'Password:',
+                                model: 'selectedPreset.password',
+                                name: '"jdbcPassword"', 
+                                tip: 'Password for connecting to database<br>Note, password would not be saved in preferences for security reasons'
+                            })(
+                                ignite-on-enter='importDomainNext()'
                             )
-                        .pc-form-grid-col-30
-                            +java-class('JDBC driver:', 'selectedPreset.jdbcDriverClass', '"jdbcDriverClass"', true, true, 'Fully qualified class name of JDBC driver that will be used to connect to database')
                         .pc-form-grid-col-60
-                            +text-enabled-autofocus('JDBC URL:', 'selectedPreset.jdbcUrl', '"jdbcUrl"', true, true, 'JDBC URL', 'JDBC URL for connecting to database<br>Refer to your database documentation for details')
-                        .pc-form-grid-col-30
-                            +text('User:', 'selectedPreset.user', '"jdbcUser"', false, '', 'User name for connecting to database')
-                        .pc-form-grid-col-30
-                            +password('Password:', 'selectedPreset.password', '"jdbcPassword"', false, '', 'Password for connecting to database<br>Note, password would not be saved in preferences for security reasons')(ignite-on-enter='importDomainNext()')
-                        .pc-form-grid-col-60
-                            - tipOpts.placement = 'auto'
-                            +checkbox('Tables only', 'selectedPreset.tablesOnly', '"tablesOnly"', 'If selected, then only tables metadata will be parsed<br>Otherwise table and view metadata will be parsed')
-                            - tipOpts.placement = 'top'
+                            +form-field__checkbox({
+                                label: 'Tables only',
+                                model: 'selectedPreset.tablesOnly',
+                                name: '"tablesOnly"',
+                                tip: 'If selected, then only tables metadata will be parsed<br>Otherwise table and view metadata will be parsed',
+                                tipOpts
+                            })
 
                 .import-domain-model-wizard-page(ng-if='importDomain.action == "schemas"')
                     pc-items-table(
@@ -95,14 +125,14 @@ mixin td-ellipses-lbl(w, lbl)
                 .import-domain-model-wizard-page(ng-if='importDomain.action == "tables"')
                     form.pc-form-grid-row(novalidate)
                         .pc-form-grid-col-30
-                            +sane-ignite-form-field-dropdown({
+                            +form-field__dropdown({
                                 label: 'Action:',
                                 model: 'importCommon.action'
                             })(
                                 bs-options='item.value as item.label for item in importActions'
                             )
                         .pc-form-grid-col-30
-                            +sane-ignite-form-field-dropdown({
+                            +form-field__dropdown({
                                 label: 'Cache:',
                                 model: 'importCommon.cacheOrTemplate'
                             })(
@@ -110,8 +140,8 @@ mixin td-ellipses-lbl(w, lbl)
                                 ng-change='$ctrl.onCacheSelect(importCommon.cacheOrTemplate)'
                             )
                         .pc-form-grid-col-60.pc-form-grid__text-only-item
-                            | Defaults to be applied for filtered tables
-                            +tooltip('Select and apply options for caches generation')
+                            +form-field__label({ label: 'Defaults to be applied for filtered tables' })
+                                +form-field__tooltip({ title: 'Select and apply options for caches generation' })
                             button.btn-ignite.btn-ignite--success(
                                 type='button'
                                 ng-click='applyDefaults()'
@@ -133,23 +163,66 @@ mixin td-ellipses-lbl(w, lbl)
 
                     form.pc-form-grid-row(name=form novalidate)
                         .pc-form-grid-col-60
-                            +checkbox('Use Java built-in types for keys', 'ui.builtinKeys', '"domainBuiltinKeys"', 'Use Java built-in types like "Integer", "Long", "String" instead of POJO generation in case when table primary key contains only one field')
+                            +form-field__checkbox({
+                                label: 'Use Java built-in types for keys',
+                                model: 'ui.builtinKeys',
+                                name: '"domainBuiltinKeys"',
+                                tip: 'Use Java built-in types like "Integer", "Long", "String" instead of POJO generation in case when table primary key contains only one field',
+                                tipOpts
+                            })
                         .pc-form-grid-col-60
-                            +checkbox('Use primitive types for NOT NULL table columns', 'ui.usePrimitives', '"domainUsePrimitives"', 'Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns')
+                            +form-field__checkbox({
+                                label: 'Use primitive types for NOT NULL table columns',
+                                model: 'ui.usePrimitives',
+                                name: '"domainUsePrimitives"',
+                                tip: 'Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns',
+                                tipOpts
+                            })
                         .pc-form-grid-col-60
-                            +checkbox('Generate query entity key fields', 'ui.generateKeyFields', '"generateKeyFields"',
-                                'Generate key fields for query entity.<br\>\
+                            +form-field__checkbox({
+                                label: 'Generate query entity key fields',
+                                model: 'ui.generateKeyFields',
+                                name: '"generateKeyFields"',
+                                tip: 'Generate key fields for query entity.<br\>\
                                 We need this for the cases when no key-value classes\
                                 are present on cluster nodes, and we need to build/modify keys and values during SQL DML operations.\
-                                Thus, setting this parameter is not mandatory and should be based on particular use case.')
+                                Thus, setting this parameter is not mandatory and should be based on particular use case.',
+                                tipOpts
+                            })
                         .pc-form-grid-col-60
-                            +checkbox('Generate POJO classes', generatePojo, '"domainGeneratePojo"', 'If selected then POJO classes will be generated from database tables')
+                            +form-field__checkbox({
+                                label: 'Generate POJO classes',
+                                model: generatePojo,
+                                name: '"domainGeneratePojo"',
+                                tip: 'If selected then POJO classes will be generated from database tables',
+                                tipOpts
+                            })
                         .pc-form-grid-col-60(ng-if=generatePojo)
-                            +checkbox('Generate aliases for query entity', 'ui.generateTypeAliases', '"domainGenerateTypeAliases"', 'Generate aliases for query entity if table name is invalid Java identifier')
+                            +form-field__checkbox({
+                                label: 'Generate aliases for query entity',
+                                model: 'ui.generateTypeAliases',
+                                name: '"domainGenerateTypeAliases"',
+                                tip: 'Generate aliases for query entity if table name is invalid Java identifier',
+                                tipOpts
+                            })
                         .pc-form-grid-col-60(ng-if=generatePojo)
-                            +checkbox('Generate aliases for query fields', 'ui.generateFieldAliases', '"domainGenerateFieldAliases"', 'Generate aliases for query fields with database field names when database field name differ from Java field name')
+                            +form-field__checkbox({
+                                label: 'Generate aliases for query fields',
+                                model: 'ui.generateFieldAliases',
+                                name: '"domainGenerateFieldAliases"',
+                                tip: 'Generate aliases for query fields with database field names when database field name differ from Java field name',
+                                tipOpts
+                            })
                         .pc-form-grid-col-60(ng-if=generatePojo)
-                            +java-package('Package:', 'ui.packageName', '"domainPackageName"', true, true, 'Package that will be used for POJOs generation')
+                            +form-field__java-package({
+                                label: 'Package:',
+                                model: 'ui.packageName',
+                                name: '"domainPackageName"',
+                                required: true,
+                                tip: 'Package that will be used for POJOs generation',
+                                tipOpts
+                            })
+
             .modal-footer
                 button.btn-ignite.btn-ignite--success.modal-import-models__prev-button(
                     type='button'

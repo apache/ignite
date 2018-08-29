@@ -71,7 +71,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 }
 
                 if (touch)
-                    entry.context().evicts().touch(entry, null);
+                    entry.touch(null);
             }
         };
 

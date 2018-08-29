@@ -121,4 +121,24 @@ queries-notebook {
     .btn.btn-default.select-toggle.tipLabel {
         padding-right: 25px;
     }
+
+    .form-field__sensitive {
+        input[type='checkbox'] {
+            height: 0;
+        }
+
+        input:checked + span {
+            color: #0067b9;
+        }
+    }
+
+    .queries-notebook-displayed-caches {
+        max-height: 210px;
+        padding: 0 5px;
+        margin-top: 10px;
+        margin-left: -5px;
+        margin-right: -5px;
+
+        overflow-y: auto;
+    }
 }
