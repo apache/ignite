@@ -35,11 +35,24 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * MinMaxScalerTrainer and NormalizationTrainer are used in this example due to different values distribution in columns and rows.
+ * {@link MinMaxScalerTrainer} and {@link NormalizationTrainer} are used in this example due to different values
+ * distribution in columns and rows.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * <p>
+ * After that it defines preprocessors that extract features from an upstream data and perform other desired changes
+ * over the extracted data, including the scaling.</p>
+ * <p>
+ * Then, it trains the model based on the processed data using decision tree classification.</p>
+ * <p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_5_Scaling {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
+        System.out.println();
+        System.out.println(">>> Tutorial step 5 (scaling) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 Step_5_Scaling.class.getSimpleName(), () -> {
@@ -47,7 +60,7 @@ public class Step_5_Scaling {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
                     // Defines first preprocessor that extracts features from an upstream data.
-                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
+                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
                         = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
@@ -56,7 +69,7 @@ public class Step_5_Scaling {
                     IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
                         .withEncoderType(EncoderType.STRING_ENCODER)
                         .encodeFeature(1)
-                        .encodeFeature(6) // <--- Changed index here
+                        .encodeFeature(6) // <--- Changed index here.
                         .fit(ignite,
                             dataCache,
                             featureExtractor
@@ -68,21 +81,20 @@ public class Step_5_Scaling {
                             strEncoderPreprocessor
                         );
 
-
                     IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
                         .fit(
-                        ignite,
-                        dataCache,
-                        imputingPreprocessor
-                    );
+                            ignite,
+                            dataCache,
+                            imputingPreprocessor
+                        );
 
                     IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
                         .withP(1)
                         .fit(
-                        ignite,
-                        dataCache,
-                        minMaxScalerPreprocessor
-                    );
+                            ignite,
+                            dataCache,
+                            minMaxScalerPreprocessor
+                        );
 
                     DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
@@ -94,6 +106,8 @@ public class Step_5_Scaling {
                         lbExtractor
                     );
 
+                    System.out.println("\n>>> Trained model: " + mdl);
+
                     double accuracy = Evaluator.evaluate(
                         dataCache,
                         mdl,
@@ -104,6 +118,8 @@ public class Step_5_Scaling {
 
                     System.out.println("\n>>> Accuracy " + accuracy);
                     System.out.println("\n>>> Test Error " + (1 - accuracy));
+
+                    System.out.println(">>> Tutorial step 5 (scaling) example completed.");
                 }
                 catch (FileNotFoundException e) {
                     e.printStackTrace();

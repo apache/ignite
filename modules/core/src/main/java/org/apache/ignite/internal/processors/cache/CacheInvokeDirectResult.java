@@ -42,6 +42,10 @@ public class CacheInvokeDirectResult implements Message {
 
     /** */
     @GridToStringInclude
+    private transient Object unprepareRes;
+
+    /** */
+    @GridToStringInclude
     private CacheObject res;
 
     /** */
@@ -66,6 +70,22 @@ public class CacheInvokeDirectResult implements Message {
     public CacheInvokeDirectResult(KeyCacheObject key, CacheObject res) {
         this.key = key;
         this.res = res;
+    }
+
+    /**
+     * Constructs CacheInvokeDirectResult with unprepared res, to avoid object marshaling while holding topology locks.
+     *
+     * @param key Key.
+     * @param res Result.
+     * @return a new instance of CacheInvokeDirectResult.
+     */
+    static CacheInvokeDirectResult lazyResult(KeyCacheObject key, Object res) {
+        CacheInvokeDirectResult res0 = new CacheInvokeDirectResult();
+
+        res0.key = key;
+        res0.unprepareRes = res;
+
+        return res0;
     }
 
     /**
@@ -118,6 +138,12 @@ public class CacheInvokeDirectResult implements Message {
 
                 errBytes = U.marshal(ctx.marshaller(), exc);
             }
+        }
+
+        if (unprepareRes != null) {
+            res = ctx.toCacheObject(unprepareRes);
+
+            unprepareRes = null;
         }
 
         if (res != null)

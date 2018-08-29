@@ -25,8 +25,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -96,6 +98,10 @@ public class DdlStatementsProcessor {
     /** Indexing. */
     IgniteH2Indexing idx;
 
+    /** Is backward compatible handling of UUID through DDL enabled. */
+    private static final boolean handleUuidAsByte =
+            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_UUID_DDL_BYTE_FORMAT, false);
+
     /**
      * Initialize message handlers and this' fields needed for further operation.
      *
@@ -113,10 +119,9 @@ public class DdlStatementsProcessor {
      * @param sql Original SQL.
      * @param cmd Command.
      * @return Result.
-     * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings("unchecked")
-    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
+    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) {
         IgniteInternalFuture fut = null;
 
         try {
@@ -127,7 +132,7 @@ public class DdlStatementsProcessor {
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
 
-                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+                GridH2Table tbl = dataTableWithRetry(cmd0.schemaName(), cmd0.tableName());
 
                 if (tbl == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
@@ -165,7 +170,7 @@ public class DdlStatementsProcessor {
             else if (cmd instanceof SqlDropIndexCommand) {
                 SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
 
-                GridH2Table tbl = idx.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
+                GridH2Table tbl = dataTableForIndexWithRetry(cmd0.schemaName(), cmd0.indexName());
 
                 if (tbl != null) {
                     isDdlSupported(tbl);
@@ -184,13 +189,7 @@ public class DdlStatementsProcessor {
             else if (cmd instanceof SqlAlterTableCommand) {
                 SqlAlterTableCommand cmd0 = (SqlAlterTableCommand)cmd;
 
-                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
-
-                if (tbl == null) {
-                    ctx.cache().createMissingQueryCaches();
-
-                    tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
-                }
+                GridH2Table tbl = dataTableWithRetry(cmd0.schemaName(), cmd0.tableName());
 
                 if (tbl == null) {
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
@@ -259,11 +258,9 @@ public class DdlStatementsProcessor {
      * @param sql SQL.
      * @param prepared Prepared.
      * @return Cursor on query results.
-     * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared)
-        throws IgniteCheckedException {
+    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared) {
         IgniteInternalFuture fut = null;
 
         try {
@@ -276,7 +273,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
@@ -315,7 +312,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
+                GridH2Table tbl = dataTableForIndexWithRetry(cmd.schemaName(), cmd.indexName());
 
                 if (tbl != null) {
                     isDdlSupported(tbl);
@@ -338,11 +335,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
-                    throw new SchemaOperationException("CREATE TABLE can only be executed on " +
-                        QueryUtils.DFLT_SCHEMA + " schema.");
-
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
 
                 if (tbl != null) {
                     if (!cmd.ifNotExists())
@@ -375,17 +368,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
-                    throw new SchemaOperationException("DROP TABLE can only be executed on " +
-                        QueryUtils.DFLT_SCHEMA + " schema.");
-
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
-
-                if (tbl == null && cmd.ifExists()) {
-                    ctx.cache().createMissingQueryCaches();
-
-                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
-                }
+                GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null) {
                     if (!cmd.ifExists())
@@ -400,13 +383,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
-
-                if (tbl == null && cmd.ifTableExists()) {
-                    ctx.cache().createMissingQueryCaches();
-
-                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
-                }
+                GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null) {
                     if (!cmd.ifTableExists())
@@ -436,7 +413,7 @@ public class DdlStatementsProcessor {
                         }
 
                         QueryField field = new QueryField(col.columnName(),
-                            DataType.getTypeClassName(col.column().getType()),
+                            getTypeClassName(col),
                             col.column().isNullable(), col.defaultValue(),
                             col.precision(), col.scale());
 
@@ -461,13 +438,7 @@ public class DdlStatementsProcessor {
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
-
-                if (tbl == null && cmd.ifTableExists()) {
-                    ctx.cache().createMissingQueryCaches();
-
-                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
-                }
+                GridH2Table tbl = dataTableWithRetry(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null) {
                     if (!cmd.ifTableExists())
@@ -540,6 +511,46 @@ public class DdlStatementsProcessor {
         catch (Exception e) {
             throw new IgniteSQLException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Get table by name optionally creating missing query caches.
+     *
+     * @param schemaName Schema name.
+     * @param tableName Table name.
+     * @return Table or {@code null} if none found.
+     * @throws IgniteCheckedException If failed.
+     */
+    private GridH2Table dataTableWithRetry(String schemaName, String tableName) throws IgniteCheckedException {
+        GridH2Table tbl = idx.dataTable(schemaName, tableName);
+
+        if (tbl == null) {
+            ctx.cache().createMissingQueryCaches();
+
+            tbl = idx.dataTable(schemaName, tableName);
+        }
+
+        return tbl;
+    }
+
+    /**
+     * Get table by name optionally creating missing query caches.
+     *
+     * @param schemaName Schema name.
+     * @param indexName Index name.
+     * @return Table or {@code null} if none found.
+     * @throws IgniteCheckedException If failed.
+     */
+    private GridH2Table dataTableForIndexWithRetry(String schemaName, String indexName) throws IgniteCheckedException {
+        GridH2Table tbl = idx.dataTableForIndex(schemaName, indexName);
+
+        if (tbl == null) {
+            ctx.cache().createMissingQueryCaches();
+
+            tbl = idx.dataTableForIndex(schemaName, indexName);
+        }
+
+        return tbl;
     }
 
     /**
@@ -647,14 +658,15 @@ public class DdlStatementsProcessor {
 
         HashMap<String, Object> dfltValues = new HashMap<>();
 
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+        Map<String, Integer> precision = new HashMap<>();
+        Map<String, Integer> scale = new HashMap<>();
 
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
 
             Column col = gridCol.column();
 
-            res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
+            res.addQueryField(e.getKey(), getTypeClassName(gridCol), null);
 
             if (!col.isNullable()) {
                 if (notNullFields == null)
@@ -668,15 +680,27 @@ public class DdlStatementsProcessor {
             if (dfltVal != null)
                 dfltValues.put(e.getKey(), dfltVal);
 
-            if (col.getType() == Value.DECIMAL)
-                decimalInfo.put(e.getKey(), F.t((int)col.getPrecision(), col.getScale()));
+            if (col.getType() == Value.DECIMAL) {
+                precision.put(e.getKey(), (int)col.getPrecision());
+
+                scale.put(e.getKey(), col.getScale());
+            }
+
+            if (col.getType() == Value.STRING || 
+                col.getType() == Value.STRING_FIXED || 
+                col.getType() == Value.STRING_IGNORECASE) {
+                precision.put(e.getKey(), (int)col.getPrecision());
+            }
         }
 
         if (!F.isEmpty(dfltValues))
             res.setDefaultFieldValues(dfltValues);
 
-        if (!F.isEmpty(decimalInfo))
-            res.setDecimalInfo(decimalInfo);
+        if (!F.isEmpty(precision))
+            res.setFieldsPrecision(precision);
+
+        if (!F.isEmpty(scale))
+            res.setFieldsScale(scale);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
@@ -693,7 +717,7 @@ public class DdlStatementsProcessor {
         if (!createTbl.wrapKey()) {
             GridSqlColumn pkCol = createTbl.columns().get(createTbl.primaryKeyColumns().iterator().next());
 
-            keyTypeName = DataType.getTypeClassName(pkCol.column().getType());
+            keyTypeName = getTypeClassName(pkCol);
 
             res.setKeyFieldName(pkCol.columnName());
         }
@@ -713,7 +737,7 @@ public class DdlStatementsProcessor {
 
             assert valCol != null;
 
-            valTypeName = DataType.getTypeClassName(valCol.column().getType());
+            valTypeName = getTypeClassName(valCol);
 
             res.setValueFieldName(valCol.columnName());
         }
@@ -739,5 +763,24 @@ public class DdlStatementsProcessor {
     public static boolean isDdlStatement(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
             cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
+    }
+
+    /**
+     * Helper function for obtaining type class name for H2.
+     *
+     * @param col Column.
+     * @return Type class name.
+     */
+    private static String getTypeClassName(GridSqlColumn col) {
+        int type = col.column().getType();
+
+        switch (type) {
+            case Value.UUID :
+                if (!handleUuidAsByte)
+                    return UUID.class.getName();
+
+            default:
+                return DataType.getTypeClassName(type);
+        }
     }
 }

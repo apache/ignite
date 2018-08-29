@@ -20,29 +20,21 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.jetbrains.annotations.NotNull;
 
 /** */
 public interface UpdateSourceIterator<T> extends GridCloseableIterator<T> {
     /**
-     * @return CacheOperation.
+     * @return Operation.
      */
-    public GridCacheOperation operation();
+    public EnlistOperation operation();
 
     /**
      * Callback method which should be called before moving iteration into another thread.
      */
     public default void beforeDetach() {
         // No-op.
-    }
-
-    /**
-     * @return True if contains entries without querying.
-     */
-    public default boolean isDirect() {
-        return false;
     }
 
     /** {@inheritDoc} */

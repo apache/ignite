@@ -29,9 +29,11 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.InvalidEnvironmentException;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -51,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -211,8 +214,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** {@inheritDoc} */
     @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
-        assert !recovery;
-
         txState.addActiveCache(cacheCtx, recovery, this);
     }
 
@@ -763,26 +764,46 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     }
                                 }
                                 catch (Throwable ex) {
-                                    boolean hasIOIssue = X.hasCause(ex, InvalidEnvironmentException.class);
+                                    boolean isNodeStopping = X.hasCause(ex, NodeStoppingException.class);
+                                    boolean hasInvalidEnvironmentIssue = X.hasCause(ex, InvalidEnvironmentException.class);
 
                                     // In case of error, we still make the best effort to commit,
                                     // as there is no way to rollback at this point.
                                     err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
                                         "(all transaction entries will be invalidated): " + CU.txString(this), ex);
 
-                                    if (hasIOIssue) {
+                                    if (isNodeStopping) {
                                         U.warn(log, "Failed to commit transaction, node is stopping [tx=" + this +
+                                            ", err=" + ex + ']');
+                                    }
+                                    else if (hasInvalidEnvironmentIssue) {
+                                        U.warn(log, "Failed to commit transaction, node is in invalid state and will be stopped [tx=" + this +
                                             ", err=" + ex + ']');
                                     }
                                     else
                                         U.error(log, "Commit failed.", err);
 
-                                    uncommit(hasIOIssue);
-
                                     state(UNKNOWN);
 
+                                    if (hasInvalidEnvironmentIssue)
+                                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+                                    else if (!isNodeStopping) { // Skip fair uncommit in case of node stopping or invalidation.
+                                        try {
+                                            // Courtesy to minimize damage.
+                                            uncommit();
+                                        }
+                                        catch (Throwable ex1) {
+                                            U.error(log, "Failed to uncommit transaction: " + this, ex1);
+
+                                            if (ex1 instanceof Error)
+                                                throw ex1;
+                                        }
+                                    }
+
                                     if (ex instanceof Error)
-                                        throw (Error)ex;
+                                        throw (Error) ex;
+
+                                    throw err;
                                 }
                             }
 
@@ -815,12 +836,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         if (wrapper != null)
                             wrapper.initialize(ret);
                     }
-                }
-
-                if (err != null) {
-                    state(UNKNOWN);
-
-                    throw err;
                 }
 
                 cctx.tm().commitTx(this);
@@ -1021,5 +1036,4 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDistributedTxRemoteAdapter.class, this, "super", super.toString());
     }
-
 }

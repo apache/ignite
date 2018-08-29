@@ -25,17 +25,15 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
@@ -195,23 +193,15 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
                 c.run();
         }
         else {
-            topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                        @Override public void run() {
-                            try {
-                                fut.get();
+            cctx.time().waitAsync(topFut, tx.remainingTime(), (e, timedOut) -> {
+                if (errorOrTimeoutOnTopologyVersion(e, timedOut))
+                    return;
 
-                                prepareOnTopology(remap, c);
-                            }
-                            catch (IgniteCheckedException e) {
-                                onDone(e);
-                            }
-                            finally {
-                                cctx.txContextReset();
-                            }
-                        }
-                    });
+                try {
+                    prepareOnTopology(remap, c);
+                }
+                finally {
+                    cctx.txContextReset();
                 }
             });
         }
@@ -244,6 +234,25 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
             mvccVerFut.init(lockCnt);
         }
+    }
+
+    /**
+     * @param e Exception.
+     * @param timedOut {@code True} if timed out.
+     */
+    protected boolean errorOrTimeoutOnTopologyVersion(IgniteCheckedException e, boolean timedOut) {
+        if (e != null || timedOut) {
+            if (timedOut)
+                e = tx.timeoutException();
+
+            ERR_UPD.compareAndSet(this, null, e);
+
+            onDone(e);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**

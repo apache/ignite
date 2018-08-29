@@ -37,7 +37,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -1743,12 +1742,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             MvccSnapshot mvccVer,
             boolean primary,
             boolean needHistory,
-            boolean fastUpdate,
             boolean noCreate) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
             return delegate.mvccUpdate(
-                cctx, key, val, ver, expireTime, mvccVer, primary, needHistory, fastUpdate, noCreate);
+                cctx, key, val, ver, expireTime, mvccVer, primary, needHistory, noCreate);
         }
 
         /** {@inheritDoc} */
@@ -1757,11 +1755,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             KeyCacheObject key,
             MvccSnapshot mvccVer,
             boolean primary,
-            boolean needHistory,
-            boolean fastUpdate) throws IgniteCheckedException {
+            boolean needHistory) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccRemove(cctx, key, mvccVer, primary, needHistory, fastUpdate);
+            return delegate.mvccRemove(cctx, key, mvccVer, primary, needHistory);
         }
 
         /** {@inheritDoc} */

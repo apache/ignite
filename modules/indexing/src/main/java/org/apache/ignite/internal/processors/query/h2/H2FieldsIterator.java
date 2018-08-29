@@ -40,9 +40,9 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
      * @param forUpdate {@code SELECT FOR UPDATE} flag.
      * @throws IgniteCheckedException If failed.
      */
-    public H2FieldsIterator(ResultSet data,
-        MvccQueryTracker mvccTracker, boolean forUpdate) throws IgniteCheckedException {
-        super(data, false, true, forUpdate);
+    public H2FieldsIterator(ResultSet data, MvccQueryTracker mvccTracker, boolean forUpdate)
+        throws IgniteCheckedException {
+        super(data, forUpdate);
 
         this.mvccTracker = mvccTracker;
     }
@@ -57,7 +57,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose() throws IgniteCheckedException {
+    @Override public void onClose() {
         try {
             super.onClose();
         }

@@ -33,13 +33,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.GridLongList;
@@ -54,8 +54,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTxQueryEnlistResultHandler.createResponse;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -193,7 +191,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
         boolean flush = false;
 
-        GridCacheOperation op = it.operation();
+        EnlistOperation op = it.operation();
 
         while (true) {
             while (hasNext0()) {
@@ -201,7 +199,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
 
                 Object cur = next0();
 
-                KeyCacheObject key = cctx.toCacheKeyObject(op == DELETE || op == READ ? cur : ((IgniteBiTuple)cur).getKey());
+                KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple)cur).getKey());
 
                 List<ClusterNode> nodes = cctx.affinity().nodesByKey(key, topVer);
 
@@ -232,8 +230,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
                     break;
                 }
 
-                batch.add(op == READ || op == DELETE ? key : cur,
-                    op != READ && cctx.affinityNode() && (cctx.isReplicated() || nodes.indexOf(cctx.localNode()) > 0));
+                batch.add(op.isDeleteOrLock() ? key : cur,
+                    op != EnlistOperation.LOCK && cctx.affinityNode() && (cctx.isReplicated() || nodes.indexOf(cctx.localNode()) > 0));
 
                 if (batch.size() == batchSize)
                     res = markReady(res, batch);
@@ -316,15 +314,17 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
         assert dhtVer != null;
         assert dhtFutId != null;
 
-        GridCacheOperation op = it.operation();
+        EnlistOperation op = it.operation();
 
-        assert op != READ;
+        assert op != EnlistOperation.LOCK;
+
+        boolean keysOnly = op.isDeleteOrLock();
 
         final ArrayList<KeyCacheObject> keys = new ArrayList<>(rows.size());
-        final ArrayList<Message> vals = op != DELETE ? new ArrayList<>(rows.size()) : null;
+        final ArrayList<Message> vals = keysOnly ? null : new ArrayList<>(rows.size());
 
         for (Object row : rows) {
-            if (op == DELETE)
+            if (keysOnly)
                 keys.add(cctx.toCacheKeyObject(row));
             else {
                 keys.add(cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey()));
@@ -420,8 +420,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             tx.remainingTime(),
             tx.taskNameHash(),
             batchFut.rows(),
-            it.operation(),
-            it.isDirect());
+            it.operation());
 
         sendRequest(req, nodeId);
     }
@@ -470,8 +469,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxAbstractEnlist
             remainingTime(),
             cctx,
             rows,
-            it.operation(),
-            it.isDirect());
+            it.operation());
 
         updateLocalFuture(fut);
 

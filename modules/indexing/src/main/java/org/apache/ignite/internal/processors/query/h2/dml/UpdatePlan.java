@@ -27,8 +27,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -487,22 +487,40 @@ public final class UpdatePlan {
      *
      * @param idx Indexing.
      * @param cur Cursor.
-     * @param op Cache operation.
      * @return Iterator.
      */
-    public UpdateSourceIterator<?> iteratorForTransaction(IgniteH2Indexing idx, QueryCursor<List<?>> cur,
-        GridCacheOperation op) {
+    public UpdateSourceIterator<?> iteratorForTransaction(IgniteH2Indexing idx, QueryCursor<List<?>> cur) {
         switch (mode) {
             case MERGE:
+                return new InsertIterator(idx, cur, this, EnlistOperation.UPSERT);
             case INSERT:
-                return new InsertIterator(idx, cur, this, op);
+                return new InsertIterator(idx, cur, this, EnlistOperation.INSERT);
             case UPDATE:
-                return new UpdateIterator(idx, cur, this, op);
+                return new UpdateIterator(idx, cur, this, EnlistOperation.UPDATE);
             case DELETE:
-                return new DeleteIterator(idx, cur, this, op);
+                return new DeleteIterator(idx, cur, this, EnlistOperation.DELETE);
 
             default:
-                throw new UnsupportedOperationException(String.valueOf(mode));
+                throw new IllegalArgumentException(String.valueOf(mode));
+        }
+    }
+
+    /**
+     * @param updMode Update plan mode.
+     * @return Operation.
+     */
+    public static EnlistOperation enlistOperation(UpdateMode updMode) {
+        switch (updMode) {
+            case INSERT:
+                return EnlistOperation.INSERT;
+            case MERGE:
+                return EnlistOperation.UPSERT;
+            case UPDATE:
+                return EnlistOperation.UPDATE;
+            case DELETE:
+                return EnlistOperation.DELETE;
+            default:
+                throw new IllegalArgumentException(String.valueOf(updMode));
         }
     }
 
@@ -602,7 +620,7 @@ public final class UpdatePlan {
         private final Iterator<List<?>> it;
 
         /** */
-        private final GridCacheOperation op;
+        private final EnlistOperation op;
 
         /** */
         private volatile ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn;
@@ -611,9 +629,9 @@ public final class UpdatePlan {
          * @param idx Indexing.
          * @param cur Query cursor.
          * @param plan Update plan.
-         * @param op Cache operation.
+         * @param op Operation.
          */
-        private AbstractIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, GridCacheOperation op) {
+        private AbstractIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
             this.idx = idx;
             this.cur = cur;
             this.plan = plan;
@@ -623,7 +641,7 @@ public final class UpdatePlan {
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheOperation operation() {
+        @Override public EnlistOperation operation() {
             return op;
         }
 
@@ -660,7 +678,7 @@ public final class UpdatePlan {
     }
 
     /** */
-    private final static class UpdateIterator extends AbstractIterator {
+    private static final class UpdateIterator extends AbstractIterator {
         /** */
         private static final long serialVersionUID = -4949035950470324961L;
 
@@ -668,9 +686,9 @@ public final class UpdatePlan {
          * @param idx Indexing.
          * @param cur Query cursor.
          * @param plan Update plan.
-         * @param op Cache operation.
+         * @param op Operation.
          */
-        private UpdateIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, GridCacheOperation op) {
+        private UpdateIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
             super(idx, cur, plan, op);
         }
 
@@ -683,7 +701,7 @@ public final class UpdatePlan {
     }
 
     /** */
-    private final static class DeleteIterator extends AbstractIterator {
+    private static final class DeleteIterator extends AbstractIterator {
         /** */
         private static final long serialVersionUID = -4949035950470324961L;
 
@@ -691,9 +709,9 @@ public final class UpdatePlan {
          * @param idx Indexing.
          * @param cur Query cursor.
          * @param plan Update plan.
-         * @param op Cache operation.
+         * @param op Operation.
          */
-        private DeleteIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, GridCacheOperation op) {
+        private DeleteIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
             super(idx, cur, plan, op);
         }
 
@@ -704,7 +722,7 @@ public final class UpdatePlan {
     }
 
     /** */
-    private final static class InsertIterator extends AbstractIterator {
+    private static final class InsertIterator extends AbstractIterator {
         /** */
         private static final long serialVersionUID = -4949035950470324961L;
 
@@ -712,9 +730,9 @@ public final class UpdatePlan {
          * @param idx Indexing.
          * @param cur Query cursor.
          * @param plan Update plan.
-         * @param op Cache operation.
+         * @param op Operation.
          */
-        private InsertIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, GridCacheOperation op) {
+        private InsertIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
             super(idx, cur, plan, op);
         }
 

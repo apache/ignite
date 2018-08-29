@@ -33,9 +33,11 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.InvalidEnvironmentException;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -49,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
-import org.apache.ignite.internal.processors.cache.GridCacheIndexUpdateException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -61,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -83,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -871,39 +874,34 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         // Need to remove version from committed list.
                         cctx.tm().removeCommittedTx(this);
 
-                        if (X.hasCause(ex, GridCacheIndexUpdateException.class) && cacheCtx.cache().isMongoDataCache()) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to update mongo document index (transaction entry will " +
-                                    "be ignored): " + txEntry);
+                        boolean isNodeStopping = X.hasCause(ex, NodeStoppingException.class);
+                        boolean hasInvalidEnvironmentIssue = X.hasCause(ex, InvalidEnvironmentException.class);
 
-                            // Set operation to NOOP.
-                            txEntry.op(NOOP);
+                        IgniteCheckedException err0 = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
+                            "(all transaction entries will be invalidated, however there was a window when " +
+                            "entries for this transaction were visible to others): " + this, ex);
 
-                            errorWhenCommitting();
-
-                            throw ex;
+                        if (isNodeStopping) {
+                            U.warn(log, "Failed to commit transaction, node is stopping [tx=" + this +
+                                ", err=" + ex + ']');
                         }
-                        else {
-                            boolean hasInvalidEnvironmentIssue = X.hasCause(ex, InvalidEnvironmentException.class);
+                        else if (hasInvalidEnvironmentIssue) {
+                            U.warn(log, "Failed to commit transaction, node is in invalid state and will be stopped [tx=" + this +
+                                ", err=" + ex + ']');
+                        }
+                        else
+                            U.error(log, "Commit failed.", err0);
 
-                            IgniteCheckedException err0 = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
-                                "(all transaction entries will be invalidated, however there was a window when " +
-                                "entries for this transaction were visible to others): " + this, ex);
+                        COMMIT_ERR_UPD.compareAndSet(this, null, err0);
 
-                            if (hasInvalidEnvironmentIssue) {
-                                U.warn(log, "Failed to commit transaction, node is stopping " +
-                                    "[tx=" + this + ", err=" + ex + ']');
-                            }
-                            else
-                                U.error(log, "Heuristic transaction failure.", err0);
+                        state(UNKNOWN);
 
-                            COMMIT_ERR_UPD.compareAndSet(this, null, err0);
-
-                            state(UNKNOWN);
-
+                        if (hasInvalidEnvironmentIssue)
+                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+                        else if (!isNodeStopping) { // Skip fair uncommit in case of node stopping or invalidation.
                             try {
                                 // Courtesy to minimize damage.
-                                uncommit(hasInvalidEnvironmentIssue);
+                                uncommit();
                             }
                             catch (Throwable ex1) {
                                 U.error(log, "Failed to uncommit transaction: " + this, ex1);
@@ -911,12 +909,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 if (ex1 instanceof Error)
                                     throw ex1;
                             }
-
-                            if (ex instanceof Error)
-                                throw ex;
-
-                            throw err0;
                         }
+
+                        if (ex instanceof Error)
+                            throw ex;
+
+                        throw err0;
                     }
                 }
 
@@ -1301,6 +1299,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         Object key0 = null;
         Object val0 = null;
 
+        IgniteThread.onEntryProcessorEntered(true);
+
         try {
             Object res = null;
 
@@ -1325,6 +1325,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
         catch (Exception e) {
             ret.addEntryProcessResult(ctx, txEntry.key(), key0, null, e, txEntry.keepBinary());
+        }
+        finally {
+            IgniteThread.onEntryProcessorLeft();
         }
     }
 
