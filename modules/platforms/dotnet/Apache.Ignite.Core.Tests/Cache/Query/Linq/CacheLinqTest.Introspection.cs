@@ -66,8 +66,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             Assert.AreEqual(
                 GetSqlEscapeAll()
-                    ? "select _T0._KEY, _T0._VAL from \"person_org\".\"Person\" as _T0 where (_T0.\"_KEY\" > ?)"
-                    : "select _T0._KEY, _T0._VAL from person_org_Schema.Person as _T0 where (_T0._KEY > ?)",
+                    ? "select _T0._KEY, _T0._VAL from PERSON_ORG_SCHEMA.\"Person\" as _T0 where (_T0.\"_KEY\" > ?)"
+                    : "select _T0._KEY, _T0._VAL from PERSON_ORG_SCHEMA.Person as _T0 where (_T0._KEY > ?)",
                 fq.Sql);
 
             Assert.AreEqual(new[] { 10 }, fq.Arguments);
