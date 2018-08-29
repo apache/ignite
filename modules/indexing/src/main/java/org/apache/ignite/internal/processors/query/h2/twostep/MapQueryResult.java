@@ -110,7 +110,7 @@ class MapQueryResult {
      */
     MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
         UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params) {
-        this.log = cctx.logger(MapQueryResult.class);
+        this.log = h2.kernalContext().log(MapQueryResult.class);
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;

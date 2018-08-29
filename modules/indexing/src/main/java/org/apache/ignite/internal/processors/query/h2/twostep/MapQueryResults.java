@@ -66,7 +66,7 @@ class MapQueryResults {
     @SuppressWarnings("unchecked")
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
         @Nullable MapQueryLazyWorker lazyWorker) {
-        this.log = cctx.logger(MapQueryResults.class);
+        this.log = h2.kernalContext().log(MapQueryResults.class);
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
