@@ -52,37 +52,35 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Persistent Store With Indexing Test Suite");
 
-//        suite.addTestSuite(IgnitePdsCacheIntegrationTest.class);
-//        suite.addTestSuite(IgnitePdsPageEvictionTest.class);
-//        suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
-//        suite.addTestSuite(IgnitePersistentStoreCacheGroupsTest.class);
-//        suite.addTestSuite(PersistenceDirectoryWarningLoggingTest.class);
-//        suite.addTestSuite(WalPathsTest.class);
-//        suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
-//
-//        suite.addTestSuite(IgniteWalRecoveryTest.class);
-//        suite.addTestSuite(IgniteWalRecoveryWithCompactionTest.class);
-//        suite.addTestSuite(IgnitePdsNoActualWalHistoryTest.class);
-//        suite.addTestSuite(IgniteWalRebalanceTest.class);
-//
-//        suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
-//        suite.addTestSuite(IgnitePdsAtomicCacheHistoricalRebalancingTest.class);
-//
-//        suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
-//        suite.addTestSuite(IgnitePdsTxHistoricalRebalancingTest.class);
-//
-//        suite.addTestSuite(IgniteWalRecoveryPPCTest.class);
+        suite.addTestSuite(IgnitePdsCacheIntegrationTest.class);
+        suite.addTestSuite(IgnitePdsPageEvictionTest.class);
+        suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
+        suite.addTestSuite(IgnitePersistentStoreCacheGroupsTest.class);
+        suite.addTestSuite(PersistenceDirectoryWarningLoggingTest.class);
+        suite.addTestSuite(WalPathsTest.class);
+        suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
 
+        suite.addTestSuite(IgniteWalRecoveryTest.class);
+        suite.addTestSuite(IgniteWalRecoveryWithCompactionTest.class);
+        suite.addTestSuite(IgnitePdsNoActualWalHistoryTest.class);
+        suite.addTestSuite(IgniteWalRebalanceTest.class);
+
+        suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
+        suite.addTestSuite(IgnitePdsAtomicCacheHistoricalRebalancingTest.class);
+
+        suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
+        suite.addTestSuite(IgnitePdsTxHistoricalRebalancingTest.class);
+
+        suite.addTestSuite(IgniteWalRecoveryPPCTest.class);
         suite.addTestSuite(IgnitePdsDiskErrorsRecoveringTest.class);
-//
-//        suite.addTestSuite(IgnitePdsCacheDestroyDuringCheckpointTest.class);
-//
-//        suite.addTestSuite(IgnitePdsBinaryMetadataOnClusterRestartTest.class);
-//        suite.addTestSuite(IgnitePdsMarshallerMappingRestoreOnNodeStartTest.class);
-//        suite.addTestSuite(IgnitePdsThreadInterruptionTest.class);
-//        suite.addTestSuite(IgnitePdsBinarySortObjectFieldsTest.class);
-//
-//        suite.addTestSuite(IgnitePdsCorruptedIndexTest.class);
+        suite.addTestSuite(IgnitePdsCacheDestroyDuringCheckpointTest.class);
+
+        suite.addTestSuite(IgnitePdsBinaryMetadataOnClusterRestartTest.class);
+        suite.addTestSuite(IgnitePdsMarshallerMappingRestoreOnNodeStartTest.class);
+        suite.addTestSuite(IgnitePdsThreadInterruptionTest.class);
+        suite.addTestSuite(IgnitePdsBinarySortObjectFieldsTest.class);
+
+        suite.addTestSuite(IgnitePdsCorruptedIndexTest.class);
 
         return suite;
     }

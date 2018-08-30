@@ -2913,26 +2913,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             lastFsyncPos = written;
                         }
 
-                        if (mmap) {
-                            try {
-                                fileIO.close();
-                            }
-                            catch (IOException ignore) {
-                                // No-op.
-                            }
-                        }
-                        else {
+                        if (!mmap) {
                             walWriter.close();
 
                             if (!rollOver)
                                 buf.free();
-
-                            try {
-                                fileIO.close();
-                            }
-                            catch (IOException ignore) {
-                                // No-op.
-                            }
+                        }
+                        try {
+                            fileIO.close();
+                        }
+                        catch (IOException ignore) {
+                            // No-op.
                         }
                     }
                     catch (IOException e) {
@@ -3414,16 +3405,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (val != Long.MIN_VALUE)
                         waiters.put(e.getKey(), Long.MIN_VALUE);
 
-                    log.info("Unpark waiters : " + e.getKey().getName() + " , isInvalid=" + cctx.kernalContext().invalid());
-
-                    if(cctx.kernalContext().invalid()){
-                        StringBuilder builder = new StringBuilder();
-                        for (StackTraceElement traceElement : e.getKey().getStackTrace()) {
-                            builder.append(traceElement.toString() + "\n");
-                        }
-
-                        log.info("Invalid stacktrace: " + builder.toString());
-                    }
                     LockSupport.unpark(e.getKey());
                 }
             }

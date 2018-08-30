@@ -55,7 +55,6 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
 
 /**
  * Tests node recovering after disk errors during interaction with persistent storage.
@@ -323,7 +322,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      */
     public void testRecoveringOnWALWritingFail2() throws Exception {
         // Fail somewhere on the second wal segment.
-        ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE - 9000)));
+        ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE)));
         System.setProperty(IGNITE_WAL_MMAP, "false");
         doTestRecoveringOnWALWritingFail();
     }
@@ -341,17 +340,15 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         int failedPosition = -1;
 
-        Thread.currentThread().setName(Thread.currentThread().getName()+"_10001");
         for (int i = 0; i < 1000; i++) {
             byte payload = (byte) i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
-            Thread.currentThread().setName(Thread.currentThread().getName().replaceFirst("_[0-9]*", "_"+i));
+
             try {
                 grid.cache(CACHE_NAME).put(i, data);
             }
             catch (Exception e) {
-                log.error("Failed put : " + i, e);
                 failedPosition = i;
 
                 break;
@@ -376,7 +373,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             Arrays.fill(data, payload);
 
             byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
-            Assert.assertArrayEquals("Total number : " + failedPosition + ", Null number : " + i, data, actualData);
+            Assert.assertArrayEquals(data, actualData);
         }
     }
 
