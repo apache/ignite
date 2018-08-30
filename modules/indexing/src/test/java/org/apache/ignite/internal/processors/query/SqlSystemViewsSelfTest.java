@@ -135,7 +135,7 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        String sql = "SELECT ID FROM IGNITE.NODES WHERE IS_LOCAL = true";
+        String sql = "SELECT ID FROM IGNITE.NODES WHERE NODE_ORDER = 1";
 
         SqlFieldsQuery qry;
 
@@ -187,47 +187,41 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        List<List<?>> resAll = execSql("SELECT ID, CONSISTENT_ID, VERSION, IS_LOCAL, IS_CLIENT, IS_DAEMON, " +
+        List<List<?>> resAll = execSql("SELECT ID, CONSISTENT_ID, VERSION, IS_CLIENT, IS_DAEMON, " +
                 "NODE_ORDER, ADDRESSES, HOSTNAMES FROM IGNITE.NODES");
 
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
-            Boolean.class, Integer.class, String.class, String.class);
+            Integer.class, String.class, String.class);
 
         assertEquals(3, resAll.size());
 
         List<List<?>> resSrv = execSql(
-            "SELECT ID, IS_LOCAL, NODE_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = FALSE AND IS_DAEMON = FALSE"
+            "SELECT ID, NODE_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = FALSE AND IS_DAEMON = FALSE"
         );
 
         assertEquals(1, resSrv.size());
 
         assertEquals(ignite1.cluster().localNode().id(), resSrv.get(0).get(0));
 
-        assertEquals(true, resSrv.get(0).get(1));
-
-        assertEquals(1, resSrv.get(0).get(2));
+        assertEquals(1, resSrv.get(0).get(1));
 
         List<List<?>> resCli = execSql(
-            "SELECT ID, IS_LOCAL, NODE_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = TRUE");
+            "SELECT ID, NODE_ORDER FROM IGNITE.NODES WHERE IS_CLIENT = TRUE");
 
         assertEquals(1, resCli.size());
 
         assertEquals(ignite2.cluster().localNode().id(), resCli.get(0).get(0));
 
-        assertEquals(false, resCli.get(0).get(1));
-
-        assertEquals(2, resCli.get(0).get(2));
+        assertEquals(2, resCli.get(0).get(1));
 
         List<List<?>> resDaemon = execSql(
-            "SELECT ID, IS_LOCAL, NODE_ORDER FROM IGNITE.NODES WHERE IS_DAEMON = TRUE");
+            "SELECT ID, NODE_ORDER FROM IGNITE.NODES WHERE IS_DAEMON = TRUE");
 
         assertEquals(1, resDaemon.size());
 
         assertEquals(ignite3.cluster().localNode().id(), resDaemon.get(0).get(0));
 
-        assertEquals(false, resDaemon.get(0).get(1));
-
-        assertEquals(3, resDaemon.get(0).get(2));
+        assertEquals(3, resDaemon.get(0).get(1));
 
         // Check index on ID column.
         assertEquals(0, execSql("SELECT ID FROM IGNITE.NODES WHERE ID = '-'").size());
@@ -238,23 +232,22 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(1, execSql("SELECT ID FROM IGNITE.NODES WHERE ID = ?",
             ignite3.cluster().localNode().id()).size());
 
-        // Check index on IS_LOCAL column.
-        assertEquals(1, execSql("SELECT ID FROM IGNITE.NODES WHERE IS_LOCAL = true").size());
-
-        // Check index on IS_LOCAL column with disjunction.
-        assertEquals(3, execSql("SELECT ID FROM IGNITE.NODES WHERE IS_LOCAL = true OR node_order=1 OR node_order=2 OR node_order=3").size());
+        // Check index on ID column with disjunction.
+        assertEquals(3, execSql("SELECT ID FROM IGNITE.NODES WHERE ID = ? " +
+            "OR node_order=1 OR node_order=2 OR node_order=3", ignite1.cluster().localNode().id()).size());
 
         // Check quick-count.
         assertEquals(3L, execSql("SELECT COUNT(*) FROM IGNITE.NODES").get(0).get(0));
 
         // Check joins
         assertEquals(ignite1.cluster().localNode().id(), execSql("SELECT N1.ID FROM IGNITE.NODES N1 JOIN " +
-            "IGNITE.NODES N2 ON N1.IS_LOCAL = N2.IS_LOCAL JOIN IGNITE.NODES N3 ON N2.ID = N3.ID WHERE N3.IS_LOCAL = true")
+            "IGNITE.NODES N2 ON N1.NODE_ORDER = N2.NODE_ORDER JOIN IGNITE.NODES N3 ON N2.ID = N3.ID " +
+            "WHERE N3.NODE_ORDER = 1")
             .get(0).get(0));
 
         // Check sub-query
         assertEquals(ignite1.cluster().localNode().id(), execSql("SELECT N1.ID FROM IGNITE.NODES N1 " +
-            "WHERE NOT EXISTS (SELECT 1 FROM IGNITE.NODES N2 WHERE N2.ID = N1.ID AND N2.IS_LOCAL = false)")
+            "WHERE NOT EXISTS (SELECT 1 FROM IGNITE.NODES N2 WHERE N2.ID = N1.ID AND N2.NODE_ORDER <> 1)")
             .get(0).get(0));
 
         // Check node attributes view
