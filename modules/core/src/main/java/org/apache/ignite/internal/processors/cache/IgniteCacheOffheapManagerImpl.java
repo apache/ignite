@@ -2551,7 +2551,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             List<IgniteBiTuple<Object, MvccVersion>> res = new ArrayList<>();
 
-            long crd = MVCC_CRD_COUNTER_NA, cntr = MVCC_COUNTER_NA; int opCntr = MVCC_OP_COUNTER_NA;
+            long crd = MVCC_CRD_COUNTER_NA;
+            long cntr = MVCC_COUNTER_NA;
+            int opCntr = MVCC_OP_COUNTER_NA;
 
             while (cur.next()) {
                 CacheDataRow row = cur.get();
@@ -2561,7 +2563,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 res.add(F.t(row.value(), row.mvccVersion()));
 
-                crd = row.mvccCoordinatorVersion(); cntr = row.mvccCounter(); opCntr = row.mvccOperationCounter();
+                crd = row.mvccCoordinatorVersion();
+                cntr = row.mvccCounter();
+                opCntr = row.mvccOperationCounter();
             }
 
             return res;
@@ -2640,8 +2644,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return cursor(cacheId, null, null);
         }
 
-        /** {@inheritDoc}
-         * @param cacheId*/
+        /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
             MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
             return cursor(cacheId, null, null, null, mvccSnapshot);

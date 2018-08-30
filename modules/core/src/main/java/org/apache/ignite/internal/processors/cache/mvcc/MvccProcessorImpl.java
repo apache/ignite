@@ -1324,7 +1324,9 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
      * @param msg Message.
      */
     private void processCoordinatorSnapshotResponse(UUID nodeId, MvccSnapshotResponse msg) {
-        Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.get(nodeId); MvccSnapshotResponseListener lsnr;
+        Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.get(nodeId);
+
+        MvccSnapshotResponseListener lsnr;
 
         if (map != null && (lsnr = map.remove(msg.futureId())) != null)
             lsnr.onResponse(msg);
