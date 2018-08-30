@@ -68,7 +68,6 @@ import org.apache.ignite.ml.tree.randomforest.data.statistics.NormalDistribution
  */
 public abstract class RandomForestTrainer<L, S extends ImpurityComputer<BootstrappedVector, S>,
     T extends RandomForestTrainer<L, S, T>> extends DatasetTrainer<ModelsComposition, Double> {
-
     /** Bucket size factor. */
     private static final double BUCKET_SIZE_FACTOR = (1 / 10.0);
 
@@ -260,8 +259,14 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         }
     }
 
+    /**
+     * Creates an instance of Histograms Computer corresponding to RF implementation.
+     */
     protected abstract ImpurityHistogramsComputer<S> createImpurityHistogramsComputer();
 
+    /**
+     * Creates an instance of Leaf Statistics Aggregator corresponding to RF implementation.
+     */
     protected abstract LeafValuesComputer<L> createLeafStatisticsAggregator();
 
     /**
@@ -303,7 +308,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
             BucketMeta bucketMeta = new BucketMeta(meta.get(i));
             if (!bucketMeta.getFeatureMeta().isCategoricalFeature()) {
                 NormalDistributionStatistics stat = stats.get(i);
-                bucketMeta.setMinValue(stat.min());
+                bucketMeta.setMinVal(stat.min());
                 bucketMeta.setBucketSize(stat.std() * BUCKET_SIZE_FACTOR);
             }
             bucketsMeta.put(i, bucketMeta);

@@ -58,7 +58,7 @@ public class TreeRoot implements Model<Vector, Double> {
     }
 
     /** */
-    public TreeNode getNode() {
+    public TreeNode getRootNode() {
         return node;
     }
 

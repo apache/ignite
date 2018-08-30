@@ -30,7 +30,7 @@ public class MeanValueStatistic implements Serializable {
     private double sumOfValues;
 
     /** Count of values. */
-    private long countOfValues;
+    private long cntOfValues;
 
     /**
      * Creates an instance of MeanValueStatistic.
@@ -40,14 +40,14 @@ public class MeanValueStatistic implements Serializable {
      */
     public MeanValueStatistic(double sumOfValues, long cntOfValues) {
         this.sumOfValues = sumOfValues;
-        this.countOfValues = cntOfValues;
+        this.cntOfValues = cntOfValues;
     }
 
     /**
      * @return mean value.
      */
     public double mean() {
-        return sumOfValues / countOfValues;
+        return sumOfValues / cntOfValues;
     }
 
     /** */
@@ -61,12 +61,12 @@ public class MeanValueStatistic implements Serializable {
     }
 
     /** */
-    public long getCountOfValues() {
-        return countOfValues;
+    public long getCntOfValues() {
+        return cntOfValues;
     }
 
     /** */
-    public void setCountOfValues(long cntOfValues) {
-        this.countOfValues = cntOfValues;
+    public void setCntOfValues(long cntOfValues) {
+        this.cntOfValues = cntOfValues;
     }
 }

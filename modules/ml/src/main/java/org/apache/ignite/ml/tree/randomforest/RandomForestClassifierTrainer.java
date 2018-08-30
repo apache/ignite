@@ -42,7 +42,6 @@ import org.apache.ignite.ml.tree.randomforest.data.statistics.LeafValuesComputer
  */
 public class RandomForestClassifierTrainer
     extends RandomForestTrainer<ObjectHistogram<BootstrappedVector>, GiniHistogram, RandomForestClassifierTrainer> {
-
     /** Label mapping. */
     private Map<Double, Integer> lblMapping = new HashMap<>();
 
@@ -103,6 +102,7 @@ public class RandomForestClassifierTrainer
         return new GiniHistogramsComputer(lblMapping);
     }
 
+    /** {@inheritDoc} */
     @Override protected LeafValuesComputer<ObjectHistogram<BootstrappedVector>> createLeafStatisticsAggregator() {
         return new ClassifierLeafValuesComputer(lblMapping);
     }

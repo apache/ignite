@@ -38,7 +38,7 @@ public class FeatureMeta implements Serializable {
     /**
      * Create an instance of Feature meta.
      *
-     * @param name
+     * @param name Feature name.
      * @param featureId Feature id.
      * @param isCategoricalFeature Is categorical feature.
      */

@@ -36,6 +36,9 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <V> Type of a value in {@code upstream} data.
  */
 public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V, EmptyContext, BootstrappedDatasetPartition> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 8146220902914010559L;
+
     /** Feature extractor. */
     private final IgniteBiFunction<K, V, Vector> featureExtractor;
 
@@ -43,7 +46,7 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
     private final IgniteBiFunction<K, V, Double> lbExtractor;
 
     /** Samples count. */
-    private final int samplesCount;
+    private final int samplesCnt;
 
     /** Subsample size. */
     private final double subsampleSize;
@@ -53,15 +56,15 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
      *
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
-     * @param samplesCount Samples count.
+     * @param samplesCnt Samples count.
      * @param subsampleSize Subsample size.
      */
     public BootstrappedDatasetBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, int samplesCount, double subsampleSize) {
+        IgniteBiFunction<K, V, Double> lbExtractor, int samplesCnt, double subsampleSize) {
 
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
-        this.samplesCount = samplesCount;
+        this.samplesCnt = samplesCnt;
         this.subsampleSize = subsampleSize;
     }
 
@@ -71,15 +74,15 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
 
         BootstrappedVector[] dataset = new BootstrappedVector[Math.toIntExact(upstreamDataSize)];
 
-        int counter = 0;
+        int cntr = 0;
         PoissonDistribution poissonDistribution = new PoissonDistribution(subsampleSize);
         while(upstreamData.hasNext()) {
             UpstreamEntry<K, V> nextRow = upstreamData.next();
             Vector features = featureExtractor.apply(nextRow.getKey(), nextRow.getValue());
-            Double label = lbExtractor.apply(nextRow.getKey(), nextRow.getValue());
-            int[] repetitionCounters = new int[samplesCount];
+            Double lb = lbExtractor.apply(nextRow.getKey(), nextRow.getValue());
+            int[] repetitionCounters = new int[samplesCnt];
             Arrays.setAll(repetitionCounters, i -> poissonDistribution.sample());
-            dataset[counter++] = new BootstrappedVector(features, label, repetitionCounters);
+            dataset[cntr++] = new BootstrappedVector(features, lb, repetitionCounters);
         }
 
         return new BootstrappedDatasetPartition(dataset);

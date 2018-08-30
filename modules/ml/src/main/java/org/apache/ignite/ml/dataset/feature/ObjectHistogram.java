@@ -57,9 +57,9 @@ public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, Dis
     }
 
     /** {@inheritDoc} */
-    @Override public void addElement(T value) {
-        Integer bucket = bucketMapping.apply(value);
-        Double cntrVal = mappingToCntr.apply(value);
+    @Override public void addElement(T val) {
+        Integer bucket = bucketMapping.apply(val);
+        Double cntrVal = mappingToCntr.apply(val);
 
         assert cntrVal >= 0;
         Double bucketVal = hist.getOrDefault(bucket, 0.0);
@@ -78,15 +78,15 @@ public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, Dis
 
     /** {@inheritDoc} */
     @Override public TreeMap<Integer, Double> computeDistributionFunction() {
-        TreeMap<Integer, Double> result = new TreeMap<>();
+        TreeMap<Integer, Double> res = new TreeMap<>();
 
         double accum = 0.0;
         for (Integer bucket : hist.keySet()) {
             accum += hist.get(bucket);
-            result.put(bucket, accum);
+            res.put(bucket, accum);
         }
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -105,8 +105,8 @@ public class ObjectHistogram<T> implements Histogram<T, ObjectHistogram<T>>, Dis
      */
     private void addTo(Map<Integer, Double> from, Map<Integer, Double> to) {
         from.forEach((bucket, value) -> {
-            Double putValue = to.getOrDefault(bucket, 0.0);
-            to.put(bucket, putValue + value);
+            Double putVal = to.getOrDefault(bucket, 0.0);
+            to.put(bucket, putVal + value);
         });
     }
 

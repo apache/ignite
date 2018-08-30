@@ -37,10 +37,10 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         /** Unknown. */
         UNKNOWN,
 
-        /** Leaf. */
+        /** Leaf node. */
         LEAF,
 
-        /** Conditional. */
+        /** Conditional node. */
         CONDITIONAL
     }
 
@@ -170,22 +170,30 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
         this.impurity = impurity;
     }
 
-    /** */
+    /**
+     * @return impurity in current node.
+     */
     public double getImpurity() {
         return impurity;
     }
 
-    /** */
+    /**
+     * @return depth of current node.
+     */
     public int getDepth() {
         return depth;
     }
 
-    /** */
+    /**
+     * @return right subtree.
+     */
     public TreeNode getLeft() {
         return left;
     }
 
-    /** */
+    /**
+     * @return left subtree.
+     */
     public TreeNode getRight() {
         return right;
     }

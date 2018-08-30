@@ -38,7 +38,7 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
     /** */
     @Before
     public void setUp() throws Exception {
-        feature2Meta.setMinValue(-5);
+        feature2Meta.setMinVal(-5);
         feature2Meta.setBucketSize(1);
     }
 
@@ -86,7 +86,7 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
     public void testOfSums() {
         int sampleId = 0;
         BucketMeta bucketMeta1 = new BucketMeta(new FeatureMeta("", 0, false));
-        bucketMeta1.setMinValue(0.);
+        bucketMeta1.setMinVal(0.);
         bucketMeta1.setBucketSize(0.1);
         BucketMeta bucketMeta2 = new BucketMeta(new FeatureMeta("", 1, true));
 

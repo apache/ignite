@@ -86,7 +86,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
                     continue;
 
                 TreeRoot root = roots.get(sampleId);
-                NodeId key = root.getNode().predictNextNodeKey(vector.features());
+                NodeId key = root.getRootNode().predictNextNodeKey(vector.features());
                 if (!part.containsKey(key)) //if we didn't take all nodes from learning queue
                     continue;
 

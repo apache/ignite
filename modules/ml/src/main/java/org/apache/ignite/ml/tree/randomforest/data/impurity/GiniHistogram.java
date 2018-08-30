@@ -198,6 +198,7 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
         return bucketId;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isEqualTo(GiniHistogram other) {
         HashSet<Integer> unionBuckets = new HashSet<>(buckets());
         unionBuckets.addAll(other.bucketIds);

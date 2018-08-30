@@ -32,10 +32,24 @@ public abstract class ImpurityHistogram {
     /** Feature id. */
     protected final int featureId;
 
+    /**
+     * Creates an instance of ImpurityHistogram.
+     *
+     * @param featureId Feature id.
+     */
     public ImpurityHistogram(int featureId) {
         this.featureId = featureId;
     }
 
+    /**
+     * Checks split value validity and return Optional-wrap of it.
+     * In other case returns Optional.empty
+     *
+     * @param bestBucketId Best bucket id.
+     * @param bestSplitVal Best split value.
+     * @param bestImpurity Best impurity.
+     * @return best split value.
+     */
     protected Optional<NodeSplit> checkAndReturnSplitValue(int bestBucketId, double bestSplitVal, double bestImpurity) {
         if (isLastBucket(bestBucketId))
             return Optional.empty();

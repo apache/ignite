@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.randomforest.data.impurity;
-
-import org.apache.ignite.ml.dataset.feature.BucketMeta;
-
 /**
- * Histogram computer realization for MSE impurity metric.
+ * <!-- Package description. -->
+ * Contains implementation of statistics computers for Random Forest.
  */
-public class MSEHistogramComputer extends ImpurityHistogramsComputer<MSEHistogram> {
-    /** Serial version uid. */
-    private static final long serialVersionUID = -1544823437437088334L;
-
-    /** {@inheritDoc} */
-    @Override protected MSEHistogram createImpurityComputerForFeature(int sampleId, BucketMeta meta) {
-        return new MSEHistogram(sampleId, meta);
-    }
-}
+package org.apache.ignite.ml.tree.randomforest.data.statistics;

@@ -34,7 +34,6 @@ import org.apache.ignite.ml.tree.randomforest.data.statistics.RegressionLeafValu
  */
 public class RandomForestRegressionTrainer
     extends RandomForestTrainer<MeanValueStatistic, MSEHistogram, RandomForestRegressionTrainer> {
-
     /**
      * Constructs an instance of RandomForestRegressionTrainer.
      *
@@ -59,6 +58,7 @@ public class RandomForestRegressionTrainer
         return new MSEHistogramComputer();
     }
 
+    /** {@inheritDoc} */
     @Override protected LeafValuesComputer<MeanValueStatistic> createLeafStatisticsAggregator() {
         return new RegressionLeafValuesComputer();
     }

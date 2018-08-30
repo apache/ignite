@@ -30,7 +30,7 @@ public class BucketMeta implements Serializable {
     private double bucketSize;
 
     /** Min value of feature. */
-    private double minValue;
+    private double minVal;
 
     /**
      * Creates an instance of BucketMeta.
@@ -44,14 +44,14 @@ public class BucketMeta implements Serializable {
     /**
      * Returns bucket id for feature value.
      *
-     * @param value Value.
+     * @param val Value.
      * @return bucket id.
      */
-    public int getBucketId(Double value) {
+    public int getBucketId(Double val) {
         if(featureMeta.isCategoricalFeature())
-            return (int) Math.rint(value);
+            return (int) Math.rint(val);
 
-        return (int) Math.rint((value - minValue) / bucketSize);
+        return (int) Math.rint((val - minVal) / bucketSize);
     }
 
     /**
@@ -64,14 +64,14 @@ public class BucketMeta implements Serializable {
         if(featureMeta.isCategoricalFeature())
             return (double) bucketId;
 
-        return minValue + (bucketId + 0.5) * bucketSize;
+        return minVal + (bucketId + 0.5) * bucketSize;
     }
 
     /**
-     * @param minValue Min value.
+     * @param minVal Min value.
      */
-    public void setMinValue(double minValue) {
-        this.minValue = minValue;
+    public void setMinVal(double minVal) {
+        this.minVal = minVal;
     }
 
     /**

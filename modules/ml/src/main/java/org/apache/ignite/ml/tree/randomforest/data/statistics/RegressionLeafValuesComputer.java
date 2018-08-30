@@ -32,7 +32,7 @@ public class RegressionLeafValuesComputer extends LeafValuesComputer<MeanValueSt
 
         int numOfRepetitions = vec.counters()[sampleId];
         leafStatAggr.setSumOfValues(leafStatAggr.getSumOfValues() + vec.label() * numOfRepetitions);
-        leafStatAggr.setCountOfValues(leafStatAggr.getCountOfValues() + numOfRepetitions);
+        leafStatAggr.setCntOfValues(leafStatAggr.getCntOfValues() + numOfRepetitions);
     }
 
     /** {@inheritDoc} */
@@ -41,7 +41,7 @@ public class RegressionLeafValuesComputer extends LeafValuesComputer<MeanValueSt
 
         return new MeanValueStatistic(
             leftStats.getSumOfValues() + rightStats.getSumOfValues(),
-            leftStats.getCountOfValues() + rightStats.getCountOfValues()
+            leftStats.getCntOfValues() + rightStats.getCntOfValues()
         );
     }
 

@@ -31,9 +31,9 @@ public interface Histogram<T, H extends Histogram<T, H>> extends Serializable {
     /**
      * Add object to histogram.
      *
-     * @param value Value.
+     * @param val Value.
      */
-    public void addElement(T value);
+    public void addElement(T val);
 
     /**
      *

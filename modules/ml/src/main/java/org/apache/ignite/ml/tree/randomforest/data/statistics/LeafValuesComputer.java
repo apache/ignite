@@ -63,8 +63,10 @@ public abstract class LeafValuesComputer<T> implements Serializable {
 
         leafs.forEach((id, leaf) -> {
             T stat = stats.get(id);
-            double leafVal = computeLeafValue(stat);
-            leaf.setValue(leafVal);
+            if(stat != null) {
+                double leafVal = computeLeafValue(stat);
+                leaf.setValue(leafVal);
+            }
         });
     }
 
@@ -84,7 +86,7 @@ public abstract class LeafValuesComputer<T> implements Serializable {
             final int sampleIdConst = sampleId;
 
             data.forEach(vec -> {
-                NodeId leafId = roots.get(sampleIdConst).getNode().predictNextNodeKey(vec.features());
+                NodeId leafId = roots.get(sampleIdConst).getRootNode().predictNextNodeKey(vec.features());
                 if (!leafs.containsKey(leafId))
                     throw new IllegalStateException();
 

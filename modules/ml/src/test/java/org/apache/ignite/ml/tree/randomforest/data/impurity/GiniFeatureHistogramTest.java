@@ -45,7 +45,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
     /** */
     @Before
     public void setUp() throws Exception {
-        feature2Meta.setMinValue(-5);
+        feature2Meta.setMinVal(-5);
         feature2Meta.setBucketSize(1);
     }
 
@@ -118,7 +118,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         GiniHistogram emptyHist = new GiniHistogram(0, lblMapping, feature3Meta);
         GiniHistogram catFeatureSmpl2 = new GiniHistogram(0, lblMapping, feature3Meta);
 
-        feature2Meta.setMinValue(-5);
+        feature2Meta.setMinVal(-5);
         feature2Meta.setBucketSize(1);
 
         for (BootstrappedVector vec : toSplitDataset) {
@@ -139,7 +139,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
     public void testOfSums() {
         int sampleId = 0;
         BucketMeta bucketMeta1 = new BucketMeta(new FeatureMeta("", 0, false));
-        bucketMeta1.setMinValue(0.);
+        bucketMeta1.setMinVal(0.);
         bucketMeta1.setBucketSize(0.1);
         BucketMeta bucketMeta2 = new BucketMeta(new FeatureMeta("", 1, true));
 
