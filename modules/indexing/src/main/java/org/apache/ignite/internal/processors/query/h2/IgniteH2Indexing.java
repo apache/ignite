@@ -134,9 +134,7 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNode
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
-import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -148,7 +146,6 @@ import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
-import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
@@ -156,8 +153,6 @@ import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
-import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -380,7 +375,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             perThreadConns.put(reusableConnection.object(), false);
 
-            return new H2ConnectionWrapper(c);
+            return reusableConnection;
         }
     };
 
@@ -2519,6 +2514,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             topVer, mvccSnapshot);
     }
 
+    /**
+     * @param flags Flags holder.
+     * @param flag Flag mask to check.
+     * @return {@code true} if flag is set, otherwise returns {@code false}.
+     */
     private boolean isFlagSet(int flags, int flag) {
         return (flags & flag) == flag;
     }
@@ -3032,24 +3032,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 it.remove();
             }
         }
-    }
-
-    /**
-     * Removes from cache and returns associated with current thread connection.
-     * @return Connection associated with current thread.
-     */
-    public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> detach() {
-        Thread key = Thread.currentThread();
-
-        ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusableConnection = connCache.get();
-
-        H2ConnectionWrapper connection = conns.remove(key);
-
-        connCache.remove();
-
-        assert reusableConnection.object().connection() == connection.connection();
-
-        return reusableConnection;
     }
 
     /**

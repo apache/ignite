@@ -71,15 +71,15 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.ObjectPool;
+import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ReadLockTimeoutException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -98,8 +98,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.h2.api.ErrorCode;
 import org.apache.ignite.thread.IgniteThread;
+import org.h2.api.ErrorCode;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.jdbc.JdbcSQLException;
@@ -516,10 +516,14 @@ public class GridMapQueryExecutor {
             req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
             req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
 
+        final GridDhtTxLocalAdapter tx;
+
+        GridH2SelectForUpdateTxDetails txReq = req.txDetails();
+
         final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
-        final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
+        final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY) && txReq == null;
 
         final List<Integer> cacheIds = req.caches();
 
@@ -527,10 +531,6 @@ public class GridMapQueryExecutor {
             CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
 
         final Object[] params = req.parameters();
-
-        final GridDhtTxLocalAdapter tx;
-
-        GridH2SelectForUpdateTxDetails txReq = req.txDetails();
 
         try {
             if (txReq != null) {
@@ -715,75 +715,24 @@ public class GridMapQueryExecutor {
         @Nullable final GridH2SelectForUpdateTxDetails txDetails,
         @Nullable final CompoundLockFuture lockFut,
         @Nullable final AtomicInteger runCntr) {
-        MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
-
         // In presence of TX, we also must always have matching details.
         assert tx == null || txDetails != null;
 
+        assert !lazy || txDetails == null : "Lazy execution of SELECT FOR UPDATE queries is not supported.";
+
         boolean inTx = (tx != null);
 
-        if (lazy && worker == null) {
-            // Lazy queries must be re-submitted to dedicated workers.
-            MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
-            worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
+        MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
-            worker.submit(new Runnable() {
-                @Override public void run() {
-                    onQueryRequest0(
-                        node,
-                        reqId,
-                        segmentId,
-                        schemaName,
-                        qrys,
-                        cacheIds,
-                        topVer,
-                        partsMap,
-                        parts,
-                        pageSize,
-                        distributedJoinMode,
-                        enforceJoinOrder,
-                        replicated,
-                        timeout,
-                        params,
-                        true,
-                        mvccSnapshot,
-                        tx,
-                        txDetails,
-                        lockFut,
-                        runCntr);
-                }
-            });
-
-            if (lazyWorkerBusyLock.enterBusy()) {
-                try {
-                    MapQueryLazyWorker oldWorker = lazyWorkers.put(key, worker);
-
-                    if (oldWorker != null)
-                        oldWorker.stop(false);
-
-                    IgniteThread thread = new IgniteThread(worker);
-
-                    thread.start();
-                }
-                finally {
-                    lazyWorkerBusyLock.leaveBusy();
-                }
-            }
-            else
-                log.info("Ignored query request (node is stopping) [nodeId=" + node.id() + ", reqId=" + reqId + ']');
-
-            return;
-        }
-
-        if (lazy && txDetails != null)
-            throw new IgniteSQLException("Lazy execution of SELECT FOR UPDATE queries is not supported.");
+        if (lazy && worker == null)
+            worker = createLazyWorker(node, reqId, segmentId);
 
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
-        MapQueryResults qr = null;
+        MapQueryResults qryResults = null;
 
         List<GridReservable> reserved = new ArrayList<>();
 
@@ -795,7 +744,7 @@ public class GridMapQueryExecutor {
                 if (!reservePartitions(cacheIds, topVer, parts, reserved, node.id(), reqId)) {
                     // Unregister lazy worker because re-try may never reach this node again.
                     if (lazy)
-                        stopAndUnregisterCurrentLazyWorker();
+                        stopAndUnregisterLazyWorker(worker);
 
                     sendRetry(node, reqId, segmentId);
 
@@ -803,10 +752,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, MapQueryLazyWorker.currentWorker(), inTx);
-
-            if (nodeRess.put(reqId, segmentId, qr) != null)
-                throw new IllegalStateException();
+            qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, worker, inTx);
 
             // Prepare query context.
             GridH2QueryContext qctx = new GridH2QueryContext(ctx.localNodeId(),
@@ -823,179 +769,246 @@ public class GridMapQueryExecutor {
                 .mvccSnapshot(mvccSnapshot)
                 .lazyWorker(worker);
 
-            Connection conn = h2.connectionForSchema(schemaName);
-
-            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
-
-            GridH2QueryContext.set(qctx);
-
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
 
-            try {
-                if (nodeRess.cancelled(reqId)) {
-                    GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qctx.type());
+            if (worker != null)
+                worker.queryContext(qctx);
 
-                    nodeRess.cancelRequest(reqId);
+            GridH2QueryContext.set(qctx);
+
+            if (nodeRess.put(reqId, segmentId, qryResults) != null)
+                throw new IllegalStateException();
+
+            Connection conn = h2.connectionForSchema(schemaName);
+
+            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder, lazy);
+
+            if (nodeRess.cancelled(reqId)) {
+                GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qctx.type());
+
+                nodeRess.cancelRequest(reqId);
+
+                throw new QueryCancelledException();
+            }
+
+            // Run queries.
+            int qryIdx = 0;
+
+            boolean evt = mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
+
+            for (GridCacheSqlQuery qry : qrys) {
+                ResultSet rs = null;
+
+                boolean removeMapping = false;
+
+                // If we are not the target node for this replicated query, just ignore it.
+                if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
+                    String sql = qry.query(); Collection<Object> params0 = F.asList(qry.parameters(params));
+
+                    PreparedStatement stmt;
+
+                    try {
+                        stmt = h2.prepareStatement(conn, sql, true);
+                    }
+                    catch (SQLException e) {
+                        throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
+                    }
+
+                    Prepared p = GridSqlQueryParser.prepared(stmt);
+
+                    if (GridSqlQueryParser.isForUpdateQuery(p)) {
+                        sql = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(p, inTx);
+                        stmt = h2.prepareStatement(conn, sql, true);
+                    }
+
+                    h2.bindParameters(stmt, params0);
+
+                    rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, timeout, qryResults.queryCancel(qryIdx));
+
+                    if (inTx) {
+                        ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
+                            ctx.localNodeId(),
+                            txDetails.version(),
+                            mvccSnapshot,
+                            txDetails.threadId(),
+                            IgniteUuid.randomUuid(),
+                            txDetails.miniId(),
+                            parts,
+                            tx,
+                            timeout,
+                            mainCctx,
+                            rs
+                        );
+
+                        if (lockFut != null)
+                            lockFut.register(enlistFut);
+
+                        enlistFut.init();
+
+                        enlistFut.get();
+
+                        rs.beforeFirst();
+                    }
+
+                    if (evt) {
+                        ctx.event().record(new CacheQueryExecutedEvent<>(
+                            node,
+                            "SQL query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.SQL.name(),
+                            mainCctx.name(),
+                            null,
+                            qry.query(),
+                            null,
+                            null,
+                            params,
+                            node.id(),
+                            null));
+                    }
+
+                    assert rs instanceof JdbcResultSet : rs.getClass();
+                }
+
+                qryResults.addResult(qryIdx, qry, node.id(), rs, params);
+
+                if (qryResults.cancelled()) {
+                    qryResults.result(qryIdx).close();
 
                     throw new QueryCancelledException();
                 }
 
-                // Run queries.
-                int qryIdx = 0;
-
-                boolean evt = mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
-
-                for (GridCacheSqlQuery qry : qrys) {
-                    ResultSet rs = null;
-
-                    boolean removeMapping = false;
-
-                    // If we are not the target node for this replicated query, just ignore it.
-                    if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        String sql = qry.query(); Collection<Object> params0 = F.asList(qry.parameters(params));
-
-                        PreparedStatement stmt;
-
-                        try {
-                            stmt = h2.prepareStatement(conn, sql, true);
-                        }
-                        catch (SQLException e) {
-                            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
-                        }
-
-                        Prepared p = GridSqlQueryParser.prepared(stmt);
-
-                        if (GridSqlQueryParser.isForUpdateQuery(p)) {
-                            sql = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(p, inTx);
-                            stmt = h2.prepareStatement(conn, sql, true);
-                        }
-
-                        h2.bindParameters(stmt, params0);
-
-                        rs = h2.executeSqlQueryWithTimer(stmt, conn, sql, params0, timeout, qr.queryCancel(qryIdx));
-
-                        if (inTx) {
-                            ResultSetEnlistFuture enlistFut = ResultSetEnlistFuture.future(
-                                ctx.localNodeId(),
-                                txDetails.version(),
-                                mvccSnapshot,
-                                txDetails.threadId(),
-                                IgniteUuid.randomUuid(),
-                                txDetails.miniId(),
-                                parts,
-                                tx,
-                                timeout,
-                                mainCctx,
-                                rs
-                            );
-
-                            if (lockFut != null)
-                                lockFut.register(enlistFut);
-
-                            enlistFut.init();
-
-                            enlistFut.get();
-
-                            rs.beforeFirst();
-                        }
-
-                        if (evt) {
-                            ctx.event().record(new CacheQueryExecutedEvent<>(
-                                node,
-                                "SQL query executed.",
-                                EVT_CACHE_QUERY_EXECUTED,
-                                CacheQueryType.SQL.name(),
-                                mainCctx.name(),
-                                null,
-                                qry.query(),
-                                null,
-                                null,
-                                params,
-                                node.id(),
-                                null));
-                        }
-
-                        assert rs instanceof JdbcResultSet : rs.getClass();
+                if (inTx) {
+                    if (tx.dht() && (runCntr == null || runCntr.decrementAndGet() == 0)) {
+                        if (removeMapping = tx.empty() && !tx.queryEnlisted())
+                            tx.rollbackAsync().get();
                     }
-
-                    qr.addResult(qryIdx, qry, node.id(), rs, params);
-
-                    if (qr.cancelled()) {
-                        qr.result(qryIdx).close();
-
-                        throw new QueryCancelledException();
-                    }
-
-                    if (inTx) {
-                        if (tx.dht() && (runCntr == null || runCntr.decrementAndGet() == 0)) {
-                            if (removeMapping = tx.empty() && !tx.queryEnlisted())
-                                tx.rollbackAsync().get();
-                        }
-                    }
-
-                    // Send the first page.
-                    if (lockFut == null)
-                        sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
-                    else {
-                        GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
-
-                        if (msg != null) {
-                            lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                                @Override public void apply(IgniteInternalFuture<Void> future) {
-                                    try {
-                                        if (node.isLocal())
-                                            h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
-                                        else
-                                            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
-                                    }
-                                    catch (Exception e) {
-                                        U.error(log, e);
-                                    }
-                                }
-                            });
-                        }
-                    }
-
-                    qryIdx++;
                 }
 
-                // All request results are in the memory in result set already, so it's ok to release partitions.
-                if (!lazy)
-                    releaseReservations();
-            }
-            catch (Throwable e){
-                releaseReservations();
+                // Send the first page.
+                if (lockFut == null)
+                    sendNextPage(nodeRess, node, qryResults, qryIdx, segmentId, pageSize, removeMapping);
+                else {
+                    GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qryResults, qryIdx, segmentId, pageSize, removeMapping);
 
-                throw e;
+                    if (msg != null) {
+                        lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                            @Override public void apply(IgniteInternalFuture<Void> future) {
+                                try {
+                                    if (node.isLocal())
+                                        h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+                                    else
+                                        ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+                                }
+                                catch (Exception e) {
+                                    U.error(log, e);
+                                }
+                            }
+                        });
+                    }
+                }
+
+                qryIdx++;
             }
+
+            // All request results are in the memory in result set already, so it's ok to release partitions.
+            if (!lazy)
+                releaseReservations();
+            else if (!qryResults.isAllClosed()) {
+                if (MapQueryLazyWorker.currentWorker() == null) {
+                    final ObjectPool.Reusable<H2ConnectionWrapper> detachedConn = h2.detachConnection();
+
+                    worker.detachedConnection(detachedConn);
+
+                    GridH2Table.detachReadLocksFromCurrentThread(H2Utils.session(conn));
+
+                    worker.start();
+
+                    final MapQueryResults qryResults0 = qryResults;
+
+                    worker.submit(new Runnable() {
+                        @Override public void run() {
+                            if (qryResults0.cancelled())
+                                qryResults0.close();
+                        }
+                    });
+
+                    GridH2QueryContext.clearThreadLocal();
+                }
+            }
+            else
+                unregisterLazyWorker(worker);
         }
         catch (Throwable e) {
-            if (qr != null) {
-                nodeRess.remove(reqId, segmentId, qr);
+            if (qryResults != null) {
+                nodeRess.remove(reqId, segmentId, qryResults);
 
-                qr.cancel(false);
+                qryResults.close();
             }
+            else
+                releaseReservations();
 
-            // Unregister worker after possible cancellation.
-            if (lazy)
-                stopAndUnregisterCurrentLazyWorker();
+            if (X.cause(e, GridH2ReadLockTimeoutException.class) != null) {
+                // Execute query in separate lazy worker in case we couldn't obtain table lock long time.
+                // Prev worker is closed within MapQueryResult
+                worker = createLazyWorker(node, reqId, segmentId);
 
-            GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
+                worker.start();
 
-            if (retryErr != null) {
-                logRetry("Failed to execute non-collocated query (will retry) [nodeId=" + node.id() +
-                    ", reqId=" + reqId + ", errMsg=" + retryErr.getMessage() + ']');
-
-                sendRetry(node, reqId, segmentId);
+                worker.submit(new Runnable() {
+                    @Override public void run() {
+                        onQueryRequest0(
+                            node,
+                            reqId,
+                            segmentId,
+                            schemaName,
+                            qrys,
+                            cacheIds,
+                            topVer,
+                            partsMap,
+                            parts,
+                            pageSize,
+                            distributedJoinMode,
+                            enforceJoinOrder,
+                            replicated,
+                            timeout,
+                            params,
+                            txDetails == null,
+                            mvccSnapshot,
+                            tx,
+                            txDetails,
+                            lockFut,
+                            runCntr);
+                    }
+                });
             }
             else {
-                U.error(log, "Failed to execute local query.", e);
+                // Stop and unregister worker after possible cancellation.
+                if (lazy)
+                    stopAndUnregisterLazyWorker(worker);
 
-                sendError(node, reqId, e);
+                JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
-                if (e instanceof Error)
-                    throw (Error)e;
+                if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                    sendError(node, reqId, new QueryCancelledException());
+                else {
+                    GridH2RetryException retryErr = X.cause(e, GridH2RetryException.class);
+
+                    if (retryErr != null) {
+                        logRetry("Failed to execute non-collocated query (will retry) [nodeId=" + node.id() +
+                            ", reqId=" + reqId + ", errMsg=" + retryErr.getMessage() + ']');
+
+                        sendRetry(node, reqId, segmentId);
+                    }
+                    else {
+                        U.error(log, "Failed to execute local query.", e);
+
+                        sendError(node, reqId, e);
+
+                        if (e instanceof Error)
+                            throw (Error)e;
+                    }
+                }
             }
         }
         finally {
@@ -1270,8 +1283,14 @@ public class GridMapQueryExecutor {
      * @return Next page.
      * @throws IgniteCheckedException If failed.
      */
-    private GridQueryNextPageResponse prepareNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
-        int pageSize, boolean removeMapping) throws IgniteCheckedException {
+    private GridQueryNextPageResponse prepareNextPage(
+        MapNodeResults nodeRess,
+        ClusterNode node,
+        MapQueryResults qr,
+        int qry,
+        int segmentId,
+        int pageSize,
+        boolean removeMapping) throws IgniteCheckedException {
         MapQueryResult res = qr.result(qry);
 
         assert res != null;
@@ -1292,8 +1311,11 @@ public class GridMapQueryExecutor {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
                 // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
-                if (MapQueryLazyWorker.currentWorker() != null)
+                if (MapQueryLazyWorker.currentWorker() != null) {
                     releaseReservations();
+
+                    qr.lazyWorker().stop(false);
+                }
             }
         }
 
@@ -1325,8 +1347,14 @@ public class GridMapQueryExecutor {
      * @param removeMapping Remove mapping flag.
      */
     @SuppressWarnings("unchecked")
-    private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
-        int pageSize, boolean removeMapping) {
+    private void sendNextPage(
+        MapNodeResults nodeRess,
+        ClusterNode node,
+        MapQueryResults qr,
+        int qry,
+        int segmentId,
+        int pageSize,
+        boolean removeMapping) {
         try {
             GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping);
 
