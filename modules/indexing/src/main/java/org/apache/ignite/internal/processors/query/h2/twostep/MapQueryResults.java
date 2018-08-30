@@ -51,17 +51,22 @@ class MapQueryResults {
     /** */
     private volatile boolean cancelled;
 
+    /** {@code SELECT FOR UPDATE} flag. */
+    private final boolean forUpdate;
+
     /**
      * Constructor.
-     *
+     * @param h2 Indexing instance.
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
      * @param cctx Cache context.
      * @param lazyWorker Lazy worker (if any).
+     * @param forUpdate {@code SELECT FOR UPDATE} flag.
      */
     @SuppressWarnings("unchecked")
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
-        @Nullable MapQueryLazyWorker lazyWorker) {
+        @Nullable MapQueryLazyWorker lazyWorker, boolean forUpdate) {
+        this.forUpdate = forUpdate;
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;
@@ -101,11 +106,11 @@ class MapQueryResults {
 
     /**
      * Add result.
-     *
      * @param qry Query result index.
      * @param q Query object.
      * @param qrySrcNodeId Query source node.
      * @param rs Result set.
+     * @param params Query arguments.
      */
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
         MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker);
@@ -171,5 +176,12 @@ class MapQueryResults {
      */
     long queryRequestId() {
         return qryReqId;
+    }
+
+    /**
+     * @return {@code SELECT FOR UPDATE} flag.
+     */
+    public boolean isForUpdate() {
+        return forUpdate;
     }
 }

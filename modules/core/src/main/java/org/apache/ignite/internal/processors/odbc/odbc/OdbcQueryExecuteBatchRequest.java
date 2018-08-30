@@ -41,6 +41,10 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
     @GridToStringExclude
     private final Object[][] args;
 
+    /** Autocommit flag. */
+    @GridToStringInclude
+    private final boolean autoCommit;
+
     /** Query timeout in seconds. */
     @GridToStringInclude
     private final int timeout;
@@ -51,9 +55,10 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
      * @param last Last page flag.
      * @param args Arguments list.
      * @param timeout Timeout in seconds.
+     * @param autoCommit Autocommit flag.
      */
     public OdbcQueryExecuteBatchRequest(@Nullable String schema, String sqlQry, boolean last, Object[][] args,
-        int timeout) {
+        int timeout, boolean autoCommit) {
         super(QRY_EXEC_BATCH);
 
         assert sqlQry != null : "SQL query should not be null";
@@ -64,6 +69,7 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
         this.last = last;
         this.args = args;
         this.timeout = timeout;
+        this.autoCommit = autoCommit;
     }
 
     /**
@@ -105,5 +111,12 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(OdbcQueryExecuteBatchRequest.class, this, "args", args, true);
+    }
+
+    /**
+     * @return Autocommit flag.
+     */
+    public boolean autoCommit() {
+        return autoCommit;
     }
 }
