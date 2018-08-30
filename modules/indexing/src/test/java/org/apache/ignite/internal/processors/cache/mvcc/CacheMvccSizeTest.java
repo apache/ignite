@@ -83,8 +83,8 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
 
         personTbl.query(q("begin"));
         personTbl.query(q("insert into person values(1, 'a')"));
-        personTbl.query(q("insert into person values(%d, 'b')", keyInSamePartition(ignite, 1)));
-        personTbl.query(q("insert into person values(%d, 'c')", keyInDifferentPartition(ignite, 1)));
+        personTbl.query(q("insert into person values(%d, 'b')", keyInSamePartition(ignite, "person", 1)));
+        personTbl.query(q("insert into person values(%d, 'c')", keyInDifferentPartition(ignite, "person", 1)));
 
         assertEquals(0, personTbl.size());
         personTbl.query(q("commit"));
@@ -149,27 +149,6 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testInitialValueWithBackups() throws Exception {
-        startGridsMultiThreaded(2);
-        IgniteEx ignite = grid(0);
-        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(
-            new CacheConfiguration<>("test")
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setCacheMode(CacheMode.REPLICATED)
-        );
-
-        try (IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer("test")) {
-            streamer.addData(1, "a");
-            streamer.flush();
-        }
-
-        assertEquals(1, cache.size());
-        assertEquals(1, cache.size(BACKUP));
-    }
-
-    /**
      * @throws Exception if failed.
      */
     public void testSizeIsNotChangedByReader() throws Exception {
@@ -187,9 +166,61 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
+     * @throws Exception if failed.
+     */
+    public void testDataStreamerModifiesReplicatedCacheSize() throws Exception {
+        startGridsMultiThreaded(2);
+
+        IgniteEx ignite = grid(0);
+
+        ignite.createCache(
+            new CacheConfiguration<>("test")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setCacheMode(CacheMode.REPLICATED)
+        );
+
+        try (IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer("test")) {
+            streamer.addData(1, "a");
+
+            streamer.addData(keyInDifferentPartition(ignite, "test", 1), "b");
+        }
+
+        assertEquals(2, ignite.cache("test").size());
+
+        assertEquals(1, grid(0).cache("test").localSize());
+        assertEquals(1, grid(0).cache("test").localSize(BACKUP));
+        assertEquals(1, grid(1).cache("test").localSize());
+        assertEquals(1, grid(1).cache("test").localSize(BACKUP));
+    }
+
+    /**
+     * @throws Exception if failed.
      */
     public void testSizeIsConsistentAfterRebalance() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache<?, ?> tbl = createTable(ignite);
+
+        for (int i = 0; i < 100; i++)
+            tbl.query(q("insert into person values(?, ?)").setArgs(i, i));
+
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<?, ?> tbl0 = grid(0).cache("person");
+        IgniteCache<?, ?> tbl1 = grid(1).cache("person");
+
+        assert tbl0.localSize() != 0 && tbl1.localSize() != 0;
+
+        assertEquals(100, tbl1.size());
+        assertEquals(100, tbl0.localSize() + tbl1.localSize());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSizeIsConsistentAfterRebalanceDuringInsert() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         IgniteCache<?, ?> tbl = createTable(ignite);
@@ -212,8 +243,8 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
 
         assert tbl0.localSize() != 0 && tbl1.localSize() != 0;
 
-        assertEquals(100, tbl0.size());
-        assertEquals(100, tbl0.size(BACKUP));
+        assertEquals(100, tbl1.size());
+        assertEquals(100, tbl0.localSize() + tbl1.localSize());
     }
 
     /** */
@@ -235,16 +266,16 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     }
 
     /** */
-    private static int keyInSamePartition(Ignite ignite, int key) {
-        Affinity<Object> affinity = ignite.affinity("person");
+    private static int keyInSamePartition(Ignite ignite, String cacheName, int key) {
+        Affinity<Object> affinity = ignite.affinity(cacheName);
         return IntStream.iterate(key + 1, i -> i + 1)
             .filter(i -> affinity.partition(i) == affinity.partition(key))
             .findFirst().getAsInt();
     }
 
     /** */
-    private static int keyInDifferentPartition(Ignite ignite, int key) {
-        Affinity<Object> affinity = ignite.affinity("person");
+    private static int keyInDifferentPartition(Ignite ignite, String cacheName, int key) {
+        Affinity<Object> affinity = ignite.affinity(cacheName);
         return IntStream.iterate(key + 1, i -> i + 1)
             .filter(i -> affinity.partition(i) != affinity.partition(key))
             .findFirst().getAsInt();
