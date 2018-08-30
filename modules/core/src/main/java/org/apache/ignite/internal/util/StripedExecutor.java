@@ -120,12 +120,12 @@ public class StripedExecutor implements ExecutorService {
         try {
             for (int i = 0; i < cnt; i++) {
                 stripes[i] = stealTasks
-                    ? new StripeConcurrentQueue(igniteInstanceName, poolName, i, log, stripes, errHnd, gridWorkerLsnr)
-                    : new StripeConcurrentQueue(igniteInstanceName, poolName, i, log, errHnd, gridWorkerLsnr);
+                    ? new StripeConcurrentQueue(igniteInstanceName, poolName, i, log, stripes, errHnd, gridWorkerLsnr, false)
+                    : new StripeConcurrentQueue(igniteInstanceName, poolName, i, log, errHnd, gridWorkerLsnr, false);
             }
 
             for (int i = cnt; i < cnt + dedicated; i++)
-                stripes[i] = new StripeConcurrentQueue(igniteInstanceName, poolName + "-dedicated", i, log, errHnd, gridWorkerLsnr);
+                stripes[i] = new StripeConcurrentQueue(igniteInstanceName, poolName + "-dedicated", i, log, errHnd, gridWorkerLsnr, true);
 
             for (int i = 0; i < cnt + dedicated; i++)
                 stripes[i].start();
@@ -582,6 +582,9 @@ public class StripedExecutor implements ExecutorService {
         /** */
         private volatile boolean parked;
 
+        /** */
+        private final boolean dedicated;
+
         /**
          * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
@@ -596,9 +599,10 @@ public class StripedExecutor implements ExecutorService {
             int idx,
             IgniteLogger log,
             IgniteInClosure<Throwable> errHnd,
-            GridWorkerListener gridWorkerLsnr
+            GridWorkerListener gridWorkerLsnr,
+            boolean dedicated
         ) {
-            this(igniteInstanceName, poolName, idx, log, null, errHnd, gridWorkerLsnr);
+            this(igniteInstanceName, poolName, idx, log, null, errHnd, gridWorkerLsnr, dedicated);
         }
 
         /**
@@ -616,7 +620,8 @@ public class StripedExecutor implements ExecutorService {
             IgniteLogger log,
             Stripe[] others,
             IgniteInClosure<Throwable> errHnd,
-            GridWorkerListener gridWorkerLsnr
+            GridWorkerListener gridWorkerLsnr,
+            boolean dedicated
         ) {
             super(
                 igniteInstanceName,
@@ -629,11 +634,26 @@ public class StripedExecutor implements ExecutorService {
             this.others = others;
 
             this.queue = others == null ? new ConcurrentLinkedQueue<Runnable>() : new ConcurrentLinkedDeque<Runnable>();
+
+            this.dedicated = dedicated;
         }
 
         /** {@inheritDoc} */
         @Override Runnable take() throws InterruptedException {
             Runnable r;
+
+            if (dedicated) {
+                for (int i = 0; ; i++) {
+                    r = queue.poll();
+
+                    if (r != null)
+                        return r;
+
+                    if (i % 2048 == 0)
+                        if (Thread.interrupted())
+                            throw new InterruptedException();
+                }
+            }
 
             for (int i = 0; i < 2048; i++) {
                 r = queue.poll();
