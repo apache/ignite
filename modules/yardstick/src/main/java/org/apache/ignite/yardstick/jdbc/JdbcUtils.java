@@ -17,8 +17,8 @@
 
 package org.apache.ignite.yardstick.jdbc;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.IgniteSemaphore;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -34,6 +34,7 @@ public class JdbcUtils {
      * @param cfg Benchmark configuration.
      * @param ignite Ignite node.
      * @param range Data key range.
+     * @param atomicMode Cache atomic mode.
      */
     public static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range, CacheAtomicityMode atomicMode) {
         IgniteSemaphore sem = ignite.semaphore("jdbc-setup", 1, true, true);
