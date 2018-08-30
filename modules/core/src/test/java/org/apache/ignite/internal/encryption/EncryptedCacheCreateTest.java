@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.encryption;
 
+import com.google.common.primitives.Bytes;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -25,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -34,14 +40,14 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
 
         IgniteEx igniteEx = startGrid(0);
@@ -100,5 +106,59 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
             grid(0).createCache(ccfg);
         }, IgniteCheckedException.class);
+    }
+
+    /** @throws Exception If failed. */
+    public void testPersistedContentEncrypted() throws Exception {
+        IgniteCache<Integer, String> enc = grid(0).createCache(
+            new CacheConfiguration<Integer, String>(ENCRYPTED_CACHE)
+                .setEncryptionEnabled(true));
+
+        IgniteCache<Integer, String> plain = grid(0).createCache(new CacheConfiguration<>("plain-cache"));
+
+        assertNotNull(enc);
+
+        String encValPart = "AAAAAAAAAA";
+        String plainValPart = "BBBBBBBBBB";
+
+        StringBuilder longEncVal = new StringBuilder(encValPart.length()*100);
+        StringBuilder longPlainVal = new StringBuilder(plainValPart.length()*100);
+
+        for (int i=0; i<100; i++) {
+            longEncVal.append(encValPart);
+            longPlainVal.append(plainValPart);
+        }
+
+        enc.put(1, longEncVal.toString());
+        plain.put(1, longPlainVal.toString());
+
+        stopAllGrids(false);
+
+        byte[] encValBytes = encValPart.getBytes(StandardCharsets.UTF_8);
+        byte[] plainValBytes = plainValPart.getBytes(StandardCharsets.UTF_8);
+
+        final boolean[] plainBytesFound = {false};
+
+        Files.walk(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false).toPath())
+            .filter(Files::isRegularFile)
+            .forEach(f -> {
+                try {
+                    if (Files.size(f) == 0)
+                        return;
+
+                    byte[] fileBytes = Files.readAllBytes(f);
+
+                    boolean notFound = Bytes.indexOf(fileBytes, encValBytes) == -1;
+
+                    assertTrue("Value should be encrypted in persisted file. " + f.getFileName(), notFound);
+
+                    plainBytesFound[0] = plainBytesFound[0] || Bytes.indexOf(fileBytes, plainValBytes) != -1;
+
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+        assertTrue("Plain value should be found in persistent store", plainBytesFound[0]);
     }
 }
