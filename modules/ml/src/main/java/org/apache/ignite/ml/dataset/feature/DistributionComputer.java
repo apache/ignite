@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.environment;
+package org.apache.ignite.ml.dataset.feature;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.TreeMap;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * Interface specifies an object that can compute some discrete distribution.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LearningEnvironmentBuilderTest.class,
-    PromiseTest.class
-})
-public class EnvironmentTestSuite {
+public interface DistributionComputer {
+    /**
+     * Compute distribution function.
+     *
+     * @return Map represents discrete distribution function.
+     */
+    public TreeMap<Integer, Double> computeDistributionFunction();
 }
