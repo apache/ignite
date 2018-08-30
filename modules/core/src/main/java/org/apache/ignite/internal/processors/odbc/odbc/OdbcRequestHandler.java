@@ -442,9 +442,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             for (FieldsQueryCursor<List<?>> qryCur : qryCurs)
                 rowsAffected.add(OdbcUtils.rowsAffected(qryCur));
 
-            if (req.last())
-                cliCtx.disableStreaming();
-
             OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected);
 
             return new OdbcResponse(res);
@@ -556,7 +553,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
 
-            extractBatchError(e, err);
+            extractBatchError(e, null, err);
         }
     }
 
@@ -898,19 +895,25 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         IgniteBiTuple<Integer, String> err = new IgniteBiTuple<>();
         List<Long> rowsAffected = new ArrayList<>();
 
-        extractBatchError(e, err);
+        extractBatchError(e, rowsAffected, err);
 
         OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, -1, err.get1(), err.get2());
 
         return new OdbcResponse(res);
     }
 
-    private static void extractBatchError(Exception e, IgniteBiTuple<Integer, String> err) {
+    private static void extractBatchError(Exception e, List<Long> rowsAffected, IgniteBiTuple<Integer, String> err) {
         if (e instanceof IgniteSQLException) {
             BatchUpdateException batchCause = X.cause(e, BatchUpdateException.class);
 
-            if (batchCause != null)
+            if (batchCause != null) {
+                if (rowsAffected != null) {
+                    for (long cnt : batchCause.getLargeUpdateCounts())
+                        rowsAffected.add(cnt);
+                }
+
                 err.set(batchCause.getErrorCode(), batchCause.getMessage());
+            }
             else
                 err.set(((IgniteSQLException)e).statusCode(), OdbcUtils.tryRetrieveH2ErrorMessage(e));
         }
