@@ -103,7 +103,7 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
             return Optional.empty();
 
         double bestImpurity = Double.POSITIVE_INFINITY;
-        double bestSplitValue = Double.NEGATIVE_INFINITY;
+        double bestSplitVal = Double.NEGATIVE_INFINITY;
         int bestBucketId = -1;
 
         List<TreeMap<Integer, Double>> countersDistribPerCls = hists.stream()
@@ -153,12 +153,12 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
             double impurityInBucket = -(leftImpurity + rightImpurity);
             if (impurityInBucket <= bestImpurity) {
                 bestImpurity = impurityInBucket;
-                bestSplitValue = bucketMeta.bucketIdToValue(bucketId);
+                bestSplitVal = bucketMeta.bucketIdToValue(bucketId);
                 bestBucketId = bucketId;
             }
         }
 
-        return checkAndReturnSplitValue(bestBucketId, bestSplitValue, bestImpurity);
+        return checkAndReturnSplitValue(bestBucketId, bestSplitVal, bestImpurity);
     }
 
     /** {@inheritDoc} */

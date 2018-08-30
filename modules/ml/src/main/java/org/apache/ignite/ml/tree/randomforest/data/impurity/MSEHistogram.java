@@ -97,7 +97,7 @@ public class MSEHistogram extends ImpurityHistogram implements ImpurityComputer<
     /** {@inheritDoc} */
     @Override public Optional<NodeSplit> findBestSplit() {
         double bestImpurity = Double.POSITIVE_INFINITY;
-        double bestSplitValue = Double.NEGATIVE_INFINITY;
+        double bestSplitVal = Double.NEGATIVE_INFINITY;
         int bestBucketId = -1;
 
         //counter corresponds to number of samples
@@ -135,24 +135,24 @@ public class MSEHistogram extends ImpurityHistogram implements ImpurityComputer<
 
             if (impurity < bestImpurity) {
                 bestImpurity = impurity;
-                bestSplitValue = bucketMeta.bucketIdToValue(bucketId);
+                bestSplitVal = bucketMeta.bucketIdToValue(bucketId);
                 bestBucketId = bucketId;
             }
         }
 
-        return checkAndReturnSplitValue(bestBucketId, bestSplitValue, bestImpurity);
+        return checkAndReturnSplitValue(bestBucketId, bestSplitVal, bestImpurity);
     }
 
     /**
      * Computes impurity function value.
      *
-     * @param count Counter value.
+     * @param cnt Counter value.
      * @param ys plus of Ys.
      * @param y2s plus of Y^2 s.
      * @return impurity value.
      */
-    private double impurity(double count, double ys, double y2s) {
-        return y2s - 2.0 * ys / count * ys + Math.pow(ys / count, 2) * count;
+    private double impurity(double cnt, double ys, double y2s) {
+        return y2s - 2.0 * ys / cnt * ys + Math.pow(ys / cnt, 2) * cnt;
     }
 
     /**
