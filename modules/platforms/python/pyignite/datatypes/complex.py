@@ -363,16 +363,14 @@ class BinaryObject:
         return ctypes.c_uint
 
     @staticmethod
-    def get_schema(client: 'Client', header) -> OrderedDict:
+    def get_dataclass(client: 'Client', header) -> OrderedDict:
         # get field names from outer space
         temp_conn = client.clone()
-        result = temp_conn.get_binary_type(header.type_id, header.schema_id)
+        result = temp_conn.query_binary_type(header.type_id, header.schema_id)
         temp_conn.close()
-        if not result['type_exists']:
+        if not result:
             raise ParseError('Binary type is not registered')
-        return next(iter([
-            s for s in result['schemas'] if schema_id(s) == header.schema_id
-        ]))
+        return result
 
     @classmethod
     def parse(cls, client: 'Client'):
@@ -383,7 +381,8 @@ class BinaryObject:
         header = header_class.from_buffer_copy(buffer)
 
         # TODO: valid only on compact schema approach
-        fields = cls.get_schema(client, header).items()
+        data_class = cls.get_dataclass(client, header)
+        fields = data_class.schema.items()
         object_fields_struct = Struct(fields)
         object_fields, object_fields_buffer = object_fields_struct.parse(client)
         buffer += object_fields_buffer
@@ -408,25 +407,16 @@ class BinaryObject:
 
     @classmethod
     def to_python(cls, ctype_object):
-        from pyignite.client.binary import GenericObjectMeta
-
-        type_info = ctype_object.client.get_binary_type(
+        data_class = ctype_object.client.query_binary_type(
             ctype_object.type_id,
             ctype_object.schema_id
         )
-        data_class = type_info.get('data_class', None) or GenericObjectMeta(
-            type_info['type_name'], (), {}, schema=type_info['schemas'][0]
-        )
-        ctype_object.client.put_binary_type(data_class=data_class)
         result = data_class()
-        setattr(result, 'version', ctype_object.version)
 
-        # hack, but robust
-        for field_name, field_c_type in ctype_object.object_fields._fields_:
-            module = import_module(field_c_type.__module__)
-            object_class = getattr(module, field_c_type.__name__)
+        result.version = ctype_object.version
+        for field_name, field_type in data_class.schema.items():
             setattr(
-                result, field_name, object_class.to_python(
+                result, field_name, field_type.to_python(
                     getattr(ctype_object.object_fields, field_name)
                 )
             )

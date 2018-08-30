@@ -25,6 +25,6 @@ def test_get_names(client):
     result = cache_get_names(client)
     assert result.status == 0
     assert type(result.value) == list
-    assert len(result.value) == len(bucket_names)
+    assert len(result.value) >= len(bucket_names)
     for i, name in enumerate(bucket_names):
         assert name in result.value

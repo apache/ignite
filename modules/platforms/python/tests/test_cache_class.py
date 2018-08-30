@@ -18,6 +18,7 @@ from decimal import Decimal
 
 import pytest
 
+from pyignite import GenericObjectMeta
 from pyignite.datatypes import (
     BoolObject, DecimalObject, FloatObject, IntObject, String,
 )
@@ -80,17 +81,21 @@ def test_cache_get_put(client):
 
 
 def test_cache_binary_get_put(client):
-    type_info = client.put_binary_type(
-        'TestBinaryType',
+
+    class TestBinaryType(
+        metaclass=GenericObjectMeta,
         schema=OrderedDict([
             ('test_bool', BoolObject),
             ('test_str', String),
             ('test_int', IntObject),
             ('test_decimal', DecimalObject),
-        ])
-    )
+        ]),
+    ):
+        pass
+
     cache = client.create_cache('my_oop_cache')
-    my_value = type_info['data_class'](
+
+    my_value = TestBinaryType(
         test_bool=True,
         test_str='This is a test',
         test_int=42,
