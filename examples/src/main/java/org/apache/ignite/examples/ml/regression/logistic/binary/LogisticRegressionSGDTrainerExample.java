@@ -75,7 +75,7 @@ public class LogisticRegressionSGDTrainerExample {
                     dataCache,
                     (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
-                ).withRawLabels(true);
+                );
 
                 System.out.println(">>> Logistic regression model: " + mdl);
 
