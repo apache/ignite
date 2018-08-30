@@ -335,7 +335,10 @@ class Client:
     @status_to_exception(BinaryTypeError)
     def get_binary_type(self, binary_type: Union[str, int]) -> dict:
         """
-        Gets the binary type information by type ID.
+        Gets the binary type information from the Ignite server. This is quite
+        a low-level implementation of Ignite thin client protocol's
+        `OP_GET_BINARY_TYPE` operation. You would probably want to use
+        :py:meth:`~pyignite.client.Client.query_binary_type` instead.
 
         :param binary_type: binary type name or ID,
         :return: binary type description − a dict with the following fields:
@@ -347,7 +350,7 @@ class Client:
          - `affinity_key_field`: string value or None,
          - `is_enum`: False in case of Complex object registration,
          - `schemas`: a list, containing the Complex object schemas in format:
-           OrderedDict[field name: field type hint]. Can be empty.
+           OrderedDict[field name: field type hint]. A schema can be empty.
         """
         from pyignite.api.binary import get_binary_type
         from pyignite.datatypes.internal import tc_map
@@ -396,7 +399,10 @@ class Client:
         is_enum=False, schema: dict=None
     ):
         """
-        Registers binary type information in cluster.
+        Registers binary type information in cluster. Do not update binary
+        registry. This is a literal implementation of Ignite thin client
+        protocol's `OP_PUT_BINARY_TYPE` operation. You would probably want
+        to use :py:meth:`~pyignite.client.Client.register_binary_type` instead.
 
         :param type_name: name of the data type being registered,
         :param affinity_key_field: (optional) name of the affinity key field,
