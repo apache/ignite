@@ -1531,8 +1531,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 if (!cctx.userCache() || !cctx.group().mvccEnabled())
                     continue;
 
-                for (Object e : cache.withKeepBinary()) {
-                    IgniteBiTuple entry = (IgniteBiTuple)e;
+                for (Iterator it = cache.withKeepBinary().iterator(); it.hasNext(); ) {
+                    IgniteBiTuple entry = (IgniteBiTuple)it.next();
 
                     KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
 
@@ -1541,9 +1541,12 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                     if (vers.size() > 1) {
                         if (failIfNotCleaned)
-                            fail("[key="  + key.value(null, false) + "; vers=" + vers + ']');
-                        else
+                            fail("[key=" + key.value(null, false) + "; vers=" + vers + ']');
+                        else {
+                            U.closeQuiet((AutoCloseable)it);
+
                             return false;
+                        }
                     }
                 }
             }
