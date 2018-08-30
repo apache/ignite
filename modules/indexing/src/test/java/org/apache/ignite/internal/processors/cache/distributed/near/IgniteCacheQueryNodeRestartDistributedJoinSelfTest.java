@@ -165,6 +165,9 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
                                 assertEquals(goldenRes, cache.query(qry).getAll());
                             }
                             catch (CacheException e) {
+                                if (!smallPageSize)
+                                    log.error("Unexpected exception at the test", e);
+
                                 assertTrue("On large page size must retry.", smallPageSize);
 
                                 boolean failedOnRemoteFetch = false;

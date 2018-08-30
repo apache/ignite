@@ -331,7 +331,8 @@ public class GridH2QueryContext {
          assert qctx.get() == null;
 
          // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
+         if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null
+             && MapQueryLazyWorker.currentWorker() == null)
              throw new IllegalStateException("Query context is already set.");
 
          qctx.set(x);
@@ -393,7 +394,10 @@ public class GridH2QueryContext {
      * @param nodeStop Node is stopping.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public void clearContext(boolean nodeStop) {
+    public synchronized void clearContext(boolean nodeStop) {
+        if (cleared)
+            return;
+
         cleared = true;
 
         List<GridReservable> r = reservations;
