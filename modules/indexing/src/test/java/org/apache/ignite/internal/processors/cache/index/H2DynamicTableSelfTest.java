@@ -50,7 +50,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -1609,25 +1608,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @return Configuration.
      * @throws Exception If failed.
      */
-    private IgniteConfiguration commonConfiguration(int idx) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
+    protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+        IgniteConfiguration cfg = super.commonConfiguration(idx);
 
         DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration().setName(DATA_REGION_NAME);
 
-        cfg.setMarshaller(new BinaryMarshaller());
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(dataRegionCfg));
 
         return optimize(cfg);
-    }
-
-    /**
-     * Execute DDL statement on given node.
-     *
-     * @param node Node.
-     * @param sql Statement.
-     */
-    private List<List<?>> execute(Ignite node, String sql) {
-        return queryProcessor(node).querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
     }
 
     /**
