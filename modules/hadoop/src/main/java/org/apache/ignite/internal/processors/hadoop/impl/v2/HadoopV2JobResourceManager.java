@@ -26,6 +26,7 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.util.RunJar;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
@@ -234,7 +235,7 @@ class HadoopV2JobResourceManager {
 
                 if (archiveNameLC.endsWith(".jar"))
                     RunJar.unJar(archiveFile, dstPath);
-                else if (archiveNameLC.endsWith(".zip"))
+                else if (archiveNameLC.endsWith(FilePageStoreManager.ZIP_SUFFIX))
                     FileUtil.unZip(archiveFile, dstPath);
                 else if (archiveNameLC.endsWith(".tar.gz") ||
                     archiveNameLC.endsWith(".tgz") ||
