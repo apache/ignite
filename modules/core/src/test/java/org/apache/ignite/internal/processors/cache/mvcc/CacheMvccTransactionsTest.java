@@ -2900,6 +2900,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testUpdate_N_Objects_ClientServer_Backups1_Scan() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7764");
+
         int[] nValues = {3, 5, 10};
 
         for (int n : nValues) {
