@@ -466,6 +466,12 @@ public class IgniteSchedulerSelfTest extends TestCase {
         }
 
         /** {@inheritDoc} */
+        @Override public Protos.Status acceptOffers(Collection<Protos.OfferID> collection,
+            Collection<Protos.Offer.Operation> collection1, Protos.Filters filters) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public Protos.Status declineOffer(Protos.OfferID offerId, Protos.Filters filters) {
             declinedOffer = offerId;
 
@@ -481,6 +487,11 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         /** {@inheritDoc} */
         @Override public Protos.Status reviveOffers() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Protos.Status suppressOffers() {
             return null;
         }
 
