@@ -1558,8 +1558,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void addPartitionMapping(int cacheId, int partId) {
-        txState.addPartitionMapping(cacheId, partId);
+    @Override public void touchPartition(int cacheId, int partId) {
+        txState.touchPartition(cacheId, partId);
     }
 
     /** {@inheritDoc} */
@@ -1648,12 +1648,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * counters only on commit phase.
      */
     private Map<Integer, PartitionUpdateCounters> applyAndCollectLocalUpdateCounters() {
-        if (F.isEmpty(txState.updatedCachePartitions()))
+        if (F.isEmpty(txState.touchedPartitions()))
             return null;
 
         HashMap<Integer, PartitionUpdateCounters> updCntrs = new HashMap<>();
 
-        for (Map.Entry<Integer, Set<Integer>> entry : txState.updatedCachePartitions().entrySet()) {
+        for (Map.Entry<Integer, Set<Integer>> entry : txState.touchedPartitions().entrySet()) {
             Integer cacheId = entry.getKey();
 
             Set<Integer> parts = entry.getValue();

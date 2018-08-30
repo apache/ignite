@@ -63,5 +63,5 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @param cacheId Cache id.
      * @param partId Partition id.
      */
-    public void addPartitionMapping(int cacheId, int partId);
+    public void touchPartition(int cacheId, int partId);
 }

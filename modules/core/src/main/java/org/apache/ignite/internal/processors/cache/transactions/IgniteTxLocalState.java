@@ -46,9 +46,9 @@ public interface IgniteTxLocalState extends IgniteTxState {
     public void seal();
 
     /**
-     * @return Cache partitions updated by current tx.
+     * @return Cache partitions touched by current tx.
      */
-    public Map<Integer, Set<Integer>> updatedCachePartitions();
+    public Map<Integer, Set<Integer>> touchedPartitions();
 
     /**
      * Remembers that particular cache partition was touched by current tx.
@@ -56,5 +56,5 @@ public interface IgniteTxLocalState extends IgniteTxState {
      * @param cacheId Cache id.
      * @param partId Partition id.
      */
-    public void addPartitionMapping(int cacheId, int partId);
+    public void touchPartition(int cacheId, int partId);
 }

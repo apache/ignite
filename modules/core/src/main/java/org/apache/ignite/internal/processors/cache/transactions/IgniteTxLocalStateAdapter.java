@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public abstract class IgniteTxLocalStateAdapter implements IgniteTxLocalState {
     /** */
-    private volatile Map<Integer, Set<Integer>> updCacheParts;
+    private volatile Map<Integer, Set<Integer>> touchedParts;
 
     /**
      * @param cacheCtx Cache context.
@@ -49,18 +49,18 @@ public abstract class IgniteTxLocalStateAdapter implements IgniteTxLocalState {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, Set<Integer>> updatedCachePartitions() {
-        Map<Integer, Set<Integer>> parts = updCacheParts;
+    @Override public Map<Integer, Set<Integer>> touchedPartitions() {
+        Map<Integer, Set<Integer>> parts = touchedParts;
 
         return parts != null ? Collections.unmodifiableMap(parts) : null;
     }
 
     /** {@inheritDoc} */
-    @Override public void addPartitionMapping(int cacheId, int partId) {
-        if (updCacheParts == null)
-            updCacheParts = new ConcurrentHashMap<>();
+    @Override public void touchPartition(int cacheId, int partId) {
+        if (touchedParts == null)
+            touchedParts = new ConcurrentHashMap<>();
 
-        updCacheParts.computeIfAbsent(cacheId, k -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
+        touchedParts.computeIfAbsent(cacheId, k -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
             .add(partId);
     }
 }
