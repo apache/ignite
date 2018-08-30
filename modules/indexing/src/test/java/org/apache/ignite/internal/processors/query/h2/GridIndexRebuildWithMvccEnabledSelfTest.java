@@ -23,6 +23,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
@@ -38,13 +40,13 @@ import org.apache.ignite.lang.IgniteBiTuple;
 public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration serverConfiguration(int idx, boolean filter) throws Exception {
-        return super.serverConfiguration(idx, filter).setMvccEnabled(true);
+        return super.serverConfiguration(idx, filter)
+            .setMvccVacuumTimeInterval(Integer.MAX_VALUE)
+            .setMvccEnabled(true);
     }
 
     /** {@inheritDoc} */
     public void testIndexRebuild() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7259");
-
         IgniteEx srv = startServer();
 
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +
@@ -87,12 +89,13 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
         node.context().coordinators().requestSnapshotAsync().get();
     }
 
+    /** {@inheritDoc} */
     protected void checkDataState(IgniteEx srv, boolean afterRebuild) throws IgniteCheckedException {
         IgniteInternalCache icache = srv.cachex(CACHE_NAME);
 
-        IgniteCache cache = srv.cache(CACHE_NAME);
-
         assertNotNull(icache);
+
+        CacheObjectContext coCtx = icache.context().cacheObjectContext();
 
         for (IgniteCacheOffheapManager.CacheDataStore store : icache.context().offheap().cacheDataStores()) {
             GridCursor<? extends CacheDataRow> cur = store.cursor();
@@ -100,7 +103,7 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
             while (cur.next()) {
                 CacheDataRow row = cur.get();
 
-                int key = row.key().value(icache.context().cacheObjectContext(), false);
+                int key = row.key().value(coCtx, false);
 
                 List<IgniteBiTuple<Object, MvccVersion>> vers = store.mvccFindAllVersions(icache.context(), row.key());
 
@@ -111,8 +114,11 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
                     // -1 (concurrent put mark) and newest restored value as long as put cleans obsolete versions.
                     assertEquals(2, vers.size());
 
-                    assertEquals(-1, vers.get(0).getKey());
-                    assertEquals(key, vers.get(1).getKey());
+                    Object val0 = ((CacheObject)vers.get(0).getKey()).value(coCtx, false);
+                    Object val1 = ((CacheObject)vers.get(1).getKey()).value(coCtx, false);
+
+                    assertEquals(-1, val0);
+                    assertEquals(key, val1);
                 }
 
             }

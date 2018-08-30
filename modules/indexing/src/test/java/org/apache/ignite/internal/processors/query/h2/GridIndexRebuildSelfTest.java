@@ -18,41 +18,27 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.File;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexAbstractSelfTest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Index rebuild after node restart test.
  */
 public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /** Data size. */
-    protected static final int AMOUNT = 10;
+    protected static final int AMOUNT = 300;
 
     /** Data size. */
     protected static final String CACHE_NAME = "T";
@@ -63,14 +49,13 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /** Latch to signal that rebuild may start. */
     private final CountDownLatch rebuildLatch = new CountDownLatch(1);
 
-    /** Latch to signal that concurrent put may start. */
-    private final Semaphore rebuildSemaphore = new Semaphore(1, true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg =  super.commonConfiguration(idx);
 
-        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration()
+            .setMaxSize(300*1024L*1024L)
+            .setPersistenceEnabled(true);
 
         return cfg;
     }
@@ -83,6 +68,22 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         cleanPersistenceDir();
 
         INSTANCE = this;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
     }
 
     /**
@@ -109,8 +110,6 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * @throws Exception if failed.
      */
     public void testIndexRebuild() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7259");
-
         IgniteEx srv = startServer();
 
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +
@@ -189,13 +188,9 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                 if (i <= AMOUNT / 2)
                     continue;
 
-                rebuildSemaphore.acquire();
-
                 cache.put(i, -1);
 
                 rebuildLatch.countDown();
-
-                rebuildSemaphore.release();
             }
             else {
                 // Data streamer is not used intentionally in order to preserve all versions.
@@ -225,22 +220,6 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        cleanPersistenceDir();
-    }
-
     /**
      * Blocking indexing processor.
      */
@@ -255,56 +234,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
             else
                 firstRbld = false;
 
-            int cacheId = CU.cacheId(cacheName);
-
-            GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
-
-            final GridCacheQueryManager qryMgr = cctx.queries();
-
-            SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
-
-            visitor.visit(new TestRebuildClosure(qryMgr, cctx.mvccEnabled()));
-
-            for (H2TableDescriptor tblDesc : tables(cacheName))
-                tblDesc.table().markRebuildFromHashInProgress(false);
-        }
-    }
-
-    /**
-     * Test closure.
-     */
-    private static final class TestRebuildClosure extends RebuildIndexFromHashClosure {
-        /** Seen keys set to track moment when concurrent put may start. */
-        private final Set<KeyCacheObject> keys =
-            Collections.newSetFromMap(new ConcurrentHashMap<KeyCacheObject, Boolean>());
-
-        /**
-         * @param qryMgr Query manager.
-         * @param mvccEnabled MVCC status flag.
-         */
-        TestRebuildClosure(GridCacheQueryManager qryMgr, boolean mvccEnabled) {
-            super(qryMgr, mvccEnabled);
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized void apply(CacheDataRow row) throws IgniteCheckedException {
-            // For half of the keys, we want to do rebuild
-            // after corresponding key had been put from a concurrent thread.
-            boolean keyFirstMet = keys.add(row.key()) && keys.size() > AMOUNT / 2;
-
-            if (keyFirstMet) {
-                try {
-                    INSTANCE.rebuildSemaphore.acquire();
-                }
-                catch (InterruptedException e) {
-                    throw new IgniteCheckedException(e);
-                }
-            }
-
-            super.apply(row);
-
-            if (keyFirstMet)
-                INSTANCE.rebuildSemaphore.release();
+            super.rebuildIndexesFromHash(cacheName);
         }
     }
 }
