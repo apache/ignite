@@ -156,22 +156,23 @@ public class IgniteSourceTask extends SourceTask {
         ArrayList<SourceRecord> records = new ArrayList<>(evtBatchSize);
         ArrayList<CacheEvent> evts = new ArrayList<>(evtBatchSize);
 
-        if (stopped)
-            return records;
+        while (!stopped) {
+            try {
+                if (evtBuf.drainTo(evts, evtBatchSize) > 0) {
+                    for (CacheEvent evt : evts) {
+                        // schema and keys are ignored.
+                        for (String topic : topics)
+                            records.add(new SourceRecord(srcPartition, offset, topic, null, evt));
+                    }
 
-        try {
-            if (evtBuf.drainTo(evts, evtBatchSize) > 0) {
-                for (CacheEvent evt : evts) {
-                    // schema and keys are ignored.
-                    for (String topic : topics)
-                        records.add(new SourceRecord(srcPartition, offset, topic, null, evt));
+                    return records;
                 }
-
-                return records;
+                else
+                    Thread.sleep(200 /* TODO: externalize this polling interval setting */);
             }
-        }
-        catch (IgniteException e) {
-            log.error("Error when polling event queue!", e);
+            catch (IgniteException e) {
+                log.error("Error when polling event queue!", e);
+            }
         }
 
         // for shutdown.
