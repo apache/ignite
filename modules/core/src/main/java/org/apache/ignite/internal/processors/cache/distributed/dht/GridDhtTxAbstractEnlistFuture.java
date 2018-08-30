@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
@@ -57,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -73,11 +73,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
  * Abstract future processing transaction enlisting and locking
@@ -351,7 +346,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
             return;
 
         GridDhtCacheAdapter cache = cctx.dhtCache();
-        GridCacheOperation op = it.operation();
+        EnlistOperation op = it.operation();
         AffinityTopologyVersion topVer = tx.topologyVersionSnapshot();
 
         try {
@@ -359,7 +354,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                 while (hasNext0()) {
                     Object cur = next0();
 
-                    KeyCacheObject key = cctx.toCacheKeyObject(op == DELETE || op == READ ? cur : ((IgniteBiTuple)cur).getKey());
+                    KeyCacheObject key = cctx.toCacheKeyObject(op.isDeleteOrLock() ? cur : ((IgniteBiTuple)cur).getKey());
 
                     if (!ensureFreeSlot(key)) {
                         // Can't advance further at the moment.
@@ -377,10 +372,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
                     assert !entry.detached();
 
-                    CacheObject val = null;
-
-                    if (op == CREATE || op == UPDATE)
-                        val = cctx.toCacheObject(((IgniteBiTuple)cur).getValue());
+                    CacheObject val = op.isDeleteOrLock() ? null : cctx.toCacheObject(((IgniteBiTuple)cur).getValue());
 
                     tx.markQueryEnlisted(mvccSnapshot);
 
@@ -398,12 +390,12 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         topVer,
                                         null,
                                         mvccSnapshot,
-                                        isMoving(key.partition()),
-                                        it.isDirect());
+                                        isMoving(key.partition()));
 
                                     break;
 
-                                case CREATE:
+                                case INSERT:
+                                case UPSERT:
                                 case UPDATE:
                                     res = entry.mvccSet(
                                         tx,
@@ -413,13 +405,13 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                                         topVer,
                                         null,
                                         mvccSnapshot,
-                                        op,
+                                        op.cacheOperation(),
                                         isMoving(key.partition()),
-                                        op == UPDATE && it.isDirect());
+                                        op.noCreate());
 
                                     break;
 
-                                case READ:
+                                case LOCK:
                                     res = entry.mvccLock(
                                         tx,
                                         mvccSnapshot);
@@ -566,7 +558,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
      * @param val New value.
      * @throws IgniteCheckedException If failed.
      */
-    private void processEntry(GridDhtCacheEntry entry, GridCacheOperation op,
+    private void processEntry(GridDhtCacheEntry entry, EnlistOperation op,
         GridCacheUpdateTxResult updRes, CacheObject val) throws IgniteCheckedException {
         checkCompleted();
 
@@ -582,7 +574,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
         cnt++;
 
-        if (op != READ)
+        if (op != EnlistOperation.LOCK)
             addToBatch(entry.key(), val, updRes.mvccHistory(), updRes.updateCounter(), entry.context().cacheId());
     }
 

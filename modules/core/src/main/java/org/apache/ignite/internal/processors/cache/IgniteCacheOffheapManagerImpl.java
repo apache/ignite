@@ -514,7 +514,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         MvccSnapshot mvccSnapshot,
         boolean primary,
         boolean needHistory,
-        boolean fastUpdate,
         boolean noCreate) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
@@ -529,7 +528,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             mvccSnapshot,
             primary,
             needHistory,
-            fastUpdate,
             noCreate);
     }
 
@@ -538,8 +536,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         GridCacheMapEntry entry,
         MvccSnapshot mvccSnapshot,
         boolean primary,
-        boolean needHistory,
-        boolean fastUpdate) throws IgniteCheckedException {
+        boolean needHistory) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
 
@@ -549,8 +546,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             entry.key(),
             mvccSnapshot,
             primary,
-            needHistory,
-            fastUpdate);
+            needHistory);
     }
 
     /** {@inheritDoc} */
@@ -1851,10 +1847,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             MvccSnapshot mvccSnapshot,
             boolean primary,
             boolean needHistory,
-            boolean fastUpdate,
             boolean noCreate) throws IgniteCheckedException {
             assert mvccSnapshot != null;
-            assert primary || (!needHistory && !fastUpdate);
+            assert primary || !needHistory;
 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
@@ -1880,7 +1875,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     primary,
                     false,
                     needHistory,
-                    fastUpdate);
+                    // we follow fast update visit flow here if row cannot be created by current operation
+                    noCreate);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -1963,11 +1959,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             KeyCacheObject key,
             MvccSnapshot mvccSnapshot,
             boolean primary,
-            boolean needHistory,
-            boolean fastUpdate) throws IgniteCheckedException {
+            boolean needHistory) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || mvccSnapshot.activeTransactions().size() == 0 : mvccSnapshot;
-            assert primary || (!needHistory && !fastUpdate);
+            assert primary || !needHistory;
 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
@@ -1992,7 +1987,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     primary,
                     false,
                     needHistory,
-                    fastUpdate);
+                    true);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -2703,7 +2698,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         rowStore.removeRow(row.link());
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Fail remove row [link=" + row.link() + "]");
+                        U.error(log, "Failed to remove row [link=" + row.link() + "]");
 
                         IgniteCheckedException ex = exception.get();
 
@@ -2716,7 +2711,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             });
 
             if (exception.get() != null)
-                throw new IgniteCheckedException("Fail destroy store", exception.get());
+                throw new IgniteCheckedException("Failed to destroy store", exception.get());
         }
 
         /** {@inheritDoc} */

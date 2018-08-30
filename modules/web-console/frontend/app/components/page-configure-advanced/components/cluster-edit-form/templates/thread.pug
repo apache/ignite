@@ -29,7 +29,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +number('Public:', model + '.publicThreadPoolSize', '"publicThreadPoolSize"', 'true', 'max(8, availableProcessors) * 2', '1',
                     'Thread pool that is in charge of processing ComputeJob, GridJobs and user messages sent to node')
             .pc-form-grid-col-30
-                +sane-ignite-form-field-number({
+                +form-field__number({
                     label: 'System:',
                     model: `${model}.systemThreadPoolSize`,
                     name: '"systemThreadPoolSize"',
@@ -47,7 +47,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +number('IGFS:', model + '.igfsThreadPoolSize', '"igfsThreadPoolSize"', 'true', 'availableProcessors', '1',
                     'Thread pool that is in charge of processing outgoing IGFS messages')
             .pc-form-grid-col-30
-                +sane-ignite-form-field-number({
+                +form-field__number({
                     label: 'Rebalance:',
                     model: `${model}.rebalanceThreadPoolSize`,
                     name: '"rebalanceThreadPoolSize"',
@@ -56,12 +56,12 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     max: `{{ $ctrl.Clusters.rebalanceThreadPoolSize.max(${model}) }}`,
                     tip: 'Max count of threads can be used at rebalancing'
                 })
-                    +form-field-feedback('max', 'Rebalance thread pool size should not exceed or be equal to System thread pool size')
+                    +form-field__error({ error: 'max', message: 'Rebalance thread pool size should not exceed or be equal to System thread pool size' })
             .pc-form-grid-col-30
                 +number('Utility cache:', model + '.utilityCacheThreadPoolSize', '"utilityCacheThreadPoolSize"', 'true', 'max(8, availableProcessors)', '1',
                     'Default thread pool size that will be used to process utility cache messages')
             .pc-form-grid-col-30
-                pc-form-field-size(
+                form-field-size(
                     label='Utility cache keep alive time:'
                     ng-model=`${model}.utilityCacheKeepAliveTime`
                     name='utilityCacheKeepAliveTime'
@@ -88,57 +88,58 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     'Size of thread pool that is in charge of processing query messages')
             .pc-form-grid-col-60(ng-if-end)
                 .ignite-form-field
-                    +ignite-form-field__label('Executor configurations:', '"executorConfigurations"')
-                        +tooltip(`Custom thread pool configurations for compute tasks`)
-                    .ignite-form-field__control
-                        list-editable(
-                            ng-model=executors
-                            ng-model-options='{allowInvalid: true}'
-                            name='executorConfigurations'
-                            ui-validate=`{
-                                allNamesExist: '$ctrl.Clusters.executorConfigurations.allNamesExist($value)',
-                                allNamesUnique: '$ctrl.Clusters.executorConfigurations.allNamesUnique($value)'
-                            }`
-                        )
-                            list-editable-item-view
-                                | {{ $item.name }} / 
-                                | {{ $item.size || 'max(8, availableProcessors)'}}
+                    +form-field__label({ label: 'Executor configurations:', name: '"executorConfigurations"' })
+                        +form-field__tooltip({ title: `Custom thread pool configurations for compute tasks` })
 
-                            list-editable-item-edit
-                                .pc-form-grid-row
-                                    .pc-form-grid-col-30
-                                        +sane-ignite-form-field-text({
-                                            label: 'Name:',
-                                            model: '$item.name',
-                                            name: '"ExecutorName"',
-                                            required: true,
-                                            placeholder: 'Input executor name',
-                                            tip: 'Thread pool name'
-                                        })(
-                                            ui-validate=`{
-                                                uniqueName: '$ctrl.Clusters.executorConfiguration.name.customValidators.uniqueName($item, ${executors})'
-                                            }`
-                                            ui-validate-watch=`"${executors}"`
-                                            ui-validate-watch-object-equality='true'
-                                            ng-model-options='{allowInvalid: true}'
-                                            data-ignite-form-field-input-autofocus='true'
-                                        )
-                                            +form-field-feedback(null, 'uniqueName', 'Service with that name is already configured')
-                                    .pc-form-grid-col-30
-                                        +number('Pool size:', '$item.size', '"ExecutorPoolSize"', 'true', 'max(8, availableProcessors)', '1', 'Thread pool size')
+                    list-editable(
+                        ng-model=executors
+                        ng-model-options='{allowInvalid: true}'
+                        name='executorConfigurations'
+                        ui-validate=`{
+                            allNamesExist: '$ctrl.Clusters.executorConfigurations.allNamesExist($value)',
+                            allNamesUnique: '$ctrl.Clusters.executorConfigurations.allNamesUnique($value)'
+                        }`
+                    )
+                        list-editable-item-view
+                            | {{ $item.name }} / 
+                            | {{ $item.size || 'max(8, availableProcessors)'}}
 
-                            list-editable-no-items
-                                list-editable-add-item-button(
-                                    add-item=`$edit($ctrl.Clusters.addExecutorConfiguration(${model}))`
-                                    label-single='executor configuration'
-                                    label-multiple='executor configurations'
-                                )
-                    .ignite-form-field__errors(
+                        list-editable-item-edit
+                            .pc-form-grid-row
+                                .pc-form-grid-col-30
+                                    +form-field__text({
+                                        label: 'Name:',
+                                        model: '$item.name',
+                                        name: '"ExecutorName"',
+                                        required: true,
+                                        placeholder: 'Input executor name',
+                                        tip: 'Thread pool name'
+                                    })(
+                                        ui-validate=`{
+                                            uniqueName: '$ctrl.Clusters.executorConfiguration.name.customValidators.uniqueName($item, ${executors})'
+                                        }`
+                                        ui-validate-watch=`"${executors}"`
+                                        ui-validate-watch-object-equality='true'
+                                        ng-model-options='{allowInvalid: true}'
+                                        data-ignite-form-field-input-autofocus='true'
+                                    )
+                                        +form-field__error({ error: 'uniqueName', message: 'Service with that name is already configured' })
+                                .pc-form-grid-col-30
+                                    +number('Pool size:', '$item.size', '"ExecutorPoolSize"', 'true', 'max(8, availableProcessors)', '1', 'Thread pool size')
+
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$edit($ctrl.Clusters.addExecutorConfiguration(${model}))`
+                                label-single='executor configuration'
+                                label-multiple='executor configurations'
+                            )
+
+                    .form-field__errors(
                         ng-messages=`pools.executorConfigurations.$error`
                         ng-show=`pools.executorConfigurations.$invalid`
                     )
-                        +form-field-feedback(_, 'allNamesExist', 'All executor configurations should have a name')
-                        +form-field-feedback(_, 'allNamesUnique', 'All executor configurations should have a unique name')
+                        +form-field__error({ error: 'allNamesExist', message: 'All executor configurations should have a name' })
+                        +form-field__error({ error: 'allNamesUnique', message: 'All executor configurations should have a unique name' })
 
         .pca-form-column-6
             +preview-xml-java(model, 'clusterPools')

@@ -1026,22 +1026,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         IgniteInternalFuture<?> affFut =
                             parent.cctx.exchange().affinityReadyFuture(res.clientRemapVersion());
 
-                        if (affFut != null && !affFut.isDone()) {
-                            affFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> fut) {
-                                    try {
-                                        fut.get();
+                        parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), (e, timedOut) -> {
+                            if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
+                                return;
 
-                                        remap();
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        onDone(e);
-                                    }
-                                }
-                            });
-                        }
-                        else
                             remap();
+                        });
                     }
                     else {
                         parent.onPrepareResponse(m, res, m.hasNearCacheEntries());

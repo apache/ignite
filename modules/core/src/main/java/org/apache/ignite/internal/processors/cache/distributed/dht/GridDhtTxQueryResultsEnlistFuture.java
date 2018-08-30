@@ -23,9 +23,9 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -38,13 +38,10 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
     /** */
     private static final long serialVersionUID = -4933550335145438798L;
     /** */
-    private GridCacheOperation op;
+    private EnlistOperation op;
 
     /** */
     private Iterator<Object> it;
-
-    /** */
-    private final boolean fastUpdate;
 
     /**
      * @param nearNodeId Near node ID.
@@ -57,8 +54,7 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
      * @param timeout Lock acquisition timeout.
      * @param cctx Cache context.
      * @param rows Collection of rows.
-     * @param op Cache operation.
-     * @param fastUpdate True if fast update mode should be used.
+     * @param op Operation.
      */
     public GridDhtTxQueryResultsEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
@@ -70,8 +66,7 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
         long timeout,
         GridCacheContext<?, ?> cctx,
         Collection<Object> rows,
-        GridCacheOperation op,
-        boolean fastUpdate) {
+        EnlistOperation op) {
         super(nearNodeId,
             nearLockVer,
             mvccSnapshot,
@@ -84,7 +79,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
             cctx);
 
         this.op = op;
-        this.fastUpdate = fastUpdate;
 
         it = rows.iterator();
 
@@ -120,7 +114,7 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheOperation operation() {
+    @Override public EnlistOperation operation() {
         return op;
     }
 
@@ -132,10 +126,5 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
     /** {@inheritDoc} */
     public Object nextX() {
         return it.next();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDirect() {
-        return fastUpdate;
     }
 }

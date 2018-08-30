@@ -23,7 +23,7 @@ include /app/helpers/jade/mixins
 
 mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
     .pc-form-grid-col-60
-        +sane-ignite-form-field-text({
+        +form-field__text({
             label: 'Name:',
             model: `${modelAt}.name`,
             name: '"name"',
@@ -36,11 +36,11 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
             ignite-unique-property='name'
             ignite-unique-skip=`["_id", ${modelAt}]`
         )
-            +form-field-feedback(_, 'notInCollection', '{{::$ctrl.Clusters.dataRegion.name.invalidValues[0]}} is reserved for internal use')
-            +form-field-feedback(_, 'igniteUnique', 'Name should be unique')
+            +form-field__error({ error: 'notInCollection', message: '{{::$ctrl.Clusters.dataRegion.name.invalidValues[0]}} is reserved for internal use' })
+            +form-field__error({ error: 'igniteUnique', message: 'Name should be unique' })
 
     .pc-form-grid-col-30
-        pc-form-field-size(
+        form-field-size(
             label='Initial size:'
             ng-model=`${modelAt}.initialSize`
             name='initialSize'
@@ -50,7 +50,7 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
         )
 
     .pc-form-grid-col-30
-        pc-form-field-size(
+        form-field-size(
             ng-model=`${modelAt}.maxSize`
             ng-model-options='{allowInvalid: true}'
             name='maxSize'
@@ -80,7 +80,7 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
             </ul>`)
 
     .pc-form-grid-col-30
-        +sane-ignite-form-field-number({
+        +form-field__number({
             label: 'Eviction threshold:',
             model: `${modelAt}.evictionThreshold`,
             name: '"evictionThreshold"',
@@ -92,7 +92,7 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
         })
 
     .pc-form-grid-col-30
-        +sane-ignite-form-field-number({
+        +form-field__number({
             label: 'Empty pages pool size:',
             model: `${modelAt}.emptyPagesPoolSize`,
             name: '"emptyPagesPoolSize"',
@@ -103,7 +103,7 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
         })
 
     .pc-form-grid-col-30
-        +sane-ignite-form-field-number({
+        +form-field__number({
             label: 'Metrics sub interval count:',
             model: `${modelAt}.metricsSubIntervalCount`,
             name: '"metricsSubIntervalCount"',
@@ -114,7 +114,7 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
         })
 
     .pc-form-grid-col-30
-        pc-form-field-size(
+        form-field-size(
             ng-model=`${modelAt}.metricsRateTimeInterval`
             ng-model-options='{allowInvalid: true}'
             name='metricsRateTimeInterval'
@@ -143,7 +143,7 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.lo
     panel-content.pca-form-row(ng-if=`$ctrl.available("2.3.0") && ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-30
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Page size:',
                     model: `${model}.pageSize`,
                     name: '"DataStorageConfigurationPageSize"',
@@ -157,7 +157,7 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.lo
                 span System region
             .pc-form-group.pc-form-grid-row
                 .pc-form-grid-col-30
-                    pc-form-field-size(
+                    form-field-size(
                         label='Initial size:'
                         ng-model=`${model}.systemRegionInitialSize`
                         name='DataStorageSystemRegionInitialSize'
@@ -167,7 +167,7 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.lo
                         on-scale-change='systemRegionInitialSizeScale = $event'
                     )
                 .pc-form-grid-col-30
-                    pc-form-field-size(
+                    form-field-size(
                         label='Max size:'
                         ng-model=`${model}.systemRegionMaxSize`
                         name='DataStorageSystemRegionMaxSize'
@@ -186,26 +186,26 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.lo
                 })
             .pc-form-grid-col-60
                 .ignite-form-field
-                    .ignite-form-field__label Data region configurations
-                    .ignite-form-field__control
-                        list-editable.pc-list-editable-with-form-grid(
-                            name='dataRegionConfigurations'
-                            ng-model=dataRegionConfigurations
-                        )
-                            list-editable-item-edit.pc-form-grid-row
-                                - form = '$parent.form'
-                                +data-region-form({
-                                    modelAt: '$item',
-                                    namePlaceholder: 'Data region name',
-                                    dataRegionsAt: dataRegionConfigurations
-                                })
-                                - form = 'dataStorageConfiguration'
-                            list-editable-no-items
-                                list-editable-add-item-button(
-                                    add-item=`$ctrl.Clusters.addDataRegionConfiguration($ctrl.clonedCluster)`
-                                    label-single='data region configuration'
-                                    label-multiple='data region configurations'
-                                )
+                    +form-field__label({ label: 'Data region configurations' })
+
+                    list-editable.pc-list-editable-with-form-grid(
+                        name='dataRegionConfigurations'
+                        ng-model=dataRegionConfigurations
+                    )
+                        list-editable-item-edit.pc-form-grid-row
+                            - form = '$parent.form'
+                            +data-region-form({
+                                modelAt: '$item',
+                                namePlaceholder: 'Data region name',
+                                dataRegionsAt: dataRegionConfigurations
+                            })
+                            - form = 'dataStorageConfiguration'
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$ctrl.Clusters.addDataRegionConfiguration($ctrl.clonedCluster)`
+                                label-single='data region configuration'
+                                label-multiple='data region configurations'
+                            )
 
             .pc-form-grid-col-60
                 +text-enabled('Storage path:', `${model}.storagePath`, '"DataStoragePath"', 'true', 'false', 'db',

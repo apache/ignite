@@ -32,7 +32,7 @@ panel-collapsible(
     panel-content.pca-form-row(ng-if=`$ctrl.available(["2.0.0", "2.3.0"]) && ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Page size:',
                     model: `${model}.pageSize`,
                     name: '"MemoryConfigurationPageSize"',
@@ -46,7 +46,7 @@ panel-collapsible(
                 span System cache
             .pc-form-group.pc-form-grid-row
                 .pc-form-grid-col-30
-                    pc-form-field-size(
+                    form-field-size(
                         label='Initial size:'
                         ng-model=`${model}.systemCacheInitialSize`
                         name='systemCacheInitialSize'
@@ -56,7 +56,7 @@ panel-collapsible(
                         on-scale-change='systemCacheInitialSizeScale = $event'
                     )
                 .pc-form-grid-col-30
-                    pc-form-field-size(
+                    form-field-size(
                         label='Max size:'
                         ng-model=`${model}.systemCacheMaxSize`
                         name='systemCacheMaxSize'
@@ -69,7 +69,7 @@ panel-collapsible(
                 span Memory policies
             .pc-form-group.pc-form-grid-row
                 .pc-form-grid-col-60
-                    +sane-ignite-form-field-text({
+                    +form-field__text({
                         label: 'Default memory policy name:',
                         model: `${model}.defaultMemoryPolicyName`,
                         name: '"defaultMemoryPolicyName"',
@@ -84,8 +84,8 @@ panel-collapsible(
                         ui-validate-watch-object-equality='true'
                         ng-model-options='{allowInvalid: true}'
                     )
-                        +form-field-feedback('"MemoryPolicyName"', 'notInCollection', '{{::$ctrl.Clusters.memoryPolicy.name.invalidValues[0]}} is reserved for internal use')
-                        +form-field-feedback('"MemoryPolicyName"', 'defaultMemoryPolicyExists', 'Memory policy with that name should be configured')
+                        +form-field__error({ error: 'notInCollection', message: '{{::$ctrl.Clusters.memoryPolicy.name.invalidValues[0]}} is reserved for internal use' })
+                        +form-field__error({ error: 'defaultMemoryPolicyExists', message: 'Memory policy with that name should be configured' })
                 .pc-form-grid-col-60(ng-hide='(' + model + '.defaultMemoryPolicyName || "default") !== "default"')
                     +number('Default memory policy size:', model + '.defaultMemoryPolicySize', '"defaultMemoryPolicySize"',
                     'true', '0.8 * totalMemoryAvailable', '10485760',
@@ -93,101 +93,100 @@ panel-collapsible(
                 .pc-form-grid-col-60
                     mixin clusters-memory-policies
                         .ignite-form-field(ng-init='memoryPoliciesTbl={type: "memoryPolicies", model: "memoryPolicies", focusId: "name", ui: "memory-policies-table"}')
-                            +ignite-form-field__label('Configured policies:', '"configuredPolicies"')
-                                +tooltip(`List of configured policies`)
-                            .ignite-form-field__control
-                                -let items = memoryPolicies
+                            +form-field__label({ label: 'Configured policies:', name: '"configuredPolicies"' })
+                                +form-field__tooltip({ title: `List of configured policies` })
 
-                                list-editable.pc-list-editable-with-form-grid(ng-model=items name='memoryPolicies')
-                                    list-editable-item-edit.pc-form-grid-row
-                                        - form = '$parent.form'
-                                        .pc-form-grid-col-60
-                                            +sane-ignite-form-field-text({
-                                                label: 'Name:',
-                                                model: '$item.name',
-                                                name: '"MemoryPolicyName"',
-                                                placeholder: '{{ ::$ctrl.Clusters.memoryPolicy.name.default }}',
-                                                tip: 'Memory policy name'
-                                            })(
-                                                ui-validate=`{
-                                                    uniqueMemoryPolicyName: '$ctrl.Clusters.memoryPolicy.customValidators.uniqueMemoryPolicyName($item, ${items})'
-                                                }`
-                                                ui-validate-watch=`"${items}"`
-                                                ui-validate-watch-object-equality='true'
-                                                pc-not-in-collection='::$ctrl.Clusters.memoryPolicy.name.invalidValues'
-                                                ng-model-options='{allowInvalid: true}'
-                                            )
-                                                +form-field-feedback('"MemoryPolicyName', 'uniqueMemoryPolicyName', 'Memory policy with that name is already configured')
-                                                +form-field-feedback('"MemoryPolicyName', 'notInCollection', '{{::$ctrl.Clusters.memoryPolicy.name.invalidValues[0]}} is reserved for internal use')
-                                        .pc-form-grid-col-60
-                                            pc-form-field-size(
-                                                label='Initial size:'
-                                                ng-model='$item.initialSize'
-                                                ng-model-options='{allowInvalid: true}'
-                                                name='MemoryPolicyInitialSize'
-                                                placeholder='{{ $ctrl.Clusters.memoryPolicy.initialSize.default / scale.value }}'
-                                                min='{{ ::$ctrl.Clusters.memoryPolicy.initialSize.min }}'
-                                                tip='Initial memory region size defined by this memory policy'
-                                                on-scale-change='scale = $event'
-                                            )
-                                        .pc-form-grid-col-60
-                                            pc-form-field-size(
-                                                ng-model='$item.maxSize'
-                                                ng-model-options='{allowInvalid: true}'
-                                                name='MemoryPolicyMaxSize'
-                                                label='Maximum size:'
-                                                placeholder='{{ ::$ctrl.Clusters.memoryPolicy.maxSize.default }}'
-                                                min='{{ $ctrl.Clusters.memoryPolicy.maxSize.min($item) }}'
-                                                tip='Maximum memory region size defined by this memory policy'
-                                            )
-                                        .pc-form-grid-col-60
-                                            +text('Swap file path:', '$item.swapFilePath', '"MemoryPolicySwapFilePath"', 'false',
-                                            'Input swap file path', 'An optional path to a memory mapped file for this memory policy')
-                                        .pc-form-grid-col-60
-                                            +dropdown('Eviction mode:', '$item.pageEvictionMode', '"MemoryPolicyPageEvictionMode"', 'true', 'DISABLED',
-                                            '[\
-                                                {value: "DISABLED", label: "DISABLED"},\
-                                                {value: "RANDOM_LRU", label: "RANDOM_LRU"},\
-                                                {value: "RANDOM_2_LRU", label: "RANDOM_2_LRU"}\
-                                            ]',
-                                            'An algorithm for memory pages eviction\
-                                            <ul>\
-                                                <li>DISABLED - Eviction is disabled</li>\
-                                                <li>RANDOM_LRU - Once a memory region defined by a memory policy is configured, an off - heap array is allocated to track last usage timestamp for every individual data page</li>\
-                                                <li>RANDOM_2_LRU - Differs from Random - LRU only in a way that two latest access timestamps are stored for every data page</li>\
-                                            </ul>')
-                                        .pc-form-grid-col-30
-                                            +number-min-max-step('Eviction threshold:', '$item.evictionThreshold', '"MemoryPolicyEvictionThreshold"',
-                                            'true', '0.9', '0.5', '0.999', '0.001', 'A threshold for memory pages eviction initiation')
-                                        .pc-form-grid-col-30
-                                            +sane-ignite-form-field-number({
-                                                label: 'Empty pages pool size:',
-                                                model: '$item.emptyPagesPoolSize',
-                                                name: '"MemoryPolicyEmptyPagesPoolSize"',
-                                                placeholder: '{{ ::$ctrl.Clusters.memoryPolicy.emptyPagesPoolSize.default }}',
-                                                min: '{{ ::$ctrl.Clusters.memoryPolicy.emptyPagesPoolSize.min }}',
-                                                max: '{{ $ctrl.Clusters.memoryPolicy.emptyPagesPoolSize.max($ctrl.clonedCluster, $item) }}',
-                                                tip: 'The minimal number of empty pages to be present in reuse lists for this memory policy'
-                                            })
-
-                                        //- Since ignite 2.1
-                                        .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.1.0")')
-                                            +number('Sub intervals:', '$item.subIntervals', '"MemoryPolicySubIntervals"',
-                                                'true', '5', '1', 'A number of sub-intervals the whole rate time interval will be split into to calculate allocation and eviction rates')
-                                        .pc-form-grid-col-30(ng-if-end)
-                                            +number('Rate time interval:', '$item.rateTimeInterval', '"MemoryPolicyRateTimeInterval"',
-                                                'true', '60000', '1000', 'Time interval for allocation rate and eviction rate monitoring purposes')
-                                                
-                                        .pc-form-grid-col-60
-                                            +checkbox('Metrics enabled', '$item.metricsEnabled', '"MemoryPolicyMetricsEnabled"',
-                                            'Whether memory metrics are enabled by default on node startup')
-
-                                    list-editable-no-items
-                                        list-editable-add-item-button(
-                                            add-item=`$ctrl.Clusters.addMemoryPolicy($ctrl.clonedCluster)`
-                                            label-single='memory policy configuration'
-                                            label-multiple='memory policy configurations'
+                            -let items = memoryPolicies
+                            list-editable.pc-list-editable-with-form-grid(ng-model=items name='memoryPolicies')
+                                list-editable-item-edit.pc-form-grid-row
+                                    - form = '$parent.form'
+                                    .pc-form-grid-col-60
+                                        +form-field__text({
+                                            label: 'Name:',
+                                            model: '$item.name',
+                                            name: '"MemoryPolicyName"',
+                                            placeholder: '{{ ::$ctrl.Clusters.memoryPolicy.name.default }}',
+                                            tip: 'Memory policy name'
+                                        })(
+                                            ui-validate=`{
+                                                uniqueMemoryPolicyName: '$ctrl.Clusters.memoryPolicy.customValidators.uniqueMemoryPolicyName($item, ${items})'
+                                            }`
+                                            ui-validate-watch=`"${items}"`
+                                            ui-validate-watch-object-equality='true'
+                                            pc-not-in-collection='::$ctrl.Clusters.memoryPolicy.name.invalidValues'
+                                            ng-model-options='{allowInvalid: true}'
                                         )
+                                            +form-field__error({ error: 'uniqueMemoryPolicyName', message: 'Memory policy with that name is already configured' })
+                                            +form-field__error({ error: 'notInCollection', message: '{{::$ctrl.Clusters.memoryPolicy.name.invalidValues[0]}} is reserved for internal use' })
+                                    .pc-form-grid-col-60
+                                        form-field-size(
+                                            label='Initial size:'
+                                            ng-model='$item.initialSize'
+                                            ng-model-options='{allowInvalid: true}'
+                                            name='MemoryPolicyInitialSize'
+                                            placeholder='{{ $ctrl.Clusters.memoryPolicy.initialSize.default / scale.value }}'
+                                            min='{{ ::$ctrl.Clusters.memoryPolicy.initialSize.min }}'
+                                            tip='Initial memory region size defined by this memory policy'
+                                            on-scale-change='scale = $event'
+                                        )
+                                    .pc-form-grid-col-60
+                                        form-field-size(
+                                            ng-model='$item.maxSize'
+                                            ng-model-options='{allowInvalid: true}'
+                                            name='MemoryPolicyMaxSize'
+                                            label='Maximum size:'
+                                            placeholder='{{ ::$ctrl.Clusters.memoryPolicy.maxSize.default }}'
+                                            min='{{ $ctrl.Clusters.memoryPolicy.maxSize.min($item) }}'
+                                            tip='Maximum memory region size defined by this memory policy'
+                                        )
+                                    .pc-form-grid-col-60
+                                        +text('Swap file path:', '$item.swapFilePath', '"MemoryPolicySwapFilePath"', 'false',
+                                        'Input swap file path', 'An optional path to a memory mapped file for this memory policy')
+                                    .pc-form-grid-col-60
+                                        +dropdown('Eviction mode:', '$item.pageEvictionMode', '"MemoryPolicyPageEvictionMode"', 'true', 'DISABLED',
+                                        '[\
+                                            {value: "DISABLED", label: "DISABLED"},\
+                                            {value: "RANDOM_LRU", label: "RANDOM_LRU"},\
+                                            {value: "RANDOM_2_LRU", label: "RANDOM_2_LRU"}\
+                                        ]',
+                                        'An algorithm for memory pages eviction\
+                                        <ul>\
+                                            <li>DISABLED - Eviction is disabled</li>\
+                                            <li>RANDOM_LRU - Once a memory region defined by a memory policy is configured, an off - heap array is allocated to track last usage timestamp for every individual data page</li>\
+                                            <li>RANDOM_2_LRU - Differs from Random - LRU only in a way that two latest access timestamps are stored for every data page</li>\
+                                        </ul>')
+                                    .pc-form-grid-col-30
+                                        +number-min-max-step('Eviction threshold:', '$item.evictionThreshold', '"MemoryPolicyEvictionThreshold"',
+                                        'true', '0.9', '0.5', '0.999', '0.05', 'A threshold for memory pages eviction initiation')
+                                    .pc-form-grid-col-30
+                                        +form-field__number({
+                                            label: 'Empty pages pool size:',
+                                            model: '$item.emptyPagesPoolSize',
+                                            name: '"MemoryPolicyEmptyPagesPoolSize"',
+                                            placeholder: '{{ ::$ctrl.Clusters.memoryPolicy.emptyPagesPoolSize.default }}',
+                                            min: '{{ ::$ctrl.Clusters.memoryPolicy.emptyPagesPoolSize.min }}',
+                                            max: '{{ $ctrl.Clusters.memoryPolicy.emptyPagesPoolSize.max($ctrl.clonedCluster, $item) }}',
+                                            tip: 'The minimal number of empty pages to be present in reuse lists for this memory policy'
+                                        })
+
+                                    //- Since ignite 2.1
+                                    .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.1.0")')
+                                        +number('Sub intervals:', '$item.subIntervals', '"MemoryPolicySubIntervals"',
+                                            'true', '5', '1', 'A number of sub-intervals the whole rate time interval will be split into to calculate allocation and eviction rates')
+                                    .pc-form-grid-col-30(ng-if-end)
+                                        +number('Rate time interval:', '$item.rateTimeInterval', '"MemoryPolicyRateTimeInterval"',
+                                            'true', '60000', '1000', 'Time interval for allocation rate and eviction rate monitoring purposes')
+                                            
+                                    .pc-form-grid-col-60
+                                        +checkbox('Metrics enabled', '$item.metricsEnabled', '"MemoryPolicyMetricsEnabled"',
+                                        'Whether memory metrics are enabled by default on node startup')
+
+                                list-editable-no-items
+                                    list-editable-add-item-button(
+                                        add-item=`$ctrl.Clusters.addMemoryPolicy($ctrl.clonedCluster)`
+                                        label-single='memory policy configuration'
+                                        label-multiple='memory policy configurations'
+                                    )
 
                     +clusters-memory-policies
 

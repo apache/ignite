@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteSingleStateImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteStateImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -57,7 +58,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 
 /**
@@ -383,14 +383,14 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /**
      *
      * @param ctx Cache context.
-     * @param op Cache operation.
+     * @param op Operation.
      * @param keys Keys.
      * @param vals Values.
      * @param snapshot Mvcc snapshot.
      * @param updCntrs Update counters.
      * @throws IgniteCheckedException If failed.
      */
-    public void mvccEnlistBatch(GridCacheContext ctx, GridCacheOperation op, List<KeyCacheObject> keys,
+    public void mvccEnlistBatch(GridCacheContext ctx, EnlistOperation op, List<KeyCacheObject> keys,
         List<Message> vals, MvccSnapshot snapshot, GridLongList updCntrs) throws IgniteCheckedException {
         assert keys != null && updCntrs != null && keys.size() == updCntrs.size();
 
@@ -420,7 +420,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                 CacheEntryInfoCollection entries =
                     val0 instanceof CacheEntryInfoCollection ? (CacheEntryInfoCollection)val0 : null;
 
-                if (entries == null && op != DELETE)
+                if (entries == null && !op.isDeleteOrLock())
                     val = (val0 instanceof CacheObject) ? (CacheObject)val0 : null;
 
                 GridDhtCacheEntry entry = dht.entryExx(key, topologyVersion());
@@ -434,26 +434,28 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                         if (entries == null) {
                             switch (op) {
                                 case DELETE:
-                                    updRes = entry.mvccRemove(this,
+                                    updRes = entry.mvccRemove(
+                                        this,
                                         ctx.localNodeId(),
                                         topologyVersion(),
                                         updCntrs.get(i),
                                         snapshot,
-                                        false,
                                         false);
 
                                     break;
 
-                                case CREATE:
+                                case INSERT:
+                                case UPSERT:
                                 case UPDATE:
-                                    updRes = entry.mvccSet(this,
+                                    updRes = entry.mvccSet(
+                                        this,
                                         ctx.localNodeId(),
                                         val,
                                         0,
                                         topologyVersion(),
                                         updCntrs.get(i),
                                         snapshot,
-                                        op,
+                                        op.cacheOperation(),
                                         false,
                                         false);
 
@@ -471,7 +473,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                 topologyVersion(),
                                 updCntrs.get(i),
                                 entries.infos(),
-                                op,
+                                op.cacheOperation(),
                                 snapshot);
                         }
 

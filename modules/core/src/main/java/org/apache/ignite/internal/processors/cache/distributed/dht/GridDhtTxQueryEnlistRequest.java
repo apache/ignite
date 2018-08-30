@@ -26,10 +26,10 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -55,7 +55,7 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     private GridCacheVersion lockVer;
 
     /** */
-    private GridCacheOperation op;
+    private EnlistOperation op;
 
     /** */
     private int mvccOpCnt;
@@ -91,7 +91,7 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     GridDhtTxQueryEnlistRequest(int cacheId,
         IgniteUuid dhtFutId,
         GridCacheVersion lockVer,
-        GridCacheOperation op,
+        EnlistOperation op,
         int batchId,
         int mvccOpCnt,
         List<KeyCacheObject> keys,
@@ -139,9 +139,9 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @return Cache operation.
+     * @return Operation.
      */
-    public GridCacheOperation op() {
+    public EnlistOperation op() {
         return op;
     }
 
@@ -292,13 +292,13 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("updCntrs", updCntrs))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMessage("updCntrs", updCntrs))
+                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -367,12 +367,12 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
                 if (!reader.isLastRead())
                     return false;
 
-                op = GridCacheOperation.fromOrdinal(opOrd);
+                op = EnlistOperation.fromOrdinal(opOrd);
 
                 reader.incrementState();
 
             case 9:
-                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
+                updCntrs = reader.readMessage("updCntrs");
 
                 if (!reader.isLastRead())
                     return false;
@@ -380,7 +380,7 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 10:
-                updCntrs = reader.readMessage("updCntrs");
+                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
