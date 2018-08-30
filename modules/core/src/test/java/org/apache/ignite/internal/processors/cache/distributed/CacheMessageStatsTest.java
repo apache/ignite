@@ -198,6 +198,7 @@ public class CacheMessageStatsTest extends GridCommonAbstractTest {
 
     /** */
     private static class Callable implements IgniteCallable<Void> {
+        /** {@inheritDoc} */
         @Override public Void call() throws Exception {
             return null;
         }
@@ -207,9 +208,9 @@ public class CacheMessageStatsTest extends GridCommonAbstractTest {
     private static class MyInvoke implements CacheEntryProcessor<Object, Object, char[]> {
         /** {@inheritDoc} */
         @Override public char[] process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
-            Integer value = (Integer)entry.getValue();
+            Integer val0 = (Integer)entry.getValue();
 
-            int val = value == null ? 0 : value;
+            int val = val0 == null ? 0 : val0;
 
             entry.setValue(val + 1);
 
