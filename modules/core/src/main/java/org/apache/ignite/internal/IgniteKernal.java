@@ -1959,7 +1959,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
             double gcPct = m.getCurrentGcCpuLoad() * 100;
 
-            //Heap params
+            // Heap params.
             long heapUsed = m.getHeapMemoryUsed();
             long heapMax = m.getHeapMemoryMaximum();
 
@@ -1996,6 +1996,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             long offHeapUsedSummary = 0;
             long offHeapMaxSummary = 0;
             long offHeapCommSummary = 0;
+            long pdsUsedSummary = 0;
 
             if (!F.isEmpty(regions)) {
                 for (DataRegion region : regions) {
@@ -2017,17 +2018,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     loadedPages += pagesCnt;
 
                     dataRegionsInfo.append("    ^--   ")
-                        .append(region.config().getName())
+                        .append(region.config().getName()).append(" region")
                         .append(" [used=").append(dblFmt.format(offHeapUsedInMBytes))
                         .append("MB, free=").append(dblFmt.format(freeOffHeapPct))
                         .append("%, comm=").append(dblFmt.format(offHeapCommInMBytes)).append("MB]")
                         .append(NL);
 
-                    if (region.config().isPersistenceEnabled() && region.config().isMetricsEnabled()) {
-                        long pdsUsedMBytes = region.memoryMetrics().getTotalAllocatedSize() / MByte;
+                    if (region.config().isPersistenceEnabled()) {
+                        long pdsUsed = region.memoryMetrics().getTotalAllocatedSize();
+                        long pdsUsedMBytes = pdsUsed / MByte;
 
-                        pdsRegionsInfo.append("    ^-- Ignite persistence region: ")
-                            .append(region.config().getName())
+                        pdsUsedSummary += pdsUsed;
+
+                        pdsRegionsInfo.append("    ^--   ")
+                            .append(region.config().getName()).append(" region")
                             .append(" [used=").append(dblFmt.format(pdsUsedMBytes)).append("MB]")
                             .append(NL);
                     }
@@ -2036,6 +2040,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             long nonHeapUsedInMBytes = offHeapUsedSummary / MByte;
             long nonHeapCommInMBytes = offHeapCommSummary / MByte;
+            long pdsUsedMBytes = pdsUsedSummary / MByte;
 
             double freeNonHeapPct = offHeapMaxSummary > 0 ?
                 ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
@@ -2054,9 +2059,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
                 "    ^-- Off-heap [used=" + dblFmt.format(nonHeapUsedInMBytes) + "MB, free=" +
                 dblFmt.format(freeNonHeapPct) + "%, comm=" + dblFmt.format(nonHeapCommInMBytes) + "MB]" + NL +
-                "    ^-- Off-heap data regions:" + NL +
-                dataRegionsInfo.toString() +
-                pdsRegionsInfo.toString() +
+                dataRegionsInfo +
+                (pdsRegionsInfo.length() > 0 ? "    ^-- Ignite persistence [used=" +
+                    dblFmt.format(pdsUsedMBytes) + "MB]" + NL + pdsRegionsInfo : "") +
                 "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]" + NL +
                 "    ^-- " + createExecutorDescription("Public thread pool", execSvc) + NL +
                 "    ^-- " + createExecutorDescription("System thread pool", sysExecSvc);

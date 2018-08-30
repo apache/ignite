@@ -40,9 +40,8 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(20 * 1024 * 1024)
-                    .setPersistenceEnabled(true)
-                    .setMetricsEnabled(true))
+                    .setMaxSize(30 * 1024 * 1024)
+                    .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -66,25 +65,24 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
         cleanPersistenceDir();
     }
 
-
     /** {@inheritDoc} */
     @Override protected void checkNodeMetricsFormat(String logOutput) {
         super.checkNodeMetricsFormat(logOutput);
 
         String msg = "Metrics are missing in the log or have an unexpected format";
 
-        assertTrue(msg, logOutput.matches("(?s).*Ignite persistence .+ \\[used=.*].*"));
+        assertTrue(msg, logOutput.matches("(?s).*Ignite persistence \\[used=.*].*"));
     }
 
     /** {@inheritDoc} */
-    protected  void checkMemoryMetrics(String logOutput) {
+    @Override protected void checkMemoryMetrics(String logOutput) {
         super.checkMemoryMetrics(logOutput);
 
-        boolean fmtMatches = false;
+        boolean summaryFmtMatches = false;
 
         Set<String> regions = new HashSet<>();
 
-        Pattern ptrn = Pattern.compile("(?m).*Ignite persistence region: (?<name>.+) \\[used=(?<used>[-.\\d]*).*].*");
+        Pattern ptrn = Pattern.compile("(?m).{2,}( {3}(?<name>.+) region|Ignite persistence) \\[used=(?<used>[-.\\d]*).*].*");
 
         Matcher matcher = ptrn.matcher(logOutput);
 
@@ -97,12 +95,15 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
 
             assertTrue(used + " should be non negative: " + subj, used >= 0);
 
-            regions.add(matcher.group("name"));
+            String regName = matcher.group("name");
 
-            fmtMatches = true;
+            if (F.isEmpty(regName))
+                summaryFmtMatches = true;
+            else
+                regions.add(regName);
         }
 
-        assertTrue("Persistence metrics have unexpected format.", fmtMatches);
+        assertTrue("Persistence metrics have unexpected format.", summaryFmtMatches);
 
         Set<String> expRegions = grid(0)
             .context()
@@ -111,7 +112,7 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
             .database()
             .dataRegions()
             .stream()
-            .filter(v -> v.config().isPersistenceEnabled() && v.config().isMetricsEnabled())
+            .filter(v -> v.config().isPersistenceEnabled())
             .map(v -> v.config().getName().trim())
             .collect(Collectors.toSet());
 
