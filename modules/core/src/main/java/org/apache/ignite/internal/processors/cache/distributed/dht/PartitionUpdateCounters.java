@@ -27,11 +27,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Partitions update counters message.
+ * Partition update counters message.
  */
-public class GridDhtPartitionsUpdateCountersMap implements Message {
+public class PartitionUpdateCounters implements Message {
     /** */
-    private static final long serialVersionUID = -4599730112233297219L;
+    private static final long serialVersionUID = 193442457510062844L;
 
     /** Map of update counters made by this tx. Mapping: partId -> updCntr. */
     @GridDirectMap(keyType = Integer.class, valueType = Long.class)
@@ -40,7 +40,7 @@ public class GridDhtPartitionsUpdateCountersMap implements Message {
     /**
      *
      */
-    public GridDhtPartitionsUpdateCountersMap() {
+    public PartitionUpdateCounters() {
         updCntrs = new HashMap<>();
     }
 
@@ -99,7 +99,7 @@ public class GridDhtPartitionsUpdateCountersMap implements Message {
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionsUpdateCountersMap.class);
+        return reader.afterMessageRead(PartitionUpdateCounters.class);
     }
 
     /** {@inheritDoc} */

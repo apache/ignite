@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  *
  */
@@ -41,4 +44,17 @@ public interface IgniteTxLocalState extends IgniteTxState {
      *
      */
     public void seal();
+
+    /**
+     * @return Cache partitions touched by current tx.
+     */
+    public Map<Integer, Set<Integer>> touchedPartitions();
+
+    /**
+     * Remembers that particular cache partition was touched by current tx.
+     *
+     * @param cacheId Cache id.
+     * @param partId Partition id.
+     */
+    public void touchPartition(int cacheId, int partId);
 }

@@ -650,4 +650,9 @@ public interface IgniteInternalTx {
      * @return Mvcc snapshot.
      */
     public MvccSnapshot mvccSnapshot();
+
+    /**
+     * @return Transaction counters.
+     */
+    public TxCounters txCounters();
 }

@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.Duration;
@@ -32,7 +31,6 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -59,7 +57,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCounters;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -161,9 +159,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** */
     private GridLongList mvccWaitTxs;
-
-    /** Update counters map */
-    private Map<Integer, Map<Integer, Long>> updCntrs;
 
     /** */
     private volatile boolean qryEnlisted;
@@ -918,7 +913,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                updateLocalPartitionCounters();
+                applyTxCounters();
 
                 if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(ptr, false);
@@ -1563,6 +1558,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
+    @Override public void touchPartition(int cacheId, int partId) {
+        txState.touchPartition(cacheId, partId);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxLocalAdapter.class, this, "super", super.toString(),
             "size", allEntries().size());
@@ -1644,74 +1644,28 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * @return Partition counters map for the given backup node.
-     */
-    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersForNode(ClusterNode node) {
-        if (F.isEmpty(updCntrs))
-            return null;
-
-        Map<Integer, GridDhtPartitionsUpdateCountersMap> res = new HashMap<>();
-
-        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
-            Map<Integer, Long> partsCntrs = entry.getValue();
-
-            assert !F.isEmpty(partsCntrs);
-
-            GridCacheContext ctx0 = cctx.cacheContext(entry.getKey());
-
-            GridDhtPartitionsUpdateCountersMap resBackupCntrs = new GridDhtPartitionsUpdateCountersMap();
-
-            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
-                Long cntr = partsCntrs.get(e.getKey());
-
-                if (ctx0.affinity().backupByPartition(node, e.getKey(), topologyVersionSnapshot())) {
-                    assert cntr != null && cntr > 0 : cntr;
-
-                    resBackupCntrs.updateCounters().put(e.getKey(), cntr);
-                }
-            }
-
-            if (!resBackupCntrs.updateCounters().isEmpty())
-                res.put(entry.getKey(), resBackupCntrs);
-        }
-
-        return res;
-    }
-
-    /**
-     * @param cacheId Cache id.
-     * @param part Partition id.
-     */
-    @SuppressWarnings("Java8MapApi")
-    public void addPartitionCountersMapping(Integer cacheId, Integer part) {
-        if (updCntrs == null)
-            updCntrs = new ConcurrentHashMap<>();
-
-        Map<Integer, Long> partUpdCntrs = updCntrs.get(cacheId);
-
-        if (partUpdCntrs == null)
-            updCntrs.put(cacheId, partUpdCntrs = new ConcurrentHashMap<>());
-
-        partUpdCntrs.put(part, 0L);
-    }
-
-    /**
      * Merges mvcc update counters to the partition update counters. For mvcc transactions we update partitions
      * counters only on commit phase.
      */
-    private void updateLocalPartitionCounters() {
-        if (F.isEmpty(updCntrs))
-            return;
+    private Map<Integer, PartitionUpdateCounters> applyAndCollectLocalUpdateCounters() {
+        if (F.isEmpty(txState.touchedPartitions()))
+            return null;
 
-        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
-            Map<Integer, Long> partsCntrs = entry.getValue();
+        HashMap<Integer, PartitionUpdateCounters> updCntrs = new HashMap<>();
 
-            assert !F.isEmpty(partsCntrs);
+        for (Map.Entry<Integer, Set<Integer>> entry : txState.touchedPartitions().entrySet()) {
+            Integer cacheId = entry.getKey();
 
-            GridCacheContext ctx0 = cctx.cacheContext(entry.getKey());
+            Set<Integer> parts = entry.getValue();
 
-            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
-                GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(e.getKey());
+            assert !F.isEmpty(parts);
+
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            HashMap<Integer, Long> partCntrs = new HashMap<>();
+
+            for (int p : parts) {
+                GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(p);
 
                 assert dhtPart != null;
 
@@ -1719,11 +1673,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 dhtPart.updateCounter(cntr);
 
-                Long prev = partsCntrs.put(e.getKey(), cntr);
-
-                assert prev == 0L : prev;
+                partCntrs.put(p, cntr);
             }
+
+            PartitionUpdateCounters pc = new PartitionUpdateCounters();
+
+            pc.updateCounters(partCntrs);
+
+            updCntrs.put(cacheId, pc);
         }
+
+        return updCntrs;
     }
 
     /**
@@ -1745,6 +1705,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             qryEnlisted = true;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void applyTxCounters() {
+        super.applyTxCounters();
+
+        Map<Integer, PartitionUpdateCounters> updCntrs = applyAndCollectLocalUpdateCounters();
+
+        // remember counters for subsequent sending to backups
+        txCounters().updateCounters(updCntrs);
     }
 
     /**
