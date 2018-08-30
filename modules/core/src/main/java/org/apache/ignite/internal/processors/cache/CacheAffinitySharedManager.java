@@ -880,6 +880,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
             catch (IgniteCheckedException e) {
+                // Cache creation errors for server node will handle in
+                // the 'GridDhtPartitionsExchangeFuture#onCacheChangeRequest(boolean crd)' method.
+                // It'll rollback cache creation for the whole grid.
                 if (cctx.localNode().isClient()) {
                     U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
                         "[cacheName=" + req.cacheName() + ']', e);
