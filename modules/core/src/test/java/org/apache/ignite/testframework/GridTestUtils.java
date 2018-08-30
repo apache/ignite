@@ -115,6 +115,9 @@ public final class GridTestUtils {
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
 
     /** */
+    public static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
+
+    /** */
     static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
 
     /**
