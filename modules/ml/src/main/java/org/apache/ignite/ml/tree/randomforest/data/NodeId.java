@@ -15,18 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.environment;
+package org.apache.ignite.ml.tree.randomforest.data;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * Class represents Node id in Random Forest consisting of tree id and node id in tree in according to
+ * breadth-first search in tree.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LearningEnvironmentBuilderTest.class,
-    PromiseTest.class
-})
-public class EnvironmentTestSuite {
+public class NodeId extends IgniteBiTuple<Integer, Long> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 4400852013136423333L;
+
+    /**
+     * Create an instance of NodeId.
+     *
+     * @param treeId Tree id.
+     * @param nodeId Node id.
+     */
+    public NodeId(Integer treeId, Long nodeId) {
+        super(treeId, nodeId);
+    }
+
+    /**
+     *
+     * @return Tree id.
+     */
+    public int treeId() {
+        return get1();
+    }
+
+    /**
+     *
+     * @return Node id.
+     */
+    public long nodeId() {
+        return get2();
+    }
 }

@@ -15,18 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.environment;
+package org.apache.ignite.ml.tree.randomforest;
 
+import org.apache.ignite.ml.tree.randomforest.data.impurity.GiniFeatureHistogramTest;
+import org.apache.ignite.ml.tree.randomforest.data.impurity.MSEHistogramTest;
+import org.apache.ignite.ml.tree.randomforest.data.statistics.NormalDistributionStatisticsComputerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * Test suite for all tests located in {@link org.apache.ignite.ml.tree} package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    LearningEnvironmentBuilderTest.class,
-    PromiseTest.class
+    RandomForestClassifierTrainerTest.class,
+    RandomForestRegressionTrainerTest.class,
+    GiniFeatureHistogramTest.class,
+    MSEHistogramTest.class,
+    NormalDistributionStatisticsComputerTest.class,
+    RandomForestTest.class
 })
-public class EnvironmentTestSuite {
+public class RandomForestTreeTestSuite {
 }
