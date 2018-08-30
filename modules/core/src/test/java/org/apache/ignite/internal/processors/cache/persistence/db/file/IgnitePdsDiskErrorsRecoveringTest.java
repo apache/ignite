@@ -323,7 +323,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      */
     public void testRecoveringOnWALWritingFail2() throws Exception {
         // Fail somewhere on the second wal segment.
-        ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE)));
+        ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE - 9000)));
         System.setProperty(IGNITE_WAL_MMAP, "false");
         doTestRecoveringOnWALWritingFail();
     }

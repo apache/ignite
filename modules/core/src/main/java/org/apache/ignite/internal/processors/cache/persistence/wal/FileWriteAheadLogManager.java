@@ -2926,6 +2926,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                             if (!rollOver)
                                 buf.free();
+
+                            try {
+                                fileIO.close();
+                            }
+                            catch (IOException ignore) {
+                                // No-op.
+                            }
                         }
                     }
                     catch (IOException e) {
@@ -3412,7 +3419,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if(cctx.kernalContext().invalid()){
                         StringBuilder builder = new StringBuilder();
                         for (StackTraceElement traceElement : e.getKey().getStackTrace()) {
-                            builder.append(traceElement.toString());
+                            builder.append(traceElement.toString() + "\n");
                         }
 
                         log.info("Invalid stacktrace: " + builder.toString());

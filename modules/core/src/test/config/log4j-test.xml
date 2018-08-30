@@ -113,6 +113,6 @@
         <!-- Append to file and console. -->
         <appender-ref ref="FILE"/>
         <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="CONSOLE_ERR"/>
+        <!--<appender-ref ref="CONSOLE_ERR"/>-->
     </root>
 </log4j:configuration>
