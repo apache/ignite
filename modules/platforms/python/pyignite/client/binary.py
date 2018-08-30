@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict, OrderedDict
-from typing import Any, Type, Union
+from collections import OrderedDict
+from typing import Any
 
 import attr
 
@@ -122,59 +122,3 @@ class GenericObjectMeta(type, GenericObjectPropsMixin):
         cls._validate_schema(schema)
         cls._schema = schema
         super().__init__(name, base_classes, namespace)
-
-
-class BinaryRegistry:
-
-    _client = None
-    _registry = None
-
-    def __init__(self, client: 'Client', registry: defaultdict):
-        self._client = client
-        self._registry = registry
-
-    @staticmethod
-    def _create_dataclass(type_name: str, schema: OrderedDict=None) -> Type:
-        schema = schema or {}
-        return GenericObjectMeta(type_name, (), {}, schema=schema)
-
-    def _sync_binary_registry(self, type_id: int):
-        type_info = self._client.get_binary_type(type_id)
-        if type_info['type_exists']:
-            for schema in type_info['schemas']:
-                if not self._registry[type_id].get(schema_id(schema), None):
-                    data_class = self._create_dataclass(
-                        type_info['type_name'],
-                        schema,
-                    )
-                    self._registry[type_id][schema_id(schema)] = data_class
-
-    def register_binary_type(
-        self, data_class: Type, affinity_key_field: str=None
-    ):
-        if not self.query(data_class.type_id, data_class.schema_id):
-            self._client.put_binary_type(
-                data_class.type_name, affinity_key_field, data_class.schema
-            )
-        self._registry[data_class.type_id][data_class.schema_id] = data_class
-
-    def query_binary_type(
-        self, binary_type: Union[int, str], schema: Union[int, dict]=None,
-        sync: bool=True
-    ):
-        type_id = entity_id(binary_type)
-        s_id = schema_id(schema)
-
-        if schema:
-            try:
-                result = self._registry[type_id][s_id]
-            except KeyError:
-                return None
-        else:
-            result = self._registry[type_id]
-
-        if sync and not result:
-            self._sync_binary_registry(type_id)
-            return self.query_binary_type(type_id, s_id, sync=False)
-
-        return result

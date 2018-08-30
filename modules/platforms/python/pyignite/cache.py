@@ -542,7 +542,8 @@ class Cache:
         The query returns the whole record (key and value).
 
         :param query_str: SQL query string,
-        :param page_size: cursor page size,
+        :param page_size: (optional) cursor page size. Default is 1, which
+         means that client makes one server call per row,
         :param query_args: (optional) query arguments,
         :param distributed_joins: (optional) distributed joins. Defaults
          to False,

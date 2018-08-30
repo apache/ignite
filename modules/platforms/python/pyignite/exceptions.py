@@ -24,14 +24,6 @@ class ParseError(Exception):
     pass
 
 
-class SocketWriteError(SocketError):
-    """
-    This exception is raised, when `Client.send` method is called during
-    a mock data parsing.
-    """
-    pass
-
-
 class HandshakeError(SocketError):
     """
     This exception is raised on Ignite binary protocol handshake failure,

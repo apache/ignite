@@ -20,7 +20,7 @@ Apache Ignite binary protocol operations. Read more:
 https://apacheignite.readme.io/docs/binary-client-protocol#section-client-operations
 
 When the binary client protocol changes, these functions also change. For
-stable end-user API see :mod:`pyignite.client` module.
+stable end user API see :mod:`pyignite.client` module.
 """
 
 from .cache_config import (

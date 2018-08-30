@@ -18,21 +18,26 @@ This module contains `Client` class, that lets you communicate with Apache
 Ignite cluster node by the means of Ignite binary client protocol.
 
 To start the communication, you may connect to the node of their choice
-by instantiating the `Client` object and calling `Client.connect()` method
-with proper parameters. Client wraps TCP socket handling, as well as
-Ignite protocol handshaking.
+by instantiating the `Client` object and calling
+:py:meth:`~pyignite.client.Client.connect` method with proper parameters.
+Client wraps TCP socket handling, as well as Ignite protocol handshaking.
 
 The whole storage room of Ignite cluster is split up onto named structures,
 called caches. For accessing the particular cache in key-value style
-(a-la Redis or memcached) you should first create the `Cache` object
-by calling `Client.create_cache()` or `Client.get_or_create_cache()` methods,
-than call `Cache` methods.
+(a-la Redis or memcached) you should first create
+the :class:`~pyignite.cache.Cache` object by calling
+:py:meth:`~pyignite.client.Client.create_cache` or
+:py:meth:`~pyignite.client.Client.get_or_create_cache()` methods, than call
+:class:`~pyignite.cache.Cache` methods. If you wish to create a cache object
+without communicating with server, there is also a
+:py:meth:`~pyignite.client.Client.get_cache()` method that does just that.
 
-For using Ignite SQL call `Client.sql()` method. This method returns
-a generator with result rows.
+For using Ignite SQL, call :py:meth:`~pyignite.client.Client.sql` method.
+It returns a generator with result rows.
 
-`Client.get_binary_type()` and `Client.put_binary_type()` methods represent
-the registry for Ignite Complex Objects.
+:py:meth:`~pyignite.client.Client.register_binary_type` and
+:py:meth:`~pyignite.client.Client.query_binary_type` methods operates
+the local (class-wise) registry for Ignite Complex objects.
 """
 
 from collections import defaultdict, OrderedDict
@@ -42,12 +47,12 @@ from typing import Iterable, Type, Union
 from pyignite.constants import *
 from pyignite.exceptions import (
     BinaryTypeError, CacheError, HandshakeError, ParameterError,
-    ReconnectError, SocketError, SocketWriteError, SQLError,
+    ReconnectError, SocketError, SQLError,
 )
 from pyignite.utils import (
     entity_id, is_iterable, schema_id, status_to_exception,
 )
-from .binary import BinaryRegistry, GenericObjectMeta
+from .binary import GenericObjectMeta
 from .handshake import HandshakeRequest, read_response
 from .ssl import wrap
 
@@ -250,20 +255,6 @@ class Client:
             clone._connect(self.host, self.port)
         clone.prefetch = prefetch
         return clone
-
-    def mock(self, buffer: bytes) -> 'MockClient':
-        """
-        Creates a mock client, but provide all the necessary parameters of
-        the real one.
-
-        :param buffer: binary data,
-        :return: `MockClient` object.
-        """
-        client = MockClient(buffer, **self.init_kwargs)
-        self._transfer_params(to=client)
-        if self.port and self.host:
-            client._connect(self.host, self.port)
-        return client
 
     def send(self, data: bytes, flags=None):
         """
@@ -566,7 +557,8 @@ class Client:
         Runs an SQL query and returns its result.
 
         :param query_str: SQL query string,
-        :param page_size: cursor page size,
+        :param page_size: (optional) cursor page size. Default is 1, which
+         means that client makes one server call per row,
         :param query_args: (optional) query arguments. List of values or
          (value, type hint) tuples,
         :param schema: (optional) schema for the query. Defaults to `PUBLIC`,
@@ -641,33 +633,3 @@ class Client:
         self._socket.shutdown(socket.SHUT_RDWR)
         self._socket.close()
         self._socket = self.host = self.port = None
-
-
-class MockClient(Client):
-    """
-    Mock socket reads. Allows deserializers to work with static buffers.
-
-    You most probably do not need to use this class directly. Call
-    `Client.mock()` instead.
-    """
-
-    def __init__(self, buffer: bytes, **kwargs):
-        self.buffer = buffer
-        self.init_kwargs = kwargs
-        self.pos = 0
-
-    def _connect(self, host: str, port: int):
-        self.host, self.port = host, port
-
-    def close(self):
-        self.host = self.port = None
-
-    def send(self, data: bytes):
-        raise SocketWriteError(
-            'Attempt to send `{}` to read-only connection'.format(data)
-        )
-
-    def recv(self, buffersize: int):
-        received = self.buffer[self.pos:self.pos+buffersize]
-        self.pos += buffersize
-        return received

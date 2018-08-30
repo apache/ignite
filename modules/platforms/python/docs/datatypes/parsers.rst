@@ -116,7 +116,7 @@ with your data, in to some API function as a *type conversion hint*.
 +-----------+--------------------+-------------------------------+-----------------------------------------------------------------+
 |0x1d       |`Enum array`_       |iterable/list                  |:class:`~pyignite.datatypes.standard.EnumArrayObject`            |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------------------+
-|0x67       |`Complex object`_   |dict                           |:class:`~pyignite.datatypes.complex.BinaryObject`                |
+|0x67       |`Complex object`_   |object                         |:class:`~pyignite.datatypes.complex.BinaryObject`                |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------------------+
 |0x1b       |`Wrapped data`_     |tuple                          |:class:`~pyignite.datatypes.complex.WrappedDataObject`           |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------------------+
