@@ -1583,6 +1583,14 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param idx Index of the Ignite instance.
+     * @return Indexed Ignite instance name.
+     */
+    protected String testNodeName(int idx) {
+        return getTestIgniteInstanceName(idx);
+    }
+
+    /**
      * Parses test Ignite instance index from test Ignite instance name.
      *
      * @param testIgniteInstanceName Test Ignite instance name, returned by {@link #getTestIgniteInstanceName(int)}.

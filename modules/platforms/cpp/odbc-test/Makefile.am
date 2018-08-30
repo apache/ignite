@@ -85,6 +85,7 @@ ignite_odbc_tests_SOURCES = \
     src/errors_test.cpp \
     src/odbc_test_suite.cpp \
     src/types_test.cpp \
+    src/transaction_test.cpp \
     src/authentication_test.cpp \
     ../odbc/src/log.cpp \
     ../odbc/src/cursor.cpp \
@@ -101,7 +102,8 @@ ignite_odbc_tests_SOURCES = \
     ../odbc/src/column.cpp \
     ../odbc/src/common_types.cpp \
     ../odbc/src/utility.cpp \
-    ../odbc/src/result_page.cpp
+    ../odbc/src/result_page.cpp \
+    ../odbc/src/nested_tx_mode.cpp
 
 run-check: check
 	./ignite-odbc-tests -p
