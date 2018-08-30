@@ -106,7 +106,7 @@ public class MvccUtils {
      * @return Newly created Mvcc processor.
      */
     public static MvccProcessor createProcessor(GridKernalContext ctx) {
-        return mvccEnabled(ctx) ? new MvccProcessorImpl(ctx) : new NoOpMvccProcessor(ctx);
+        return new MvccProcessorImpl(ctx);
     }
 
     /**
@@ -723,7 +723,7 @@ public class MvccUtils {
      * @return Whether MVCC is enabled or not on {@link IgniteConfiguration}.
      */
     public static boolean mvccEnabled(GridKernalContext ctx) {
-        return ctx.config().isMvccEnabled();
+        return ctx.coordinators().mvccStarted();
     }
 
     /**

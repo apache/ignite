@@ -30,6 +30,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -208,6 +209,9 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     /** */
     private final GridFutureAdapter<Void> initFut = new GridFutureAdapter<>();
 
+    /** Flag whether at least one cache with {@link CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is started. */
+    private boolean mvccStarted;
+
     /**
      * @param ctx Context.
      */
@@ -225,6 +229,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
             EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(TOPIC_CACHE_COORDINATOR, new CoordinatorMessageListener());
+
+        mvccStarted = true; // TODO lazy initialization.
     }
 
     /** {@inheritDoc} */
@@ -774,6 +780,11 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
             U.warn(log, ">>> " + waitAckFut.toString());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccStarted() {
+        return mvccStarted;
     }
 
     /**

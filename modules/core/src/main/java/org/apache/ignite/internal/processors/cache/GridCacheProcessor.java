@@ -165,7 +165,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTR
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -543,7 +543,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "other cache types [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                 ", cacheType=" + cacheType + "]");
 
-        if (cc.getAtomicityMode() == TRANSACTIONAL && c.isMvccEnabled()) {
+        if (cc.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
             if (cc.getCacheStoreFactory() != null) {
                 throw new IgniteCheckedException("Transactional cache may not have a third party cache store when " +
                     "MVCC is enabled.");
@@ -1532,7 +1532,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         switch (cfg.getCacheMode()) {
             case LOCAL: {
                 switch (cfg.getAtomicityMode()) {
-                    case TRANSACTIONAL: {
+                    case TRANSACTIONAL:
+                    case TRANSACTIONAL_SNAPSHOT: {
                         cache = new GridLocalCache(cacheCtx);
 
                         break;
@@ -1554,7 +1555,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             case REPLICATED: {
                 if (nearEnabled) {
                     switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL: {
+                        case TRANSACTIONAL:
+                        case TRANSACTIONAL_SNAPSHOT: {
                             cache = new GridNearTransactionalCache(cacheCtx);
 
                             break;
@@ -1572,7 +1574,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
                 else {
                     switch (cfg.getAtomicityMode()) {
-                        case TRANSACTIONAL: {
+                        case TRANSACTIONAL:
+                        case TRANSACTIONAL_SNAPSHOT: {
                             cache = cacheCtx.affinityNode() ?
                                 new GridDhtColocatedCache(cacheCtx) :
                                 new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap());
@@ -1662,7 +1665,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridDhtCacheAdapter dht = null;
 
             switch (cfg.getAtomicityMode()) {
-                case TRANSACTIONAL: {
+                case TRANSACTIONAL:
+                case TRANSACTIONAL_SNAPSHOT: {
                     assert cache instanceof GridNearTransactionalCache;
 
                     GridNearTransactionalCache near = (GridNearTransactionalCache)cache;

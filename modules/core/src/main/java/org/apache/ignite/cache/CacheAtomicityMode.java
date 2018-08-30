@@ -88,7 +88,15 @@ public enum CacheAtomicityMode {
      *
      * @see IgniteCache#withNoRetries()
      */
-    ATOMIC;
+    ATOMIC,
+
+    /**
+     * Specified fully {@code ACID}-compliant transactional cache behavior not only for Key-Value API,
+     * but also for SQL transactions. This cache atomicity mode is based on
+     * <a href="http://en.wikipedia.org/wiki/Snapshot_isolation">http://en.wikipedia.org/wiki/Snapshot_isolation</a>.
+     * See {@link Transaction} for more information about transactions.
+     */
+    TRANSACTIONAL_SNAPSHOT;
 
     /** Enumerated values. */
     private static final CacheAtomicityMode[] VALS = values();

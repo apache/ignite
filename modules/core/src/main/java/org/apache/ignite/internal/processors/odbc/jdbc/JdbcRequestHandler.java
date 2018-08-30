@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.authentication.AuthorizationContext
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -190,7 +191,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         log = ctx.log(getClass());
 
-        if (ctx.grid().configuration().isMvccEnabled())
+        if (MvccUtils.mvccEnabled(ctx)) // TODO IGNITE-9320
             worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
         else
             worker = null;

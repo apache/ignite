@@ -494,9 +494,6 @@ public class IgniteConfiguration {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
-    /** Flag whether MVCC is enabled. */
-    private boolean mvccEnabled;
-
     /** Size of MVCC vacuum thread pool. */
     private int mvccVacuumThreadCnt = DFLT_MVCC_VACUUM_THREAD_CNT;
 
@@ -595,7 +592,6 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
-        mvccEnabled = cfg.isMvccEnabled();
         mvccVacuumThreadCnt = cfg.mvccVacuumThreadCnt;
         mvccVacuumTimeInterval = cfg.mvccVacuumTimeInterval;
         netTimeout = cfg.getNetworkTimeout();
@@ -3000,27 +2996,6 @@ public class IgniteConfiguration {
      */
     @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
         return cliConnCfg;
-    }
-
-    /**
-     * Whether or not MVCC is enabled.
-     *
-     * @return {@code True} if MVCC is enabled.
-     */
-    public boolean isMvccEnabled() {
-        return mvccEnabled;
-    }
-
-    /**
-     * Sets MVCC enabled flag.
-     *
-     * @param mvccEnabled MVCC enabled flag.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setMvccEnabled(boolean mvccEnabled) {
-        this.mvccEnabled = mvccEnabled;
-
-        return this;
     }
 
     /**

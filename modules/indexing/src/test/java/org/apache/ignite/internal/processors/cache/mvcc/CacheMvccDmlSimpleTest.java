@@ -49,7 +49,7 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
 
         cache = startGrid(0).getOrCreateCache(
             new CacheConfiguration<>("test")
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
                 .setSqlSchema("PUBLIC")
                 .setIndexedTypes(Integer.class, Integer.class)
         );

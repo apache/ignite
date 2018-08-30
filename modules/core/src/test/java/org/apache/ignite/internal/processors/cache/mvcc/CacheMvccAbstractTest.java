@@ -71,7 +71,6 @@ import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -89,7 +88,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -159,8 +158,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMvccEnabled(true);
 
         if (disableScheduledVacuum)
             cfg.setMvccVacuumTimeInterval(Integer.MAX_VALUE);
@@ -1430,7 +1427,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
-        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
         ccfg.setWriteSynchronizationMode(syncMode);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, parts));
 
@@ -1592,12 +1589,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         MvccProcessor crd = ctx.coordinators();
 
         assertNotNull(crd);
-
-        if (crd instanceof NoOpMvccProcessor) {
-            assertFalse(MvccUtils.mvccEnabled(ctx));
-
-            return null;
-        }
 
         return (MvccProcessorImpl)crd;
     }

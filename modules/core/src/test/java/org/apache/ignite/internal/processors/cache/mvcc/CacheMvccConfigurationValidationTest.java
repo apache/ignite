@@ -37,7 +37,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
  *
@@ -49,8 +49,6 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMvccEnabled(true);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -74,7 +72,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                node.createCache(new CacheConfiguration("cache2").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL));
+                node.createCache(new CacheConfiguration("cache2").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
 
                 return null;
             }
@@ -89,7 +87,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     public void testMvccModeMismatchForGroup2() throws Exception {
         final Ignite node = startGrid(0);
 
-        node.createCache(new CacheConfiguration("cache1").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL));
+        node.createCache(new CacheConfiguration("cache1").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -99,7 +97,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
             }
         }, CacheException.class, null);
 
-        node.createCache(new CacheConfiguration("cache2").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL));
+        node.createCache(new CacheConfiguration("cache2").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
     }
 
     /**
@@ -141,7 +139,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         try (final Ignite node = startGrid(0)) {
             final CacheConfiguration cfg = new TestConfiguration("cache");
 
-            cfg.setAtomicityMode(TRANSACTIONAL);
+            cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 
             U.invoke(TestConfiguration.class, cfg, setterName, obj);
 

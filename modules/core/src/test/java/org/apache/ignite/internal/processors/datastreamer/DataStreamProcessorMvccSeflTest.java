@@ -33,8 +33,6 @@ public class DataStreamProcessorMvccSeflTest extends DataStreamProcessorSelfTest
         assert cacheConfigurations == null || cacheConfigurations.length == 0
                 || (cacheConfigurations.length == 1 && cacheConfigurations[0].getAtomicityMode() == TRANSACTIONAL);
 
-        igniteConfiguration.setMvccEnabled(true);
-
         return igniteConfiguration;
     }
 

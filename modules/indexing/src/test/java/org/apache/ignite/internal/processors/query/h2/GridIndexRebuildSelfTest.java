@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -127,6 +126,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     private void doTest(boolean mvccEnabled) throws Exception {
         IgniteEx srv = startServer(mvccEnabled);
 
+        // TODO transactional_snapshot
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +
             "atomicity=transactional\"");
 
@@ -257,7 +257,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         // idxCls static field on each call.
         GridQueryProcessor.idxCls = BlockingIndexing.class;
 
-        IgniteConfiguration cfg = serverConfiguration(0).setMvccEnabled(mvccEnabled);
+        IgniteConfiguration cfg = serverConfiguration(0);
 
         IgniteEx res = startGrid(cfg);
 

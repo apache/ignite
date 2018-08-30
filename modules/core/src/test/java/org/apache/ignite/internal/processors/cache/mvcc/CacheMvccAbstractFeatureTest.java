@@ -80,7 +80,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
 
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
         ccfg.setIndexedTypes(Integer.class, Person.class);
 

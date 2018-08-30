@@ -104,8 +104,13 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
             return false;
 
         try {
-            if (!data.next()){
-                onClose();
+            if (!data.next()) {
+                try {
+                    close();
+                }
+                catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
+                }
 
                 return false;
             }
