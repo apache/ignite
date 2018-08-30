@@ -34,6 +34,12 @@ public class NormalDistributionStatisticsComputer implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = -3699071003012595743L;
 
+    /**
+     * Computes statistics of normal distribution on features in dataset.
+     *
+     * @param meta Meta.
+     * @param dataset Dataset.
+     */
     public List<NormalDistributionStatistics> computeStatistics(List<FeatureMeta> meta, Dataset<EmptyContext,
         BootstrappedDatasetPartition> dataset) {
 
