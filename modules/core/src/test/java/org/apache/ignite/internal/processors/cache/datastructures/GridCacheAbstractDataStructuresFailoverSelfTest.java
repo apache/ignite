@@ -50,11 +50,13 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
@@ -107,11 +109,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
         // No-op
     }
 
@@ -1295,7 +1292,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             if (failed.get())
                                 return;
 
-                            int idx = nodeIdx.getAndIncrement();
+                            int idx = nodeIdx.incrementAndGet();
 
                             Thread.currentThread().setName("thread-" + getTestIgniteInstanceName(idx));
 
@@ -1305,6 +1302,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                                 Ignite g = startGrid(idx);
 
                                 cb.apply(g);
+                            }
+                            catch (IgniteException e) {
+                                if (!X.hasCause(e, NodeStoppingException.class) &&
+                                    !X.hasCause(e, IllegalStateException.class))
+                                    throw e;
+
+                                // OK for this test.
                             }
                             finally {
                                 stopGrid(idx);
