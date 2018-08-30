@@ -638,7 +638,6 @@ public class GridCacheMvccCandidate implements Externalizable,
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public boolean equals(Object o) {
         if (o == this)
             return true;

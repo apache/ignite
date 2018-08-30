@@ -882,7 +882,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"unchecked"})
         @Override public boolean equals(Object obj) {
             if (obj == this)
                 return true;
