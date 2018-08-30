@@ -145,6 +145,9 @@
     <ClCompile Include="..\..\src\queries_ssl_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\transaction_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\config\connection_string_parser.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
@@ -165,6 +168,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\authentication_test.cpp">
       <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\nested_tx_mode.cpp">
+      <Filter>Externals</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -207,6 +213,12 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\queries-auth-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-transaction.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-transaction-32.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

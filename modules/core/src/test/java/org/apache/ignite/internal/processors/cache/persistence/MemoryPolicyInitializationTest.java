@@ -75,7 +75,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertTrue(allMemPlcs.size() == 2);
+        assertEquals(2, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
     }
@@ -91,7 +91,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertTrue(allMemPlcs.size() == 3);
+        assertEquals(3, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -112,13 +112,13 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertTrue(allMemPlcs.size() == 2);
+        assertEquals(2, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
         DataRegion dfltMemPlc = U.field(dbMgr, "dfltDataRegion");
 
-        assertTrue(dfltMemPlc.config().getMaxSize() == USER_DEFAULT_MEM_PLC_SIZE);
+        assertEquals(dfltMemPlc.config().getMaxSize(), USER_DEFAULT_MEM_PLC_SIZE);
     }
 
     /**
@@ -136,13 +136,13 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertTrue(allMemPlcs.size() == 3);
+        assertEquals(3, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
         DataRegion dfltMemPlc = U.field(dbMgr, "dfltDataRegion");
 
-        assertTrue(dfltMemPlc.config().getMaxSize() == USER_CUSTOM_MEM_PLC_SIZE);
+        assertEquals(dfltMemPlc.config().getMaxSize(), USER_CUSTOM_MEM_PLC_SIZE);
     }
 
     /**

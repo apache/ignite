@@ -51,6 +51,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Expected statement type. */
     private JdbcStatementType stmtType;
 
+    /** Client auto commit flag state. */
+    private boolean autoCommit;
+
     /**
      */
     JdbcQueryExecuteRequest() {
@@ -62,11 +65,12 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param schemaName Cache name.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
+     * @param autoCommit Connection auto commit flag state.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
     public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        String sqlQry, Object[] args) {
+        boolean autoCommit, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
@@ -75,6 +79,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         this.sqlQry = sqlQry;
         this.args = args;
         this.stmtType = stmtType;
+        this.autoCommit = autoCommit;
     }
 
     /**
@@ -119,6 +124,13 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         return stmtType;
     }
 
+    /**
+     * @return Auto commit flag.
+     */
+    boolean autoCommit() {
+        return autoCommit;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
@@ -136,9 +148,12 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         }
 
         writer.writeByte((byte)stmtType.ordinal());
+
+        writer.writeBoolean(autoCommit);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
@@ -159,6 +174,16 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
                 stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
             else
                 stmtType = JdbcStatementType.ANY_STATEMENT_TYPE;
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException(e);
+        }
+
+        try {
+            if (reader.available() > 0)
+                autoCommit = reader.readBoolean();
+            else
+                autoCommit = true;
         }
         catch (IOException e) {
             throw new BinaryObjectException(e);

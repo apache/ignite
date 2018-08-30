@@ -223,6 +223,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dataRegionsInitialized)
             return;
 
+        initDataRegions0(memCfg);
+
+        dataRegionsInitialized = true;
+    }
+
+    /**
+     * @param memCfg Database config.
+     * @throws IgniteCheckedException If failed to initialize swap path.
+     */
+    protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegionConfigurations();
 
         int dataRegions = dataRegionCfgs == null ? 0 : dataRegionCfgs.length;
@@ -251,8 +261,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             CU.isPersistenceEnabled(memCfg)
         );
 
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext())) {
+            lsnr.onInitDataRegions(this);
+        }
+    }
 
-        dataRegionsInitialized = true;
+    /**
+     * @param kctx Kernal context.
+     * @return Database lifecycle listeners.
+     */
+    protected List<DatabaseLifecycleListener> getDatabaseListeners(GridKernalContext kctx) {
+        return kctx.internalSubscriptionProcessor().getDatabaseListeners();
     }
 
     /**
@@ -260,7 +279,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRegionCfg Data region config.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
-    protected void addDataRegion(
+    public void addDataRegion(
         DataStorageConfiguration dataStorageCfg,
         DataRegionConfiguration dataRegionCfg,
         boolean trackable
@@ -984,6 +1003,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         final DataRegionMetricsImpl memMetrics
     ) {
         return new DirectMemoryProvider() {
+            /** */
             private final DirectMemoryProvider memProvider = memoryProvider0;
 
             @Override public void initialize(long[] chunkSizes) {
@@ -1039,10 +1059,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         startMemoryPolicies();
 
         initPageMemoryDataStructures(memCfg);
+
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(kctx)) {
+            lsnr.afterInitialise(this);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
+        for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext())) {
+            lsnr.beforeStop(this);
+        }
+
         if (dataRegionMap != null) {
             for (DataRegion memPlc : dataRegionMap.values()) {
                 memPlc.pageMemory().stop();

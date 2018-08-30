@@ -146,6 +146,17 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
      */
     @SuppressWarnings("ConstantConditions")
     public void prepare() {
+        if (tx.txState().mvccEnabled(cctx)) { // TODO IGNITE-7313
+            U.error(log, "Cannot commit MVCC enabled transaction by recovery procedure. " +
+                "Operation is usupported at the moment [tx=" + CU.txString(tx) + ']');
+
+            onDone(false);
+
+            markInitialized();
+
+            return;
+        }
+
         if (nearTxCheck) {
             UUID nearNodeId = tx.eventNodeId();
 

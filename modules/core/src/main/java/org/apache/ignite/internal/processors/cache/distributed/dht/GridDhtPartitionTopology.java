@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
 
@@ -74,6 +75,7 @@ public interface GridDhtPartitionTopology {
     public void updateTopologyVersion(
         GridDhtTopologyFuture exchFut,
         DiscoCache discoCache,
+        MvccCoordinator mvccCrd,
         long updateSeq,
         boolean stopping
     ) throws IgniteInterruptedCheckedException;
@@ -421,4 +423,6 @@ public interface GridDhtPartitionTopology {
      * @param updateRebalanceVer {@code True} if need check rebalance state.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment, boolean updateRebalanceVer);
+
+    public MvccCoordinator mvccCoordinator();
 }

@@ -34,7 +34,7 @@ public class H2KeyValueIterator<K, V> extends H2ResultSetIterator<IgniteBiTuple<
      * @throws IgniteCheckedException If failed.
      */
     protected H2KeyValueIterator(ResultSet data) throws IgniteCheckedException {
-        super(data);
+        super(data, false);
     }
 
     /** {@inheritDoc} */

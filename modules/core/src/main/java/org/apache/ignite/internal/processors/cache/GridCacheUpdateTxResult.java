@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,26 +33,38 @@ public class GridCacheUpdateTxResult {
     /** Success flag.*/
     private final boolean success;
 
-    /** Old value. */
-    @GridToStringInclude
-    private final CacheObject oldVal;
-
-    /** Partition idx. */
+    /** Partition update counter. */
     private long updateCntr;
 
     /** */
+    private GridLongList mvccWaitTxs;
+
+    /** */
+    private  GridFutureAdapter<GridCacheUpdateTxResult> fut;
+
+    /** */
     private WALPointer logPtr;
+
+    /** */
+    private List<MvccLinkAwareSearchRow> mvccHistory;
 
     /**
      * Constructor.
      *
      * @param success Success flag.
-     * @param oldVal Old value (if any),
+     */
+    GridCacheUpdateTxResult(boolean success) {
+        this.success = success;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param success Success flag.
      * @param logPtr Logger WAL pointer for the update.
      */
-    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, WALPointer logPtr) {
+    GridCacheUpdateTxResult(boolean success, WALPointer logPtr) {
         this.success = success;
-        this.oldVal = oldVal;
         this.logPtr = logPtr;
     }
 
@@ -56,20 +72,45 @@ public class GridCacheUpdateTxResult {
      * Constructor.
      *
      * @param success Success flag.
-     * @param oldVal Old value (if any).
+     * @param fut Update future.
+     */
+    GridCacheUpdateTxResult(boolean success, GridFutureAdapter<GridCacheUpdateTxResult> fut) {
+        this.success = success;
+        this.fut = fut;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param success Success flag.
+     * @param updateCntr Update counter.
      * @param logPtr Logger WAL pointer for the update.
      */
-    GridCacheUpdateTxResult(boolean success, @Nullable CacheObject oldVal, long updateCntr, WALPointer logPtr) {
+    GridCacheUpdateTxResult(boolean success, long updateCntr, WALPointer logPtr) {
         this.success = success;
-        this.oldVal = oldVal;
         this.updateCntr = updateCntr;
         this.logPtr = logPtr;
     }
 
     /**
-     * @return Partition idx.
+     * Constructor.
+     *
+     * @param success Success flag.
+     * @param updateCntr Update counter.
+     * @param logPtr Logger WAL pointer for the update.
+     * @param mvccWaitTxs List of transactions to wait for completion.
      */
-    public long updatePartitionCounter() {
+    GridCacheUpdateTxResult(boolean success, long updateCntr, WALPointer logPtr, GridLongList mvccWaitTxs) {
+        this.success = success;
+        this.updateCntr = updateCntr;
+        this.logPtr = logPtr;
+        this.mvccWaitTxs = mvccWaitTxs;
+    }
+
+    /**
+     * @return Partition update counter.
+     */
+    public long updateCounter() {
         return updateCntr;
     }
 
@@ -88,10 +129,33 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
-     * @return Old value.
+     * @return Update future.
      */
-    @Nullable public CacheObject oldValue() {
-        return oldVal;
+    @Nullable public IgniteInternalFuture<GridCacheUpdateTxResult> updateFuture() {
+        return fut;
+    }
+
+    /**
+     * @return List of transactions to wait for completion.
+     */
+    @Nullable public GridLongList mvccWaitTransactions() {
+        return mvccWaitTxs;
+    }
+
+    /**
+     *
+     * @return Mvcc history rows.
+     */
+    @Nullable public List<MvccLinkAwareSearchRow> mvccHistory() {
+        return mvccHistory;
+    }
+
+    /**
+     *
+     * @param mvccHistory Mvcc history rows.
+     */
+    public void mvccHistory(List<MvccLinkAwareSearchRow> mvccHistory) {
+        this.mvccHistory = mvccHistory;
     }
 
     /** {@inheritDoc} */

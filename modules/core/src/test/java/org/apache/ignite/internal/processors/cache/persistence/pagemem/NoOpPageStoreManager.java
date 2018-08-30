@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 
@@ -50,6 +51,12 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
 
     /** {@inheritDoc} */
     @Override public void finishRecover() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initialize(int cacheId, int partitions, String workingDir,
+        AllocatedPageTracker tracker) throws IgniteCheckedException {
         // No-op.
     }
 

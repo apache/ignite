@@ -206,7 +206,7 @@ namespace ignite
             {
                 const std::string& schema = connection.GetSchema();
 
-                QueryExecuteRequest req(schema, sql, params, timeout);
+                QueryExecuteRequest req(schema, sql, params, timeout, connection.IsAutoCommit());
                 QueryExecuteResponse rsp;
 
                 try

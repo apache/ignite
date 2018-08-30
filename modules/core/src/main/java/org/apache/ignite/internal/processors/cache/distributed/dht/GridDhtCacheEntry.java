@@ -102,6 +102,11 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
+    @Override protected long nextMvccPartitionCounter() {
+        return locPart.nextMvccUpdateCounter();
+    }
+
+    /** {@inheritDoc} */
     @Override public int memorySize() throws IgniteCheckedException {
         int rdrsOverhead;
 
@@ -648,7 +653,10 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                     ']');
             }
 
-            removeValue();
+                if (cctx.mvccEnabled())
+                    cctx.offheap().mvccRemoveAll(this);
+                else
+                    removeValue();
 
             // Give to GC.
             update(null, 0L, 0L, ver, true);
