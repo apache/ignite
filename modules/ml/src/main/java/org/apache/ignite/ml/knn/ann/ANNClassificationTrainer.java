@@ -86,6 +86,8 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         if (mdl != null) {
             centers = Arrays.stream(mdl.getCandidates().data()).map(x -> x.features()).collect(Collectors.toList());
             CentroidStat newStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
+            if(newStat == null)
+                return mdl;
             CentroidStat oldStat = mdl.getCandiatesStat();
             centroidStat = newStat.merge(oldStat);
         } else {

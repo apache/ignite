@@ -19,9 +19,11 @@ package org.apache.ignite.ml.knn.classification;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -82,7 +84,8 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
      */
     protected List<LabeledVector> findKNearestNeighbors(Vector v) {
         List<LabeledVector> neighborsFromPartitions = datasets.stream()
-            .flatMap(dataset -> findKNearestNeighborsInDataset(v, dataset).stream())
+            .map(dataset -> Optional.ofNullable(findKNearestNeighborsInDataset(v, dataset)))
+            .flatMap(res -> res.orElse(Collections.emptyList()).stream())
             .collect(Collectors.toList());
 
         LabeledVectorSet<Double, LabeledVector> neighborsToFilter = buildLabeledDatasetOnListOfVectors(neighborsFromPartitions);
