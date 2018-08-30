@@ -75,6 +75,13 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -96,6 +103,8 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
 
         super.afterTest();
     }
+
+
 
     /**
      * @param clo Closure to check consistency upon.
