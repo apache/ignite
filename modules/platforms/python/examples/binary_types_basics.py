@@ -45,6 +45,6 @@ print(person.__class__ is Person)
 print(person.first_name)
 # Ivan
 
-client.put_binary_type(data_class=Person)
+client.register_binary_type(data_class=Person)
 
 Person = person.__class__

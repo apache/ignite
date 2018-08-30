@@ -123,22 +123,6 @@ class Cache:
 
         self._cache_id = cache_id(self._name)
 
-    def _register_binary_objects(self, value: Any):
-        """
-        Register any object as a Complex Object before saving any data.
-        """
-        if is_binary(value):
-            self.client.register_binary_type(value.__class__)
-            for nested in [getattr(value, n, None) for n in value.schema]:
-                self._register_binary_objects(nested)
-        elif is_iterable(value) and type(value) is not str:
-            for nested in value:
-                self._register_binary_objects(nested)
-        elif isinstance(value, dict):
-            for k, v in value.items():
-                self._register_binary_objects(k)
-                self._register_binary_objects(v)
-
     @property
     def settings(self) -> Optional[dict]:
         """
@@ -234,8 +218,6 @@ class Cache:
         :param value_hint: (optional) Ignite data type, for which the given
          value should be converted.
         """
-        self._register_binary_objects(key)
-        self._register_binary_objects(value)
         return cache_put(
             self._client, self._cache_id, key, value,
             key_hint=key_hint, value_hint=value_hint
@@ -265,9 +247,6 @@ class Cache:
          to save. Each key or value can be an item of representable
          Python type or a tuple of (item, hint),
         """
-        for k, v in pairs.items():
-            self._register_binary_objects(k)
-            self._register_binary_objects(v)
         return cache_put_all(self._client, self._cache_id, pairs)
 
     @status_to_exception(CacheError)
@@ -284,8 +263,6 @@ class Cache:
         :param value_hint: (optional) Ignite data type, for which the given
          value should be converted.
         """
-        self._register_binary_objects(key)
-        self._register_binary_objects(value)
         result = cache_replace(
             self._client, self._cache_id, key, value,
             key_hint=key_hint, value_hint=value_hint
@@ -357,8 +334,6 @@ class Cache:
          value should be converted.
         :return: old value or None.
         """
-        self._register_binary_objects(key)
-        self._register_binary_objects(value)
         result = cache_get_and_put(
             self._client, self._cache_id, key, value, key_hint, value_hint
         )
@@ -381,8 +356,6 @@ class Cache:
          value should be converted,
         :return: old value or None.
         """
-        self._register_binary_objects(key)
-        self._register_binary_objects(value)
         result = cache_get_and_put_if_absent(
             self._client, self._cache_id, key, value, key_hint, value_hint
         )
@@ -402,8 +375,6 @@ class Cache:
         :param value_hint: (optional) Ignite data type, for which the given
          value should be converted.
         """
-        self._register_binary_objects(key)
-        self._register_binary_objects(value)
         return cache_put_if_absent(
             self._client, self._cache_id, key, value, key_hint, value_hint
         )
@@ -418,7 +389,6 @@ class Cache:
          should be converted,
         :return: old value or None.
         """
-        self._register_binary_objects(key)
         result = cache_get_and_remove(
             self._client, self._cache_id, key, key_hint
         )
@@ -442,7 +412,6 @@ class Cache:
          value should be converted.
         :return: old value or None.
         """
-        self._register_binary_objects(value)
         result = cache_get_and_replace(
             self._client, self._cache_id, key, value, key_hint, value_hint
         )
@@ -458,7 +427,6 @@ class Cache:
         :param key_hint: (optional) Ignite data type, for which the given key
          should be converted,
         """
-        self._register_binary_objects(key)
         return cache_remove_key(self._client, self._cache_id, key, key_hint)
 
     @status_to_exception(CacheError)
@@ -470,8 +438,6 @@ class Cache:
         :param keys: (optional) list of keys or tuples of (key, key_hint) to
          remove. Defaults to all.
         """
-        for key in keys:
-            self._register_binary_objects(key)
         if keys:
             return cache_remove_keys(self._client, self._cache_id, keys)
         else:
@@ -490,8 +456,6 @@ class Cache:
         :param sample_hint: (optional) Ignite data type, for whic
          the given sample should be converted.
         """
-        self._register_binary_objects(key)
-        self._register_binary_objects(sample)
         return cache_remove_if_equals(
             self._client, self._cache_id, key, sample, key_hint, sample_hint
         )
@@ -516,9 +480,6 @@ class Cache:
          value should be converted,
         :return: boolean `True` when key is present, `False` otherwise.
         """
-        self._register_binary_objects(key)
-        self._register_binary_objects(value)
-        self._register_binary_objects(sample)
         result = cache_replace_if_equals(
             self._client, self._cache_id, key, sample, value,
             key_hint, sample_hint, value_hint

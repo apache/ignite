@@ -15,11 +15,11 @@
 
 from collections import OrderedDict
 import ctypes
-from importlib import import_module
+import inspect
 
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
-from pyignite.utils import hashcode, is_hinted, schema_id
+from pyignite.utils import hashcode, is_hinted
 from .internal import AnyDataObject
 from .type_codes import *
 
@@ -424,6 +424,34 @@ class BinaryObject:
 
     @classmethod
     def from_python(cls, value: object):
+
+        def find_client():
+            """
+            A nice hack. Extracts the nearest `Client` instance from the
+            call stack.
+            """
+            from pyignite import Client
+
+            frame = None
+            try:
+                for rec in inspect.stack()[2:]:
+                    frame = rec[0]
+                    code = frame.f_code
+                    for varname in code.co_varnames:
+                        if varname in ['client', 'self']:
+                            suspect = frame.f_locals[varname]
+                            if isinstance(suspect, Client):
+                                return suspect
+            finally:
+                del frame
+
+        client = find_client()
+        if client:
+            # if no client will be found (which is hardly imaginable, but
+            # still possible), the class of the `value` will be discarded
+            # and the new dataclass will be automatically registered
+            client.register_binary_type(value.__class__)
+
         # prepare header
         header_class = cls.build_header()
         header = header_class()
