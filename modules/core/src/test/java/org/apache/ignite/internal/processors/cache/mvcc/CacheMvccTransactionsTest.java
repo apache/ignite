@@ -961,8 +961,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testCleanupWaitsForGet1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8318");
-
         boolean vals[] = {true, false};
 
         for (boolean otherPuts : vals) {

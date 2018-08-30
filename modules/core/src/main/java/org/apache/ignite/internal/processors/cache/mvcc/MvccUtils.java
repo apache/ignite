@@ -775,7 +775,9 @@ public class MvccUtils {
      */
     public static MvccSnapshot requestSnapshot(GridCacheContext cctx,
         GridNearTxLocal tx) throws IgniteCheckedException {
-        MvccSnapshot snapshot; tx = checkActive(tx);
+        MvccSnapshot snapshot;
+
+        tx = checkActive(tx);
 
         if ((snapshot = tx.mvccSnapshot()) == null) {
             MvccProcessor prc = cctx.shared().coordinators();
