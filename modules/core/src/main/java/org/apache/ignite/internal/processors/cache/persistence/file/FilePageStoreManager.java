@@ -77,6 +77,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** File suffix. */
     public static final String FILE_SUFFIX = ".bin";
 
+    public static final String ZIP_SUFFIX = ".zip";
+
     /** Partition file prefix. */
     public static final String PART_FILE_PREFIX = "part-";
 
