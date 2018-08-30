@@ -39,10 +39,10 @@
         </layout>
 
         <!-- Do not log beyond INFO level. -->
-        <filter class="org.apache.log4j.varia.LevelRangeFilter">
-            <param name="levelMin" value="DEBUG"/>
-            <param name="levelMax" value="INFO"/>
-        </filter>
+        <!--<filter class="org.apache.log4j.varia.LevelRangeFilter">-->
+            <!--<param name="levelMin" value="DEBUG"/>-->
+            <!--<param name="levelMax" value="INFO"/>-->
+        <!--</filter>-->
     </appender>
 
     <!--
