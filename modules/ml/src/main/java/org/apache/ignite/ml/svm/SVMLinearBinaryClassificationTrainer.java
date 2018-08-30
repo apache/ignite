@@ -98,6 +98,11 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
         return new SVMLinearBinaryClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(SVMLinearBinaryClassificationModel mdl) {
+        return true;
+    }
+
     private Vector getStateVector(SVMLinearBinaryClassificationModel mdl) {
         double intercept = mdl.intercept();
         Vector weights = mdl.weights();

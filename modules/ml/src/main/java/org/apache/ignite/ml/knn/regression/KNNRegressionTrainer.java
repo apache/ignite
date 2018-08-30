@@ -41,6 +41,7 @@ public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressio
         return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> KNNRegressionModel updateModel(KNNRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -49,5 +50,10 @@ public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressio
         if (mdl != null)
             res.copyStateFrom(mdl);
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(KNNRegressionModel mdl) {
+        return true;
     }
 }

@@ -76,6 +76,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -95,6 +96,11 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         final LabeledVectorSet<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
 
         return new ANNClassificationModel(dataset, centroidStat);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(ANNClassificationModel mdl) {
+        return mdl.getDistanceMeasure().equals(distance) && mdl.getCandidates().rowSize() == k;
     }
 
     /** */

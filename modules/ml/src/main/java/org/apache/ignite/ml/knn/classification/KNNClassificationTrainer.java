@@ -41,6 +41,7 @@ public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClass
         return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> KNNClassificationModel updateModel(KNNClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -50,5 +51,10 @@ public class KNNClassificationTrainer extends SingleLabelDatasetTrainer<KNNClass
         if (mdl != null)
             res.copyStateFrom(mdl);
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(KNNClassificationModel mdl) {
+        return true;
     }
 }

@@ -73,4 +73,9 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
 
         return new LinearRegressionModel(weights, x[x.length - 1]);
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(LinearRegressionModel mdl) {
+        return true;
+    }
 }

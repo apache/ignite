@@ -142,4 +142,9 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
         perceptron.setParameters(mlpState);
         return perceptron;
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(LinearRegressionModel mdl) {
+        return true;
+    }
 }

@@ -101,6 +101,11 @@ public class SVMLinearMultiClassClassificationTrainer
         return multiClsMdl;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(SVMLinearMultiClassClassificationModel mdl) {
+        return true;
+    }
+
     /**
      * Trains model based on the specified data.
      *

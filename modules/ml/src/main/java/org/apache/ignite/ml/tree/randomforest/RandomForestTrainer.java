@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.tree.randomforest;
 
 import org.apache.ignite.ml.composition.BaggingModelTrainer;
+import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.PredictionsAggregator;
 
 /**
@@ -57,5 +58,10 @@ public abstract class RandomForestTrainer extends BaggingModelTrainer {
 
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(ModelsComposition mdl) {
+        return true;
     }
 }

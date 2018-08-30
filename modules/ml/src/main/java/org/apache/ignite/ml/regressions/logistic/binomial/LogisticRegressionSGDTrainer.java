@@ -141,4 +141,9 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
         perceptron.setParameters(mlpState);
         return perceptron;
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(LogisticRegressionModel mdl) {
+        return true;
+    }
 }

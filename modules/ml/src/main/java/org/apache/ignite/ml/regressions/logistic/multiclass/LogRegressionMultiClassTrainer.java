@@ -110,6 +110,11 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
         return multiClsMdl;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(LogRegressionMultiClassModel mdl) {
+        return true;
+    }
+
     /** Iterates among dataset and collects class labels. */
     private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Double> lbExtractor) {

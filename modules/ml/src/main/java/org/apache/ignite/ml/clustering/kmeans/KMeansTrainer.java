@@ -130,6 +130,11 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         return new KMeansModel(centers, distance);
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(KMeansModel mdl) {
+        return mdl.centers().length == k && mdl.distanceMeasure().equals(distance);
+    }
+
     /**
      * Prepares the data to define new centroids on current iteration.
      *

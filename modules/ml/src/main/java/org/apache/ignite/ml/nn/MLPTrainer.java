@@ -201,6 +201,11 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(MultilayerPerceptron mdl) {
+        return true;
+    }
+
     /**
      * Builds a batch of the data by fetching specified rows.
      *

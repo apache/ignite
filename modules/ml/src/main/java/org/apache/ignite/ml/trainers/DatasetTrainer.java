@@ -85,11 +85,9 @@ public abstract class DatasetTrainer<M extends Model, L> {
 
     /**
      * @param mdl Model.
-     * @return true if current training parameters correspond to parameters from last training.
+     * @return true if current critical for training parameters correspond to parameters from last training.
      */
-    protected  boolean checkState(M mdl) {
-        return false;
-    }
+    protected abstract boolean checkState(M mdl);
 
     /**
      * Gets state of model in arguments, update in according to new data and return new model.
