@@ -19,6 +19,8 @@
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/query/streaming_query.h"
+#include "ignite/odbc/sql/sql_set_streaming_command.h"
+
 
 namespace ignite
 {
@@ -35,10 +37,10 @@ namespace ignite
                 connection(connection),
                 params(params),
                 cmd(cmd),
-                resultMeta(),
-                rowsAffected(),
-                rowsAffectedIdx(0),
-                executed(false)
+                order(0),
+                executed(false),
+                currentBatch(),
+                responseBuffer(1024)
             {
                 // No-op.
             }
@@ -50,38 +52,22 @@ namespace ignite
 
             SqlResult::Type StreamingQuery::Execute()
             {
-                if (executed)
-                    Close();
+                currentBatch.AddRow(sql, params);
 
-                int32_t maxPageSize = connection.GetConfiguration().GetPageSize();
-                int32_t rowNum = params.GetParamSetSize();
-                SqlResult::Type res;
+                if (currentBatch.GetSize() < cmd.GetBatchSize())
+                    return SqlResult::AI_SUCCESS;
 
-                int32_t processed = 0;
-
-                rowsAffected.clear();
-                rowsAffected.reserve(static_cast<size_t>(params.GetParamSetSize()));
-
-                do {
-                    int32_t currentPageSize = std::min(maxPageSize, rowNum - processed);
-                    bool lastPage = currentPageSize == rowNum - processed;
-
-                    res = MakeRequestExecuteBatch(processed, processed + currentPageSize, lastPage);
-
-                    processed += currentPageSize;
-                } while ((res == SqlResult::AI_SUCCESS || res == SqlResult::AI_SUCCESS_WITH_INFO) && processed < rowNum);
-
-                params.SetParamsProcessed(static_cast<SqlUlen>(rowsAffected.size()));
-
-                return res;
+                return Flush(false);
             }
 
             const meta::ColumnMetaVector& StreamingQuery::GetMeta() const
             {
-                return resultMeta;
+                static meta::ColumnMetaVector empty;
+
+                return empty;
             }
 
-            SqlResult::Type StreamingQuery::FetchNextRow(app::ColumnBindingMap& columnBindings)
+            SqlResult::Type StreamingQuery::FetchNextRow(app::ColumnBindingMap&)
             {
                 if (!executed)
                 {
@@ -93,7 +79,7 @@ namespace ignite
                 return SqlResult::AI_NO_DATA;
             }
 
-            SqlResult::Type StreamingQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
+            SqlResult::Type StreamingQuery::GetColumn(uint16_t, app::ApplicationDataBuffer&)
             {
                 if (!executed)
                 {
@@ -110,9 +96,9 @@ namespace ignite
 
             SqlResult::Type StreamingQuery::Close()
             {
+                Flush(true);
+
                 executed = false;
-                rowsAffected.clear();
-                rowsAffectedIdx = 0;
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -124,25 +110,24 @@ namespace ignite
 
             int64_t StreamingQuery::AffectedRows() const
             {
-                int64_t affected = rowsAffectedIdx < rowsAffected.size() ? rowsAffected[rowsAffectedIdx] : 0;
-                return affected < 0 ? 0 : affected;
+                return 0;
             }
 
             SqlResult::Type StreamingQuery::NextResultSet()
             {
-                if (rowsAffectedIdx + 1 >= rowsAffected.size())
-                {
-                    Close();
-                    return SqlResult::AI_NO_DATA;
-                }
-
-                ++rowsAffectedIdx;
-
-                return SqlResult::AI_SUCCESS;
+                return SqlResult::AI_NO_DATA;
             }
 
-            SqlResult::Type StreamingQuery::Flush()
+            SqlResult::Type StreamingQuery::Flush(bool last)
             {
+                if (currentBatch.GetSize() == 0 && !last)
+                    return SqlResult::AI_SUCCESS;
+
+                SqlResult::Type res = MakeRequestStreamingBatch(last);
+
+                currentBatch.Clear();
+
+                return res;
             }
 
             void StreamingQuery::PrepareQuery(const std::string& query)
@@ -150,74 +135,98 @@ namespace ignite
                 sql = query;
             }
 
-            //SqlResult::Type StreamingQuery::MakeRequestExecuteBatch(SqlUlen begin, SqlUlen end, bool last)
-            //{
-            //    const std::string& schema = connection.GetSchema();
+            SqlResult::Type StreamingQuery::MakeRequestStreamingBatch(bool last)
+            {
+                const std::string& schema = connection.GetSchema();
 
-            //    QueryExecuteBatchtRequest req(schema, sql, params, begin, end, last, timeout);
-            //    QueryExecuteBatchResponse rsp;
+                StreamingBatchRequest req(schema, currentBatch, last);
+                Response rsp;
 
-            //    try
-            //    {
-            //        // Setting connection timeout to 1 second more than query timeout itself.
-            //        int32_t connectionTimeout = timeout ? timeout + 1 : 0;
+                currentBatch.Synchronize();
 
-            //        bool success = connection.SyncMessage(req, rsp, connectionTimeout);
+                try
+                {
+                    connection.SyncMessage(req, rsp);
+                }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
 
-            //        if (!success)
-            //        {
-            //            diag.AddStatusRecord(SqlState::SHYT00_TIMEOUT_EXPIRED, "Query timeout expired");
+                    return SqlResult::AI_ERROR;
+                }
+                catch (const IgniteError& err)
+                {
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
-            //            return SqlResult::AI_ERROR;
-            //        }
-            //    }
-            //    catch (const OdbcError& err)
-            //    {
-            //        diag.AddStatusRecord(err);
+                    return SqlResult::AI_ERROR;
+                }
 
-            //        return SqlResult::AI_ERROR;
-            //    }
-            //    catch (const IgniteError& err)
-            //    {
-            //        diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+                currentBatch.Clear();
+                
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                {
+                    LOG_MSG("Error: " << rsp.GetError());
 
-            //        return SqlResult::AI_ERROR;
-            //    }
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
 
-            //    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-            //    {
-            //        LOG_MSG("Error: " << rsp.GetError());
+                    return SqlResult::AI_ERROR;
+                }
 
-            //        diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
+                return SqlResult::AI_SUCCESS;
+            }
 
-            //        return SqlResult::AI_ERROR;
-            //    }
+            SqlResult::Type StreamingQuery::MakeRequestStreamingBatchOrdered(bool last)
+            {
+                const std::string& schema = connection.GetSchema();
 
-            //    const std::vector<int64_t>& rowsLastTime = rsp.GetAffectedRows();
+                StreamingBatchOrderedRequest req(schema, currentBatch, last, order);
+                StreamingBatchOrderedResponse rsp;
 
-            //    for (size_t i = 0; i < rowsLastTime.size(); ++i)
-            //    {
-            //        int64_t idx = static_cast<int64_t>(i + rowsAffected.size());
+                currentBatch.Synchronize();
 
-            //        params.SetParamStatus(idx, rowsLastTime[i] < 0 ? SQL_PARAM_ERROR : SQL_PARAM_SUCCESS);
-            //    }
+                try
+                {
+                    connection.SyncMessage(req, rsp);
+                }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
 
-            //    rowsAffected.insert(rowsAffected.end(), rowsLastTime.begin(), rowsLastTime.end());
-            //    LOG_MSG("Affected rows list size: " << rowsAffected.size());
+                    return SqlResult::AI_ERROR;
+                }
+                catch (const IgniteError& err)
+                {
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
-            //    if (!rsp.GetErrorMessage().empty())
-            //    {
-            //        LOG_MSG("Error: " << rsp.GetErrorMessage());
-            //        LOG_MSG("Sets Processed: " << rowsAffected.size());
+                    return SqlResult::AI_ERROR;
+                }
 
-            //        diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetErrorCode()), rsp.GetErrorMessage(),
-            //            static_cast<int32_t>(rowsAffected.size()), 0);
+                currentBatch.Clear();
 
-            //        return SqlResult::AI_SUCCESS_WITH_INFO;
-            //    }
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                {
+                    LOG_MSG("Error: " << rsp.GetError());
 
-            //    return SqlResult::AI_SUCCESS;
-            //}
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
+
+                    return SqlResult::AI_ERROR;
+                }
+
+                if (rsp.GetErrorCode() != ResponseStatus::SUCCESS)
+                {
+                    LOG_MSG("Error: " << rsp.GetErrorMessage());
+
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetErrorCode()), rsp.GetErrorMessage());
+
+                    return SqlResult::AI_ERROR;
+                }
+
+                assert(order == rsp.GetOrder());
+
+                ++order;
+
+                return SqlResult::AI_SUCCESS;
+            }
         }
     }
 }

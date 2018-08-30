@@ -483,10 +483,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             OdbcResponse resp = (OdbcResponse)processStreamingBatch(req);
 
-            if (resp.response() instanceof OdbcStreamingBatchResult) {
-                resp = new OdbcResponse(
-                    new OdbcStreamingBatchOrderedResult((OdbcStreamingBatchResult)resp.response(), req.order()));
-            }
+            resp = new OdbcResponse(
+                new OdbcStreamingBatchOrderedResult(resp, req.order()));
 
             sender.send(resp);
         } catch (Exception e) {
@@ -509,10 +507,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     private ClientListenerResponse processStreamingBatch(OdbcStreamingBatchRequest req) {
         assert cliCtx.isStream();
 
-        int qryCnt = req.queries().size();
-
-        List<Long> rowsAffected = new ArrayList<>(qryCnt);
-
         // Send back only the first error. Others will be written to the log.
         IgniteBiTuple<Integer, String> firstErr = new IgniteBiTuple<>();
 
@@ -521,7 +515,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         for (OdbcQuery q : req.queries()) {
             if (q.sql() != null) { // If we have a new query string in the batch,
                 if (qry != null) // then execute the previous sub-batch and create a new SqlFieldsQueryEx.
-                    processStreamingBatch(qry, rowsAffected, firstErr);
+                    processStreamingBatch(qry, firstErr);
 
                 qry = makeQuery(req.schemaName(), q.sql());
             }
@@ -532,18 +526,18 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         }
 
         if (qry != null)
-            processStreamingBatch(qry, rowsAffected, firstErr);
+            processStreamingBatch(qry, firstErr);
 
         if (req.last())
             cliCtx.disableStreaming();
 
         if (firstErr.isEmpty())
-            return new OdbcResponse(new OdbcStreamingBatchResult(rowsAffected));
+            return new OdbcResponse(null);
         else
         {
             assert firstErr.getKey() != null;
 
-            return new OdbcResponse(new OdbcStreamingBatchResult(rowsAffected, firstErr.getKey(), firstErr.getValue()));
+            return new OdbcResponse(firstErr.getKey(), firstErr.getValue());
         }
     }
 
@@ -551,20 +545,18 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * Executes query and updates result counters.
      *
      * @param qry Query.
-     * @param affected Per query rows affected.
      * @param err First error data - code and message.
      */
-    private void processStreamingBatch(SqlFieldsQueryEx qry, List<Long> affected, IgniteBiTuple<Integer, String> err) {
+    private void processStreamingBatch(SqlFieldsQueryEx qry, IgniteBiTuple<Integer, String> err) {
         try {
             assert cliCtx.isStream();
 
-            affected = ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(),
-                qry.batchedArguments());
+            ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(), qry.batchedArguments());
         }
         catch (Exception e) {
             U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
 
-            extractBatchError(e, err, affected);
+            extractBatchError(e, err);
         }
     }
 
@@ -906,23 +898,19 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         IgniteBiTuple<Integer, String> err = new IgniteBiTuple<>();
         List<Long> rowsAffected = new ArrayList<>();
 
-        extractBatchError(e, err, rowsAffected);
+        extractBatchError(e, err);
 
         OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, -1, err.get1(), err.get2());
 
         return new OdbcResponse(res);
     }
 
-    private static void extractBatchError(Exception e, IgniteBiTuple<Integer, String> err, List<Long> rowsAffected) {
+    private static void extractBatchError(Exception e, IgniteBiTuple<Integer, String> err) {
         if (e instanceof IgniteSQLException) {
             BatchUpdateException batchCause = X.cause(e, BatchUpdateException.class);
 
-            if (batchCause != null) {
-                for (long cnt : batchCause.getLargeUpdateCounts())
-                    rowsAffected.add(cnt);
-
+            if (batchCause != null)
                 err.set(batchCause.getErrorCode(), batchCause.getMessage());
-            }
             else
                 err.set(((IgniteSQLException)e).statusCode(), OdbcUtils.tryRetrieveH2ErrorMessage(e));
         }

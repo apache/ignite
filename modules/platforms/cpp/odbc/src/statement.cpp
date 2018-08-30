@@ -927,9 +927,7 @@ namespace ignite
         {
             assert(IsStreamingActive());
 
-            query::StreamingQuery* currentQuery0 = static_cast<query::StreamingQuery*>(currentQuery.get());
-
-            SqlResult::Type result = currentQuery0->Flush();
+            SqlResult::Type result = currentQuery->Close();
 
             currentQuery.reset();
 

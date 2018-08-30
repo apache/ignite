@@ -22,7 +22,7 @@ package org.apache.ignite.internal.processors.odbc.odbc;
  */
 public class OdbcStreamingBatchOrderedResult {
     /** Rows affected. */
-    private final OdbcStreamingBatchResult batchResult;
+    private final OdbcResponse batchResult;
 
     /** Order. */
     private final long order;
@@ -31,15 +31,12 @@ public class OdbcStreamingBatchOrderedResult {
      * @param batchResult Execute batch result.
      * @param order Order.
      */
-    public OdbcStreamingBatchOrderedResult(OdbcStreamingBatchResult batchResult, long order) {
+    public OdbcStreamingBatchOrderedResult(OdbcResponse batchResult, long order) {
         this.batchResult = batchResult;
         this.order = order;
     }
 
-    /**
-     * @return Batch result.
-     */
-    public OdbcStreamingBatchResult batchResult() {
+    public OdbcResponse batchResult() {
         return batchResult;
     }
 

@@ -35,6 +35,15 @@ namespace ignite
 {
     namespace odbc
     {
+        namespace query
+        {
+            namespace streaming
+            {
+                // Forward declaration.
+                class StreamingBatch;
+            }
+        }
+
         struct ClientType
         {
             enum Type
@@ -63,7 +72,11 @@ namespace ignite
 
                 EXECUTE_SQL_QUERY_BATCH = 8,
 
-                QUERY_MORE_RESULTS = 9
+                QUERY_MORE_RESULTS = 9,
+
+                STREAMING_BATCH = 10,
+
+                STREAMING_BATCH_ORDERED = 11
             };
         };
 
@@ -146,7 +159,7 @@ namespace ignite
         /**
          * Query execute batch request.
          */
-        class QueryExecuteBatchtRequest
+        class QueryExecuteBatchRequest
         {
         public:
             /**
@@ -160,14 +173,14 @@ namespace ignite
              * @param timeout Timeout.
              * @param autoCommit Auto commit flag.
              */
-            QueryExecuteBatchtRequest(const std::string& schema, const std::string& sql,
+            QueryExecuteBatchRequest(const std::string& schema, const std::string& sql,
                 const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last, int32_t timeout,
                 bool autoCommit);
 
             /**
              * Destructor.
              */
-            ~QueryExecuteBatchtRequest();
+            ~QueryExecuteBatchRequest();
 
             /**
              * Write request using provided writer.
@@ -424,6 +437,85 @@ namespace ignite
             /** SQL query. */
             int32_t pageSize;
         };
+
+        /**
+         * Streaming batch request.
+         */
+        class StreamingBatchRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param schema Schema.
+             * @param batch Batch.
+             * @param last Last batch indicator.
+             */
+            StreamingBatchRequest(const std::string& schema, const query::streaming::StreamingBatch& batch, bool last);
+
+            /**
+             * Destructor.
+             */
+            ~StreamingBatchRequest();
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
+
+        private:
+            /** Schema name. */
+            std::string schema;
+
+            /** Batch. */
+            const query::streaming::StreamingBatch& batch;
+
+            /** Last page flag. */
+            bool last;
+        };
+
+        /**
+         * Streaming batch ordered request.
+         */
+        class StreamingBatchOrderedRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param schema Schema.
+             * @param batch Batch.
+             * @param last Last batch indicator.
+             * @param order Order.
+             */
+            StreamingBatchOrderedRequest(const std::string& schema, const query::streaming::StreamingBatch& batch, bool last, int64_t order);
+
+            /**
+             * Destructor.
+             */
+            ~StreamingBatchOrderedRequest();
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
+
+        private:
+            /** Schema name. */
+            std::string schema;
+
+            /** Batch. */
+            const query::streaming::StreamingBatch& batch;
+
+            /** Last page flag. */
+            bool last;
+
+            /** Order. */
+            int64_t order;
+        };
+
 
         /**
          * General response.
@@ -695,6 +787,116 @@ namespace ignite
 
             /** Error code. */
             int32_t errorCode;
+        };
+
+        /**
+         * Streaming batch response.
+         */
+        class StreamingBatchResponse : public Response
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            StreamingBatchResponse();
+
+            /**
+             * Destructor.
+             */
+            virtual ~StreamingBatchResponse();
+
+            /**
+             * Get error message.
+             * @return Error message.
+             */
+            const std::string& GetErrorMessage() const
+            {
+                return errorMessage;
+            }
+
+            /**
+             * Get error code.
+             * @return Error code.
+             */
+            int32_t GetErrorCode() const
+            {
+                return errorCode;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             * @param ver Protocol version.
+             */
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
+
+            /** Error message. */
+            std::string errorMessage;
+
+            /** Error code. */
+            int32_t errorCode;
+        };
+
+        /**
+         * Streaming batch response.
+         */
+        class StreamingBatchOrderedResponse : public Response
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            StreamingBatchOrderedResponse();
+
+            /**
+             * Destructor.
+             */
+            virtual ~StreamingBatchOrderedResponse();
+
+            /**
+             * Get error message.
+             * @return Error message.
+             */
+            const std::string& GetErrorMessage() const
+            {
+                return errorMessage;
+            }
+
+            /**
+             * Get error code.
+             * @return Error code.
+             */
+            int32_t GetErrorCode() const
+            {
+                return errorCode;
+            }
+
+            /**
+             * Get order.
+             * @return Order.
+             */
+            int64_t GetOrder() const
+            {
+                return order;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             * @param ver Protocol version.
+             */
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
+
+            /** Error message. */
+            std::string errorMessage;
+
+            /** Error code. */
+            int32_t errorCode;
+
+            /** Order. */
+            int64_t order;
         };
 
         /**
