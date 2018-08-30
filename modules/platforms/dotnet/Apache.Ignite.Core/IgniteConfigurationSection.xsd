@@ -1373,7 +1373,7 @@
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
-                </xs:element>                
+                </xs:element>
                 <xs:element name="sqlConnectorConfiguration" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>SQL connector configuration (JDBC and ODBC).</xs:documentation>
@@ -1744,7 +1744,7 @@
                                                         <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
-                                            </xs:complexType>                                            
+                                            </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
                                 </xs:complexType>

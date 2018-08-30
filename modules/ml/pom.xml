@@ -21,6 +21,9 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <properties>
+        <commons.math.version>3.6.1</commons.math.version>
+    </properties>
 
     <parent>
         <artifactId>ignite-parent</artifactId>
@@ -47,7 +50,7 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
 	    <groupId>org.apache.ignite</groupId>
 	    <artifactId>ignite-indexing</artifactId>
@@ -60,7 +63,7 @@
 	    <artifactId>ignite-spring</artifactId>
 	    <version>${project.version}</version>
         </dependency>
-       
+
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>fastutil</artifactId>
@@ -117,6 +120,12 @@
             <artifactId>mockito-all</artifactId>
             <version>${mockito.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>${commons.math.version}</version>
         </dependency>
     </dependencies>
 

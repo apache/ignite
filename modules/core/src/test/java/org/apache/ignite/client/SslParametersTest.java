@@ -123,7 +123,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
         };
 
         startGrid();
-        
+
         checkSuccessfulClientStart(
             new String[][] {
                 new String[] {
@@ -144,7 +144,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
         };
 
         startGrid();
-        
+
         checkClientStartFailure(
             new String[][] {
                 new String[] {
@@ -165,7 +165,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
         };
 
         startGrid();
-        
+
         checkClientStartFailure(
             new String[][] {
                 new String[] {
