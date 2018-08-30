@@ -3407,6 +3407,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (val != Long.MIN_VALUE)
                         waiters.put(e.getKey(), Long.MIN_VALUE);
 
+                    log.info("Unpark waiters : " + e.getKey().getName());
                     LockSupport.unpark(e.getKey());
                 }
             }

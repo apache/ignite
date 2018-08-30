@@ -341,11 +341,12 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         int failedPosition = -1;
 
+        Thread.currentThread().setName(Thread.currentThread().getName()+"_10001");
         for (int i = 0; i < 1000; i++) {
             byte payload = (byte) i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
-
+            Thread.currentThread().setName(Thread.currentThread().getName().replaceFirst("_[0-9]*", "_"+i));
             try {
                 grid.cache(CACHE_NAME).put(i, data);
             }
