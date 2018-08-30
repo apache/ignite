@@ -331,21 +331,23 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         if (!hasWriteKey(entry.txKey()))
             return false;
 
-        IgniteTxCommitEntriesFuture commitFut = startCommitEntries();
+        cctx.tm().finisher().execute(this, () -> {
+            IgniteTxCommitEntriesFuture commitFut = startCommitEntries();
 
-        commitFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
-            try {
-                finishCommitEntries(commitFut);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to commit remote transaction: " + this, e);
+            commitFut.listen(f -> cctx.tm().finisher().execute(this, () -> {
+                try {
+                    finishCommitEntries(commitFut);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to commit remote transaction: " + this, e);
 
-                invalidate(true);
-                systemInvalidate(true);
+                    invalidate(true);
+                    systemInvalidate(true);
 
-                rollbackRemoteTx();
-            }
-        }));
+                    rollbackRemoteTx();
+                }
+            }));
+        });
 
         return true;
     }

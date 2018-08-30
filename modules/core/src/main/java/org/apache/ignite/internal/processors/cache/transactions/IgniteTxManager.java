@@ -177,12 +177,30 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Committed local transactions. */
     private final ConcurrentLinkedHashMap<GridCacheVersion, Object> completedVersHashMap =
-        new ConcurrentLinkedHashMap<>(
+        new ConcurrentLinkedHashMap(
             Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT),
             0.75f,
             Runtime.getRuntime().availableProcessors() * 2,
             Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT),
-            PER_SEGMENT_Q);
+            PER_SEGMENT_Q) {
+/*
+
+            @Override public Object putIfAbsent(Object key, Object val) {
+                System.err.println("[PUT] " + Thread.currentThread().getName());
+
+                if (!Thread.currentThread().getName().contains("dedicated"))
+                    U.dumpStack(log, "[PUT] to completed vers hashmap.");
+
+                return super.putIfAbsent(key, val);
+            }
+
+            @Override public Object get(Object key) {
+                System.err.println("[GET] " + Thread.currentThread().getName());
+
+                return super.get(key);
+            }
+*/
+        };
 
     /** Pending one phase commit ack requests sender. */
     private GridDeferredAckMessageSender deferredAckMsgSnd;
@@ -910,32 +928,36 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Collection<IgniteTxEntry> entries = tx.local() ? tx.allEntries() : tx.writeEntries();
 
         for (IgniteTxEntry entry : entries) {
-            GridCacheEntryEx cached = entry.cached();
+            cctx.cache().executor().execute(entry.key().partition(), () -> {
+                GridCacheEntryEx cached = entry.cached();
 
-            GridCacheContext cacheCtx = entry.context();
+                GridCacheContext cacheCtx = entry.context();
 
-            if (cached == null)
-                cached = cacheCtx.cache().peekEx(entry.key());
+                if (cached == null)
+                    cached = cacheCtx.cache().peekEx(entry.key());
 
-            if (cached.detached())
-                continue;
+                if (cached.detached())
+                    return null;
 
-            try {
-                if (cached.obsolete() || cached.markObsoleteIfEmpty(tx.xidVersion()))
-                    cacheCtx.cache().removeEntry(cached);
+                try {
+                    if (cached.obsolete() || cached.markObsoleteIfEmpty(tx.xidVersion()))
+                        cacheCtx.cache().removeEntry(cached);
 
-                if (!tx.near() && isNearEnabled(cacheCtx)) {
-                    GridNearCacheAdapter near = cacheCtx.isNear() ? cacheCtx.near() : cacheCtx.dht().near();
+                    if (!tx.near() && isNearEnabled(cacheCtx)) {
+                        GridNearCacheAdapter near = cacheCtx.isNear() ? cacheCtx.near() : cacheCtx.dht().near();
 
-                    GridNearCacheEntry e = near.peekExx(entry.key());
+                        GridNearCacheEntry e = near.peekExx(entry.key());
 
-                    if (e != null && e.markObsoleteIfEmpty(null))
-                        near.removeEntry(e);
+                        if (e != null && e.markObsoleteIfEmpty(null))
+                            near.removeEntry(e);
+                    }
                 }
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to remove obsolete entry from cache: " + cached, e);
-            }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to remove obsolete entry from cache: " + cached, e);
+                }
+
+                return null;
+            });
         }
     }
 
@@ -1527,8 +1549,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (tx.internal())
             return;
 
-        for (IgniteTxEntry txEntry : tx.allEntries())
-            txEntry.cached().context().evicts().touch(txEntry, tx.local());
+        for (IgniteTxEntry txEntry : tx.allEntries()) {
+            cctx.cache().executor().execute(txEntry.key().partition(), () -> {
+                txEntry.cached().context().evicts().touch(txEntry, tx.local());
+
+                return null;
+            });
+        }
     }
 
     /**
@@ -1745,8 +1772,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param entries Entries to unlock.
      */
     private void unlockMultiple(IgniteInternalTx tx, Iterable<IgniteTxEntry> entries) {
-        for (IgniteTxEntry txEntry : entries)
-            txUnlock(tx, txEntry);
+        for (IgniteTxEntry txEntry : entries) {
+            cctx.cache().executor().execute(txEntry.key().partition(), () -> {
+                txUnlock(tx, txEntry);
+
+                return null;
+            });
+        }
     }
 
     /**
