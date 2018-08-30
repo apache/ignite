@@ -850,11 +850,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @Override protected void applyTxCounters() {
         super.applyTxCounters();
 
-        applyUpdateCounters(txCounters().updateCounters());
-    }
+        Map<Integer, PartitionUpdateCounters> updCntrs = txCounters().updateCounters();
 
-    /** */
-    private void applyUpdateCounters(Map<Integer, PartitionUpdateCounters> updCntrs) {
         if (F.isEmpty(updCntrs))
             return;
 

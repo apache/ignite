@@ -916,11 +916,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 applyTxCounters();
 
-                Map<Integer, PartitionUpdateCounters> updCntrs = applyAndCollectLocalUpdateCounters();
-
-                // remember counters for subsequent sending to backups
-                txCounters().updateCounters(updCntrs);
-
                 if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(ptr, false);
             }
@@ -1711,6 +1706,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             qryEnlisted = true;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void applyTxCounters() {
+        super.applyTxCounters();
+
+        Map<Integer, PartitionUpdateCounters> updCntrs = applyAndCollectLocalUpdateCounters();
+
+        // remember counters for subsequent sending to backups
+        txCounters().updateCounters(updCntrs);
     }
 
     /**

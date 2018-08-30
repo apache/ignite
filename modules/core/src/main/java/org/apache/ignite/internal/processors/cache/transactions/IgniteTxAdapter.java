@@ -2029,11 +2029,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * Make counters accumulated during transaction visible outside of transaciton.
      */
     protected void applyTxCounters() {
-        applyCacheSizeDeltas(txCounters.sizeDeltas());
-    }
+        Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas = txCounters.sizeDeltas();
 
-    /** */
-    private void applyCacheSizeDeltas(Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas) {
         if (F.isEmpty(sizeDeltas))
             return;
 
