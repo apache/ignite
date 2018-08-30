@@ -269,7 +269,10 @@ public class GridCacheReturn implements Externalizable, Message {
                 invokeResCol = new ArrayList<>();
 
             CacheInvokeDirectResult res0 = err == null ?
-                CacheInvokeDirectResult.lazyResult(key, res) : new CacheInvokeDirectResult(key, err);
+                cctx.transactional() ?
+                    new CacheInvokeDirectResult(key, cctx.toCacheObject(res)) :
+                    CacheInvokeDirectResult.lazyResult(key, res) :
+                new CacheInvokeDirectResult(key, err);
 
             invokeResCol.add(res0);
         }
@@ -305,6 +308,18 @@ public class GridCacheReturn implements Externalizable, Message {
         }
 
         resMap.putAll((Map<Object, EntryProcessorResult>)other.v);
+    }
+
+    /**
+     * Converts entry processor invokation results to cache object instances.
+     *
+     * @param ctx Cache context.
+     */
+    public void marshalResult(GridCacheContext ctx) {
+        if (invokeRes && invokeResCol != null) {
+            for (CacheInvokeDirectResult directRes : invokeResCol)
+                directRes.marshalResult(ctx);
+        }
     }
 
     /**
