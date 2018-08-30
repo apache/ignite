@@ -22,6 +22,8 @@
 #include "ignite/odbc/app/parameter_set.h"
 #include "ignite/odbc/cursor.h"
 
+#include "ignite/odbc/query/streaming/streaming_batch.h"
+
 namespace ignite
 {
     namespace odbc
@@ -131,9 +133,10 @@ namespace ignite
                 /**
                  * Flush collected streaming data to remote server.
                  *
+                 * @param last Last page indicator.
                  * @return Operation result.
                  */
-                SqlResult::Type Flush();
+                SqlResult::Type Flush(bool last);
 
                 /**
                  * Prepare query for execution in a streaming mode.
@@ -146,15 +149,20 @@ namespace ignite
                 IGNITE_NO_COPY_ASSIGNMENT(StreamingQuery);
 
                 /**
-                 * Make query execute request and use response to set internal
-                 * state.
+                 * Send batch request.
                  *
-                 * @param begin Paramset interval beginning.
-                 * @param end Paramset interval end.
                  * @param last Last page flag.
                  * @return Result.
                  */
-                //SqlResult::Type MakeRequestExecuteBatch(SqlUlen begin, SqlUlen end, bool last);
+                SqlResult::Type MakeRequestStreamingBatch(bool last);
+
+                /**
+                 * Send batch ordered request.
+                 *
+                 * @param last Last page flag.
+                 * @return Result.
+                 */
+                SqlResult::Type MakeRequestStreamingBatchOrdered(bool last);
 
                 /** Connection associated with the statement. */
                 Connection& connection;
@@ -168,17 +176,17 @@ namespace ignite
                 /** Command. */
                 const SqlSetStreamingCommand& cmd;
 
-                /** Columns metadata. */
-                meta::ColumnMetaVector resultMeta;
-
-                /** Number of rows affected. */
-                std::vector<int64_t> rowsAffected;
-
-                /** Rows affected index. */
-                size_t rowsAffectedIdx;
+                /** Order. */
+                int64_t order;
 
                 /** Query executed. */
                 bool executed;
+
+                /** Current batch. */
+                streaming::StreamingBatch currentBatch;
+
+                /** Current response. */
+                impl::interop::InteropUnpooledMemory responseBuffer;
             };
         }
     }
