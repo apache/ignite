@@ -18,6 +18,9 @@
 package org.apache.ignite.examples.ml.tree.randomforest;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -26,29 +29,22 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.examples.ml.util.TestCache;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.environment.logging.ConsoleLogger;
-import org.apache.ignite.ml.environment.logging.MLLogger;
-import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
+import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
+import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Example represents a solution for the task of price predictions for houses in Boston based on a
- * <a href ="https://en.wikipedia.org/wiki/Random_forest">Random Forest</a> implementation for regression.
- * <p>
- * Code in this example launches Ignite grid and fills the cache with test data points (based on the
- * <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/housing/">Boston Housing dataset</a>).</p>
- * <p>
- * After that it initializes the {@link RandomForestRegressionTrainer} and trains the model based on the specified data
- * using random forest regression algorithm.</p>
- * <p>
- * Finally, this example loops over the test set of data points, compares prediction of the trained model to the
- * expected outcome (ground truth), and evaluates model quality in terms of Mean Squared Error (MSE) and
- * Mean Absolute Error (MAE).</p>
- * <p>
- * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
+ * Example represents a solution for the task of price predictions for houses in Boston based on RandomForestTrainer
+ * implementation for regression. It shows an initialization of {@link RandomForestTrainer}, +initialization of Ignite
+ * Cache, learning step and evaluation of model quality in terms of Mean Squared Error (MSE) and Mean Absolute Error
+ * (MAE).
+ *
+ * Dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/housing/
+ *
+ * @see RandomForestRegressionTrainer
  */
 public class RandomForestRegressionExample {
     /**
@@ -65,22 +61,20 @@ public class RandomForestRegressionExample {
                 RandomForestRegressionExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
-                RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
-
-                trainer.setEnvironment(LearningEnvironment.builder()
-                    .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
-                    .withLoggingFactory(ConsoleLogger.factory(MLLogger.VerboseLevel.LOW))
-                    .build()
-                );
-
-                System.out.println(">>> Configured trainer: " + trainer.getClass().getSimpleName());
+                AtomicInteger indx = new AtomicInteger(0);
+                RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(
+                    IntStream.range(0, data[0].length - 1).mapToObj(x -> new FeatureMeta("", indx.getAndIncrement(), false)).collect(Collectors.toList())
+                ).withCountOfTrees(101)
+                    .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
+                    .withMaxDepth(4)
+                    .withMinImpurityDelta(0.)
+                    .withSubsampleSize(0.3)
+                    .withSeed(0);
 
                 ModelsComposition randomForest = trainer.fit(ignite, dataCache,
                         (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
                         (k, v) -> v[v.length - 1]
                 );
-
-                System.out.println(">>> Trained model: " + randomForest.toString(true));
 
                 double mse = 0.0;
                 double mae = 0.0;
@@ -100,15 +94,11 @@ public class RandomForestRegressionExample {
                         totalAmount++;
                     }
 
-                    System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
-
                     mse = mse / totalAmount;
                     System.out.println("\n>>> Mean squared error (MSE) " + mse);
 
                     mae = mae / totalAmount;
                     System.out.println("\n>>> Mean absolute error (MAE) " + mae);
-
-                    System.out.println(">>> Random Forest regression algorithm over cached dataset usage example completed.");
                 }
             });
 
@@ -117,7 +107,9 @@ public class RandomForestRegressionExample {
         }
     }
 
-    /** The Boston housing dataset. */
+    /**
+     * The Boston housing dataset.
+     */
     private static final double[][] data = {
             {0.02731,0.00,7.070,0,0.4690,6.4210,78.90,4.9671,2,242.0,17.80,396.90,9.14,21.60},
             {0.02729,0.00,7.070,0,0.4690,7.1850,61.10,4.9671,2,242.0,17.80,392.83,4.03,34.70},

@@ -103,6 +103,8 @@ public class IgniteNode implements BenchmarkServer {
 
         CacheConfiguration[] ccfgs = c.getCacheConfiguration();
 
+        c.setMvccEnabled(args.mvccEnabled());
+
         if (ccfgs != null) {
             for (CacheConfiguration cc : ccfgs) {
                 // IgniteNode can not run in CLIENT_ONLY mode,

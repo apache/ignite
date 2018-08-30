@@ -2349,12 +2349,8 @@ public class IgnitionEx {
                         "like TcpDiscoverySpi)");
 
                 for (CacheConfiguration ccfg : userCaches) {
-                    if (CU.isHadoopSystemCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isUtilityCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
+                    if (CU.isReservedCacheName(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + ccfg.getName() +
                             "\" because it is reserved for internal purposes.");
 
                     if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
