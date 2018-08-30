@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -34,12 +33,9 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  *
@@ -179,25 +175,15 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
 
-        GridTestUtils.runAsync(() -> {
-                //when: put to cache more than 1 MB
-                for (int i = 0; i < 1000; i++)
-                    cache.put(i, i);
-            }
-        );
+        for (int i = 0; i < 500; i++)
+            cache.put(i, i);
 
         //then: checkpoint triggered by size limit of wall without checkpoint
         GridCacheDatabaseSharedManager.Checkpointer checkpointer = dbMgr.getCheckpointer();
 
-        final AtomicReference<String> reason = new AtomicReference<>();
+        String checkpointReason = U.field((Object)U.field(checkpointer, "curCpProgress"), "reason");
 
-        GridTestUtils.waitForCondition(() -> {
-            reason.set(U.field((Object)U.field(checkpointer, "scheduledCp"), "reason"));
-
-            return reason.get() != null;
-        }, 5000);
-
-        assertEquals("too big size of WAL without checkpoint", reason.get());
+        assertEquals("too big size of WAL without checkpoint", checkpointReason);
     }
 
     /**
