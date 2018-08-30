@@ -132,6 +132,19 @@ namespace ignite
             }
         }
 
+        Ignite OdbcTestSuite::StartTestNode(const char* cfg, const char* name)
+        {
+            std::string config(cfg);
+
+#ifdef IGNITE_TESTS_32
+            // Cutting off the ".xml" part.
+            config.resize(config.size() - 4);
+            config += "-32.xml";
+#endif //IGNITE_TESTS_32
+
+            return StartNode(config.c_str(), name);
+        }
+
         OdbcTestSuite::OdbcTestSuite():
             env(NULL),
             dbc(NULL),
