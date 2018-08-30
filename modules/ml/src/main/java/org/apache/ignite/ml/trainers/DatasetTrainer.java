@@ -63,11 +63,8 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
-
-        throw new UnsupportedOperationException();
-    }
+    public abstract <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor);
 
     /**
      * Trains model based on the specified data.

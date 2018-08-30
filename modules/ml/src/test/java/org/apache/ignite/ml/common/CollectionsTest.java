@@ -22,6 +22,7 @@ import java.util.Set;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModelFormat;
 import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
+import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.ann.ANNModelFormat;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNModelFormat;
@@ -103,11 +104,11 @@ public class CollectionsTest {
 
         test(new SVMLinearBinaryClassificationModel(null, 1.0), new SVMLinearBinaryClassificationModel(null, 0.5));
 
-        test(new ANNClassificationModel(new LabeledVectorSet<>()),
-            new ANNClassificationModel(new LabeledVectorSet<>(1, 1, true)));
+        test(new ANNClassificationModel(new LabeledVectorSet<>(), new ANNClassificationTrainer.CentroidStat()),
+            new ANNClassificationModel(new LabeledVectorSet<>(1, 1, true), new ANNClassificationTrainer.CentroidStat()));
 
-        test(new ANNModelFormat(1, new ManhattanDistance(), NNStrategy.SIMPLE, new LabeledVectorSet<>()),
-            new ANNModelFormat(2, new ManhattanDistance(), NNStrategy.SIMPLE, new LabeledVectorSet<>()));
+        test(new ANNModelFormat(1, new ManhattanDistance(), NNStrategy.SIMPLE, new LabeledVectorSet<>(), new ANNClassificationTrainer.CentroidStat()),
+            new ANNModelFormat(2, new ManhattanDistance(), NNStrategy.SIMPLE, new LabeledVectorSet<>(), new ANNClassificationTrainer.CentroidStat()));
     }
 
     /** Test classes that have all instances equal (eg, metrics). */

@@ -86,6 +86,24 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
         }
     }
 
+    /**
+     * Trains new model based on dataset because there is no valid approach to update decision trees.
+     *
+     * @param mdl Learned model.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return New model based on new dataset.
+     */
+    @Override public <K, V> DecisionTreeNode update(DecisionTreeNode mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return fit(datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** */
     public <K,V> DecisionTreeNode fit(Dataset<EmptyContext, DecisionTreeData> dataset) {
         return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset));
     }
