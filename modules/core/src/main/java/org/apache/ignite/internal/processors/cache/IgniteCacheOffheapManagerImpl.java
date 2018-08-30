@@ -1450,14 +1450,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param cacheId Cache ID.
          */
         void incrementSize(int cacheId) {
-            updateSize0(cacheId, 1);
+            updateSize(cacheId, 1);
         }
 
         /**
          * @param cacheId Cache ID.
          */
         void decrementSize(int cacheId) {
-            updateSize0(cacheId, -1);
+            updateSize(cacheId, -1);
         }
 
         /** {@inheritDoc} */
@@ -1496,11 +1496,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void updateSize(int cacheId, long delta) {
-            updateSize0(cacheId, delta);
-        }
-
-        /** */
-        private void updateSize0(int cacheId, long delta) {
             storageSize.addAndGet(delta);
 
             if (grp.sharedGroup()) {
