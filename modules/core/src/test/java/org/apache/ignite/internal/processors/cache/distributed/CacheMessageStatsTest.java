@@ -22,19 +22,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -43,13 +48,16 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class CacheMessageStatsTest extends GridCommonAbstractTest {
     /** Grid count. */
-    public static final int GRID_COUNT = 3;
+    private static final int GRID_COUNT = 3;
 
     /** Caches count. */
-    public static final int CACHES_CNT = 3;
+    private static final int CACHES_CNT = 3;
 
     /** MB. */
-    public static final long MB = 1024L * 1024;
+    private static final long MB = 1024L * 1024;
+
+    /** */
+    private static final int DEFAULT_ATOMIC_CACHE_INDEX = CACHES_CNT - 1;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -81,7 +89,7 @@ public class CacheMessageStatsTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(int idx) {
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME + idx);
 
-        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setAtomicityMode(idx == DEFAULT_ATOMIC_CACHE_INDEX ? ATOMIC : TRANSACTIONAL);
         ccfg.setBackups(2);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setOnheapCacheEnabled(false);
@@ -170,19 +178,42 @@ public class CacheMessageStatsTest extends GridCommonAbstractTest {
 
         grid(0).context().io().dumpProcessedMessagesStats();
 
+        // atomics
+        client.cache(caches[DEFAULT_ATOMIC_CACHE_INDEX].getName()).putAll(keys.stream().collect(Collectors.toMap(k -> k, k -> 0)));
+        client.cache(caches[DEFAULT_ATOMIC_CACHE_INDEX].getName()).put(keys.get(0), 0);
+        char[] res0 = client.cache(caches[DEFAULT_ATOMIC_CACHE_INDEX].getName()).invoke(keys.get(1), new MyInvoke());
+        char[] res1 = client.cache(caches[DEFAULT_ATOMIC_CACHE_INDEX].getName()).invoke(keys.get(1), new MyInvoke());
+        grid(0).context().io().dumpProcessedMessagesStats();
+
         moreOperations();
 
         for (int i = 0; i < caches.length; i++)
             grid(0).cache(caches[i].getName()).removeAll();
     }
 
+    /** */
     protected void moreOperations() {
         // No-op.
     }
 
+    /** */
     private static class Callable implements IgniteCallable<Void> {
         @Override public Void call() throws Exception {
             return null;
+        }
+    }
+
+    /** */
+    private static class MyInvoke implements CacheEntryProcessor<Object, Object, char[]> {
+        /** {@inheritDoc} */
+        @Override public char[] process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
+            Integer value = (Integer)entry.getValue();
+
+            int val = value == null ? 0 : value;
+
+            entry.setValue(val + 1);
+
+            return new char[] {(char) ((Integer)entry.getValue()).intValue()};
         }
     }
 

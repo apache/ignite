@@ -38,11 +38,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
@@ -200,8 +202,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         updateReplyClos = new UpdateReplyClosure() {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
             @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
-                if (req.writeSynchronizationMode() != FULL_ASYNC)
+                if (req.writeSynchronizationMode() != FULL_ASYNC) {
+                    // Early prepare cache return to estimate size.
+                    try {
+                        res.returnValue().prepareMarshal(ctx);
+                    }
+                    catch (IgniteCheckedException e) {
+                        e.printStackTrace();
+                    }
+
                     sendNearUpdateReply(res.nodeId(), res);
+                }
                 else {
                     if (res.remapTopologyVersion() != null)
                         // Remap keys on primary node in FULL_ASYNC mode.
@@ -1801,8 +1812,31 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             completionCb.apply(req, res);
         }
         else {
-            if (dhtFut != null)
+            if (dhtFut != null) {
+                if (req.operation() == TRANSFORM) {
+                    GridIoManager.AtomicInvokeProcessingStat stat = (GridIoManager.AtomicInvokeProcessingStat)ctx.kernalContext().io().ctxStatHolder.get();
+
+                    GridCacheReturn ret = res.returnValue();
+
+                    try {
+                        ret.prepareMarshal(ctx);
+                    }
+                    catch (IgniteCheckedException e) {
+                        // No-op.
+                    }
+
+                    for (CacheInvokeDirectResult result : ret.invokeResCol()) {
+                        try {
+                            stat.sndBackEntrySize += result.result().valueBytesLength(ctx.cacheObjectContext());
+                        }
+                        catch (IgniteCheckedException e) {
+                            log.error("Cannot get result size", e);
+                        }
+                    }
+                }
+
                 dhtFut.map(node, res.returnValue(), res, completionCb);
+            }
         }
 
         if (req.writeSynchronizationMode() != FULL_ASYNC)

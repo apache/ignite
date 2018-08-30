@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.managers.communication.GridIoManager.AtomicInvokeProcessingStat;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -1763,8 +1764,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 c.call(dataRow);
             }
-            else
+            else {
+                if (op == TRANSFORM) {
+                    AtomicInvokeProcessingStat obj = (AtomicInvokeProcessingStat)cctx.kernalContext().io().ctxStatHolder.get();
+
+                    obj.startInvokeTs = System.nanoTime();
+                }
+
                 cctx.offheap().invoke(cctx, key, localPartition(), c);
+            }
 
             GridCacheUpdateAtomicResult updateRes = c.updateRes;
 
@@ -4638,9 +4646,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean invoke = op == TRANSFORM;
 
             if (invoke) {
+                AtomicInvokeProcessingStat statHolder = (AtomicInvokeProcessingStat)cctx.kernalContext().io().ctxStatHolder.get();
+
+                statHolder.finishInvokeTs = System.nanoTime();
+
                 invokeEntry = new CacheInvokeEntry<>(entry.key, oldVal, entry.ver, keepBinary, entry);
 
                 invokeRes = runEntryProcessor(invokeEntry);
+
+                if (writeObj != null) {
+                    CacheObject tmp = (CacheObject)writeObj;
+
+                    statHolder.keySize = entry.key.valueBytesLength(cctx.cacheObjectContext());
+                    statHolder.valSize = tmp.valueBytesLength(cctx.cacheObjectContext());
+
+                    statHolder.finishRunEntryProcessor = System.nanoTime();
+                }
 
                 op = writeObj == null ? DELETE : UPDATE;
             }
@@ -4749,6 +4770,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert op == DELETE && writeObj == null : op;
 
                 remove(conflictCtx, invokeRes, storeLoadedVal != null);
+            }
+
+            if (invoke) {
+                AtomicInvokeProcessingStat statHolder = (AtomicInvokeProcessingStat)cctx.kernalContext().io().ctxStatHolder.get();
+
+                statHolder.finishTreeUpdate = System.nanoTime();
             }
 
             assert updateRes != null && treeOp != null;

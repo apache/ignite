@@ -265,6 +265,10 @@ public class GridCacheReturn implements Externalizable, Message {
         }
     }
 
+    public Collection<CacheInvokeDirectResult> invokeResCol() {
+        return invokeResCol;
+    }
+
     /**
      * @return Cache ID.
      */

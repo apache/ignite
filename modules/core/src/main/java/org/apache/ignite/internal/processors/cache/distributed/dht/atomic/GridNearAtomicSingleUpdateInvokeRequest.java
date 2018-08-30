@@ -286,6 +286,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearAtomicSingleUpdateRequest.class, this, super.toString());
+        return S.toString(GridNearAtomicSingleUpdateInvokeRequest.class, this, super.toString());
     }
 }

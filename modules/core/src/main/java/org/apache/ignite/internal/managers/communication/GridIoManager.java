@@ -80,6 +80,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateInvokeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
@@ -94,7 +95,7 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1126,6 +1127,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
+    /** */
+    public ThreadLocal<Object> ctxStatHolder = new ThreadLocal<>();
+
     /**
      * @param nodeId Node ID.
      * @param msg Message.
@@ -1148,11 +1152,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 try {
                     threadProcessingMessage(true, msgC);
 
+                    Object statHolder = null;
+
+                    if (msg.message() instanceof GridNearAtomicSingleUpdateInvokeRequest)
+                        ctxStatHolder.set(statHolder = new AtomicInvokeProcessingStat());
+
                     long startProc = System.nanoTime();
 
                     processRegularMessage0(msg, nodeId);
 
-                    logMessageProcessingTime(msg, startWait, startProc, System.nanoTime(), enqueueTs);
+                    logMessageProcessingTime(msg, startWait, startProc, System.nanoTime(), enqueueTs, statHolder);
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1234,13 +1243,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private ThreadLocal<Map<Class<? extends Message>, MessageStat>> locStatHolder = new ThreadLocal<>();
 
     /** */
-    private ThreadLocal<List<T3<Long, Long, String>>> slowMsgHolder = new ThreadLocal<>();
+    private ThreadLocal<List<T4<Long, Long, String, Object>>> slowMsgHolder = new ThreadLocal<>();
 
     /** */
     private final Map<Thread, Map<Class<? extends Message>, MessageStat>> sharedStats = new HashMap<>();
 
     /** */
-    private final Map<Thread, List<T3<Long, Long, String>>> sharedSlowMsgs = new HashMap<>();
+    private final Map<Thread, List<T4<Long, Long, String, Object>>> sharedSlowMsgs = new HashMap<>();
 
     /** Needed for correct rolling average calculation. */
     private Map<Class<? extends Message>, Integer> avgCntMap = new HashMap<>();
@@ -1376,12 +1385,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         sb.setLength(0);
 
-        Set<Entry<Thread, List<T3<Long, Long, String>>>> entries = sharedSlowMsgs.entrySet();
+        Set<Entry<Thread, List<T4<Long, Long, String, Object>>>> entries = sharedSlowMsgs.entrySet();
 
-        for (Entry<Thread, List<T3<Long, Long, String>>> entry : entries) {
-            List<T3<Long, Long, String>> messages = entry.getValue();
+        for (Entry<Thread, List<T4<Long, Long, String, Object>>> entry : entries) {
+            List<T4<Long, Long, String, Object>> messages = entry.getValue();
 
-            List<T3<Long, Long, String>> cp;
+            List<T4<Long, Long, String, Object>> cp;
 
             synchronized (messages) {
                 cp = new ArrayList<>(messages);
@@ -1389,14 +1398,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 messages.clear();
             }
 
-            for (T3<Long, Long, String> message : cp) {
+            for (T4<Long, Long, String, Object> message : cp) {
                 sb.a(">>><DBG> Slow message: enqTime=").a(LocalDateTime.ofInstant(
                     Instant.ofEpochMilli(message.get1()),
                     sysZoneId).format(formatter)).
                     a(", duration=").
                     a(TimeUnit.NANOSECONDS.toMillis(message.get2())).
                     a("ms, message=").
-                    a(message.get3().replace("\n", " ")).a(U.nl());
+                    a(message.get3().replace("\n", " ")).
+                    a(", ctx=").a(message.get4()).
+                    a(U.nl());
 
             }
         }
@@ -1412,8 +1423,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param startProc Start processing timestamp.
      * @param finishProc Finish processing timestamp.
      * @param enqueueTs enqueue UNIX timestamp (10ms resolution)
+     * @param statHolder context stat holder.
      */
-    private void logMessageProcessingTime(GridIoMessage msg, long startWait, long startProc, long finishProc, long enqueueTs) {
+    private void logMessageProcessingTime(GridIoMessage msg, long startWait, long startProc, long finishProc,
+        long enqueueTs, Object statHolder) {
         if (ctx.clientNode())
             return;
 
@@ -1427,7 +1440,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
 
-        List<T3<Long, Long, String>> messages = slowMsgHolder.get();
+        List<T4<Long, Long, String, Object>> messages = slowMsgHolder.get();
 
         if (messages == null) {
             slowMsgHolder.set(messages = new ArrayList<>());
@@ -1466,7 +1479,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         synchronized (messages) {
             if (procTime > IGNITE_STAT_TOO_LONG_PROCESSING) {
                 try {
-                    messages.add(new T3<>(enqueueTs, procTime, msg0.toString()));
+                    messages.add(new T4<>(enqueueTs, procTime, msg0.toString(), statHolder));
                 }
                 catch (Throwable e) {
                     log.error("Failed to add slow message: msgCls=" + msgCls.getSimpleName(), e);
@@ -3640,6 +3653,42 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             System.out.println(merge.rollingAvg);
             System.out.println(merge.total);
+        }
+    }
+
+    /** */
+    public static final class AtomicInvokeProcessingStat {
+        /** */
+        public long keySize;
+
+        /** */
+        public long valSize;
+
+        /** */
+        public long sndBackEntrySize;
+
+        /** */
+        public long startInvokeTs;
+
+        /** */
+        public long finishInvokeTs;
+
+        /** */
+        public long finishRunEntryProcessor;
+
+        /** */
+        public long finishTreeUpdate;
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "[" +
+                "keySize=" + keySize +
+                ", valSize=" + valSize +
+                ", sendBackEntrySize=" + sndBackEntrySize +
+                ", searchEntry=" + (finishInvokeTs - startInvokeTs) / 1000 / 1000. + " ms" +
+                ", runEntryProcessor=" + (finishRunEntryProcessor - finishInvokeTs) / 1000 / 1000. + " ms" +
+                ", treeUpdate=" + (finishTreeUpdate - finishRunEntryProcessor) / 1000 / 1000. + " ms" +
+                ']';
         }
     }
 }
