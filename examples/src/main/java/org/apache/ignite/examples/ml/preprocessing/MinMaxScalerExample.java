@@ -42,8 +42,8 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
  * <p>
  * After that it defines preprocessors that extract features from an upstream data and normalize their values.</p>
  * <p>
- * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output
- * various statistical metrics of the data.</p>
+ * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output various
+ * statistical metrics of the data.</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */

@@ -21,9 +21,8 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * The preprocessing function that makes maxabsscaling, transforms features to the scale {@code[-1,+1]}.
- * From mathematical point of view it's the following function which
- * is applied to every element in a dataset:
+ * The preprocessing function that makes maxabsscaling, transforms features to the scale {@code [-1,+1]}. From
+ * mathematical point of view it's the following function which is applied to every element in a dataset:
  *
  * {@code a_i = a_i / maxabs_i for all i},
  *
@@ -66,7 +65,7 @@ public class MaxAbsScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
         assert res.size() == maxAbs.length;
 
         for (int i = 0; i < res.size(); i++)
-            res.set(i, res.get(i) / maxAbs[i] );
+            res.set(i, res.get(i) / maxAbs[i]);
 
         return res;
     }

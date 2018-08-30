@@ -24,7 +24,6 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
-import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPartitionData;
 
 /**
  * Trainer of the maxabsscaling preprocessor.
@@ -62,23 +61,22 @@ public class MaxAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vec
                 return new MaxAbsScalerPartitionData(maxAbs);
             }
         )) {
-            double[] maxAbs = dataset.compute(data -> data.getMaxAbs(),
-                    (a,b) -> {
-                if (a == null)
-                    return b;
+            double[] maxAbs = dataset.compute(MaxAbsScalerPartitionData::getMaxAbs,
+                (a, b) -> {
+                    if (a == null)
+                        return b;
 
-                if (b == null)
-                    return a;
+                    if (b == null)
+                        return a;
 
-                double[] result = new double[a.length];
+                    double[] result = new double[a.length];
 
-                for (int i = 0; i < result.length; i++) {
-                    result[i] = Math.max(Math.abs(a[i]), Math.abs(b[i]));
-                }
-                return result;
-            });
+                    for (int i = 0; i < result.length; i++) {
+                        result[i] = Math.max(Math.abs(a[i]), Math.abs(b[i]));
+                    }
+                    return result;
+                });
             return new MaxAbsScalerPreprocessor<>(maxAbs, basePreprocessor);
-
         }
         catch (Exception e) {
             throw new RuntimeException(e);

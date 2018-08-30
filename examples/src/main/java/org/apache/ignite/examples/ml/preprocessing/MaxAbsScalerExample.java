@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.preprocessing;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,9 +29,7 @@ import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
-
-import java.util.Arrays;
+import org.apache.ignite.ml.preprocessing.maxabsscaling.MaxAbsScalerTrainer;
 
 /**
  * Example that shows how to use MaxAbsScaler preprocessor to scale the given data.

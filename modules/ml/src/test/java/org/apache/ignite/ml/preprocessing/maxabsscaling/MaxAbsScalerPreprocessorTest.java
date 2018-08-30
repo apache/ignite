@@ -19,7 +19,6 @@ package org.apache.ignite.ml.preprocessing.maxabsscaling;
 
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPreprocessor;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -31,11 +30,11 @@ public class MaxAbsScalerPreprocessorTest {
     /** Tests {@code apply()} method. */
     @Test
     public void testApply() {
-        double[][] data = new double[][]{
-            {2.,  4.,    1.},
-            {1.,  8.,   22.},
+        double[][] data = new double[][] {
+            {2., 4., 1.},
+            {1., 8., 22.},
             {-4., 10., 100.},
-            {0.,  22., 300.}
+            {0., 22., 300.}
         };
         double[] maxAbs = new double[] {4, 22, 300};
         MaxAbsScalerPreprocessor<Integer, Vector> preprocessor = new MaxAbsScalerPreprocessor<>(
@@ -43,14 +42,14 @@ public class MaxAbsScalerPreprocessorTest {
             (k, v) -> v
         );
 
-        double[][] expectedData = new double[][]{
-                {.5,  4./22,  1./300},
-                {.25, 8./22,  22./300},
-                {-1., 10./22, 100./300},
-                {0.,  22./22, 300./300}
+        double[][] expectedData = new double[][] {
+            {.5, 4. / 22, 1. / 300},
+            {.25, 8. / 22, 22. / 300},
+            {-1., 10. / 22, 100. / 300},
+            {0., 22. / 22, 300. / 300}
         };
 
-       for (int i = 0; i < data.length; i++)
-           assertArrayEquals(expectedData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
+        for (int i = 0; i < data.length; i++)
+            assertArrayEquals(expectedData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
     }
 }
