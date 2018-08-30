@@ -1,0 +1,74 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: ignite
+  namespace: ignite
+spec:
+  selector:
+    matchLabels:
+      app: ignite
+  serviceName: ignite
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: ignite
+    spec:
+      serviceAccountName: ignite
+      containers:
+      - name: ignite
+        image: apacheignite/ignite:2.6.0
+        env:
+        - name: OPTION_LIBS
+          value: ignite-kubernetes,ignite-rest-http
+        - name: CONFIG_URI
+          value: https://raw.githubusercontent.com/apache/ignite/master/modules/kubernetes/config/example-kube-persistence-and-wal.xml
+        - name: IGNITE_QUIET
+          value: "false"
+        - name: JVM_OPTS
+          value: "-Djava.net.preferIPv4Stack=true"
+        ports:
+        - containerPort: 11211 # JDBC port number.
+        - containerPort: 47100 # communication SPI port number.
+        - containerPort: 47500 # discovery SPI port number.
+        - containerPort: 49112 # JMX port number.
+        - containerPort: 10800 # SQL port number.
+        - containerPort: 8080 # REST port number.
+        - containerPort: 10900 #Thin clients port number.
+        volumeMounts:
+        - mountPath: "/wal"
+          name: ignite-wal
+        - mountPath: "/persistence"
+          name: ignite-persistence
+  volumeClaimTemplates:
+  - metadata:
+      name: ignite-persistence
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "ignite-persistence-storage-class"
+      resources:
+        requests:
+          storage: "1Gi"
+  - metadata:
+      name: ignite-wal
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "ignite-wal-storage-class"
+      resources:
+        requests:
+          storage: "1Gi"

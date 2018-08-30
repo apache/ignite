@@ -14,9 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin ignite-form-field-datepicker(label, model, name, mindate, maxdate, minview = 1, format = 'MMM yyyy', disabled, required, placeholder, tip)
-    mixin form-field-input()
-        input.form-control(
+mixin form-field__datepicker({ label, model, name, mindate, maxdate, minview = 1, format = 'MMM yyyy', disabled, required, placeholder, tip })
+    mixin __form-field__datepicker()
+        input(
             id=`{{ ${name} }}Input`
             name=`{{ ${name} }}`
 
@@ -41,19 +41,24 @@ mixin ignite-form-field-datepicker(label, model, name, mindate, maxdate, minview
 
             tabindex='0'
 
-            onkeydown='return false'
+            onkeydown='return false',
+            expose-ignite-form-field-control='$input'
         )&attributes(attributes.attributes)
 
-    .datepicker--ignite.ignite-form-field
-        if name
-            +ignite-form-field__label(label, name, required)
+    .form-field.form-field__datepicker.ignite-form-field(id=`{{ ${name} }}Field`)
+        +form-field__label({ label, name, required, disabled })
+            +form-field__tooltip({ title: tip, options: tipOpts })
 
-        .ignite-form-field__control
-            if tip
-                i.tipField.icon-help(bs-tooltip='' data-title=tip)
+        .form-field__control
+            - attributes.type='button'
+            +__form-field__datepicker(attributes=attributes)
 
+        .form-field__errors(
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
+        )
             if block
                 block
 
-            .input-tip
-                +form-field-input(attributes=attributes)
+            if required
+                +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })

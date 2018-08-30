@@ -58,6 +58,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -70,7 +72,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -168,7 +169,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
             return;
 
-        if ((!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
+        if ((!node.isClient() && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
             synchronized (mux) {
                 assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0 :
@@ -459,7 +460,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         if (grpHolder.client()) {
                             ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer);
 
-                            grp.topology().updateTopologyVersion(topFut, discoCache, -1, false);
+                            grp.topology().updateTopologyVersion(topFut,
+                                discoCache,
+                                cctx.coordinators().currentCoordinator(),
+                                -1,
+                                false);
 
                             grpHolder = new CacheGroupHolder1(grp, grpHolder.affinity());
 
@@ -507,6 +512,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert grp != null;
 
                 GridDhtAffinityAssignmentResponse res = fetchAffinity(topVer,
+                    cctx.coordinators().currentCoordinator(),
                     null,
                     discoCache,
                     grp.affinity(),
@@ -529,7 +535,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         new ClusterTopologyServerNotFoundException("All server nodes left grid."));
                 }
 
-                grp.topology().updateTopologyVersion(topFut, discoCache, -1, false);
+                grp.topology().updateTopologyVersion(topFut,
+                    discoCache,
+                    cctx.coordinators().currentCoordinator(),
+                    -1,
+                    false);
 
                 grp.topology().update(topVer, partMap, null, Collections.<Integer>emptySet(), null, null);
 
@@ -1285,7 +1295,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             fetchFut.init(false);
 
-            fetchAffinity(evts.topologyVersion(), evts, evts.discoveryCache(), aff, fetchFut);
+            fetchAffinity(evts.topologyVersion(),
+                cctx.coordinators().currentCoordinator(),
+                evts,
+                evts.discoveryCache(),
+                aff,
+                fetchFut);
         }
     }
 
@@ -1383,9 +1398,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final Map<Long, ClusterNode> nodesByOrder = new HashMap<>();
 
-        final Map<Integer, CacheGroupAffinityMessage> joinedNodeAff = msg.joinedNodeAffinity();
+        final Map<Integer, CacheGroupAffinityMessage> receivedAff = msg.joinedNodeAffinity();
 
-        assert F.isEmpty(affReq) || (!F.isEmpty(joinedNodeAff) && joinedNodeAff.size() >= affReq.size()) : msg;
+        assert F.isEmpty(affReq) || (!F.isEmpty(receivedAff) && receivedAff.size() >= affReq.size())
+            : ("Requested and received affinity are different " +
+                "[requestedCnt=" + (affReq != null ? affReq.size() : "none") +
+                ", receivedCnt=" + (receivedAff != null ? receivedAff.size() : "none") +
+                ", msg=" + msg + "]");
 
         forAllCacheGroups(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
@@ -1398,7 +1417,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (affReq != null && affReq.contains(aff.groupId())) {
                     assert AffinityTopologyVersion.NONE.equals(aff.lastVersion());
 
-                    CacheGroupAffinityMessage affMsg = joinedNodeAff.get(aff.groupId());
+                    CacheGroupAffinityMessage affMsg = receivedAff.get(aff.groupId());
 
                     assert affMsg != null;
 
@@ -1679,6 +1698,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             int grpId = fetchFut.groupId();
 
             fetchAffinity(topVer,
+                cctx.coordinators().currentCoordinator(),
                 fut.events(),
                 fut.events().discoveryCache(),
                 cctx.cache().cacheGroup(grpId).affinity(),
@@ -1688,6 +1708,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param topVer Topology version.
+     * @param mvccCrd Mvcc coordinator to set in affinity.
      * @param events Discovery events.
      * @param discoCache Discovery data cache.
      * @param affCache Affinity.
@@ -1695,7 +1716,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      * @return Affinity assignment response.
      */
-    private GridDhtAffinityAssignmentResponse fetchAffinity(AffinityTopologyVersion topVer,
+    private GridDhtAffinityAssignmentResponse fetchAffinity(
+        AffinityTopologyVersion topVer,
+        MvccCoordinator mvccCrd,
         @Nullable ExchangeDiscoveryEvents events,
         DiscoCache discoCache,
         GridAffinityAssignmentCache affCache,
@@ -1708,7 +1731,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (res == null) {
             List<List<ClusterNode>> aff = affCache.calculate(topVer, events, discoCache);
 
-            affCache.initialize(topVer, aff);
+            affCache.initialize(topVer, aff, mvccCrd);
         }
         else {
             List<List<ClusterNode>> idealAff = res.idealAffinityAssignment(discoCache);
@@ -1725,7 +1748,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             assert aff != null : res;
 
-            affCache.initialize(topVer, aff);
+            affCache.initialize(topVer, aff, mvccCrd);
         }
 
         return res;
@@ -1774,8 +1797,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      * @return Future completed when caches initialization is done.
      */
-    public IgniteInternalFuture<?> initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut,
-        final boolean newAff) throws IgniteCheckedException {
+    public IgniteInternalFuture<?> initCoordinatorCaches(
+        final GridDhtPartitionsExchangeFuture fut,
+        final boolean newAff
+    ) throws IgniteCheckedException {
         final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = new ArrayList<>();
 
         final AffinityTopologyVersion topVer = fut.initialVersion();
@@ -1842,6 +1867,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             @Override public void applyx(IgniteInternalFuture<GridDhtAffinityAssignmentResponse> fetchFut)
                                 throws IgniteCheckedException {
                                 fetchAffinity(prev.topologyVersion(),
+                                    null, // Pass null mvcc coordinator, this affinity version should be used for queries.
                                     prev.events(),
                                     prev.events().discoveryCache(),
                                     aff,
@@ -2245,10 +2271,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     if (!owners.isEmpty() && !owners.contains(curPrimary))
                         curPrimary = owners.get(0);
 
-                    if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
-                        if (aliveNodes.contains(curPrimary)) {
-                            GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
+                    // If new assignment is empty preserve current ownership for alive nodes.
+                    if (curPrimary != null && newPrimary == null) {
+                        newNodes0 = new ArrayList<>(curNodes.size());
 
+                        for (ClusterNode node : curNodes) {
+                            if (aliveNodes.contains(node))
+                                newNodes0.add(node);
+                        }
+                    }
+                    else if (curPrimary != null && !curPrimary.equals(newPrimary)) {
+                        GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
+
+                        if (aliveNodes.contains(curPrimary)) {
                             if (state != GridDhtPartitionState.OWNING) {
                                 newNodes0 = latePrimaryAssignment(grpHolder.affinity(),
                                     p,
@@ -2258,8 +2293,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             }
                         }
                         else {
-                            GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
-
                             if (state != GridDhtPartitionState.OWNING) {
                                 for (int i = 1; i < curNodes.size(); i++) {
                                     ClusterNode curNode = curNodes.get(i);

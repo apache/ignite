@@ -1855,6 +1855,11 @@
                                 <xs:documentation>If true, system will filter and compress WAL archive in background. Compressed WAL archive gets automatically decompressed on demand.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="maxWalArchiveSize" type="xs:long">
+                            <xs:annotation>
+                                <xs:documentation>Maximum size of wal archive folder, in bytes.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                         <xs:attribute name="pageSize" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>Size of the memory page.</xs:documentation>
@@ -2027,6 +2032,16 @@
                                 <xs:documentation>Timeout for node stop, use only for StopNodeOrHaltFailureHandler.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="sqlSchemas" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>SQL schemas to be created on node startup. Schemas are created on local node only and are not propagated.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                        </xs:sequence>
                     </xs:complexType>
                 </xs:element>
             </xs:all>

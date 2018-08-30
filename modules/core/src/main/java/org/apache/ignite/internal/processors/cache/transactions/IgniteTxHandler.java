@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -340,8 +342,6 @@ public class IgniteTxHandler {
             return new GridFinishedFuture<>(e);
         }
 
-        assert firstEntry != null : req;
-
         GridDhtTxLocal tx = null;
 
         GridCacheVersion mappedVer = ctx.tm().mappedVersion(req.version());
@@ -361,8 +361,10 @@ public class IgniteTxHandler {
             GridDhtPartitionTopology top = null;
 
             if (req.firstClientRequest()) {
+                assert firstEntry != null : req;
+
                 assert req.concurrency() == OPTIMISTIC : req;
-                assert CU.clientNode(nearNode) : nearNode;
+                assert nearNode.isClient() : nearNode;
 
                 top = firstEntry.context().topology();
 
@@ -548,7 +550,7 @@ public class IgniteTxHandler {
     /**
      * @param node Sender node.
      * @param req Request.
-     * @return {@code True} if update will be retried from future listener.
+     * @return {@code True} if update will be retried from future listener or topology version future is timed out.
      */
     private boolean waitForExchangeFuture(final ClusterNode node, final GridNearTxPrepareRequest req) {
         assert req.firstClientRequest() : req;
@@ -562,27 +564,37 @@ public class IgniteTxHandler {
                 final IgniteThread thread = (IgniteThread)curThread;
 
                 if (thread.cachePoolThread()) {
-                    topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                            ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, new Runnable() {
-                                @Override public void run() {
-                                    try {
-                                        processNearTxPrepareRequest0(node, req);
-                                    }
-                                    finally {
-                                        ctx.io().onMessageProcessed(req);
-                                    }
+                    ctx.time().waitAsync(topFut, req.timeout(), (e, timedOut) -> {
+                            if (e != null || timedOut) {
+                                sendResponseOnTimeoutOrError(e, topFut, node, req);
+
+                                return;
+                            }
+                            ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, () -> {
+                                try {
+                                    processNearTxPrepareRequest0(node, req);
+                                }
+                                finally {
+                                    ctx.io().onMessageProcessed(req);
                                 }
                             });
                         }
-                    });
+                    );
 
                     return true;
                 }
             }
 
             try {
-                topFut.get();
+                if (req.timeout() > 0)
+                    topFut.get(req.timeout());
+                else
+                    topFut.get();
+            }
+            catch (IgniteFutureTimeoutCheckedException e) {
+                sendResponseOnTimeoutOrError(null, topFut, node, req);
+
+                return true;
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Topology future failed: " + e, e);
@@ -590,6 +602,48 @@ public class IgniteTxHandler {
         }
 
         return false;
+    }
+
+    /**
+     * @param e Exception or null if timed out.
+     * @param topFut Topology future.
+     * @param node Node.
+     * @param req Prepare request.
+     */
+    private void sendResponseOnTimeoutOrError(@Nullable IgniteCheckedException e,
+        GridDhtTopologyFuture topFut,
+        ClusterNode node,
+        GridNearTxPrepareRequest req) {
+        if (e == null)
+            e = new IgniteTxTimeoutCheckedException("Failed to wait topology version for near prepare " +
+                "[txId=" + req.version() +
+                ", topVer=" + topFut.initialVersion() +
+                ", node=" + node.id() +
+                ", req=" + req + ']');
+
+        GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+            req.partition(),
+            req.version(),
+            req.futureId(),
+            req.miniId(),
+            req.version(),
+            req.version(),
+            null,
+            e,
+            null,
+            req.onePhaseCommit(),
+            req.deployInfo() != null);
+
+        try {
+            ctx.io().send(node.id(), res, req.policy());
+        }
+        catch (IgniteCheckedException e0) {
+            U.error(txPrepareMsgLog, "Failed to send wait topology version response for near prepare " +
+                "[txId=" + req.version() +
+                ", topVer=" + topFut.initialVersion() +
+                ", node=" + node.id() +
+                ", req=" + req + ']', e0);
+        }
     }
 
     /**
@@ -603,6 +657,8 @@ public class IgniteTxHandler {
         GridNearTxPrepareRequest req) {
         if (expVer.equals(curVer))
             return false;
+
+        // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
 
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
             GridCacheContext ctx = e.context();
@@ -858,8 +914,11 @@ public class IgniteTxHandler {
         else
             tx = ctx.tm().tx(dhtVer);
 
-        if (tx != null)
+        if (tx != null) {
+            tx.mvccSnapshot(req.mvccSnapshot());
+
             req.txState(tx.txState());
+        }
 
         if (tx == null && locTx != null && !req.commit()) {
             U.warn(log, "DHT local tx not found for near local tx rollback " +
@@ -1324,6 +1383,7 @@ public class IgniteTxHandler {
                 tx.commitVersion(req.commitVersion());
                 tx.invalidate(req.isInvalidate());
                 tx.systemInvalidate(req.isSystemInvalidate());
+                tx.mvccSnapshot(req.mvccSnapshot());
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
@@ -1331,11 +1391,13 @@ public class IgniteTxHandler {
                 tx.setPartitionUpdateCounters(
                     req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
 
+                tx.updateCountersMap(req.updateCountersMap());
+
                 tx.commitRemoteTx();
             }
             else {
                 tx.doneRemote(req.baseVersion(), null, null, null);
-
+                tx.mvccSnapshot(req.mvccSnapshot());
                 tx.rollbackRemoteTx();
             }
         }
@@ -1370,6 +1432,7 @@ public class IgniteTxHandler {
         try {
             tx.commitVersion(req.writeVersion());
             tx.invalidate(req.isInvalidate());
+            tx.mvccSnapshot(req.mvccSnapshot());
 
             // Complete remote candidates.
             tx.doneRemote(req.version(), null, null, null);
@@ -1554,10 +1617,12 @@ public class IgniteTxHandler {
         GridDhtTxPrepareRequest req,
         GridDhtTxPrepareResponse res
     ) throws IgniteCheckedException {
-        if (!F.isEmpty(req.writes())) {
+        if (req.queryUpdate() || !F.isEmpty(req.writes())) {
             GridDhtTxRemote tx = ctx.tm().tx(req.version());
 
             if (tx == null) {
+                assert !req.queryUpdate();
+
                 boolean single = req.last() && req.writes().size() == 1;
 
                 tx = new GridDhtTxRemote(
@@ -1664,7 +1729,8 @@ public class IgniteTxHandler {
                                                 /*transformClo*/null,
                                                 tx.resolveTaskName(),
                                                 /*expiryPlc*/null,
-                                                /*keepBinary*/true);
+                                                /*keepBinary*/true,
+                                                null); // TODO IGNITE-7371
 
                                             if (val == null)
                                                 val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
@@ -1712,7 +1778,7 @@ public class IgniteTxHandler {
 
             res.invalidPartitionsByCacheId(tx.invalidPartitions());
 
-            if (tx.empty() && req.last()) {
+            if (!req.queryUpdate() && tx.empty() && req.last()) {
                 tx.skipCompletedVersions(req.skipCompletedVersion());
 
                 tx.rollbackRemoteTx();

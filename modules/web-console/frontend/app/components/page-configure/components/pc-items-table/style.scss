@@ -24,9 +24,6 @@ pc-items-table {
         display: flex;
         flex-direction: row;
     }
-    .ui-grid-settings--heading {
-        flex: 1;
-    }
 
     // Removes unwanted box-shadow and border-right from checkboxes column
     .ui-grid.ui-grid--ignite .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-render-container-left:before {

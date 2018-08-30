@@ -86,7 +86,7 @@ public class IgniteLangSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteFutureImplTest.class));
         suite.addTest(new TestSuite(IgniteCacheFutureImplTest.class));
 
-        //suite.addTest(new TestSuite(IgniteOffheapReadWriteLockSelfTest.class));
+        suite.addTest(new TestSuite(IgniteOffheapReadWriteLockSelfTest.class));
 
         // Consistent hash tests.
         suite.addTest(new TestSuite(GridConsistentHashSelfTest.class));

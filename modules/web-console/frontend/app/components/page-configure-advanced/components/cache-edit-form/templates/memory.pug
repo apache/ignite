@@ -51,7 +51,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
 
             //- Removed in ignite 2.0
             .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Mode:',
                     model: `${model}.memoryMode`,
                     name: '"memoryMode"',
@@ -88,9 +88,9 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     ui-validate-watch=`"${model}.domains.length"`
                     ng-model-options='{allowInvalid: true}'
                 )
-                    +form-field-feedback(null, 'offheapAndDomains', 'Query indexing could not be enabled while values are stored off-heap')
+                    +form-field__error({ error: 'offheapAndDomains', message: 'Query indexing could not be enabled while values are stored off-heap' })
             .pc-form-grid-col-60(ng-if=`${model}.memoryMode !== 'OFFHEAP_VALUES'`)
-                +sane-ignite-form-field-dropdown({
+                +form-field__dropdown({
                     label: 'Off-heap memory:',
                     model: `${model}.offHeapMode`,
                     name: '"offHeapMode"',
@@ -111,12 +111,12 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     ui-validate-watch=`'${model}.memoryMode'`
                     ng-model-options='{allowInvalid: true}'
                 )
-                    +form-field-feedback(null, 'offheapDisabled', 'Off-heap storage can\'t be disabled when memory mode is OFFHEAP_TIERED')
+                    +form-field__error({ error: 'offheapDisabled', message: 'Off-heap storage can\'t be disabled when memory mode is OFFHEAP_TIERED' })
             .pc-form-grid-col-60(
                 ng-if=`${model}.offHeapMode === 1 && ${model}.memoryMode !== 'OFFHEAP_VALUES'`
                 ng-if-end
             )
-                pc-form-field-size(
+                form-field-size(
                     label='Off-heap memory max size:'
                     ng-model=`${model}.offHeapMaxMemory`
                     name='offHeapMaxMemory'
