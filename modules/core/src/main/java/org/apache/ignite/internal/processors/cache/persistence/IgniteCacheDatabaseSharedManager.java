@@ -42,6 +42,7 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
@@ -69,6 +70,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
 
 /**
  *
@@ -388,6 +391,30 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
 
         checkDataRegionConfiguration(memCfg, regNames, memCfg.getDefaultDataRegionConfiguration());
+
+        checkWalArchiveSizeConfiguration(memCfg);
+    }
+
+    /**
+     * Check wal archive size configuration for correctness.
+     *
+     * @param memCfg durable memory configuration for an Apache Ignite node.
+     */
+    private void checkWalArchiveSizeConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
+        if (memCfg.getWalHistorySize() == DFLT_WAL_HISTORY_SIZE || memCfg.getWalHistorySize() == Integer.MAX_VALUE)
+            LT.warn(log, "DataRegionConfiguration.maxWalArchiveSize instead DataRegionConfiguration.walHistorySize " +
+            "would be used for removing old archive wal files");
+        else if(memCfg.getMaxWalArchiveSize() == DFLT_WAL_ARCHIVE_MAX_SIZE)
+            LT.warn(log, "walHistorySize was deprecated. maxWalArchiveSize should be used instead");
+        else
+            throw new IgniteCheckedException("Should be used only one of wal history size or max wal archive size." +
+                "(use DataRegionConfiguration.maxWalArchiveSize because DataRegionConfiguration.walHistorySize was deprecated)"
+            );
+
+        if(memCfg.getMaxWalArchiveSize() < memCfg.getWalSegmentSize())
+            throw new IgniteCheckedException(
+                "DataRegionConfiguration.maxWalArchiveSize should be greater than DataRegionConfiguration.walSegmentSize"
+            );
     }
 
     /**
@@ -744,6 +771,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      */
     @Nullable public IgniteInternalFuture wakeupForCheckpoint(String reason) {
+        return null;
+    }
+
+    /**
+     * @return Last checkpoint mark WAL pointer.
+     */
+    public WALPointer lastCheckpointMarkWalPointer() {
         return null;
     }
 
