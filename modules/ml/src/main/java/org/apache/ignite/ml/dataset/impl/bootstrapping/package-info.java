@@ -1,4 +1,5 @@
 /*
+
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,18 +16,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.environment;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * <!-- Package description. -->
+ * Base package for bootstrapped implementation of machine learning dataset.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LearningEnvironmentBuilderTest.class,
-    PromiseTest.class
-})
-public class EnvironmentTestSuite {
-}
+package org.apache.ignite.ml.dataset.impl.bootstrapping;

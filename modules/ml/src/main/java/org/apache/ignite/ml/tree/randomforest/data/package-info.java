@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.environment;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * <!-- Package description. -->
+ * Package contains helper data structures for random forest implementation.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LearningEnvironmentBuilderTest.class,
-    PromiseTest.class
-})
-public class EnvironmentTestSuite {
-}
+package org.apache.ignite.ml.tree.randomforest.data;

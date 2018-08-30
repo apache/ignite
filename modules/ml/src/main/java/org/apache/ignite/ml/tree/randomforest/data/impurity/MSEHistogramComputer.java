@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.environment;
+package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.ml.dataset.feature.BucketMeta;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * Histogram computer realization for MSE impurity metric.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LearningEnvironmentBuilderTest.class,
-    PromiseTest.class
-})
-public class EnvironmentTestSuite {
+public class MSEHistogramComputer extends ImpurityHistogramsComputer<MSEHistogram> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = -1544823437437088334L;
+
+    /** {@inheritDoc} */
+    @Override protected MSEHistogram createImpurityComputerForFeature(int sampleId, BucketMeta meta) {
+        return new MSEHistogram(sampleId, meta);
+    }
 }
