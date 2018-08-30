@@ -160,42 +160,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 return cache.sizeAsync(new CachePeekMode[] {}).get() - 1;
             }
 
-            if (collocated) {
-                int keyTypeId = ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).binaryContext()
-                    .descriptorForClass(CollocatedSetItemKey.class, false, false).typeId();
-
-                return affinityCall(new IgniteCallable<Integer>() {
-                    @Override public Integer call() throws Exception {
-                        int cnt = 0;
-
-                        try (GridCloseableIterator iter = ctx.queries().createScanQuery(
-                            new IgniteBiPredicate() {
-                                @Override public boolean apply(Object k, Object v) {
-                                    if (k instanceof BinaryObjectImpl) {
-                                        BinaryObjectImpl obj = (BinaryObjectImpl)k;
-
-                                        return obj.typeId() == keyTypeId &&
-                                            id.equals(((BinaryObject)obj.field("setId")).deserialize());
-                                    }
-
-                                    return false;
-                                }
-                            },
-                            hdrPart,
-                            true)
-                            .executeScanQuery()) {
-
-                            for (; iter.hasNext(); iter.next())
-                                ++cnt;
-                        }
-
-                        return cnt;
-                    }
-                });
-            }
-
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), null, false, false);
+                new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null, false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 

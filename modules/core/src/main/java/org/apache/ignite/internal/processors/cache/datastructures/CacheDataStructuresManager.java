@@ -458,11 +458,11 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         keys.clear();
                     }
                 }
-
-                if (!keys.isEmpty())
-                    retryRemoveAll(cache, keys);
             }
         }
+
+        if (!keys.isEmpty())
+            retryRemoveAll(cache, keys);
     }
 
     /**
@@ -539,8 +539,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         else {
             blockSet(id);
 
-            if (!separated)
-                cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO);
+            cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO);
         }
     }
 
@@ -654,8 +653,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @Override public Void call() throws IgniteCheckedException {
             assert ignite != null;
-
-            assert ((IgniteKernal)ignite).context().cache().cacheDescriptor(cacheName) != null : cacheName;
 
             GridCacheAdapter cache = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
