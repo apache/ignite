@@ -464,25 +464,18 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     @SuppressWarnings("unchecked")
     private WeakReferenceCloseableIterator<T> sharedCacheIterator() throws IgniteCheckedException {
-        GridCloseableIterator<Map.Entry<T, ?>> iter = ((GridCacheContext<SetItemKey, Boolean>)ctx).queries()
-            .createScanQuery(
-                new IgniteBiPredicate() {
-                    @Override public boolean apply(Object k, Object v) {
-                        if (k instanceof SetItemKey) {
-                            SetItemKey key = (SetItemKey)k;
+        CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
+            new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null, false, false);
 
-                            return id().equals(key.setId());
-                        }
-                        return false;
-                    }
-                },
-                collocated ? hdrPart : null,
-                false)
-            .executeScanQuery();
+        Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
-        return ctx.itHolder().iterator(iter, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
+        qry.projection(ctx.grid().cluster().forNodes(nodes));
+
+        CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
+
+        return ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
             @Override protected T convert(Map.Entry<T, ?> e) {
-                return (T)((SetItemKey)e.getKey()).item();
+                return e.getKey();
             }
 
             @Override protected void remove(T item) {
