@@ -39,8 +39,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
@@ -267,9 +267,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         while (true) {
             try {
-                FileIO fileIO = fd.isCompressed() ? new UnzipFileIO(fd.file()) : ioFactory.create(fd.file());
-
-                readSegmentHeader(fileIO, FILE_INPUT_FACTORY, curWalSegmIdx);
+                try (FileIO fileIO = fd.toIO(ioFactory)) {
+                    readSegmentHeader(new SegmentIO(curWalSegmIdx, fileIO), FILE_INPUT_FACTORY);
+                }
 
                 break;
             }
@@ -403,8 +403,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /** {@inheritDoc} */
     @Override protected AbstractReadFileHandle createReadFileHandle(
-        FileIO fileIO, long idx, RecordSerializer ser, FileInput in
+        SegmentIO fileIO, RecordSerializer ser, FileInput in
     ) {
-        return new ReadFileHandle(fileIO, idx, ser, in);
+        return new ReadFileHandle(fileIO, ser, in);
     }
 }

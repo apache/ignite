@@ -53,11 +53,10 @@ public class LockedFileInputFactory implements FileInputFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public FileInput createFileInput(long segmentId, FileIO fileIO, ByteBufferExpander buf) throws IOException {
+    @Override public FileInput createFileInput(SegmentIO segmentIO, ByteBufferExpander buf) throws IOException {
         return new LockedReadFileInput(
             buf,
-            fileIO,
-            segmentId,
+            segmentIO,
             segmentAware,
             id -> {
                 FileDescriptor segment = segmentRouter.findSegment(id);

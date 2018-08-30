@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
@@ -307,17 +308,17 @@ public abstract class AbstractWalRecordsIterator
         @Nullable final FileWALPointer start
     ) throws IgniteCheckedException, FileNotFoundException {
         try {
-            FileIO fileIO = desc.toIO(ioFactory);
+            SegmentIO fileIO = new SegmentIO(curWalSegmIdx, desc.toIO(ioFactory));
 
             try {
-                SegmentHeader segmentHeader = readSegmentHeader(fileIO, fileInputFactory, curWalSegmIdx);
+                SegmentHeader segmentHeader = readSegmentHeader(fileIO, fileInputFactory);
 
                 boolean isCompacted = segmentHeader.isCompacted();
 
                 if (isCompacted)
                     serializerFactory.skipPositionCheck(true);
 
-                FileInput in = fileInputFactory.createFileInput(curWalSegmIdx, fileIO, buf);
+                FileInput in = fileInputFactory.createFileInput(fileIO, buf);
 
                 if (start != null && desc.idx() == start.index()) {
                     if (isCompacted) {
@@ -334,7 +335,7 @@ public abstract class AbstractWalRecordsIterator
 
                 int serVer = segmentHeader.getSerializerVersion();
 
-                return createReadFileHandle(fileIO, desc.idx(), serializerFactory.createSerializer(serVer), in);
+                return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {
@@ -368,8 +369,7 @@ public abstract class AbstractWalRecordsIterator
 
     /** */
     protected abstract AbstractReadFileHandle createReadFileHandle(
-        FileIO fileIO,
-        long idx,
+        SegmentIO fileIO,
         RecordSerializer ser,
         FileInput in
     );

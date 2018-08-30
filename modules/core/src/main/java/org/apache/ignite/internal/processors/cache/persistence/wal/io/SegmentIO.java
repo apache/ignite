@@ -17,18 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
-import java.io.IOException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 
 /**
- * Factory to provide I/O interfaces for read primitives with files.
+ * Implementation of {@link FileIO} specified for WAL segment file.
  */
-public interface FileInputFactory {
+public class SegmentIO extends FileIODecorator {
+    /** Segment id. */
+    private final long segmentId;
+
     /**
-     * @param segmentIO FileIO of segment for reading.
-     * @param buf ByteBuffer wrapper for dynamically expand buffer size.
-     * @return Instance of {@link FileInput}.
-     * @throws IOException If have some trouble with I/O.
+     * @param id Segment id.
+     * @param delegate File I/O delegate
      */
-    FileInput createFileInput(SegmentIO segmentIO, ByteBufferExpander buf) throws IOException;
+    public SegmentIO(long id, FileIO delegate) {
+        super(delegate);
+        segmentId = id;
+    }
+
+    /**
+     * @return Segment id.
+     */
+    public long getSegmentId() {
+        return segmentId;
+    }
 }

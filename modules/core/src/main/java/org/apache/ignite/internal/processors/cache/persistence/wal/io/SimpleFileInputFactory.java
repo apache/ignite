@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
 import java.io.IOException;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 
 /**
@@ -27,8 +26,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExp
 public class SimpleFileInputFactory implements FileInputFactory {
 
     /** {@inheritDoc} */
-    @Override public FileInput createFileInput(long segmentId, FileIO fileIO,
+    @Override public FileInput createFileInput(SegmentIO segmentIO,
         ByteBufferExpander buf) throws IOException {
-        return new SimpleFileInput(fileIO, buf);
+        return new SimpleFileInput(segmentIO, buf);
     }
 }

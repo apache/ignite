@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaC
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.LockedFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
@@ -771,14 +772,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (rec.rollOver()){
                 assert cctx.database().checkpointLockIsHeldByThread();
 
-                long idx = currWrHandle.idx;
+                long idx = currWrHandle.getSegmentId();
 
                 currWrHandle.buf.close();
 
                 currWrHandle = rollOver(currWrHandle);
 
                 if (log != null && log.isInfoEnabled())
-                    log.info("Rollover segment [" + idx + " to " + currWrHandle.idx + "], recordType=" + rec.type());
+                    log.info("Rollover segment [" + idx + " to " + currWrHandle.getSegmentId() + "], recordType=" + rec.type());
             }
 
             WALPointer ptr = currWrHandle.addRecord(rec);
@@ -903,7 +904,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWriteHandle cur = currHnd;
 
-        return cur != null && cur.idx >= absIdx;
+        return cur != null && cur.getSegmentId() >= absIdx;
     }
 
     /** {@inheritDoc} */
@@ -1181,7 +1182,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         int len = lastReadPtr == null ? 0 : lastReadPtr.length();
 
         try {
-            FileIO fileIO = ioFactory.create(curFile);
+            SegmentIO fileIO = new SegmentIO(absIdx, ioFactory.create(curFile));
 
             IgniteInClosure<FileIO> lsnr = createWalFileListener;
 
@@ -1194,7 +1195,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 // If we have existing segment, try to read version from it.
                 if (lastReadPtr != null) {
                     try {
-                        serVer = readSegmentHeader(fileIO, fileInputFactory, absIdx).getSerializerVersion();
+                        serVer = readSegmentHeader(fileIO, fileInputFactory).getSerializerVersion();
                     }
                     catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVer;
@@ -1222,7 +1223,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileWriteHandle hnd = new FileWriteHandle(
                     fileIO,
-                    absIdx,
                     off + len,
                     true,
                     ser,
@@ -1266,14 +1266,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         IgniteCheckedException error = null;
 
         try {
-            File nextFile = pollNextFile(cur.idx);
+            File nextFile = pollNextFile(cur.getSegmentId());
 
             if (log.isDebugEnabled())
                 log.debug("Switching to a new WAL segment: " + nextFile.getAbsolutePath());
 
             SegmentedRingByteBuffer rbuf = null;
 
-            FileIO fileIO = null;
+            SegmentIO fileIO = null;
 
             FileWriteHandle hnd;
 
@@ -1281,7 +1281,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             while (true) {
                 try {
-                    fileIO = ioFactory.create(nextFile);
+                    fileIO = new SegmentIO(cur.getSegmentId() + 1, ioFactory.create(nextFile));
 
                     IgniteInClosure<FileIO> lsnr = createWalFileListener;
                     if (lsnr != null)
@@ -1297,7 +1297,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     hnd = new FileWriteHandle(
                         fileIO,
-                        cur.idx + 1,
                         0,
                         false,
                         serializer,
@@ -1947,7 +1946,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             int segmentSerializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
-                segmentSerializerVer = readSegmentHeader(fileIO, fileInputFactory, nextSegment).getSerializerVersion();
+                segmentSerializerVer = readSegmentHeader(new SegmentIO(nextSegment, fileIO), fileInputFactory).getSerializerVersion();
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
@@ -2231,18 +2230,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private abstract static class FileHandle {
         /** I/O interface for read/write operations with file */
-        FileIO fileIO;
-
-        /** Absolute WAL segment file index (incremental counter) */
-        protected final long idx;
+        SegmentIO fileIO;
 
         /**
-         * @param fileIO I/O interface for read/write operations of FileHandle.
-         * @param idx Absolute WAL segment file index (incremental counter).
+         * @param fileIO I/O interface for read/write operations of FileHandle.         *
          */
-        private FileHandle(FileIO fileIO, long idx) {
+        private FileHandle(SegmentIO fileIO) {
             this.fileIO = fileIO;
-            this.idx = idx;
+        }
+
+        /**
+         * @return Absolute WAL segment file index (incremental counter).
+         */
+        public long getSegmentId(){
+            return fileIO.getSegmentId();
         }
     }
 
@@ -2264,17 +2265,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param fileIO I/O interface for read/write operations of FileHandle.
-         * @param idx Absolute WAL segment file index (incremental counter).
          * @param ser Entry serializer.
          * @param in File input.
          */
         public ReadFileHandle(
-            FileIO fileIO,
-            long idx,
+            SegmentIO fileIO,
             RecordSerializer ser,
             FileInput in
         ) {
-            super(fileIO, idx);
+            super(fileIO);
 
             this.ser = ser;
             this.in = in;
@@ -2296,7 +2295,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override public long idx() {
-            return idx;
+            return getSegmentId();
         }
 
         /** {@inheritDoc} */
@@ -2355,7 +2354,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * @param fileIO I/O file interface to use
-         * @param idx Absolute WAL segment file index for easy access.
          * @param pos Position.
          * @param resume Created on resume logging flag.
          * @param serializer Serializer.
@@ -2363,14 +2361,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @throws IOException If failed.
          */
         private FileWriteHandle(
-            FileIO fileIO,
-            long idx,
+            SegmentIO fileIO,
             long pos,
             boolean resume,
             RecordSerializer serializer,
             SegmentedRingByteBuffer buf
         ) throws IOException {
-            super(fileIO, idx);
+            super(fileIO);
 
             assert serializer != null;
 
@@ -2394,7 +2391,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             assert seg != null && seg.position() > 0;
 
-            prepareSerializerVersionBuffer(idx, serializerVersion(), false, seg.buffer());
+            prepareSerializerVersionBuffer(getSegmentId(), serializerVersion(), false, seg.buffer());
 
             seg.release();
         }
@@ -2430,7 +2427,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         if (buf == null)
                             return null; // Can not write to this segment, need to switch to the next one.
 
-                        ptr = new FileWALPointer(idx, pos, rec.size());
+                        ptr = new FileWALPointer(getSegmentId(), pos, rec.size());
 
                         rec.position(ptr);
 
@@ -2473,7 +2470,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private void flushOrWait(FileWALPointer ptr) {
             if (ptr != null) {
                 // If requested obsolete file index, it must be already flushed by close.
-                if (ptr.index() != idx)
+                if (ptr.index() != getSegmentId())
                     return;
             }
 
@@ -2490,7 +2487,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 return;
             }
 
-            assert ptr.index() == idx;
+            assert ptr.index() == getSegmentId();
 
             walWriter.flushBuffer(ptr.fileOffset());
         }
@@ -2519,7 +2516,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             // If index has changed, it means that the log was rolled over and already sync'ed.
             // If requested position is smaller than last sync'ed, it also means all is good.
             // If position is equal, then our record is the last not synced.
-            return idx == ptr.index() && lastFsyncPos <= ptr.fileOffset();
+            return getSegmentId() == ptr.index() && lastFsyncPos <= ptr.fileOffset();
         }
 
         /**
@@ -2529,7 +2526,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lock.lock();
 
             try {
-                return new FileWALPointer(idx, (int)written, 0);
+                return new FileWALPointer(getSegmentId(), (int)written, 0);
             }
             finally {
                 lock.unlock();
@@ -2699,11 +2696,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
                     catch (IOException e) {
-                        throw new StorageException("Failed to close WAL write handle [idx=" + idx + "]", e);
+                        throw new StorageException("Failed to close WAL write handle [idx=" + getSegmentId() + "]", e);
                     }
 
                     if (log.isDebugEnabled())
-                        log.debug("Closed WAL write handle [idx=" + idx + "]");
+                        log.debug("Closed WAL write handle [idx=" + getSegmentId() + "]");
 
                     return true;
                 }
@@ -2727,7 +2724,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 assert cctx.kernalContext().invalid() ||
                     written == lastFsyncPos || mode != WALMode.FSYNC :
-                    "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ", idx=" + idx + ']';
+                    "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ", idx=" + getSegmentId() + ']';
 
                 fileIO = null;
 
@@ -2978,9 +2975,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /** {@inheritDoc} */
-        @Override protected AbstractReadFileHandle createReadFileHandle(FileIO fileIO, long idx,
+        @Override protected AbstractReadFileHandle createReadFileHandle(SegmentIO fileIO,
             RecordSerializer ser, FileInput in) {
-            return new ReadFileHandle(fileIO, idx, ser, in);
+            return new ReadFileHandle(fileIO, ser, in);
         }
     }
 

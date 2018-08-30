@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
@@ -248,15 +249,14 @@ public class RecordV1Serializer implements RecordSerializer {
      * NOTE: Method mutates position of {@code io}.
      *
      * @param io I/O interface for file.
-     * @param fileInputFactory
-     * @param expectedIdx Expected WAL segment index for readable record.
+     * @param fileInputFactory File input factory.
      * @return Instance of {@link SegmentHeader} extracted from the file.
      * @throws IgniteCheckedException If failed to read serializer version.
      */
-    public static SegmentHeader readSegmentHeader(FileIO io, FileInputFactory fileInputFactory, long expectedIdx)
+    public static SegmentHeader readSegmentHeader(SegmentIO io, FileInputFactory fileInputFactory)
         throws IgniteCheckedException, IOException {
         try (ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
-            ByteBufferBackedDataInput in = fileInputFactory.createFileInput(expectedIdx, io, buf);
+            ByteBufferBackedDataInput in = fileInputFactory.createFileInput(io, buf);
 
             in.ensure(HEADER_RECORD_SIZE);
 
@@ -273,7 +273,7 @@ public class RecordV1Serializer implements RecordSerializer {
             // Read file pointer.
             FileWALPointer ptr = readPosition(in);
 
-            if (expectedIdx != ptr.index())
+            if (io.getSegmentId() != ptr.index())
                 throw new SegmentEofException("Reached logical end of the segment by pointer", null);
 
             assert ptr.fileOffset() == 0 : "Header record should be placed at the beginning of file " + ptr;

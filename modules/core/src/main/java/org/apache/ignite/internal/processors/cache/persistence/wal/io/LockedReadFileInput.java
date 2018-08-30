@@ -44,23 +44,21 @@ final class LockedReadFileInput extends SimpleFileInput {
     /**
      * @param buf Buffer for reading blocks of data into.
      * @param initFileIo Initial File I/O for reading.
-     * @param segmentId Segment for read.
      * @param segmentAware Holder of actual information of latest manipulation on WAL segments.
      * @param segmentIOFactory Factory of file I/O for segment.
      * @throws IOException
      */
     LockedReadFileInput(
         ByteBufferExpander buf,
-        FileIO initFileIo,
-        long segmentId,
+        SegmentIO initFileIo,
         SegmentAware segmentAware,
         SegmentIoFactory segmentIOFactory
     ) throws IOException {
         super(initFileIo, buf);
-        this.segmentId = segmentId;
         this.segmentAware = segmentAware;
         this.fileIOFactory = segmentIOFactory;
-        isLastReadFromArchive = segmentAware.lastArchivedAbsoluteIndex() >= segmentId;
+        this.segmentId = initFileIo.getSegmentId();
+        isLastReadFromArchive = segmentAware.lastArchivedAbsoluteIndex() >= initFileIo.getSegmentId();
     }
 
     /** {@inheritDoc} */
@@ -75,13 +73,7 @@ final class LockedReadFileInput extends SimpleFileInput {
             if (readArchive && !isLastReadFromArchive) {
                 isLastReadFromArchive = true;
 
-                FileIO io = fileIOFactory.build(segmentId);
-
-                io.position(io().position());
-
-                io().close();
-
-                this.io = io;
+                refreshIO();
             }
 
             super.ensure(requested);
@@ -90,6 +82,21 @@ final class LockedReadFileInput extends SimpleFileInput {
             if (!readArchive)
                 segmentAware.releaseWorkSegment(segmentId);
         }
+    }
+
+    /**
+     * Refresh current file io.
+     *
+     * @throws IOException
+     */
+    private void refreshIO() throws IOException {
+        FileIO io = fileIOFactory.build(segmentId);
+
+        io.position(io().position());
+
+        io().close();
+
+        this.io = io;
     }
 
     /**
