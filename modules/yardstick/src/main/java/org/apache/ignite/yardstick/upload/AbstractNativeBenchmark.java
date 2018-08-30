@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick.upload;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.upload.model.Values10;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -58,7 +59,7 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
         BenchmarkUtils.println(cfg, "Starting custom warmup.");
         String warmupCacheName = cacheName + "Warmup";
 
-        try (IgniteCache<Long, Values10> warmupCache = ignite().createCache(warmupCacheName)) {
+        try (IgniteCache<Long, Values10> warmupCache = createCache(warmupCacheName)) {
             upload(warmupCacheName, warmupRowsCnt);
         }
         finally {
@@ -68,7 +69,16 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
         BenchmarkUtils.println(cfg, "Custom warmup finished.");
 
         // cache for benchmarked action
-        cache = ignite().createCache(cacheName);
+        cache = createCache(cacheName);
+    }
+
+    private IgniteCache<Long, Values10> createCache(String name) {
+        CacheConfiguration<Long, Values10> cfg = new CacheConfiguration<>(name);
+
+        if (args.atomicMode() != null)
+            cfg.setAtomicityMode(args.atomicMode());
+
+        return ignite().createCache(cfg);
     }
 
     /** {@inheritDoc} */

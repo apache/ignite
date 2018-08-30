@@ -82,15 +82,18 @@ namespace ignite
             {
                 utility::WriteString(writer, config.GetUser());
                 utility::WriteString(writer, config.GetPassword());
+
+                writer.WriteInt8(config.GetNestedTxMode());
             }
         }
 
         QueryExecuteRequest::QueryExecuteRequest(const std::string& schema, const std::string& sql,
-            const app::ParameterSet& params, int32_t timeout):
+            const app::ParameterSet& params, int32_t timeout, bool autoCommit):
             schema(schema),
             sql(sql),
             params(params),
-            timeout(timeout)
+            timeout(timeout),
+            autoCommit(autoCommit)
         {
             // No-op.
         }
@@ -115,17 +118,21 @@ namespace ignite
 
             if (ver >= ProtocolVersion::VERSION_2_3_2)
                 writer.WriteInt32(timeout);
+
+            if (ver >= ProtocolVersion::VERSION_2_5_0)
+                writer.WriteBool(autoCommit);
         }
 
         QueryExecuteBatchtRequest::QueryExecuteBatchtRequest(const std::string& schema, const std::string& sql,
-            const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last, int32_t timeout):
+            const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last, int32_t timeout, bool autoCommit) :
             schema(schema),
             sql(sql),
             params(params),
             begin(begin),
             end(end),
             last(last),
-            timeout(timeout)
+            timeout(timeout),
+            autoCommit(autoCommit)
         {
             // No-op.
         }
@@ -150,6 +157,9 @@ namespace ignite
 
             if (ver >= ProtocolVersion::VERSION_2_3_2)
                 writer.WriteInt32(timeout);
+
+            if (ver >= ProtocolVersion::VERSION_2_5_0)
+                writer.WriteBool(autoCommit);
         }
 
         QueryCloseRequest::QueryCloseRequest(int64_t queryId): queryId(queryId)
