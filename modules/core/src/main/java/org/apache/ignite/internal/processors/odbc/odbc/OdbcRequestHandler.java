@@ -339,7 +339,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
         qry.setCollocated(cliCtx.isCollocated());
         qry.setLazy(cliCtx.isLazy());
-        qry.setSchema(F.isEmpty(schema) ? schema : QueryUtils.DFLT_SCHEMA);
+        qry.setSchema(F.isEmpty(schema) ? QueryUtils.DFLT_SCHEMA : schema);
         qry.setSkipReducerOnUpdate(cliCtx.isSkipReducerOnUpdate());
         qry.setNestedTxMode(nestedTxMode);
 
