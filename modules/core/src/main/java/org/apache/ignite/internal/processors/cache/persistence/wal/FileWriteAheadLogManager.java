@@ -3408,6 +3408,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         waiters.put(e.getKey(), Long.MIN_VALUE);
 
                     log.info("Unpark waiters : " + e.getKey().getName() + " , isInvalid=" + cctx.kernalContext().invalid());
+
+                    if(cctx.kernalContext().invalid()){
+                        StringBuilder builder = new StringBuilder();
+                        for (StackTraceElement traceElement : e.getKey().getStackTrace()) {
+                            builder.append(traceElement.toString());
+                        }
+
+                        log.info("Invalid stacktrace: " + builder.toString());
+                    }
                     LockSupport.unpark(e.getKey());
                 }
             }
