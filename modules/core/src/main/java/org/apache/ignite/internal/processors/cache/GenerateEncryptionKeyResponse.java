@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
+import java.util.Map;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -28,42 +28,44 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Generate encryption key request.
+ * Generate encryption key response.
  */
-public class GenerateEncryptionKeyRequest implements Message {
+public class GenerateEncryptionKeyResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Request ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    /** Request message ID. */
+    private IgniteUuid id;
 
     /** */
-    @GridDirectCollection(Integer.class)
-    private Collection<Integer> grpIds;
+    @GridDirectMap(keyType = Integer.class, valueType = byte[].class)
+    private Map<Integer, byte[]> encGrpKeys;
 
     /** */
-    public GenerateEncryptionKeyRequest() {
+    public GenerateEncryptionKeyResponse() {
     }
 
     /**
-     * @param grpIds Groups ids.
+     * @param id Request id.
+     * @param encGrpKeys Encryption keys.
      */
-    public GenerateEncryptionKeyRequest(Collection<Integer> grpIds) {
-        this.grpIds = grpIds;
+    public GenerateEncryptionKeyResponse(IgniteUuid id, Map<Integer, byte[]> encGrpKeys) {
+        this.id = id;
+        this.encGrpKeys = encGrpKeys;
     }
 
     /**
      * @return Request id.
      */
-    public IgniteUuid id() {
+    public IgniteUuid requestId() {
         return id;
     }
 
     /**
-     * @return Group ids for a key generation.
+     * @return Encrypted group keys.
      */
-    public Collection<Integer> grpIds() {
-        return grpIds;
+    public Map<Integer, byte[]> encGrpKeys() {
+        return encGrpKeys;
     }
 
     /** {@inheritDoc} */
@@ -79,7 +81,7 @@ public class GenerateEncryptionKeyRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("grpIds", grpIds, MessageCollectionItemType.INT))
+                if (!writer.writeMap("encGrpKeys", encGrpKeys, MessageCollectionItemType.INT, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -104,7 +106,7 @@ public class GenerateEncryptionKeyRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                grpIds = reader.readCollection("grpIds", MessageCollectionItemType.INT);
+                encGrpKeys = reader.readMap("encGrpKeys", MessageCollectionItemType.INT, MessageCollectionItemType.BYTE_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -121,12 +123,12 @@ public class GenerateEncryptionKeyRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GenerateEncryptionKeyRequest.class);
+        return reader.afterMessageRead(GenerateEncryptionKeyResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 158;
+        return 159;
     }
 
     /** {@inheritDoc} */
@@ -136,11 +138,11 @@ public class GenerateEncryptionKeyRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
-        // No-op.
+        //No-op.
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GenerateEncryptionKeyRequest.class, this);
+        return S.toString(GenerateEncryptionKeyResponse.class, this);
     }
 }
