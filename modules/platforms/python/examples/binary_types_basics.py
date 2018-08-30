@@ -31,6 +31,7 @@ client = Client()
 client.connect('localhost', 10800)
 
 person_cache = client.get_or_create_cache('person')
+
 person_cache.put(
     1, Person(first_name='Ivan', last_name='Ivanov', age=33)
 )
@@ -40,11 +41,13 @@ print(person.__class__.__name__)
 # Person
 
 print(person.__class__ is Person)
-# True
+# True if `Person` was registered automatically (on writing)
+# or manually (using `client.register_binary_type()` method).
+# False otherwise
 
-print(person.first_name)
-# Ivan
+print(person)
+# Person(first_name='Ivan', last_name='Ivanov', age=33, version=1)
 
-client.register_binary_type(data_class=Person)
+client.register_binary_type(Person)
 
 Person = person.__class__
