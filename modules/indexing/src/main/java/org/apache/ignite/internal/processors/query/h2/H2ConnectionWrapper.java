@@ -107,13 +107,12 @@ public class H2ConnectionWrapper implements AutoCloseable {
         return intiThread;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(H2ConnectionWrapper.class, this);
     }
 
-    /** Closes wrapped connection. */
+    /** Closes wrapped connection */
     @Override
     public void close() {
         U.closeQuiet(conn);

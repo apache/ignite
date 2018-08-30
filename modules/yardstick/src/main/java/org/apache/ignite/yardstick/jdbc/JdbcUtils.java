@@ -17,6 +17,7 @@
 
 package org.apache.ignite.yardstick.jdbc;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
@@ -34,15 +35,21 @@ public class JdbcUtils {
      * @param ignite Ignite node.
      * @param range Data key range.
      */
-    static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range) {
+    public static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range, CacheAtomicityMode atomicMode) {
         IgniteSemaphore sem = ignite.semaphore("jdbc-setup", 1, true, true);
 
         try {
             if (sem.tryAcquire()) {
                 println(cfg, "Create table...");
 
+                String withExpr = atomicMode != null ? " WITH \"atomicity=" + atomicMode.name() + "\";" : ";";
+
+                String qry = "CREATE TABLE test_long (id long primary key, val long)" + withExpr;
+
+                println(cfg, "Creating table with schema: " + qry);
+
                 ignite.context().query().querySqlFields(
-                    new SqlFieldsQuery("CREATE TABLE test_long (id long primary key, val long)"), true);
+                    new SqlFieldsQuery(qry), true);
 
                 println(cfg, "Populate data...");
 
@@ -60,7 +67,7 @@ public class JdbcUtils {
             else {
                 // Acquire (wait setup by other client) and immediately release/
                 println(cfg, "Waits for setup...");
-                
+
                 sem.acquire();
             }
         }
