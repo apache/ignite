@@ -52,10 +52,10 @@ import org.apache.ignite.lang.IgniteBiTuple;
  */
 public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /** Data size. */
-    private final static int AMOUNT = 10;
+    protected static final int AMOUNT = 10;
 
     /** Data size. */
-    private final static String CACHE_NAME = "T";
+    protected static final String CACHE_NAME = "T";
 
     /** Test instance to allow interaction with static context. */
     private static GridIndexRebuildSelfTest INSTANCE;
@@ -86,23 +86,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     }
 
     /**
-     * Do test with MVCC enabled.
-     */
-    public void testMvccEnabled() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7259");
-        doTest(true);
-    }
-
-    /**
-     * Do test with MVCC disabled.
-     */
-    public void testMvccDisabled() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7259");
-        doTest(false);
-    }
-
-    /**
-     * Do test.<p>
+     * Do test.
+     * <p>
      * Steps are as follows:
      * <ul>
      *     <li>Put some data;</li>
@@ -120,12 +105,13 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      *             index rebuild for them has happened after put.</li>
      *         </ul>
      *     </li>
-     * </ul>
-     * @param mvccEnabled MVCC flag.
+     * </ul></p>
      * @throws Exception if failed.
      */
-    private void doTest(boolean mvccEnabled) throws Exception {
-        IgniteEx srv = startServer(mvccEnabled);
+    public void testIndexRebuild() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7259");
+
+        IgniteEx srv = startServer();
 
         execute(srv, "CREATE TABLE T(k int primary key, v int) WITH \"cache_name=T,wrap_value=false," +
             "atomicity=transactional\"");
@@ -136,12 +122,9 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         assertNotNull(cc);
 
-        if (mvccEnabled)
-            lockVersion(srv);
-
         putData(srv, false);
 
-        checkDataState(srv, mvccEnabled, false);
+        checkDataState(srv, false);
 
         File cacheWorkDir = ((FilePageStoreManager)cc.context().shared().pageStore()).cacheWorkDir(cc.configuration());
 
@@ -151,22 +134,22 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         assertTrue(U.delete(idxPath));
 
-        srv = startServer(mvccEnabled);
+        srv = startServer();
 
         putData(srv, true);
 
-        checkDataState(srv, mvccEnabled, true);
+        checkDataState(srv, true);
     }
 
     /**
      * Check versions presence in index tree.
+     *
      * @param srv Node.
-     * @param mvccEnabled MVCC flag.
      * @param afterRebuild Whether index rebuild has occurred.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    private void checkDataState(IgniteEx srv, boolean mvccEnabled, boolean afterRebuild) throws IgniteCheckedException {
+    protected void checkDataState(IgniteEx srv, boolean afterRebuild) throws IgniteCheckedException {
         IgniteInternalCache icache = srv.cachex(CACHE_NAME);
 
         IgniteCache cache = srv.cache(CACHE_NAME);
@@ -179,47 +162,23 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
             while (cur.next()) {
                 CacheDataRow row = cur.get();
 
-                int key  = row.key().value(icache.context().cacheObjectContext(), false);
+                int key = row.key().value(icache.context().cacheObjectContext(), false);
 
-                if (mvccEnabled) {
-                    List<IgniteBiTuple<Object, MvccVersion>> vers = store.mvccFindAllVersions(icache.context(), row.key());
-
-                    if (!afterRebuild || key <= AMOUNT / 2)
-                        assertEquals(key, vers.size());
-                    else {
-                        // For keys affected by concurrent put there are two versions -
-                        // -1 (concurrent put mark) and newest restored value as long as put cleans obsolete versions.
-                        assertEquals(2, vers.size());
-
-                        assertEquals(-1, vers.get(0).getKey());
-                        assertEquals(key, vers.get(1).getKey());
-                    }
-                }
-                else {
-                    if (!afterRebuild || key <= AMOUNT / 2)
-                        assertEquals(key, cache.get(key));
-                    else
-                        assertEquals(-1, cache.get(key));
-                }
+                if (!afterRebuild || key <= AMOUNT / 2)
+                    assertEquals(key, cache.get(key));
+                else
+                    assertEquals(-1, cache.get(key));
             }
         }
     }
 
     /**
-     * Lock coordinator version in order to keep MVCC versions in place.
-     * @param node Node.
-     * @throws IgniteCheckedException if failed.
-     */
-    private static void lockVersion(IgniteEx node) throws IgniteCheckedException {
-        node.context().coordinators().requestSnapshotAsync().get();
-    }
-
-    /**
      * Put data to cache.
+     *
      * @param node Node.
      * @throws Exception if failed.
      */
-    private void putData(Ignite node, final boolean forConcurrentPut) throws Exception {
+    protected void putData(Ignite node, final boolean forConcurrentPut) throws Exception {
         final IgniteCache<Integer, Integer> cache = node.cache(CACHE_NAME);
 
         assertNotNull(cache);
@@ -248,16 +207,16 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
     /**
      * Start server node.
-     * @param mvccEnabled MVCC flag.
+     *
      * @return Started node.
      * @throws Exception if failed.
      */
-    private IgniteEx startServer(boolean mvccEnabled) throws Exception {
+    protected IgniteEx startServer() throws Exception {
         // Have to do this for each starting node - see GridQueryProcessor ctor, it nulls
         // idxCls static field on each call.
         GridQueryProcessor.idxCls = BlockingIndexing.class;
 
-        IgniteConfiguration cfg = serverConfiguration(0).setMvccEnabled(mvccEnabled);
+        IgniteConfiguration cfg = serverConfiguration(0);
 
         IgniteEx res = startGrid(cfg);
 
@@ -268,6 +227,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
         stopAllGrids();
 
@@ -313,13 +273,13 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /**
      * Test closure.
      */
-    private final static class TestRebuildClosure extends RebuildIndexFromHashClosure {
+    private static final class TestRebuildClosure extends RebuildIndexFromHashClosure {
         /** Seen keys set to track moment when concurrent put may start. */
         private final Set<KeyCacheObject> keys =
             Collections.newSetFromMap(new ConcurrentHashMap<KeyCacheObject, Boolean>());
 
         /**
-         * @param qryMgr      Query manager.
+         * @param qryMgr Query manager.
          * @param mvccEnabled MVCC status flag.
          */
         TestRebuildClosure(GridCacheQueryManager qryMgr, boolean mvccEnabled) {
