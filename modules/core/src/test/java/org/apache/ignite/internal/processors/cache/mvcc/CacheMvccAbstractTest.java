@@ -1509,7 +1509,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void verifyOldVersionsCleaned() throws Exception {
+    protected void verifyOldVersionsCleaned() throws Exception {
         runVacuumSync();
 
         // Check versions.

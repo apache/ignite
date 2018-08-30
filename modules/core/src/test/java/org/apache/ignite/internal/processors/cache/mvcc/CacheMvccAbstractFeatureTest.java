@@ -69,6 +69,8 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        cleanPersistenceDir();
+
         startGrids(4);
 
         node = grid(0);
@@ -83,8 +85,6 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -100,11 +100,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         node.destroyCache(CACHE_NAME);
-
-        super.afterTest();
     }
-
-
 
     /**
      * @param clo Closure to check consistency upon.
