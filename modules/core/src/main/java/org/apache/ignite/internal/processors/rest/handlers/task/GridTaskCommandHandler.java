@@ -109,7 +109,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         super(ctx);
 
         ctx.io().addMessageListener(TOPIC_REST, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (!(msg instanceof GridTaskResultRequest)) {
                     U.warn(log, "Received unexpected message instead of task result request: " + msg);
 
@@ -425,7 +425,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         final Condition cond = lock.newCondition();
 
         GridMessageListener msgLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 String err = null;
                 GridTaskResultResponse res = null;
 

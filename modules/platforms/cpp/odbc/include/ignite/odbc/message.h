@@ -24,11 +24,11 @@
 #include "ignite/impl/binary/binary_writer_impl.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
 
-#include "ignite/odbc/utility.h"
 #include "ignite/odbc/result_page.h"
+#include "ignite/odbc/protocol_version.h"
 #include "ignite/odbc/meta/column_meta.h"
 #include "ignite/odbc/meta/table_meta.h"
-#include "ignite/odbc/app/parameter.h"
+#include "ignite/odbc/app/parameter_set.h"
 
 namespace ignite
 {
@@ -48,7 +48,9 @@ namespace ignite
 
             REQUEST_TYPE_GET_TABLES_METADATA = 6,
 
-            REQUEST_TYPE_GET_PARAMS_METADATA = 7
+            REQUEST_TYPE_GET_PARAMS_METADATA = 7,
+
+            REQUEST_TYPE_EXECUTE_SQL_QUERY_BATCH = 8
         };
 
         enum ResponseStatus
@@ -71,35 +73,18 @@ namespace ignite
              * @param distributedJoins Distributed joins flag.
              * @param enforceJoinOrder Enforce join order flag.
              */
-            HandshakeRequest(int64_t version, bool distributedJoins, bool enforceJoinOrder) :
-                version(version),
-                distributedJoins(distributedJoins),
-                enforceJoinOrder(enforceJoinOrder)
-            {
-                // No-op.
-            }
+            HandshakeRequest(int64_t version, bool distributedJoins, bool enforceJoinOrder);
 
             /**
              * Destructor.
              */
-            ~HandshakeRequest()
-            {
-                // No-op.
-            }
+            ~HandshakeRequest();
 
             /**
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
-            {
-                writer.WriteInt8(REQUEST_TYPE_HANDSHAKE);
-
-                writer.WriteInt64(version);
-
-                writer.WriteBool(distributedJoins);
-                writer.WriteBool(enforceJoinOrder);
-            }
+            void Write(impl::binary::BinaryWriterImpl& writer) const;
 
         private:
             /** Protocol version. */
@@ -123,53 +108,20 @@ namespace ignite
              *
              * @param cache Cache name.
              * @param sql SQL query.
-             * @param argsNum Number of arguments.
+             * @param params Number of arguments.
              */
-            QueryExecuteRequest(const std::string& cache, const std::string& sql,
-                const app::ParameterBindingMap& params) :
-                cache(cache),
-                sql(sql),
-                params(params)
-            {
-                // No-op.
-            }
+            QueryExecuteRequest(const std::string& cache, const std::string& sql, const app::ParameterSet& params);
 
             /**
              * Destructor.
              */
-            ~QueryExecuteRequest()
-            {
-                // No-op.
-            }
+            ~QueryExecuteRequest();
 
             /**
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
-            {
-                writer.WriteInt8(REQUEST_TYPE_EXECUTE_SQL_QUERY);
-                utility::WriteString(writer, cache);
-                utility::WriteString(writer, sql);
-
-                writer.WriteInt32(static_cast<int32_t>(params.size()));
-
-                app::ParameterBindingMap::const_iterator i;
-                uint16_t prev = 0;
-
-                for (i = params.begin(); i != params.end(); ++i) {
-                    uint16_t current = i->first;
-
-                    while ((current - prev) > 1) {
-                        writer.WriteNull();
-                        ++prev;
-                    }
-
-                    i->second.Write(writer);
-
-                    prev = current;
-                }
-            }
+            void Write(impl::binary::BinaryWriterImpl& writer) const;
 
         private:
             /** Cache name. */
@@ -179,9 +131,57 @@ namespace ignite
             std::string sql;
 
             /** Parameters bindings. */
-            const app::ParameterBindingMap& params;
+            const app::ParameterSet& params;
         };
 
+        /**
+         * Query execute batch request.
+         */
+        class QueryExecuteBatchtRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param schema Schema.
+             * @param sql SQL query.
+             * @param params Query arguments.
+             * @param begin Beginng of the interval.
+             * @param end End of the interval.
+             */
+            QueryExecuteBatchtRequest(const std::string& schema, const std::string& sql,
+                                          const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last);
+
+            /**
+             * Destructor.
+             */
+            ~QueryExecuteBatchtRequest();
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(impl::binary::BinaryWriterImpl& writer) const;
+
+        private:
+            /** Schema name. */
+            std::string schema;
+
+            /** SQL query. */
+            std::string sql;
+
+            /** Parameters bindings. */
+            const app::ParameterSet& params;
+
+            /** Beginng of the interval. */
+            SqlUlen begin;
+
+            /** End of the interval. */
+            SqlUlen end;
+
+            /** Last page flag. */
+            bool last;
+        };
 
         /**
          * Query close request.
@@ -194,28 +194,18 @@ namespace ignite
              *
              * @param queryId Query ID.
              */
-            QueryCloseRequest(int64_t queryId) : queryId(queryId)
-            {
-                // No-op.
-            }
+            QueryCloseRequest(int64_t queryId);
 
             /**
              * Destructor.
              */
-            ~QueryCloseRequest()
-            {
-                // No-op.
-            }
+            ~QueryCloseRequest();
 
             /**
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
-            {
-                writer.WriteInt8(REQUEST_TYPE_CLOSE_SQL_QUERY);
-                writer.WriteInt64(queryId);
-            }
+            void Write(impl::binary::BinaryWriterImpl& writer) const;
 
         private:
             /** Query ID. */
@@ -234,31 +224,18 @@ namespace ignite
              * @param queryId Query ID.
              * @param pageSize Required page size.
              */
-            QueryFetchRequest(int64_t queryId, int32_t pageSize) :
-                queryId(queryId),
-                pageSize(pageSize)
-            {
-                // No-op.
-            }
+            QueryFetchRequest(int64_t queryId, int32_t pageSize);
 
             /**
              * Destructor.
              */
-            ~QueryFetchRequest()
-            {
-                // No-op.
-            }
+            ~QueryFetchRequest();
 
             /**
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
-            {
-                writer.WriteInt8(REQUEST_TYPE_FETCH_SQL_QUERY);
-                writer.WriteInt64(queryId);
-                writer.WriteInt32(pageSize);
-            }
+            void Write(impl::binary::BinaryWriterImpl& writer) const;
 
         private:
             /** Query ID. */
@@ -281,34 +258,18 @@ namespace ignite
              * @param table Table name.
              * @param column Column name.
              */
-            QueryGetColumnsMetaRequest(const std::string& schema, const std::string& table, const std::string& column) :
-                schema(schema),
-                table(table),
-                column(column)
-            {
-                // No-op.
-            }
+            QueryGetColumnsMetaRequest(const std::string& schema, const std::string& table, const std::string& column);
 
             /**
              * Destructor.
              */
-            ~QueryGetColumnsMetaRequest()
-            {
-                // No-op.
-            }
+            ~QueryGetColumnsMetaRequest();
 
             /**
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
-            {
-                writer.WriteInt8(REQUEST_TYPE_GET_COLUMNS_METADATA);
-                
-                utility::WriteString(writer, schema);
-                utility::WriteString(writer, table);
-                utility::WriteString(writer, column);
-            }
+            void Write(impl::binary::BinaryWriterImpl& writer) const;
 
         private:
             /** Schema search pattern. */
@@ -336,36 +297,18 @@ namespace ignite
              * @param tableTypes Table types search pattern.
              */
             QueryGetTablesMetaRequest(const std::string& catalog, const std::string& schema,
-                                      const std::string& table, const std::string& tableTypes) :
-                catalog(catalog),
-                schema(schema),
-                table(table),
-                tableTypes(tableTypes)
-            {
-                // No-op.
-            }
+                                      const std::string& table, const std::string& tableTypes);
 
             /**
              * Destructor.
              */
-            ~QueryGetTablesMetaRequest()
-            {
-                // No-op.
-            }
+            ~QueryGetTablesMetaRequest();
 
             /**
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
-            {
-                writer.WriteInt8(REQUEST_TYPE_GET_TABLES_METADATA);
-
-                utility::WriteString(writer, catalog);
-                utility::WriteString(writer, schema);
-                utility::WriteString(writer, table);
-                utility::WriteString(writer, tableTypes);
-            }
+            void Write(impl::binary::BinaryWriterImpl& writer) const;
 
         private:
             /** Column search pattern. */
@@ -414,13 +357,7 @@ namespace ignite
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
-            {
-                writer.WriteInt8(REQUEST_TYPE_GET_PARAMS_METADATA);
-
-                utility::WriteString(writer, cacheName);
-                utility::WriteString(writer, sqlQuery);
-            }
+            void Write(impl::binary::BinaryWriterImpl& writer) const;
 
         private:
             /** Cache name. */
@@ -439,33 +376,19 @@ namespace ignite
             /**
              * Constructor.
              */
-            Response() : status(RESPONSE_STATUS_FAILED), error()
-            {
-                // No-op.
-            }
+            Response();
 
             /**
              * Destructor.
              */
-            virtual ~Response()
-            {
-                // No-op.
-            }
+            virtual ~Response();
 
             /**
              * Read response using provided reader.
              * @param reader Reader.
              */
-            void Read(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                status = reader.ReadInt8();
+            void Read(impl::binary::BinaryReaderImpl& reader);
 
-                if (status == RESPONSE_STATUS_SUCCESS)
-                    ReadOnSuccess(reader);
-                else
-                    utility::ReadString(reader, error);;
-            }
-            
             /**
              * Get request processing status.
              * @return Status.
@@ -488,10 +411,7 @@ namespace ignite
             /**
              * Read data if response status is RESPONSE_STATUS_SUCCESS.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl&)
-            {
-                // No-op.
-            }
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl&);
 
         private:
             /** Request processing status. */
@@ -510,21 +430,12 @@ namespace ignite
             /**
              * Constructor.
              */
-            HandshakeResponse() :
-                accepted(false),
-                protoVerSince(),
-                currentVer()
-            {
-                // No-op.
-            }
+            HandshakeResponse();
 
             /**
              * Destructor.
              */
-            ~HandshakeResponse()
-            {
-                // No-op.
-            }
+            ~HandshakeResponse();
 
             /**
              * Check if the handshake has been accepted.
@@ -558,16 +469,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                accepted = reader.ReadBool();
-
-                if (!accepted)
-                {
-                    utility::ReadString(reader, protoVerSince);
-                    utility::ReadString(reader, currentVer);
-                }
-            }
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
 
             /** Handshake accepted. */
             bool accepted;
@@ -588,18 +490,12 @@ namespace ignite
             /**
              * Constructor.
              */
-            QueryCloseResponse() : queryId(0)
-            {
-                // No-op.
-            }
+            QueryCloseResponse();
 
             /**
              * Destructor.
              */
-            ~QueryCloseResponse()
-            {
-                // No-op.
-            }
+            virtual ~QueryCloseResponse();
 
             /**
              * Get query ID.
@@ -615,10 +511,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                queryId = reader.ReadInt64();
-            }
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
 
             /** Query ID. */
             int64_t queryId;
@@ -633,18 +526,12 @@ namespace ignite
             /**
              * Constructor.
              */
-            QueryExecuteResponse() : queryId(0), meta()
-            {
-                // No-op.
-            }
+            QueryExecuteResponse();
 
             /**
              * Destructor.
              */
-            ~QueryExecuteResponse()
-            {
-                // No-op.
-            }
+            virtual ~QueryExecuteResponse();
 
             /**
              * Get query ID.
@@ -669,18 +556,73 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                queryId = reader.ReadInt64();
-
-                meta::ReadColumnMetaVector(reader, meta);
-            }
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
 
             /** Query ID. */
             int64_t queryId;
 
             /** Columns metadata. */
             meta::ColumnMetaVector meta;
+        };
+
+        /**
+         * Query execute batch start response.
+         */
+        class QueryExecuteBatchResponse : public Response
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            QueryExecuteBatchResponse();
+
+            /**
+             * Destructor.
+             */
+            virtual ~QueryExecuteBatchResponse();
+
+            /**
+             * Affected rows.
+             * @return Affected rows.
+             */
+            int64_t GetAffectedRows() const
+            {
+                return affectedRows;
+            }
+
+            /**
+             * Get index of the set which caused an error.
+             * @return Index of the set which caused an error.
+             */
+            int64_t GetErrorSetIdx() const
+            {
+                return affectedRows;
+            }
+
+            /**
+             * Get error message.
+             * @return Error message.
+             */
+            const std::string& GetErrorMessage() const
+            {
+                return errorMessage;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
+
+            /** Affected rows. */
+            int64_t affectedRows;
+
+            /** Index of the set which caused an error. */
+            int64_t errorSetIdx;
+
+            /** Error message. */
+            std::string errorMessage;
         };
 
         /**
@@ -693,18 +635,12 @@ namespace ignite
              * Constructor.
              * @param resultPage Result page.
              */
-            QueryFetchResponse(ResultPage& resultPage) : queryId(0), resultPage(resultPage)
-            {
-                // No-op.
-            }
+            QueryFetchResponse(ResultPage& resultPage);
 
             /**
              * Destructor.
              */
-            ~QueryFetchResponse()
-            {
-                // No-op.
-            }
+            virtual ~QueryFetchResponse();
 
             /**
              * Get query ID.
@@ -720,12 +656,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                queryId = reader.ReadInt64();
-
-                resultPage.Read(reader);
-            }
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
 
             /** Query ID. */
             int64_t queryId;
@@ -743,18 +674,12 @@ namespace ignite
             /**
              * Constructor.
              */
-            QueryGetColumnsMetaResponse()
-            {
-                // No-op.
-            }
+            QueryGetColumnsMetaResponse();
 
             /**
              * Destructor.
              */
-            ~QueryGetColumnsMetaResponse()
-            {
-                // No-op.
-            }
+            virtual ~QueryGetColumnsMetaResponse();
 
             /**
              * Get column metadata.
@@ -770,10 +695,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                meta::ReadColumnMetaVector(reader, meta);
-            }
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
 
             /** Columns metadata. */
             meta::ColumnMetaVector meta;
@@ -788,18 +710,12 @@ namespace ignite
             /**
              * Constructor.
              */
-            QueryGetTablesMetaResponse()
-            {
-                // No-op.
-            }
+            QueryGetTablesMetaResponse();
 
             /**
              * Destructor.
              */
-            ~QueryGetTablesMetaResponse()
-            {
-                // No-op.
-            }
+            virtual ~QueryGetTablesMetaResponse();
 
             /**
              * Get column metadata.
@@ -815,10 +731,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                meta::ReadTableMetaVector(reader, meta);
-            }
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
 
             /** Columns metadata. */
             meta::TableMetaVector meta;
@@ -833,18 +746,12 @@ namespace ignite
             /**
              * Constructor.
              */
-            QueryGetParamsMetaResponse()
-            {
-                // No-op.
-            }
+            QueryGetParamsMetaResponse();
 
             /**
              * Destructor.
              */
-            ~QueryGetParamsMetaResponse()
-            {
-                // No-op.
-            }
+            virtual ~QueryGetParamsMetaResponse();
 
             /**
              * Get parameter type IDs.
@@ -860,10 +767,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
-            {
-                utility::ReadByteArray(reader, typeIds);
-            }
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
 
             /** Columns metadata. */
             std::vector<int8_t> typeIds;

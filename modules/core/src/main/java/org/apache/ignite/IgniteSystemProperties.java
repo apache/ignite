@@ -19,10 +19,12 @@ package org.apache.ignite;
 
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,6 +66,9 @@ public final class IgniteSystemProperties {
      * be allowed.
      */
     public static final String IGNITE_NO_DISCO_ORDER = "IGNITE_NO_DISCO_ORDER";
+
+    /** Defines reconnect delay in milliseconds for client node that was failed forcible. */
+    public static final String IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY = "IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY";
 
     /**
      * If this system property is set to {@code false} - no checks for new versions will
@@ -110,6 +115,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_REST_MAX_TASK_RESULTS = "IGNITE_REST_MAX_TASK_RESULTS";
 
     /**
+     * This property allows to override default behavior that rest processor
+     * doesn't start on client node. If set {@code true} than rest processor will be started on client node.
+     */
+    public static final String IGNITE_REST_START_ON_CLIENT = "IGNITE_REST_START_ON_CLIENT";
+
+    /**
      * This property defines the maximum number of attempts to remap near get to the same
      * primary node. Remapping may be needed when topology is changed concurrently with
      * get operation.
@@ -127,12 +138,27 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
 
     /**
+     * Setting this option to {@code true} will enable troubleshooting logger.
+     * Troubleshooting logger makes logging more verbose without enabling debug mode
+     * to provide more detailed logs without performance penalty.
+     */
+    public static final String IGNITE_TROUBLESHOOTING_LOGGER = "IGNITE_TROUBLESHOOTING_LOGGER";
+
+    /**
+     * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
+     */
+    public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
+
+    /**
      * If this property is set to {@code true} (default) and Ignite is launched
      * in verbose mode (see {@link #IGNITE_QUIET}) and no console appenders can be found
      * in configuration, then default console appender will be added.
      * Set this property to {@code false} if no appenders should be added.
      */
     public static final String IGNITE_CONSOLE_APPENDER = "IGNITE_CONSOLE_APPENDER";
+
+    /** Maximum size for exchange history. Default value is {@code 1000}.*/
+    public static final String IGNITE_EXCHANGE_HISTORY_SIZE = "IGNITE_EXCHANGE_HISTORY_SIZE";
 
     /**
      * Name of the system property defining name of command line program.
@@ -268,6 +294,9 @@ public final class IgniteSystemProperties {
     /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
+    /** Ttl of removed cache entries (ms). */
+    public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
+
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
      * Makes sense only for {@link org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}.
@@ -290,6 +319,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT = "IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT";
 
     /**
+     * Atomic cache deferred update timeout.
+     */
+    public static final String IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT = "IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT";
+
+    /**
      * One phase commit deferred ack request timeout.
      */
     public static final String IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT =
@@ -305,6 +339,14 @@ public final class IgniteSystemProperties {
      * If this property set then debug console will be opened for H2 indexing SPI.
      */
     public static final String IGNITE_H2_DEBUG_CONSOLE = "IGNITE_H2_DEBUG_CONSOLE";
+
+    /**
+     * This property allows to specify user defined port which H2 indexing SPI will use
+     * to start H2 debug console on. If this property is not set or set to 0, H2 debug
+     * console will use system-provided dynamic port.
+     * This property is only relevant when {@link #IGNITE_H2_DEBUG_CONSOLE} property is set.
+     */
+    public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
      * If this property is set to {@code true} then shared memory space native debug will be enabled.
@@ -352,6 +394,14 @@ public final class IgniteSystemProperties {
      * Default is {@code true}.
      */
     public static final String IGNITE_MBEAN_APPEND_CLASS_LOADER_ID = "IGNITE_MBEAN_APPEND_CLASS_LOADER_ID";
+
+    /**
+     * If property is set to {@code true}, then Ignite will disable MBeans registration.
+     * This may be helpful if MBeans are not allowed e.g. for security reasons.
+     *
+     * Default is {@code false}
+     */
+    public static final String IGNITE_MBEANS_DISABLED = "IGNITE_MBEANS_DISABLED";
 
     /**
      * Property controlling size of buffer holding last exception. Default value of {@code 1000}.
@@ -467,6 +517,8 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
 
+    public static final String IGNITE_SERVICE_REASSIGN_DELAY = "IGNITE_SERVICE_REASSIGN_DELAY";
+
     /**
      * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
      * wrapped into special holders introduced to overcome serialization issue caused by missing {@code Comparable}
@@ -476,6 +528,9 @@ public final class IgniteSystemProperties {
      */
     @Deprecated
     public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
+
+    /** */
+    public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
 
     /**
      * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
@@ -492,6 +547,64 @@ public final class IgniteSystemProperties {
      * Defaults to {@code} false, meaning that unaligned access will be performed only on x86 architecture.
      */
     public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
+
+    /**
+     * When unsafe memory copy if performed below this threshold, Ignite will do it on per-byte basis instead of
+     * calling to Unsafe.copyMemory().
+     * <p>
+     * Defaults to 0, meaning that threshold is disabled.
+     */
+    public static final String IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD = "IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD";
+
+    /**
+     * When set to {@code true} BinaryObject will be unwrapped before passing to IndexingSpi to preserve
+     * old behavior query processor with IndexingSpi.
+     * <p>
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
+
+    /** Returns true for system properties only avoiding sending sensitive information. */
+    private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
+        @Override public boolean apply(final Map.Entry<String, String> entry) {
+            final String key = entry.getKey();
+
+            return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
+        }
+    };
+
+    /**
+     * Use local metadata cache instead of distributed one. May be used only when binary objects schema
+     * are not modified and all classes available on each node. Classes that implements Binarylizable are
+     * not supported.
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    public static final String IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE = "IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE";
+
+     /**
+     * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
+     * support service security permissions. In this case security permissions will be ignored
+     * (if they set).
+     * <p>
+     *     Default is {@code false}, which means that service security permissions will be respected.
+     * </p>
+     */
+    public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
+
+    /**
+     * If this property is set, a node will forcible fail a remote node when it fails to establish a communication
+     * connection.
+     */
+    public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
+
+    /** Ignite marshaller cache reread pause. */
+    public static final String IGNITE_MARSHALLER_CACHE_REREAD_PAUSE = "IGNITE_MARSHALLER_CACHE_REREAD_PAUSE";
+
+    /**
+     * Property allowing to serialize a singleton collections obtained by {@link Collections#singletonList(Object)},
+     * {@link Collections#singleton(Object)} and {@link Collections#singletonMap(Object, Object)}.
+     */
+    public static final String IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION = "IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION";
 
     /**
      * Enforces singleton.
@@ -665,5 +778,27 @@ public final class IgniteSystemProperties {
         }
 
         return sysProps;
+    }
+
+    /**
+     * Does the same as {@link #snapshot()} but filters out
+     * possible sensitive user data.
+     *
+     * @return Snapshot of system properties.
+     */
+    @SuppressWarnings("unchecked")
+    public static Properties safeSnapshot() {
+        final Properties props = snapshot();
+
+        final Iterator<Map.Entry<Object, Object>> iter = props.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            final Map.Entry entry = iter.next();
+
+            if (!PROPS_FILTER.apply(entry))
+                iter.remove();
+        }
+
+        return props;
     }
 }

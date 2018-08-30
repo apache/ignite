@@ -817,16 +817,16 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(val = decimal.Parse("-11,12"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
 
             // Test echo with overflow.
-            try
-            {
-                _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { null, decimal.MaxValue.ToString() + 1 });
+            var ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
+                .ExecuteJavaTask<object>(DecimalTask, new object[] {null, decimal.MaxValue.ToString() + 1}));
 
-                Assert.Fail();
-            }
-            catch (IgniteException)
-            {
-                // No-op.
-            }
+            Assert.AreEqual("Decimal magnitude overflow (must be less than 96 bits): 104", ex.Message);
+
+            // Negative scale. 1E+1 parses to "1 scale -1" on Java side.
+            ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
+                .ExecuteJavaTask<object>(DecimalTask, new object[] {null, "1E+1"}));
+
+            Assert.AreEqual("Decimal value scale overflow (must be between 0 and 28): -1", ex.Message);
         }
 
         /// <summary>

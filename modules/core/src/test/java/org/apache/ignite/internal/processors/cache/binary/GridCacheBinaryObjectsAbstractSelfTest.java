@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,6 +38,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
@@ -69,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -293,7 +296,11 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         String typeName = nameMapper.typeName(TestReferenceObject.class.getName());
 
-        assertTrue("Unexpected toString: " + str, str.startsWith(typeName) && str.contains("obj=" + typeName + " ["));
+        assertTrue("Unexpected toString: " + str,
+            S.INCLUDE_SENSITIVE ?
+            str.startsWith(typeName) && str.contains("obj=" + typeName + " [") :
+            str.startsWith("BinaryObject") && str.contains("idHash=") && str.contains("hash=")
+        );
 
         TestReferenceObject obj1_r = po.deserialize();
 
@@ -457,6 +464,109 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                 assertEquals(idx, (int)map.get(idx).field("val"));
             }
+        }
+    }
+
+    /**
+     * Checks deserialization of elements in the singleton map.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSingletonMap() {
+        System.setProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION, "true");
+        try {
+            IgniteCache<Integer, Map<TestObject, TestObject>> c = jcache(0);
+
+            TestObject obj = new TestObject(123);
+            c.put(0, Collections.singletonMap(obj, obj));
+            c.put(1, Collections.singletonMap((TestObject) null, (TestObject) null));
+
+            assertEquals(1, c.get(0).size());
+            assertEquals(1, c.get(1).size());
+
+            Map.Entry<TestObject, TestObject> entry = c.get(0).entrySet().iterator().next();
+            assertEquals(123, entry.getKey().val);
+            assertEquals(123, entry.getValue().val);
+
+            Map.Entry<TestObject, TestObject> nullEntry = c.get(1).entrySet().iterator().next();
+            assertNull(nullEntry.getKey());
+            assertNull(nullEntry.getValue());
+
+            IgniteCache<Integer, Map<BinaryObject, BinaryObject>> kpc = keepBinaryCache();
+
+            Map<?, ?> cBinary = kpc.get(0);
+
+            assertEquals(Collections.singletonMap((TestObject) null, (TestObject) null).getClass(), cBinary.getClass());
+
+            Map.Entry<?, ?> binaryEntry = kpc.get(0).entrySet().iterator().next();
+
+            assertTrue(binaryEntry.getKey() instanceof BinaryObject);
+            assertTrue(binaryEntry.getValue() instanceof BinaryObject);
+
+            assertEquals(Integer.valueOf(123), ((BinaryObject)binaryEntry.getKey()).field("val"));
+            assertEquals(Integer.valueOf(123), ((BinaryObject)binaryEntry.getValue()).field("val"));
+
+            Map.Entry<?, ?> nullBinaryEntry = kpc.get(1).entrySet().iterator().next();
+
+            assertNull(nullBinaryEntry.getKey());
+            assertNull(nullBinaryEntry.getValue());
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION);
+        }
+    }
+
+    /**
+     * Checks deserialization of elements in the singleton list and set.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSingletonCollection() {
+        System.setProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION, "true");
+        try {
+            IgniteCache<Integer, Collection<TestObject>> c = jcache(0);
+
+            c.put(0, Collections.singletonList(new TestObject(123)));
+            c.put(1, Collections.singleton(new TestObject(123)));
+            c.put(3, Collections.singletonList((TestObject) null));
+            c.put(4, Collections.singleton((TestObject) null));
+
+            assertEquals(1, c.get(0).size());
+            assertEquals(123,c.get(0).iterator().next().val);
+
+            assertEquals(1, c.get(1).size());
+            assertEquals(123,c.get(1).iterator().next().val);
+
+            assertEquals(1, c.get(3).size());
+            assertNull(c.get(3).iterator().next());
+
+            assertEquals(1, c.get(4).size());
+            assertNull(c.get(4).iterator().next());
+
+            IgniteCache<Integer, Collection<BinaryObject>> kpc = keepBinaryCache();
+
+            Collection<?> binaryList = kpc.get(0);
+            Collection<?> binarySet = kpc.get(1);
+
+            assertEquals(Collections.singletonList(null).getClass(), binaryList.getClass());
+            assertEquals(Collections.singleton(null).getClass(), binarySet.getClass());
+
+            assertEquals(1, binaryList.size());
+            assertEquals(1, binarySet.size());
+
+            Object obj1 = binaryList.iterator().next();
+            assertTrue(obj1 instanceof BinaryObject);
+            assertEquals(Integer.valueOf(123), ((BinaryObject)obj1).field("val"));
+
+            Object obj2 = binaryList.iterator().next();
+            assertTrue(obj2 instanceof BinaryObject);
+            assertEquals(Integer.valueOf(123), ((BinaryObject)obj2).field("val"));
+
+            assertNull(kpc.get(3).iterator().next());
+            assertNull(kpc.get(4).iterator().next());
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION);
         }
     }
 

@@ -31,4 +31,14 @@ public class CacheTtlOnheapTransactionalPartitionedSelfTest extends CacheTtlOnhe
     @Override protected int gridCount() {
         return 2;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testDefaultTimeToLiveLoadAll() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-11241");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testDefaultTimeToLiveStreamerAdd() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-11241");
+    }
 }

@@ -235,6 +235,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
+    }
+
+    /** {@inheritDoc} */
     @Override public int partitionId(int idx) {
         assert idx == 0 : idx;
 
@@ -358,6 +363,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public boolean keepBinary() {
         return isFlag(KEEP_BINARY_FLAG_MASK);
+    }
+
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /**

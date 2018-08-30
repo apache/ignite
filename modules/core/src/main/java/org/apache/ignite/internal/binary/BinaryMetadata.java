@@ -42,16 +42,19 @@ public class BinaryMetadata implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Type ID. */
+    @GridToStringInclude(sensitive = true)
     private int typeId;
 
     /** Type name. */
+    @GridToStringInclude(sensitive = true)
     private String typeName;
 
     /** Recorded object fields. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Map<String, Integer> fields;
 
     /** Affinity key field name. */
+    @GridToStringInclude(sensitive = true)
     private String affKeyFieldName;
 
     /** Schemas associated with type. */

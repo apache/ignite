@@ -45,6 +45,13 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         Collection<String> hostNames = Arrays.asList("h_1", "h_2", "h_3");
 

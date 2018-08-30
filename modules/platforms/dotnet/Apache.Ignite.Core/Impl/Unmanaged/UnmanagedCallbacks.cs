@@ -942,22 +942,47 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: SERVICES
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "User processor can throw any exception")]
         private long ServiceInit(void* target, long memPtr)
         {
             return SafeCall(() =>
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                    try
+                    {
+                        var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    bool srvKeepBinary = reader.ReadBoolean();
-                    var svc = reader.ReadObject<IService>();
+                        var srvKeepBinary = reader.ReadBoolean();
+                        var svc = reader.ReadObject<IService>();
 
-                    ResourceProcessor.Inject(svc, _ignite);
+                        ResourceProcessor.Inject(svc, _ignite);
 
-                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                        svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
-                    return _handleRegistry.Allocate(svc);
+                        stream.Reset();
+
+                        stream.WriteBool(true); // Success.
+
+                        stream.SynchronizeOutput();
+
+                        return _handleRegistry.Allocate(svc);
+                    }
+                    catch (Exception e)
+                    {
+                        stream.Reset();
+
+                        var writer = _ignite.Marshaller.StartMarshal(stream);
+
+                        BinaryUtils.WriteInvocationResult(writer, false, e);
+
+                        _ignite.Marshaller.FinishMarshal(writer);
+
+                        stream.SynchronizeOutput();
+
+                        return 0;
+                    }
                 }
             });
         }

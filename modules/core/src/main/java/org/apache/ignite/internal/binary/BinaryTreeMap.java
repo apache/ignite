@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Serializable;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -31,8 +32,14 @@ import java.util.TreeMap;
 
 /**
  * Binary {@link TreeMap} wrapper.
+ *
+ * Note: It is required to supply a BinaryTypeConfiguration for BinaryTreeMap with BinaryArrayIdentityResolver
+ *  for using this type in keys.
  */
-public class BinaryTreeMap implements Binarylizable {
+public class BinaryTreeMap implements Binarylizable, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Original map. */
     private TreeMap map;
 

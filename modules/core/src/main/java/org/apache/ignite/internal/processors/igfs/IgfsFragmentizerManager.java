@@ -453,7 +453,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (msg instanceof IgfsFragmentizerResponse) {
                 IgfsFragmentizerResponse res = (IgfsFragmentizerResponse)msg;
 
@@ -673,7 +673,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (msg instanceof IgfsFragmentizerRequest ||
                 msg instanceof IgfsSyncMessage) {
                 if (log.isDebugEnabled())

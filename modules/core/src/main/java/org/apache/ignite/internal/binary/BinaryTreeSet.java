@@ -30,6 +30,9 @@ import java.util.TreeSet;
 
 /**
  * Binary {@link TreeSet} wrapper.
+ *
+ * Note: It is required to supply a BinaryTypeConfiguration for BinaryTreeSet with BinaryArrayIdentityResolver
+ *  for using this type in keys.
  */
 public class BinaryTreeSet implements Binarylizable {
     /** Original set. */

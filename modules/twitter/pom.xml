@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-twitter</artifactId>
-    <version>1.8.0-SNAPSHOT</version>
+    <version>1.9.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -66,6 +66,12 @@
             <groupId>com.twitter</groupId>
             <artifactId>hbc-twitter4j</artifactId>
             <version>${twitter.hbc.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

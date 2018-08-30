@@ -35,7 +35,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -49,7 +51,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     private static final int TIME_TO_LIVE = 1000;
 
     /** Additional time to wait expiry process in milliseconds. */
-    private static final int WAIT_TIME = 500;
+    private static final int WAIT_TIME = 1000;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -138,7 +140,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
      * @throws Exception If failed.
      */
     private void checkLocalLoad(boolean async) throws Exception {
-        IgniteCache<String, Integer> cache = jcache(0)
+        final IgniteCache<String, Integer> cache = jcache(0)
             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
 
         List<Integer> keys = primaryKeys(cache, 3);
@@ -155,9 +157,13 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
 
         assertEquals(3, cache.localSize());
 
-        Thread.sleep(TIME_TO_LIVE + WAIT_TIME);
+        boolean res = GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return cache.localSize() == 0;
+            }
+        }, TIME_TO_LIVE + WAIT_TIME);
 
-        assertEquals(0, cache.localSize());
+        assertTrue(res);
     }
 
     /**

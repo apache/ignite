@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -145,7 +147,37 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             ONHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, false);
+        doOrderingTest(ccfg, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicOnheapTwoBackupLocalQuery() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
+            ONHEAP_TIERED, PRIMARY_SYNC);
+
+        doOrderingTest(ccfg, false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicOnheapTwoBackupLocalQueryAsync() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
+            ONHEAP_TIERED, PRIMARY_SYNC);
+
+        doOrderingTest(ccfg, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicOnheapTwoBackupLocalQueryAsyncFullSync() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
+            ONHEAP_TIERED, FULL_SYNC);
+
+        doOrderingTest(ccfg, false, true);
     }
 
     /**
@@ -155,7 +187,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             OFFHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, false);
+        doOrderingTest(ccfg, false, false);
     }
 
     /**
@@ -165,7 +197,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             OFFHEAP_VALUES, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, false);
+        doOrderingTest(ccfg, false, false);
     }
 
     /**
@@ -175,7 +207,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
             OFFHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, false);
+        doOrderingTest(ccfg, false, false);
     }
 
     /**
@@ -185,7 +217,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL,
             ONHEAP_TIERED, FULL_SYNC);
 
-        doOrderingTest(ccfg, false);
+        doOrderingTest(ccfg, false, false);
     }
 
     /**
@@ -195,7 +227,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL,
             ONHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, false);
+        doOrderingTest(ccfg, false, false);
     }
 
     /**
@@ -205,7 +237,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL,
             ONHEAP_TIERED, FULL_SYNC);
 
-        doOrderingTest(ccfg, false);
+        doOrderingTest(ccfg, false, false);
     }
 
     // ASYNC
@@ -217,7 +249,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             ONHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -227,7 +259,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             ONHEAP_TIERED, FULL_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -237,7 +269,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             OFFHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -247,7 +279,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             OFFHEAP_TIERED, FULL_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -257,7 +289,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             OFFHEAP_VALUES, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -267,7 +299,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             OFFHEAP_VALUES, FULL_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -277,7 +309,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
             ONHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -287,7 +319,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
             ONHEAP_TIERED, FULL_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -297,7 +329,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
             OFFHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -307,7 +339,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, ATOMIC,
             ONHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -317,7 +349,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL,
             ONHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -327,7 +359,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL,
             ONHEAP_TIERED, PRIMARY_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
@@ -337,17 +369,17 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL,
             ONHEAP_TIERED, FULL_SYNC);
 
-        doOrderingTest(ccfg, true);
+        doOrderingTest(ccfg, true, false);
     }
 
     /**
      * @param ccfg Cache configuration.
      * @param async Async filter.
+     * @param localQry Start local query.
+     *
      * @throws Exception If failed.
      */
-    protected void doOrderingTest(
-        final CacheConfiguration ccfg,
-        final boolean async)
+    protected void doOrderingTest(final CacheConfiguration ccfg, final boolean async, final boolean localQry)
         throws Exception {
         ignite(0).createCache(ccfg);
 
@@ -372,14 +404,16 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
                         qry.setLocalListener(new TestCacheAsyncEventListener(queue, qryCntr));
 
                         qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(
-                            new CacheTestRemoteFilterAsync(ccfg.getName())));
+                            new CacheTestRemoteFilterAsync(ccfg.getName(), localQry)));
                     }
                     else {
                         qry.setLocalListener(new TestCacheEventListener(queue, qryCntr));
 
                         qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(
-                            new CacheTestRemoteFilter(ccfg.getName())));
+                            new CacheTestRemoteFilter(ccfg.getName(), localQry)));
                     }
+
+                    qry.setLocal(localQry);
 
                     rcvdEvts.add(queue);
 
@@ -390,6 +424,25 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
                     qries.add(qryCursor);
                 }
             }
+
+            IgniteCache<Object, Object> cache = grid(0).cache(ccfg.getName());
+
+            for (int i = 0; i < KEYS; i++) {
+                cache.put(new QueryTestKey(i), new QueryTestValue(-1));
+
+                cache.remove(new QueryTestValue(i));
+            }
+
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    return qryCntr.get() >= 4 * KEYS * LISTENER_CNT * NODES;
+                }
+            }, 3000L);
+
+            for (BlockingQueue<CacheEntryEvent<QueryTestKey, QueryTestValue>> q : rcvdEvts)
+                q.clear();
+
+            qryCntr.set(0);
 
             IgniteInternalFuture<Long> f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
@@ -448,14 +501,17 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
 
             f.get(15, TimeUnit.SECONDS);
 
-            GridTestUtils.waitForCondition(new PA() {
+            boolean res = GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
-                    return qryCntr.get() >= ITERATION_CNT * threadCnt * LISTENER_CNT * NODES;
+                    return qryCntr.get() >= ITERATION_CNT * threadCnt * LISTENER_CNT *
+                        (localQry ? 1 : NODES);
                 }
             }, 1000L);
 
+            assertTrue("Failed to wait all events.", res);
+
             for (BlockingQueue<CacheEntryEvent<QueryTestKey, QueryTestValue>> queue : rcvdEvts)
-                checkEvents(queue, ITERATION_CNT * threadCnt);
+                checkEvents(queue, ITERATION_CNT * threadCnt, localQry);
 
             assertFalse("Ordering invocations of filter broken.", fail);
         }
@@ -469,9 +525,12 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
 
     /**
      * @param queue Event queue.
+     * @param localQry Local query flag.
      * @throws Exception If failed.
      */
-    private void checkEvents(BlockingQueue<CacheEntryEvent<QueryTestKey, QueryTestValue>> queue, int expCnt)
+    private void checkEvents(BlockingQueue<CacheEntryEvent<QueryTestKey, QueryTestValue>> queue,
+        int expCnt,
+        boolean localQry)
         throws Exception {
         CacheEntryEvent<QueryTestKey, QueryTestValue> evt;
         int cnt = 0;
@@ -483,11 +542,17 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
 
             Integer preVal = vals.get(evt.getKey());
 
-            if (preVal == null)
-                assertEquals(new QueryTestValue(0), evt.getValue());
+            if (!localQry) {
+                if (preVal == null)
+                    assertEquals(new QueryTestValue(0), evt.getValue());
+                else {
+                    if (!new QueryTestValue(preVal + 1).equals(evt.getValue()))
+                        assertEquals("Key event: " + evt.getKey(), new QueryTestValue(preVal + 1), evt.getValue());
+                }
+            }
             else {
-                if (!new QueryTestValue(preVal + 1).equals(evt.getValue()))
-                    assertEquals("Key event: " + evt.getKey(), new QueryTestValue(preVal + 1), evt.getValue());
+                if (preVal != null)
+                    assertTrue("Evt out of order.", preVal < evt.getValue().val1);
             }
 
             vals.put(evt.getKey(), evt.getValue().val1);
@@ -495,7 +560,8 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
             ++cnt;
         }
 
-        assertEquals(expCnt, cnt);
+        if (!localQry)
+            assertEquals(expCnt, cnt);
     }
 
     /** {@inheritDoc} */
@@ -510,9 +576,10 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     private static class CacheTestRemoteFilterAsync extends CacheTestRemoteFilter {
         /**
          * @param cacheName Cache name.
+         * @param localQry Local query.
          */
-        public CacheTestRemoteFilterAsync(String cacheName) {
-            super(cacheName);
+        public CacheTestRemoteFilterAsync(String cacheName, boolean localQry) {
+            super(cacheName, localQry);
         }
     }
 
@@ -531,11 +598,16 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         /** */
         private String cacheName;
 
+        /** */
+        private boolean localQry;
+
         /**
          * @param cacheName Cache name.
+         * @param localQry Local query flag.
          */
-        public CacheTestRemoteFilter(String cacheName) {
+        public CacheTestRemoteFilter(String cacheName, boolean localQry) {
             this.cacheName = cacheName;
+            this.localQry = localQry;
         }
 
         /** {@inheritDoc} */
@@ -544,7 +616,11 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
                 QueryTestValue prevVal = prevVals.put(e.getKey(), e.getValue());
 
                 if (prevVal != null) {
-                    if (!new QueryTestValue(prevVal.val1 + 1).equals(e.getValue()))
+                    if (localQry) {
+                        if (prevVal.val1 > e.getValue().val1)
+                            fail = true;
+                    }
+                    else if (!new QueryTestValue(prevVal.val1 + 1).equals(e.getValue()))
                         fail = true;
                 }
             }

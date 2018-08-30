@@ -388,6 +388,34 @@ public class PlatformUtils {
     }
 
     /**
+     * Read linked map.
+     *
+     * @param reader Reader.
+     * @param readClo Reader closure.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> readLinkedMap(BinaryRawReaderEx reader,
+        @Nullable PlatformReaderBiClosure<K, V> readClo) {
+        int cnt = reader.readInt();
+
+        Map<K, V> map = U.newLinkedHashMap(cnt);
+
+        if (readClo == null) {
+            for (int i = 0; i < cnt; i++)
+                map.put((K)reader.readObjectDetached(), (V)reader.readObjectDetached());
+        }
+        else {
+            for (int i = 0; i < cnt; i++) {
+                IgniteBiTuple<K, V> entry = readClo.read(reader);
+
+                map.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return map;
+    }
+
+    /**
      * Read nullable map.
      *
      * @param reader Reader.
@@ -737,7 +765,7 @@ public class PlatformUtils {
      * @param resObj Result.
      * @param err Error.
      */
-    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Exception err)
+    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Throwable err)
     {
         if (err == null) {
             writer.writeBoolean(true);
@@ -919,7 +947,7 @@ public class PlatformUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(obj));
 
-        return col0;
+        return U.unwrapSingletonCollection(col0);
     }
 
     /**
@@ -949,7 +977,7 @@ public class PlatformUtils {
         for (Map.Entry<Object, Object> e : map.entrySet())
             map0.put(unwrapBinary(e.getKey()), unwrapBinary(e.getValue()));
 
-        return map0;
+        return U.unwrapSingletonMap(map0);
     }
     /**
      * Create Java object.

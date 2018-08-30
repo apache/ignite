@@ -17,6 +17,9 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.h2.jdbcx.JdbcConnectionPool;
 
 /**
@@ -31,5 +34,38 @@ public class CacheJdbcPojoStoreMultitreadedSelfTest
         store.setDataSource(JdbcConnectionPool.create(DFLT_CONN_URL, "sa", ""));
 
         return store;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMultithreadedPut() throws Exception {
+        if (!supportedMarshaller())
+            fail("https://ggsystems.atlassian.net/browse/GG-13127");
+
+        super.testMultithreadedPut();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMultithreadedPutAll() throws Exception {
+        if (!supportedMarshaller())
+            fail("https://ggsystems.atlassian.net/browse/GG-13127");
+
+        super.testMultithreadedPutAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMultithreadedExplicitTx() throws Exception {
+        if (!supportedMarshaller())
+            fail("https://ggsystems.atlassian.net/browse/GG-13127");
+
+        super.testMultithreadedExplicitTx();
+    }
+
+    /**
+     * @return Supported marshaller.
+     */
+    private boolean supportedMarshaller() {
+        Marshaller marsh = grid().configuration().getMarshaller();
+
+        return marsh instanceof BinaryMarshaller || marsh instanceof OptimizedMarshaller;
     }
 }

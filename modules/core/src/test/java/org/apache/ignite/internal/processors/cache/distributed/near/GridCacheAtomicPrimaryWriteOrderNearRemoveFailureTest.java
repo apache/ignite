@@ -49,4 +49,9 @@ public class GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest extends GridC
     @Override protected NearCacheConfiguration nearCache() {
         return new NearCacheConfiguration();
     }
+
+    /** {@inheritDoc} */
+    @Override public void testPutAndRemove() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12700, https://issues.apache.org/jira/browse/IGNITE-5954");
+    }
 }
