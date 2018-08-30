@@ -3259,7 +3259,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
             CacheDataRow row = cctx.offheap().read(cctx, key0);
 
-            checkRow(cctx, row, key0, vers.get(0).get1());
+            Object val = ((CacheObject)vers.get(0).get1()).value(cctx.cacheObjectContext(), false);
+
+            checkRow(cctx, row, key0, val);
 
             for (IgniteBiTuple<Object, MvccVersion> ver : vers) {
                 MvccVersion cntr = ver.get2();
@@ -3269,18 +3271,20 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                 row = cctx.offheap().mvccRead(cctx, key0, readVer);
 
-                checkRow(cctx, row, key0, ver.get1());
+                Object verVal = ((CacheObject)ver.get1()).value(cctx.cacheObjectContext(), false);
+
+                checkRow(cctx, row, key0, verVal);
             }
 
             checkRow(cctx,
                 cctx.offheap().mvccRead(cctx, key0, version(vers.get(0).get2().coordinatorVersion() + 1, 1)),
                 key0,
-                vers.get(0).get1());
+                val);
 
             checkRow(cctx,
                 cctx.offheap().mvccRead(cctx, key0, version(vers.get(0).get2().coordinatorVersion(), vers.get(0).get2().counter() + 1)),
                 key0,
-                vers.get(0).get1());
+                val);
 
             MvccSnapshotResponse ver = version(vers.get(0).get2().coordinatorVersion(), 100000);
 
@@ -3293,8 +3297,11 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
                 if (v == vers.size() - 1)
                     assertNull(row);
-                else
-                    checkRow(cctx, row, key0, vers.get(v + 1).get1());
+                else {
+                    Object nextVal = ((CacheObject)vers.get(v + 1).get1()).value(cctx.cacheObjectContext(), false);
+
+                    checkRow(cctx, row, key0, nextVal);
+                }
             }
         }
 
