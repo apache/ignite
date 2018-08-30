@@ -77,11 +77,11 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
     @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LogisticRegressionModel update(LogisticRegressionModel mdl,
+    @Override public <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 

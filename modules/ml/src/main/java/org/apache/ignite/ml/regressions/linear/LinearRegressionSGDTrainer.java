@@ -78,11 +78,11 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LinearRegressionModel update(LinearRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {

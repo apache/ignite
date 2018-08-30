@@ -58,11 +58,11 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     @Override public <K, V> SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> SVMLinearBinaryClassificationModel update(SVMLinearBinaryClassificationModel mdl,
+    @Override public <K, V> SVMLinearBinaryClassificationModel updateModel(SVMLinearBinaryClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 

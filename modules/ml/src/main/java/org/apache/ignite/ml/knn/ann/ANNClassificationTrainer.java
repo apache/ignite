@@ -73,12 +73,12 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
-    @Override
-    public <K, V> ANNClassificationModel update(ANNClassificationModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override public <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
 
         List<Vector> centers;
         CentroidStat centroidStat;

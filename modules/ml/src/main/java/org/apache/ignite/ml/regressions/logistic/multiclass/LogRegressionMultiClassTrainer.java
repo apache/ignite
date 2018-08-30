@@ -73,11 +73,11 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
         IgniteBiFunction<K, V, Double> lbExtractor) {
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
 
-        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LogRegressionMultiClassModel update(LogRegressionMultiClassModel mdl,
+    @Override public <K, V> LogRegressionMultiClassModel updateModel(LogRegressionMultiClassModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 

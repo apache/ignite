@@ -26,6 +26,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -53,6 +54,44 @@ public abstract class DatasetTrainer<M extends Model, L> {
         IgniteBiFunction<K, V, L> lbExtractor);
 
     /**
+     * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then
+     * trainer updates model in according to new data and return new model. In other case trains new model.
+     *
+     * @param mdl Learned model.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Updated model.
+     */
+    public <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+
+        if(mdl != null) {
+            if(checkState(mdl))
+                return updateModel(mdl, datasetBuilder, featureExtractor, lbExtractor);
+            else {
+                environment.logger(getClass()).log(
+                    MLLogger.VerboseLevel.HIGH,
+                    "Model cannot be updated because of initial state of " +
+                        "it doesn't corresponds to trainer parameters"
+                );
+            }
+        }
+
+        return fit(datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /**
+     * @param mdl Model.
+     * @return true if current training parameters correspond to parameters from last training.
+     */
+    protected  boolean checkState(M mdl) {
+        return false;
+    }
+
+    /**
      * Gets state of model in arguments, update in according to new data and return new model.
      *
      * @param mdl Learned model.
@@ -63,7 +102,7 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated model.
      */
-    public abstract <K,V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder,
+    protected abstract <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor);
 
     /**

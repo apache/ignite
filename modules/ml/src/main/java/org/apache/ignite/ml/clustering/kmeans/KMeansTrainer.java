@@ -74,11 +74,11 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
                                             IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> KMeansModel update(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         assert datasetBuilder != null;

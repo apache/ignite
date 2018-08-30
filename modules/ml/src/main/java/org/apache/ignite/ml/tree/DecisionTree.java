@@ -97,10 +97,15 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @param <V> Type of a value in {@code upstream} data.
      * @return New model based on new dataset.
      */
-    @Override public <K, V> DecisionTreeNode update(DecisionTreeNode mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> DecisionTreeNode updateModel(DecisionTreeNode mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         return fit(datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(DecisionTreeNode mdl) {
+        return true;
     }
 
     /** */

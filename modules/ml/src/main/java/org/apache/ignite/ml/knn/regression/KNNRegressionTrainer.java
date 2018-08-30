@@ -38,10 +38,10 @@ public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressio
     public <K, V> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
-    @Override public <K, V> KNNRegressionModel update(KNNRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> KNNRegressionModel updateModel(KNNRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         KNNRegressionModel res = new KNNRegressionModel(KNNUtils.buildDataset(datasetBuilder,

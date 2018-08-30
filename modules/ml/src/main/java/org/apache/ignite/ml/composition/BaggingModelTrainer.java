@@ -189,7 +189,7 @@ public abstract class BaggingModelTrainer extends DatasetTrainer<ModelsCompositi
      * @param <V> Type of a value in {@code upstream} data.
      * @return New models composition.
      */
-    @Override public <K, V> ModelsComposition update(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         ArrayList<Model<Vector, Double>> newModels = new ArrayList<>(mdl.getModels());

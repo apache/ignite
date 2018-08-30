@@ -62,11 +62,11 @@ public class SVMLinearMultiClassClassificationTrainer
     @Override public <K, V> SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
                                                                 IgniteBiFunction<K, V, Vector> featureExtractor,
                                                                 IgniteBiFunction<K, V, Double> lbExtractor) {
-        return update(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> SVMLinearMultiClassClassificationModel update(SVMLinearMultiClassClassificationModel mdl,
+    @Override public <K, V> SVMLinearMultiClassClassificationModel updateModel(SVMLinearMultiClassClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
