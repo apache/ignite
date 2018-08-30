@@ -1879,6 +1879,7 @@ public class PlatformConfigurationUtils {
                 .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
                 .setWriteThrottlingEnabled(in.readBoolean())
                 .setWalCompactionEnabled(in.readBoolean())
+                .setMaxWalArchiveSize(in.readLong())
                 .setSystemRegionInitialSize(in.readLong())
                 .setSystemRegionMaxSize(in.readLong())
                 .setPageSize(in.readInt())
@@ -2006,6 +2007,7 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
             w.writeBoolean(cfg.isWriteThrottlingEnabled());
             w.writeBoolean(cfg.isWalCompactionEnabled());
+            w.writeLong(cfg.getMaxWalArchiveSize());
             w.writeLong(cfg.getSystemRegionInitialSize());
             w.writeLong(cfg.getSystemRegionMaxSize());
             w.writeInt(cfg.getPageSize());

@@ -186,6 +186,15 @@ public abstract class WALRecord {
         /** Rotated id part record. */
         ROTATED_ID_PART_RECORD,
 
+        /** */
+        MVCC_DATA_PAGE_MARK_UPDATED_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD,
+
         /** Encrypted WAL-record. */
         ENCRYPTED_RECORD,
 
