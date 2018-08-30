@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.svm;
 
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -59,33 +58,13 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     @Override public <K, V> SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return fit(datasetBuilder, featureExtractor, lbExtractor, dataset -> {
-            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
-            final int weightVectorSizeWithIntercept = cols + 1;
-            return initializeWeightsWithZeros(weightVectorSizeWithIntercept);
-        });
+        return update(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> SVMLinearBinaryClassificationModel update(SVMLinearBinaryClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        return fit(datasetBuilder, featureExtractor, lbExtractor, dataset -> getStateVector(mdl));
-    }
-
-    /**
-     * Trains model based on the specified data with initial weights supplier.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @param initialWeightsSupplier Initial weights vector supplier.
-     * @return Model.
-     */
-    private <K, V> SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor,
-        Function<Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>>, Vector> initialWeightsSupplier) {
 
         assert datasetBuilder != null;
 
@@ -100,7 +79,14 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            weights = initialWeightsSupplier.apply(dataset);
+            if (mdl == null) {
+                final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
+                final int weightVectorSizeWithIntercept = cols + 1;
+                weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
+            } else {
+                weights = getStateVector(mdl);
+            }
+
             for (int i = 0; i < this.getAmountOfIterations(); i++) {
                 Vector deltaWeights = calculateUpdates(weights, dataset);
                 weights = weights.plus(deltaWeights); // creates new vector

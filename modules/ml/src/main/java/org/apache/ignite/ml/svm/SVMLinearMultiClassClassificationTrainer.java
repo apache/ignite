@@ -62,38 +62,14 @@ public class SVMLinearMultiClassClassificationTrainer
     @Override public <K, V> SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
                                                                 IgniteBiFunction<K, V, Vector> featureExtractor,
                                                                 IgniteBiFunction<K, V, Double> lbExtractor) {
-        return fit(datasetBuilder, featureExtractor, lbExtractor, this::learnNewModel);
+        return update(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param multiClsMdl Learning multi-class model.
-     * @param clsLb Current class label.
-     * @param svmTrainer Prepared SVM trainer.
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     */
-    private <K,V> SVMLinearBinaryClassificationModel learnNewModel(SVMLinearMultiClassClassificationModel multiClsMdl,
-        Double clsLb, SVMLinearBinaryClassificationTrainer svmTrainer, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    /** {@inheritDoc} */
+    @Override public <K, V> SVMLinearMultiClassClassificationModel update(SVMLinearMultiClassClassificationModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return svmTrainer.fit(datasetBuilder, featureExtractor, lbExtractor);
-    }
-
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder   Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
-     * @return Model.
-     */
-    private <K, V> SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor,
-        OneModelSupplier<K,V> oneModelSupplier) {
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
 
         SVMLinearMultiClassClassificationModel multiClsMdl = new SVMLinearMultiClassClassificationModel();
@@ -113,20 +89,31 @@ public class SVMLinearMultiClassClassificationTrainer
                     return -1.0;
             };
 
-            SVMLinearBinaryClassificationModel model = oneModelSupplier.apply(multiClsMdl, clsLb,
-                trainer, datasetBuilder, featureExtractor, lbTransformer);
+
+            SVMLinearBinaryClassificationModel model;
+            if(mdl == null)
+                model = learnNewModel(trainer, datasetBuilder, featureExtractor, lbTransformer);
+            else
+                model = updateModel(mdl, clsLb, trainer, datasetBuilder, featureExtractor, lbTransformer);
             multiClsMdl.add(clsLb, model);
         });
 
         return multiClsMdl;
     }
 
-    /** {@inheritDoc} */
-    @Override public <K, V> SVMLinearMultiClassClassificationModel update(SVMLinearMultiClassClassificationModel mdl,
+    /**
+     * Trains model based on the specified data.
+     *
+     * @param svmTrainer Prepared SVM trainer.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     */
+    private <K,V> SVMLinearBinaryClassificationModel learnNewModel(SVMLinearBinaryClassificationTrainer svmTrainer,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return fit(datasetBuilder, featureExtractor, lbExtractor, this::updateModel);
+        return svmTrainer.fit(datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /**
