@@ -319,6 +319,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Rollback all active transactions with acquired Mvcc snapshot.
+     */
+    public void rollbackMvccTxOnCoordinatorChange() {
+        for (IgniteInternalTx tx : activeTransactions()) {
+            if (tx.mvccSnapshot() != null)
+                ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
+        }
+    }
+
+    /**
      * @param cacheId Cache ID.
      * @param txMap Transactions map.
      */
@@ -462,6 +472,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout transaction timeout.
+     * @param sql Whether this transaction is being started via SQL API or not, or {@code null} if unknown.
      * @param txSize Expected transaction size.
      * @param lb Label.
      * @return New transaction.
@@ -474,6 +485,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TransactionIsolation isolation,
         long timeout,
         boolean storeEnabled,
+        Boolean sql,
         int txSize,
         @Nullable String lb
     ) {
@@ -493,6 +505,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             isolation,
             timeout,
             storeEnabled,
+            sql,
             txSize,
             subjId,
             taskNameHash,

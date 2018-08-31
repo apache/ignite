@@ -130,6 +130,9 @@ public enum GridTopic {
     TOPIC_EXCHANGE,
 
     /** */
+    TOPIC_CACHE_COORDINATOR,
+
+    /** */
     TOPIC_TXDR;
 
     /** Enum values. */

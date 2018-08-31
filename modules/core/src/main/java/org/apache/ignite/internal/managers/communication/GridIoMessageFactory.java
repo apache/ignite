@@ -47,13 +47,13 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -68,11 +68,15 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryFirstEnlistRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
@@ -97,6 +101,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
@@ -108,7 +113,24 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryResultsEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryCntr;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQueryId;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQueryCntr;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQueryId;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccActiveQueriesMessage;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccFutureResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccWaitTxsRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -924,6 +946,116 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 135:
                 msg = new LatchAckMessage();
+
+                break;
+
+            case 136:
+                msg = new MvccTxSnapshotRequest();
+
+                break;
+
+            case 137:
+                msg = new MvccAckRequestTx();
+
+                break;
+
+            case 138:
+                msg = new MvccFutureResponse();
+
+                break;
+
+            case 139:
+                msg = new MvccQuerySnapshotRequest();
+
+                break;
+
+            case 140:
+                msg = new MvccAckRequestQueryCntr();
+
+                break;
+
+            case 141:
+                msg = new MvccSnapshotResponse();
+
+                break;
+
+            case 142:
+                msg = new MvccWaitTxsRequest();
+
+                break;
+
+            case 143:
+                msg = new GridCacheMvccEntryInfo();
+
+                break;
+
+            case 144:
+                msg = new GridDhtTxQueryEnlistResponse();
+
+                break;
+
+            case 145:
+                msg = new MvccAckRequestQueryId();
+
+                break;
+
+            case 146:
+                msg = new MvccAckRequestTxAndQueryCntr();
+
+                break;
+
+            case 147:
+                msg = new MvccAckRequestTxAndQueryId();
+
+                break;
+
+            case 148:
+                msg = new MvccVersionImpl();
+
+                break;
+
+            case 149:
+                msg = new MvccActiveQueriesMessage();
+
+                break;
+
+            case 150:
+                msg = new MvccSnapshotWithoutTxs();
+
+                break;
+
+            case 151:
+                msg = new GridNearTxQueryEnlistRequest();
+
+                break;
+
+            case 152:
+                msg = new GridNearTxQueryEnlistResponse();
+
+                break;
+
+            case 153:
+                msg = new GridNearTxQueryResultsEnlistRequest();
+
+                break;
+
+            case 154:
+                msg = new GridNearTxQueryResultsEnlistResponse();
+
+                break;
+
+            case 155:
+                msg = new GridDhtTxQueryEnlistRequest();
+
+                break;
+
+            case 156:
+                msg = new GridDhtTxQueryFirstEnlistRequest();
+
+                break;
+
+            case 157:
+                msg = new GridDhtPartitionsUpdateCountersMap();
 
                 break;
 
