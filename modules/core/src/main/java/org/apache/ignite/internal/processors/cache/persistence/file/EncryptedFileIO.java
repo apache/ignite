@@ -21,9 +21,14 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.util.Arrays;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 
 /**
  * Implementation of {@code FileIO} that supports encryption(decryption) of pages written(readed) to(from) file.
@@ -92,7 +97,8 @@ public class EncryptedFileIO implements FileIO {
         this.encMgr = encMgr;
         this.encSpi = encSpi;
 
-        this.encryptionOverhead = encSpi.encryptedSizeNoPadding(pageSize) - pageSize;
+        this.encryptionOverhead =
+            encSpi.encryptedSizeNoPadding(pageSize) - pageSize + encSpi.blockSize() /* CRC size. */;
         this.zeroes =  new byte[encryptionOverhead];
     }
 
@@ -208,13 +214,32 @@ public class EncryptedFileIO implements FileIO {
         assert position() != 0;
         assert srcBuf.capacity() == pageSize;
 
-        byte[] srcArr = new byte[pageSize];
+        byte[] srcArr;
 
-        srcBuf.get(srcArr, 0, pageSize);
+        if (srcBuf.hasArray())
+            srcArr = srcBuf.array();
+        else {
+            srcArr = new byte[pageSize];
+
+            srcBuf.get(srcArr, 0, pageSize);
+        }
 
         assert tailIsEmpty(srcArr, PageIO.getType(srcBuf));
 
-        return encSpi.encryptNoPadding(srcArr, key(), 0, srcArr.length - encryptionOverhead);
+        byte[] encrypted = new byte[pageSize];
+
+        encSpi.encryptNoPadding(srcArr, key(), 0, pageSize - encryptionOverhead, encrypted);
+
+        int encDataLen = pageSize - encSpi.blockSize();
+
+        int crc = PureJavaCrc32.calcCrc32(ByteBuffer.wrap(encrypted), encDataLen);
+
+        encrypted[encDataLen] = (byte) (crc >> 24);
+        encrypted[encDataLen + 1] = (byte) (crc >> 16);
+        encrypted[encDataLen + 2] = (byte) (crc >> 8);
+        encrypted[encDataLen + 3] = (byte) (crc);
+
+        return encrypted;
     }
 
     /**
@@ -222,8 +247,38 @@ public class EncryptedFileIO implements FileIO {
      * @param destBuf Destination buffer.
      */
     private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) {
-        destBuf.put(encSpi.decryptNoPadding(encrypted.array(), key()));
+        assert encrypted.capacity() == pageSize;
+
+        byte[] encData;
+
+        if (encrypted.hasArray())
+            encData = encrypted.array();
+        else {
+            encData = new byte[pageSize];
+
+            encrypted.get(encData, 0, pageSize);
+        }
+
+        int encDataLen = pageSize - encSpi.blockSize();
+
+        destBuf.put(encSpi.decryptNoPadding(encData, key(), 0, encDataLen));
         destBuf.put(zeroes); //Forcibly purge page buffer tail.
+
+        encrypted.rewind();
+
+        int crc = PureJavaCrc32.calcCrc32(encrypted, encDataLen);
+
+        int storedCrc = 0;
+
+        storedCrc |= (int)encData[encDataLen] << 24;
+        storedCrc |= ((int)encData[encDataLen + 1] & 0xff) << 16;
+        storedCrc |= ((int)encData[encDataLen + 2] & 0xff) << 8;
+        storedCrc |= encData[encDataLen + 3] & 0xff;
+
+        if(crc != storedCrc) {
+            throw new IgniteException("Content of encrypted page is broken. [StoredCrc=" + storedCrc +
+                ", calculatedCrd=" + crc + "]");
+        }
     }
 
     /** */

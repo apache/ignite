@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -320,8 +321,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
-        encPageSize = pageSize -
-            (ctx.kernalContext().config().getEncryptionSpi().encryptedSizeNoPadding(pageSize) - pageSize);
+        EncryptionSpi encSpi = ctx.kernalContext().config().getEncryptionSpi();
+
+        encPageSize = pageSize
+            - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
+            - encSpi.blockSize() /* For CRC */;
 
         rwLock = new OffheapReadWriteLock(128);
 

@@ -93,6 +93,11 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
     private static final String DIGEST_ALGO = "SHA-512";
 
     /**
+     * Data block size.
+     */
+    private static final int BLOCK_SZ = 16;
+
+    /**
      * Path to master key store.
      */
     private String keyStorePath;
@@ -182,22 +187,24 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
     /** {@inheritDoc} */
     @Override public byte[] encrypt(byte[] data, Serializable key, int start, int length) {
-        return doEncryption(data, AES_WITH_PADDING, key, start, length);
+        byte[] res = new byte[encryptedSize(data.length, AES_WITH_PADDING)];
+
+        return doEncryption(data, AES_WITH_PADDING, key, start, length, res);
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encryptNoPadding(byte[] data, Serializable key, int start, int length) {
-        return doEncryption(data, AES_WITHOUT_PADDING, key, start, length);
+    @Override public void encryptNoPadding(byte[] data, Serializable key, int start, int length, byte[] encData) {
+        doEncryption(data, AES_WITHOUT_PADDING, key, start, length, encData);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] decrypt(byte[] data, Serializable key) {
-        return doDecryption(data, AES_WITH_PADDING, key);
+        return doDecryption(data, AES_WITH_PADDING, key, 0, data.length);
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] decryptNoPadding(byte[] data, Serializable key) {
-        return doDecryption(data, AES_WITHOUT_PADDING, key);
+    @Override public byte[] decryptNoPadding(byte[] data, Serializable key, int start, int length) {
+        return doDecryption(data, AES_WITHOUT_PADDING, key, start, length);
     }
 
     /**
@@ -208,7 +215,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
      * @param length Length in {@code data} array.
      * @return Encrypted data.
      */
-    private byte[] doEncryption(byte[] data, String algo, Serializable key, int start, int length) {
+    private byte[] doEncryption(byte[] data, String algo, Serializable key, int start, int length, byte[] res) {
         assert key instanceof AESEncryptionKey;
         assert start >= 0 && length + start <= data.length;
 
@@ -220,8 +227,6 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
             Cipher cipher = Cipher.getInstance(algo);
 
             byte[] iv = initVector(cipher);
-
-            byte[] res = new byte[encryptedSize(length, algo)];
 
             System.arraycopy(iv, 0, res, 0, iv.length);
 
@@ -241,9 +246,11 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
      * @param data Encrypted data.
      * @param algo Encryption algorithm.
      * @param key Encryption key.
+     * @param start Offset in {@code data} to start encrypt from.
+     * @param length Length of {@code data} to encrypt.
      * @return Decrypted data.
      */
-    private byte[] doDecryption(byte[] data, String algo, Serializable key) {
+    private byte[] doDecryption(byte[] data, String algo, Serializable key, int start, int length) {
         assert key instanceof AESEncryptionKey;
 
         ensureStarted();
@@ -253,9 +260,9 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
             Cipher cipher = Cipher.getInstance(algo);
 
-            cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(data, 0, cipher.getBlockSize()));
+            cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(data, start, cipher.getBlockSize()));
 
-            return cipher.doFinal(data, cipher.getBlockSize(), data.length - cipher.getBlockSize());
+            return cipher.doFinal(data, start + cipher.getBlockSize(), length - cipher.getBlockSize());
         }
         catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
             NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
@@ -296,11 +303,15 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
         return encryptedSize(dataSize, AES_WITHOUT_PADDING);
     }
 
+    /** {@inheritDoc} */
+    @Override public int blockSize() {
+        return BLOCK_SZ;
+    }
+
     /**
-     *
-     * @param dataSize
-     * @param algo
-     * @return
+     * @param dataSize Data size.
+     * @param algo Encryption algorithm
+     * @return Encrypted data size.
      */
     private int encryptedSize(int dataSize, String algo) {
         int cntBlocks;
@@ -318,7 +329,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
                 throw new IllegalStateException("Unknown algorithm: " + algo);
         }
 
-        return (dataSize/16 + cntBlocks)*16;
+        return (dataSize/BLOCK_SZ + cntBlocks)*BLOCK_SZ;
     }
 
     /**

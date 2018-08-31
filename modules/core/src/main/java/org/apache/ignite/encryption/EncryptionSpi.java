@@ -60,9 +60,10 @@ public interface EncryptionSpi extends IgniteSpi {
      * @param key Encryption key.
      * @param start Offset in {@code data} to start encrypt from.
      * @param length Length of {@code data} to encrypt.
+     * @param encData Array to store encrypted data.
      * @return Encrypted data.
      */
-    byte[] encryptNoPadding(byte[] data, Serializable key, int start, int length);
+    void encryptNoPadding(byte[] data, Serializable key, int start, int length, byte[] encData);
 
     /**
      * Decrypts data encrypted with {@link #encrypt(byte[], Serializable, int, int)} method.
@@ -78,9 +79,11 @@ public interface EncryptionSpi extends IgniteSpi {
      *
      * @param data Data to decrypt.
      * @param key Encryption key.
+     * @param start Offset in {@code data} to start encrypt from.
+     * @param length Length of {@code data} to encrypt.
      * @return Decrypted data.
      */
-    byte[] decryptNoPadding(byte[] data, Serializable key);
+    byte[] decryptNoPadding(byte[] data, Serializable key, int start, int length);
 
     /**
      * Encrypts key.
@@ -110,4 +113,9 @@ public interface EncryptionSpi extends IgniteSpi {
      * @return Size of encrypted data in bytes for nopadding encryption mode.
      */
     int encryptedSizeNoPadding(int dataSize);
+
+    /**
+     * @return Encrypted data block size.
+     */
+    int blockSize();
 }
