@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
@@ -379,7 +380,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
             return res;
         }
-        catch (EOFException | SegmentEofException | WalSegmentTailReachedException e) {
+        catch (EOFException | SegmentEofException | WalSegmentTailReachedException | IgniteDataIntegrityViolationException e) {
             throw e;
         }
         catch (Exception e) {

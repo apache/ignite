@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
@@ -161,7 +162,7 @@ public abstract class AbstractWalRecordsIterator
                         return;
                 }
             }
-            catch (WalSegmentTailReachedException e) {
+            catch (WalSegmentTailReachedException | IgniteDataIntegrityViolationException e) {
                 AbstractReadFileHandle currWalSegment = this.currWalSegment;
 
                 IgniteCheckedException e0 = validateTailReachedException(e, currWalSegment);
@@ -185,7 +186,7 @@ public abstract class AbstractWalRecordsIterator
      * @return If need to throw exception after validation.
      */
     protected IgniteCheckedException validateTailReachedException(
-        WalSegmentTailReachedException tailReachedException,
+        Exception tailReachedException,
         AbstractReadFileHandle currWalSegment
     ) {
         return !currWalSegment.workDir() ? new IgniteCheckedException(
