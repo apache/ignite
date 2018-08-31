@@ -81,6 +81,8 @@ namespace ignite
 
                 void StreamingBatch::Clear()
                 {
+                    currentSql.clear();
+
                     size = 0;
 
                     data.Get()->Length(0);

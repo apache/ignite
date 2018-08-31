@@ -39,7 +39,7 @@ namespace ignite
                 ordered(cmd.IsOrdered()),
                 batchSize(cmd.GetBatchSize()),
                 order(0),
-                executed(false),
+                enabled(true),
                 currentBatch(),
                 responseBuffer(1024)
             {
@@ -70,9 +70,9 @@ namespace ignite
 
             SqlResult::Type StreamingQuery::FetchNextRow(app::ColumnBindingMap&)
             {
-                if (!executed)
+                if (!enabled)
                 {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not enabled.");
 
                     return SqlResult::AI_ERROR;
                 }
@@ -82,9 +82,9 @@ namespace ignite
 
             SqlResult::Type StreamingQuery::GetColumn(uint16_t, app::ApplicationDataBuffer&)
             {
-                if (!executed)
+                if (!enabled)
                 {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not enabled.");
 
                     return SqlResult::AI_ERROR;
                 }
@@ -97,10 +97,12 @@ namespace ignite
 
             SqlResult::Type StreamingQuery::Close()
             {
-                if (executed)
+                LOG_MSG("Closing streaming context.");
+
+                if (enabled)
                     Flush(true);
 
-                executed = false;
+                enabled = false;
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -122,6 +124,8 @@ namespace ignite
 
             SqlResult::Type StreamingQuery::Flush(bool last)
             {
+                LOG_MSG("Flushing data.");
+
                 if (currentBatch.GetSize() == 0 && !last)
                     return SqlResult::AI_SUCCESS;
 
