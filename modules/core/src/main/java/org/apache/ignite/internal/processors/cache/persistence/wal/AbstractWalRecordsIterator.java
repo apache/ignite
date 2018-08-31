@@ -245,6 +245,7 @@ public abstract class AbstractWalRecordsIterator
             return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
+            log.error("Stop iteration : ", e);
             if (e instanceof WalSegmentTailReachedException) {
                 throw new WalSegmentTailReachedException(
                     "WAL segment tail reached. [idx=" + hnd.idx() +
@@ -259,6 +260,10 @@ public abstract class AbstractWalRecordsIterator
             }
 
             return null;
+        }
+        catch (Exception e) {
+            log.error("Stop iteration ex: ", e);
+            throw e;
         }
     }
 
