@@ -45,6 +45,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -540,8 +541,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         MvccQueryTracker mvccTracker = null;
 
-        if (cctx.mvccEnabled() && mvccSnapshot == null)
-            mvccSnapshot = (mvccTracker = MvccUtils.mvccTracker(cctx, false)).snapshot();
+        if (cctx.mvccEnabled() && mvccSnapshot == null) {
+            GridNearTxLocal tx = cctx.tm().userTx();
+
+            if (tx != null)
+                mvccSnapshot = MvccUtils.requestSnapshot(cctx, tx);
+            else {
+                mvccTracker = MvccUtils.mvccTracker(cctx, null);
+
+                mvccSnapshot = mvccTracker.snapshot();
+            }
+
+            assert mvccSnapshot != null;
+        }
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 

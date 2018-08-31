@@ -71,7 +71,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
     public void testBackupsCoherenceSimple() throws Exception {
         disableScheduledVacuum = true;
 
-        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, 10)
             .setIndexedTypes(Integer.class, Integer.class);
 
         final int KEYS_CNT = 5_000;
@@ -184,10 +184,10 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
     public void testBackupsCoherenceWithLargeOperations() throws Exception {
         disableScheduledVacuum = true;
 
-        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 1, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 1, 10)
             .setIndexedTypes(Integer.class, Integer.class);
 
-        final int KEYS_CNT = 50_000;
+        final int KEYS_CNT = 5_000;
         assert KEYS_CNT % 2 == 0;
 
         startGrids(2);

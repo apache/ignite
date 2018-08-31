@@ -634,7 +634,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
                         barrier.await();
 
                         String sqlText = "UPDATE MvccTestSqlIndexValue t SET idxVal1=" +
-                            "(SELECT _val FROM \"int\".Integer WHERE t._key = _key ORDER BY _key)";
+                            "(SELECT _val FROM \"int\".Integer WHERE _key >= 5 AND _key <= 5 ORDER BY _key) WHERE _key = 5";
 
                         qry = new SqlFieldsQuery(sqlText);
 
