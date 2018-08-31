@@ -167,8 +167,10 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @Nullable final AbstractReadFileHandle curWalSegment
     ) throws IgniteCheckedException {
 
-        if (curWalSegment != null)
+        if (curWalSegment != null) {
+            log.info("Close current segment : " + curWalSegment.idx());
             curWalSegment.close();
+        }
 
         FileDescriptor fd;
 
@@ -177,8 +179,10 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             curIdx++;
 
-            if (curIdx >= walFileDescriptors.size())
+            if (curIdx >= walFileDescriptors.size()) {
+                log.info("Next segment not found");
                 return null;
+            }
 
             fd = walFileDescriptors.get(curIdx);
         }
