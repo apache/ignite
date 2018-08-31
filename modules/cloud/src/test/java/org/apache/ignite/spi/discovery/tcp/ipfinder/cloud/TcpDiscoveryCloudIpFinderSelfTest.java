@@ -81,6 +81,8 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
      * @throws Exception If any error occurs.
      */
     public void testRackspace() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9444");
+
         testCloudProvider("rackspace-cloudservers-us");
     }
 
