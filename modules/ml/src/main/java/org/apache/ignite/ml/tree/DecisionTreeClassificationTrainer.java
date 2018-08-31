@@ -22,10 +22,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.ml.dataset.Dataset;
-import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasure;
@@ -131,12 +128,5 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
             encoder.put(lb, idx++);
 
         return new GiniImpurityMeasureCalculator(encoder, useIndex);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> DecisionTreeNode update(DecisionTreeNode mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        throw new UnsupportedOperationException();
     }
 }

@@ -18,10 +18,7 @@
 package org.apache.ignite.ml.tree;
 
 import org.apache.ignite.ml.dataset.Dataset;
-import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasure;
@@ -71,12 +68,5 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
         Dataset<EmptyContext, DecisionTreeData> dataset) {
 
         return new MSEImpurityMeasureCalculator(useIndex);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> DecisionTreeNode update(DecisionTreeNode mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        throw new UnsupportedOperationException();
     }
 }
