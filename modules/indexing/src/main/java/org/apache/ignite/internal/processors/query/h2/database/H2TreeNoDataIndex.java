@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -102,23 +103,13 @@ public class H2TreeNoDataIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override protected H2Cursor doFind0(
-        IgniteTree t,
-        @Nullable SearchRow first,
-        boolean includeFirst,
-        @Nullable SearchRow last,
-        IndexingQueryFilter filter) {
-        throw new IgniteSQLException("Should be invoked, due to it's not affinity node");
-    }
-
-    /** {@inheritDoc} */
     @Override public void refreshColumnIds() {
         super.refreshColumnIds();
     }
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
-        return H2TreeIndex.EMPTY_CURSOR;
+        return GridH2Cursor.EMPTY;
     }
 
     /** {@inheritDoc} */

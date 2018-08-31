@@ -753,41 +753,13 @@ public class DmlStatementsProcessor {
         if (res != null)
             return res;
 
-        GridSqlStatement stmt = UpdatePlanBuilder.statement(p);
-
-        checkCachesForDmlStatement(stmt);
-
-        res = UpdatePlanBuilder.planForStatement(stmt, loc, idx, conn, fieldsQry, errKeysPos);
+        res = UpdatePlanBuilder.planForStatement(p, loc, idx, conn, fieldsQry, errKeysPos);
 
         // Don't cache re-runs
         if (errKeysPos == null)
             return U.firstNotNull(planCache.putIfAbsent(planKey, res), res);
         else
             return res;
-    }
-
-    /**
-     * Check cache for given statement. Start cache in case it is lazy.
-     * @param stmt
-     */
-    private void checkCachesForDmlStatement(GridSqlStatement stmt) {
-        GridSqlElement target;
-
-        if (stmt instanceof GridSqlMerge)
-            target = ((GridSqlMerge)stmt).into();
-        else if (stmt instanceof GridSqlInsert)
-            target = ((GridSqlInsert)stmt).into();
-        else if (stmt instanceof GridSqlUpdate)
-            target = ((GridSqlUpdate)stmt).target();
-        else if (stmt instanceof GridSqlDelete)
-            target = ((GridSqlDelete)stmt).from();
-        else
-            throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        GridSqlTable tbl = DmlAstUtils.gridTableForElement(target);
-
-        H2CacheUtils.checkAndInitLazyCache(tbl.dataTable());
     }
 
     /**

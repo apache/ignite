@@ -40,7 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
 /**
- * Test lazy cache loading on client nodes.
+ * Test lazy cache start on client nodes.
  */
 public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /** Cache name. */

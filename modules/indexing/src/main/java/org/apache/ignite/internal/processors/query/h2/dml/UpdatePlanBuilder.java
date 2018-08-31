@@ -31,6 +31,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.cache.query.H2CacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -82,27 +83,17 @@ public final class UpdatePlanBuilder {
     }
 
     /**
-     * Create Grid SQL statement by given Prepared.
-     *
-     * @param prepared H2's {@link Prepared}.
-     * @return Grid SQL statement.
-     */
-    public static GridSqlStatement statement(Prepared prepared){
-        return new GridSqlQueryParser(false).parse(prepared);
-    }
-
-    /**
      * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
      * if available.
      *
-     * @param stmt Grid SQL statement.
+     * @param prepared H2's {@link Prepared}.
      * @param loc Local query flag.
      * @param idx Indexing.
      * @param conn Connection.
      * @param fieldsQry Original query.
      * @return Update plan.
      */
-    public static UpdatePlan planForStatement(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
+    public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
         @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos)
         throws IgniteCheckedException {
         assert !prepared.isQuery();
@@ -111,34 +102,7 @@ public final class UpdatePlanBuilder {
 
         GridSqlStatement stmt = parser.parse(prepared);
 
-        boolean mvccEnabled = false;
-
-        GridCacheContext cctx = null;
-
-        // check all involved caches
-        for (Object o : parser.objectsMap().values()) {
-            if (o instanceof GridSqlInsert)
-                o = ((GridSqlInsert)o).into();
-            else if (o instanceof GridSqlMerge)
-                o = ((GridSqlMerge)o).into();
-            else if (o instanceof GridSqlDelete)
-                o = ((GridSqlDelete)o).from();
-
-            if (o instanceof GridSqlAlias)
-                o = GridSqlAlias.unwrap((GridSqlAst)o);
-
-            if (o instanceof GridSqlTable) {
-                if (((GridSqlTable)o).dataTable() == null) { // Check for virtual tables.
-                    throw new IgniteSQLException("Operation not supported for table '" +
-                        ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                }
-
-                if (cctx == null)
-                    mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
-                else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
-                    throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
-            }
-        }
+        boolean mvccEnabled = isMvccEnabledAndStartLazyCaches(parser);
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
@@ -147,6 +111,47 @@ public final class UpdatePlanBuilder {
         else
             throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Check caches for given parser. Start lazy caches.
+     *
+     * @param {@code true} in case MVCC enabled for
+     */
+    private static boolean isMvccEnabledAndStartLazyCaches(GridSqlQueryParser parser) {
+        boolean mvccEnabled = false;
+        GridCacheContext cctx = null;
+
+        // check all involved caches
+        for (Object o : parser.objectsMap().values()) {
+            if (o instanceof GridSqlMerge)
+                o = ((GridSqlMerge)o).into();
+            else if (o instanceof GridSqlInsert)
+                o = ((GridSqlInsert)o).into();
+            else if (o instanceof GridSqlUpdate)
+                o = ((GridSqlUpdate)o).target();
+            else if (o instanceof GridSqlDelete)
+                o = ((GridSqlDelete)o).from();
+
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table h2tbl = ((GridSqlTable)o).dataTable();
+                if (h2tbl == null) { // Check for virtual tables.
+                    throw new IgniteSQLException("Operation not supported for table '" +
+                        ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+
+                H2CacheUtils.checkAndInitLazyCache(h2tbl);
+
+                if (cctx == null)
+                    mvccEnabled = (cctx = h2tbl.cache()).mvccEnabled();
+                else if (h2tbl.cache().mvccEnabled() != mvccEnabled)
+                    throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
+            }
+        }
+        return mvccEnabled;
     }
 
     /**
