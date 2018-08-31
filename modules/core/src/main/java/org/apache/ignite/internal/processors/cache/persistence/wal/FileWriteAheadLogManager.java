@@ -2642,6 +2642,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         rec.position(ptr);
 
+                        log.info("Fill buffer : " + ptr);
                         fillBuffer(buf, rec);
 
                         if (mmap) {
@@ -3327,7 +3328,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
 
                         try {
-                            writeBuffer(seg.position(), seg.buffer());
+                            long position = seg.position();
+                            log.info("Write buffer : " + position);
+                            writeBuffer(position, seg.buffer());
                         }
                         catch (Throwable e) {
                             log.error("Exception in WAL writer thread:", e);
