@@ -123,6 +123,8 @@ def test_sql_write_as_binary(client):
                         'is_key_field': True,
                         'is_notnull_constraint_field': True,
                         'default_value': None,
+                        'precision': -1,
+                        'scale': -1,
                     },
                     {
                         'name': 'TEST_BOOL',
@@ -130,6 +132,8 @@ def test_sql_write_as_binary(client):
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
+                        'precision': -1,
+                        'scale': -1,
                     },
                     {
                         'name': 'TEST_STR',
@@ -137,6 +141,8 @@ def test_sql_write_as_binary(client):
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
+                        'precision': -1,
+                        'scale': -1,
                     },
                     {
                         'name': 'TEST_INT',
@@ -144,6 +150,8 @@ def test_sql_write_as_binary(client):
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
+                        'precision': -1,
+                        'scale': -1,
                     },
                     {
                         'name': 'TEST_DECIMAL',
@@ -151,6 +159,8 @@ def test_sql_write_as_binary(client):
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
+                        'precision': 11,
+                        'scale': 2,
                     },
                 ],
                 'query_indexes': [],

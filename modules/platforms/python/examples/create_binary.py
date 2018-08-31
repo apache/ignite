@@ -38,6 +38,8 @@ student_cache = client.create_cache({
                         'is_key_field': True,
                         'is_notnull_constraint_field': True,
                         'default_value': None,
+                        'precision': -1,
+                        'scale': -1,
                     },
                     {
                         'name': 'NAME',
@@ -45,6 +47,8 @@ student_cache = client.create_cache({
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
+                        'precision': -1,
+                        'scale': -1,
                     },
                     {
                         'name': 'LOGIN',
@@ -52,6 +56,8 @@ student_cache = client.create_cache({
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
+                        'precision': -1,
+                        'scale': -1,
                     },
                     {
                         'name': 'AGE',
@@ -59,6 +65,8 @@ student_cache = client.create_cache({
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
+                        'precision': -1,
+                        'scale': -1,
                     },
                     {
                         'name': 'GPA',
@@ -66,6 +74,8 @@ student_cache = client.create_cache({
                         'is_key_field': False,
                         'is_notnull_constraint_field': False,
                         'default_value': None,
+                        'precision': -1,
+                        'scale': -1,
                     },
                 ],
                 'query_indexes': [],

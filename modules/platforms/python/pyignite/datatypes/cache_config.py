@@ -67,6 +67,8 @@ QueryFields = StructArray([
     ('is_key_field', Bool),
     ('is_notnull_constraint_field', Bool),
     ('default_value', AnyDataObject),
+    ('precision', Int),
+    ('scale', Int),
 ])
 
 
