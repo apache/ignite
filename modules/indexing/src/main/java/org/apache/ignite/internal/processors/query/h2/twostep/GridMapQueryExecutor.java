@@ -504,6 +504,7 @@ public class GridMapQueryExecutor {
     /**
      * @param node Node.
      * @param req Query request.
+     * @throws IgniteCheckedException On error.
      */
     private void onQueryRequest(final ClusterNode node, final GridH2QueryRequest req) throws IgniteCheckedException {
         int[] qryParts = req.queryPartitions();
@@ -686,7 +687,11 @@ public class GridMapQueryExecutor {
      * @param parts Explicit partitions for current node.
      * @param pageSize Page size.
      * @param distributedJoinMode Query distributed join mode.
-     * @param lazy Streaming flag.
+     * @param enforceJoinOrder Enforce join order flag.
+     * @param replicated Replicated flag.
+     * @param timeout Query timeout.
+     * @param params Query params.
+     * @param lazy Lazy query execution flag.
      * @param mvccSnapshot MVCC snapshot.
      * @param tx Transaction.
      * @param txDetails TX details, if it's a {@code FOR UPDATE} request, or {@code null}.
@@ -1076,6 +1081,7 @@ public class GridMapQueryExecutor {
     /**
      * @param node Node.
      * @param req DML request.
+     * @throws IgniteCheckedException On error.
      */
     private void onDmlRequest(final ClusterNode node, final GridH2DmlRequest req) throws IgniteCheckedException {
         int[] parts = req.queryPartitions();
