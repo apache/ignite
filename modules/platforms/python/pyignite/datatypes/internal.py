@@ -107,6 +107,7 @@ class StructArray:
     """ `counter_type` counter, followed by count*following structure. """
     following = attr.ib(type=list, factory=list)
     counter_type = attr.ib(default=ctypes.c_int)
+    defaults = attr.ib(type=dict, default={})
 
     def build_header_class(self):
         return type(
@@ -146,7 +147,9 @@ class StructArray:
         length = getattr(ctype_object, 'length', 0)
         for i in range(length):
             result.append(
-                Struct(self.following, dict_type=dict).to_python(
+                Struct(
+                    self.following, dict_type=dict
+                ).to_python(
                     getattr(ctype_object, 'element_{}'.format(i))
                 )
             )
@@ -160,8 +163,9 @@ class StructArray:
         buffer = bytes(header)
 
         for i, v in enumerate(value):
-            for element in self.following:
-                name, el_class = element
+            for default_key, default_value in self.defaults.items():
+                v.setdefault(default_key, default_value)
+            for name, el_class in self.following:
                 buffer += el_class.from_python(v[name])
 
         return buffer
@@ -172,6 +176,7 @@ class Struct:
     """ Sequence of fields, including variable-sized and nested. """
     fields = attr.ib(type=list)
     dict_type = attr.ib(default=OrderedDict)
+    defaults = attr.ib(type=dict, default={})
 
     def parse(self, client: 'Client') -> Tuple[type, bytes]:
         buffer = b''
@@ -202,6 +207,9 @@ class Struct:
 
     def from_python(self, value) -> bytes:
         buffer = b''
+
+        for default_key, default_value in self.defaults.items():
+            value.setdefault(default_key, default_value)
 
         for name, el_class in self.fields:
             buffer += el_class.from_python(value[name])
