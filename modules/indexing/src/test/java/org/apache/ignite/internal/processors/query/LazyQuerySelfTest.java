@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -137,6 +138,47 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
         // Test is OK in case DDL operations is passed on hi load queries pressure.
         end.set(true);
         fut.get();
+    }
+
+    /**
+     * Test release reserved partition after query complete (results is bigger than one page).
+     *
+     * @throws Exception If failed.
+     */
+    public void testReleasePartitionReservationSeveralPagesResults() throws Exception {
+        checkReleasePartitionReservation(PAGE_SIZE_SMALL);
+    }
+
+    /**
+     * Test release reserved partition after query complete (results is placed on one page).
+     *
+     * @throws Exception If failed.
+     */
+    public void testReleasePartitionReservationOnePageResults() throws Exception {
+        checkReleasePartitionReservation(KEY_CNT);
+    }
+
+    /**
+     * Test release reserved partition after query complete.
+     *
+     * @param pageSize Results page size.
+     * @throws Exception If failed.
+     */
+    public void checkReleasePartitionReservation(int pageSize) throws Exception {
+        Ignite srv1 = startGrid(1);
+        startGrid(2);
+
+        srv1.createCache(cacheConfiguration(1));
+
+        populateBaseQueryData(srv1);
+
+        FieldsQueryCursor<List<?>> cursor = execute(srv1, query(0).setPageSize(pageSize));
+
+        cursor.getAll();
+
+        startGrid(3);
+
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -361,8 +403,11 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      * @return Default cache configuration.
      */
     private static CacheConfiguration<Long, Person> cacheConfiguration(int parallelism) {
-        return new CacheConfiguration<Long, Person>().setName(CACHE_NAME).setIndexedTypes(Long.class, Person.class)
-            .setQueryParallelism(parallelism);
+        return new CacheConfiguration<Long, Person>()
+            .setName(CACHE_NAME)
+            .setIndexedTypes(Long.class, Person.class)
+            .setQueryParallelism(parallelism)
+            .setAffinity(new RendezvousAffinityFunction(false, 10));
     }
 
     /**

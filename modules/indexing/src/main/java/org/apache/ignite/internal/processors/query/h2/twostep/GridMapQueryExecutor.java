@@ -1311,7 +1311,7 @@ public class GridMapQueryExecutor {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
                 // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
-                if (MapQueryLazyWorker.currentWorker() != null) {
+                if (qr.lazyWorker() != null) {
                     releaseReservations();
 
                     qr.lazyWorker().stop(false);
