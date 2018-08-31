@@ -545,7 +545,7 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
         }
 
         if (!ctx.localNodeId().equals(crd.nodeId()) || !initFut.isDone())
-            return  null;
+            return null;
         else if (tx != null)
             return assignTxSnapshot(0L);
         else
@@ -1324,7 +1324,9 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
      * @param msg Message.
      */
     private void processCoordinatorSnapshotResponse(UUID nodeId, MvccSnapshotResponse msg) {
-        Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.get(nodeId); MvccSnapshotResponseListener lsnr;
+        Map<Long, MvccSnapshotResponseListener> map = snapLsnrs.get(nodeId);
+
+        MvccSnapshotResponseListener lsnr;
 
         if (map != null && (lsnr = map.remove(msg.futureId())) != null)
             lsnr.onResponse(msg);
@@ -2007,18 +2009,22 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
             try {
                 GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(KEY_ONLY);
 
-                KeyCacheObject prevKey = null; Object rest = null;
+                KeyCacheObject prevKey = null;
+
+                Object rest = null;
 
                 List<MvccLinkAwareSearchRow> cleanupRows = null;
 
                 MvccSnapshot snapshot = task.snapshot();
 
-                GridCacheContext cctx = null; int curCacheId = CU.UNDEFINED_CACHE_ID;
+                GridCacheContext cctx = null;
+
+                int curCacheId = CU.UNDEFINED_CACHE_ID;
 
                 boolean shared = part.group().sharedGroup();
 
-                if (!shared)
-                    cctx = part.group().singleCacheContext();
+                if (!shared && (cctx = F.first(part.group().caches())) == null)
+                    return metrics;
 
                 while (cursor.next()) {
                     if (isCancelled())
@@ -2032,18 +2038,26 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
                     if (cctx == null) {
                         assert shared;
 
-                        curCacheId = row.cacheId();
-                        cctx = part.group().shared().cacheContext(curCacheId);
+                        cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
+
+                        if (cctx == null)
+                            return metrics;
                     }
 
                     if (!prevKey.equals(row.key()) || (shared && curCacheId != row.cacheId())) {
                         if (rest != null || !F.isEmpty(cleanupRows))
                             cleanup(part, prevKey, cleanupRows, rest, cctx, metrics);
 
-                        cleanupRows = null; rest = null;
+                        cleanupRows = null;
 
-                        if (shared && curCacheId != row.cacheId())
+                        rest = null;
+
+                        if (shared && curCacheId != row.cacheId()) {
                             cctx = part.group().shared().cacheContext(curCacheId = row.cacheId());
+
+                            if (cctx == null)
+                                return metrics;
+                        }
 
                         prevKey = row.key();
                     }
@@ -2127,7 +2141,6 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
         }
 
         /**
-         *
          * @param part Local partition.
          * @param key Key.
          * @param cleanupRows Cleanup rows.
