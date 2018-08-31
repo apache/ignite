@@ -81,8 +81,10 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
+
+        if(classes.isEmpty())
+            return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
         LogRegressionMultiClassModel multiClsMdl = new LogRegressionMultiClassModel();
 
@@ -145,7 +147,8 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
                 return Stream.of(a, b).flatMap(Collection::stream).collect(Collectors.toSet());
             });
 
-            res.addAll(clsLabels);
+            if (clsLabels != null)
+                res.addAll(clsLabels);
 
         }
         catch (Exception e) {
@@ -215,7 +218,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Set up the regularization parameter.
+     * Set up the random seed parameter.
      *
      * @param seed Seed for random generator.
      * @return Trainer with new seed parameter value.

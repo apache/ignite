@@ -45,16 +45,16 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
     /** Max number of iteration. */
-    private final int maxIterations;
+    private int maxIterations = 1000;
 
     /** Batch size. */
-    private final int batchSize;
+    private int batchSize = 10;
 
     /** Number of local iterations. */
-    private final int locIterations;
+    private int locIterations = 100;
 
     /** Seed for random generator. */
-    private final long seed;
+    private long seed = System.currentTimeMillis();
 
     /**
      * Constructs a new instance of linear regression SGD trainer.
@@ -74,6 +74,13 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
         this.seed = seed;
     }
 
+    /**
+     * Constructs a new instance of linear regression SGD trainer.
+     */
+    public LinearRegressionSGDTrainer(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy) {
+        this.updatesStgy = updatesStgy;
+    }
+
     /** {@inheritDoc} */
     @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
@@ -82,7 +89,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
@@ -152,5 +159,49 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     /** {@inheritDoc} */
     @Override protected boolean checkState(LinearRegressionModel mdl) {
         return true;
+    }
+
+    /**
+     * Set up the max number of iterations before convergence.
+     *
+     * @param maxIterations The parameter value.
+     * @return Model with new max number of iterations before convergence parameter value.
+     */
+    public LinearRegressionSGDTrainer<P> withMaxIterations(int maxIterations) {
+        this.maxIterations = maxIterations;
+        return this;
+    }
+
+    /**
+     * Set up the batchSize parameter.
+     *
+     * @param batchSize The size of learning batch.
+     * @return Trainer with new batch size parameter value.
+     */
+    public LinearRegressionSGDTrainer<P> withBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+        return this;
+    }
+
+    /**
+     * Set up the amount of local iterations of SGD algorithm.
+     *
+     * @param amountOfLocIterations The parameter value.
+     * @return Trainer with new locIterations parameter value.
+     */
+    public LinearRegressionSGDTrainer<P> withLocIterations(int amountOfLocIterations) {
+        this.locIterations = amountOfLocIterations;
+        return this;
+    }
+
+    /**
+     * Set up the random seed parameter.
+     *
+     * @param seed Seed for random generator.
+     * @return Trainer with new seed parameter value.
+     */
+    public LinearRegressionSGDTrainer<P> withSeed(long seed) {
+        this.seed = seed;
+        return this;
     }
 }

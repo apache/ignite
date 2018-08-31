@@ -57,23 +57,26 @@ public class SVMLinearMultiClassClassificationTrainer
     /**
      * Trains model based on the specified data.
      *
-     * @param datasetBuilder   Dataset builder.
+     * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
+     * @param lbExtractor Label extractor.
      * @return Model.
      */
     @Override public <K, V> SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-                                                                IgniteBiFunction<K, V, Vector> featureExtractor,
-                                                                IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
         return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> SVMLinearMultiClassClassificationModel updateModel(SVMLinearMultiClassClassificationModel mdl,
+    @Override public <K, V> SVMLinearMultiClassClassificationModel updateModel(
+        SVMLinearMultiClassClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
+        if (classes.isEmpty())
+            return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
         SVMLinearMultiClassClassificationModel multiClsMdl = new SVMLinearMultiClassClassificationModel();
 
@@ -93,9 +96,8 @@ public class SVMLinearMultiClassClassificationTrainer
                     return -1.0;
             };
 
-
             SVMLinearBinaryClassificationModel model;
-            if(mdl == null)
+            if (mdl == null)
                 model = learnNewModel(trainer, datasetBuilder, featureExtractor, lbTransformer);
             else
                 model = updateModel(mdl, clsLb, trainer, datasetBuilder, featureExtractor, lbTransformer);
@@ -118,7 +120,7 @@ public class SVMLinearMultiClassClassificationTrainer
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    private <K,V> SVMLinearBinaryClassificationModel learnNewModel(SVMLinearBinaryClassificationTrainer svmTrainer,
+    private <K, V> SVMLinearBinaryClassificationModel learnNewModel(SVMLinearBinaryClassificationTrainer svmTrainer,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -135,7 +137,7 @@ public class SVMLinearMultiClassClassificationTrainer
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    private <K,V> SVMLinearBinaryClassificationModel updateModel(SVMLinearMultiClassClassificationModel multiClsMdl,
+    private <K, V> SVMLinearBinaryClassificationModel updateModel(SVMLinearMultiClassClassificationModel multiClsMdl,
         Double clsLb, SVMLinearBinaryClassificationTrainer svmTrainer, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -145,7 +147,8 @@ public class SVMLinearMultiClassClassificationTrainer
     }
 
     /** Iterates among dataset and collects class labels. */
-    private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Double> lbExtractor) {
+    private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabelPartitionDataOnHeap> partDataBuilder = new LabelPartitionDataBuilderOnHeap<>(lbExtractor);
@@ -161,7 +164,8 @@ public class SVMLinearMultiClassClassificationTrainer
 
                 final double[] lbs = data.getY();
 
-                for (double lb : lbs) locClsLabels.add(lb);
+                for (double lb : lbs)
+                    locClsLabels.add(lb);
 
                 return locClsLabels;
             }, (a, b) -> {
@@ -172,9 +176,10 @@ public class SVMLinearMultiClassClassificationTrainer
                 return Stream.of(a, b).flatMap(Collection::stream).collect(Collectors.toSet());
             });
 
-            res.addAll(clsLabels);
-
-        } catch (Exception e) {
+            if (clsLabels != null)
+                res.addAll(clsLabels);
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
         return res;
@@ -186,7 +191,7 @@ public class SVMLinearMultiClassClassificationTrainer
      * @param lambda The regularization parameter. Should be more than 0.0.
      * @return Trainer with new lambda parameter value.
      */
-    public SVMLinearMultiClassClassificationTrainer  withLambda(double lambda) {
+    public SVMLinearMultiClassClassificationTrainer withLambda(double lambda) {
         assert lambda > 0.0;
         this.lambda = lambda;
         return this;
@@ -216,7 +221,7 @@ public class SVMLinearMultiClassClassificationTrainer
      * @param amountOfIterations The parameter value.
      * @return Trainer with new amountOfIterations parameter value.
      */
-    public SVMLinearMultiClassClassificationTrainer  withAmountOfIterations(int amountOfIterations) {
+    public SVMLinearMultiClassClassificationTrainer withAmountOfIterations(int amountOfIterations) {
         this.amountOfIterations = amountOfIterations;
         return this;
     }
@@ -236,7 +241,7 @@ public class SVMLinearMultiClassClassificationTrainer
      * @param amountOfLocIterations The parameter value.
      * @return Trainer with new amountOfLocIterations parameter value.
      */
-    public SVMLinearMultiClassClassificationTrainer  withAmountOfLocIterations(int amountOfLocIterations) {
+    public SVMLinearMultiClassClassificationTrainer withAmountOfLocIterations(int amountOfLocIterations) {
         this.amountOfLocIterations = amountOfLocIterations;
         return this;
     }

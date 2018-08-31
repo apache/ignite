@@ -102,12 +102,8 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
                 return b;
             });
 
-            if (cols == null) {
-                if (mdl != null)
-                    return mdl;
-                else
-                    throw new IllegalArgumentException("Cannot train model on empty dataset");
-            }
+            if (cols == null)
+                return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
             centers = Optional.ofNullable(mdl)
                 .map(KMeansModel::centers)

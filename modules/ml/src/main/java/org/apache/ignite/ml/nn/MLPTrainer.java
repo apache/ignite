@@ -115,7 +115,8 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> MultilayerPerceptron updateModel(MultilayerPerceptron learnedModel, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedModel,
+        DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
@@ -123,8 +124,8 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
             MultilayerPerceptron mdl;
-            if(learnedModel != null)
-                mdl = learnedModel;
+            if (lastLearnedModel != null)
+                mdl = lastLearnedModel;
             else {
                 MLPArchitecture arch = archSupplier.apply(dataset);
                 mdl = new MultilayerPerceptron(arch, new RandomInitializer(seed));
@@ -189,6 +190,9 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
                         }
                     }
                 );
+
+                if (totUp == null)
+                    return getLastTrainedModelOrThrowEmptyDatasetException(lastLearnedModel);
 
                 P update = updatesStgy.allUpdatesReducer().apply(totUp);
                 mdl = updater.update(mdl, update);

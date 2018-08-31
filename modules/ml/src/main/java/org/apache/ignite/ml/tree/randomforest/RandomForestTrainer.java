@@ -117,7 +117,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
             new EmptyContextBuilder<>(),
             new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, cntOfTrees, subsampleSize))) {
 
-            init(dataset);
+            if(!init(dataset))
+                return buildComposition(Collections.emptyList());
             models = fit(dataset);
         }
         catch (Exception e) {
@@ -203,7 +204,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      *
      * @param dataset Dataset.
      */
-    protected void init(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
+    protected boolean init(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
+        return true;
     }
 
     /**
@@ -216,6 +218,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         Queue<TreeNode> treesQueue = createRootsQueue();
         ArrayList<TreeRoot> roots = initTrees(treesQueue);
         Map<Integer, BucketMeta> histMeta = computeHistogramMeta(meta, dataset);
+        if(histMeta.isEmpty())
+            return Collections.emptyList();
 
         ImpurityHistogramsComputer<S> histogramsComputer = createImpurityHistogramsComputer();
         while (!treesQueue.isEmpty()) {
@@ -320,6 +324,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
 
         List<NormalDistributionStatistics> stats = new NormalDistributionStatisticsComputer()
             .computeStatistics(meta, dataset);
+        if(stats == null)
+            return Collections.emptyMap();
 
         Map<Integer, BucketMeta> bucketsMeta = new HashMap<>();
         for (int i = 0; i < stats.size(); i++) {

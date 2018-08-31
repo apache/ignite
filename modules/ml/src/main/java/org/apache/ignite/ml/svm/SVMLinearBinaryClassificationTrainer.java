@@ -22,9 +22,11 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -65,7 +67,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> SVMLinearBinaryClassificationModel updateModel(SVMLinearBinaryClassificationModel mdl,
+    @Override protected <K, V> SVMLinearBinaryClassificationModel updateModel(SVMLinearBinaryClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -99,6 +101,9 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
             for (int i = 0; i < this.getAmountOfIterations(); i++) {
                 Vector deltaWeights = calculateUpdates(weights, dataset);
+                if (deltaWeights == null)
+                    return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
+
                 weights = weights.plus(deltaWeights); // creates new vector
             }
         } catch (Exception e) {
@@ -115,7 +120,11 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     private Vector getStateVector(SVMLinearBinaryClassificationModel mdl) {
         double intercept = mdl.intercept();
         Vector weights = mdl.weights();
-        Vector result = weights.like(weights.size() + 1);
+
+        int stateVectorSize = weights.size() + 1;
+        Vector result = weights.isDense() ?
+            new DenseVector(stateVectorSize) :
+            new SparseVector(stateVectorSize, StorageConstants.RANDOM_ACCESS_MODE);
 
         result.set(0, intercept);
         weights.nonZeroes().forEach(ith -> result.set(ith.index(), ith.get()));

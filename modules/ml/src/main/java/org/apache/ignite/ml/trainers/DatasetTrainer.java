@@ -29,6 +29,7 @@ import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for trainers. Trainer is just a function which produces model from the data.
@@ -88,6 +89,21 @@ public abstract class DatasetTrainer<M extends Model, L> {
      * @return true if current critical for training parameters correspond to parameters from last training.
      */
     protected abstract boolean checkState(M mdl);
+
+    /**
+     * Used on update phase when given dataset is empty.
+     * If last trained model exist then method returns it. In other case throws IllegalArgumentException.
+     *
+     * @param lastTrainedMdl Model.
+     */
+    @NotNull protected M getLastTrainedModelOrThrowEmptyDatasetException(M lastTrainedMdl) {
+        String msg = "Cannot train model on empty dataset";
+        if (lastTrainedMdl != null) {
+            environment.logger(getClass()).log(MLLogger.VerboseLevel.HIGH, msg);
+            return lastTrainedMdl;
+        } else
+            throw new EmptyDatasetException();
+    }
 
     /**
      * Gets state of model in arguments, update in according to new data and return new model.
@@ -278,5 +294,15 @@ public abstract class DatasetTrainer<M extends Model, L> {
      */
     public void setEnvironment(LearningEnvironment environment) {
         this.environment = environment;
+    }
+
+    /** */
+    public static class EmptyDatasetException extends IllegalArgumentException {
+        /**
+         * Constructs an instance of EmptyDatasetException.
+         */
+        public EmptyDatasetException() {
+            super("Cannot train model on empty dataset");
+        }
     }
 }

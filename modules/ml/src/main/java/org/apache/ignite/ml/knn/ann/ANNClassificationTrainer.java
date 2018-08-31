@@ -348,6 +348,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
 
     /** Service class used for statistics. */
     public static class CentroidStat implements Serializable {
+        /** Serial version uid. */
         private static final long serialVersionUID = 7624883170532045144L;
 
         /** Count of points closest to the center with a given index. */

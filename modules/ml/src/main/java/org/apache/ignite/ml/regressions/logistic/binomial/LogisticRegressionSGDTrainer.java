@@ -81,7 +81,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
+    @Override protected <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 

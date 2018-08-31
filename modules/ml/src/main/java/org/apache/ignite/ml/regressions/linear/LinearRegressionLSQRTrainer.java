@@ -42,7 +42,8 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
+        DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         LSQRResult res;
@@ -55,7 +56,7 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
             )
         )) {
             double[] x0 = null;
-            if(mdl != null) {
+            if (mdl != null) {
                 int x0Size = mdl.getWeights().size() + 1;
                 Vector weights = mdl.getWeights().like(x0Size);
                 mdl.getWeights().nonZeroes().forEach(ith -> weights.set(ith.index(), ith.get()));
@@ -63,6 +64,8 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
                 x0 = weights.asArray();
             }
             res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, x0);
+            if (res == null)
+                return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
