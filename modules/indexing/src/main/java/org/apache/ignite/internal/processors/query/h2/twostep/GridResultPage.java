@@ -72,8 +72,6 @@ public class GridResultPage {
             Collection<?> plainRows = res.plainRows();
 
             if (plainRows != null) {
-                assert plainRows instanceof ArrayList;
-
                 rowsInPage = plainRows.size();
 
                 if (rowsInPage == 0 || ((ArrayList<Value[]>)plainRows).get(0).length == res.columns())
@@ -81,7 +79,7 @@ public class GridResultPage {
                 else {
                     // If it's a result of SELECT FOR UPDATE (we can tell by difference in number
                     // of columns checked above), we need to strip off stuff we don't need.
-                    rows = F.iterator(plainRows, new IgniteClosure<Object, Value[]>() {
+                    rows = F.iterator (plainRows, new IgniteClosure<Object, Value[]>() {
                         @Override public Value[] apply(Object o) {
                             Value[] row = (Value[])o;
 
