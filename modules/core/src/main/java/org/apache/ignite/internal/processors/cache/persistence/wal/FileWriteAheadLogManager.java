@@ -808,8 +808,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
 
-        if (mode == LOG_ONLY)
+        if (mode == LOG_ONLY) {
             cur.flushOrWait(filePtr);
+            if (cctx.kernalContext().invalid())
+                throw new StorageException("Flush is fail");
+        }
 
         if (!explicitFsync && mode != WALMode.FSYNC)
             return; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
