@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * H2 row cache registry.
@@ -49,7 +49,7 @@ public class H2RowCacheRegistry {
      *
      * @param cctx Cache context.
      */
-    public void onCacheRegistered(GridCacheContext cctx) {
+    public void onCacheRegistered(GridCacheContextInfo cctx) {
         if (!cctx.config().isSqlOnheapCacheEnabled())
             return;
 
@@ -68,17 +68,23 @@ public class H2RowCacheRegistry {
 
             HashMap<Integer, H2RowCache> caches0 = copy();
 
-            H2RowCache rowCache = new H2RowCache(cctx.group(), cctx.config().getSqlOnheapCacheMaxSize());
+            if (cctx.affinityNode()) {
+                GridCacheContext gcctx = cctx.gridCacheContext();
 
-            caches0.put(grpId, rowCache);
+                assert gcctx != null;
 
-            caches = caches0;
+                H2RowCache rowCache = new H2RowCache(gcctx.group(), cctx.config().getSqlOnheapCacheMaxSize());
 
-            // Inject row cache cleaner into store on cache creation.
-            // Used in case the cache with enabled SqlOnheapCache is created in exists cache group
-            // and SqlOnheapCache is disbaled for the caches have been created before.
-            for (IgniteCacheOffheapManager.CacheDataStore ds : cctx.offheap().cacheDataStores())
-                ds.setRowCacheCleaner(rowCache);
+                caches0.put(grpId, rowCache);
+
+                caches = caches0;
+
+                // Inject row cache cleaner into store on cache creation.
+                // Used in case the cache with enabled SqlOnheapCache is created in exists cache group
+                // and SqlOnheapCache is disbaled for the caches have been created before.
+                for (IgniteCacheOffheapManager.CacheDataStore ds : gcctx.offheap().cacheDataStores())
+                    ds.setRowCacheCleaner(rowCache);
+            }
         }
     }
 
@@ -87,7 +93,7 @@ public class H2RowCacheRegistry {
      *
      * @param cctx Cache context.
      */
-    public void onCacheUnregistered(GridCacheContext cctx) {
+    public void onCacheUnregistered(GridCacheContextInfo cctx) {
         if (!cctx.config().isSqlOnheapCacheEnabled())
             return;
 

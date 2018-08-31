@@ -878,6 +878,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
                     }
                 }
+                else
+                    cctx.kernalContext().cache().lazyCacheStart(cacheDesc);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +

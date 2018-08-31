@@ -31,6 +31,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -210,7 +211,7 @@ public interface GridQueryIndexing {
      * @param cctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(String cacheName, String schemaName, GridCacheContext<?,?> cctx)
+    public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?,?> cctx)
         throws IgniteCheckedException;
 
     /**
@@ -220,7 +221,7 @@ public interface GridQueryIndexing {
      * @param rmvIdx If {@code true}, will remove index.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(GridCacheContext cctx, boolean rmvIdx) throws IgniteCheckedException;
+    public void unregisterCache(GridCacheContextInfo cctx, boolean rmvIdx) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
@@ -230,7 +231,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
+    public boolean registerType(GridCacheContextInfo cctx, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes

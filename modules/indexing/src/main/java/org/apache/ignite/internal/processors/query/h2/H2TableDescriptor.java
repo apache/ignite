@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
@@ -60,7 +61,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     private final H2Schema schema;
 
     /** Cache context. */
-    private final GridCacheContext cctx;
+    private final GridCacheContextInfo cctx;
 
     /** */
     private GridH2Table tbl;
@@ -80,7 +81,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @param cctx Cache context.
      */
     public H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type,
-        GridCacheContext cctx) {
+        GridCacheContextInfo cctx) {
         this.idx = idx;
         this.type = type;
         this.schema = schema;
@@ -139,10 +140,24 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     }
 
     /**
+     * @return Cache name.
+     */
+    public String cacheName(){
+        return cctx.name();
+    }
+
+    /**
+     * @return CacheInfo context
+     */
+    public GridCacheContextInfo cacheInfo() {
+        return cctx;
+    }
+
+    /**
      * @return Cache context.
      */
     public GridCacheContext cache() {
-        return cctx;
+        return cctx.gridCacheContext();
     }
 
     /**
@@ -172,7 +187,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      */
     H2RowFactory rowFactory(GridH2RowDescriptor rowDesc) {
         if (cctx.affinityNode())
-            return new H2RowFactory(rowDesc, cctx);
+            return new H2RowFactory(rowDesc, cctx.gridCacheContext());
 
         return null;
     }
@@ -320,7 +335,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (cctx.affinityNode()) {
             assert pkHashIdx == null : pkHashIdx;
 
-            pkHashIdx = new H2PkHashIndex(cctx, tbl, idxName, cols);
+            pkHashIdx = new H2PkHashIndex(cctx.gridCacheContext(), tbl, idxName, cols);
 
             return pkHashIdx;
         }

@@ -1574,7 +1574,7 @@ public class GridSqlQueryParser {
             if (o instanceof GridSqlTable) {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
-                if (tbl != null) {
+                if (tbl != null && tbl.cache() != null) {
                     hasCaches = true;
 
                     GridCacheContext cctx = tbl.cache();

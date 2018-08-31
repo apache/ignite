@@ -254,6 +254,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** MBean group for cache group metrics */
     private final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
 
+    /** Lazy caches map, contains not started client caches */
+    private final Map<Integer, GridCacheContextInfo> lazyCacheMap = new ConcurrentHashMap<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -1131,7 +1134,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (cache.context().userCache()) {
                     // Re-create cache structures inside indexing in order to apply recent schema changes.
-                    GridCacheContext cctx = cache.context();
+                    GridCacheContextInfo cctx = new GridCacheContextInfo(cache.context());
 
                     DynamicCacheDescriptor desc = cacheDescriptor(cctx.name());
 
@@ -1163,6 +1166,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return sharedCtx.exchange().deferStopCachesOnClientReconnect(stoppedCaches);
 
         return null;
+    }
+
+    /**
+     * Create cache without full initialization and start.
+     *
+     * @param cacheDesc Cache descriptor for create cache.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void lazyCacheStart(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
+        QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
+
+        GridCacheContextInfo cacheCtx = new GridCacheContextInfo(cacheDesc, ctx);
+
+        Integer lazyCacheKey = cacheCtx.cacheId();
+
+        GridCacheContextInfo prevCtx = lazyCacheMap.putIfAbsent(lazyCacheKey, cacheCtx);
+
+        if (prevCtx == null) {
+            try {
+                ctx.query().onCacheStart(cacheCtx, schema);
+            }
+            catch (IgniteCheckedException ex) {
+                lazyCacheMap.remove(lazyCacheKey, cacheCtx);
+
+                throw ex;
+            }
+        }
     }
 
     /**
@@ -1208,7 +1239,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.cache().start();
 
-        ctx.query().onCacheStart(cacheCtx, schema);
+        GridCacheContextInfo lazyCacheCtx = lazyCacheMap.remove(cacheCtx.cacheId());
+
+        if (lazyCacheCtx != null)
+            lazyCacheCtx.initLazyCacheContext(cacheCtx);
+        else
+            ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx), schema);
 
         cacheCtx.onStarted();
 
@@ -1252,7 +1288,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cache.stop();
 
-            ctx.kernalContext().query().onCacheStop(ctx, !cache.context().group().persistenceEnabled() || destroy);
+            GridCacheContextInfo cctx = new GridCacheContextInfo(ctx);
+
+            ctx.kernalContext().query().onCacheStop(cctx, !cache.context().group().persistenceEnabled() || destroy);
 
             if (isNearEnabled(ctx)) {
                 GridDhtCacheAdapter dht = ctx.near().dht();

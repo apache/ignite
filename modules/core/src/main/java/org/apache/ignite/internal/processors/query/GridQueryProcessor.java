@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -680,10 +681,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"deprecation", "ThrowableResultOfMethodCallIgnored"})
-    public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema)
+    public void onCacheStart0(GridCacheContextInfo<?, ?> cctx, QuerySchema schema)
         throws IgniteCheckedException {
 
-        cctx.shared().database().checkpointReadLock();
+        ctx.cache().context().database().checkpointReadLock();
 
         try {
             synchronized (stateMux) {
@@ -702,8 +703,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (!F.isEmpty(qryEntities)) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, schemaName, cctx, qryEntity,
-                            mustDeserializeClss, escape);
+                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, schemaName, cctx, ctx,
+                            qryEntity, mustDeserializeClss, escape);
 
                         cands.add(cand);
                     }
@@ -815,7 +816,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
         finally {
-            cctx.shared().database().checkpointReadUnlock();
+            ctx.cache().context().database().checkpointReadUnlock();
         }
     }
 
@@ -854,7 +855,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schema Index states.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart(GridCacheContext cctx, QuerySchema schema) throws IgniteCheckedException {
+    public void onCacheStart(GridCacheContextInfo cctx, QuerySchema schema) throws IgniteCheckedException {
         if (idx == null)
             return;
 
@@ -873,7 +874,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      * @param removeIdx If {@code true}, will remove index.
      */
-    public void onCacheStop(GridCacheContext cctx, boolean removeIdx) {
+    public void onCacheStop(GridCacheContextInfo cctx, boolean removeIdx) {
         if (idx == null)
             return;
 
@@ -1591,7 +1592,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void registerCache0(
         String cacheName,
         String schemaName,
-        GridCacheContext<?, ?> cctx,
+        GridCacheContextInfo<?, ?> cctx,
         Collection<QueryTypeCandidate> cands
     ) throws IgniteCheckedException {
         synchronized (stateMux) {
@@ -1647,7 +1648,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      * @param destroy Destroy flag.
      */
-    public void onCacheStop0(GridCacheContext cctx, boolean destroy) {
+    public void onCacheStop0(GridCacheContextInfo cctx, boolean destroy) {
         if (idx == null)
             return;
 

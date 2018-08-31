@@ -46,7 +46,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -392,15 +392,16 @@ public class QueryUtils {
      * @param cacheName Cache name.
      * @param schemaName Schema name.
      * @param cctx Cache context.
+     * @param ctx Grid kernal context .
      * @param qryEntity Query entity.
      * @param mustDeserializeClss Classes which must be deserialized.
      * @param escape Escape flag.
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
-    public static QueryTypeCandidate typeForQueryEntity(String cacheName, String schemaName, GridCacheContext cctx,
-        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
-        GridKernalContext ctx = cctx.kernalContext();
+    public static QueryTypeCandidate typeForQueryEntity(String cacheName, String schemaName, GridCacheContextInfo cctx,
+        GridKernalContext ctx, QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape)
+        throws IgniteCheckedException {
         CacheConfiguration<?,?> ccfg = cctx.config();
 
         boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);

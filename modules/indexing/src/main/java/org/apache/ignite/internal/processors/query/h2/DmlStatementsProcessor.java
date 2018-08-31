@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.H2CacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
@@ -66,7 +68,14 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -613,13 +622,41 @@ public class DmlStatementsProcessor {
         if (res != null)
             return res;
 
-        res = UpdatePlanBuilder.planForStatement(p, loc, idx, conn, fieldsQry, errKeysPos);
+        GridSqlStatement stmt = UpdatePlanBuilder.statement(p);
+
+        checkCachesForDmlStatement(stmt);
+
+        res = UpdatePlanBuilder.planForStatement(stmt, loc, idx, conn, fieldsQry, errKeysPos);
 
         // Don't cache re-runs
         if (errKeysPos == null)
             return U.firstNotNull(planCache.putIfAbsent(planKey, res), res);
         else
             return res;
+    }
+
+    /**
+     * Check cache for given statement. Start cache in case it is lazy.
+     * @param stmt
+     */
+    private void checkCachesForDmlStatement(GridSqlStatement stmt) {
+        GridSqlElement target;
+
+        if (stmt instanceof GridSqlMerge)
+            target = ((GridSqlMerge)stmt).into();
+        else if (stmt instanceof GridSqlInsert)
+            target = ((GridSqlInsert)stmt).into();
+        else if (stmt instanceof GridSqlUpdate)
+            target = ((GridSqlUpdate)stmt).target();
+        else if (stmt instanceof GridSqlDelete)
+            target = ((GridSqlDelete)stmt).from();
+        else
+            throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        GridSqlTable tbl = DmlAstUtils.gridTableForElement(target);
+
+        H2CacheUtils.checkAndInitLazyCache(tbl.dataTable());
     }
 
     /**
@@ -1025,9 +1062,8 @@ public class DmlStatementsProcessor {
 
         IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new BulkLoadDataConverter(plan);
 
-        GridCacheContext cache = tbl.cache();
 
-        IgniteDataStreamer<Object, Object> streamer = cache.grid().dataStreamer(cache.name());
+        IgniteDataStreamer<Object, Object> streamer = idx.ctx.grid().dataStreamer(tbl.cacheName());
 
         BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
 

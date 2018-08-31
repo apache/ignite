@@ -78,27 +78,37 @@ public final class UpdatePlanBuilder {
     }
 
     /**
+     * Create Grid SQL statement by given Prepared.
+     *
+     * @param prepared H2's {@link Prepared}.
+     * @return Grid SQL statement.
+     */
+    public static GridSqlStatement statement(Prepared prepared){
+        return new GridSqlQueryParser(false).parse(prepared);
+    }
+
+    /**
      * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
      * if available.
      *
-     * @param prepared H2's {@link Prepared}.
+     * @param stmt Grid SQL statement.
      * @param loc Local query flag.
      * @param idx Indexing.
      * @param conn Connection.
      * @param fieldsQry Original query.
      * @return Update plan.
      */
-    public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
+    public static UpdatePlan planForStatement(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
         @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos)
         throws IgniteCheckedException {
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt, loc, idx, conn, fieldsQry);
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
             return planForUpdate(stmt, loc, idx, conn, fieldsQry, errKeysPos);
         else
-            throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
+            throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 

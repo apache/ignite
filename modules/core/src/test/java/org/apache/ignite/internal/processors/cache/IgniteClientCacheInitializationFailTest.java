@@ -301,18 +301,18 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void registerCache(String cacheName, String schemaName,
-            GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
-            if (FAILED_CACHES.contains(cctx.name()) && cctx.kernalContext().clientNode())
+            GridCacheContextInfo<?, ?> cctx) throws IgniteCheckedException {
+            if (FAILED_CACHES.contains(cctx.name()) && cctx.gridCacheContext().kernalContext().clientNode())
                 throw new IgniteCheckedException("Test query exception " + cctx.name() + " " + new Random().nextInt());
         }
 
         /** {@inheritDoc} */
-        @Override public void unregisterCache(GridCacheContext cctx, boolean rmvIdx) throws IgniteCheckedException {
+        @Override public void unregisterCache(GridCacheContextInfo cctx, boolean rmvIdx) throws IgniteCheckedException {
             // No-op
         }
 
         /** {@inheritDoc} */
-        @Override public boolean registerType(GridCacheContext cctx,
+        @Override public boolean registerType(GridCacheContextInfo cctx,
             GridQueryTypeDescriptor desc) throws IgniteCheckedException {
             return false;
         }

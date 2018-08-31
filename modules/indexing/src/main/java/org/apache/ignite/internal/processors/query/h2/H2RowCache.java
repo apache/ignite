@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.util.typedef.F;
@@ -103,7 +103,7 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
      * @param cctx Cache context.
      * @return {@code True} if there are no more usages for the given cache group.
      */
-    public boolean onCacheUnregistered(GridCacheContext cctx) {
+    public boolean onCacheUnregistered(GridCacheContextInfo cctx) {
         boolean res = --usageCnt == 0;
 
         clearForCache(cctx);
@@ -123,7 +123,7 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
      *
      * @param cctx Cache context.
      */
-    private void clearForCache(GridCacheContext cctx) {
+    private void clearForCache(GridCacheContextInfo cctx) {
         int cacheId = cctx.cacheId();
 
         Iterator<Map.Entry<Long, GridH2KeyValueRowOnheap>> iter = rows.entrySet().iterator();

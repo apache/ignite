@@ -32,6 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -71,7 +72,7 @@ public class GridH2Table extends TableBase {
     private static final ThreadLocal<Boolean> INSERT_HACK = new ThreadLocal<>();
 
     /** Cache context. */
-    private final GridCacheContext cctx;
+    private final GridCacheContextInfo cctx;
 
     /** */
     private final GridH2RowDescriptor desc;
@@ -128,7 +129,7 @@ public class GridH2Table extends TableBase {
      * @param cctx Cache context.
      */
     public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2RowFactory rowFactory,
-        GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
+        GridH2SystemIndexFactory idxsFactory, GridCacheContextInfo cctx) {
         super(createTblData);
 
         assert idxsFactory != null;
@@ -201,7 +202,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If this is a partitioned table.
      */
     public boolean isPartitioned() {
-        return desc != null && desc.context().config().getCacheMode() == PARTITIONED;
+        return desc != null && desc.contextInfo().config().getCacheMode() == PARTITIONED;
     }
 
     /**
@@ -238,10 +239,24 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * @return CacheInfo context.
+     */
+    public GridCacheContextInfo cacheInfo() {
+        return cctx;
+    }
+
+    /**
+     * @return {@code true} If Cache is lazy (not full inited).
+     */
+    public boolean isCacheLazy() {
+        return cctx.gridCacheContext() == null;
+    }
+
+    /**
      * @return Cache context.
      */
-    public GridCacheContext cache() {
-        return cctx;
+    @Nullable public GridCacheContext cache() {
+        return cctx.gridCacheContext();
     }
 
     /** {@inheritDoc} */
