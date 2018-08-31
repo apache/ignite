@@ -1403,8 +1403,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     Instant.ofEpochMilli(message.get1()),
                     sysZoneId).format(formatter)).
                     a(", duration=").
-                    a(TimeUnit.NANOSECONDS.toMillis(message.get2())).
-                    a("ms, message=").
+                    a(message.get2() / 1000 / 1000.).
+                    a(" ms, message=").
                     a(message.get3().replace("\n", " ")).
                     a(", ctx=").a(message.get4()).
                     a(U.nl());
@@ -3679,6 +3679,30 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** */
         public long finishTreeUpdate;
 
+        /** */
+        public long entryLockWait;
+
+        /** */
+        public String keyStr;
+
+        /** */
+        public long totalProc;
+
+        /** */
+        public long checkpointReadLockWait;
+
+        /** */
+        public long topLockWait;
+
+        /** */
+        public long underCheckpointReadLock;
+
+        /** */
+        public long waitForPreload;
+
+        /** */
+        public long finishProc;
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return "[" +
@@ -3688,6 +3712,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 ", searchEntry=" + (finishInvokeTs - startInvokeTs) / 1000 / 1000. + " ms" +
                 ", runEntryProcessor=" + (finishRunEntryProcessor - finishInvokeTs) / 1000 / 1000. + " ms" +
                 ", treeUpdate=" + (finishTreeUpdate - finishRunEntryProcessor) / 1000 / 1000. + " ms" +
+                ", entryLockWait=" + entryLockWait / 1000 / 1000. + " ms" +
+                ", totalProc=" + totalProc / 1000 / 1000. + " ms" +
+                ", checkpointReadLockWait=" + checkpointReadLockWait / 1000 / 1000. + " ms" +
+                ", topLockWait=" + topLockWait / 1000 / 1000. + " ms" +
+                ", underCheckpointReadLock=" + underCheckpointReadLock / 1000 / 1000. + " ms" +
+                ", waitForPreload=" + waitForPreload / 1000 / 1000. + " ms" +
+                ", finishProc=" + finishProc / 1000 / 1000. + " ms" +
                 ']';
         }
     }

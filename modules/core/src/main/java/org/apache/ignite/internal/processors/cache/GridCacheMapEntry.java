@@ -1721,6 +1721,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (!primary && !isNear())
             ensureFreeSpace();
 
+        long t0 = System.nanoTime();
+
+        AtomicInvokeProcessingStat statHolder = (AtomicInvokeProcessingStat)cctx.kernalContext().io().ctxStatHolder.get();
+
         lockEntry();
 
         try {
@@ -1765,11 +1769,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 c.call(dataRow);
             }
             else {
-                if (op == TRANSFORM) {
-                    AtomicInvokeProcessingStat obj = (AtomicInvokeProcessingStat)cctx.kernalContext().io().ctxStatHolder.get();
-
-                    obj.startInvokeTs = System.nanoTime();
-                }
+                if (op == TRANSFORM)
+                    statHolder.startInvokeTs = System.nanoTime();
 
                 cctx.offheap().invoke(cctx, key, localPartition(), c);
             }
@@ -4616,6 +4617,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             GridCacheContext cctx = entry.context();
 
+            AtomicInvokeProcessingStat statHolder = (AtomicInvokeProcessingStat)cctx.kernalContext().io().ctxStatHolder.get();
+
             CacheObject oldVal;
             CacheObject storeLoadedVal = null;
 
@@ -4646,8 +4649,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean invoke = op == TRANSFORM;
 
             if (invoke) {
-                AtomicInvokeProcessingStat statHolder = (AtomicInvokeProcessingStat)cctx.kernalContext().io().ctxStatHolder.get();
-
                 statHolder.finishInvokeTs = System.nanoTime();
 
                 invokeEntry = new CacheInvokeEntry<>(entry.key, oldVal, entry.ver, keepBinary, entry);
@@ -4772,11 +4773,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 remove(conflictCtx, invokeRes, storeLoadedVal != null);
             }
 
-            if (invoke) {
-                AtomicInvokeProcessingStat statHolder = (AtomicInvokeProcessingStat)cctx.kernalContext().io().ctxStatHolder.get();
-
+            if (invoke)
                 statHolder.finishTreeUpdate = System.nanoTime();
-            }
 
             assert updateRes != null && treeOp != null;
         }

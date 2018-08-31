@@ -274,9 +274,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     UUID nodeId,
                     GridNearAtomicAbstractUpdateRequest req
                 ) {
+                    long t0 = System.nanoTime();
+
                     processNearAtomicUpdateRequest(
                         nodeId,
                         req);
+
+                    if (req.operation() == TRANSFORM) {
+                        GridIoManager.AtomicInvokeProcessingStat statHolder =
+                            (GridIoManager.AtomicInvokeProcessingStat)ctx.kernalContext().io().ctxStatHolder.get();
+
+                        statHolder.totalProc = System.nanoTime() - t0;
+                    }
                 }
 
                 @Override public String toString() {
@@ -1620,6 +1629,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridNearAtomicAbstractUpdateRequest req,
         final UpdateReplyClosure completionCb
     ) {
+        long t0 = System.nanoTime();
+
         IgniteInternalFuture<Object> forceFut = ctx.group().preloader().request(ctx, req, req.topologyVersion());
 
         if (forceFut == null || forceFut.isDone()) {
@@ -1636,7 +1647,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 return;
             }
 
-            updateAllAsyncInternal0(node, req, completionCb);
+            updateAllAsyncInternal0(node, req, completionCb, System.nanoTime() - t0);
         }
         else {
             forceFut.listen(new CI1<IgniteInternalFuture<Object>>() {
@@ -1653,7 +1664,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         return;
                     }
 
-                    updateAllAsyncInternal0(node, req, completionCb);
+                    updateAllAsyncInternal0(node, req, completionCb, System.nanoTime() - t0);
                 }
             });
         }
@@ -1684,16 +1695,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /**
      * Executes local update after preloader fetched values.
-     *
      * @param node Node.
      * @param req Update request.
      * @param completionCb Completion callback.
+     * @param waitForPreload Wait for preload time.
      */
     private void updateAllAsyncInternal0(
         ClusterNode node,
         GridNearAtomicAbstractUpdateRequest req,
-        UpdateReplyClosure completionCb
-    ) {
+        UpdateReplyClosure completionCb,
+        long waitForPreload) {
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
             node.id(),
             req.futureId(),
@@ -1703,25 +1714,48 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
 
+        GridIoManager.AtomicInvokeProcessingStat statHolder = (GridIoManager.AtomicInvokeProcessingStat)ctx.kernalContext().io().ctxStatHolder.get();
+
         GridDhtAtomicAbstractUpdateFuture dhtFut = null;
 
         IgniteCacheExpiryPolicy expiry = null;
 
+        long t0 = System.nanoTime();
+
         ctx.shared().database().checkpointReadLock();
+
+        if (req.operation() == TRANSFORM) {
+            statHolder.waitForPreload = waitForPreload;
+
+            statHolder.checkpointReadLockWait = System.nanoTime() - t0;
+        }
 
         try {
             ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
 
+            t0 = System.nanoTime();
+
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
             List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion());;
+
+            if (req.operation() == TRANSFORM) {
+                statHolder.keyStr = locked.get(0).key().toString();
+
+                statHolder.entryLockWait = System.nanoTime() - t0;
+            }
 
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
             try {
                 GridDhtPartitionTopology top = topology();
 
+                t0 = System.nanoTime();
+
                 top.readLock();
+
+                if (req.operation() == TRANSFORM)
+                    statHolder.topLockWait = System.nanoTime() - t0;
 
                 try {
                     if (top.stopping()) {
@@ -1804,7 +1838,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
         finally {
             ctx.shared().database().checkpointReadUnlock();
+
+            if (req.operation() == TRANSFORM)
+                statHolder.underCheckpointReadLock = System.nanoTime() - t0;
         }
+
+        t0 = System.nanoTime();
 
         if (res.remapTopologyVersion() != null) {
             assert dhtFut == null;
@@ -1814,8 +1853,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         else {
             if (dhtFut != null) {
                 if (req.operation() == TRANSFORM) {
-                    GridIoManager.AtomicInvokeProcessingStat stat = (GridIoManager.AtomicInvokeProcessingStat)ctx.kernalContext().io().ctxStatHolder.get();
-
                     GridCacheReturn ret = res.returnValue();
 
                     try {
@@ -1828,7 +1865,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (ret.invokeResCol() != null) {
                         for (CacheInvokeDirectResult result : ret.invokeResCol()) {
                             try {
-                                stat.sndBackEntrySize += result.result().valueBytesLength(ctx.cacheObjectContext());
+                                statHolder.sndBackEntrySize += result.result().valueBytesLength(ctx.cacheObjectContext());
                             }
                             catch (IgniteCheckedException e) {
                                 log.error("Cannot get result size", e);
@@ -1845,6 +1882,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.cleanup(!node.isLocal());
 
         sendTtlUpdateRequest(expiry);
+
+        if (req.operation() == TRANSFORM)
+            statHolder.finishProc = System.nanoTime() - t0;
     }
 
     /**
