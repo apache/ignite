@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -39,6 +40,9 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
     /** Topology version. */
     private final AffinityTopologyVersion topVer;
+
+    /** */
+    private final MvccCoordinator mvccCrd;
 
     /** Collection of calculated affinity nodes. */
     private List<List<ClusterNode>> assignment;
@@ -73,6 +77,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         this.topVer = topVer;
         primary = new HashMap<>();
         backup = new HashMap<>();
+        mvccCrd = null;
         clientEvtChange = false;
     }
 
@@ -83,7 +88,8 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      */
     GridAffinityAssignment(AffinityTopologyVersion topVer,
         List<List<ClusterNode>> assignment,
-        List<List<ClusterNode>> idealAssignment) {
+        List<List<ClusterNode>> idealAssignment,
+        MvccCoordinator mvccCrd) {
         assert topVer != null;
         assert assignment != null;
         assert idealAssignment != null;
@@ -91,6 +97,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         this.topVer = topVer;
         this.assignment = assignment;
         this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
+        this.mvccCrd = mvccCrd;
 
         primary = new HashMap<>();
         backup = new HashMap<>();
@@ -110,6 +117,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
+        mvccCrd = aff.mvccCrd;
 
         clientEvtChange = true;
     }
@@ -280,6 +288,11 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
                 map = backup;
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccCoordinator mvccCoordinator() {
+        return mvccCrd;
     }
 
     /** {@inheritDoc} */

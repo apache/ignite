@@ -98,8 +98,6 @@ public final class DmlAstUtils {
 
             GridSqlArray[] args = new GridSqlArray[cols.length];
 
-            boolean noQry = true;
-
             for (int i = 0; i < cols.length; i++) {
                 GridSqlArray arr = new GridSqlArray(rows.size());
 
@@ -123,17 +121,9 @@ public final class DmlAstUtils {
             for (GridSqlElement[] row : rows) {
                 assert cols.length == row.length;
 
-                for (int i = 0; i < row.length; i++) {
-                    GridSqlElement el = row[i];
-
-                    noQry &= (el instanceof GridSqlConst || el instanceof GridSqlParameter);
-
+                for (int i = 0; i < row.length; i++)
                     args[i].addChild(row[i]);
-                }
             }
-
-            if (noQry)
-                return null;
 
             return sel;
         }

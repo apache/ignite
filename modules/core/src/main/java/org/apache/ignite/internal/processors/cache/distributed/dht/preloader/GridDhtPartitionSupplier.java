@@ -33,10 +33,15 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -361,13 +366,38 @@ class GridDhtPartitionSupplier {
                 if (!remainingParts.contains(part))
                     continue;
 
-                GridCacheEntryInfo info = new GridCacheEntryInfo();
+                GridCacheEntryInfo info = grp.mvccEnabled() ?
+                    new GridCacheMvccEntryInfo() : new GridCacheEntryInfo();
 
                 info.key(row.key());
-                info.expireTime(row.expireTime());
-                info.version(row.version());
-                info.value(row.value());
                 info.cacheId(row.cacheId());
+
+                if (grp.mvccEnabled()) {
+                    byte txState = row.mvccTxState() != TxState.NA ? row.mvccTxState() :
+                        MvccUtils.state(grp, row.mvccCoordinatorVersion(), row.mvccCounter(),
+                        row.mvccOperationCounter());
+
+                    if (txState != TxState.COMMITTED)
+                        continue;
+
+                    ((MvccVersionAware)info).mvccVersion(row);
+                    ((GridCacheMvccEntryInfo)info).mvccTxState(TxState.COMMITTED);
+
+                    byte newTxState = row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
+                        MvccUtils.state(grp, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
+                        row.newMvccOperationCounter());
+
+                    if (newTxState != TxState.ABORTED) {
+                        ((MvccUpdateVersionAware)info).newMvccVersion(row);
+
+                        if (newTxState == TxState.COMMITTED)
+                            ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
+                    }
+                }
+
+                info.value(row.value());
+                info.version(row.version());
+                info.expireTime(row.expireTime());
 
                 if (preloadPred == null || preloadPred.apply(info))
                     s.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());

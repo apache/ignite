@@ -39,7 +39,8 @@ public class SVMBinaryTrainerTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
-        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
+        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
+            .withSeed(1234L);
 
         SVMLinearBinaryClassificationModel mdl = trainer.fit(
             cacheMock,

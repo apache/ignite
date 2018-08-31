@@ -976,6 +976,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * @return Current mvcc update counter value.
+     */
+    public long mvccUpdateCounter() {
+        return store.mvccUpdateCounter();
+    }
+
+    /**
+     * @return Next mvcc update counter.
+     */
+    public long nextMvccUpdateCounter() {
+        return store.nextMvccUpdateCounter();
+    }
+
+    /**
      * @return Initial update counter.
      */
     public long initialUpdateCounter() {
@@ -1256,6 +1270,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (this.state.compareAndSet(state, setSize(state, getSize(state) - 1)))
                 return;
         }
+    }
+
+    /**
+     * Returns group context.
+     *
+     * @return Group context.
+     */
+    public CacheGroupContext group() {
+        return grp;
     }
 
     /**
