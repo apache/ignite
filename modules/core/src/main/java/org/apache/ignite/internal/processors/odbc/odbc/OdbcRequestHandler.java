@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -46,7 +47,9 @@ import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -76,6 +79,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
+    /** Worker. */
+    private final OdbcRequestHandlerWorker worker;
+
     /** Maximum allowed cursors. */
     private final int maxCursors;
 
@@ -91,6 +97,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Replicated only flag. */
     private final boolean replicatedOnly;
 
+    /** Nested transaction behaviour. */
+    private final NestedTxMode nestedTxMode;
+
     /** Collocated flag. */
     private final boolean collocated;
 
@@ -101,7 +110,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     private final boolean skipReducerOnUpdate;
 
     /** Authentication context */
-    private AuthorizationContext actx;
+    private final AuthorizationContext actx;
 
     /** Client version. */
     private ClientListenerProtocolVersion ver;
@@ -117,12 +126,13 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param collocated Collocated flag.
      * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param nestedTxMode Nested transaction mode.
      * @param actx Authentication context.
      * @param ver Client protocol version.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly, boolean collocated, boolean lazy,
-        boolean skipReducerOnUpdate, AuthorizationContext actx, ClientListenerProtocolVersion ver) {
+        boolean skipReducerOnUpdate, AuthorizationContext actx, NestedTxMode nestedTxMode, ClientListenerProtocolVersion ver) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -133,20 +143,56 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.actx = actx;
+        this.nestedTxMode = nestedTxMode;
         this.ver = ver;
 
         log = ctx.log(getClass());
+
+        if (ctx.grid().configuration().isMvccEnabled())
+            worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
+        else
+            worker = null;
     }
 
     /** {@inheritDoc} */
     @Override public ClientListenerResponse handle(ClientListenerRequest req0) {
         assert req0 != null;
 
+        assert req0 instanceof OdbcRequest;
+
         OdbcRequest req = (OdbcRequest)req0;
 
+        if (worker == null)
+            return doHandle(req);
+        else {
+            GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
+
+            try {
+                return fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                return exceptionToResult(e);
+            }
+        }
+    }
+
+    /**
+     * Start worker, if it's present.
+     */
+    void start() {
+        if (worker != null)
+            worker.start();
+    }
+
+    /**
+     * Handle ODBC request.
+     * @param req ODBC request.
+     * @return Response.
+     */
+    public ClientListenerResponse doHandle(OdbcRequest req) {
         if (!busyLock.enterBusy())
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
-                    "Failed to handle ODBC request because node is stopping: " + req);
+                "Failed to handle ODBC request because node is stopping: " + req);
 
         if (actx != null)
             AuthorizationContext.context(actx);
@@ -204,6 +250,17 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     public void onDisconnect() {
         if (busyLock.enterBusy())
         {
+            if (worker != null) {
+                worker.cancel();
+
+                try {
+                    worker.join();
+                }
+                catch (InterruptedException e) {
+                    // No-op.
+                }
+            }
+
             try
             {
                 for (OdbcQueryResults res : qryResults.values())
@@ -220,9 +277,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param schema Schema.
      * @param sql SQL request.
      * @param args Arguments.
+     * @param autoCommit Autocommit transaction.
+     * @param timeout Query timeout.
      * @return Query instance.
      */
-    private SqlFieldsQueryEx makeQuery(String schema, String sql, Object[] args, int timeout) {
+    private SqlFieldsQueryEx makeQuery(String schema, String sql, Object[] args, int timeout, boolean autoCommit) {
         SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
 
         qry.setArgs(args);
@@ -234,6 +293,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setLazy(lazy);
         qry.setSchema(schema);
         qry.setSkipReducerOnUpdate(skipReducerOnUpdate);
+        qry.setNestedTxMode(nestedTxMode);
+        qry.setAutoCommit(autoCommit);
 
         qry.setTimeout(timeout, TimeUnit.SECONDS);
 
@@ -264,7 +325,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                     ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout());
+            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout(), req.autoCommit());
 
             List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(qry, true, false);
 
@@ -313,7 +374,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                         ", parsed=" + sql + ']');
 
-            SqlFieldsQueryEx qry = makeQuery(req.schema(), sql, null, req.timeout());
+            SqlFieldsQueryEx qry = makeQuery(req.schema(), sql, null, req.timeout(), req.autoCommit());
 
             Object[][] paramSet = req.arguments();
 

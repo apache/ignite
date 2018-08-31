@@ -40,7 +40,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT
 /**
  * Test correctness of truncating unused WAL segments.
  */
-public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
+public class IgnitePdsReserveWalSegmentsTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -67,23 +67,27 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(dbCfg);
 
         dbCfg.setWalSegmentSize(1024 * 1024)
-                .setWalHistorySize(Integer.MAX_VALUE)
-                .setWalSegments(10)
-                .setWalMode(WALMode.LOG_ONLY)
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                        .setMaxSize(100 * 1024 * 1024)
-                        .setPersistenceEnabled(true));
+            .setMaxWalArchiveSize(Long.MAX_VALUE)
+            .setWalSegments(10)
+            .setWalMode(WALMode.LOG_ONLY)
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(100 * 1024 * 1024)
+                .setPersistenceEnabled(true));
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
@@ -93,32 +97,27 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testWalManagerRangeReservation() throws Exception {
-        try{
-            IgniteEx ig0 = prepareGrid(4);
+        IgniteEx ig0 = prepareGrid(4);
 
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) ig0.context().cache().context()
-                    .database();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig0.context().cache().context()
+            .database();
 
-            IgniteWriteAheadLogManager wal = ig0.context().cache().context().wal();
+        IgniteWriteAheadLogManager wal = ig0.context().cache().context().wal();
 
-            long resIdx = getReservedWalSegmentIndex(dbMgr);
+        long resIdx = getReservedWalSegmentIndex(dbMgr);
 
-            assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
+        assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
             FileWALPointer lowPtr = (FileWALPointer)dbMgr.checkpointHistory().firstCheckpointPointer();
 
-            assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
+        assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
-            // Reserve previous WAL segment.
-            wal.reserve(new FileWALPointer(resIdx - 1, 0, 0));
+        // Reserve previous WAL segment.
+        wal.reserve(new FileWALPointer(resIdx - 1, 0, 0));
 
-            int resCnt = wal.reserved(new FileWALPointer(resIdx - 1, 0, 0), new FileWALPointer(resIdx, 0, 0));
+        int resCnt = wal.reserved(new FileWALPointer(resIdx - 1, 0, 0), new FileWALPointer(resIdx, 0, 0));
 
-            assertTrue("Expected resCnt is 2, real is " + resCnt, resCnt == 2);
-        }
-        finally {
-            stopAllGrids();
-        }
+        assertTrue("Expected resCnt is 2, real is " + resCnt, resCnt == 2);
     }
 
     /**
@@ -126,35 +125,30 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
-    public void testUnusedWalTruncate() throws Exception {
-        try{
-            IgniteEx ig0 = prepareGrid(4);
+    public void testWalDoesNotTruncatedWhenSegmentReserved() throws Exception {
+        IgniteEx ig0 = prepareGrid(4);
 
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) ig0.context().cache().context()
-                    .database();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig0.context().cache().context()
+            .database();
 
-            IgniteWriteAheadLogManager wal = ig0.context().cache().context().wal();
+        IgniteWriteAheadLogManager wal = ig0.context().cache().context().wal();
 
-            long resIdx = getReservedWalSegmentIndex(dbMgr);
+        long resIdx = getReservedWalSegmentIndex(dbMgr);
 
-            assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
+        assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
             FileWALPointer lowPtr = (FileWALPointer) dbMgr.checkpointHistory().firstCheckpointPointer();
 
-            assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
+        assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
-            // Reserve previous WAL segment.
-            wal.reserve(new FileWALPointer(resIdx - 1, 0, 0));
+        // Reserve previous WAL segment.
+        wal.reserve(new FileWALPointer(resIdx - 1, 0, 0));
 
-            int numDel = wal.truncate(null, lowPtr);
+        int numDel = wal.truncate(null, lowPtr);
 
-            int expNumDel = (int)resIdx - 1;
+        int expNumDel = (int)resIdx - 1;
 
-            assertTrue("Expected del segments is " + expNumDel + ", real is " + numDel, expNumDel == numDel);
-        }
-        finally {
-            stopAllGrids();
-        }
+        assertTrue("Expected del segments is " + expNumDel + ", real is " + numDel, expNumDel == numDel);
     }
 
     /**
@@ -171,19 +165,15 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = ig0.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < 10_000; k++)
+        for (int k = 0; k < 1_000; k++) {
             cache.put(k, new byte[1024]);
 
-        forceCheckpoint();
-
-        for (int k = 0; k < 1_000; k++)
-            cache.put(k, new byte[1024]);
-
-        forceCheckpoint();
+            if (k % 100 == 0)
+                forceCheckpoint();
+        }
 
         return ig0;
     }
-
 
     /**
      * Get index of reserved WAL segment by checkpointer.

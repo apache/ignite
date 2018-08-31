@@ -43,7 +43,7 @@ namespace ignite
             /** Version 2.3.2: added multiple statements support. */
             static const ProtocolVersion VERSION_2_3_2;
 
-            /** Version 2.5.0: added multiple statements support. */
+            /** Version 2.5.0: added authentication and transactions support. */
             static const ProtocolVersion VERSION_2_5_0;
 
             /** Version 2.7.0: added fields precision and scale. */
