@@ -19,11 +19,17 @@ package org.apache.ignite.ml.composition.boosting.convergence;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
+import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 
 /**
  * Contains logic of error computing and convergence checking for Gradient Boosting algorithms.
@@ -58,7 +64,8 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
 
     /**
      * Constructs an instance of ConvergenceCheckStrategy.
-     *  @param sampleSize Sample size.
+     *
+     * @param sampleSize Sample size.
      * @param externalLbToInternalMapping External label to internal mapping.
      * @param lossGradient Loss gradient.
      * @param datasetBuilder Dataset builder.
@@ -88,29 +95,38 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
      * @return true if GDB is converged.
      */
     public boolean isConverged(ModelsComposition currMdl) {
-        double error = computeMeanErrorOnDataset(currMdl);
-        assert error >= 0;
-        return error < precision;
+        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector<Vector, Double>>> dataset = datasetBuilder.build(
+            new EmptyContextBuilder<>(),
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(featureExtractor, lbExtractor)
+        )) {
+            Double error = computeMeanErrorOnDataset(dataset, currMdl);
+            return error < precision || error.isNaN();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
      * Compute error for given model on learning dataset.
+     *
+     * @param dataset Learning dataset.
      * @param mdl Model.
      * @return error mean value.
      */
-    protected abstract double computeMeanErrorOnDataset(ModelsComposition mdl);
+    protected abstract Double computeMeanErrorOnDataset(
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector<Vector, Double>>> dataset,
+        ModelsComposition mdl);
 
     /**
      * Compute error on one element of dataset.
      *
-     * @param key Key.
-     * @param val Value.
      * @param currMdl Current model.
      * @return error.
      */
-    public double computeError(K key, V val, ModelsComposition currMdl) {
-        Double realAnswer = externalLbToInternalMapping.apply(lbExtractor.apply(key, val));
-        Double mdlAnswer = currMdl.apply(featureExtractor.apply(key, val));
+    public double computeError(Vector features, Double answer, ModelsComposition currMdl) {
+        Double realAnswer = externalLbToInternalMapping.apply(answer);
+        Double mdlAnswer = currMdl.apply(features);
         return -lossGradient.apply(sampleSize, realAnswer, mdlAnswer);
     }
 }

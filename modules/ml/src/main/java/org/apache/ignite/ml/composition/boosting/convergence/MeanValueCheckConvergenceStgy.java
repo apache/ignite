@@ -17,18 +17,23 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence;
 
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 
 /**
+ * Use mean value of errors for estimating error on dataset.
  *
- *
- * @param <K>
- * @param <V>
+ * @param <K> Type of a key in upstream data.
+ * @param <V> Type of a value in upstream data.
  */
 public class MeanValueCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy<K,V> {
     /** Serial version uid. */
@@ -55,4 +60,41 @@ public class MeanValueCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy
         super(sampleSize, externalLbToInternalMapping, lossGradient, datasetBuilder, featureExtractor, lbExtractor, precision);
     }
 
+    /** {@inheritDoc} */
+    @Override protected Double computeMeanErrorOnDataset(
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector<Vector, Double>>> dataset,
+        ModelsComposition mdl) {
+
+        IgniteBiTuple<Double, Long> sumAndCnt = dataset.compute(partition -> {
+            Double sum = 0.0;
+            Long cnt = 0L;
+
+            for(int i = 0; i < partition.rowSize(); i++) {
+                LabeledVector<Vector, Double> vec = partition.getRow(i);
+                sum += computeError(vec.features(), vec.label(), mdl);
+                cnt++;
+            }
+
+            return new IgniteBiTuple<>(sum, cnt);
+        }, (left, right) -> {
+            if (left == null) {
+                if (right != null)
+                    return right;
+                else
+                    return new IgniteBiTuple<>(0.0, 0L);
+            }
+
+            if (right == null)
+                return left;
+
+            return new IgniteBiTuple<>(
+                left.getKey() + right.getKey(),
+                right.getValue() + left.getValue()
+            );
+        });
+
+        if(sumAndCnt == null || sumAndCnt.getValue() == 0)
+            return Double.NaN;
+        return sumAndCnt.getKey() / sumAndCnt.getValue();
+    }
 }
