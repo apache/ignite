@@ -544,18 +544,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         if (cctx.mvccEnabled() && mvccSnapshot == null) {
             GridNearTxLocal tx = cctx.tm().userTx();
 
-            if (tx != null && tx.mvccSnapshot() != null) {
-                mvccTracker = tx.mvccQueryTracker();
-
-                mvccSnapshot = tx.mvccSnapshot();
-            }
+            if (tx != null)
+                mvccSnapshot = MvccUtils.requestSnapshot(cctx, tx);
             else {
-                mvccTracker = MvccUtils.mvccTracker(cctx, tx);
+                mvccTracker = MvccUtils.mvccTracker(cctx, null);
 
                 mvccSnapshot = mvccTracker.snapshot();
-
-                assert mvccSnapshot != null;
             }
+
+            assert mvccSnapshot != null;
         }
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
