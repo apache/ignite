@@ -99,6 +99,17 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
             TreeMap<Double, Set<Integer>> distanceIdxPairs = getDistances(v, data);
             return Arrays.asList(getKClosestVectors(data, distanceIdxPairs));
         }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
+        }, (a, b) -> {
+            if (a == null)
+                return b == null ? new ArrayList<>() : b;
+            if (b == null)
+                return a;
+            return Stream.concat(a.stream(), b.stream()).collect(Collectors.toList());
+        });
+
+        LabeledVectorSet<Double, LabeledVector> neighborsToFilter = buildLabeledDatasetOnListOfVectors(neighborsFromPartitions);
+
+        return Arrays.asList(getKClosestVectors(neighborsToFilter, getDistances(v, neighborsToFilter)));
     }
 
     /** */

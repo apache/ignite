@@ -183,9 +183,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-
             return dataset.compute(data -> {
-
                 CentroidStat res = new CentroidStat();
 
                 for (int i = 0; i < data.rowSize(); i++) {
@@ -204,8 +202,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                         centroidStat = new ConcurrentHashMap<>();
                         centroidStat.put(lb, 1);
                         res.centroidStat.put(centroidIdx, centroidStat);
-                    }
-                    else {
+                    } else {
                         int cnt = centroidStat.containsKey(lb) ? centroidStat.get(lb) : 0;
                         centroidStat.put(lb, cnt + 1);
                     }
@@ -214,10 +211,15 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                         (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
                 }
                 return res;
-            }, (a, b) -> a == null ? b : a.merge(b));
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? new CentroidStat() : b;
+                if (b == null)
+                    return a;
+                return a.merge(b);
+            });
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -346,6 +348,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
 
     /** Service class used for statistics. */
     public static class CentroidStat implements Serializable {
+        private static final long serialVersionUID = 7624883170532045144L;
 
         /** Count of points closest to the center with a given index. */
         ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> centroidStat = new ConcurrentHashMap<>();

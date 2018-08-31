@@ -94,17 +94,19 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final Integer cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
-            if (cols == null) {
-                if (mdl != null)
-                    return mdl;
-                else
-                    throw new IllegalArgumentException("Cannot train model on empty dataset");
-            }
+            final Integer cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
+                if (a == null)
+                    return b == null ? 0 : b;
+                if (b == null)
+                    return a;
+                return b;
+            });
 
             centers = Optional.ofNullable(mdl)
                 .map(KMeansModel::centers)
                 .orElseGet(() -> initClusterCentersRandomly(dataset, k));
+
+            centers = initClusterCentersRandomly(dataset, k);
 
             boolean converged = false;
             int iteration = 0;
@@ -156,7 +158,6 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         final Vector[] finalCenters = centers;
 
         return dataset.compute(data -> {
-
             TotalCostAndCounts res = new TotalCostAndCounts();
 
             for (int i = 0; i < data.rowSize(); i++) {
@@ -171,13 +172,22 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
                 int finalI = i;
                 res.sums.compute(centroidIdx,
-                    (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> v.plus(data.getRow(finalI).features()));
+                    (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> {
+                        Vector features = data.getRow(finalI).features();
+                        return v == null ? features : v.plus(features);
+                    });
 
                 res.counts.merge(centroidIdx, 1,
                     (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
             }
             return res;
-        }, (a, b) -> a == null ? b : a.merge(b));
+        }, (a, b) -> {
+            if (a == null)
+                return b == null ? new TotalCostAndCounts() : b;
+            if (b == null)
+                return a;
+            return a.merge(b);
+        });
     }
 
     /**
@@ -209,7 +219,6 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      */
     private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset,
         int k) {
-
         Vector[] initCenters = new DenseVector[k];
 
         // Gets k or less vectors from each partition.
@@ -235,13 +244,18 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
                         rndPnt.add(data.getRow(nextIdx));
                     }
-                }
-                else // If it's not enough vectors to pick k vectors.
+                } else // If it's not enough vectors to pick k vectors.
                     for (int i = 0; i < data.rowSize(); i++)
                         rndPnt.add(data.getRow(i));
             }
             return rndPnt;
-        }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
+        }, (a, b) -> {
+            if (a == null)
+                return b == null ? new ArrayList<>() : b;
+            if (b == null)
+                return a;
+            return Stream.concat(a.stream(), b.stream()).collect(Collectors.toList());
+        });
 
         // Shuffle them.
         Collections.shuffle(rndPnts);

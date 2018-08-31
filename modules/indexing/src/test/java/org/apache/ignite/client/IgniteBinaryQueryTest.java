@@ -38,7 +38,10 @@ import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertEquals;
 
@@ -46,6 +49,10 @@ import static org.junit.Assert.assertEquals;
  * Ignite {@link BinaryObject} API system tests.
  */
 public class IgniteBinaryQueryTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /**
      * Test queries in Ignite binary.
      */

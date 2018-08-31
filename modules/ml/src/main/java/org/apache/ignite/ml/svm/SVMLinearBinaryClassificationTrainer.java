@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.svm;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -46,6 +46,9 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
 
     /** Regularization parameter. */
     private double lambda = 0.4;
+
+    /** The seed number. */
+    private long seed;
 
     /**
      * Trains model based on the specified data.
@@ -80,7 +83,14 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
             partDataBuilder
         )) {
             if (mdl == null) {
-                final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
+                final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
+                    if (a == null)
+                        return b == null ? 0 : b;
+                    if (b == null)
+                        return a;
+                    return b;
+                });
+
                 final int weightVectorSizeWithIntercept = cols + 1;
                 weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
             } else {
@@ -91,8 +101,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
                 Vector deltaWeights = calculateUpdates(weights, dataset);
                 weights = weights.plus(deltaWeights); // creates new vector
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
         return new SVMLinearBinaryClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
@@ -129,8 +138,10 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
             Vector tmpAlphas = initializeWeightsWithZeros(amountOfObservation);
             Vector deltaAlphas = initializeWeightsWithZeros(amountOfObservation);
 
+            Random random = new Random(seed);
+
             for (int i = 0; i < this.getAmountOfLocIterations(); i++) {
-                int randomIdx = ThreadLocalRandom.current().nextInt(amountOfObservation);
+                int randomIdx = random.nextInt(amountOfObservation);
 
                 Deltas deltas = getDeltas(data, copiedWeights, amountOfObservation, tmpAlphas, randomIdx);
 
@@ -141,7 +152,13 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
                 deltaAlphas.set(randomIdx, deltaAlphas.get(randomIdx) + deltas.deltaAlpha);
             }
             return deltaWeights;
-        }, (a, b) -> a == null ? b : a.plus(b));
+        }, (a, b) -> {
+            if (a == null)
+                return b == null ? new DenseVector() : b;
+            if (b == null)
+                return a;
+            return a.plus(b);
+        });
     }
 
     /** */
@@ -279,6 +296,25 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
         return this;
     }
 
+    /**
+     * Gets the seed number.
+     *
+     * @return The parameter value.
+     */
+    public long getSeed() {
+        return seed;
+    }
+
+    /**
+     * Set up the seed.
+     *
+     * @param seed The parameter value.
+     * @return Model with new seed parameter value.
+     */
+    public SVMLinearBinaryClassificationTrainer withSeed(long seed) {
+        this.seed = seed;
+        return this;
+    }
 }
 
 /** This is a helper class to handle pair results which are returned from the calculation method. */

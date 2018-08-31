@@ -42,7 +42,8 @@ public class SVMMultiClassTrainerTest extends TrainerTest {
         SVMLinearMultiClassClassificationTrainer trainer = new SVMLinearMultiClassClassificationTrainer()
             .withLambda(0.3)
             .withAmountOfLocIterations(10)
-            .withAmountOfIterations(20);
+            .withAmountOfIterations(20)
+            .withSeed(1234L);
 
         SVMLinearMultiClassClassificationModel mdl = trainer.fit(
             cacheMock,
