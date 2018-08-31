@@ -117,7 +117,12 @@ SSL-related `pytest` parameters are:
 ``--ssl-version`` − SSL version:
 
 - ``TLSV1_1`` (default),
-- ``TLSV1_2``,
+- ``TLSV1_2``.
+
+Other `pytest` parameters:
+
+``--timeout`` − timeout (in seconds) for each socket operation, including
+`connect`. Can accept integer or float value. Default is None (blocking mode),
 
 ``--username`` and ``--password`` − credentials to authenticate to Ignite
 cluster. Used in conjunction with `authenticationEnabled` property in cluster

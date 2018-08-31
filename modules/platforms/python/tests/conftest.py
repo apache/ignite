@@ -66,11 +66,12 @@ class SSLVersionParser(argparse.Action):
 
 @pytest.fixture(scope='module')
 def client(
-    ignite_host, ignite_port, use_ssl, ssl_keyfile, ssl_certfile,
+    ignite_host, ignite_port, timeout, use_ssl, ssl_keyfile, ssl_certfile,
     ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version,
     username, password,
 ):
     client = Client(
+        timeout=timeout,
         use_ssl=use_ssl,
         ssl_keyfile=ssl_keyfile,
         ssl_certfile=ssl_certfile,
@@ -111,10 +112,20 @@ def pytest_addoption(parser):
         help='Ignite binary protocol test server port (default: 10800)'
     )
     parser.addoption(
+        '--timeout',
+        action='store',
+        type=float,
+        default=None,
+        help=(
+            'Timeout (in seconds) for each socket operation. Can accept '
+            'integer or float value. Default is None'
+        )
+    )
+    parser.addoption(
         '--use-ssl',
         action=UseSSLParser,
         nargs='?',
-        default=True,
+        default=False,
         help='Use SSL encryption'
     )
     parser.addoption(
@@ -180,6 +191,7 @@ def pytest_generate_tests(metafunc):
     session_parameters = {
         'ignite_host': IGNITE_DEFAULT_HOST,
         'ignite_port': IGNITE_DEFAULT_PORT,
+        'timeout': None,
         'use_ssl': False,
         'ssl_keyfile': None,
         'ssl_certfile': None,
@@ -193,10 +205,9 @@ def pytest_generate_tests(metafunc):
 
     for param_name in session_parameters:
         if param_name in metafunc.fixturenames:
-            param = (
-                metafunc.config.getoption(param_name)
-                or session_parameters[param_name]
-            )
+            param = metafunc.config.getoption(param_name)
+            if param is None:
+                param = session_parameters[param_name]
             if type(param) is not list:
                 param = [param]
             metafunc.parametrize(param_name, param, scope='session')

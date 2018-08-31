@@ -115,8 +115,9 @@ class Client:
         :param prefetch: (optional) initialize the read-ahead data buffer.
          Empty by default,
         :param timeout: (optional) sets timeout (in seconds) for each socket
-         operation including `connect`. 0 means non-blocking mode. Can accept
-         integer or float value. Default is None (blocking mode),
+         operation including `connect`. 0 means non-blocking mode, which is
+         virtually guaranteed to fail. Can accept integer or float value.
+         Default is None (blocking mode),
         :param use_ssl: (optional) set to True if Ignite server uses SSL
          on its binary connector. Defaults to use SSL when username
          and password has been supplied, not to use SSL otherwise,
