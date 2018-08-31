@@ -117,6 +117,10 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
         return true;
     }
 
+    /**
+     * @param mdl Model.
+     * @return vector of model weights with intercept.
+     */
     private Vector getStateVector(SVMLinearBinaryClassificationModel mdl) {
         double intercept = mdl.intercept();
         Vector weights = mdl.weights();
