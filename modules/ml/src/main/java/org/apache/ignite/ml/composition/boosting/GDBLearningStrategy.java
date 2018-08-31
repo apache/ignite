@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -79,7 +80,7 @@ public class GDBLearningStrategy {
             double[] weights = Arrays.copyOf(compositionWeights, i);
 
             WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLabelValue);
-            Model<Vector, Double> currComposition = new ModelsComposition(models, aggregator);
+            ModelsComposition currComposition = new ModelsComposition(models, aggregator);
 
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
                 Double realAnswer = externalLbToInternalMapping.apply(lbExtractor.apply(k, v));
