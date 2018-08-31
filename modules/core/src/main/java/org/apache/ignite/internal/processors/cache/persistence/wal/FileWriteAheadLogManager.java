@@ -2907,8 +2907,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         if (mode != WALMode.NONE) {
                             if (mmap)
                                 ((MappedByteBuffer)buf.buf).force();
-                            else
+                            else {
+                                log.info("File IO force");
                                 fileIO.force();
+                            }
 
                             lastFsyncPos = written;
                         }
@@ -3527,13 +3529,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             assert size > 0 : size;
 
             try {
-                assert hdl.written == hdl.fileIO.position();
+               hdl.fileIO.position();
 
                 hdl.written += hdl.fileIO.writeFully(buf);
 
+                hdl.written = pos;
+
                 metrics.onWalBytesWritten(size);
 
-                assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {
                 StorageException se = new StorageException("Failed to write buffer.", e);
