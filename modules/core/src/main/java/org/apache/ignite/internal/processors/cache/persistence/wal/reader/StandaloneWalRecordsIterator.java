@@ -145,7 +145,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /** {@inheritDoc} */
     @Override protected IgniteCheckedException validateTailReachedException(
-        WalSegmentTailReachedException tailReachedException,
+        Exception tailReachedException,
         AbstractReadFileHandle currWalSegment
     ) {
         FileDescriptor lastWALSegmentDesc = walFileDescriptors.get(walFileDescriptors.size() - 1);
