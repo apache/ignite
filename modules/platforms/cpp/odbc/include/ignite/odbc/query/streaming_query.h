@@ -173,8 +173,11 @@ namespace ignite
                 /** Parameter bindings. */
                 const app::ParameterSet& params;
 
-                /** Command. */
-                const SqlSetStreamingCommand& cmd;
+                /** Ordered flag. */
+                bool ordered;
+
+                /** Batch size. */
+                int32_t batchSize;
 
                 /** Order. */
                 int64_t order;

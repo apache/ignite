@@ -36,7 +36,8 @@ namespace ignite
                 Query(diag, QueryType::STREAMING),
                 connection(connection),
                 params(params),
-                cmd(cmd),
+                ordered(cmd.IsOrdered()),
+                batchSize(cmd.GetBatchSize()),
                 order(0),
                 executed(false),
                 currentBatch(),
@@ -54,7 +55,7 @@ namespace ignite
             {
                 currentBatch.AddRow(sql, params);
 
-                if (currentBatch.GetSize() < cmd.GetBatchSize())
+                if (currentBatch.GetSize() < batchSize)
                     return SqlResult::AI_SUCCESS;
 
                 return Flush(false);
@@ -96,7 +97,8 @@ namespace ignite
 
             SqlResult::Type StreamingQuery::Close()
             {
-                Flush(true);
+                if (executed)
+                    Flush(true);
 
                 executed = false;
 
@@ -123,7 +125,12 @@ namespace ignite
                 if (currentBatch.GetSize() == 0 && !last)
                     return SqlResult::AI_SUCCESS;
 
-                SqlResult::Type res = MakeRequestStreamingBatch(last);
+                SqlResult::Type res;
+
+                if (ordered)
+                    res = MakeRequestStreamingBatchOrdered(last);
+                else
+                    res = MakeRequestStreamingBatch(last);
 
                 currentBatch.Clear();
 

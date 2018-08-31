@@ -500,9 +500,11 @@ namespace ignite
             SqlResult::Type InternalExecuteSqlQuery();
 
             /**
+             * Process internal query.
              *
+             * @return Operation result.
              */
-            void ProcessInternalQuery();
+            SqlResult::Type ProcessInternalQuery();
 
             /**
              * Fetch query result row with offset
