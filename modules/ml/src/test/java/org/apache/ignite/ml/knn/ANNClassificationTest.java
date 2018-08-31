@@ -82,10 +82,9 @@ public class ANNClassificationTest extends TrainerTest {
             .withK(10)
             .withMaxIterations(10)
             .withEpsilon(1e-4)
-            .withDistance(new EuclideanDistance())
-            .withSeed(1234L);
+            .withDistance(new EuclideanDistance());
 
-        ANNClassificationModel originalMdl = (ANNClassificationModel) trainer.fit(
+        ANNClassificationModel originalMdl = (ANNClassificationModel) trainer.withSeed(1234L).fit(
             cacheMock,
             parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
@@ -94,13 +93,13 @@ public class ANNClassificationTest extends TrainerTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
-        ANNClassificationModel updatedOnSameDataset = trainer.update(originalMdl,
+        ANNClassificationModel updatedOnSameDataset = trainer.withSeed(1234L).update(originalMdl,
             cacheMock, parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
         );
 
-        ANNClassificationModel updatedOnEmptyDataset = trainer.update(originalMdl,
+        ANNClassificationModel updatedOnEmptyDataset = trainer.withSeed(1234L).update(originalMdl,
             new HashMap<Integer, double[]>(), parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]

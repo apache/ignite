@@ -84,8 +84,7 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
      */
     protected List<LabeledVector> findKNearestNeighbors(Vector v) {
         List<LabeledVector> neighborsFromPartitions = datasets.stream()
-            .map(dataset -> Optional.ofNullable(findKNearestNeighborsInDataset(v, dataset)))
-            .flatMap(res -> res.orElse(Collections.emptyList()).stream())
+            .flatMap(dataset -> findKNearestNeighborsInDataset(v, dataset).stream())
             .collect(Collectors.toList());
 
         LabeledVectorSet<Double, LabeledVector> neighborsToFilter = buildLabeledDatasetOnListOfVectors(neighborsFromPartitions);
@@ -95,10 +94,9 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
 
     private List<LabeledVector> findKNearestNeighborsInDataset(Vector v,
         Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset) {
-        return dataset.compute(data -> {
+        List<LabeledVector> neighborsFromPartitions = dataset.compute(data -> {
             TreeMap<Double, Set<Integer>> distanceIdxPairs = getDistances(v, data);
             return Arrays.asList(getKClosestVectors(data, distanceIdxPairs));
-        }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
         }, (a, b) -> {
             if (a == null)
                 return b == null ? new ArrayList<>() : b;
@@ -106,6 +104,9 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
                 return a;
             return Stream.concat(a.stream(), b.stream()).collect(Collectors.toList());
         });
+
+        if(neighborsFromPartitions == null)
+            return Collections.emptyList();
 
         LabeledVectorSet<Double, LabeledVector> neighborsToFilter = buildLabeledDatasetOnListOfVectors(neighborsFromPartitions);
 

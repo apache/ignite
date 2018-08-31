@@ -102,11 +102,16 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
                 return b;
             });
 
+            if (cols == null) {
+                if (mdl != null)
+                    return mdl;
+                else
+                    throw new IllegalArgumentException("Cannot train model on empty dataset");
+            }
+
             centers = Optional.ofNullable(mdl)
                 .map(KMeansModel::centers)
                 .orElseGet(() -> initClusterCentersRandomly(dataset, k));
-
-            centers = initClusterCentersRandomly(dataset, k);
 
             boolean converged = false;
             int iteration = 0;
@@ -244,7 +249,8 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
                         rndPnt.add(data.getRow(nextIdx));
                     }
-                } else // If it's not enough vectors to pick k vectors.
+                }
+                else // If it's not enough vectors to pick k vectors.
                     for (int i = 0; i < data.rowSize(); i++)
                         rndPnt.add(data.getRow(i));
             }
