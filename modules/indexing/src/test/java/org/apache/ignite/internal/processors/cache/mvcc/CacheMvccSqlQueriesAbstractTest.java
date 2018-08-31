@@ -629,6 +629,8 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @throws Exception If failed.
      */
     public void testDistributedJoinSimple() throws Exception {
+        disableScheduledVacuum = true; //TODO: IGNITE-9446: remove this after races in vacuum will be fixed.
+
         startGridsMultiThreaded(4);
 
         Ignite srv0 = ignite(0);

@@ -57,7 +57,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onClose() {
+    @Override public void onClose() throws IgniteCheckedException {
         try {
             super.onClose();
         }

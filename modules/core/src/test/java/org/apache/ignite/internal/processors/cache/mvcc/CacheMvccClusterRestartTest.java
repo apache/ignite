@@ -74,25 +74,29 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        cleanPersistenceDir();
-
         super.afterTestsStopped();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+        fail("https://issues.apache.org/jira/browse/IGNITE-9394");
 
         cleanPersistenceDir();
+
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cleanPersistenceDir();
+        super.afterTest();
 
         stopAllGrids();
 
-        super.afterTest();
+        cleanPersistenceDir();
     }
 
     /**
@@ -124,8 +128,6 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
     private void restart1(int srvBefore, int srvAfter) throws Exception {
         Ignite srv0 = startGridsMultiThreaded(srvBefore);
 
-        srv0.active(true);
-
         IgniteCache<Object, Object> cache = srv0.createCache(cacheConfiguration());
 
         Set<Integer> keys = new HashSet<>(primaryKeys(cache, 1, 0));
@@ -140,8 +142,6 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         srv0 = startGridsMultiThreaded(srvAfter);
-
-        srv0.active(true);
 
         cache = srv0.cache(DEFAULT_CACHE_NAME);
 

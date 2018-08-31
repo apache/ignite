@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithCo
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurrentTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccVacuumTest;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSeflTest;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSelfTest;
 
 /**
  *
@@ -42,19 +42,25 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("IgniteCache MVCC Test Suite");
 
+        // Basic tests.
         suite.addTestSuite(CacheMvccTransactionsTest.class);
         suite.addTestSuite(CacheMvccProcessorTest.class);
-        suite.addTestSuite(CacheMvccClusterRestartTest.class);
+        suite.addTestSuite(CacheMvccVacuumTest.class);
         suite.addTestSuite(CacheMvccConfigurationValidationTest.class);
+
+        suite.addTestSuite(DataStreamProcessorMvccSelfTest.class);
         suite.addTestSuite(CacheMvccOperationChecksTest.class);
+
+        // Concurrent ops tests.
         suite.addTestSuite(CacheMvccIteratorWithConcurrentTransactionTest.class);
         suite.addTestSuite(CacheMvccLocalEntriesWithConcurrentTransactionTest.class);
         suite.addTestSuite(CacheMvccScanQueryWithConcurrentTransactionTest.class);
         suite.addTestSuite(CacheMvccSizeWithConcurrentTransactionTest.class);
-        suite.addTestSuite(CacheMvccVacuumTest.class);
+
+        // Failover tests.
+        suite.addTestSuite(CacheMvccClusterRestartTest.class);
         suite.addTestSuite(CacheMvccPartitionedCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheMvccReplicatedCoordinatorFailoverTest.class);
-        suite.addTestSuite(DataStreamProcessorMvccSeflTest.class);
 
         return suite;
     }
