@@ -1825,12 +1825,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         // No-op.
                     }
 
-                    for (CacheInvokeDirectResult result : ret.invokeResCol()) {
-                        try {
-                            stat.sndBackEntrySize += result.result().valueBytesLength(ctx.cacheObjectContext());
-                        }
-                        catch (IgniteCheckedException e) {
-                            log.error("Cannot get result size", e);
+                    if (ret.invokeResCol() != null) {
+                        for (CacheInvokeDirectResult result : ret.invokeResCol()) {
+                            try {
+                                stat.sndBackEntrySize += result.result().valueBytesLength(ctx.cacheObjectContext());
+                            }
+                            catch (IgniteCheckedException e) {
+                                log.error("Cannot get result size", e);
+                            }
                         }
                     }
                 }
