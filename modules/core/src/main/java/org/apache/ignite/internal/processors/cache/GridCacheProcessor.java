@@ -245,7 +245,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private ConcurrentMap<String, IgniteInternalFuture> pendingTemplateFuts = new ConcurrentHashMap<>();
 
     /** Pending generate encryption key futures. */
-    private final ConcurrentMap<IgniteUuid, GenerateEncryptionKeyFuture> genEncKeyFuts = new ConcurrentHashMap<>();
+    private ConcurrentMap<IgniteUuid, GenerateEncryptionKeyFuture> genEncKeyFuts = new ConcurrentHashMap<>();
+
+    /** */
+    private final Object genEcnKeyMux = new Object();
 
     /** Enable/disable cache statistics futures. */
     private ConcurrentMap<UUID, EnableStatisticsFuture> manageStatisticsFuts = new ConcurrentHashMap<>();
@@ -3164,12 +3167,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GenerateEncryptionKeyFuture genEncKeyFut = new GenerateEncryptionKeyFuture(grpIds);
 
-        boolean sndRes = sendGenEncReq(genEncKeyFut);
+        synchronized (genEcnKeyMux) {
+            try {
+                sendGenEncReq(genEncKeyFut);
 
-        if (sndRes) {
-            GenerateEncryptionKeyFuture old = genEncKeyFuts.putIfAbsent(genEncKeyFut.id(), genEncKeyFut);
+                GenerateEncryptionKeyFuture old = genEncKeyFuts.putIfAbsent(genEncKeyFut.id(), genEncKeyFut);
 
-            assert old == null;
+                assert old == null;
+            }
+            catch (IgniteCheckedException e) {
+                genEncKeyFut.onDone(null, e);
+            }
         }
 
         GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
@@ -4841,13 +4849,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
                 UUID leftNodeId = evt.eventNode().id();
 
-                for (Map.Entry<IgniteUuid, GenerateEncryptionKeyFuture> futEntry : genEncKeyFuts.entrySet()) {
-                    GenerateEncryptionKeyFuture fut = futEntry.getValue();
+                synchronized (genEcnKeyMux) {
+                    for (Map.Entry<IgniteUuid, GenerateEncryptionKeyFuture> futEntry : genEncKeyFuts.entrySet()) {
+                        GenerateEncryptionKeyFuture fut = futEntry.getValue();
 
-                    if (!fut.nodeId().equals(leftNodeId))
-                        continue;
+                        if (!F.eq(leftNodeId, fut.nodeId()))
+                            continue;
 
-                    sendGenEncReq(fut);
+                        try {
+                            sendGenEncReq(fut);
+                        }
+                        catch (IgniteCheckedException e) {
+                            fut.onDone(null, e);
+                        }
+                    }
                 }
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
@@ -4885,15 +4900,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 else {
                     GenerateEncryptionKeyResponse resp = (GenerateEncryptionKeyResponse) msg;
 
-                    GenerateEncryptionKeyFuture fut = genEncKeyFuts.get(resp.requestId());
+                    synchronized (genEcnKeyMux) {
+                        GenerateEncryptionKeyFuture fut = genEncKeyFuts.get(resp.requestId());
 
-                    if (fut != null)
-                        fut.onDone(resp.encGrpKeys(), null);
-                    else {
-                        Set<Integer> grps = resp.encGrpKeys().keySet();
+                        if (fut != null)
+                            fut.onDone(resp.encGrpKeys(), null);
+                        else {
+                            Set<Integer> grps = resp.encGrpKeys().keySet();
 
-                        log.warning("Response received for a unknown request. [grps=" +
-                            grps.stream().map(Object::toString).collect(Collectors.joining(", ")) + "]");
+                            log.warning("Response received for a unknown request. [grps=" +
+                                grps.stream().map(Object::toString).collect(Collectors.joining(", ")) + "]");
+                        }
                     }
                 }
             }
@@ -4901,32 +4918,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** */
-    private boolean sendGenEncReq(GenerateEncryptionKeyFuture fut) {
-        while(true) {
-            ClusterGroup grp = ctx.cluster().get().forServers();
+    private void sendGenEncReq(GenerateEncryptionKeyFuture fut) throws IgniteCheckedException {
+        ClusterNode rndNode = U.randomNode(ctx);
 
-            if (grp.nodes().isEmpty()) {
-                fut.onDone(null, new IgniteException("All server nodes left cluster."));
+        if (rndNode == null)
+            throw new IgniteCheckedException("There is no node to send GenerateEncryptionKeyRequest to");
 
-                return false;
-            }
+        GenerateEncryptionKeyRequest req = new GenerateEncryptionKeyRequest(fut.grpIds());
 
-            UUID srvNode = grp.forRandom().node().id();
+        fut.id(req.id());
+        fut.nodeId(rndNode.id());
 
-            GenerateEncryptionKeyRequest req = new GenerateEncryptionKeyRequest(fut.grpIds());
-
-            fut.id(req.id());
-            fut.nodeId(srvNode);
-
-            try {
-                ctx.io().sendToGridTopic(srvNode, TOPIC_GEN_ENC_KEY, req, SYSTEM_POOL);
-
-                return true;
-            }
-            catch (IgniteCheckedException e) {
-                // No-Op.
-            }
-        }
+        ctx.io().sendToGridTopic(rndNode.id(), TOPIC_GEN_ENC_KEY, req, SYSTEM_POOL);
     }
 
     /**

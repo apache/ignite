@@ -97,9 +97,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Whan the future is done the node is ready for authentication. */
     private final GridFutureAdapter<Void> readyForAuthFut = new GridFutureAdapter<>();
 
-    /** Random is used to get random server node to authentication from client node. */
-    private static final Random RND = new Random(System.currentTimeMillis());
-
     /** Operation mutex. */
     private final Object mux = new Object();
 
@@ -313,18 +310,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 AuthenticateFuture fut;
 
                 synchronized (mux) {
-                    Collection<ClusterNode> aliveNodes = ctx.discovery().aliveServerNodes();
-
-                    int rndIdx = RND.nextInt(aliveNodes.size()) + 1;
-
-                    int i = 0;
-                    ClusterNode rndNode = null;
-
-                    for (Iterator<ClusterNode> it = aliveNodes.iterator(); i < rndIdx && it.hasNext(); i++)
-                        rndNode = it.next();
-
-                    if (rndNode == null)
-                        assert rndNode != null;
+                    ClusterNode rndNode = U.randomNode(ctx);
 
                     fut = new AuthenticateFuture(rndNode.id());
 
