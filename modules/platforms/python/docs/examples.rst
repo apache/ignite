@@ -277,34 +277,24 @@ using a :py:attr:`~pyignite.cache.Cache.settings` property.
 
 .. literalinclude:: ../examples/binary_types.py
   :language: python
-  :lines: 231-260
+  :lines: 231-251
 
 The values of `value_type_name` and `key_type_name` are names of the binary
-types, in which the `Cities` table rows' values and keys are stored. Let us
-check the types' registration and properties.
+types. The `City` table's key fields are stored using `key_type_name` type,
+and the other fields − `value_type_name` type.
+
+Now when we have the cache, in which the SQL data resides, and the names
+of the key and value data types, we can read the data without using SQL
+functions and verify the correctness of the result.
 
 .. literalinclude:: ../examples/binary_types.py
   :language: python
-  :lines: 262-276
+  :lines: 253-267
 
-Binary types are really exists, so we are on the right track. Let us take
-a closer look to the value type.
-
-.. literalinclude:: ../examples/binary_types.py
-  :language: python
-  :lines: 278-300
-
-We have 3 fields in the row value: `Name`, `District`, and `Population`.
-The complex primary key field, `ID` + `CountryCode`, is in the row key.
-
-To support this theory let us try to read the data without using SQL
-functions.
-
-.. literalinclude:: ../examples/binary_types.py
-  :language: python
-  :lines: 302-316
-
-What we see is a tuple of key and value, both of which are Complex objects.
+What we see is a tuple of key and value, extracted from the cache. Both key
+and value are represent Complex objects. The dataclass names are the same
+as the `value_type_name` and `key_type_name` cache settings. The objects'
+fields correspond to the SQL query.
 
 .. _sql_cache_create:
 
@@ -416,7 +406,7 @@ field. If you try, you will be greeted with the following message:
 ```org.apache.ignite.binary.BinaryObjectException: Wrong value has been set
 [typeName=SomeType, fieldName=f1, fieldType=String, assignedValueType=int]```
 
-As an alternative, you can rename the field or create a new schema.
+As an alternative, you can rename the field or create a new Complex object.
 
 Failover
 --------
@@ -426,27 +416,43 @@ When connection to the server is broken or timed out,
 exception, but keeps its constructor's parameters intact and tries
 to reconnect on the next data operation.
 
-The following example features a simple round-robin failover mechanism.
+The following example features a simple node list traversal failover mechanism.
 Launch 3 Ignite nodes on `localhost` and run:
 
 .. literalinclude:: ../examples/failover.py
   :language: python
-  :lines: 16-40
+  :lines: 16-38
 
-Then try shutting down and restarting nodes, and see what happens. At least
-one node should remain active.
+Then try shutting down and restarting nodes, and see what happens.
 
-.. code-block:: python3
-
-    # Connected to node 0
-    # Error: Socket connection broken.
-    # Connected to node 1
-    # Error: Socket connection broken.
-    # Error: [Errno 111] Client refused
-    # Connected to node 0
+.. literalinclude:: ../examples/failover.py
+  :language: python
+  :lines: 40-49
 
 In this example, the automatic reconnection happens after the second
 `client.get_or_create_cache()` call.
+
+:py:meth:`~pyignite.client.Client.connect` methon can accept any iterable
+instead of list. It means that you can implement any reconnection policy
+(round-robin, nodes prioritization, pause on reconnect or graceful backoff)
+with a generator.
+
+`pyignite` comes with a sample :class:`~pyignite.client.generators.RoundRobin`
+generator. In the above example try to replace
+
+.. literalinclude:: ../examples/failover.py
+  :language: python
+  :lines: 27
+
+with
+
+.. code-block:: python3
+
+    client.connect(RoundRobin(nodes, max_reconnects=20))
+
+The client will try to reconnect to node 1 after node 3 is crashed, then to
+node 2, et c. At least one node should be active for the
+:class:`~pyignite.client.generators.RoundRobin` to work properly.
 
 SSL/TLS
 -------

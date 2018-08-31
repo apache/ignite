@@ -37,4 +37,13 @@ while True:
         my_cache = client.get_or_create_cache('my_cache')
         print('Reconnected to {}'.format(client))
 
+# Connected to pydev debugger (build 182.4129.34)
+# Connected to 127.0.0.1:10800
+# Error: Socket connection broken.
+# Reconnected to 127.0.0.1:10801
+# Error: Socket connection broken.
+# Reconnected to 127.0.0.1:10802
+# # Error: [Errno 111] Client refused
+# Traceback (most recent call last):
+# ...
 # pyignite.exceptions.ReconnectError: Can not reconnect: out of nodes

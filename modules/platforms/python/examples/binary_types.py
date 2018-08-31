@@ -232,15 +232,6 @@ city_cache = client.get_or_create_cache('SQL_PUBLIC_CITY')
 print(city_cache.settings[PROP_NAME])
 # 'SQL_PUBLIC_CITY'
 
-print(city_cache.settings[PROP_SQL_SCHEMA])
-# 'PUBLIC'
-
-print(city_cache.settings[PROP_CACHE_KEY_CONFIGURATION])
-# {
-#     'type_name': 'SQL_PUBLIC_CITY_9ac8e17a_2f99_45b7_958e_06da32882e9d_KEY',
-#     'affinity_key_field_name': 'COUNTRYCODE'
-# }
-
 print(city_cache.settings[PROP_QUERY_ENTITIES])
 # {
 #     'key_type_name': (
@@ -257,46 +248,6 @@ print(city_cache.settings[PROP_QUERY_ENTITIES])
 #         ...
 #     ],
 #     'query_indexes': []
-# }
-
-query_entity = city_cache.settings[PROP_QUERY_ENTITIES][0]
-key_binary_type_name = query_entity['key_type_name']
-value_binary_type_name = query_entity['value_type_name']
-
-print(key_binary_type_name, value_binary_type_name)
-# SQL_PUBLIC_CITY_88f6c30c_b9dc_4a38_858a_5b4950d3fffd_KEY
-# SQL_PUBLIC_CITY_88f6c30c_b9dc_4a38_858a_5b4950d3fffd
-
-result = client.get_binary_type(key_binary_type_name)
-print(result['type_exists'])
-# True
-
-result = client.get_binary_type(value_binary_type_name)
-print(result['type_exists'])
-# True
-
-print(result)
-# {
-#     'type_exists': True,
-#     'type_id': -1295865797,
-#     'type_name': 'SQL_PUBLIC_CITY_9ac8e17a_2f99_45b7_958e_06da32882e9d',
-#     'affinity_key_field': None,
-#     'binary_fields': [
-#         {'field_name': 'NAME', 'type_id': 9, 'field_id': 3373707},
-#         {'field_name': 'DISTRICT', 'type_id': 9, 'field_id': 288961422},
-#         {'field_name': 'POPULATION', 'type_id': 3, 'field_id': -2023558323}
-#     ],
-#     'is_enum': False,
-#     'schema': [
-#         {
-#             'schema_id': 275495165,
-#             'schema_fields': [
-#                 {'schema_field_id': 3373707},
-#                 {'schema_field_id': 288961422},
-#                 {'schema_field_id': -2023558323}
-#             ]
-#         }
-#     ]
 # }
 
 result = city_cache.scan()
