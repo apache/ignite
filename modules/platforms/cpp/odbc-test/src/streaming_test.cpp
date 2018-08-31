@@ -74,9 +74,9 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
 
     void InsertTestStrings(int32_t begin, int32_t end)
     {
-        SQLCHAR insertReq[] = "INSERT INTO TestType(_key, strField) VALUES(?, ?)";
+        SQLCHAR req[] = "INSERT INTO TestType(_key, strField) VALUES(?, ?)";
 
-        SQLRETURN ret = SQLPrepare(stmt, insertReq, SQL_NTS);
+        SQLRETURN ret = SQLPrepare(stmt, req, SQL_NTS);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -119,6 +119,73 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
+    void CheckValues(int32_t begin, int32_t end)
+    {
+        SQLCHAR req[] = "SELECT _key, strField FROM TestType WHERE _key >= ? AND _key < ? ORDER BY _key";
+
+        SQLRETURN ret = SQLPrepare(stmt, req, SQL_NTS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        int64_t p1 = begin;
+        int64_t p2 = end;
+
+        // Binding parameters.
+        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &p1, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &p2, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        int64_t keyVal = 0;
+        char strField[1024] = {0};
+        SQLLEN strFieldLen = 0;
+
+        ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &keyVal, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLBindCol(stmt, 2, SQL_C_CHAR, &strField, sizeof(strField), &strFieldLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        // Fetching values.
+        for (SQLSMALLINT i = begin; i < end; ++i)
+        {
+            ret = SQLFetch(stmt);
+
+            if (!SQL_SUCCEEDED(ret))
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+            BOOST_CHECK_EQUAL(i, keyVal);
+            BOOST_CHECK_EQUAL(getTestString(i), std::string(strField, static_cast<size_t>(strFieldLen)));
+        }
+
+        // Resetting parameters.
+        ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        // Resetting columns.
+        ret = SQLFreeStmt(stmt, SQL_UNBIND);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
     /** Node started during the test. */
     Ignite grid;
 
@@ -127,6 +194,31 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
 };
 
 BOOST_FIXTURE_TEST_SUITE(StreamingTestSuite, StreamingTestSuiteFixture)
+
+BOOST_AUTO_TEST_CASE(TestStreamingSimple)
+{
+    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
+
+    SQLRETURN res = ExecQuery("set streaming on batch_size 100");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    InsertTestStrings(0, 10);
+
+    BOOST_CHECK_EQUAL(cache.Size(), 0);
+
+    InsertTestStrings(10, 110);
+
+    res = ExecQuery("set streaming off");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(cache.Size(), 110);
+
+    CheckValues(0, 110);
+}
 
 BOOST_AUTO_TEST_CASE(TestStreamingWorks)
 {
