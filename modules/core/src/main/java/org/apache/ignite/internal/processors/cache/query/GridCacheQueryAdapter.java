@@ -116,7 +116,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private volatile boolean incBackups;
 
     /** Local query. */
-    private volatile boolean forceLocal;
+    private boolean forceLocal;
 
     /** */
     private volatile boolean dedup;
