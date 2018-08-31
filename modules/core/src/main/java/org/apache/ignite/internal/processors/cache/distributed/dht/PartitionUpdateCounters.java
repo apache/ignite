@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -37,11 +36,16 @@ public class PartitionUpdateCounters implements Message {
     @GridDirectMap(keyType = Integer.class, valueType = Long.class)
     private  Map<Integer, Long> updCntrs;
 
-    /**
-     *
-     */
+    /** */
     public PartitionUpdateCounters() {
-        updCntrs = new HashMap<>();
+        // No-op.
+    }
+
+    /**
+     * @param updCntrs Update counters map.
+     */
+    public PartitionUpdateCounters(Map<Integer, Long> updCntrs) {
+        this.updCntrs = updCntrs;
     }
 
     /**

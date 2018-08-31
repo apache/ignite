@@ -1662,9 +1662,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
-            HashMap<Integer, Long> partCntrs = new HashMap<>();
+            Map<Integer, Long> partCntrs = new HashMap<>(parts.size());
 
-            for (int p : parts) {
+            for (Integer p : parts) {
                 GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(p);
 
                 assert dhtPart != null;
@@ -1676,11 +1676,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 partCntrs.put(p, cntr);
             }
 
-            PartitionUpdateCounters pc = new PartitionUpdateCounters();
-
-            pc.updateCounters(partCntrs);
-
-            updCntrs.put(cacheId, pc);
+            updCntrs.put(cacheId, new PartitionUpdateCounters(partCntrs));
         }
 
         return updCntrs;

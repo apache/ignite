@@ -940,6 +940,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * @param node Backup node.
      * @return Partition counters map for the given backup node.
      */
     public Map<Integer, PartitionUpdateCounters> filterUpdateCountersForBackupNode(ClusterNode node) {
@@ -961,7 +962,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
             GridCacheAffinityManager affinity = cctx.cacheContext(cacheId).affinity();
 
-            PartitionUpdateCounters resBackupUpdates = new PartitionUpdateCounters();
+            Map<Integer, Long> resCntrs = new HashMap<>(partsCntrs.size());
 
             for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
                 Integer p = e.getKey();
@@ -971,12 +972,12 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 if (affinity.backupByPartition(node, p, top)) {
                     assert cntr != null && cntr > 0 : cntr;
 
-                    resBackupUpdates.updateCounters().put(p, cntr);
+                    resCntrs.put(p, cntr);
                 }
             }
 
-            if (!resBackupUpdates.updateCounters().isEmpty())
-                res.put(cacheId, resBackupUpdates);
+            if (!resCntrs.isEmpty())
+                res.put(cacheId, new PartitionUpdateCounters(resCntrs));
         }
 
         return res;
