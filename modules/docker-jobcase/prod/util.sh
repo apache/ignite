@@ -21,7 +21,7 @@
 # Allow the container to be started with subdirectory of a log directory mount point.
 if [ ! -e "${JOBCASE_LOGS}" ]; then
     mkdir -p ${JOBCASE_LOGS} 
-endif
+fi
 
 LOG_DATE='date +%Y/%m/%d:%H:%M:%S'
 LOG_FILE=${JOBCASE_LOGS}/entrypoint.log
