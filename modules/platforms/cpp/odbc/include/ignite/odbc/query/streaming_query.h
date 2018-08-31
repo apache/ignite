@@ -182,8 +182,8 @@ namespace ignite
                 /** Order. */
                 int64_t order;
 
-                /** Query executed. */
-                bool executed;
+                /** Streaming enabled. */
+                bool enabled;
 
                 /** Current batch. */
                 streaming::StreamingBatch currentBatch;

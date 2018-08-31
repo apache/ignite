@@ -710,6 +710,8 @@ namespace ignite
             assert(currentQuery->GetType() == query::QueryType::INTERNAL);
 
             query::InternalQuery* qry = static_cast<query::InternalQuery*>(currentQuery.get());
+            
+            LOG_MSG("Processing internal query: " << qry->GetQuery());
 
             assert(qry->GetCommand().GetType() == SqlCommandType::SET_STREAMING);
 
@@ -717,10 +719,12 @@ namespace ignite
 
             if (!cmd.IsEnabled())
             {
-                currentQuery.reset();
+                LOG_MSG("Streaming already disabled");
 
                 return SqlResult::AI_SUCCESS;
             }
+
+            LOG_MSG("Sending start streaming command");
 
             query::DataQuery enablingQuery(*this, connection, qry->GetQuery(), parameters, timeout);
 
@@ -728,6 +732,8 @@ namespace ignite
 
             if (res != SqlResult::AI_SUCCESS)
                 return res;
+
+            LOG_MSG("Preparing streaming context on client");
 
             std::auto_ptr<query::Query> newQry(new query::StreamingQuery(*this, connection, parameters, cmd));
 
@@ -934,7 +940,10 @@ namespace ignite
 
         SqlResult::Type Statement::StopStreaming()
         {
-            assert(IsStreamingActive());
+            if (!IsStreamingActive())
+                return SqlResult::AI_SUCCESS;
+
+            LOG_MSG("Stopping streaming");
 
             SqlResult::Type result = currentQuery->Close();
 
