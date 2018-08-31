@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.TxTopologyVersionFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -234,8 +233,7 @@ public class GridReduceQueryExecutor {
      * @param nodeId Left node ID.
      */
     private void handleNodeLeft(ReduceQueryRun r, UUID nodeId) {
-        // Will attempt to retry. If reduce query was started it will fail on next page fetching.
-        retry(r, h2.readyTopologyVersion(), nodeId);
+        r.setStateOnNodeLeave(nodeId, h2.readyTopologyVersion());
     }
 
     /**
@@ -287,12 +285,13 @@ public class GridReduceQueryExecutor {
      */
     private void fail(ReduceQueryRun r, UUID nodeId, String msg, byte failCode) {
         if (r != null) {
-            CacheException e = new CacheException("Failed to execute map query on the node: " + nodeId + ", " + msg);
+            CacheException e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
+                ", errMsg=" + msg + ']');
 
             if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR)
                 e.addSuppressed(new QueryCancelledException());
 
-            r.state(e, nodeId);
+            r.setStateOnException(nodeId, e);
         }
     }
 
@@ -319,7 +318,6 @@ public class GridReduceQueryExecutor {
         try {
             page = new GridResultPage(ctx, node.id(), msg) {
                 @Override public void fetchNextPage() {
-
                     if (r.hasError()) {
                         CacheException err0 = r.cacheException();
 
@@ -360,7 +358,7 @@ public class GridReduceQueryExecutor {
         idx.addPage(page);
 
         if (msg.retry() != null)
-            r.stateWithMessage(msg, node.id());
+            r.setStateOnRetry(node.id(), msg.retry(), msg.retryCause());
         else if (msg.page() == 0) {
             // Do count down on each first page received.
             r.latch().countDown();
@@ -373,23 +371,13 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param r Query run.
-     * @param retryVer Retry version.
-     * @param nodeId Node ID.
-     */
-    private void retry(ReduceQueryRun r, AffinityTopologyVersion retryVer, UUID nodeId) {
-        r.state(retryVer, nodeId);
-    }
-
-    /**
      * @param cacheIds Cache IDs.
      * @return {@code true} If preloading is active.
      */
     private boolean isPreloadingActive(List<Integer> cacheIds) {
         for (Integer cacheId : cacheIds) {
-
             if (null == cacheContext(cacheId))
-                throw new CacheException(String.format("Cache not found on local node [cacheId=%d]",cacheId));
+                throw new CacheException(String.format("Cache not found on local node [cacheId=%d]", cacheId));
 
             if (hasMovingPartitions(cacheContext(cacheId)))
                 return true;
@@ -404,6 +392,7 @@ public class GridReduceQueryExecutor {
      */
     private boolean hasMovingPartitions(GridCacheContext<?, ?> cctx) {
         assert cctx!=null;
+
         return !cctx.isLocal() && cctx.topology().hasMovingPartitions();
     }
 
@@ -603,6 +592,7 @@ public class GridReduceQueryExecutor {
         for (int attempt = 0;; attempt++) {
             if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout)) {
                 String rcValue = lastRun.rootCause();
+
                 throw new CacheException((!F.isEmpty(rcValue))?rcValue:("Failed to map SQL query to topology."));
             }
             if (attempt != 0) {

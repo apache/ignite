@@ -62,7 +62,7 @@ public class DisappearedCacheWasNotFoundMessageSelfTest extends GridCommonAbstra
             fail("No CacheException emitted.");
         }
         catch (CacheException e) {
-            assertTrue(e.getMessage(), e.getMessage().contains("Cache not found no local node"));
+            assertTrue(e.getMessage(), e.getMessage().contains("Cache not found on local node"));
         }
     }
 

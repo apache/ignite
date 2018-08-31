@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.h2.jdbc.JdbcConnection;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 
@@ -87,38 +86,42 @@ class ReduceQueryRun {
     }
 
     /**
-     * @param o Fail state object.
+     * Set state on exception.
+     *
+     * @param err error.
      * @param nodeId Node ID.
      */
-    void state(Object o, @Nullable UUID nodeId) {
-        assert o != null;
-
-        assert o instanceof CacheException || o instanceof AffinityTopologyVersion : o.getClass();
-
-        if ( o instanceof  CacheException )
-            state(new State((CacheException)o, null, null, nodeId));
-
-        else
-            state(new State(null, null, (AffinityTopologyVersion)o, nodeId));
+    void setStateOnException(@Nullable UUID nodeId, CacheException err) {
+        setState0(new State(nodeId, err, null, null));
     }
 
     /**
-     * @param msg corresponding response message
+     * Set state on map node leave.
+     *
      * @param nodeId Node ID.
+     * @param topVer Topology version.
      */
-    void stateWithMessage(GridQueryNextPageResponse msg, @Nullable UUID nodeId) {
-        assert msg != null;
+    void setStateOnNodeLeave(UUID nodeId, AffinityTopologyVersion topVer) {
+        setState0(new State(nodeId, null, topVer, "Data node has left the grid during query execution [nodeId=" +
+            nodeId + ']'));
+    }
 
-        assert msg.retry() != null;
-
-        state(new State(null, msg.retryCause(), msg.retry(), nodeId));
+    /**
+     * Set state on retry due to mapping failure.
+     *
+     * @param nodeId Node ID.
+     * @param topVer Topology version.
+     * @param retryCause Retry cause.
+     */
+    void setStateOnRetry(UUID nodeId, AffinityTopologyVersion topVer, String retryCause) {
+        setState0(new State(nodeId, null, topVer, retryCause));
     }
 
     /**
      *
      * @param state state
      */
-    private void state(State state){
+    private void setState0(State state){
         if (!this.state.compareAndSet(null, state))
             return;
 
@@ -133,7 +136,7 @@ class ReduceQueryRun {
      * @param e Error.
      */
     void disconnected(CacheException e) {
-        state(e, null);
+        setStateOnException(null, e);
     }
 
     /**
@@ -173,14 +176,14 @@ class ReduceQueryRun {
     AffinityTopologyVersion topVersion(){
         State st = state.get();
 
-        return st!=null ? st.topVer : null;
+        return st!=null ? st.retryTopVer : null;
     }
 
     /** */
     String rootCause(){
         State st = state.get();
 
-        return st!=null ? st.rootCause : null;
+        return st!=null ? st.retryCause : null;
     }
     /**
      * @return Indexes.
@@ -210,26 +213,28 @@ class ReduceQueryRun {
         return selectForUpdateFut;
     }
 
-    /** */
+    /**
+     * Error state.
+     */
     private static class State {
-        /** */
-        private final CacheException ex;
-
-        /** */
-        private final String rootCause;
-
-        /** */
-        private final AffinityTopologyVersion topVer;
-
-        /** */
+        /** Affected node (may be null in case of local node failure). */
         private final UUID nodeId;
 
+        /** Error. */
+        private final CacheException ex;
+
+        /** Retry topology version. */
+        private final AffinityTopologyVersion retryTopVer;
+
+        /** Retry cause. */
+        private final String retryCause;
+
         /** */
-        private State(CacheException ex, String rootCause, AffinityTopologyVersion topVer, UUID nodeId){
-            this.ex=ex;
-            this.rootCause = rootCause;
-            this.topVer = topVer;
+        private State(UUID nodeId, CacheException ex, AffinityTopologyVersion retryTopVer, String retryCause){
             this.nodeId = nodeId;
+            this.ex = ex;
+            this.retryTopVer = retryTopVer;
+            this.retryCause = retryCause;
         }
     }
 }
