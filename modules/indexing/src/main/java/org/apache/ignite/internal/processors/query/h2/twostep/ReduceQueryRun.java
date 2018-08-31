@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSe
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.jdbc.JdbcConnection;
 import org.jetbrains.annotations.Nullable;
 
@@ -114,6 +115,8 @@ class ReduceQueryRun {
      * @param retryCause Retry cause.
      */
     void setStateOnRetry(UUID nodeId, AffinityTopologyVersion topVer, String retryCause) {
+        assert !F.isEmpty(retryCause);
+
         setState0(new State(nodeId, null, topVer, retryCause));
     }
 
@@ -161,30 +164,46 @@ class ReduceQueryRun {
     }
 
     /** */
-    boolean hasError(){
-        return state.get()!=null;
+    boolean hasErrorOrRetry(){
+        return state.get() != null;
     }
 
-    /** */
-    CacheException cacheException() {
+    /**
+     * @return Exception.
+     */
+    CacheException exception() {
         State st = state.get();
 
-        return st!=null ? st.ex : null;
+        return st != null ? st.ex : null;
     }
 
-    /** */
-    AffinityTopologyVersion topVersion(){
+    /**
+     * @return Retry topology version.
+     */
+    AffinityTopologyVersion retryTopologyVersion(){
         State st = state.get();
 
-        return st!=null ? st.retryTopVer : null;
+        return st != null ? st.retryTopVer : null;
     }
 
-    /** */
-    String rootCause(){
+    /**
+     * @return Retry bode ID.
+     */
+    UUID retryNodeId() {
         State st = state.get();
 
-        return st!=null ? st.retryCause : null;
+        return st != null ? st.nodeId : null;
     }
+
+    /**
+     * @return Retry cause.
+     */
+    String retryCause(){
+        State st = state.get();
+
+        return st != null ? st.retryCause : null;
+    }
+
     /**
      * @return Indexes.
      */

@@ -318,8 +318,8 @@ public class GridReduceQueryExecutor {
         try {
             page = new GridResultPage(ctx, node.id(), msg) {
                 @Override public void fetchNextPage() {
-                    if (r.hasError()) {
-                        CacheException err0 = r.cacheException();
+                    if (r.hasErrorOrRetry()) {
+                        CacheException err0 = r.exception();
 
                         if (err0 != null && err0.getCause() instanceof IgniteClientDisconnectedException)
                             throw err0;
@@ -591,10 +591,15 @@ public class GridReduceQueryExecutor {
 
         for (int attempt = 0;; attempt++) {
             if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout)) {
-                String rcValue = lastRun.rootCause();
+                UUID retryNodeId = lastRun.retryNodeId();
+                String retryCause = lastRun.retryCause();
 
-                throw new CacheException((!F.isEmpty(rcValue))?rcValue:("Failed to map SQL query to topology."));
+                assert !F.isEmpty(retryCause);
+
+                throw new CacheException("Failed to map SQL query to topology on data node [dataNodeId=" + retryNodeId +
+                    ", msg=" + retryCause + ']');
             }
+
             if (attempt != 0) {
                 try {
                     Thread.sleep(attempt * 10); // Wait for exchange.
@@ -875,25 +880,26 @@ public class GridReduceQueryExecutor {
                 if (send(nodes, req, spec, false)) {
                     awaitAllReplies(r, nodes, cancel);
 
-                    if (r.hasError()) {
-                        if (r.cacheException() != null) {
-                            CacheException err = r.cacheException();
+                    if (r.hasErrorOrRetry()) {
+                        CacheException err = r.exception();
 
+                        if (err != null) {
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
 
                             if (wasCancelled(err))
                                 throw new QueryCancelledException(); // Throw correct exception.
 
-                            throw new CacheException("Failed to run map query remotely." + err.getMessage(), err);
-                        } else {
+                            throw new CacheException("Failed to run map query remotely: " + err.getMessage(), err);
+                        }
+                        else {
                             retry = true;
 
                             // On-the-fly topology change must not be possible in FOR UPDATE case.
                             assert sfuFut == null;
 
                             // If remote node asks us to retry then we have outdated full partition map.
-                            h2.awaitForReadyTopologyVersion(r.topVersion());
+                            h2.awaitForReadyTopologyVersion(r.retryTopologyVersion());
                         }
                     }
                 }
