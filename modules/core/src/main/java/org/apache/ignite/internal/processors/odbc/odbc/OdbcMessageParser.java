@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -134,6 +135,53 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                     autoCommit = reader.readBoolean();
 
                 res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params, timeout, autoCommit);
+
+                break;
+            }
+
+            case OdbcRequest.STREAMING_BATCH:
+            {
+                String schema = reader.readString();
+
+                int num = reader.readInt();
+
+                ArrayList<OdbcQuery> queries = new ArrayList<>(num);
+
+                for (int i = 0; i < num; ++i)
+                {
+                    OdbcQuery qry = new OdbcQuery();
+                    qry.readBinary(reader);
+
+                    queries.add(qry);
+                }
+
+                boolean last = reader.readBoolean();
+
+                res = new OdbcStreamingBatchRequest(schema, queries, last);
+
+                break;
+            }
+
+            case OdbcRequest.STREAMING_BATCH_ORDERED:
+            {
+                String schema = reader.readString();
+
+                int num = reader.readInt();
+
+                ArrayList<OdbcQuery> queries = new ArrayList<>(num);
+
+                for (int i = 0; i < num; ++i)
+                {
+                    OdbcQuery qry = new OdbcQuery();
+                    qry.readBinary(reader);
+
+                    queries.add(qry);
+                }
+
+                boolean last = reader.readBoolean();
+                long order = reader.readLong();
+
+                res = new OdbcStreamingBatchOrderedRequest(schema, queries, last, order);
 
                 break;
             }
@@ -277,6 +325,13 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) >= 0)
                     writer.writeInt(res.errorCode());
             }
+        }
+        else if (res0 instanceof OdbcStreamingBatchOrderedResult) {
+            OdbcStreamingBatchOrderedResult res = (OdbcStreamingBatchOrderedResult) res0;
+
+            writer.writeString(res.batchResult().error());
+            writer.writeInt(res.batchResult().status());
+            writer.writeLong(res.order());
         }
         else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;

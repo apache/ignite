@@ -41,21 +41,6 @@ public class OdbcStreamingBatchRequest extends OdbcRequest {
     private boolean last;
 
     /**
-     * Default constructor.
-     */
-    public OdbcStreamingBatchRequest() {
-        this(STREAMING_BATCH);
-    }
-
-    /**
-     * Constructor for child requests.
-     * @param type Request type/
-     */
-    protected OdbcStreamingBatchRequest(byte type) {
-        super(type);
-    }
-
-    /**
      * @param schemaName Schema name.
      * @param queries Queries.
      * @param last {@code true} in case the request is the last batch at the stream.
