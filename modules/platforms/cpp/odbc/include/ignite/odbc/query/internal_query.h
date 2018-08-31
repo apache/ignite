@@ -106,13 +106,11 @@ namespace ignite
                 /**
                  * Close query.
                  *
-                 * @return True on success.
+                 * @return Operation result.
                  */
                 virtual SqlResult::Type Close()
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Internal error.");
-
-                    return SqlResult::AI_ERROR;
+                    return SqlResult::AI_SUCCESS;
                 }
 
                 /**
