@@ -32,18 +32,24 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
-import org.apache.ignite.ml.tree.randomforest.RandomForestTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Example represents a solution for the task of wine classification based on RandomForestTrainer implementation for
- * multi-classification. It shows an initialization of {@link RandomForestTrainer} with thread pool for multi-thread
- * learning, initialization of Ignite Cache, learning step and evaluation of accuracy of model.
- *
- * Dataset url: https://archive.ics.uci.edu/ml/machine-learning-databases/wine/
- *
- * @see RandomForestClassifierTrainer
+ * Example represents a solution for the task of wine classification based on a
+ *  <a href ="https://en.wikipedia.org/wiki/Random_forest">Random Forest</a> implementation for
+ * multi-classification.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data points (based on the
+ * <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/wine/">Wine recognition dataset</a>).</p>
+ * <p>
+ * After that it initializes the  {@link RandomForestClassifierTrainer} with thread pool for multi-thread learning
+ * and trains the model based on the specified data using random forest regression algorithm.</p>
+ * <p>
+ * Finally, this example loops over the test set of data points, compares prediction of the trained model to the
+ * expected outcome (ground truth), and evaluates accuracy of the model.</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class RandomForestClassificationExample {
     /**
@@ -57,22 +63,28 @@ public class RandomForestClassificationExample {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                    RandomForestClassificationExample.class.getSimpleName(), () -> {
+                RandomForestClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
-                AtomicInteger indx = new AtomicInteger(0);
+                AtomicInteger idx = new AtomicInteger(0);
                 RandomForestClassifierTrainer classifier = new RandomForestClassifierTrainer(
-                    IntStream.range(0, 13).mapToObj(x -> new FeatureMeta("", indx.getAndIncrement(), false)).collect(Collectors.toList()))
-                    .withCountOfTrees(101)
-                    .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.SQRT)
-                    .withMaxDepth(3)
+                    IntStream.range(0, data[0].length - 1).mapToObj(
+                        x -> new FeatureMeta("", idx.getAndIncrement(), false)).collect(Collectors.toList())
+                ).withCountOfTrees(101)
+                    .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
+                    .withMaxDepth(4)
                     .withMinImpurityDelta(0.)
-                    .withSubsampleSize(0.3);
+                    .withSubsampleSize(0.3)
+                    .withSeed(0);
+
+                System.out.println(">>> Configured trainer: " + classifier.getClass().getSimpleName());
 
                 ModelsComposition randomForest = classifier.fit(ignite, dataCache,
                     (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
                 );
+
+                System.out.println(">>> Trained model: " + randomForest.toString(true));
 
                 int amountOfErrors = 0;
                 int totalAmount = 0;
@@ -91,8 +103,11 @@ public class RandomForestClassificationExample {
 
                     }
 
+                    System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
+
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
+                    System.out.println(">>> Random Forest multi-class classification algorithm over cached dataset usage example completed.");
                 }
             });
 
@@ -101,9 +116,7 @@ public class RandomForestClassificationExample {
         }
     }
 
-    /**
-     * The Wine dataset.
-     */
+    /** The Wine recognition dataset. */
     private static final double[][] data = {
         {1, 14.23, 1.71, 2.43, 15.6, 127, 2.8, 3.06, .28, 2.29, 5.64, 1.04, 3.92, 1065},
         {1, 13.2, 1.78, 2.14, 11.2, 100, 2.65, 2.76, .26, 1.28, 4.38, 1.05, 3.4, 1050},
