@@ -324,8 +324,9 @@ public class GridReduceQueryExecutor {
                         if (err0 != null && err0.getCause() instanceof IgniteClientDisconnectedException)
                             throw err0;
 
+                        // TODO: Is it possible that retryCause will be not-null here? IMO - no.
                         CacheException e = new CacheException(
-                            (msg.retryCause()!=null) ? msg.retryCause() : "Failed to fetch data from node: " + node.id());
+                            (msg.retryCause() != null) ? msg.retryCause() : "Failed to fetch data from node: " + node.id());
 
                         if (err0 != null)
                             e.addSuppressed(err0);
