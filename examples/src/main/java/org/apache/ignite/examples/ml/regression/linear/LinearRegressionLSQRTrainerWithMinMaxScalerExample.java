@@ -35,7 +35,8 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run linear regression model ({@link LinearRegressionLSQRTrainer}) over cached dataset that was created using
+ * Run linear regression model based on <a href="http://web.stanford.edu/group/SOL/software/lsqr/">LSQR algorithm</a>
+ * ({@link LinearRegressionLSQRTrainer}) over cached dataset that was created using
  * a minmaxscaling preprocessor ({@link MinMaxScalerTrainer}, {@link MinMaxScalerPreprocessor}).
  * <p>
  * Code in this example launches Ignite grid, fills the cache with simple test data, and defines minmaxscaling
