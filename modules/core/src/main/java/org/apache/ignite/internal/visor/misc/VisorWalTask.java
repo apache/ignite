@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -160,11 +161,11 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
 
                 switch (arg.getOperation()) {
                     case DELETE_UNUSED_WAL_SEGMENTS:
-                        return deleteUnusedWalSegments(dbMgr, wal);
+                        return deleteUnusedWalSegments(dbMgr, wal, true);
 
                     case PRINT_UNUSED_WAL_SEGMENTS:
                     default:
-                        return getUnusedWalSegments(dbMgr, wal);
+                        return deleteUnusedWalSegments(dbMgr, wal, false);
 
                 }
             }
@@ -176,82 +177,59 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         }
 
         /**
-         * Get unused wal segments.
-         *
-         * @param  wal Database manager.
-         * @return {@link Collection<String>} of absolute paths of unused WAL segments.
-         * @throws IgniteCheckedException if failed.
-         */
-        Collection<String> getUnusedWalSegments(
-            GridCacheDatabaseSharedManager dbMgr,
-            FileWriteAheadLogManager wal
-        ) throws IgniteCheckedException{
-            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
-
-            if (lowBoundForTruncate == null)
-                return Collections.emptyList();
-
-            int maxIdx = resolveMaxReservedIndex(wal, lowBoundForTruncate);
-
-            File[] walFiles = getWalArchiveDir().listFiles(WAL_ARCHIVE_FILE_FILTER);
-
-            Collection<String> res = new ArrayList<>(walFiles != null && walFiles.length > 0 ? walFiles.length - 1 : 0);
-
-            if(walFiles != null && walFiles.length > 0) {
-                sortWalFiles(walFiles);
-
-                // Obtain index of last archived WAL segment, it will not be deleted.
-                long lastArchIdx = getIndex(walFiles[walFiles.length - 1]);
-
-                for (File f : walFiles) {
-                    long fileIdx = getIndex(f);
-
-                    if (fileIdx < maxIdx && fileIdx < lastArchIdx)
-                        res.add(f.getAbsolutePath());
-                    else
-                        break;
-                }
-            }
-
-            return res;
-        }
-
-        /**
-         * Delete unused wal segments.
+         * Delete or Get unused wal segments.
          *
          * @param dbMgr Database manager.
+         * @param deleteCpAndWal If <code>true</code> delete unused checkpoint and wal else .
          * @return {@link Collection<String>} of deleted WAL segment's files.
          * @throws IgniteCheckedException if failed.
          */
         Collection<String> deleteUnusedWalSegments(
             GridCacheDatabaseSharedManager dbMgr,
-            FileWriteAheadLogManager wal
+            FileWriteAheadLogManager wal,
+            boolean deleteCpAndWal
         ) throws IgniteCheckedException {
-            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
+            Collection<Long> checkpoints = dbMgr.checkpointHistory().checkpoints(true);
 
-            if (lowBoundForTruncate == null)
+            Iterator<Long> iterator = checkpoints.iterator();
+
+            Long penultimate=null;
+
+            if (iterator.hasNext())
+                iterator.next();
+
+            if (iterator.hasNext())
+                penultimate = iterator.next();
+
+            if (penultimate == null)
                 return Collections.emptyList();
+
+            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().entry(penultimate).checkpointMark();
 
             int maxIdx = resolveMaxReservedIndex(wal, lowBoundForTruncate);
 
             File[] walFiles = getWalArchiveDir().listFiles(WAL_ARCHIVE_FILE_FILTER);
 
-            dbMgr.onWalTruncated(lowBoundForTruncate);
+            if (deleteCpAndWal) {
+                dbMgr.onWalTruncated(lowBoundForTruncate);
 
-            int num = wal.truncate(null, lowBoundForTruncate);
+                wal.truncate(null, lowBoundForTruncate);
+
+            }
 
             if (walFiles != null) {
                 sortWalFiles(walFiles);
 
-                Collection<String> res = new ArrayList<>(num);
+                Collection<String> res = new ArrayList<>(walFiles.length-1);
 
-                for (File walFile: walFiles) {
-                    if (getIndex(walFile) < maxIdx && num > 0)
+                for (int i=0; i<walFiles.length-1;i++) {
+                    File walFile = walFiles[i];
+
+                    if (getIndex(walFile) < maxIdx)
                         res.add(walFile.getAbsolutePath());
                     else
                         break;
 
-                    num--;
                 }
 
                 return res;

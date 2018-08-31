@@ -46,6 +46,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -120,6 +122,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** Option is used for auto confirmation. */
     private static final String CMD_AUTO_CONFIRMATION = "--yes";
+
+    /** Count of transaction iterations to fill. */
+    private static final int TRANSACTION_COUNT = 20000;
+    /** Count of entry in transaction to fill. */
+    private static final int RECORD_IN_TRANSACTION = 5;
 
     /**
      * @return Folder in work directory.
@@ -1322,6 +1329,34 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
+        final CacheConfiguration<Long, String> cacheConfiguration = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        cacheConfiguration.setCacheMode(CacheMode.PARTITIONED);
+        cacheConfiguration.setBackups(1);
+        cacheConfiguration.setIndexedTypes(Long.class, String.class);
+        cacheConfiguration.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        final IgniteCache<Long, String> cache = ignite.getOrCreateCache(cacheConfiguration);
+
+        for (int i = 0; i < TRANSACTION_COUNT; i++) {
+            try (final Transaction transaction = ignite.transactions().txStart()) {
+                for (int j = 0; j < RECORD_IN_TRANSACTION; j++)
+                    cache.put((long)i * RECORD_IN_TRANSACTION + j, "name_tx" + i + "_record_" + j);
+
+                transaction.commit();
+
+            }
+
+        }
+
+        Thread.sleep(ignite.configuration().getDataStorageConfiguration().getCheckpointFrequency());
+
+        try (final Transaction transaction = ignite.transactions().txStart()) {
+            cache.put((long)TRANSACTION_COUNT, "name_tx" + TRANSACTION_COUNT);
+
+            transaction.commit();
+
+        }
+
         List<String> nodes = new ArrayList<>(2);
 
         for (ClusterNode node : ignite.cluster().forServers().nodes())
@@ -1329,12 +1364,25 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
+        cleanPersistenceDir();
+
+        File archiveDir = U.resolveWorkDirectory(
+            U.defaultWorkDirectory(),
+            ignite.configuration().getDataStorageConfiguration().getWalArchivePath()+File.separatorChar+ignite.name(),
+            false);
+
+        File[] archiveFilesBefore = archiveDir.listFiles();
+
         assertEquals(EXIT_CODE_OK, execute("--wal", "delete"));
+
+        File[] archiveFilesAfter = archiveDir.listFiles();
 
         for (String id : nodes)
             assertTrue(testOut.toString().contains(id));
 
         assertTrue(!testOut.toString().contains("error"));
+
+        assertTrue(archiveFilesBefore.length>archiveFilesAfter.length);
 
         testOut.reset();
 
