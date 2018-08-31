@@ -3529,13 +3529,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             assert size > 0 : size;
 
             try {
-               hdl.fileIO.position();
+                assert hdl.written == hdl.fileIO.position();
 
                 hdl.written += hdl.fileIO.writeFully(buf);
 
-                hdl.written = pos;
-
                 metrics.onWalBytesWritten(size);
+
+                assert hdl.written == hdl.fileIO.position();
 
             }
             catch (IOException e) {

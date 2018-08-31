@@ -104,9 +104,15 @@ public abstract class AbstractFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int writeFully(final ByteBuffer srcBuf) throws IOException {
+        final int strt = srcBuf.remaining();
         return fully(new IOOperation() {
             @Override public int run(int offs) throws IOException {
-                return write(srcBuf);
+                try {
+                    return write(srcBuf);
+                }
+                catch (IOException e) {
+                    throw new IOException(e.getMessage() + ", start=" + strt, e);
+                }
             }
         }, position(), srcBuf.remaining(), true);
     }

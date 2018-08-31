@@ -384,7 +384,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
                 try {
                     IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
-                    log.info("Record : "+tup.get2());
+//                    log.info("Record : "+tup.get2());
                 }
                 catch (IgniteException e) {
                     log.error("Failed read : ", e);
@@ -449,7 +449,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             int written = super.write(srcBuf);
             availableSpaceBytes.addAndGet(-written);
             if (availableSpaceBytes.get() < 0)
-                throw new IOException("Not enough space!");
+                throw new IOException("Not enough space!_"+written);
             return written;
         }
 
@@ -458,24 +458,24 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             int written = super.write(srcBuf, position);
             availableSpaceBytes.addAndGet(-written);
             if (availableSpaceBytes.get() < 0)
-                throw new IOException("Not enough space!");
+                throw new IOException("Not enough space!_"+written);
             return written;
         }
 
         /** {@inheritDoc} */
         @Override public int write(byte[] buf, int off, int len) throws IOException {
-            final int num = super.write(buf, off, len);
+            int written = super.write(buf, off, len);
             availableSpaceBytes.addAndGet(-len);
             if (availableSpaceBytes.get() < 0)
-                throw new IOException("Not enough space!");
-            return num;
+                throw new IOException("Not enough space!_"+written);
+            return written;
         }
 
         /** {@inheritDoc} */
         @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
-            availableSpaceBytes.addAndGet(-sizeBytes);
+            long written = availableSpaceBytes.addAndGet(-sizeBytes);
             if (availableSpaceBytes.get() < 0)
-                throw new IOException("Not enough space!");
+                throw new IOException("Not enough space!_"+written);
             return super.map(sizeBytes);
         }
     }
