@@ -723,7 +723,7 @@ public class MvccUtils {
      * @return Whether MVCC is enabled or not on {@link IgniteConfiguration}.
      */
     public static boolean mvccEnabled(GridKernalContext ctx) {
-        return ctx.coordinators().mvccStarted();
+        return ctx.coordinators().mvccEnabled();
     }
 
     /**

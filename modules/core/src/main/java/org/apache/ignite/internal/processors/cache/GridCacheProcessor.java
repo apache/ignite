@@ -3028,6 +3028,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (checkThreadTx)
             checkEmptyTransactions();
 
+        if (ccfg != null && ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT &&
+            !ctx.coordinators().clusterWideMvccSupport()) {
+            throw new IgniteException("Cannot start cache with MVCC transactional snapshot when there some nodes " +
+                "in cluster do not support it.");
+        }
+
         try {
             DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                 ccfg,

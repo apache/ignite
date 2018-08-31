@@ -1562,7 +1562,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             if (!node.configuration().isClientMode()) {
                 MvccProcessorImpl crd = mvccProcessor(node);
 
-                if (crd == null)
+                if (crd == null || !crd.mvccEnabled())
                     continue;
 
                 Throwable vacuumError = crd.vacuumError();

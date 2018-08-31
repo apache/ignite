@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
@@ -139,6 +140,10 @@ class ClusterCachesInfo {
         Map<String, CacheConfiguration> grpCfgs = new HashMap<>();
 
         for (CacheJoinNodeDiscoveryData.CacheInfo info : joinDiscoData.caches().values()) {
+            if (info.cacheData().config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT &&
+                !ctx.coordinators().mvccEnabled())
+                ctx.coordinators().enableMvcc();
+
             if (info.cacheData().config().getGroupName() == null)
                 continue;
 

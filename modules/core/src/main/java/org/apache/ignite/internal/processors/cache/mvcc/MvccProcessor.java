@@ -28,6 +28,7 @@ import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
@@ -44,8 +45,10 @@ public interface MvccProcessor extends GridProcessor {
      * @param evtType Event type.
      * @param nodes Current nodes.
      * @param topVer Topology version.
+     * @param customMsg Message
      */
-    void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer);
+    void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer,
+        @Nullable DiscoveryCustomMessage customMsg);
 
     /**
      * Exchange start callback.
@@ -250,7 +253,19 @@ public interface MvccProcessor extends GridProcessor {
     void dumpDebugInfo(IgniteLogger log, @Nullable IgniteDiagnosticPrepareContext diagCtx);
 
     /**
-     * @return {@code True} if at least one cache with {@link CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is started.
+     * @return {@code True} if at least one cache with
+     * {@link CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is registered.
      */
-    boolean mvccStarted();
+    boolean mvccEnabled();
+
+    /**
+     * Notifies MVCC processor tha at least one cache with
+     * {@link CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is registered
+     */
+    void enableMvcc() throws IgniteCheckedException;
+
+    /**
+     * @return {@code True} if MVCC is supported by entire cluster.
+     */
+    boolean clusterWideMvccSupport();
 }
