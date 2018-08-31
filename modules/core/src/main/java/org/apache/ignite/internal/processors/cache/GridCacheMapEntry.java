@@ -2037,6 +2037,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 update(updated, expireTime, ttl, ver, true);
 
+                logUpdate(op, updated, ver, expireTime, 0);
+
                 if (evt) {
                     CacheObject evtOld = null;
 
@@ -2066,6 +2068,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 removeValue();
 
                 update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver, true);
+
+                logUpdate(op, null, ver, CU.EXPIRE_TIME_ETERNAL, 0);
 
                 if (evt) {
                     CacheObject evtOld = null;
