@@ -364,7 +364,9 @@ public class RecordV1Serializer implements RecordSerializer {
     ) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        try (FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
+        FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc);
+
+        try {
             startPos = in0.position();
 
             WALRecord res = reader.readWithHeaders(in, expPtr);
@@ -372,6 +374,8 @@ public class RecordV1Serializer implements RecordSerializer {
             assert res != null;
 
             res.size((int)(in0.position() - startPos + CRC_SIZE)); // Account for CRC which will be read afterwards.
+
+            in.close();
 
             return res;
         }
