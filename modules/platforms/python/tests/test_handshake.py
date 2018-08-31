@@ -16,7 +16,7 @@
 import socket
 
 from pyignite import Client
-from pyignite.client.handshake import HandshakeRequest, read_response
+from pyignite.connection.handshake import HandshakeRequest, read_response
 
 
 def test_handshake(
@@ -48,7 +48,7 @@ def test_handshake(
     client.close()
 
     # intentionally pass wrong protocol version
-    from pyignite.client import handshake
+    from pyignite.connection import handshake
     monkeypatch.setattr(handshake, 'PROTOCOL_VERSION_MAJOR', 10)
 
     client._socket = client._wrap(

@@ -27,7 +27,6 @@ from random import randint
 
 import attr
 
-from pyignite import Client
 from pyignite.constants import *
 from pyignite.datatypes import (
     AnyDataObject, Bool, Int, Long, String, StringArray, Struct,
@@ -141,7 +140,7 @@ class Response:
             },
         )
 
-    def parse(self, client: Client):
+    def parse(self, client: 'Client'):
         header_class = self.build_header()
         buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
@@ -207,7 +206,7 @@ class SQLResponse:
             return 'fields', StringArray
         return 'field_count', Int
 
-    def parse(self, client: Client):
+    def parse(self, client: 'Client'):
         header_class = self.build_header()
         buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)

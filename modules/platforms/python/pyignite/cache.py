@@ -15,14 +15,12 @@
 
 from typing import Any, Iterable, Optional, Union
 
-from pyignite import Client
 from pyignite.datatypes import prop_codes
 from pyignite.exceptions import (
     CacheCreationError, CacheError, ParameterError, SQLError,
 )
 from pyignite.utils import (
-    cache_id, is_binary, is_iterable, is_wrapped, status_to_exception,
-    unwrap_binary,
+    cache_id, is_wrapped, status_to_exception, unwrap_binary,
 )
 from pyignite.api.cache_config import (
     cache_create, cache_create_with_config,
@@ -71,7 +69,7 @@ class Cache:
     _settings = None
 
     @staticmethod
-    def validate_settings(
+    def _validate_settings(
         settings: Union[str, dict]=None, get_only: bool=False,
     ):
         if any([
@@ -91,7 +89,7 @@ class Cache:
             raise ParameterError('Only cache name allowed as a parameter')
 
     def __init__(
-        self, client: Client, settings: Union[str, dict]=None,
+        self, client: 'Client', settings: Union[str, dict]=None,
         with_get: bool=False, get_only: bool=False,
     ):
         """
@@ -109,7 +107,7 @@ class Cache:
          at all, only create Cache instance. Defaults to False.
         """
         self._client = client
-        self.validate_settings(settings)
+        self._validate_settings(settings)
         if type(settings) == str:
             self._name = settings
         else:
@@ -155,7 +153,7 @@ class Cache:
         return self._name
 
     @property
-    def client(self) -> Client:
+    def client(self) -> 'Client':
         """
         Ignite :class:`~pyignite.client.Client` object.
 

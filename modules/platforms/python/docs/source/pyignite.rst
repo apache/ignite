@@ -13,6 +13,7 @@ Subpackages
 
     pyignite.api
     pyignite.client
+    pyignite.connection
     pyignite.datatypes
     pyignite.queries
 

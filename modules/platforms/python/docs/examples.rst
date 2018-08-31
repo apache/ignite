@@ -437,8 +437,9 @@ instead of list. It means that you can implement any reconnection policy
 (round-robin, nodes prioritization, pause on reconnect or graceful backoff)
 with a generator.
 
-`pyignite` comes with a sample :class:`~pyignite.client.generators.RoundRobin`
-generator. In the above example try to replace
+`pyignite` comes with a sample
+:class:`~pyignite.connection.generators.RoundRobin` generator. In the above
+example try to replace
 
 .. literalinclude:: ../examples/failover.py
   :language: python
@@ -452,7 +453,7 @@ with
 
 The client will try to reconnect to node 1 after node 3 is crashed, then to
 node 2, et c. At least one node should be active for the
-:class:`~pyignite.client.generators.RoundRobin` to work properly.
+:class:`~pyignite.connection.generators.RoundRobin` to work properly.
 
 SSL/TLS
 -------

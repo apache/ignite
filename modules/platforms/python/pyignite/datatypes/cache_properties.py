@@ -92,10 +92,10 @@ class PropBase:
         )
 
     @classmethod
-    def parse(cls, client: 'Client'):
+    def parse(cls, connection: 'Connection'):
         header_class = cls.build_header()
-        header_buffer = client.recv(ctypes.sizeof(header_class))
-        data_class, data_buffer = cls.prop_data_class.parse(client)
+        header_buffer = connection.recv(ctypes.sizeof(header_class))
+        data_class, data_buffer = cls.prop_data_class.parse(connection)
         prop_class = type(
             cls.__name__,
             (header_class,),
