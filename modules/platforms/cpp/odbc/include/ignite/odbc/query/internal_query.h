@@ -44,11 +44,13 @@ namespace ignite
                  * Constructor.
                  *
                  * @param diag Diagnosable.
-                 * @param sql SQL command.
+                 * @param sql SQL query.
+                 * @param cmd Parsed command.
                  */
-                InternalQuery(diagnostic::Diagnosable& diag, std::auto_ptr<SqlCommand> sql) :
+                InternalQuery(diagnostic::Diagnosable& diag, const std::string& sql, std::auto_ptr<SqlCommand> cmd) :
                     Query(diag, QueryType::INTERNAL),
-                    sql(sql)
+                    sql(sql),
+                    cmd(cmd)
                 {
                     // No-op.
                 }
@@ -162,12 +164,25 @@ namespace ignite
                  */
                 SqlCommand& GetCommand() const
                 {
-                    return *sql;
+                    return *cmd;
+                }
+
+                /**
+                 * Get SQL query.
+                 *
+                 * @return SQL Query.
+                 */
+                const std::string& GetQuery() const
+                {
+                    return sql;
                 }
 
             protected:
+                /** SQL string*/
+                std::string sql;
+
                 /** SQL command. */
-                std::auto_ptr<SqlCommand> sql;
+                std::auto_ptr<SqlCommand> cmd;
             };
         }
     }

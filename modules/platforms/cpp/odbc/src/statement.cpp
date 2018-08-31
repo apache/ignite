@@ -589,7 +589,7 @@ namespace ignite
 
                 parameters.Prepare();
 
-                currentQuery.reset(new query::InternalQuery(*this, cmd));
+                currentQuery.reset(new query::InternalQuery(*this, query, cmd));
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -705,7 +705,7 @@ namespace ignite
             return currentQuery->Execute();
         }
 
-        void Statement::ProcessInternalQuery()
+        SqlResult::Type Statement::ProcessInternalQuery()
         {
             assert(currentQuery->GetType() == query::QueryType::INTERNAL);
 
@@ -719,12 +719,21 @@ namespace ignite
             {
                 currentQuery.reset();
 
-                return;
+                return SqlResult::AI_SUCCESS;
             }
+
+            query::DataQuery enablingQuery(*this, connection, qry->GetQuery(), parameters, timeout);
+
+            SqlResult::Type res = enablingQuery.Execute();
+
+            if (res != SqlResult::AI_SUCCESS)
+                return res;
 
             std::auto_ptr<query::Query> newQry(new query::StreamingQuery(*this, connection, parameters, cmd));
 
             std::swap(currentQuery, newQry);
+
+            return SqlResult::AI_SUCCESS;
         }
 
         void Statement::ExecuteGetColumnsMetaQuery(const std::string& schema,
