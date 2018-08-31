@@ -112,9 +112,16 @@ Query field
 
 - `name`: field name,
 - `type_name`: name of Java type or complex object,
-- `is_key_field`: boolean value,
+- `is_key_field`: (optional) boolean value, `False` by default,
 - `is_notnull_constraint_field`: boolean value,
-- `default_value`: anything that can be converted to `type_name` type.
+- `default_value`: (optional) anything that can be converted to `type_name`
+  type. `None` (:py:class:`~pyignite.datatypes.null_object.Null`) by default,
+- `precision` − (optional) decimal precision: total number of digits
+  in decimal value. Defaults to -1 (use cluster default). Ignored for
+  non-decimal SQL types (other than `java.math.BigDecimal`),
+- `scale` − (optional) decimal precision: number of digits after the decimal
+  point. Defaults to -1 (use cluster default). Ignored for non-decimal SQL
+  types.
 
 Query index
 ===========
@@ -128,7 +135,7 @@ Fields
 ======
 
 - `name`: field name,
-- `is_descending`: boolean value.
+- `is_descending`: (optional) boolean value, `False` by default.
 
 Cache key
 ---------
