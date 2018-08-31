@@ -220,8 +220,10 @@ public class GridSqlQuerySplitter {
         qry = parse(optimize(h2, conn, qry.getSQL(), params, false, enforceJoinOrder),
             true);
 
+        boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
+
         // Do the actual query split. We will update the original query AST, need to be careful.
-        splitter.splitQuery(qry);
+        splitter.splitQuery(qry, forUpdate);
 
         assert !F.isEmpty(splitter.mapSqlQrys): "map"; // We must have at least one map query.
         assert splitter.rdcSqlQry != null: "rdc"; // We must have a reduce query.
@@ -261,13 +263,16 @@ public class GridSqlQuerySplitter {
         // all map queries must have non-empty derivedPartitions to use this feature.
         twoStepQry.derivedPartitions(mergePartitionsFromMultipleQueries(twoStepQry.mapQueries()));
 
+        twoStepQry.forUpdate(forUpdate);
+
         return twoStepQry;
     }
 
     /**
      * @param qry Optimized and normalized query to split.
+     * @param forUpdate {@code SELECT FOR UPDATE} flag.
      */
-    private void splitQuery(GridSqlQuery qry) throws IgniteCheckedException {
+    private void splitQuery(GridSqlQuery qry, boolean forUpdate) throws IgniteCheckedException {
         // Create a fake parent AST element for the query to allow replacing the query in the parent by split.
         GridSqlSubquery fakeQryPrnt = new GridSqlSubquery(qry);
 
@@ -307,6 +312,15 @@ public class GridSqlQuerySplitter {
 
         // Get back the updated query from the fake parent. It will be our reduce query.
         qry = fakeQryPrnt.subquery();
+
+        // Reset SELECT FOR UPDATE flag for reduce query.
+        if (forUpdate) {
+            assert qry instanceof GridSqlSelect;
+
+            GridSqlSelect sel = (GridSqlSelect)qry;
+
+            sel.forUpdate(false);
+        }
 
         String rdcQry = qry.getSQL();
 

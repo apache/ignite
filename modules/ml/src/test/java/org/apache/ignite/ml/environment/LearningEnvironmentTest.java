@@ -19,7 +19,10 @@ package org.apache.ignite.ml.environment;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -29,11 +32,13 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.environment.logging.ConsoleLogger;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
+import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 
@@ -79,7 +84,16 @@ public class LearningEnvironmentTest extends GridCommonAbstractTest {
             LearningEnvironmentTest.class.getSimpleName(), () -> {
             IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-            RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(13, 4, 101, 0.3, 2, 0);
+            AtomicInteger idx = new AtomicInteger(0);
+            RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(
+                IntStream.range(0, data[0].length - 1).mapToObj(
+                    x -> new FeatureMeta("", idx.getAndIncrement(), false)).collect(Collectors.toList())
+            ).withCountOfTrees(101)
+                .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
+                .withMaxDepth(4)
+                .withMinImpurityDelta(0.)
+                .withSubsampleSize(0.3)
+                .withSeed(0);
 
             trainer.setEnvironment(LearningEnvironment.builder()
                 .withParallelismStrategy(ParallelismStrategy.Type.ON_DEFAULT_POOL)
