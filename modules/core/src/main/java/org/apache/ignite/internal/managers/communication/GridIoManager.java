@@ -3686,6 +3686,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         public String keyStr;
 
         /** */
+        public String entryProcCls;
+
+        /** */
         public long totalProc;
 
         /** */
@@ -3703,6 +3706,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         /** */
         public long finishProc;
 
+        /** */
+        public long walFlush;
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return "[" +
@@ -3719,6 +3725,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 ", underCheckpointReadLock=" + underCheckpointReadLock / 1000 / 1000. + " ms" +
                 ", waitForPreload=" + waitForPreload / 1000 / 1000. + " ms" +
                 ", finishProc=" + finishProc / 1000 / 1000. + " ms" +
+                ", walFlush=" + walFlush / 1000 / 1000. + " ms" +
+                ", keyStr=" + keyStr +
+                ", entryProcCls=" + entryProcCls +
                 ']';
         }
     }

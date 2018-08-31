@@ -4653,6 +4653,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 invokeEntry = new CacheInvokeEntry<>(entry.key, oldVal, entry.ver, keepBinary, entry);
 
+                EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
+                statHolder.entryProcCls = entryProcessor.getClass().getCanonicalName();
+
                 invokeRes = runEntryProcessor(invokeEntry);
 
                 if (writeObj != null) {
