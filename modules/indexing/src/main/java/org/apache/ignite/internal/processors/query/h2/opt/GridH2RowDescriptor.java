@@ -30,6 +30,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -37,7 +39,6 @@ import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
-import org.h2.result.SimpleRow;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -292,8 +293,9 @@ public class GridH2RowDescriptor {
         GridH2Row row;
 
         try {
-            if (dataRow.value() == null) // Only can happen for remove operation, can create simple search row.
+            if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
                 row = new GridH2KeyRowOnheap(dataRow, wrap(dataRow.key(), keyType));
+            }
             else
                 row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
         }
@@ -477,7 +479,7 @@ public class GridH2RowDescriptor {
         copyAliasColumnData(data, KEY_COL, keyAliasColId);
         copyAliasColumnData(data, VAL_COL, valAliasColId);
 
-        return new SimpleRow(data);
+        return GridH2PlainRowFactory.create(data);
     }
 
     /**

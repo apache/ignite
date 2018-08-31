@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 
 /**
  *
  */
-public interface CacheSearchRow {
+public interface CacheSearchRow extends MvccVersionAware {
     /**
      * @return Cache key.
      */

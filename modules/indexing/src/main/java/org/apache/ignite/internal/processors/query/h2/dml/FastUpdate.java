@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -100,5 +101,21 @@ public final class FastUpdate {
         }
 
         return res ? UpdateResult.ONE : UpdateResult.ZERO;
+    }
+
+    /**
+     *
+     * @param args Query Parameters.
+     * @return Key and value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public IgniteBiTuple getRow(Object[] args) throws IgniteCheckedException {
+        Object key = keyArg.get(args);
+
+        assert key != null;
+
+        Object newVal = newValArg.get(args);
+
+        return new IgniteBiTuple(key, newVal);
     }
 }

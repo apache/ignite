@@ -65,8 +65,10 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
      * @param valType Value type.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, CacheDataRow row, int keyType, int valType)
-        throws IgniteCheckedException {
+    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc,
+        CacheDataRow row,
+        int keyType,
+        int valType) throws IgniteCheckedException {
         super(row);
 
         this.desc = desc;
@@ -78,6 +80,11 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
         if (row.version() != null)
             this.ver = desc.wrap(row.version(), Value.JAVA_OBJECT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean indexSearchRow() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -218,6 +225,16 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
     /** {@inheritDoc} */
     @Override public final int hashCode() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
         throw new UnsupportedOperationException();
     }
 }
