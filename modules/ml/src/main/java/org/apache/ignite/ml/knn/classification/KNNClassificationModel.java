@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -64,9 +63,9 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
             List<LabeledVector> neighbors = findKNearestNeighbors(v);
 
             return classify(neighbors, v, stgy);
-        }
-        else
+        } else {
             throw new IllegalStateException("The train kNN dataset is null");
+        }
     }
 
     /** */

@@ -174,6 +174,7 @@ public abstract class NNClassificationModel implements Model<Vector, Double>, Ex
             return 1.0; // strategy.SIMPLE
     }
 
+    /** */
     public DistanceMeasure getDistanceMeasure() {
         return distanceMeasure;
     }

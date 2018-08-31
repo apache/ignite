@@ -178,8 +178,7 @@ public class SVMLinearMultiClassClassificationTrainer
 
             if (clsLabels != null)
                 res.addAll(clsLabels);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
         return res;

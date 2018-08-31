@@ -40,6 +40,7 @@ public class KMeansTrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
+    /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
 
     static {

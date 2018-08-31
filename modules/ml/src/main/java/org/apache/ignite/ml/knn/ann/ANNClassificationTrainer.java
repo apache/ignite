@@ -77,7 +77,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
+    @Override protected <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
         DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 

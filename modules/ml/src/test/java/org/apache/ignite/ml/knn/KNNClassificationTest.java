@@ -175,6 +175,7 @@ public class KNNClassificationTest {
         assertEquals(knnMdl.apply(vector), 1.0);
     }
 
+    /** */
     @Test
     public void testUpdate() {
         Map<Integer, double[]> data = new HashMap<>();

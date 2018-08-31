@@ -124,9 +124,9 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
             MultilayerPerceptron mdl;
-            if (lastLearnedModel != null)
+            if (lastLearnedModel != null) {
                 mdl = lastLearnedModel;
-            else {
+            } else {
                 MLPArchitecture arch = archSupplier.apply(dataset);
                 mdl = new MultilayerPerceptron(arch, new RandomInitializer(seed));
             }

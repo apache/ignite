@@ -104,6 +104,10 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
         models.put(clsLb, mdl);
     }
 
+    /**
+     * @param clsLb Class label.
+     * @return model trained for target class if it exists.
+     */
     public Optional<SVMLinearBinaryClassificationModel> getModelForClass(double clsLb) {
         return Optional.of(models.get(clsLb));
     }
