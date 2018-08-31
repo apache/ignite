@@ -417,6 +417,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxReadIsolationSimple() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7764");
+
         Ignite srv0 = startGrids(4);
 
         client = true;
@@ -2812,7 +2814,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 2, 64));
 
-        final int KEYS = 10_000;
+        final int KEYS = 1_000;
 
         Map<Object, Object> data = new HashMap<>();
 
