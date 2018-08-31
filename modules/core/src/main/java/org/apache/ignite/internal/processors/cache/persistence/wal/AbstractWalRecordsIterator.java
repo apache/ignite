@@ -246,6 +246,8 @@ public abstract class AbstractWalRecordsIterator
         }
         catch (IOException | IgniteCheckedException e) {
             log.error("Stop iteration : " + curWalSegmIdx + ", value : " + curRec + ", curPos : " + actualFilePtr, e);
+            log.error("fill buffer " + FileWriteAheadLogManager.fillBUffer);
+            log.error("write buffer " + FileWriteAheadLogManager.writeBUffer);
 
             if (e instanceof WalSegmentTailReachedException) {
                 throw new WalSegmentTailReachedException(
