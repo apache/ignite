@@ -34,7 +34,7 @@ public class PartitionUpdateCounters implements Message {
 
     /** Map of update counters made by this tx. Mapping: partId -> updCntr. */
     @GridDirectMap(keyType = Integer.class, valueType = Long.class)
-    private  Map<Integer, Long> updCntrs;
+    private Map<Integer, Long> updCntrs;
 
     /** */
     public PartitionUpdateCounters() {
