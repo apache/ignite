@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
@@ -41,6 +42,18 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * Invoked after checkpoint recover is finished.
      */
     public void finishRecover() throws IgniteCheckedException;
+
+    /**
+     * Initializes disk store structures.
+     *
+     * @param cacheId Cache id.
+     * @param partitions Partitions count.
+     * @param workingDir Working directory.
+     * @param tracker Allocation tracker.
+     * @throws IgniteCheckedException If failed.
+     */
+    void initialize(int cacheId, int partitions, String workingDir, AllocatedPageTracker tracker)
+        throws IgniteCheckedException;
 
     /**
      * Callback called when a cache is starting.

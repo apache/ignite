@@ -26,7 +26,6 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     LearningEnvironmentBuilderTest.class,
-    LearningEnvironmentTest.class,
     PromiseTest.class
 })
 public class EnvironmentTestSuite {
