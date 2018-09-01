@@ -505,7 +505,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 writer.incrementState();
 
-            case 33:
+            case 34:
                 if (!writer.writeString("label", txLbl))
                     return false;
 
@@ -638,7 +638,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 33:
+            case 34:
                 txLbl = reader.readString("label");
 
                 if (!reader.isLastRead())
@@ -658,7 +658,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 34;
+        return 35;
     }
 
     /** {@inheritDoc} */

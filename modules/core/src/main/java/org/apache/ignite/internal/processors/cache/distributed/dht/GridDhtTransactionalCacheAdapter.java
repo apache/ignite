@@ -2083,7 +2083,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     -1,
                     null,
                     txSubjectId,
-                    txTaskNameHash);
+                    txTaskNameHash,
+                    null);
 
                 // if (req.syncCommit())
                 tx.syncMode(FULL_SYNC);
@@ -2187,7 +2188,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     -1,
                     req0.subjectId(),
                     req0.taskNameHash(),
-                    false);
+                    false,
+                    null);
 
                 tx.mvccSnapshot(new MvccSnapshotWithoutTxs(req0.coordinatorVersion(), req0.counter(),
                     MVCC_OP_COUNTER_NA, req0.cleanupVersion()));
