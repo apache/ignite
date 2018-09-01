@@ -432,7 +432,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 29:
-                if(!writer.writeString("label", txLbl))
+                if(!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -525,7 +525,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 29:
-                txLbl = reader.readString("label");
+                txLbl = reader.readString("txLbl");
 
                 if(!reader.isLastRead())
                     return false;

@@ -369,7 +369,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeString("label", txLbl))
+                if (!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -438,7 +438,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 26:
-                txLbl = reader.readString("label");
+                txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
                     return false;

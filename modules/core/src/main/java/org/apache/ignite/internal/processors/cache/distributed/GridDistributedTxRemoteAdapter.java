@@ -153,7 +153,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param txLbl Transaction label.
-     *
      */
     public GridDistributedTxRemoteAdapter(
         GridCacheSharedContext<?, ?> ctx,
@@ -1031,7 +1030,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /**
-     *
      * @return Transaction label.
      */
     @Nullable public String label() {

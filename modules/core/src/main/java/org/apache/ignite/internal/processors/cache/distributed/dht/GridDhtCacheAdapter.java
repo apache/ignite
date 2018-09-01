@@ -801,7 +801,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
-
         return getAllAsync0(keys,
             readerArgs,
             readThrough,

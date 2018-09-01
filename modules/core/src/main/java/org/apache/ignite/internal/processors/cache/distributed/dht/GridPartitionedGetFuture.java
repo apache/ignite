@@ -79,7 +79,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** Logger. */
     private static IgniteLogger log;
 
-
     /** Transaction label. */
     private String txLbl;
 

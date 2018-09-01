@@ -438,7 +438,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 30:
-                if(!writer.writeString("label", txLbl))
+                if(!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -540,7 +540,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 30:
-                txLbl = reader.readString("label");
+                txLbl = reader.readString("txLbl");
 
                 if(!reader.isLastRead())
                     return false;

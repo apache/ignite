@@ -448,7 +448,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeString("label", txLbl))
+                if (!writer.writeString("txlbl", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -566,7 +566,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                 reader.incrementState();
 
             case 15:
-                txLbl = reader.readString("label");
+                txLbl = reader.readString("txlbl");
 
                 if(!reader.isLastRead())
                     return false;
