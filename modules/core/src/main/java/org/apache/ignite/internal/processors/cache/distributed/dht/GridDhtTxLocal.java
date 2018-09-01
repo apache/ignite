@@ -167,7 +167,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         assert nearNodeId != null;
         assert nearFutId != null;
-        assert nearMiniId != 0;
         assert nearXidVer != null;
 
         this.nearNodeId = nearNodeId;
@@ -431,10 +430,10 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             final IgniteInternalFuture<?> lockFut = tryRollbackAsync();
 
             if (lockFut != null) {
-                if (lockFut instanceof GridDhtLockFuture)
-                    ((GridDhtLockFuture)lockFut).onError(rollbackException());
-                else {
-                    /**
+                if (lockFut instanceof DhtLockFuture)
+                    ((DhtLockFuture<?>)lockFut).onError(rollbackException());
+                else if (!lockFut.isDone()) {
+                    /*
                      * Prevents race with {@link GridDhtTransactionalCacheAdapter#lockAllAsync
                      * (GridCacheContext, ClusterNode, GridNearLockRequest, CacheEntryPredicate[])}
                      */
@@ -557,6 +556,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      */
     public IgniteInternalFuture<IgniteInternalTx> rollbackDhtLocalAsync() {
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, false);
+
+        rollbackFuture(fut);
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 

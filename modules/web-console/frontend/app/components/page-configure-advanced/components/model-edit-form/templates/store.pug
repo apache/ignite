@@ -37,7 +37,7 @@ mixin list-db-field-edit({ items, itemName, itemsName })
         list-editable-item-edit
             .pc-form-grid-row
                 .pc-form-grid-col-30(divider='/')
-                    +sane-ignite-form-field-text({
+                    +form-field__text({
                         label: 'DB name:',
                         model: '$item.databaseFieldName',
                         name: '"databaseFieldName"',
@@ -53,7 +53,7 @@ mixin list-db-field-edit({ items, itemName, itemsName })
                 .pc-form-grid-col-30
                     +dropdown-required('DB type:', '$item.databaseFieldType', '"databaseFieldType"', true, true, 'Choose DB type', 'supportedJdbcTypes')
                 .pc-form-grid-col-30(divider='/')
-                    +sane-ignite-form-field-text({
+                    +form-field__text({
                         label: 'Java name:',
                         model: '$item.javaFieldName',
                         name: '"javaFieldName"',
@@ -88,35 +88,37 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 +text('Database table:', model + '.databaseTable', '"databaseTable"', 'false', 'Input DB table name', 'Table name in database')
             .pc-form-grid-col-60
                 .ignite-form-field
-                    +ignite-form-field__label('Key fields:', '"keyFields"')
-                        +tooltip(`Collection of key fields descriptions for CacheJdbcPojoStore`)
-                    .ignite-form-field__control
-                        +list-db-field-edit({
-                            items: keyFields,
-                            itemName: 'key field',
-                            itemsName: 'key fields'
-                        })(name='keyFields')
-                    .ignite-form-field__errors(
+                    +form-field__label({ label: 'Key fields:', name: '"keyFields"' })
+                        +form-field__tooltip({ title: `Collection of key fields descriptions for CacheJdbcPojoStore` })
+
+                    +list-db-field-edit({
+                        items: keyFields,
+                        itemName: 'key field',
+                        itemsName: 'key fields'
+                    })(name='keyFields')
+
+                    .form-field__errors(
                         ng-messages=`store.keyFields.$error`
                         ng-show=`store.keyFields.$invalid`
                     )
-                        +form-field-feedback(_, 'dbFieldUnique', 'Each key field DB name and Java name should be unique')
+                        +form-field__error({ error: 'dbFieldUnique', message: 'Each key field DB name and Java name should be unique' })
 
             .pc-form-grid-col-60
                 .ignite-form-field
-                    +ignite-form-field__label('Value fields:', '"valueFields"')
-                        +tooltip(`Collection of value fields descriptions for CacheJdbcPojoStore`)
-                    .ignite-form-field__control
-                        +list-db-field-edit({
-                            items: valueFields,
-                            itemName: 'value field',
-                            itemsName: 'value fields'
-                        })(name='valueFields')
-                    .ignite-form-field__errors(
+                    +form-field__label({ label: 'Value fields:', name: '"valueFields"' })
+                        +form-field__tooltip({ title: `Collection of value fields descriptions for CacheJdbcPojoStore` })
+
+                    +list-db-field-edit({
+                        items: valueFields,
+                        itemName: 'value field',
+                        itemsName: 'value fields'
+                    })(name='valueFields')
+
+                    .form-field__errors(
                         ng-messages=`store.valueFields.$error`
                         ng-show=`store.valueFields.$invalid`
                     )
-                        +form-field-feedback(_, 'dbFieldUnique', 'Each value field DB name and Java name should be unique')
+                        +form-field__error({ error: 'dbFieldUnique', message: 'Each value field DB name and Java name should be unique' })
 
         .pca-form-column-6
             +preview-xml-java(model, 'domainStore')

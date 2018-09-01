@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import './style.scss';
+
 import './vendor';
 import '../public/stylesheets/style.scss';
 import '../app/primitives';
@@ -130,6 +132,7 @@ import gridExport from './components/grid-export';
 import gridShowingRows from './components/grid-showing-rows';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
+import uiGrid from './components/ui-grid';
 import uiGridHovering from './components/ui-grid-hovering';
 import uiGridFilters from './components/ui-grid-filters';
 import uiGridColumnResizer from './components/ui-grid-column-resizer';
@@ -227,6 +230,7 @@ export default angular.module('ignite-console', [
     gridExport.name,
     gridShowingRows.name,
     bsSelectMenu.name,
+    uiGrid.name,
     uiGridHovering.name,
     uiGridFilters.name,
     uiGridColumnResizer.name,

@@ -21,11 +21,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.ml.composition.ModelOnFeaturesSubspace;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -72,16 +71,14 @@ public class RandomForestRegressionTrainerTest {
             sample.put(x1 * x2 + x3 * x4, new double[] {x1, x2, x3, x4});
         }
 
-        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4, 3, 5, 0.3, 4, 0.1)
-            .withUseIndex(false);
+        ArrayList<FeatureMeta> meta = new ArrayList<>();
+        for(int i = 0; i < 4; i++)
+            meta.add(new FeatureMeta("", i, false));
+        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(meta)
+            .withCountOfTrees(5)
+            .withFeaturesCountSelectionStrgy(x -> 2);
 
         ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(v), (k, v) -> k);
-
-        mdl.getModels().forEach(m -> {
-            assertTrue(m instanceof ModelOnFeaturesSubspace);
-            assertTrue(((ModelOnFeaturesSubspace) m).getMdl() instanceof DecisionTreeConditionalNode);
-        });
-
         assertTrue(mdl.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
         assertEquals(5, mdl.getModels().size());
     }

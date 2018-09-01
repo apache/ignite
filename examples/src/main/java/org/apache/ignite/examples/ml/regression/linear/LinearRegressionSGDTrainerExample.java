@@ -35,8 +35,9 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run linear regression model based on stochastic gradient descent algorithm ({@link LinearRegressionSGDTrainer})
- * over cached dataset.
+ * Run linear regression model based on  based on
+ * <a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">stochastic gradient descent</a> algorithm
+ * ({@link LinearRegressionSGDTrainer}) over cached dataset.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>
@@ -116,7 +117,7 @@ public class LinearRegressionSGDTrainerExample {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 LinearRegressionSGDTrainerExample.class.getSimpleName(), () -> {
 
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).get(data);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 System.out.println(">>> Create new linear regression trainer object.");
                 LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(

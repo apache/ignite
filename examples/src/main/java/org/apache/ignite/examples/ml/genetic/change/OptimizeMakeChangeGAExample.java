@@ -20,7 +20,6 @@ package org.apache.ignite.examples.ml.genetic.change;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
@@ -64,8 +63,6 @@ public class OptimizeMakeChangeGAExample {
     public static void main(String args[]) {
         System.out.println(">>> OptimizeMakeChange GA grid example started.");
 
-        System.setProperty("IGNITE_QUIET", "false");
-
         String sAmountChange = "75";
 
         StringBuilder sbErrorMsg = new StringBuilder();
@@ -84,8 +81,6 @@ public class OptimizeMakeChangeGAExample {
         try {
             // Create an Ignite instance as you would in any other use case.
             Ignite ignite = Ignition.start("examples/config/example-ignite.xml");
-
-            IgniteLogger log = ignite.log();
 
             // Create GAConfiguration.
             GAConfiguration gaCfg = new GAConfiguration();
@@ -120,7 +115,8 @@ public class OptimizeMakeChangeGAExample {
             gaCfg.setFitnessFunction(function);
 
             // Create and set TerminateCriteria.
-            OptimizeMakeChangeTerminateCriteria termCriteria = new OptimizeMakeChangeTerminateCriteria(ignite);
+            OptimizeMakeChangeTerminateCriteria termCriteria = new OptimizeMakeChangeTerminateCriteria(ignite,
+                System.out::println);
 
             ChromosomeCriteria chromosomeCriteria = new ChromosomeCriteria();
 
@@ -139,11 +135,11 @@ public class OptimizeMakeChangeGAExample {
             // Initialize GAGrid.
             GAGrid gaGrid = new GAGrid(gaCfg, ignite);
 
-            log.info("##########################################################################################");
+            System.out.println("##########################################################################################");
 
-            log.info("Calculating optimal set of coins where amount of change is " + sAmountChange);
+            System.out.println("Calculating optimal set of coins where amount of change is " + sAmountChange);
 
-            log.info("##########################################################################################");
+            System.out.println("##########################################################################################");
 
             Chromosome chromosome = gaGrid.evolve();
 

@@ -33,8 +33,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "localTasks",  // Java-specific (classloaders)
             "undeployTask",  // Java-specific (classloaders)
             "withName",  // Java-specific (classloaders)
-            "activeTaskFutures",
-            "withNoResultCache" // https://issues.apache.org/jira/browse/IGNITE-9301
+            "activeTaskFutures"
         };
 
         /// <summary>
