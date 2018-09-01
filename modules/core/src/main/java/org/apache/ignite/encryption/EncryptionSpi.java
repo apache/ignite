@@ -18,6 +18,7 @@
 package org.apache.ignite.encryption;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.spi.IgniteSpi;
 
@@ -47,43 +48,34 @@ public interface EncryptionSpi extends IgniteSpi {
      * 
      * @param data Data to encrypt.
      * @param key Encryption key.
-     * @param start Offset in {@code data} to start encrypt from.
-     * @param length Length of {@code data} to encrypt.
-     * @return Encrypted data.
+     * @param res Destination buffer.
      */
-    byte[] encrypt(byte[] data, Serializable key, int start, int length);
+    void encrypt(ByteBuffer data, Serializable key, ByteBuffer res);
 
     /**
      * Encrypts data without padding info.
      *
      * @param data Data to encrypt.
      * @param key Encryption key.
-     * @param start Offset in {@code data} to start encrypt from.
-     * @param length Length of {@code data} to encrypt.
-     * @param encData Array to store encrypted data.
-     * @return Encrypted data.
+     * @param res Destination buffer.
      */
-    void encryptNoPadding(byte[] data, Serializable key, int start, int length, byte[] encData);
+    void encryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res);
 
     /**
-     * Decrypts data encrypted with {@link #encrypt(byte[], Serializable, int, int)} method.
+     * Decrypts data encrypted with {@link #encrypt(ByteBuffer, Serializable, ByteBuffer)}
      * 
      * @param data Data to decrypt.
      * @param key Encryption key.
-     * @return Decrypted data.
      */
-    byte[] decrypt(byte[] data, Serializable key);
+     byte[] decrypt(byte[] data, Serializable key);
 
     /**
-     * Decrypts data encrypted with {@link #encryptNoPadding(byte[], Serializable, int, int)} method.
+     * Decrypts data encrypted with {@link #encryptNoPadding(ByteBuffer, Serializable, ByteBuffer)}
      *
      * @param data Data to decrypt.
      * @param key Encryption key.
-     * @param start Offset in {@code data} to start encrypt from.
-     * @param length Length of {@code data} to encrypt.
-     * @return Decrypted data.
      */
-    byte[] decryptNoPadding(byte[] data, Serializable key, int start, int length);
+    void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res);
 
     /**
      * Encrypts key.

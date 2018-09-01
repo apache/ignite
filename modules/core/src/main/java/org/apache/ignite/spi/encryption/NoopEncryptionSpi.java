@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.encryption;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -45,12 +46,12 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encrypt(byte[] data, Serializable key, int start, int length) {
+    @Override public void encrypt(ByteBuffer data, Serializable key, ByteBuffer res) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public void encryptNoPadding(byte[] data, Serializable key, int start, int length, byte[] encData) {
+    @Override public void encryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
@@ -59,7 +60,8 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
-    @Override public byte[] decryptNoPadding(byte[] data, Serializable key, int start, int length) {
+    /** {@inheritDoc} */
+    @Override public void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 

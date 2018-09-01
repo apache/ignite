@@ -126,7 +126,7 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int read(ByteBuffer destBuf, long position) throws IOException {
-        assert destBuf.capacity() == pageSize;
+        assert destBuf.remaining() >= pageSize;
         assert position() != 0;
 
         ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
@@ -140,6 +140,8 @@ public class EncryptedFileIO implements FileIO {
             throw new IllegalStateException("Expecting to read whole page[" + pageSize + " bytes], " +
                 "but read only " + res + " bytes");
         }
+
+        encrypted.rewind();
 
         decrypt(encrypted, destBuf);
 
@@ -162,6 +164,8 @@ public class EncryptedFileIO implements FileIO {
             throw new IllegalStateException("Expecting to read whole page[" + pageSize + " bytes], " +
                 "but read only " + res + " bytes");
         }
+
+        encrypted.rewind();
 
         decrypt(encrypted, destBuf);
 
@@ -193,53 +197,49 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-        byte[] encrypted = encrypt(srcBuf);
+        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
 
-        return plainFileIO.write(ByteBuffer.wrap(encrypted), position);
+        encrypt(srcBuf, encrypted);
+
+        encrypted.rewind();
+
+        return plainFileIO.write(encrypted, position);
     }
 
     /** {@inheritDoc} */
     @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
-        byte[] encrypted = encrypt(srcBuf);
+        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
 
-        return plainFileIO.writeFully(ByteBuffer.wrap(encrypted), position);
+        encrypt(srcBuf, encrypted);
+
+        encrypted.rewind();
+
+        return plainFileIO.writeFully(encrypted, position);
     }
 
     /**
-     * @param srcBuf Source buffer
-     * @return Encrypted bytes.
+     * @param srcBuf Source buffer.
+     * @param res Destination buffer.
      * @throws IOException If failed.
      */
-    private byte[] encrypt(ByteBuffer srcBuf) throws IOException {
+    private void encrypt(ByteBuffer srcBuf, ByteBuffer res) throws IOException {
         assert position() != 0;
-        assert srcBuf.capacity() == pageSize;
+        assert srcBuf.remaining() >= pageSize;
+        assert tailIsEmpty(srcBuf, PageIO.getType(srcBuf));
 
-        byte[] srcArr;
+        int encDataLen = pageSize - encryptionOverhead;
+        int srcLimit = srcBuf.limit();
 
-        if (srcBuf.hasArray())
-            srcArr = srcBuf.array();
-        else {
-            srcArr = new byte[pageSize];
+        srcBuf.limit(srcBuf.position() + encDataLen);
 
-            srcBuf.get(srcArr, 0, pageSize);
-        }
+        encSpi.encryptNoPadding(srcBuf, key(), res);
 
-        assert tailIsEmpty(srcArr, PageIO.getType(srcBuf));
+        res.rewind();
 
-        byte[] encrypted = new byte[pageSize];
+        storeCRC(res);
 
-        encSpi.encryptNoPadding(srcArr, key(), 0, pageSize - encryptionOverhead, encrypted);
-
-        int encDataLen = pageSize - encSpi.blockSize();
-
-        int crc = PureJavaCrc32.calcCrc32(ByteBuffer.wrap(encrypted), encDataLen);
-
-        encrypted[encDataLen] = (byte) (crc >> 24);
-        encrypted[encDataLen + 1] = (byte) (crc >> 16);
-        encrypted[encDataLen + 2] = (byte) (crc >> 8);
-        encrypted[encDataLen + 3] = (byte) (crc);
-
-        return encrypted;
+        srcBuf.limit(srcLimit);
+        srcBuf.position(srcBuf.position() + encryptionOverhead);
     }
 
     /**
@@ -247,44 +247,68 @@ public class EncryptedFileIO implements FileIO {
      * @param destBuf Destination buffer.
      */
     private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) {
-        assert encrypted.capacity() == pageSize;
+        assert encrypted.remaining() >= pageSize;
+        assert encrypted.limit() >= pageSize;
 
-        byte[] encData;
-
-        if (encrypted.hasArray())
-            encData = encrypted.array();
-        else {
-            encData = new byte[pageSize];
-
-            encrypted.get(encData, 0, pageSize);
-        }
+        checkCRC(encrypted);
 
         int encDataLen = pageSize - encSpi.blockSize();
 
-        destBuf.put(encSpi.decryptNoPadding(encData, key(), 0, encDataLen));
+        encrypted.limit(encDataLen);
+
+        encSpi.decryptNoPadding(encrypted, key(), destBuf);
+
         destBuf.put(zeroes); //Forcibly purge page buffer tail.
+    }
 
-        encrypted.rewind();
+    /**
+     * Stores CRC in res.
+     *
+     * @param res Destination buffer.
+     */
+    private void storeCRC(ByteBuffer res) {
+        int crc = PureJavaCrc32.calcCrc32(res, pageSize - encSpi.blockSize());
 
-        int crc = PureJavaCrc32.calcCrc32(encrypted, encDataLen);
+        res.put((byte) (crc >> 24));
+        res.put((byte) (crc >> 16));
+        res.put((byte) (crc >> 8));
+        res.put((byte) crc);
+    }
+
+    /**
+     * Checks encrypted data integrity.
+     *
+     * @param encrypted Encrypted data buffer.
+     */
+    private void checkCRC(ByteBuffer encrypted) {
+        int crc = PureJavaCrc32.calcCrc32(encrypted, pageSize - encSpi.blockSize());
 
         int storedCrc = 0;
 
-        storedCrc |= (int)encData[encDataLen] << 24;
-        storedCrc |= ((int)encData[encDataLen + 1] & 0xff) << 16;
-        storedCrc |= ((int)encData[encDataLen + 2] & 0xff) << 8;
-        storedCrc |= encData[encDataLen + 3] & 0xff;
+        storedCrc |= (int)encrypted.get() << 24;
+        storedCrc |= ((int)encrypted.get() & 0xff) << 16;
+        storedCrc |= ((int)encrypted.get() & 0xff) << 8;
+        storedCrc |= encrypted.get() & 0xff;
 
         if(crc != storedCrc) {
             throw new IgniteException("Content of encrypted page is broken. [StoredCrc=" + storedCrc +
                 ", calculatedCrd=" + crc + "]");
         }
+
+        encrypted.position(encrypted.position() - (pageSize - encSpi.blockSize() + 4));
     }
 
     /** */
-    private boolean tailIsEmpty(byte[] srcArr, int pageType) {
-        for (int i = srcArr.length - encryptionOverhead; i < srcArr.length; i++)
-            assert srcArr[i] == 0 : "Tail of srcArr should be empty [i=" + i + ", pageType=" + pageType + "]";
+    private boolean tailIsEmpty(ByteBuffer src, int pageType) {
+        int start = src.capacity() - encryptionOverhead;
+        int srcPos = src.position();
+
+        src.position(start);
+
+        for (int i = start; i < src.capacity(); i++)
+            assert src.get() == 0 : "Tail of src should be empty [i=" + i + ", pageType=" + pageType + "]";
+
+        src.position(srcPos);
 
         return true;
     }

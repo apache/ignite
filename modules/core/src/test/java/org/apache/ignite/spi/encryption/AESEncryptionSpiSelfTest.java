@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.encryption;
 
+import java.nio.ByteBuffer;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.encryption.EncryptionSpi;
@@ -25,6 +26,7 @@ import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 
@@ -71,9 +73,10 @@ public class AESEncryptionSpiSelfTest extends TestCase {
         assertNotNull(k);
         assertNotNull(k.key());
 
-        byte[] plainText = "Just a test string to encrypt!".getBytes("UTF-8");
+        byte[] plainText = "Just a test string to encrypt!".getBytes(UTF_8);
+        byte[] cipherText = new byte[spi().encryptedSize(plainText.length)];
 
-        byte[] cipherText = encSpi.encrypt(plainText, k, 0, plainText.length);
+        encSpi.encrypt(ByteBuffer.wrap(plainText), k, ByteBuffer.wrap(cipherText));
 
         assertNotNull(cipherText);
         assertEquals(encSpi.encryptedSize(plainText.length), cipherText.length);
@@ -83,7 +86,7 @@ public class AESEncryptionSpiSelfTest extends TestCase {
         assertNotNull(decryptedText);
         assertEquals(plainText.length, decryptedText.length);
 
-        assertEquals(new String(plainText, "UTF-8"), new String(decryptedText, "UTF-8"));
+        assertEquals(new String(plainText, UTF_8), new String(decryptedText, UTF_8));
     }
 
     /** @throws Exception If failed. */

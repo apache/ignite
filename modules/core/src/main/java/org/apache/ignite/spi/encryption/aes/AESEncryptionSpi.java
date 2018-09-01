@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -186,38 +187,70 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encrypt(byte[] data, Serializable key, int start, int length) {
-        byte[] res = new byte[encryptedSize(data.length, AES_WITH_PADDING)];
-
-        return doEncryption(data, AES_WITH_PADDING, key, start, length, res);
+    @Override public void encrypt(ByteBuffer data, Serializable key, ByteBuffer res) {
+        doEncryption(data, AES_WITH_PADDING, key, res);
     }
 
     /** {@inheritDoc} */
-    @Override public void encryptNoPadding(byte[] data, Serializable key, int start, int length, byte[] encData) {
-        doEncryption(data, AES_WITHOUT_PADDING, key, start, length, encData);
+    @Override public void encryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
+        doEncryption(data, AES_WITHOUT_PADDING, key, res);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] decrypt(byte[] data, Serializable key) {
-        return doDecryption(data, AES_WITH_PADDING, key, 0, data.length);
+        assert key instanceof AESEncryptionKey;
+
+        ensureStarted();
+
+        try {
+            SecretKeySpec keySpec = new SecretKeySpec(((AESEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
+
+            Cipher cipher = Cipher.getInstance(AES_WITH_PADDING);
+
+            cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(data, 0, cipher.getBlockSize()));
+
+            return cipher.doFinal(data, cipher.getBlockSize(), data.length - cipher.getBlockSize());
+        }
+        catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
+            NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
+            throw new IgniteSpiException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] decryptNoPadding(byte[] data, Serializable key, int start, int length) {
-        return doDecryption(data, AES_WITHOUT_PADDING, key, start, length);
+    @Override public void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
+        assert key instanceof AESEncryptionKey;
+
+        ensureStarted();
+
+        try {
+            SecretKeySpec keySpec = new SecretKeySpec(((AESEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
+
+            Cipher cipher = Cipher.getInstance(AES_WITHOUT_PADDING);
+
+            byte[] iv = new byte[cipher.getBlockSize()];
+
+            data.get(iv);
+
+            cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(iv));
+
+            cipher.doFinal(data, res);
+        }
+        catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
+            NoSuchPaddingException | IllegalBlockSizeException | ShortBufferException | BadPaddingException e) {
+            throw new IgniteSpiException(e);
+        }
     }
 
     /**
      * @param data Plain data.
      * @param algo Encryption algorithm.
      * @param key Encryption key.
-     * @param start Offset in {@code data} array.
-     * @param length Length in {@code data} array.
      * @return Encrypted data.
      */
-    private byte[] doEncryption(byte[] data, String algo, Serializable key, int start, int length, byte[] res) {
+    private void doEncryption(ByteBuffer data, String algo, Serializable key, ByteBuffer res) {
         assert key instanceof AESEncryptionKey;
-        assert start >= 0 && length + start <= data.length;
+        //assert start >= 0 && length + start <= data.length;
 
         ensureStarted();
 
@@ -228,43 +261,13 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
             byte[] iv = initVector(cipher);
 
-            System.arraycopy(iv, 0, res, 0, iv.length);
+            res.put(iv);
 
             cipher.init(ENCRYPT_MODE, keySpec, new IvParameterSpec(iv));
 
-            cipher.doFinal(data, start, length, res, iv.length);
-
-            return res;
+            cipher.doFinal(data, res);
         }
         catch (ShortBufferException | InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
-            NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
-            throw new IgniteSpiException(e);
-        }
-    }
-
-    /**
-     * @param data Encrypted data.
-     * @param algo Encryption algorithm.
-     * @param key Encryption key.
-     * @param start Offset in {@code data} to start encrypt from.
-     * @param length Length of {@code data} to encrypt.
-     * @return Decrypted data.
-     */
-    private byte[] doDecryption(byte[] data, String algo, Serializable key, int start, int length) {
-        assert key instanceof AESEncryptionKey;
-
-        ensureStarted();
-
-        try {
-            SecretKeySpec keySpec = new SecretKeySpec(((AESEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
-
-            Cipher cipher = Cipher.getInstance(algo);
-
-            cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(data, start, cipher.getBlockSize()));
-
-            return cipher.doFinal(data, start + cipher.getBlockSize(), length - cipher.getBlockSize());
-        }
-        catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException | InvalidKeyException |
             NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException e) {
             throw new IgniteSpiException(e);
         }
@@ -276,7 +279,11 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
         byte[] serKey = U.toBytes(key);
 
-        return encrypt(serKey, masterKey, 0, serKey.length);
+        byte[] res = new byte[encryptedSize(serKey.length)];
+
+        encrypt(ByteBuffer.wrap(serKey), masterKey, ByteBuffer.wrap(res));
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -291,6 +298,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
             throw new IgniteException("Key is broken!");
 
         return key;
+
     }
 
     /** {@inheritDoc} */

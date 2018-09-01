@@ -196,6 +196,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             writePlainRecord(rec, clData);
 
+            clData.rewind();
+
             writeEncryptedData(((WalRecordCacheGroupAware)rec).groupId(), rec.type(), clData, buf);
 
             return;
@@ -301,7 +303,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         assert key != null;
 
-        dst.put(encSpi.encrypt(clData.array(), key, 0, clData.capacity()));
+        encSpi.encrypt(clData, key, dst);
     }
 
     /**
@@ -1708,6 +1710,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             ByteBuffer clData = ByteBuffer.allocate(clSz);
 
             putPlainDataEntry(clData, entry);
+
+            clData.rewind();
 
             buf.put(ENCRYPTED);
 
