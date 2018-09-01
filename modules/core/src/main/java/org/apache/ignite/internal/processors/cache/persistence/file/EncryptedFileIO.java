@@ -98,7 +98,7 @@ public class EncryptedFileIO implements FileIO {
         this.encSpi = encSpi;
 
         this.encryptionOverhead =
-            encSpi.encryptedSizeNoPadding(pageSize) - pageSize + encSpi.blockSize() /* CRC size. */;
+            encSpi.encryptedSizeNoPadding(pageSize) - pageSize + encSpi.blockSize() /* For CRC. */;
         this.zeroes =  new byte[encryptionOverhead];
     }
 

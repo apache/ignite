@@ -325,7 +325,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         encPageSize = pageSize
             - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
-            - encSpi.blockSize() /* For CRC */;
+            - encSpi.blockSize() /* For CRC. */;
 
         rwLock = new OffheapReadWriteLock(128);
 
