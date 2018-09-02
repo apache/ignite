@@ -97,7 +97,7 @@ public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
