@@ -176,7 +176,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /**
      * @return Transaction.
      */
-    public GridNearTxLocal tx() {
+    @Override public GridNearTxLocal tx() {
         return tx;
     }
 
@@ -402,7 +402,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override @SuppressWarnings("ForLoopReplaceableByForEach")
     public void finish(final boolean commit, final boolean clearThreadMap, final boolean onTimeout) {
         if (!cctx.mvcc().addFuture(this, futureId()))
             return;

@@ -190,7 +190,7 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    public ProtocolVersion serverVersion() {
+    @Override public ProtocolVersion serverVersion() {
         return ver;
     }
 
