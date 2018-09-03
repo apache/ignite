@@ -3604,7 +3604,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     ", snapshotFutureReadyDuration=%dms" +
                                     ", cacheGroupStatesDuration=%dms" +
                                     ", drtyPagesCollectedDuration=%dms" +
-                                    ", checkpointEntryLoggerDuration=%dms" +
+                                    ", checkpointEntryLoggedDuration=%dms" +
+                                    ", totalMetasProcessed=%d" +
                                     ", totalDirtyMetaPages=%d" +
                                     ", metas=%s" +
                                     ']',
@@ -3620,7 +3621,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 tracker.snapshotFutureReadyDuration(),
                                 tracker.cacheGroupStatesDuration(),
                                 tracker.drtyPagesCollectedDuration(),
-                                tracker.checkpointEntryLoggerDuration(),
+                                tracker.checkpointEntryLoggedDuration(),
+                                tracker.getStats().size(),
                                 tracker.getStats().values().stream().collect(Collectors.summarizingLong(new ToLongFunction<DbCheckpointListener.SaveMetadataStat>() {
                                     @Override public long applyAsLong(DbCheckpointListener.SaveMetadataStat val) {
                                         return val.getPages();
@@ -3628,16 +3630,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 })).getSum(),
                                 tracker.getStats().entrySet().stream().sorted((o1,
                                     o2) -> Long.compare(o2.getKey(), o1.getKey())).
-                                    filter(entry -> entry.getValue().getPages() > 0).
-                                map(new Function<Map.Entry<Long, DbCheckpointListener.SaveMetadataStat>, String>() {
-                                    @Override public String apply(Map.Entry<Long, DbCheckpointListener.SaveMetadataStat> entry) {
-                                        return '[' + "name=" + entry.getValue().getName() +
-                                            ", duration=" + (entry.getKey() / 1000 / 1000.) + " ms" +
-                                            ", stripes=" + entry.getValue().getStripes() +
-                                            ", dirtyPages=" + entry.getValue().getPages() +
-                                            ']';
-                                    }
-                                }).limit(500).collect(Collectors.toList()).toString()
+                                    map(new Function<Map.Entry<Long, DbCheckpointListener.SaveMetadataStat>, String>() {
+                                        @Override
+                                        public String apply(
+                                            Map.Entry<Long, DbCheckpointListener.SaveMetadataStat> entry) {
+                                            return '[' + "name=" + entry.getValue().getName() +
+                                                ", duration=" + (entry.getKey() / 1000 / 1000.) + " ms" +
+                                                ", stripes=" + entry.getValue().getStripes() +
+                                                ", dirtyPages=" + entry.getValue().getPages() +
+                                                ']';
+                                        }
+                                    }).collect(Collectors.toList()).toString()
                             )
                         );
 

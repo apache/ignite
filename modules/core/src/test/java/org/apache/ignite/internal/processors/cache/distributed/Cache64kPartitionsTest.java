@@ -49,7 +49,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
             DataStorageConfiguration memCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration().setPersistenceEnabled(true))
-                .setWalMode(WALMode.LOG_ONLY).setCheckpointFrequency(30_000);
+                .setWalMode(WALMode.LOG_ONLY).setCheckpointFrequency(300_000);
 
             cfg.setDataStorageConfiguration(memCfg);
         }

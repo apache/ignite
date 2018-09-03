@@ -286,7 +286,7 @@ public class CheckpointMetricsTracker {
     }
 
     /** */
-    public long checkpointEntryLoggerDuration() {
+    public long checkpointEntryLoggedDuration() {
         return checkpointEntryLogged - dirtyPagesCollected;
     }
 
