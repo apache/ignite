@@ -70,7 +70,7 @@ public class SimpleCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy<K,
     }
 
     /** {@inheritDoc} */
-    @Override protected Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
+    @Override public Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
         ModelsComposition mdl) {
 
         throw new UnsupportedOperationException();

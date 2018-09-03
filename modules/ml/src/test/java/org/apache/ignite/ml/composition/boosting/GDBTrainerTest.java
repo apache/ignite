@@ -22,11 +22,12 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCheckConvergenceStgyFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.simple.SimpleCheckConvergenceStgyFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
@@ -54,8 +55,8 @@ public class GDBTrainerTest {
             learningSample.put(i, new double[] {xs[i], ys[i]});
         }
 
-        DatasetTrainer<ModelsComposition, Double> trainer
-            = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0).withUseIndex(true);
+        GDBTrainer trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0)
+            .withUseIndex(true);
 
         Model<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
@@ -84,6 +85,13 @@ public class GDBTrainerTest {
 
         assertEquals(2000, composition.getModels().size());
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
+
+        trainer = trainer.withCheckConvergenceStgyFactory(new MeanAbsValueCheckConvergenceStgyFactory(0.1));
+        assertTrue(trainer.fit(
+            learningSample, 1,
+            (k, v) -> VectorUtils.of(v[0]),
+            (k, v) -> v[1]
+        ).getModels().size() < 2000);
     }
 
     /** */
@@ -107,7 +115,7 @@ public class GDBTrainerTest {
     }
 
     /** */
-    private void testClassifier(BiFunction<GDBBinaryClassifierOnTreesTrainer, Map<Integer, double[]>,
+    private void testClassifier(BiFunction<GDBTrainer, Map<Integer, double[]>,
         Model<Vector, Double>> fitter) {
         int sampleSize = 100;
         double[] xs = new double[sampleSize];
@@ -122,8 +130,9 @@ public class GDBTrainerTest {
         for (int i = 0; i < sampleSize; i++)
             learningSample.put(i, new double[] {xs[i], ys[i]});
 
-        GDBBinaryClassifierOnTreesTrainer trainer
-            = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0).withUseIndex(true);
+        GDBTrainer trainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0)
+            .withUseIndex(true)
+            .withCheckConvergenceStgyFactory(new MeanAbsValueCheckConvergenceStgyFactory(0.3));
 
         Model<Vector, Double> mdl = fitter.apply(trainer, learningSample);
 
@@ -132,7 +141,7 @@ public class GDBTrainerTest {
             double x = xs[j];
             double y = ys[j];
             double p = mdl.apply(VectorUtils.of(x));
-            if(p != y)
+            if (p != y)
                 errorsCnt++;
         }
 
@@ -142,7 +151,10 @@ public class GDBTrainerTest {
         ModelsComposition composition = (ModelsComposition)mdl;
         composition.getModels().forEach(m -> assertTrue(m instanceof DecisionTreeConditionalNode));
 
-        assertEquals(500, composition.getModels().size());
+        assertTrue(composition.getModels().size() < 500);
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
+
+        trainer = trainer.withCheckConvergenceStgyFactory(new SimpleCheckConvergenceStgyFactory());
+        assertEquals(500, ((ModelsComposition)fitter.apply(trainer,learningSample)).getModels().size());
     }
 }

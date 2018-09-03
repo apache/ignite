@@ -62,19 +62,18 @@ public class MeanAbsValueCheckConvergenceStgy<K,V> extends ConvergenceCheckStrat
     }
 
     /** {@inheritDoc} */
-    @Override protected Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
+    @Override public Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
         ModelsComposition mdl) {
 
         IgniteBiTuple<Double, Long> sumAndCnt = dataset.compute(partition -> {
             Double sum = 0.0;
-            Long cnt = 0L;
 
             for(int i = 0; i < partition.getFeatures().length; i++) {
-                sum += Math.abs(computeError(VectorUtils.of(partition.getFeatures()[i]), partition.getLabels()[i], mdl));
-                cnt++;
+                double error = computeError(VectorUtils.of(partition.getFeatures()[i]), partition.getLabels()[i], mdl);
+                sum += Math.abs(error);
             }
 
-            return new IgniteBiTuple<>(sum, cnt);
+            return new IgniteBiTuple<>(sum, (long) partition.getLabels().length);
         }, (left, right) -> {
             if (left == null) {
                 if (right != null)

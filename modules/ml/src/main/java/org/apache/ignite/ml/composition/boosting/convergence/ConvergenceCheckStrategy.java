@@ -80,7 +80,7 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
         IgniteBiFunction<K, V, Double> lbExtractor,
         double precision) {
 
-        assert precision < 1 && precision > 0;
+        assert precision < 1 && precision >= 0;
 
         this.sampleSize = sampleSize;
         this.externalLbToInternalMapping = externalLbToInternalMapping;
@@ -119,7 +119,7 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
      * @param mdl Model.
      * @return error mean value.
      */
-    protected abstract Double computeMeanErrorOnDataset(
+    public abstract Double computeMeanErrorOnDataset(
         Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
         ModelsComposition mdl);
 

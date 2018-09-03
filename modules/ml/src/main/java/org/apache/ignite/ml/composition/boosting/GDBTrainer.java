@@ -68,7 +68,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     protected final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
 
     /** Check convergence strategy factory. */
-    protected ConvergenceCheckStrategyFactory checkConvergenceStgyFactory = new MeanAbsValueCheckConvergenceStgyFactory(0.1);
+    protected ConvergenceCheckStrategyFactory checkConvergenceStgyFactory = new MeanAbsValueCheckConvergenceStgyFactory(0.001);
 
     /**
      * Constructs GDBTrainer instance.

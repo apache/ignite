@@ -65,7 +65,7 @@ public class GDBLearningStrategy {
     protected double[] compositionWeights;
 
     /** Check convergence strategy factory. */
-    protected ConvergenceCheckStrategyFactory checkConvergenceStgyFactory = new MeanAbsValueCheckConvergenceStgyFactory(0.1);
+    protected ConvergenceCheckStrategyFactory checkConvergenceStgyFactory = new MeanAbsValueCheckConvergenceStgyFactory(0.001);
 
     /**
      * Implementation of gradient boosting iterations. At each step of iterations this algorithm build a regression

@@ -61,7 +61,7 @@ public class MedianOfMedianConvergenceCheckStrategy<K, V> extends ConvergenceChe
     }
 
     /** {@inheritDoc} */
-    @Override protected Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
+    @Override public Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
         ModelsComposition mdl) {
 
         double[] medians = dataset.compute(
