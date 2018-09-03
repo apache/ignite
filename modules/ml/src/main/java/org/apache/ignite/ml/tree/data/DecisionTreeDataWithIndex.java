@@ -19,12 +19,14 @@ package org.apache.ignite.ml.tree.data;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.tree.TreeFilter;
 
 /**
- * A partition {@code data} of the containing matrix of features and vector of labels stored in heap.
+ * A partition {@code data} of the containing matrix of features and vector of labels stored in heap
+ * with index on features.
  */
-public class DecisionTreeDataWithIndex extends DecisionTreeData implements AutoCloseable {
+public class DecisionTreeDataWithIndex extends FeatureMatrixWithLabelsOnHeapData implements AutoCloseable {
     /** Copy of vector with original labels. Auxiliary for Gradient Boosting on Trees.*/
     private double[] copyOfOriginalLabels;
 
@@ -126,10 +128,12 @@ public class DecisionTreeDataWithIndex extends DecisionTreeData implements AutoC
         }
     }
 
+    /** */
     public double[] getCopyOfOriginalLabels() {
         return copyOfOriginalLabels;
     }
 
+    /** */
     public void setCopyOfOriginalLabels(double[] copyOfOriginalLabels) {
         this.copyOfOriginalLabels = copyOfOriginalLabels;
     }

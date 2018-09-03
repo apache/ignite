@@ -24,13 +24,13 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
 import org.apache.ignite.ml.dataset.impl.local.LocalDataset;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
+import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -72,8 +72,8 @@ public class MedianOfMedianConvergenceCheckStrategyTest {
         Assert.assertFalse(stgy.isConverged(datasetBuilder, notConvergedModel));
         Assert.assertTrue(stgy.isConverged(datasetBuilder, convergedModel));
 
-        try(LocalDataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
-            new EmptyContextBuilder<>(), new DecisionTreeDataBuilder<>(fExtr, lbExtr))) {
+        try(LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
+            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(fExtr, lbExtr))) {
 
             double onDSError = stgy.computeMeanErrorOnDataset(dataset, notConvergedModel);
             Assert.assertEquals(1.6, onDSError, 0.01);

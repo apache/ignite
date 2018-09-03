@@ -189,6 +189,11 @@ public class GDBLearningStrategy {
         return this;
     }
 
+    /**
+     * Sets CheckConvergenceStgyFactory.
+     *
+     * @param factory Factory.
+     */
     public GDBLearningStrategy withCheckConvergenceStgyFactory(ConvergenceCheckStrategyFactory factory) {
         this.checkConvergenceStgyFactory = factory;
         return this;

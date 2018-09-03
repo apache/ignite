@@ -61,7 +61,7 @@ public class GDBOnTreesRegressionTrainerExample {
 
                 // Create regression trainer.
                 DatasetTrainer<ModelsComposition, Double> trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 1, 0.)
-                    .withCheckConvergenceStgyFactory(new MeanAbsValueCheckConvergenceStgyFactory(0.1));
+                    .withCheckConvergenceStgyFactory(new MeanAbsValueCheckConvergenceStgyFactory(0.001));
 
                 // Train decision tree model.
                 Model<Vector, Double> mdl = trainer.fit(

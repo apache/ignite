@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.data;
+package org.apache.ignite.ml.dataset.primitive;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -23,6 +23,7 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
 
 /**
  * A partition {@code data} builder that makes {@link DecisionTreeDataWithIndex}.
@@ -31,8 +32,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class DecisionTreeDataBuilder<K, V, C extends Serializable>
-    implements PartitionDataBuilder<K, V, C, DecisionTreeData> {
+public class FeatureMatrixWithLabelsOnHeapDataBuilder<K, V, C extends Serializable>
+    implements PartitionDataBuilder<K, V, C, FeatureMatrixWithLabelsOnHeapData> {
     /** Serial version uid. */
     private static final long serialVersionUID = 6273736987424171813L;
 
@@ -48,14 +49,14 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
      * @param lbExtractor Function that extracts labels from an {@code upstream} data.
      */
-    public DecisionTreeDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
+    public FeatureMatrixWithLabelsOnHeapDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
     }
 
     /** {@inheritDoc} */
-    @Override public DecisionTreeData build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
+    @Override public FeatureMatrixWithLabelsOnHeapData build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
         double[][] features = new double[Math.toIntExact(upstreamDataSize)][];
         double[] labels = new double[Math.toIntExact(upstreamDataSize)];
 
@@ -70,6 +71,6 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
             ptr++;
         }
 
-        return new DecisionTreeData(features, labels);
+        return new FeatureMatrixWithLabelsOnHeapData(features, labels);
     }
 }

@@ -15,19 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.data;
+package org.apache.ignite.ml.dataset.primitive;
 
 /**
  * A partition {@code data} of the containing matrix of features and vector of labels stored in heap.
  */
-public class DecisionTreeData implements AutoCloseable {
+public class FeatureMatrixWithLabelsOnHeapData implements AutoCloseable {
     /** Matrix with features. */
     private final double[][] features;
 
     /** Vector with labels. */
     private final double[] labels;
 
-    public DecisionTreeData(double[][] features, double[] labels) {
+    /**
+     * Constructs an instance of FeatureMatrixWithLabelsOnHeapData.
+     *
+     * @param features Features.
+     * @param labels Labels.
+     */
+    public FeatureMatrixWithLabelsOnHeapData(double[][] features, double[] labels) {
         assert features.length == labels.length : "Features and labels have to be the same length";
 
         this.features = features;

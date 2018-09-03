@@ -196,6 +196,12 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
         }
     }
 
+    /**
+     * Sets CheckConvergenceStgyFactory.
+     *
+     * @param factory
+     * @return trainer.
+     */
     public GDBTrainer withCheckConvergenceStgyFactory(ConvergenceCheckStrategyFactory factory) {
         this.checkConvergenceStgyFactory = factory;
         return this;

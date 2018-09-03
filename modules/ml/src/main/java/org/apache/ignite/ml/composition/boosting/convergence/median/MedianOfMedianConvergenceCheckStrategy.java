@@ -22,13 +22,13 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
 
 /**
  * Use median of median on partitions value of errors for estimating error on dataset. This algorithm may be less
@@ -60,7 +60,7 @@ public class MedianOfMedianConvergenceCheckStrategy<K, V> extends ConvergenceChe
     }
 
     /** {@inheritDoc} */
-    @Override public Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
+    @Override public Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
         ModelsComposition mdl) {
 
         double[] medians = dataset.compute(
@@ -80,7 +80,7 @@ public class MedianOfMedianConvergenceCheckStrategy<K, V> extends ConvergenceChe
      * @param data Data.
      * @return median value.
      */
-    private double[] computeMedian(ModelsComposition mdl, DecisionTreeData data) {
+    private double[] computeMedian(ModelsComposition mdl, FeatureMatrixWithLabelsOnHeapData data) {
         double[] errors = new double[data.getLabels().length];
         for (int i = 0; i < errors.length; i++)
             errors[i] = Math.abs(computeError(VectorUtils.of(data.getFeatures()[i]), data.getLabels()[i], mdl));

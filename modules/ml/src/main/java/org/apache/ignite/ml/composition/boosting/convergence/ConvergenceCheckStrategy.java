@@ -21,14 +21,14 @@ import java.io.Serializable;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
+import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 
 /**
  * Contains logic of error computing and convergence checking for Gradient Boosting algorithms.
@@ -94,9 +94,9 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
      * @return true if GDB is converged.
      */
     public boolean isConverged(DatasetBuilder<K, V> datasetBuilder, ModelsComposition currMdl) {
-        try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
+            new FeatureMatrixWithLabelsOnHeapDataBuilder<>(featureExtractor, lbExtractor)
         )) {
             return isConverged(dataset, currMdl);
         }
@@ -112,7 +112,7 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
      * @param currMdl Current model.
      * @return true if GDB is converged.
      */
-    public boolean isConverged(Dataset<EmptyContext, ? extends DecisionTreeData> dataset, ModelsComposition currMdl) {
+    public boolean isConverged(Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset, ModelsComposition currMdl) {
         Double error = computeMeanErrorOnDataset(dataset, currMdl);
         return error < precision || error.isNaN();
     }
@@ -125,7 +125,7 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
      * @return error mean value.
      */
     public abstract Double computeMeanErrorOnDataset(
-        Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
+        Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
         ModelsComposition mdl);
 
     /**
