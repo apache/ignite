@@ -678,6 +678,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If failed.
      */
     private Metas getOrAllocateCacheMetas() throws IgniteCheckedException {
+        System.out.println("GridCacheOffheapManager.getOrAllocateCacheMetas - " + grp.encrypted() + ", grpId = " + grp.groupId() + ", name = " + grp.config().getName());
+
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
         IgniteWriteAheadLogManager wal = ctx.wal();
 

@@ -198,7 +198,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
     /** {@inheritDoc} */
     @Override public byte[] decrypt(byte[] data, Serializable key) {
-        assert key instanceof AESEncryptionKey;
+        assert key instanceof AESEncryptionKey : key;
 
         ensureStarted();
 
@@ -219,7 +219,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
     /** {@inheritDoc} */
     @Override public void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
-        assert key instanceof AESEncryptionKey;
+        assert key instanceof AESEncryptionKey : key;
 
         ensureStarted();
 
@@ -249,8 +249,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
      * @return Encrypted data.
      */
     private void doEncryption(ByteBuffer data, String algo, Serializable key, ByteBuffer res) {
-        assert key instanceof AESEncryptionKey;
-        //assert start >= 0 && length + start <= data.length;
+        assert key instanceof AESEncryptionKey : key;
 
         ensureStarted();
 
@@ -275,7 +274,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
     /** {@inheritDoc} */
     @Override public byte[] encryptKey(Serializable key) {
-        assert key instanceof AESEncryptionKey;
+        assert key instanceof AESEncryptionKey : key;
 
         byte[] serKey = U.toBytes(key);
 

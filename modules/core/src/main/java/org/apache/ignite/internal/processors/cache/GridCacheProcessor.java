@@ -1388,9 +1388,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (log.isInfoEnabled()) {
                 if (ctx.group().sharedGroup())
-                    log.info("Stopped cache [cacheName=" + cache.name() + ", group=" + ctx.group().name() + ']');
+                    log.info("Stopped cache [cacheName=" + cache.name() + ", group=" + ctx.group().name() +
+                        ", encryptionEnabled=" + ctx.config().isEncryptionEnabled() + ']');
                 else
-                    log.info("Stopped cache [cacheName=" + cache.name() + ']');
+                    log.info("Stopped cache [cacheName=" + cache.name() +
+                        ", encryptionEnabled=" + ctx.config().isEncryptionEnabled() + ']');
             }
         }
         finally {

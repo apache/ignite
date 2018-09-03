@@ -317,8 +317,11 @@ public class EncryptedFileIO implements FileIO {
      * @return Encryption key.
      */
     private Serializable key() {
-        if (encKey == null)
-            return encKey = encMgr.groupKey(groupId);
+        if (encKey == null) {
+            encKey = encMgr.groupKey(groupId);
+
+            assert encKey != null : groupId;
+        }
 
         return encKey;
     }

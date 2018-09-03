@@ -52,6 +52,7 @@ import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -382,7 +383,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see EncryptionSpi
      * @see AESEncryptionSpi
      */
-    private boolean encryptionEnabled;
+    public static boolean encryptionEnabled = true;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -2286,7 +2287,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code True} if this cache persistent data is encrypted.
      */
     public boolean isEncryptionEnabled() {
-        return encryptionEnabled;
+        return !CU.isSystemCache(name);
     }
 
     /**
