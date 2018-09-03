@@ -319,19 +319,12 @@ public class GridReduceQueryExecutor {
             page = new GridResultPage(ctx, node.id(), msg) {
                 @Override public void fetchNextPage() {
                     if (r.hasErrorOrRetry()) {
-                        CacheException err0 = r.exception();
+                        if (r.exception() != null)
+                            throw r.exception();
 
-                        if (err0 != null && err0.getCause() instanceof IgniteClientDisconnectedException)
-                            throw err0;
+                        assert r.retryCause() != null;
 
-                        // TODO: Is it possible that retryCause will be not-null here? IMO - no.
-                        CacheException e = new CacheException(
-                            (msg.retryCause() != null) ? msg.retryCause() : "Failed to fetch data from node: " + node.id());
-
-                        if (err0 != null)
-                            e.addSuppressed(err0);
-
-                        throw e;
+                        throw new CacheException(r.retryCause());
                     }
 
                     try {
