@@ -37,6 +37,10 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     @GridToStringExclude
     private final Object[] args;
 
+    /** Autocommit flag. */
+    @GridToStringInclude
+    private final boolean autoCommit;
+
     /** Query timeout in seconds. */
     @GridToStringInclude
     private final int timeout;
@@ -47,7 +51,8 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
      * @param args Arguments list.
      * @param timeout Timeout in seconds.
      */
-    public OdbcQueryExecuteRequest(@Nullable String schema, String sqlQry, Object[] args, int timeout) {
+    public OdbcQueryExecuteRequest(@Nullable String schema, String sqlQry, Object[] args, int timeout,
+        boolean autoCommit) {
         super(QRY_EXEC);
 
         assert sqlQry != null : "SQL query should not be null";
@@ -56,6 +61,7 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
         this.sqlQry = sqlQry;
         this.args = args;
         this.timeout = timeout;
+        this.autoCommit = autoCommit;
     }
 
     /**
@@ -91,4 +97,10 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
         return S.toString(OdbcQueryExecuteRequest.class, this, "args", args, true);
     }
 
+    /**
+     * @return Autocommit flag.
+     */
+    public boolean autoCommit() {
+        return autoCommit;
+    }
 }

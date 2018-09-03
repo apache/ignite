@@ -46,6 +46,12 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
     /** Type. */
     private String type;
 
+    /** Precision. */
+    private int precision;
+
+    /** Scale. */
+    private int scale;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -58,14 +64,19 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
      * @param typeName Type name.
      * @param name Name.
      * @param type Type.
+     * @param precision Precision.
+     * @param scale Scale.
      */
-    H2SqlFieldMetadata(@Nullable String schemaName, @Nullable String typeName, String name, String type) {
+    H2SqlFieldMetadata(@Nullable String schemaName, @Nullable String typeName, String name, String type,
+        int precision, int scale) {
         assert name != null && type != null : schemaName + " | " + typeName + " | " + name + " | " + type;
 
         this.schemaName = schemaName;
         this.typeName = typeName;
         this.name = name;
         this.type = type;
+        this.precision = precision;
+        this.scale = scale;
     }
 
     /** {@inheritDoc} */
@@ -89,11 +100,24 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
     }
 
     /** {@inheritDoc} */
+    @Override public int precision() {
+        return precision;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int scale() {
+        return scale;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, schemaName);
         U.writeString(out, typeName);
         U.writeString(out, name);
         U.writeString(out, type);
+        out.write(precision);
+        out.write(scale);
+
     }
 
     /** {@inheritDoc} */
@@ -102,6 +126,8 @@ public class H2SqlFieldMetadata implements GridQueryFieldMetadata {
         typeName = U.readString(in);
         name = U.readString(in);
         type = U.readString(in);
+        precision = in.read();
+        scale = in.read();
     }
 
     /** {@inheritDoc} */

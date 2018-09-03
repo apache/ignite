@@ -61,7 +61,9 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     /** */
     private final Comparator<RowStream> streamCmp = new Comparator<RowStream>() {
         @Override public int compare(RowStream o1, RowStream o2) {
-            // Nulls at the beginning.
+            if (o1 == o2) // both nulls
+                return 0;
+
             if (o1 == null)
                 return -1;
 

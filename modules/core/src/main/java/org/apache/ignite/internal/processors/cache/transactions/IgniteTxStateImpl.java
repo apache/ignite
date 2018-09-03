@@ -78,6 +78,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     protected Boolean recovery;
 
+    /** */
+    @GridToStringInclude
+    protected Boolean mvccEnabled;
+
     /** List of savepoints for this transaction, which is used to retrieve previous states. */
     private LinkedList<TxSavepoint> savepoints;
 
@@ -89,6 +93,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
         return activeCacheIds.isEmpty() ? null : activeCacheIds.get(0);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridIntList cacheIds() {
+        return activeCacheIds;
     }
 
     /** {@inheritDoc} */
@@ -211,8 +220,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
+        assert tx.local();
+
         GridCacheSharedContext cctx = cacheCtx.shared();
 
         int cacheId = cacheCtx.cacheId();
@@ -222,6 +233,12 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
                 "(cannot transact between recovery and non-recovery caches).");
 
         this.recovery = recovery;
+
+        if (this.mvccEnabled != null && this.mvccEnabled != cacheCtx.mvccEnabled())
+            throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
+                "(caches with different mvcc settings can't be enlisted in one transaction).");
+
+        this.mvccEnabled = cacheCtx.mvccEnabled();
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {
@@ -467,6 +484,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
         return writeView != null && writeView.size() == 1 ? F.firstValue(writeView) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccEnabled(GridCacheSharedContext cctx) {
+        return Boolean.TRUE == mvccEnabled;
     }
 
     /** {@inheritDoc} */

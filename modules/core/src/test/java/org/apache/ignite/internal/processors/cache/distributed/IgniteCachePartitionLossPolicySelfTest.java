@@ -21,11 +21,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -258,7 +259,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     private void checkLostPartition(boolean canWrite, boolean safe, TopologyChanger topChanger) throws Exception {
         assert partLossPlc != null;
 
-        int part = topChanger.changeTopology();
+        int part = topChanger.changeTopology().get(0);
 
         // Wait for all grids (servers and client) have same topology version
         // to make sure that all nodes received map with lost partition.
@@ -382,10 +383,12 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
     /**
      * @param nodes List of nodes to find partition.
-     * @return Partition id that isn't primary or backup for specified nodes.
+     * @return List of partitions that aren't primary or backup for specified nodes.
      */
-    protected Integer noPrimaryOrBackupPartition(List<Integer> nodes) {
+    protected List<Integer> noPrimaryOrBackupPartition(List<Integer> nodes) {
         Affinity<Object> aff = ignite(4).affinity(CACHE_NAME);
+
+        List<Integer> parts = new ArrayList<>();
 
         Integer part;
 
@@ -401,11 +404,10 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             }
 
             if (part != null)
-                return part;
-
+                parts.add(i);
         }
 
-        return null;
+        return parts;
     }
 
     /** */
@@ -440,7 +442,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
          * @return Lost partition ID.
          * @throws Exception If failed.
          */
-        protected int changeTopology() throws Exception {
+        protected List<Integer> changeTopology() throws Exception {
             startGrids(4);
 
             Affinity<Object> aff = ignite(0).affinity(CACHE_NAME);
@@ -459,16 +461,21 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             awaitPartitionMapExchange();
 
-            final Integer part = noPrimaryOrBackupPartition(aliveNodes);
+            final List<Integer> parts = noPrimaryOrBackupPartition(aliveNodes);
 
-            if (part == null)
+            if (parts.size() == 0)
                 throw new IllegalStateException("No partition on nodes: " + killNodes);
 
-            final List<Semaphore> partLost = new ArrayList<>();
+            final List<Map<Integer, Semaphore>> lostMap = new ArrayList<>();
 
             for (int i : aliveNodes) {
-                final Semaphore sem = new Semaphore(0);
-                partLost.add(sem);
+                HashMap<Integer, Semaphore> semaphoreMap = new HashMap<>();
+
+                for (Integer part : parts)
+                    semaphoreMap.put(part, new Semaphore(0));
+
+                lostMap.add(semaphoreMap);
+
 
                 grid(i).events().localListen(new P1<Event>() {
                     @Override public boolean apply(Event evt) {
@@ -476,8 +483,10 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
                         CacheRebalancingEvent cacheEvt = (CacheRebalancingEvent)evt;
 
-                        if (cacheEvt.partition() == part && F.eq(CACHE_NAME, cacheEvt.cacheName()))
-                            sem.release();
+                        if (F.eq(CACHE_NAME, cacheEvt.cacheName())) {
+                            if (semaphoreMap.containsKey(cacheEvt.partition()))
+                                semaphoreMap.get(cacheEvt.partition()).release();
+                        }
 
                         return true;
                     }
@@ -504,13 +513,19 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             delayPartExchange.set(false);
 
-            for (Semaphore sem : partLost)
-                assertTrue("Failed to wait for partition LOST event", sem.tryAcquire(1, 10L, TimeUnit.SECONDS));
+            Thread.sleep(5_000L);
 
-            for (Semaphore sem : partLost)
-                assertFalse("Partition LOST event raised twice", sem.tryAcquire(1, 1L, TimeUnit.SECONDS));
+            for (Map<Integer, Semaphore> map : lostMap) {
+                for (Map.Entry<Integer, Semaphore> entry : map.entrySet())
+                    assertTrue("Failed to wait for partition LOST event for partition:" + entry.getKey(), entry.getValue().tryAcquire(1));
+            }
 
-            return part;
+            for (Map<Integer, Semaphore> map : lostMap) {
+                for (Map.Entry<Integer, Semaphore> entry : map.entrySet())
+                    assertFalse("Partition LOST event raised twice for partition:" + entry.getKey(), entry.getValue().tryAcquire(1));
+            }
+
+            return parts;
         }
     }
 

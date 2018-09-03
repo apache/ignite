@@ -39,10 +39,10 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.Config;
-import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -52,6 +52,10 @@ import static org.junit.Assert.assertTrue;
  * Load, capacity and performance tests.
  */
 public class LoadTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /**
      * Test thin client in multi-thread environment.
      */

@@ -17,7 +17,7 @@
 
 const template = '<div class="footer" ng-bind-html="footer.html"></div>';
 
-export default ['igniteFooter', ['IgniteBranding', (branding) => {
+export default ['igniteFooter', ['IgniteBranding', function(branding) {
     function controller() {
         const ctrl = this;
 
