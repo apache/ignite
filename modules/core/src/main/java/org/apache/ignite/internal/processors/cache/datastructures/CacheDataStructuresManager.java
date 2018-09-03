@@ -440,7 +440,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         Collection<SetItemKey> keys = new ArrayList<>(BATCH_SIZE);
 
-        for (Cache.Entry entry : cache.localEntries(new CachePeekMode[] {})) {
+        for (Cache.Entry entry : cache.localEntries(new CachePeekMode[] {CachePeekMode.PRIMARY})) {
             Object obj = entry.getKey();
 
             if (!(obj instanceof SetItemKey && setId.equals(((SetItemKey)obj).setId())))
