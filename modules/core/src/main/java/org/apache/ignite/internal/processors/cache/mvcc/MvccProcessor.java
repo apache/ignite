@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -75,6 +76,11 @@ public interface MvccProcessor extends GridProcessor {
     void processClientActiveQueries(UUID nodeId, @Nullable GridLongList activeQueries);
 
     /**
+     * @return Mvcc coordinator received from discovery event.
+     */
+    @Nullable MvccCoordinator assignedCoordinator();
+
+    /**
      * @return Coordinator.
      */
     @Nullable MvccCoordinator currentCoordinator();
@@ -85,11 +91,6 @@ public interface MvccProcessor extends GridProcessor {
      * @return Mvcc coordinator.
      */
     @Nullable MvccCoordinator currentCoordinator(AffinityTopologyVersion topVer);
-
-    /**
-     * @return Mvcc coordinator received from discovery event.
-     */
-    @Nullable MvccCoordinator coordinatorFromDiscoveryEvent();
 
     /**
      * @return Current coordinator node ID.
@@ -258,14 +259,9 @@ public interface MvccProcessor extends GridProcessor {
      */
     boolean mvccEnabled();
 
-    /**
-     * Notifies MVCC processor tha at least one cache with
-     * {@link CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is registered
-     */
-    void enableMvcc() throws IgniteCheckedException;
+    void preProcessCacheConfiguration(CacheConfiguration ccfg);
 
-    /**
-     * @return {@code True} if MVCC is supported by entire cluster.
-     */
-    boolean clusterWideMvccSupport();
+    void validateCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException;
+
+    void ensureStarted() throws IgniteCheckedException;
 }

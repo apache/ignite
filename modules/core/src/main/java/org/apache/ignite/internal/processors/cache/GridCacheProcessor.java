@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
-import javax.cache.expiry.EternalExpiryPolicy;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -278,6 +277,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         CU.initializeConfigDefaults(log, cfg, cacheObjCtx);
 
+        ctx.coordinators().preProcessCacheConfiguration(cfg);
         ctx.igfsHelper().preProcessCacheConfiguration(cfg);
     }
 
@@ -525,6 +525,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.igfsHelper().validateCacheConfiguration(cc);
+        ctx.coordinators().validateCacheConfiguration(cc);
 
         if (cc.getAtomicityMode() == ATOMIC)
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
@@ -542,24 +543,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Using cache group names reserved for datastructures is not allowed for " +
                 "other cache types [cacheName=" + cc.getName() + ", groupName=" + cc.getGroupName() +
                 ", cacheType=" + cacheType + "]");
-
-        if (cc.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
-            if (cc.getCacheStoreFactory() != null) {
-                throw new IgniteCheckedException("Transactional cache may not have a third party cache store when " +
-                    "MVCC is enabled.");
-            }
-
-            if (cc.getExpiryPolicyFactory() != null && !(cc.getExpiryPolicyFactory().create() instanceof
-                EternalExpiryPolicy)) {
-                throw new IgniteCheckedException("Transactional cache may not have expiry policy when " +
-                    "MVCC is enabled.");
-            }
-
-            if (cc.getInterceptor() != null) {
-                throw new IgniteCheckedException("Transactional cache may not have an interceptor when " +
-                    "MVCC is enabled.");
-            }
-        }
 
         // Make sure we do not use sql schema for system views.
         if (ctx.query().moduleEnabled()) {
@@ -1461,6 +1444,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             pluginMgr = new CachePluginManager(ctx, cfg);
 
         pluginMgr.validate();
+
+        if (cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            sharedCtx.coordinators().ensureStarted();
 
         sharedCtx.jta().registerCache(cfg);
 
@@ -3027,12 +3013,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (checkThreadTx)
             checkEmptyTransactions();
-
-        if (ccfg != null && ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT &&
-            !ctx.coordinators().clusterWideMvccSupport()) {
-            throw new IgniteException("Cannot start cache with MVCC transactional snapshot when there some nodes " +
-                "in cluster do not support it.");
-        }
 
         try {
             DynamicCacheChangeRequest req = prepareCacheChangeRequest(
