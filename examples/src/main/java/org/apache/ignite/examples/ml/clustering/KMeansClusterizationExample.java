@@ -38,7 +38,8 @@ import org.apache.ignite.thread.IgniteThread;
  * Code in this example launches Ignite grid and fills the cache with test data points (based on the
  * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
  * <p>
- * After that it trains the model based on the specified data using KMeans algorithm.</p>
+ * After that it trains the model based on the specified data using
+ * <a href="https://en.wikipedia.org/wiki/K-means_clustering">KMeans</a> algorithm.</p>
  * <p>
  * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
  * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
@@ -56,7 +57,7 @@ public class KMeansClusterizationExample {
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 KMeansClusterizationExample.class.getSimpleName(), () -> {
-                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).get(data);
+                IgniteCache<Integer, double[]> dataCache = new TestCache(ignite).fillCacheWith(data);
 
                 KMeansTrainer trainer = new KMeansTrainer()
                     .withSeed(7867L);

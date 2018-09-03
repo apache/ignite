@@ -41,7 +41,7 @@ const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
-const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2'];
+const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.1-p13'];
 
 const ENFORCE_JOIN_SINCE = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], '1.9.1'];
 
@@ -283,7 +283,15 @@ export class NotebookCtrl {
 
         $scope.caches = [];
 
-        $scope.pageSizes = [50, 100, 200, 400, 800, 1000];
+        $scope.pageSizesOptions = [
+            {value: 50, label: '50'},
+            {value: 100, label: '100'},
+            {value: 200, label: '200'},
+            {value: 400, label: '400'},
+            {value: 800, label: '800'},
+            {value: 1000, label: '1000'}
+        ];
+
         $scope.maxPages = [
             {label: 'Unlimited', value: 0},
             {label: '1', value: 1},
@@ -1048,7 +1056,7 @@ export class NotebookCtrl {
             const paragraph = _newParagraph({
                 name: 'Query' + (sz === 0 ? '' : sz),
                 query: '',
-                pageSize: $scope.pageSizes[1],
+                pageSize: $scope.pageSizesOptions[1].value,
                 timeLineSpan: $scope.timeLineSpans[0],
                 result: 'none',
                 rate: {
@@ -1077,7 +1085,7 @@ export class NotebookCtrl {
             const paragraph = _newParagraph({
                 name: 'Scan' + (sz === 0 ? '' : sz),
                 query: '',
-                pageSize: $scope.pageSizes[1],
+                pageSize: $scope.pageSizesOptions[1].value,
                 timeLineSpan: $scope.timeLineSpans[0],
                 result: 'none',
                 rate: {

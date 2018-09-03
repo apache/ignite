@@ -195,7 +195,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Writes the specified config.
         /// </summary>
-        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg, bool skipCodes = false)
+        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg, ClientProtocolVersion srvVer,
+            bool skipCodes = false)
         {
             Debug.Assert(stream != null);
             Debug.Assert(cfg != null);
@@ -302,7 +303,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteCollectionRaw(cfg.KeyConfiguration);
             
             code(Op.QueryEntities);
-            writer.WriteCollectionRaw(cfg.QueryEntities);
+            writer.WriteCollectionRaw(cfg.QueryEntities, srvVer);
 
             // Write length (so that part of the config can be skipped).
             var len = writer.Stream.Position - pos - 4;
@@ -312,7 +313,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Reads the config.
         /// </summary>
-        public static void Read(IBinaryStream stream, CacheClientConfiguration cfg)
+        public static void Read(IBinaryStream stream, CacheClientConfiguration cfg, ClientProtocolVersion srvVer)
         {
             Debug.Assert(stream != null);
 
@@ -351,7 +352,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             cfg.SqlSchema = reader.ReadString();
             cfg.WriteSynchronizationMode = (CacheWriteSynchronizationMode)reader.ReadInt();
             cfg.KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
-            cfg.QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
+            cfg.QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r, srvVer));
 
             Debug.Assert(len == reader.Stream.Position - pos);
         }

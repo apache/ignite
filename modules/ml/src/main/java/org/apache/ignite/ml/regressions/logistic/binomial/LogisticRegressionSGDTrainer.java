@@ -64,7 +64,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
      * @param seed Seed for random generator.
      */
     public LogisticRegressionSGDTrainer(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations,
-                                        int batchSize, int locIterations, long seed) {
+        int batchSize, int locIterations, long seed) {
         this.updatesStgy = updatesStgy;
         this.maxIterations = maxIterations;
         this.batchSize = batchSize;
@@ -82,7 +82,13 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
                 if (data.getFeatures() == null)
                     return null;
                 return data.getFeatures().length / data.getRows();
-            }, (a, b) -> a == null ? b : a);
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? 0 : b;
+                if (b == null)
+                    return a;
+                return b;
+            });
 
             MLPArchitecture architecture = new MLPArchitecture(cols);
             architecture = architecture.withAddedLayer(1, true, Activators.SIGMOID);
@@ -100,7 +106,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
             seed
         );
 
-        MultilayerPerceptron mlp = trainer.fit(datasetBuilder, featureExtractor, (k, v) -> new double[]{lbExtractor.apply(k, v)});
+        MultilayerPerceptron mlp = trainer.fit(datasetBuilder, featureExtractor, (k, v) -> new double[] {lbExtractor.apply(k, v)});
 
         double[] params = mlp.parameters().getStorage().data();
 

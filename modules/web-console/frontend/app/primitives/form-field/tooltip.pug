@@ -14,5 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__tooltip({ title, options })
-    +tooltip(title, options)
+mixin form-field__tooltip({ title, options = { placement: 'auto' }})
+    if title
+        svg(
+            ignite-icon='info'
+            bs-tooltip=''
+
+            data-title=title
+            data-container=options && options.container || false
+            data-placement=options && options.placement || false
+        )&attributes(attributes)

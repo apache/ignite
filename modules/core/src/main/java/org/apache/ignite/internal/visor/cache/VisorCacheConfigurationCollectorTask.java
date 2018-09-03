@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.cache;
 import java.util.Map;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Task that collect cache metrics from all nodes.

@@ -85,6 +85,12 @@
                                         </bean>
                                     </list>
                                 </property>
+
+                                <property name="fieldsPrecision">
+                                    <map>
+                                        <entry key="strField" value="60" />
+                                    </map>
+                                </property>
                             </bean>
                         </list>
                     </property>

@@ -2271,7 +2271,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
                             false);
 
-                        cctx.evicts().touch(entry, topVer);
+                        entry.touch(topVer);
 
                         CU.unwindEvicts(cctx);
 

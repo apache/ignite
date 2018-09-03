@@ -23,9 +23,12 @@ import java.util.Collection;
 import java.util.Random;
 import org.apache.ignite.internal.cluster.graph.FullyConnectedComponentSearcher;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -34,6 +37,10 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class FullyConnectedComponentSearcherTest {
+    /** Per test timeout */
+    @Rule
+    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+
     /** Adjacency matrix provider for each test. */
     private AdjacencyMatrixProvider provider;
 
