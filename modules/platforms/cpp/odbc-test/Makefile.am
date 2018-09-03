@@ -47,7 +47,9 @@ ignite_odbc_tests_LDADD = \
     -ldl \
     -lodbc \
     -lpthread \
-    -lboost_regex
+    -lboost_thread \
+    -lboost_system \
+    -lboost_chrono
 
 ignite_odbc_tests_LDFLAGS = \
     -static-libtool-libs

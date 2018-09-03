@@ -289,7 +289,7 @@ namespace ignite
             }
 
             /** Storage. */
-            int8_t storage[sizeof(Bigger<ResultType, ErrorType>::type)];
+            int8_t storage[sizeof(typename Bigger<ResultType, ErrorType>::type)];
 
             /** Result flag. Set to @c false if the value is an error. */
             bool ok;
