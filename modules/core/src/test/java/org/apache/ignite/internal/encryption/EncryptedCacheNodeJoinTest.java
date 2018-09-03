@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.spi.encryption.AESEncryptionSpiImpl;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
 import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -77,7 +77,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
             grid.equals(GRID_3) ||
             grid.equals(GRID_4) ||
             grid.equals(GRID_5)) {
-            AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
+            AESEncryptionSpi encSpi = new AESEncryptionSpi();
 
             encSpi.setKeyStorePath(grid.equals(GRID_2) ? KEYSTORE_PATH_2 : KEYSTORE_PATH);
             encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
@@ -85,7 +85,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
             cfg.setEncryptionSpi(encSpi);
         }
         else
-            cfg.setEncryptionSpi(new NoopEncryptionSpi());
+            cfg.setEncryptionSpi(null);
 
         cfg.setClientMode(grid.equals(CLIENT));
 
@@ -100,7 +100,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName(cacheName());
-        ccfg.setEncrypted(gridName.equals(GRID_0));
+        ccfg.setEncryptionEnabled(gridName.equals(GRID_0));
 
         return ccfg;
     }

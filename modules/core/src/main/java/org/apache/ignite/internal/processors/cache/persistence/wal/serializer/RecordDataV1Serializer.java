@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
@@ -46,6 +46,8 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageSetFreeListPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
@@ -66,6 +68,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuc
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageListMetaResetCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
@@ -193,6 +196,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             writePlainRecord(rec, clData);
 
+            clData.rewind();
+
             writeEncryptedData(((WalRecordCacheGroupAware)rec).groupId(), rec.type(), clData, buf);
 
             return;
@@ -243,7 +248,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         in.readFully(encData);
 
-        EncryptionKey key = cctx.kernalContext().encryption().groupKey(grpId);
+        Serializable key = cctx.kernalContext().encryption().groupKey(grpId);
 
         if (key == null)
             return new T3<>(null, grpId, plainRecType);
@@ -294,11 +299,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (plainRecType != null)
             putRecordType(dst, plainRecType);
 
-        EncryptionKey key = cctx.kernalContext().encryption().groupKey(grpId);
+        Serializable key = cctx.kernalContext().encryption().groupKey(grpId);
 
         assert key != null;
 
-        dst.put(encSpi.encrypt(clData.array(), key, 0, clData.capacity()));
+        encSpi.encrypt(clData, key, dst);
     }
 
     /**
@@ -375,6 +380,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case DATA_PAGE_SET_FREE_LIST_PAGE:
                 return 4 + 8 + 8;
+
+            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
+                return 4 + 8 + 4 + 8 + 8 + 4;
+
+            case MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD:
+                return 4 + 8 + 4 + 1;
+
+            case MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD:
+                return 4 + 8 + 4 + 1;
 
             case INIT_NEW_PAGE_RECORD:
                 return 4 + 8 + 2 + 2 + 8;
@@ -704,6 +718,41 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long freeListPage = in.readLong();
 
                 res = new DataPageSetFreeListPageRecord(cacheId, pageId, freeListPage);
+
+                break;
+
+            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                itemId = in.readInt();
+                long newMvccCrd = in.readLong();
+                long newMvccCntr = in.readLong();
+                int newMvccOpCntr = in.readInt();
+
+                res = new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId, newMvccCrd, newMvccCntr, newMvccOpCntr);
+
+                break;
+
+            case MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                itemId = in.readInt();
+                byte txState = in.readByte();
+
+                res = new DataPageMvccUpdateTxStateHintRecord(cacheId, pageId, itemId, txState);
+
+                break;
+
+            case MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                itemId = in.readInt();
+                byte newTxState = in.readByte();
+
+                res = new DataPageMvccUpdateNewTxStateHintRecord(cacheId, pageId, itemId, newTxState);
 
                 break;
 
@@ -1250,6 +1299,41 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
+                DataPageMvccMarkUpdatedRecord rmvRec = (DataPageMvccMarkUpdatedRecord)rec;
+
+                buf.putInt(rmvRec.groupId());
+                buf.putLong(rmvRec.pageId());
+
+                buf.putInt(rmvRec.itemId());
+                buf.putLong(rmvRec.newMvccCrd());
+                buf.putLong(rmvRec.newMvccCntr());
+                buf.putInt(rmvRec.newMvccOpCntr());
+
+                break;
+
+            case MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD:
+                DataPageMvccUpdateTxStateHintRecord txStRec = (DataPageMvccUpdateTxStateHintRecord)rec;
+
+                buf.putInt(txStRec.groupId());
+                buf.putLong(txStRec.pageId());
+
+                buf.putInt(txStRec.itemId());
+                buf.put(txStRec.txState());
+
+                break;
+
+            case MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD:
+                DataPageMvccUpdateNewTxStateHintRecord newTxStRec = (DataPageMvccUpdateNewTxStateHintRecord)rec;
+
+                buf.putInt(newTxStRec.groupId());
+                buf.putLong(newTxStRec.pageId());
+
+                buf.putInt(newTxStRec.itemId());
+                buf.put(newTxStRec.txState());
+
+                break;
+
             case INIT_NEW_PAGE_RECORD:
                 InitNewPageRecord inpRec = (InitNewPageRecord)rec;
 
@@ -1626,6 +1710,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             ByteBuffer clData = ByteBuffer.allocate(clSz);
 
             putPlainDataEntry(clData, entry);
+
+            clData.rewind();
 
             buf.put(ENCRYPTED);
 

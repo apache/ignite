@@ -17,59 +17,46 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Map;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Generate encryption key request.
  */
-public class GenerateEncryptionKeyRequest implements DiscoveryCustomMessage {
+public class GenerateEncryptionKeyRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Discovery custom message ID. */
+    /** Request ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
     /** */
+    @GridDirectCollection(Integer.class)
     private Collection<Integer> grpIds;
 
     /** */
-    private Map<Integer, byte[]> encGrpKeys;
+    public GenerateEncryptionKeyRequest() {
+    }
 
+    /**
+     * @param grpIds Groups ids.
+     */
     public GenerateEncryptionKeyRequest(Collection<Integer> grpIds) {
         this.grpIds = grpIds;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
+    /**
+     * @return Request id.
+     */
+    public IgniteUuid id() {
         return id;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
-        return null;
     }
 
     /**
@@ -79,17 +66,81 @@ public class GenerateEncryptionKeyRequest implements DiscoveryCustomMessage {
         return grpIds;
     }
 
-    /**
-     * @return Encrypted group keys.
-     */
-    public Map<Integer, byte[]> encGrpKeys() {
-        return encGrpKeys;
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeCollection("grpIds", grpIds, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeIgniteUuid("id", id))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
     }
 
-    /**
-     * @param encGrpKeys Encrypted group keys.
-     */
-    public void encGrpKeys(Map<Integer, byte[]> encGrpKeys) {
-        this.encGrpKeys = encGrpKeys;
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                grpIds = reader.readCollection("grpIds", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                id = reader.readIgniteUuid("id");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return reader.afterMessageRead(GenerateEncryptionKeyRequest.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 158;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GenerateEncryptionKeyRequest.class, this);
     }
 }

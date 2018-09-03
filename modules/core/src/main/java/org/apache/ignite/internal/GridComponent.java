@@ -67,7 +67,10 @@ public interface GridComponent {
         AUTH_PROC,
 
         /** Encryption manager. */
-        ENCRYPTION_MGR
+        ENCRYPTION_MGR,
+
+        /** */
+        CACHE_CRD_PROC
     }
 
     /**
@@ -181,3 +184,4 @@ public interface GridComponent {
      */
     @Nullable public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException;
 }
+

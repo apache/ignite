@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.encryption;
 
 import java.util.Collection;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
 
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEY_PREFIX;
 
@@ -112,7 +111,7 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheGroupId(encCacheName, grpName);
 
-        EncryptionKey encKey = grid.context().encryption().groupKey(grpId);
+        AESEncryptionKey encKey = (AESEncryptionKey)grid.context().encryption().groupKey(grpId);
         MetaStorage metaStore = grid.context().cache().context().database().metaStorage();
 
         if (keyShouldBeEmpty) {

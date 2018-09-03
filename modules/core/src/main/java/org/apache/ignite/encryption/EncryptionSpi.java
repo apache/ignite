@@ -17,6 +17,8 @@
 
 package org.apache.ignite.encryption;
 
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.spi.IgniteSpi;
 
@@ -39,47 +41,41 @@ public interface EncryptionSpi extends IgniteSpi {
      * @return Newly created encryption key.
      * @throws IgniteException If key creation failed.
      */
-    EncryptionKey create() throws IgniteException;
+    Serializable create() throws IgniteException;
 
     /**
      * Encrypts data.
      * 
      * @param data Data to encrypt.
      * @param key Encryption key.
-     * @param start Offset in {@code data} to start encrypt from.
-     * @param length Length of {@code data} to encrypt.
-     * @return Encrypted data.
+     * @param res Destination buffer.
      */
-    byte[] encrypt(byte[] data, EncryptionKey key, int start, int length);
+    void encrypt(ByteBuffer data, Serializable key, ByteBuffer res);
 
     /**
      * Encrypts data without padding info.
      *
      * @param data Data to encrypt.
      * @param key Encryption key.
-     * @param start Offset in {@code data} to start encrypt from.
-     * @param length Length of {@code data} to encrypt.
-     * @return Encrypted data.
+     * @param res Destination buffer.
      */
-    byte[] encryptNoPadding(byte[] data, EncryptionKey key, int start, int length);
+    void encryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res);
 
     /**
-     * Decrypts data encrypted with {@link #encrypt(byte[], EncryptionKey, int, int)} method.
+     * Decrypts data encrypted with {@link #encrypt(ByteBuffer, Serializable, ByteBuffer)}
      * 
      * @param data Data to decrypt.
      * @param key Encryption key.
-     * @return Decrypted data.
      */
-    byte[] decrypt(byte[] data, EncryptionKey key);
+     byte[] decrypt(byte[] data, Serializable key);
 
     /**
-     * Decrypts data encrypted with {@link #encryptNoPadding(byte[], EncryptionKey, int, int)} method.
+     * Decrypts data encrypted with {@link #encryptNoPadding(ByteBuffer, Serializable, ByteBuffer)}
      *
      * @param data Data to decrypt.
      * @param key Encryption key.
-     * @return Decrypted data.
      */
-    byte[] decryptNoPadding(byte[] data, EncryptionKey key);
+    void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res);
 
     /**
      * Encrypts key.
@@ -88,7 +84,7 @@ public interface EncryptionSpi extends IgniteSpi {
      * @param key Key to encrypt.
      * @return Encrypted key.
      */
-    byte[] encryptKey(EncryptionKey key);
+    byte[] encryptKey(Serializable key);
 
     /**
      * Decrypts key and checks it integrity.
@@ -96,7 +92,7 @@ public interface EncryptionSpi extends IgniteSpi {
      * @param key Key to decrypt.
      * @return Encrypted key.
      */
-    EncryptionKey decryptKey(byte[] key);
+    Serializable decryptKey(byte[] key);
 
     /**
      * @param dataSize Size of plain data in bytes.
@@ -109,4 +105,9 @@ public interface EncryptionSpi extends IgniteSpi {
      * @return Size of encrypted data in bytes for nopadding encryption mode.
      */
     int encryptedSizeNoPadding(int dataSize);
+
+    /**
+     * @return Encrypted data block size.
+     */
+    int blockSize();
 }

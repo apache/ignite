@@ -30,14 +30,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.encryption.AESEncryptionSpiImpl;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -45,8 +45,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.FSYNC;
-import static org.apache.ignite.spi.encryption.AESEncryptionSpiImpl.CIPHER_ALGO;
-import static org.apache.ignite.spi.encryption.AESEncryptionSpiImpl.MASTER_KEY_NAME;
+import static org.apache.ignite.spi.encryption.aes.AESEncryptionSpi.CIPHER_ALGO;
+import static org.apache.ignite.spi.encryption.aes.AESEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 
 /**
  */
@@ -71,7 +71,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
-        AESEncryptionSpiImpl encSpi = new AESEncryptionSpiImpl();
+        AESEncryptionSpi encSpi = new AESEncryptionSpi();
 
         encSpi.setKeyStorePath(keystorePath());
         encSpi.setKeyStorePassword(keystorePassword());
@@ -110,7 +110,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         for (String cacheName : cacheNames) {
             CacheConfiguration ccfg = grid1.cache(cacheName).getConfiguration(CacheConfiguration.class);
 
-            if (!ccfg.isEncrypted())
+            if (!ccfg.isEncryptionEnabled())
                 continue;
 
             IgniteInternalCache<?, ?> encrypted0 = grid0.cachex(cacheName);
@@ -123,15 +123,15 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             assertNotNull(encrypted1);
 
-            assertTrue(encrypted1.configuration().isEncrypted());
+            assertTrue(encrypted1.configuration().isEncryptionEnabled());
 
-            EncryptionKey encKey0 = grid0.context().encryption().groupKey(grpId);
+            AESEncryptionKey encKey0 = (AESEncryptionKey)grid0.context().encryption().groupKey(grpId);
 
             assertNotNull(encKey0);
             assertNotNull(encKey0.key());
 
             if (!grid1.configuration().isClientMode()) {
-                EncryptionKey encKey1 = grid1.context().encryption().groupKey(grpId);
+                AESEncryptionKey encKey1 = (AESEncryptionKey)grid1.context().encryption().groupKey(grpId);
 
                 assertNotNull(encKey1);
                 assertNotNull(encKey1.key());
@@ -167,7 +167,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<Long, String>(cacheName)
             .setWriteSynchronizationMode(FULL_SYNC)
             .setGroupName(cacheGroup)
-            .setEncrypted(true);
+            .setEncryptionEnabled(true);
 
         IgniteCache<Long, String> cache = grid0.createCache(ccfg);
 
@@ -221,12 +221,12 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         KeyGenerator gen = KeyGenerator.getInstance(CIPHER_ALGO);
 
-        gen.init(AESEncryptionSpiImpl.KEY_SIZE);
+        gen.init(AESEncryptionSpi.DEFAULT_KEY_SIZE);
 
         SecretKey key = gen.generateKey();
 
         ks.setEntry(
-            MASTER_KEY_NAME,
+            DEFAULT_MASTER_KEY_NAME,
             new KeyStore.SecretKeyEntry(key),
             new KeyStore.PasswordProtection(KEYSTORE_PASSWORD.toCharArray()));
 

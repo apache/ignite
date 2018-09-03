@@ -160,9 +160,6 @@ public abstract class GridAbstractTest extends TestCase {
     }};
 
     /** */
-    private static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
-
-    /** */
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
@@ -1583,6 +1580,14 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param idx Index of the Ignite instance.
+     * @return Indexed Ignite instance name.
+     */
+    protected String testNodeName(int idx) {
+        return getTestIgniteInstanceName(idx);
+    }
+
+    /**
      * Parses test Ignite instance index from test Ignite instance name.
      *
      * @param testIgniteInstanceName Test Ignite instance name, returned by {@link #getTestIgniteInstanceName(int)}.
@@ -2175,7 +2180,7 @@ public abstract class GridAbstractTest extends TestCase {
         if (timeout != null)
             return Long.parseLong(timeout);
 
-        return DFLT_TEST_TIMEOUT;
+        return GridTestUtils.DFLT_TEST_TIMEOUT;
     }
 
     /**

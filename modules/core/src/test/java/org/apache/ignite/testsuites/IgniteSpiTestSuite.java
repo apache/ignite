@@ -20,7 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.managers.GridManagerLocalMessageListenerSelfTest;
 import org.apache.ignite.internal.managers.GridNoopManagerSelfTest;
-import org.apache.ignite.spi.encryption.AESEncryptionSpiImplSelfTest;
+import org.apache.ignite.spi.encryption.AESEncryptionSpiSelfTest;
 
 /**
  * Grid SPI test suite.
@@ -63,7 +63,7 @@ public class IgniteSpiTestSuite extends TestSuite {
         // Local Message Listener tests.
         suite.addTestSuite(GridManagerLocalMessageListenerSelfTest.class);
 
-        suite.addTestSuite(AESEncryptionSpiImplSelfTest.class);
+        suite.addTestSuite(AESEncryptionSpiSelfTest.class);
 
         return suite;
     }

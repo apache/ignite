@@ -27,7 +27,6 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -103,7 +102,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         (IgnitePredicate<String>)key -> key.startsWith(ENCRYPTION_KEY_PREFIX);
 
     /** Group encryption keys. */
-    private Map<Integer, EncryptionKey> grpEncKeys = new HashMap<>();
+    private Map<Integer, Serializable> grpEncKeys = new HashMap<>();
 
     /** Metastorage. */
     private volatile ReadWriteMetastorage metaStorage;
@@ -191,14 +190,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         for (Map.Entry<Integer, byte[]> entry : nodeEncKeys.knownKeys.entrySet()) {
-            EncryptionKey locEncKey = grpEncKeys.get(entry.getKey());
+            Serializable locEncKey = grpEncKeys.get(entry.getKey());
 
             if (locEncKey == null)
                 continue;
 
-            EncryptionKey rmtKey = getSpi().decryptKey(entry.getValue());
+            Serializable rmtKey = getSpi().decryptKey(entry.getValue());
 
-            if (F.eq(locEncKey.key(), rmtKey.key()))
+            if (F.eq(locEncKey, rmtKey))
                 continue;
 
             return new IgniteNodeValidationResult(ctx.localNodeId(),
@@ -330,7 +329,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param grpId Group id.
      * @return Group encryption key.
      */
-    @Nullable public EncryptionKey groupKey(int grpId) {
+    @Nullable public Serializable groupKey(int grpId) {
         return grpEncKeys.get(grpId);
     }
 
@@ -343,7 +342,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     public void groupKey(int grpId, byte[] encGrpKey) {
         assert !grpEncKeys.containsKey(grpId);
 
-        EncryptionKey encKey = getSpi().decryptKey(encGrpKey);
+        Serializable encKey = getSpi().decryptKey(encGrpKey);
 
         synchronized (mux) {
             if (log.isDebugEnabled())
@@ -439,7 +438,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         synchronized (mux) {
             this.metaStorage = metaStorage;
 
-            for (Map.Entry<Integer, EncryptionKey> entry : grpEncKeys.entrySet()) {
+            for (Map.Entry<Integer, Serializable> entry : grpEncKeys.entrySet()) {
                 if (metaStorage.read(ENCRYPTION_KEY_PREFIX + entry.getKey()) != null)
                     continue;
 
@@ -499,7 +498,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         HashMap<Integer, byte[]> newKeys = null;
 
         for (CacheGroupDescriptor grpDesc : grpDescs.values()) {
-            if (knownKeys.contains(grpDesc.groupId()) || !grpDesc.config().isEncrypted())
+            if (knownKeys.contains(grpDesc.groupId()) || !grpDesc.config().isEncryptionEnabled())
                 continue;
 
             if (newKeys == null)
@@ -520,7 +519,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         HashMap<Integer, byte[]> knownKeys = new HashMap<>();
 
-        for (Map.Entry<Integer, EncryptionKey> entry : grpEncKeys.entrySet())
+        for (Map.Entry<Integer, Serializable> entry : grpEncKeys.entrySet())
             knownKeys.put(entry.getKey(), getSpi().encryptKey(entry.getValue()));
 
         return knownKeys;

@@ -20,13 +20,14 @@ package org.apache.ignite.internal.encryption;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.encryption.EncryptionKey;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import sun.security.krb5.EncryptionKey;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -55,8 +56,8 @@ public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheGroupId(cacheName(), null);
 
-        EncryptionKey keyBeforeRestart =
-            grids.get1().context().encryption().groupKey(grpId);
+        AESEncryptionKey keyBeforeRestart =
+            (AESEncryptionKey)grids.get1().context().encryption().groupKey(grpId);
 
         stopAllGrids();
 
@@ -64,7 +65,7 @@ public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
 
         checkEncCaches(grids.get1(), grids.get2());
 
-        EncryptionKey keyAfterRestart = grids.get1().context().encryption().groupKey(grpId);
+        AESEncryptionKey keyAfterRestart = (AESEncryptionKey)grids.get1().context().encryption().groupKey(grpId);
 
         assertNotNull(keyAfterRestart);
         assertNotNull(keyAfterRestart.key());
@@ -78,7 +79,7 @@ public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
         CacheConfiguration<Integer, byte[]> ccfg = new CacheConfiguration<Integer, byte[]>(cacheName)
             .setWriteSynchronizationMode(FULL_SYNC)
             .setGroupName(cacheGroup)
-            .setEncrypted(true);
+            .setEncryptionEnabled(true);
 
         IgniteCache<Integer, byte[]> cache = grid0.createCache(ccfg);
 

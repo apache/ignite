@@ -62,9 +62,6 @@ public class ANNClassificationTest extends TrainerTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
-        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(550, 550)), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(-550, -550)), PRECISION);
-
         Assert.assertNotNull(((ANNClassificationModel) mdl).getCandidates());
 
         Assert.assertTrue(mdl.toString().contains(NNStrategy.SIMPLE.name()));

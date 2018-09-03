@@ -18,19 +18,20 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,8 +43,19 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearTxPrepareFutureAdapter {
     /** */
+    private static final long serialVersionUID = 7460376140787916619L;
+
+    /** */
+    private static final AtomicIntegerFieldUpdater<MvccSnapshotFutureExt> LOCK_CNT_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(MvccSnapshotFutureExt.class, "lockCnt");
+
+    /** */
     @GridToStringExclude
     protected KeyLockFuture keyLockFut;
+
+    /** */
+    @GridToStringExclude
+    protected MvccSnapshotFutureExt mvccVerFut;
 
     /**
      * @param cctx Context.
@@ -73,7 +85,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             }
 
             if (keyLockFut != null)
-                add(keyLockFut);
+                add((IgniteInternalFuture)keyLockFut);
         }
     }
 
@@ -202,6 +214,29 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     protected abstract void prepare0(boolean remap, boolean topLocked);
 
     /**
+     * @param lockCnt Expected number of lock responses.
+     * @param remap Remap flag.
+     */
+    @SuppressWarnings("unchecked")
+    final void initMvccVersionFuture(int lockCnt, boolean remap) {
+        if (!remap) {
+            mvccVerFut = new MvccSnapshotFutureExt();
+
+            mvccVerFut.init(lockCnt);
+
+            if (keyLockFut != null)
+                keyLockFut.listen(mvccVerFut);
+
+            add((IgniteInternalFuture)mvccVerFut);
+        }
+        else {
+            assert mvccVerFut != null;
+
+            mvccVerFut.init(lockCnt);
+        }
+    }
+
+    /**
      * @param e Exception.
      * @param timedOut {@code True} if timed out.
      */
@@ -223,7 +258,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     /**
      * Keys lock future.
      */
-    protected static class KeyLockFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
+    protected static class KeyLockFuture extends GridFutureAdapter<Void> {
         /** */
         @GridToStringInclude
         protected Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
@@ -258,29 +293,103 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             checkLocks();
         }
 
-        /**
-         * @return {@code True} if all locks are owned.
-         */
-        private boolean checkLocks() {
+        /** */
+        private void checkLocks() {
             boolean locked = lockKeys.isEmpty();
 
             if (locked && allKeysAdded) {
                 if (log.isDebugEnabled())
                     log.debug("All locks are acquired for near prepare future: " + this);
 
-                onDone((GridNearTxPrepareResponse)null);
+                onDone((Void)null);
             }
             else {
                 if (log.isDebugEnabled())
                     log.debug("Still waiting for locks [fut=" + this + ", keys=" + lockKeys + ']');
             }
-
-            return locked;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(KeyLockFuture.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    class MvccSnapshotFutureExt extends GridFutureAdapter<Void> implements MvccSnapshotResponseListener, IgniteInClosure<IgniteInternalFuture<Void>> {
+        /** */
+        private static final long serialVersionUID = 5883078648683911226L;
+
+        /** */
+        volatile int lockCnt;
+
+        /** {@inheritDoc} */
+        @Override public void apply(IgniteInternalFuture<Void> keyLockFut) {
+            try {
+                keyLockFut.get();
+
+                onLockReceived();
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("MvccSnapshotFutureExt ignores key lock future failure: " + e);
+            }
+        }
+
+        /**
+         * @param lockCnt Expected number of lock responses.
+         */
+        void init(int lockCnt) {
+            assert lockCnt > 0;
+
+            this.lockCnt = lockCnt;
+
+            assert !isDone();
+        }
+
+        /** */
+        void onLockReceived() {
+            int remaining = LOCK_CNT_UPD.decrementAndGet(this);
+
+            assert remaining >= 0 : remaining;
+
+            if (remaining == 0) {
+                try {
+                    MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
+
+                    if (snapshot != null)
+                        onResponse(snapshot);
+                    else
+                        cctx.coordinators().requestSnapshotAsync(tx, this);
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    onError(e);
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onResponse(MvccSnapshot res) {
+            tx.mvccSnapshot(res);
+
+            onDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onError(IgniteCheckedException e) {
+            if (e instanceof ClusterTopologyCheckedException)
+                ((ClusterTopologyCheckedException)e).retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+            ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFutureAdapter.this, null, e);
+
+            onDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MvccSnapshotFutureExt.class, this, super.toString());
         }
     }
 }

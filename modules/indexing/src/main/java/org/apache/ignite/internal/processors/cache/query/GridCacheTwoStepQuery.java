@@ -65,6 +65,12 @@ public class GridCacheTwoStepQuery {
     /** */
     private CacheQueryPartitionInfo[] derivedPartitions;
 
+    /** */
+    private boolean mvccEnabled;
+
+    /** {@code FOR UPDATE} flag. */
+    private boolean forUpdate;
+
     /**
      * @param originalSql Original query SQL.
      * @param tbls Tables in query.
@@ -241,6 +247,8 @@ public class GridCacheTwoStepQuery {
         cp.distributedJoins = distributedJoins;
         cp.derivedPartitions = derivedPartitions;
         cp.local = local;
+        cp.mvccEnabled = mvccEnabled;
+        cp.forUpdate = forUpdate;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy());
@@ -260,6 +268,34 @@ public class GridCacheTwoStepQuery {
      */
     public Set<QueryTable> tables() {
         return tbls;
+    }
+
+    /**
+     * @return Mvcc flag.
+     */
+    public boolean mvccEnabled() {
+        return mvccEnabled;
+    }
+
+    /**
+     * @param mvccEnabled Mvcc flag.
+     */
+    public void mvccEnabled(boolean mvccEnabled) {
+        this.mvccEnabled = mvccEnabled;
+    }
+
+    /**
+     * @return {@code FOR UPDATE} flag.
+     */
+    public boolean forUpdate() {
+        return forUpdate;
+    }
+
+    /**
+     * @param forUpdate {@code FOR UPDATE} flag.
+     */
+    public void forUpdate(boolean forUpdate) {
+        this.forUpdate = forUpdate;
     }
 
     /** {@inheritDoc} */

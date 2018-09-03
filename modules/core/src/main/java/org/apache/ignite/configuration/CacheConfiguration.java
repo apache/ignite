@@ -52,8 +52,7 @@ import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.encryption.AESEncryptionSpiImpl;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -381,9 +380,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * If {@code true} data on the disk will be encrypted.
      *
      * @see EncryptionSpi
-     * @see AESEncryptionSpiImpl
+     * @see AESEncryptionSpi
      */
-    public static boolean encrypted = true;
+    private boolean encryptionEnabled;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -424,7 +423,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cpOnRead = cc.isCopyOnRead();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         eagerTtl = cc.isEagerTtl();
-        //encrypted = cc.isEncrypted();
+        //encryptionEnabled = cc.isEncryptionEnabled();
         evictFilter = cc.getEvictionFilter();
         evictPlc = cc.getEvictionPolicy();
         evictPlcFactory = cc.getEvictionPolicyFactory();
@@ -1032,6 +1031,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param atomicityMode Cache atomicity mode.
      * @return {@code this} for chaining.
      */
+    @SuppressWarnings("unchecked")
     public CacheConfiguration<K, V> setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
 
@@ -2285,18 +2285,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return {@code True} if this cache persistent data is encrypted.
      */
-    public boolean isEncrypted() {
-        return !CU.isSystemCache(name) && encrypted;
+    public boolean isEncryptionEnabled() {
+        return encryptionEnabled;
     }
 
     /**
      * Sets encrypted flag.
      *
-     * @param encrypted {@code True} if this cache persistent data should be encrypted.
+     * @param encryptionEnabled {@code True} if this cache persistent data should be encrypted.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setEncrypted(boolean encrypted) {
-        //this.encrypted = encrypted;
+    public CacheConfiguration<K, V> setEncryptionEnabled(boolean encryptionEnabled) {
+        //this.encryptionEnabled = encryptionEnabled;
         
         return this;
     }
