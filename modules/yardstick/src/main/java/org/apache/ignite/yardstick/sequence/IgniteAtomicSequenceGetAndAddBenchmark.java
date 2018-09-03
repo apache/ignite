@@ -31,6 +31,6 @@ public class IgniteAtomicSequenceGetAndAddBenchmark extends IgniteAtomicSequence
 
         seq.getAndAdd(delta);
 
-        return false;
+        return true;
     }
 }
