@@ -94,16 +94,14 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         if (plcEnabled)
             prepare(cfg, plc, cctx.isNear());
 
-        if (!cctx.isNear()) {
-            filterFactory = cfg.getEvictionFilterFactory();
-            if (filterFactory != null){
-                prepare(cfg, filterFactory, cctx.isNear());
-                filter = (EvictionFilter)filterFactory.create();
-            }
-            else{
-                filter = cfg.getEvictionFilter();
-                prepare(cfg, filter, cctx.isNear());
-            }
+        filterFactory = cfg.getEvictionFilterFactory();
+        if (filterFactory != null){
+            prepare(cfg, filterFactory, cctx.isNear());
+            filter = (EvictionFilter)filterFactory.create();
+        }
+        else{
+            filter = cfg.getEvictionFilter();
+            prepare(cfg, filter, cctx.isNear());
         }
 
         if (log.isDebugEnabled())
