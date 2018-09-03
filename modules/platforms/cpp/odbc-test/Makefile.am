@@ -81,6 +81,7 @@ ignite_odbc_tests_SOURCES = \
     src/sql_parsing_test.cpp \
     src/sql_outer_join_test.cpp \
     src/sql_get_info_test.cpp \
+    src/streaming_test.cpp \
     src/api_robustness_test.cpp \
     src/attributes_test.cpp \
     src/errors_test.cpp \
@@ -100,6 +101,8 @@ ignite_odbc_tests_SOURCES = \
     ../odbc/src/ssl/ssl_mode.cpp \
     ../odbc/src/sql/sql_parser.cpp \
     ../odbc/src/sql/sql_lexer.cpp \
+    ../odbc/src/sql/sql_set_streaming_command.cpp \
+    ../odbc/src/sql/sql_utils.cpp \
     ../odbc/src/row.cpp \
     ../odbc/src/protocol_version.cpp \
     ../odbc/src/column.cpp \
