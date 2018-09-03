@@ -673,10 +673,16 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         Map<K, Entry<? extends K, ? extends  V>> vals,
         boolean initSes) {
 
-        if (initSes && storeMgr != null)
-            storeMgr.writeBehindSessionInit();
-
         try {
+            if (storeMgr != null) {
+                if (initSes)
+                    storeMgr.writeBehindSessionInit();
+                else
+                    // Back-pressure mechanism is running.
+                    // Cache store session must be initialized by storeMgr.
+                    storeMgr.writeBehindCacheStoreSessionListenerStart();
+            }
+
             boolean threwEx = true;
 
             try {
@@ -908,7 +914,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         private static final long serialVersionUID = 0L;
 
         /** Value. */
-        @GridToStringInclude
+        @GridToStringInclude(sensitive = true)
         private Entry<? extends K, ? extends V> val;
 
         /** Store operation. */

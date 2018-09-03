@@ -52,6 +52,7 @@ libignite_odbc_la_SOURCES = \
     os/linux/src/system/socket_client.cpp \
     src/app/application_data_buffer.cpp \
     src/app/parameter.cpp \
+    src/app/parameter_set.cpp \
     src/common_types.cpp \
     src/config/configuration.cpp \
     src/config/connection_info.cpp \
@@ -68,6 +69,7 @@ libignite_odbc_la_SOURCES = \
     src/dsn_config.cpp \
     src/query/column_metadata_query.cpp \
     src/query/data_query.cpp \
+    src/query/batch_query.cpp \
     src/query/foreign_keys_query.cpp \
     src/query/primary_keys_query.cpp \
     src/query/table_metadata_query.cpp \
@@ -76,6 +78,7 @@ libignite_odbc_la_SOURCES = \
     src/protocol_version.cpp \
     src/result_page.cpp \
     src/row.cpp \
+    src/message.cpp \
     src/column.cpp \
     src/statement.cpp \
     src/type_traits.cpp \

@@ -32,6 +32,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.PluginProvider;
@@ -49,7 +51,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     private static final String JDK_CLS_NAMES_FILE = "META-INF/classnames-jdk.properties";
 
     /** */
-    private final ConcurrentMap<Integer, String> map = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, Object> map = new ConcurrentHashMap8<>();
 
     /** */
     private final Set<String> registeredSystemTypes = new HashSet<>();
@@ -134,55 +136,129 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
 
                 int typeId = clsName.hashCode();
 
-                String oldClsName;
+                Object oldClsNameOrFuture = map.put(typeId, clsName);
 
-                if ((oldClsName = map.put(typeId, clsName)) != null) {
-                    if (!oldClsName.equals(clsName))
-                        throw new IgniteException("Duplicate type ID [id=" + typeId + ", clsName=" + clsName +
-                        ", oldClsName=" + oldClsName + ']');
+                try {
+                    String oldClsName = unwrap(oldClsNameOrFuture);
+
+                    if (oldClsName != null) {
+                        if (!oldClsName.equals(clsName))
+                            throw new IgniteException("Duplicate type ID [id=" + typeId + ", clsName=" + clsName +
+                            ", oldClsName=" + oldClsName + ']');
+                    }
+
+                    registeredSystemTypes.add(clsName);
                 }
-
-                registeredSystemTypes.add(clsName);
+                catch (IgniteCheckedException e) {
+                    throw new IllegalStateException("Failed to process type ID [typeId=" + typeId +
+                        ", clsName" + clsName + ']', e);
+                }
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean registerClass(int id, Class cls) throws IgniteCheckedException {
-        boolean registered = true;
+    @Override public boolean registerClass(final int id, final Class cls) throws IgniteCheckedException {
+        Object clsNameOrFuture = map.get(id);
 
-        String clsName = map.get(id);
+        String clsName = clsNameOrFuture != null ?
+            unwrap(clsNameOrFuture) :
+            computeIfAbsent(id, new IgniteOutClosureX<String>() {
+                @Override public String applyx() throws IgniteCheckedException {
+                    return registerClassName(id, cls.getName()) ? cls.getName() : null;
+                }
+            });
 
-        if (clsName == null) {
-            registered = registerClassName(id, cls.getName());
+        // The only way we can have clsName eq null here is a failing concurrent thread.
+        if (clsName == null)
+            return false;
 
-            if (registered)
-                map.putIfAbsent(id, cls.getName());
-        }
-        else if (!clsName.equals(cls.getName()))
+        if (!clsName.equals(cls.getName()))
             throw new IgniteCheckedException("Duplicate ID [id=" + id + ", oldCls=" + clsName +
                 ", newCls=" + cls.getName());
 
-        return registered;
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
-        String clsName = map.get(id);
+    @Override public Class getClass(final int id, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
+        Object clsNameOrFuture = map.get(id);
 
-        if (clsName == null) {
-            clsName = className(id);
+        String clsName = clsNameOrFuture != null ?
+            unwrap(clsNameOrFuture) :
+            computeIfAbsent(id, new IgniteOutClosureX<String>() {
+                @Override public String applyx() throws IgniteCheckedException {
+                    return className(id);
+                }
+            });
 
-            if (clsName == null)
-                throw new ClassNotFoundException("Unknown type ID: " + id);
-
-            String old = map.putIfAbsent(id, clsName);
-
-            if (old != null)
-                clsName = old;
-        }
+        if (clsName == null)
+            throw new ClassNotFoundException("Unknown type ID: " + id);
 
         return U.forName(clsName, ldr);
+    }
+
+    /**
+     * Computes the map value for the given ID. Will make sure that if there are two threads are calling
+     *      {@code computeIfAbsent}, only one of them will invoke the closure. If the closure threw an exeption,
+     *      all threads attempting to compute the value will throw this exception.
+     *
+     * @param id Type ID.
+     * @param clo Close to compute.
+     * @return Computed value.
+     * @throws IgniteCheckedException If closure threw an exception.
+     */
+    private String computeIfAbsent(int id, IgniteOutClosureX<String> clo) throws IgniteCheckedException {
+        Object clsNameOrFuture = map.get(id);
+
+        if (clsNameOrFuture == null) {
+            GridFutureAdapter<String> fut = new GridFutureAdapter<>();
+
+            Object old = map.putIfAbsent(id, fut);
+
+            if (old == null) {
+                String clsName = null;
+
+                try {
+                    try {
+                        clsName = clo.applyx();
+
+                        fut.onDone(clsName);
+
+                        clsNameOrFuture = clsName;
+                    }
+                    catch (Throwable e) {
+                        fut.onDone(e);
+
+                        throw e;
+                    }
+                }
+                finally {
+                    if (clsName != null)
+                        map.replace(id, fut, clsName);
+                    else
+                        map.remove(id, fut);
+                }
+            }
+            else
+                clsNameOrFuture = old;
+        }
+
+        // Unwrap the existing object.
+        return unwrap(clsNameOrFuture);
+    }
+
+    /**
+     * Unwraps an object into the String. Expects the object be {@code null}, a String or a GridFutureAdapter.
+     *
+     * @param clsNameOrFuture Class name or future to unwrap.
+     * @return Unwrapped value.
+     * @throws IgniteCheckedException If future completed with an exception.
+     */
+    private String unwrap(Object clsNameOrFuture) throws IgniteCheckedException {
+        return clsNameOrFuture == null ? null :
+            clsNameOrFuture instanceof String ? (String)clsNameOrFuture :
+                ((GridFutureAdapter<String>)clsNameOrFuture).get();
     }
 
     /** {@inheritDoc} */

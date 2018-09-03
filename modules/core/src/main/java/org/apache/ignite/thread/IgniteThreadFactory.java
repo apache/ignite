@@ -20,6 +20,7 @@ package org.apache.ignite.thread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -61,5 +62,10 @@ public class IgniteThreadFactory implements ThreadFactory {
     /** {@inheritDoc} */
     @Override public Thread newThread(@NotNull Runnable r) {
         return new IgniteThread(gridName, threadName, r, idxGen.incrementAndGet());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteThreadFactory.class, this, super.toString());
     }
 }

@@ -72,6 +72,7 @@
     <Compile Include="Cache\CacheResultTest.cs" />
     <Compile Include="Cache\CacheSwapSpaceTest.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
+    <Compile Include="Cache\Store\NamedNodeCacheStoreTest.cs" />
     <Compile Include="Collections\MultiValueDictionaryTest.cs" />
     <Compile Include="Collections\ReadOnlyCollectionTest.cs" />
     <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />

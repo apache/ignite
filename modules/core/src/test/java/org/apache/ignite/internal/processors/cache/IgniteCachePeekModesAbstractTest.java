@@ -996,23 +996,40 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
      * @param part Cache partition
      * @return Tuple with number of primary and backup keys (one or both will be zero).
      */
-    private T2<Integer, Integer> swapKeysCount(int nodeIdx, int part) throws IgniteCheckedException {
+    private T2<Integer, Integer> swapKeysCount(final int nodeIdx, final int part) throws IgniteCheckedException {
         GridCacheContext ctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache().context();
         // Swap and offheap are disabled for near cache.
         GridCacheSwapManager swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
-        //First count entries...
-        int cnt = (int)swapMgr.swapEntriesCount(part);
 
-        GridCacheAffinityManager affinity = ctx.affinity();
-        AffinityTopologyVersion topVer = affinity.affinityTopologyVersion();
+        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        //And then find out whether they are primary or backup ones.
+        Affinity aff = ignite(nodeIdx).affinity(null);
+
+        ClusterNode node = ignite(nodeIdx).cluster().localNode();
+
+        Iterator<KeyCacheObject> it = swapMgr.swapKeyIterator(true, true, topVer);
+
+        CacheObjectContext coctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache()
+            .context().cacheObjectContext();
+
         int primaryCnt = 0;
         int backupCnt = 0;
-        if (affinity.primary(ctx.localNode(), part, topVer))
-            primaryCnt = cnt;
-        else if (affinity.backup(ctx.localNode(), part, topVer))
-            backupCnt = cnt;
+
+        while (it.hasNext()) {
+            Integer key = it.next().value(coctx, false);
+
+            if (part != aff.partition(key))
+                continue;
+
+            if (aff.isPrimary(node, key))
+                primaryCnt++;
+            else {
+                assertTrue(aff.isBackup(node, key));
+
+                backupCnt++;
+            }
+        }
+
         return new T2<>(primaryCnt, backupCnt);
     }
 
@@ -1081,9 +1098,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         //And then find out whether they are primary or backup ones.
         int primaryCnt = 0;
         int backupCnt = 0;
-        if (affinity.primary(ctx.localNode(), part, topVer))
+        if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
             primaryCnt = cnt;
-        else if (affinity.backup(ctx.localNode(), part, topVer))
+        else if (affinity.backupByPartition(ctx.localNode(), part, topVer))
             backupCnt = cnt;
         return new T2<>(primaryCnt, backupCnt);
     }

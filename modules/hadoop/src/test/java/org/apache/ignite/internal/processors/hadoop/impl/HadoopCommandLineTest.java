@@ -413,6 +413,8 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
      * Tests Hive integration.
      */
     public void testHiveCommandLine() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12944");
+
         assertEquals(0, executeHiveQuery(
             "create table table_a (" +
                 "id_a int," +

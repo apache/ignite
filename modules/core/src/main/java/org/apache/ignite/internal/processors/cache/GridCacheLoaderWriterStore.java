@@ -25,6 +25,7 @@ import javax.cache.Cache;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
@@ -141,5 +142,10 @@ class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAwa
     /** {@inheritDoc} */
     @Override public void sessionEnd(boolean commit) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheLoaderWriterStore.class, this);
     }
 }

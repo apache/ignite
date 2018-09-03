@@ -94,6 +94,14 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
             out.synchronize();
 
             ptr = platformCtx.gateway().serviceInit(mem.pointer());
+
+            PlatformInputStream in = mem.input();
+
+            in.synchronize();
+
+            BinaryRawReaderEx reader = platformCtx.reader(in);
+
+            PlatformUtils.readInvocationResult(platformCtx, reader);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

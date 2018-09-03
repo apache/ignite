@@ -276,17 +276,9 @@ namespace Apache.Ignite.Linq.Impl
         {
             // Field hierarchy is flattened (Person.Address.Street is just Street), append as is, do not call Visit.
 
-            // Special case: string.Length
-            if (expression.Member == MethodVisitor.StringLength)
-            {
-                ResultBuilder.Append("length(");
-
-                VisitMember((MemberExpression) expression.Expression);
-
-                ResultBuilder.Append(")");
-
+            // Property call (string.Length, DateTime.Month, etc).
+            if (MethodVisitor.VisitPropertyCall(expression, this))
                 return expression;
-            }
 
             // Special case: grouping
             if (VisitGroupByMember(expression.Expression))

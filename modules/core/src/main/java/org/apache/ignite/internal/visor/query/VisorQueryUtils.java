@@ -25,7 +25,13 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import javax.cache.Cache;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
  * Contains utility methods for Visor query tasks and jobs.
@@ -77,12 +83,19 @@ public class VisorQueryUtils {
     private static String valueOf(Object o) {
         if (o == null)
             return "null";
+
         if (o instanceof byte[])
             return "size=" + ((byte[])o).length;
+
         if (o instanceof Byte[])
             return "size=" + ((Byte[])o).length;
+
         if (o instanceof Object[])
             return "size=" + ((Object[])o).length + ", values=[" + mkString((Object[])o, 120) + "]";
+
+        if (o instanceof BinaryObject)
+            return binaryToString((BinaryObject)o);
+
         return o.toString();
     }
 
@@ -168,6 +181,51 @@ public class VisorQueryUtils {
     }
 
     /**
+     * Convert Binary object to string.
+     *
+     * @param obj Binary object.
+     * @return String representation of Binary object.
+     */
+    public static String binaryToString(BinaryObject obj) {
+        int hash = obj.hashCode();
+
+        if (obj instanceof BinaryObjectEx) {
+            BinaryObjectEx objEx = (BinaryObjectEx)obj;
+
+            BinaryType meta;
+
+            try {
+                meta = ((BinaryObjectEx)obj).rawType();
+            }
+            catch (BinaryObjectException ignore) {
+                meta = null;
+            }
+
+            if (meta != null) {
+                SB buf = new SB(meta.typeName());
+
+                if (meta.fieldNames() != null) {
+                    buf.a(" [hash=").a(hash);
+
+                    for (String name : meta.fieldNames()) {
+                        Object val = objEx.field(name);
+
+                        buf.a(", ").a(name).a('=').a(val);
+                    }
+
+                    buf.a(']');
+
+                    return buf.toString();
+                }
+            }
+        }
+
+        return S.toString(obj.getClass().getSimpleName(),
+            "hash", hash, false,
+            "typeId", obj.type().typeId(), true);
+    }
+
+    /**
      * Collects rows from sql query future, first time creates meta and column names arrays.
      *
      * @param cur Query cursor to fetch rows from.
@@ -193,6 +251,8 @@ public class VisorQueryUtils {
                     row[i] = null;
                 else if (isKnownType(o))
                     row[i] = o;
+                else if (o instanceof BinaryObject)
+                    row[i] = binaryToString((BinaryObject)o);
                 else
                     row[i] = o.getClass().isArray() ? "binary" : o.toString();
             }

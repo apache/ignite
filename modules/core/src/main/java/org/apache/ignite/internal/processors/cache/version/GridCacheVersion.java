@@ -190,6 +190,15 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
         return new IgniteUuid(new UUID(((long)topVer << 32) | nodeOrderDrId, globalTime), order);
     }
 
+    /**
+     * For testing purpose!!!
+     *
+     * @param globalTime Global time.
+     */
+    public void globalTime(long globalTime) {
+        this.globalTime = globalTime;
+    }
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.

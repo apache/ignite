@@ -151,14 +151,14 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
                     throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
             }
 
-            SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(args);
+            SqlFieldsQuery qry = new JdbcSqlFieldsQuery(sql, true).setArgs(args);
 
             qry.setPageSize(fetchSize);
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
 
-            QueryCursor<List<?>> qryCursor = cache.query(qry);
+            QueryCursor<List<?>> qryCursor = cache.withKeepBinary().query(qry);
 
             Collection<GridQueryFieldMetadata> meta = ((QueryCursorImpl<List<?>>)qryCursor).fieldsMeta();
 

@@ -34,12 +34,14 @@ module.exports = {
 module.exports.factory = (_, mongo, spacesService, errors) => {
     /**
      * Convert remove status operation to own presentation.
+     *
      * @param {RemoveResult} result - The results of remove operation.
      */
     const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
 
     /**
-     * Update existing notebook
+     * Update existing notebook.
+     *
      * @param {Object} notebook - The notebook for updating
      * @returns {Promise.<mongo.ObjectId>} that resolves cache id
      */
@@ -53,6 +55,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
 
     /**
      * Create new notebook.
+     *
      * @param {Object} notebook - The notebook for creation.
      * @returns {Promise.<mongo.ObjectId>} that resolves cache id.
      */
@@ -67,6 +70,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
     class NotebooksService {
         /**
          * Create or update Notebook.
+         *
          * @param {Object} notebook - The Notebook
          * @returns {Promise.<mongo.ObjectId>} that resolves Notebook id of merge operation.
          */
@@ -78,16 +82,18 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
         }
 
         /**
-         * Get caches by spaces.
+         * Get notebooks by spaces.
+         *
          * @param {mongo.ObjectId|String} spaceIds - The spaces ids that own caches.
-         * @returns {Promise.<mongo.Cache[]>} - contains requested caches.
+         * @returns {Promise.<mongo.Notebook[]>} - contains requested caches.
          */
         static listBySpaces(spaceIds) {
             return mongo.Notebook.find({space: {$in: spaceIds}}).sort('name').lean().exec();
         }
 
         /**
-         * Remove Notebook.
+         * Remove notebook.
+         *
          * @param {mongo.ObjectId|String} notebookId - The Notebook id for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */

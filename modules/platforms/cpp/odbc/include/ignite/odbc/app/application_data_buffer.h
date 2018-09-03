@@ -54,10 +54,9 @@ namespace ignite
                  * @param buffer Data buffer pointer.
                  * @param buflen Data buffer length.
                  * @param reslen Resulting data length.
-                 * @param offset Pointer to buffer and reslen offset pointer.
                  */
                 ApplicationDataBuffer(type_traits::IgniteSqlType type, void* buffer,
-                    SqlLen buflen, SqlLen* reslen, int** offset = 0);
+                    SqlLen buflen, SqlLen* reslen);
 
                 /**
                  * Copy constructor.
@@ -80,13 +79,23 @@ namespace ignite
                 ApplicationDataBuffer& operator=(const ApplicationDataBuffer& other);
 
                 /**
-                 * Set pointer to offset pointer.
+                 * Set offset in bytes for all bound pointers.
                  *
-                 * @param offset Pointer to offset pointer.
+                 * @param offset Offset.
                  */
-                void SetPtrToOffsetPtr(int** offset)
+                void SetByteOffset(int offset)
                 {
-                    this->offset = offset;
+                    this->byteOffset = offset;
+                }
+
+                /**
+                 * Set offset in elements for all bound pointers.
+                 *
+                 * @param
+                 */
+                void SetElementOffset(SqlUlen idx)
+                {
+                    this->elementOffset = idx;
                 }
 
                 /**
@@ -314,6 +323,13 @@ namespace ignite
                 SqlLen GetDataAtExecSize() const;
 
                 /**
+                 * Get single element size.
+                 *
+                 * @return Size of the single element.
+                 */
+                SqlLen GetElementSize() const;
+
+                /**
                  * Get size of the input buffer.
                  *
                  * @return Input buffer size, or zero if the data is going
@@ -392,10 +408,11 @@ namespace ignite
                  * Apply buffer offset to pointer.
                  * Adds offset to pointer if offset pointer is not null.
                  * @param ptr Pointer.
+                 * @param elemSize Element size.
                  * @return Pointer with applied offset.
                  */
                 template<typename T>
-                T* ApplyOffset(T* ptr) const;
+                T* ApplyOffset(T* ptr, size_t elemSize) const;
 
                 /** Underlying data type. */
                 type_traits::IgniteSqlType type;
@@ -409,8 +426,11 @@ namespace ignite
                 /** Result length. */
                 SqlLen* reslen;
 
-                /** Pointer to implementation pointer to application offset */
-                int** offset;
+                /** Current byte offset */
+                int byteOffset;
+
+                /** Current element offset. */
+                SqlUlen elementOffset;
             };
 
             /** Column binging map type alias. */

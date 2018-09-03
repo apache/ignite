@@ -90,7 +90,7 @@ public class CacheEvent extends EventAdapter {
     private int part;
 
     /** Cache entry. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object key;
 
     /** Event ID. */
@@ -102,11 +102,11 @@ public class CacheEvent extends EventAdapter {
     private final Object lockId;
 
     /** New value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private final Object newVal;
 
     /** Old value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private final Object oldVal;
 
     /**

@@ -20,15 +20,27 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -45,6 +57,11 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        return super.getConfiguration(gridName).setCommunicationSpi(new TestTcpCommunicationSpi());
     }
 
     /**
@@ -133,6 +150,74 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
             assertEquals(entry.getKey(), entry.getValue().id());
 
             assert F.asList(persons).contains(entry.getValue());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testScanQueryPagination() throws Exception {
+        final int pageSize = 5;
+
+        final AtomicInteger pages = new AtomicInteger(0);
+
+        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+
+        for (int i = 0; i < 50; i++)
+            cache.put(i, i);
+
+        CommunicationSpi spi = ignite().configuration().getCommunicationSpi();
+
+        assert spi instanceof TestTcpCommunicationSpi;
+
+        TestTcpCommunicationSpi commSpi = (TestTcpCommunicationSpi)spi;
+
+        commSpi.filter = new IgniteInClosure<Message>() {
+            @Override public void apply(Message msg) {
+                if (!(msg instanceof GridIoMessage))
+                    return;
+
+                Message msg0 = ((GridIoMessage)msg).message();
+
+                if (msg0 instanceof GridCacheQueryRequest) {
+                    assertEquals(pageSize, ((GridCacheQueryRequest)msg0).pageSize());
+
+                    pages.incrementAndGet();
+                }
+                else if (msg0 instanceof GridCacheQueryResponse)
+                    assertTrue(((GridCacheQueryResponse)msg0).data().size() <= pageSize);
+            }
+        };
+
+        try {
+            ScanQuery<Integer, Integer> qry = new ScanQuery<Integer, Integer>();
+
+            qry.setPageSize(pageSize);
+
+            List<Cache.Entry<Integer, Integer>> all = cache.query(qry).getAll();
+
+            assertTrue(pages.get() > ignite().cluster().forDataNodes(null).nodes().size());
+
+            assertEquals(50, all.size());
+        }
+        finally {
+            commSpi.filter = null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestTcpCommunicationSpi extends TcpCommunicationSpi {
+        /** */
+        volatile IgniteInClosure<Message> filter;
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+            if (filter != null)
+                filter.apply(msg);
+
+            super.sendMessage(node, msg, ackC);
         }
     }
 }

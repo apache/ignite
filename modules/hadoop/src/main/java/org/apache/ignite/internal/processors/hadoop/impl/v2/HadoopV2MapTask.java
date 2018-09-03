@@ -28,6 +28,7 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 
 /**
@@ -49,29 +50,38 @@ public class HadoopV2MapTask extends HadoopV2Task {
 
         JobContextImpl jobCtx = taskCtx.jobContext();
 
+        if (taskCtx.taskInfo().hasMapperIndex())
+            HadoopMapperUtils.mapperIndex(taskCtx.taskInfo().mapperIndex());
+        else
+            HadoopMapperUtils.clearMapperIndex();
+
         try {
-            InputSplit nativeSplit = hadoopContext().getInputSplit();
+            HadoopV2Context hadoopCtx = hadoopContext();
+
+            InputSplit nativeSplit = hadoopCtx.getInputSplit();
 
             if (nativeSplit == null)
                 throw new IgniteCheckedException("Input split cannot be null.");
 
             InputFormat inFormat = ReflectionUtils.newInstance(jobCtx.getInputFormatClass(),
-                hadoopContext().getConfiguration());
+                hadoopCtx.getConfiguration());
 
-            RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopContext());
+            RecordReader reader = inFormat.createRecordReader(nativeSplit, hadoopCtx);
 
-            reader.initialize(nativeSplit, hadoopContext());
+            reader.initialize(nativeSplit, hadoopCtx);
 
-            hadoopContext().reader(reader);
+            hadoopCtx.reader(reader);
 
             HadoopJobInfo jobInfo = taskCtx.job().info();
 
             outputFormat = jobInfo.hasCombiner() || jobInfo.hasReducer() ? null : prepareWriter(jobCtx);
 
-            Mapper mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), hadoopContext().getConfiguration());
+            Mapper mapper = ReflectionUtils.newInstance(jobCtx.getMapperClass(), hadoopCtx.getConfiguration());
 
             try {
-                mapper.run(new WrappedMapper().getMapContext(hadoopContext()));
+                mapper.run(new WrappedMapper().getMapContext(hadoopCtx));
+
+                taskCtx.onMapperFinished();
             }
             finally {
                 closeWriter();
@@ -92,6 +102,8 @@ public class HadoopV2MapTask extends HadoopV2Task {
             throw new IgniteCheckedException(e);
         }
         finally {
+            HadoopMapperUtils.clearMapperIndex();
+
             if (err != null)
                 abort(outputFormat);
         }

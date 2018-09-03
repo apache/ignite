@@ -60,7 +60,9 @@ if %ERRORLEVEL% equ 0 (
     if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m
 )
 
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "*" org.apache.ignite.console.agent.AgentLauncher  %*
+set JVM_OPTS=%JVM_OPTS% -Djava.net.useSystemProxies=true
+
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "*" org.apache.ignite.console.agent.AgentLauncher %*
 
 set JAVA_ERRORLEVEL=%ERRORLEVEL%
 

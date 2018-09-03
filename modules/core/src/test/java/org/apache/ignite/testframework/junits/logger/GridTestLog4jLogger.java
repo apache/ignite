@@ -50,7 +50,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
 /**
  * Log4j-based implementation for logging. This logger should be used
- * by loaders that have prefer <a target=_new href="http://logging.apache.org/log4j/docs/">log4j</a>-based logging.
+ * by loaders that have prefer <a target=_new href="http://logging.apache.org/log4j/1.2/">log4j</a>-based logging.
  * <p>
  * Here is a typical example of configuring log4j logger in Ignite configuration file:
  * <pre name="code" class="xml">

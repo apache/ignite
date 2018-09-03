@@ -571,7 +571,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
             assert cached != null;
 
-            assert cached == val : "Cached value mismatch [expected=" + val + ", cached=" + cached + ']';
+            assert cached.equals(val) : "Cached value mismatch [expected=" + val + ", cached=" + cached + ']';
 
             // Make sure that value is coming from cache, not from store.
             checkLastMethod(null);

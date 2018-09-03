@@ -17,6 +17,8 @@
 
 import angular from 'angular';
 
+import templateUrl from 'views/reset.tpl.pug';
+
 angular
 .module('ignite-console.states.password', [
     'ui.router'
@@ -31,14 +33,14 @@ angular
     })
     .state('password.reset', {
         url: '/reset?{token}',
-        templateUrl: '/reset.html',
+        templateUrl,
         metaTags: {
             title: 'Reset password'
         }
     })
     .state('password.send', {
         url: '/send',
-        templateUrl: '/reset.html',
+        templateUrl,
         metaTags: {
             title: 'Password Send'
         }

@@ -17,23 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -72,16 +75,18 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
      * @param ctx Context.
      * @param cacheName Cache name.
      * @param topVer Topology version.
+     * @param discoCache Discovery cache.
      */
     public GridDhtAssignmentFetchFuture(
         GridCacheSharedContext ctx,
         String cacheName,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        DiscoCache discoCache
     ) {
         this.ctx = ctx;
         this.key = new T2<>(CU.cacheId(cacheName), topVer);
 
-        Collection<ClusterNode> availableNodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
+        Collection<ClusterNode> availableNodes = discoCache.cacheAffinityNodes(CU.cacheId(cacheName));
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
 
@@ -202,8 +207,14 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
                         "continue to another node): " + node);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log0, "Failed to request affinity assignment from remote node (will " +
-                        "continue to another node): " + node, e);
+                    if (ctx.discovery().reconnectSupported() && X.hasCause(e, IOException.class)) {
+                        onDone(new IgniteNeedReconnectException(ctx.localNode(), e));
+
+                        return;
+                    }
+
+                    U.warn(log0, "Failed to request affinity assignment from remote node (will " +
+                        "continue to another node): " + node);
                 }
             }
 

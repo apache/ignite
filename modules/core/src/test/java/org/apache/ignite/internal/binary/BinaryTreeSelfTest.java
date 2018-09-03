@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Arrays;
+import javax.cache.Cache.Entry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
@@ -71,8 +76,8 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testTreeMapRegularNoComparator() throws Exception {
-        checkTreeMap(false, false);
+    public void testTreeMapAsValueRegularNoComparator() throws Exception {
+        checkTreeMapAsValue(false, false);
     }
 
     /**
@@ -80,8 +85,8 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testTreeMapRegularComparator() throws Exception {
-        checkTreeMap(false, true);
+    public void testTreeMapAsValueRegularComparator() throws Exception {
+        checkTreeMapAsValue(false, true);
     }
 
     /**
@@ -89,8 +94,8 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testTreeMapBinaryNoComparator() throws Exception {
-        checkTreeMap(true, false);
+    public void testTreeMapAsValueBinaryNoComparator() throws Exception {
+        checkTreeMapAsValue(true, false);
     }
 
     /**
@@ -98,8 +103,26 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testTreeMapBinaryComparator() throws Exception {
-        checkTreeMap(true, true);
+    public void testTreeMapAsValueBinaryComparator() throws Exception {
+        checkTreeMapAsValue(true, true);
+    }
+
+    /**
+     * Test {@code TreeMap} data structure when used as key.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTreeMapAsKeyNoComparator() throws Exception {
+        checkTreeMapAsKey(false);
+    }
+
+    /**
+     * Test {@code TreeMap} data structure with comparator when used as key.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTreeMapAsKeyComparator() throws Exception {
+        checkTreeMapAsKey(true);
     }
 
     /**
@@ -110,22 +133,11 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void checkTreeMap(boolean useBinary, boolean useComparator) throws Exception {
+    private void checkTreeMapAsValue(boolean useBinary, boolean useComparator) throws Exception {
         // Populate map.
         TreeMap<TestKey, Integer> map;
 
-        if (useComparator) {
-            map = new TreeMap<>(new TestKeyComparator());
-
-            for (int i = 0; i < SIZE; i++)
-                map.put(key(false, i), i);
-        }
-        else {
-            map = new TreeMap<>();
-
-            for (int i = 0; i < SIZE; i++)
-                map.put(key(true, i), i);
-        }
+        map = testMap(useComparator);
 
         // Put and get value from cache.
         cache().put(KEY, map);
@@ -147,6 +159,71 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
             assertNull(resMap.comparator());
 
         assertEquals(map, resMap);
+
+        cache().clear();
+    }
+
+    /**
+     * Check {@code TreeMap} data structure when used as key.
+     *
+     * @param useComparator Whether comparator should be used.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void checkTreeMapAsKey(boolean useComparator) throws Exception {
+        // Populate map.
+        TreeMap<TestKey, Integer> map;
+
+        map = testMap(useComparator);
+
+        // Put and get value from cache.
+        cache().put(map, KEY);
+
+        TreeMap<TestKey, Integer> resMap = (TreeMap<TestKey, Integer>)((Entry)cache().iterator().next()).getKey();
+
+        // Ensure content is correct.
+        if (useComparator)
+            assert resMap.comparator() instanceof TestKeyComparator;
+        else
+            assertNull(resMap.comparator());
+
+        assertEquals(map, resMap);
+
+        // Ensure value is correct.
+        Integer resSameMap = (Integer)cache().get(map);
+
+        assertEquals((Object)KEY, resSameMap);
+
+        Integer resIdenticalMap = (Integer)cache().get(testMap(useComparator));
+
+        assertEquals((Object)KEY, resIdenticalMap);
+
+        // Ensure wrong comparator is not accepted.
+        Integer resDifferentComparator = (Integer)cache().get(testMap(!useComparator));
+
+        assertEquals(null, resDifferentComparator);
+
+        cache().clear();
+    }
+
+    /** */
+    private TreeMap<TestKey, Integer> testMap(boolean useComparator) {
+        TreeMap<TestKey, Integer> map;
+
+        if (useComparator) {
+            map = new TreeMap<>(new TestKeyComparator());
+
+            for (int i = 0; i < SIZE; i++)
+                map.put(key(false, i), i);
+        }
+        else {
+            map = new TreeMap<>();
+
+            for (int i = 0; i < SIZE; i++)
+                map.put(key(true, i), i);
+        }
+
+        return map;
     }
 
     /**
@@ -154,8 +231,8 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testTreeSetRegularNoComparator() throws Exception {
-        checkTreeSet(false, false);
+    public void testTreeSetAsValueRegularNoComparator() throws Exception {
+        checkTreeSetAsValue(false, false);
     }
 
     /**
@@ -163,8 +240,8 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testTreeSetRegularComparator() throws Exception {
-        checkTreeSet(false, true);
+    public void testTreeSetAsValueRegularComparator() throws Exception {
+        checkTreeSetAsValue(false, true);
     }
 
     /**
@@ -172,8 +249,8 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testTreeSetBinaryNoComparator() throws Exception {
-        checkTreeSet(true, false);
+    public void testTreeSetAsValueBinaryNoComparator() throws Exception {
+        checkTreeSetAsValue(true, false);
     }
 
     /**
@@ -181,8 +258,26 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testTreeSetBinaryComparator() throws Exception {
-        checkTreeSet(true, true);
+    public void testTreeSetAsValueBinaryComparator() throws Exception {
+        checkTreeSetAsValue(true, true);
+    }
+
+    /**
+     * Test {@code TreeSet} data structure.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTreeSetAsKeyNoComparator() throws Exception {
+        checkTreeSetAsKey(false);
+    }
+
+    /**
+     * Test {@code TreeSet} data structure with comparator.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTreeSetAsKeyComparator() throws Exception {
+        checkTreeSetAsKey(true);
     }
 
     /**
@@ -193,22 +288,11 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void checkTreeSet(boolean useBinary, boolean useComparator) throws Exception {
+    private void checkTreeSetAsValue(boolean useBinary, boolean useComparator) throws Exception {
         // Populate set.
         TreeSet<TestKey> set;
 
-        if (useComparator) {
-            set = new TreeSet<>(new TestKeyComparator());
-
-            for (int i = 0; i < SIZE; i++)
-                set.add(key(false, i));
-        }
-        else {
-            set = new TreeSet<>();
-
-            for (int i = 0; i < SIZE; i++)
-                set.add(key(true, i));
-        }
+        set = testSet(useComparator);
 
         // Put and get value from cache.
         cache().put(KEY, set);
@@ -230,6 +314,74 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
             assertNull(resSet.comparator());
 
         assertEquals(set, resSet);
+
+        cache().clear();
+    }
+
+
+    /**
+     * Check {@code TreeSet} data structure when used as key.
+     *
+     * @param useComparator Whether comparator should be used.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void checkTreeSetAsKey(boolean useComparator) throws Exception {
+        // Populate set.
+        TreeSet<TestKey> set;
+
+        set = testSet(useComparator);
+
+        // Put and get value from cache.
+        cache().put(set, KEY);
+
+        TreeSet<TestKey> resSet = (TreeSet<TestKey>)((Entry)cache().iterator().next()).getKey();
+
+        // Ensure content is correct.
+        if (useComparator)
+            assert resSet.comparator() instanceof TestKeyComparator;
+        else
+            assertNull(resSet.comparator());
+
+        assertEquals(set, resSet);
+
+        // Ensure value is correct.
+        Integer resSameMap = (Integer)cache().get(set);
+
+        assertEquals((Object)KEY, resSameMap);
+
+        Integer resIdenticalMap = (Integer)cache().get(testSet(useComparator));
+
+        assertEquals((Object)KEY, resIdenticalMap);
+
+        // Ensure wrong comparator is not accepted.
+        Integer resDifferentComparator = (Integer)cache().get(testSet(!useComparator));
+
+        assertEquals(null, resDifferentComparator);
+
+        assertEquals(set, resSet);
+
+        cache().clear();
+    }
+
+    /** */
+    private TreeSet<TestKey> testSet(boolean useComparator) {
+        TreeSet<TestKey> set;
+
+        if (useComparator) {
+            set = new TreeSet<>(new TestKeyComparator());
+
+            for (int i = 0; i < SIZE; i++)
+                set.add(key(false, i));
+        }
+        else {
+            set = new TreeSet<>();
+
+            for (int i = 0; i < SIZE; i++)
+                set.add(key(true, i));
+        }
+
+        return set;
     }
 
     /**
@@ -266,6 +418,22 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setPeerClassLoadingEnabled(false);
+
+        BinaryTypeConfiguration mapTypeCfg = new BinaryTypeConfiguration();
+
+        mapTypeCfg.setTypeName("org.apache.ignite.internal.binary.BinaryTreeMap");
+        mapTypeCfg.setIdentityResolver(new BinaryArrayIdentityResolver());
+
+        BinaryTypeConfiguration setTypeCfg = new BinaryTypeConfiguration();
+
+        setTypeCfg.setTypeName("org.apache.ignite.internal.binary.BinaryTreeSet");
+        setTypeCfg.setIdentityResolver(new BinaryArrayIdentityResolver());
+
+        BinaryConfiguration binaryCfg = new BinaryConfiguration();
+
+        binaryCfg.setTypeConfigurations(Arrays.asList(mapTypeCfg, setTypeCfg));
+
+        cfg.setBinaryConfiguration(binaryCfg);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -308,6 +476,23 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
         public int id() {
             return id;
         }
+
+        /** */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestKey key = (TestKey)o;
+
+            return id == key.id;
+        }
+
+        /** */
+        @Override public int hashCode() {
+            return id;
+        }
     }
 
     /**
@@ -336,6 +521,21 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int compare(TestKey o1, TestKey o2) {
             return o1.id() - o2.id();
+        }
+
+        /** */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            return true;
+        }
+
+        /** */
+        @Override public int hashCode() {
+            return 13;
         }
     }
 }

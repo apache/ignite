@@ -30,6 +30,7 @@ public interface GridMessageListener extends EventListener {
      * @param nodeId ID of node that sent the message. Note that may have already
      *      left topology by the time this message is received.
      * @param msg Message received.
+     * @param plc Message policy (pool).
      */
-    public void onMessage(UUID nodeId, Object msg);
+    public void onMessage(UUID nodeId, Object msg, byte plc);
 }

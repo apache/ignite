@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -1102,7 +1103,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 U.sleep(5000);
 
                 for (int i = 0; i < NODES; i++)
-                    stopGrid(i);
+                    stopGrid(i, false, false);
 
                 return null;
             }
@@ -1166,6 +1167,73 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         commSpi0.stopBlock();
 
         checkAffinity(4, topVer(4, 1), true);
+    }
+
+    /**
+     * Wait for rebalance, send affinity change message, but affinity already changed (new node joined).
+     *
+     * @throws Exception If failed.
+     */
+    public void testDelayAssignmentAffinityChanged2() throws Exception {
+        Ignite ignite0 = startServer(0, 1);
+
+        TestTcpDiscoverySpi discoSpi0 =
+            (TestTcpDiscoverySpi)ignite0.configuration().getDiscoverySpi();
+        TestRecordingCommunicationSpi commSpi0 =
+            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+
+        startClient(1, 2);
+
+        checkAffinity(2, topVer(2, 0), true);
+
+        startServer(2, 3);
+
+        checkAffinity(3, topVer(3, 1), false);
+
+        discoSpi0.blockCustomEvent();
+
+        stopNode(2, 4);
+
+        discoSpi0.waitCustomEvent();
+
+        blockSupplySend(commSpi0, CACHE_NAME1);
+
+        final IgniteInternalFuture<?> startedFuture = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startServer(3, 5);
+
+                return null;
+            }
+        }, 1, "server-starter");
+
+        Thread.sleep(2_000);
+
+        discoSpi0.stopBlock();
+
+        boolean started = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return startedFuture.isDone();
+            }
+        }, 10_000);
+
+        if (!started)
+            startedFuture.cancel();
+
+        assertTrue(started);
+
+        checkAffinity(3, topVer(5, 0), false);
+
+        checkNoExchange(3, topVer(5, 1));
+
+        commSpi0.stopBlock();
+
+        checkAffinity(3, topVer(5, 1), true);
+
+        List<GridDhtPartitionsExchangeFuture> exFutures = grid(3).context().cache().context().exchange().exchangeFutures();
+
+        for (GridDhtPartitionsExchangeFuture f : exFutures)
+            //Shouldn't contains staled futures.
+            assertTrue(f.topologyVersion().topologyVersion() >= 5);
     }
 
     /**

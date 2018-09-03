@@ -47,7 +47,7 @@ public class IgniteVersionUtils {
     public static final String ACK_VER_STR;
 
     /** Copyright blurb. */
-    public static final String COPYRIGHT = "2016 Copyright(C) Apache Software Foundation";
+    public static final String COPYRIGHT = "2017 Copyright(C) Apache Software Foundation";
 
     /**
      * Static initializer.

@@ -111,20 +111,6 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testMessageListenerReconnectAndStopFromServer() throws Exception {
-        testMessageListenerReconnect(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMessageListenerReconnectAndStopFromClient() throws Exception {
-        testMessageListenerReconnect(true);
-    }
-
-    /**
      * @param stopFromClient If {@code true} stops listener from client node, otherwise from server.
      * @throws Exception If failed.
      */
@@ -212,6 +198,8 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
      * @throws Exception If failed.
      */
     public void testCacheContinuousQueryReconnect() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12703");
+
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());

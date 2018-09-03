@@ -185,6 +185,20 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         clientReconnectOnCoordinatorRouterFail(2);
     }
 
+    /** {@inheritDoc} */
+    @Override public void testPingFailedClientNode() throws Exception {
+        int hb = maxMissedClientHbs;
+
+        maxMissedClientHbs = Integer.MAX_VALUE;
+
+        try {
+            super.testPingFailedClientNode();
+        }
+        finally {
+            maxMissedClientHbs = hb;
+        }
+    }
+
     /**
      * Test tries to provoke scenario when client sends reconnect message before router failure detected.
      *

@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -450,6 +451,27 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         Set<String> names = new HashSet<>();
 
+        Ignite crd = null;
+
+        for (Ignite g : G.allGrids()) {
+            ClusterNode node = g.cluster().localNode();
+
+            if (crd == null || node.order() < crd.cluster().localNode().order()) {
+                crd = g;
+
+                if (node.order() == 1)
+                    break;
+            }
+        }
+
+        if (crd == null)
+            return;
+
+        AffinityTopologyVersion waitTopVer = ((IgniteKernal)crd).context().discovery().topologyVersionEx();
+
+        if (waitTopVer.topologyVersion() <= 0)
+            waitTopVer = new AffinityTopologyVersion(1, 0);
+
         for (Ignite g : G.allGrids()) {
             if (nodes != null && !nodes.contains(g.cluster().localNode()))
                 continue;
@@ -465,6 +487,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
             else
                 startTime = g0.context().discovery().gridStartTime();
+
+            IgniteInternalFuture<?> exchFut =
+                g0.context().cache().context().exchange().affinityReadyFuture(waitTopVer);
+
+            if (exchFut != null && !exchFut.isDone()) {
+                try {
+                    exchFut.get(timeout);
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to wait for exchange [topVer=" + waitTopVer +
+                        ", node=" + g0.name() + ']', e);
+                }
+            }
 
             for (IgniteCacheProxy<?, ?> c : g0.context().cache().jcaches()) {
                 CacheConfiguration cfg = c.context().config();

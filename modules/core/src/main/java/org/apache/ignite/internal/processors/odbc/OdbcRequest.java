@@ -42,6 +42,9 @@ public class OdbcRequest {
     /** Get parameters meta. */
     public static final int GET_PARAMS_META = 7;
 
+    /** Execute sql query with the batch of parameters. */
+    public static final int QRY_EXEC_BATCH = 8;
+
     /** Command. */
     private final int cmd;
 

@@ -142,7 +142,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
-        commSpi.setIdleConnectionTimeout(100);
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -258,15 +257,15 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 qryClnCache.put(key, -1);
 
             qryClnCache.put(keys.get(0), 100);
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return lsnr.evts.size() == 1;
+                }
+            }, 5000);
+
+            assertEquals(1, lsnr.evts.size());
         }
-
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return lsnr.evts.size() == 1;
-            }
-        }, 5000);
-
-        assertEquals(lsnr.evts.size(), 1);
     }
 
     /**
@@ -1387,7 +1386,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             @Override public boolean apply() {
                 return backupQueue.isEmpty();
             }
-        }, 2000);
+        }, 10000);
 
         assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.size() < BACKUP_ACK_THRESHOLD);
 
@@ -1409,12 +1408,12 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             @Override public boolean apply() {
                 return backupQueue.isEmpty();
             }
-        }, ACK_FREQ + 2000);
-
-        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.isEmpty());
+        }, ACK_FREQ + 20000);
 
         if (!latch.await(5, SECONDS))
             fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
+
+        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.isEmpty());
 
         cur.close();
 
@@ -1465,9 +1464,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             @Override public boolean apply() {
                 return backupQueue.isEmpty();
             }
-        }, 2000);
-
-        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.size() < BACKUP_ACK_THRESHOLD);
+        }, 20000);
 
         boolean wait = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -1476,6 +1473,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         }, ttl + 1000);
 
         assertTrue("Entry evicted.", wait);
+
+        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.size() < BACKUP_ACK_THRESHOLD);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -2074,107 +2073,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         cur.close();
 
         assertFalse("Unexpected error during test, see log for details.", err);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMultiThreaded() throws Exception {
-        this.backups = 2;
-
-        final int SRV_NODES = 3;
-
-        startGridsMultiThreaded(SRV_NODES);
-
-        client = true;
-
-        Ignite qryClient = startGrid(SRV_NODES);
-
-        final IgniteCache<Object, Object> cache = qryClient.cache(null);
-
-        CacheEventListener1 lsnr = new CacheEventListener1(true);
-
-        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
-
-        qry.setLocalListener(lsnr);
-
-        QueryCursor<?> cur = cache.query(qry);
-
-        client = false;
-
-        final int SRV_IDX = SRV_NODES - 1;
-
-        List<Integer> keys = primaryKeys(ignite(SRV_IDX).cache(null), 10);
-
-        final int THREADS = 10;
-
-        for (int i = 0; i < keys.size(); i++) {
-            log.info("Iteration: " + i);
-
-            Ignite srv = ignite(SRV_IDX);
-
-            TestCommunicationSpi spi = (TestCommunicationSpi)srv.configuration().getCommunicationSpi();
-
-            spi.sndFirstOnly = new AtomicBoolean(false);
-
-            final Integer key = keys.get(i);
-
-            final AtomicInteger val = new AtomicInteger();
-
-            CountDownLatch latch = new CountDownLatch(THREADS);
-
-            lsnr.latch = latch;
-
-            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    Integer val0 = val.getAndIncrement();
-
-                    cache.put(key, val0);
-
-                    return null;
-                }
-            }, THREADS, "update-thread");
-
-            fut.get();
-
-            stopGrid(SRV_IDX);
-
-            if (!latch.await(5, SECONDS))
-                fail("Failed to wait for notifications [exp=" + THREADS + ", left=" + lsnr.latch.getCount() + ']');
-
-            assertEquals(THREADS, lsnr.allEvts.size());
-
-            Set<Integer> vals = new HashSet<>();
-
-            boolean err = false;
-
-            for (CacheEntryEvent<?, ?> evt : lsnr.allEvts) {
-                assertEquals(key, evt.getKey());
-                assertNotNull(evt.getValue());
-
-                if (!vals.add((Integer)evt.getValue())) {
-                    err = true;
-
-                    log.info("Extra event: " + evt);
-                }
-            }
-
-            for (int v = 0; v < THREADS; v++) {
-                if (!vals.contains(v)) {
-                    err = true;
-
-                    log.info("Event for value not received: " + v);
-                }
-            }
-
-            assertFalse("Invalid events, see log for details.", err);
-
-            lsnr.allEvts.clear();
-
-            startGrid(SRV_IDX);
-        }
-
-        cur.close();
     }
 
     /**

@@ -299,12 +299,14 @@ namespace ignite
                     return IGNITE_ODBC_C_TYPE_WCHAR;
 
                 case SQL_C_SSHORT:
+                case SQL_C_SHORT:
                     return IGNITE_ODBC_C_TYPE_SIGNED_SHORT;
 
                 case SQL_C_USHORT:
                     return IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT;
 
                 case SQL_C_SLONG:
+                case SQL_C_LONG:
                     return IGNITE_ODBC_C_TYPE_SIGNED_LONG;
 
                 case SQL_C_ULONG:
@@ -320,6 +322,7 @@ namespace ignite
                     return IGNITE_ODBC_C_TYPE_BIT;
 
                 case SQL_C_STINYINT:
+                case SQL_C_TINYINT:
                     return IGNITE_ODBC_C_TYPE_SIGNED_TINYINT;
 
                 case SQL_C_UTINYINT:

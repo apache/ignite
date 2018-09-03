@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -255,7 +254,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
         supplier.onTopologyChanged(lastFut.topologyVersion());
 
-        demander.updateLastExchangeFuture(lastFut);
+        demander.onTopologyChanged(lastFut);
     }
 
     /** {@inheritDoc} */
@@ -290,7 +289,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
 
             // If partition belongs to local node.
-            if (cctx.affinity().localNode(p, topVer)) {
+            if (cctx.affinity().partitionLocalNode(p, topVer)) {
                 GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
                 assert part != null;
@@ -350,7 +349,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Picked owners.
      */
     private Collection<ClusterNode> pickedOwners(int p, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
+        Collection<ClusterNode> affNodes = cctx.affinity().nodesByPartition(p, topVer);
 
         int affCnt = affNodes.size();
 
@@ -413,9 +412,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Callable<Boolean> addAssignments(GridDhtPreloaderAssignments assignments,
-        boolean forcePreload, Collection<String> caches, int cnt) {
-        return demander.addAssignments(assignments, forcePreload, caches, cnt);
+    @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
+        boolean forcePreload, int cnt, Runnable next,  @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
+        return demander.addAssignments(assignments, forcePreload, cnt, next, forcedRebFut);
     }
 
     /**
@@ -729,8 +728,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void forcePreload() {
-        demander.forcePreload();
+    @Override public IgniteInternalFuture<Boolean> forceRebalance() {
+        return demander.forceRebalance();
     }
 
     /** {@inheritDoc} */

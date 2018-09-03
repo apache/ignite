@@ -29,6 +29,8 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.mockito.Matchers;
+import org.mockito.Mockito;
 
 /**
  * Update notifier test.
@@ -73,8 +75,14 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
     public void testNotifier() throws Exception {
         String nodeVer = IgniteProperties.get("ignite.version");
 
+        HttpIgniteUpdatesChecker updatesCheckerMock = Mockito.mock(HttpIgniteUpdatesChecker.class);
+
+        // Return current node version and some other info
+        Mockito.when(updatesCheckerMock.getUpdates(Matchers.anyString()))
+                .thenReturn("meta=meta" + "\n" + "version=" + nodeVer + "\n" + "downloadUrl=url");
+
         GridUpdateNotifier ntf = new GridUpdateNotifier(null, nodeVer,
-            TEST_GATEWAY, Collections.<PluginProvider>emptyList(), false);
+            TEST_GATEWAY, Collections.<PluginProvider>emptyList(), false, updatesCheckerMock);
 
         ntf.checkForNewVersion(log);
 

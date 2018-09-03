@@ -160,8 +160,9 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder());
 
-            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.query(qry);
+            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
 
             if (isQry == null)
                 isQry = qryCursor.isQuery();
@@ -209,6 +210,13 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
         assert isQry != null : "Query flag must be set prior to returning result";
 
         return new QueryResult(uuid, finished, isQry, rows, cols, tbls, types);
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    protected boolean enforceJoinOrder() {
+        return false;
     }
 
     /**

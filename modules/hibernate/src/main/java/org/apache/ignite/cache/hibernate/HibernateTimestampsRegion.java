@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.hibernate.cache.spi.TimestampsRegion;
 
 /**
@@ -34,7 +33,7 @@ public class HibernateTimestampsRegion extends HibernateGeneralDataRegion implem
      * @param cache Region cache.
      */
     public HibernateTimestampsRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, IgniteInternalCache<Object, Object> cache) {
+        Ignite ignite,  HibernateCacheProxy cache) {
         super(factory, name, ignite, cache);
     }
 }

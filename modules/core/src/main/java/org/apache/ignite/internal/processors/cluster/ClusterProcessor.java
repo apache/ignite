@@ -58,7 +58,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     private IgniteClusterImpl cluster;
 
     /** */
-    private final AtomicBoolean notifyEnabled = new AtomicBoolean();
+    private final AtomicBoolean notifyEnabled = new AtomicBoolean(false);
 
     /** */
     @GridToStringExclude
@@ -73,9 +73,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
      */
     public ClusterProcessor(GridKernalContext ctx) {
         super(ctx);
-
-        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
-            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default"))));
 
         cluster = new IgniteClusterImpl(ctx);
     }

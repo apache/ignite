@@ -23,8 +23,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This interface defines basic logging functionality used throughout the system. We had to
  * abstract it out so that we can use whatever logging is used by the hosting environment.
- * Currently, <a target=_new href="http://logging.apache.org/log4j/docs/">log4j</a>,
- * <a target=_new href="http://www.jboss.org/developers/guides/logging">JBoss</a>,
+ * Currently, <a target=_new href="http://logging.apache.org/log4j/1.2/">log4j</a>,
+ * <a target=_new href="http://docs.jboss.org/hibernate/orm/4.3/topical/html/logging/Logging">JBoss</a>,
  * <a target=_new href="http://jakarta.apache.org/commons/logging/">JCL</a> and
  * console logging are provided as supported implementations.
  * <p>
@@ -146,9 +146,9 @@ public interface IgniteLogger {
     public boolean isInfoEnabled();
 
     /**
-     * Tests whether {@code info} and {@code debug} levels are turned off.
+     * Tests whether Logger is in "Quiet mode".
      *
-     * @return Whether {@code info} and {@code debug} levels are turned off.
+     * @return {@code true} "Quiet mode" is enabled, {@code false} otherwise
      */
     public boolean isQuiet();
 

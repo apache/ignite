@@ -63,6 +63,13 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(3);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */

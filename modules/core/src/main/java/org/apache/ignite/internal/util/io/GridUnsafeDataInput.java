@@ -135,7 +135,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
             if (maxOff < halfSize) {
                 byte[] newInBuf = new byte[halfSize]; // Shrink.
 
-                GridUnsafe.copyMemory(inBuf, BYTE_ARR_OFF, newInBuf, BYTE_ARR_OFF, off);
+                System.arraycopy(inBuf, 0, newInBuf, 0, off);
 
                 buf = inBuf = newInBuf;
             }
@@ -191,7 +191,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         byte[] arr = new byte[arrSize];
 
-        GridUnsafe.copyMemory(buf, BYTE_ARR_OFF + offset(arrSize), arr, BYTE_ARR_OFF, arrSize);
+        System.arraycopy(buf, offset(arrSize), arr, 0, arrSize);
 
         return arr;
     }
@@ -364,14 +364,14 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         fromStream(len);
 
-        GridUnsafe.copyMemory(buf, BYTE_ARR_OFF + offset(len), b, BYTE_ARR_OFF, len);
+        System.arraycopy(buf, offset(len), b, 0, len);
     }
 
     /** {@inheritDoc} */
     @Override public void readFully(byte[] b, int off, int len) throws IOException {
         fromStream(len);
 
-        GridUnsafe.copyMemory(buf, BYTE_ARR_OFF + offset(len), b, BYTE_ARR_OFF + off, len);
+        System.arraycopy(buf, offset(len), b, off, len);
     }
 
     /** {@inheritDoc} */
@@ -488,7 +488,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
         else {
             int toRead = Math.min(len, max - this.off);
 
-            GridUnsafe.copyMemory(buf, BYTE_ARR_OFF + offset(toRead), b, BYTE_ARR_OFF + off, toRead);
+            System.arraycopy(buf, offset(toRead), b, off, toRead);
 
             return toRead;
         }
@@ -552,7 +552,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
             else {
                 // shift and refill buffer manually
                 if (avail > 0)
-                    GridUnsafe.copyMemory(utfBuf, BYTE_ARR_OFF + pos, utfBuf, BYTE_ARR_OFF, avail);
+                    System.arraycopy(utfBuf, pos, utfBuf, 0, avail);
 
                 pos = 0;
                 end = (int)Math.min(MAX_BLOCK_SIZE, utfLen);

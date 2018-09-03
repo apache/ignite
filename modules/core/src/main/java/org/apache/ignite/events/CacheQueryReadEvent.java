@@ -96,19 +96,19 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
     private final String taskName;
 
     /** Key. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private final K key;
 
     /** Value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private final V val;
 
     /** Old value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private final V oldVal;
 
     /** Result row. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private final Object row;
 
     /**

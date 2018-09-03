@@ -18,7 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
+import org.apache.ignite.internal.processors.cache.CacheKeepBinaryTransactionTest;
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
+import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapSpaceSpiConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
@@ -29,8 +32,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffHeapCleanupTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentFairAffinityTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
 
 /**
@@ -50,6 +55,7 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(IgniteCacheWriteBehindNoUpdateSelfTest.class);
         suite.addTestSuite(IgniteCachePutStackOverflowSelfTest.class);
         suite.addTestSuite(GridCacheSwapSpaceSpiConsistencySelfTest.class);
+        suite.addTestSuite(CacheKeepBinaryTransactionTest.class);
 
         suite.addTestSuite(CacheLateAffinityAssignmentTest.class);
         suite.addTestSuite(CacheLateAffinityAssignmentFairAffinityTest.class);
@@ -61,6 +67,13 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
 
         suite.addTestSuite(GridCacheOffHeapCleanupTest.class);
+
+        suite.addTestSuite(CacheRebalancingSelfTest.class);
+        suite.addTestSuite(CacheManualRebalancingTest.class);
+
+        suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
+
+        suite.addTestSuite(GridCachePartitionExchangeManagerHistSizeTest.class);
 
         return suite;
     }

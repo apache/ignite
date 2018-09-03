@@ -111,6 +111,8 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
 
         Map<String, Object> map = client.getBulk("getKey1", "getKey2");
 
+        info("Map: " + map);
+
         Assert.assertEquals(2, map.size());
 
         Assert.assertEquals("getVal1", map.get("getKey1"));

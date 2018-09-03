@@ -121,6 +121,10 @@ public class IgniteBenchmarkArguments {
     private boolean collocated;
 
     /** */
+    @Parameter(names = {"-stripe", "--singleStripe"}, description = "Generate keys belonging to single stripe per node")
+    private boolean singleStripe;
+
+    /** */
     @Parameter(names = {"-jdbc", "--jdbcUrl"}, description = "JDBC url")
     private String jdbcUrl;
 
@@ -336,6 +340,13 @@ public class IgniteBenchmarkArguments {
      */
     public boolean collocated() {
         return collocated;
+    }
+
+    /**
+     * @return Generate keys for single stripe per node.
+     */
+    public boolean singleStripe() {
+        return singleStripe;
     }
 
     /**

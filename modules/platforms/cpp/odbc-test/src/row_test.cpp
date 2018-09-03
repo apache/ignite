@@ -82,12 +82,11 @@ void CheckRowData(Row& row, size_t rowIdx)
     char strBuf[1024];
     SQLGUID guidBuf;
     char bitBuf;
-    int* offset = 0;
 
-    ApplicationDataBuffer appLongBuf(type_traits::IGNITE_ODBC_C_TYPE_SIGNED_LONG, &longBuf, sizeof(longBuf), &reslen, &offset);
-    ApplicationDataBuffer appStrBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, &offset);
-    ApplicationDataBuffer appGuidBuf(type_traits::IGNITE_ODBC_C_TYPE_GUID, &guidBuf, sizeof(guidBuf), &reslen, &offset);
-    ApplicationDataBuffer appBitBuf(type_traits::IGNITE_ODBC_C_TYPE_BIT, &bitBuf, sizeof(bitBuf), &reslen, &offset);
+    ApplicationDataBuffer appLongBuf(type_traits::IGNITE_ODBC_C_TYPE_SIGNED_LONG, &longBuf, sizeof(longBuf), &reslen);
+    ApplicationDataBuffer appStrBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen);
+    ApplicationDataBuffer appGuidBuf(type_traits::IGNITE_ODBC_C_TYPE_GUID, &guidBuf, sizeof(guidBuf), &reslen);
+    ApplicationDataBuffer appBitBuf(type_traits::IGNITE_ODBC_C_TYPE_BIT, &bitBuf, sizeof(bitBuf), &reslen);
 
     // Checking size.
     BOOST_REQUIRE(row.GetSize() == 4);

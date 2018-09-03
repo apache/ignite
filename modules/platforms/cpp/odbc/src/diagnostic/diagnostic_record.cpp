@@ -75,6 +75,12 @@ namespace
 
     /** SQL state HYT01 constant. */
     const std::string STATE_HYT01 = "HYT01";
+
+    /** SQL state HY003 constant. */
+    const std::string STATE_HY003 = "HY003";
+
+    /** SQL state HY105 constant. */
+    const std::string STATE_HY105 = "HY105";
 }
 
 namespace ignite
@@ -245,6 +251,12 @@ namespace ignite
 
                     case SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT:
                         return STATE_HYT01;
+
+                    case SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE:
+                        return STATE_HY003;
+
+                    case SQL_STATE_HY105_INVALID_PARAMETER_TYPE:
+                        return STATE_HY105;
 
                     default:
                         break;

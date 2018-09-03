@@ -139,7 +139,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
         BinaryObjectBuilder bldr = ignite(0).binary().builder("Person");
 
         bldr.setField("id", id);
-        bldr.setField("name", name);
+        bldr.setField("firstName", name);
         bldr.setField("secondName", secondName);
 
         return bldr.build();
@@ -186,7 +186,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
         LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
         flds.put("id", Integer.class.getName());
-        flds.put("name", String.class.getName());
+        flds.put("firstName", String.class.getName());
         flds.put("secondName", String.class.getName());
 
         e.setFields(flds);
@@ -214,7 +214,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
         protected int id;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(name = "firstName")
         protected final String name;
 
         /** */

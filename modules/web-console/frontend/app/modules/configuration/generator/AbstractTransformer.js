@@ -17,7 +17,24 @@
 
 import StringBuilder from './StringBuilder';
 
+import IgniteConfigurationGenerator from './ConfigurationGenerator';
+import IgniteEventGroups from './defaults/Event-groups.service';
+
+import IgniteClusterDefaults from './defaults/Cluster.service';
+import IgniteCacheDefaults from './defaults/Cache.service';
+import IgniteIGFSDefaults from './defaults/IGFS.service';
+
+import JavaTypes from '../../../services/JavaTypes.service';
+
+const clusterDflts = new IgniteClusterDefaults();
+const cacheDflts = new IgniteCacheDefaults();
+const igfsDflts = new IgniteIGFSDefaults();
+
 export default class AbstractTransformer {
+    static generator = IgniteConfigurationGenerator;
+    static javaTypes = new JavaTypes(clusterDflts, cacheDflts, igfsDflts);
+    static eventGroups = new IgniteEventGroups();
+
     // Append comment with time stamp.
     static mainComment(sb, ...lines) {
         lines.push(sb.generatedBy());
@@ -191,6 +208,11 @@ export default class AbstractTransformer {
     // Generate cache general group.
     static cacheGeneral(cache) {
         return this.toSection(this.generator.cacheGeneral(cache));
+    }
+
+    // Generate cache memory group.
+    static cacheAffinity(cache) {
+        return this.toSection(this.generator.cacheAffinity(cache));
     }
 
     // Generate cache memory group.

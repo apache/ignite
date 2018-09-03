@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import { suite, test, setup } from 'mocha';
+
 suite('ExampleTestSuite', () => {
     setup(() => {
         // browser.get('http://localhost:9000/');

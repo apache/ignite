@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-import AuthService from '../../app/modules/user/Auth.service';
+// import AuthService from '../../app/modules/user/Auth.service';
+
+import { suite, test } from 'mocha';
 
 suite('AuthServiceTestsSuite', () => {
     test('SignIn', (done) => {

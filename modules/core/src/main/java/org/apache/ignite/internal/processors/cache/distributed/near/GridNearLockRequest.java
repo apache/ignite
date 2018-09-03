@@ -80,6 +80,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** Sync commit flag. */
     private boolean syncCommit;
 
+    /** TTL for create operation. */
+    private long createTtl;
+
     /** TTL for read operation. */
     private long accessTtl;
 
@@ -116,6 +119,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param syncCommit Synchronous commit flag.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
@@ -141,6 +145,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         boolean syncCommit,
         @Nullable UUID subjId,
         int taskNameHash,
+        long createTtl,
         long accessTtl,
         boolean skipStore,
         boolean keepBinary,
@@ -174,6 +179,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         this.syncCommit = syncCommit;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.retVal = retVal;
         this.firstClientReq = firstClientReq;
@@ -312,6 +318,13 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @return New TTL to set after entry is created, -1 to leave unchanged.
+     */
+    public long createTtl() {
+        return createTtl;
+    }
+
+    /**
      * @return TTL for read operation.
      */
     public long accessTtl() {
@@ -368,84 +381,90 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
+                if (!writer.writeLong("createTtl", createTtl))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeBoolean("firstClientReq", firstClientReq))
+                if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeBoolean("hasTransforms", hasTransforms))
+                if (!writer.writeBoolean("firstClientReq", firstClientReq))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeBoolean("implicitSingleTx", implicitSingleTx))
+                if (!writer.writeBoolean("hasTransforms", hasTransforms))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeBoolean("implicitTx", implicitTx))
+                if (!writer.writeBoolean("implicitSingleTx", implicitSingleTx))
                     return false;
 
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeBoolean("implicitTx", implicitTx))
                     return false;
 
                 writer.incrementState();
 
             case 28:
-                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 29:
-                if (!writer.writeBoolean("retVal", retVal))
+                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
                 writer.incrementState();
 
             case 30:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeBoolean("retVal", retVal))
                     return false;
 
                 writer.incrementState();
 
             case 31:
-                if (!writer.writeBoolean("syncCommit", syncCommit))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 32:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
                 writer.incrementState();
 
             case 33:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 34:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 35:
                 if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
                     return false;
 
@@ -476,7 +495,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 21:
-                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                createTtl = reader.readLong("createTtl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -484,7 +503,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 22:
-                filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
+                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -492,7 +511,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 23:
-                firstClientReq = reader.readBoolean("firstClientReq");
+                filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -500,7 +519,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 24:
-                hasTransforms = reader.readBoolean("hasTransforms");
+                firstClientReq = reader.readBoolean("firstClientReq");
 
                 if (!reader.isLastRead())
                     return false;
@@ -508,7 +527,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 25:
-                implicitSingleTx = reader.readBoolean("implicitSingleTx");
+                hasTransforms = reader.readBoolean("hasTransforms");
 
                 if (!reader.isLastRead())
                     return false;
@@ -516,7 +535,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 26:
-                implicitTx = reader.readBoolean("implicitTx");
+                implicitSingleTx = reader.readBoolean("implicitSingleTx");
 
                 if (!reader.isLastRead())
                     return false;
@@ -524,7 +543,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 27:
-                miniId = reader.readIgniteUuid("miniId");
+                implicitTx = reader.readBoolean("implicitTx");
 
                 if (!reader.isLastRead())
                     return false;
@@ -532,7 +551,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 28:
-                onePhaseCommit = reader.readBoolean("onePhaseCommit");
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -540,7 +559,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 29:
-                retVal = reader.readBoolean("retVal");
+                onePhaseCommit = reader.readBoolean("onePhaseCommit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -548,7 +567,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 30:
-                subjId = reader.readUuid("subjId");
+                retVal = reader.readBoolean("retVal");
 
                 if (!reader.isLastRead())
                     return false;
@@ -556,7 +575,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 31:
-                syncCommit = reader.readBoolean("syncCommit");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -564,7 +583,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 32:
-                taskNameHash = reader.readInt("taskNameHash");
+                syncCommit = reader.readBoolean("syncCommit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -572,7 +591,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 33:
-                topVer = reader.readMessage("topVer");
+                taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
@@ -580,6 +599,14 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 34:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 35:
                 partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -599,7 +626,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 35;
+        return 36;
     }
 
     /** {@inheritDoc} */

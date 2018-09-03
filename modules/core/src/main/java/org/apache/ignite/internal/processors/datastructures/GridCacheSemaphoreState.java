@@ -46,6 +46,9 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
     /** FailoverSafe flag. */
     private boolean failoverSafe;
 
+    /** Flag indicating that semaphore is no longer safe to use. */
+    private boolean broken;
+
     /**
      * Constructor.
      *
@@ -101,6 +104,21 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
         return failoverSafe;
     }
 
+    /**
+     * @return broken flag.
+     */
+    public boolean isBroken() {
+        return broken;
+    }
+
+    /**
+     *
+     * @param broken Flag indicating that this semaphore should be no longer used.
+     */
+    public void setBroken(boolean broken) {
+        this.broken = broken;
+    }
+
     /** {@inheritDoc} */
     @Override public Object clone() throws CloneNotSupportedException {
         return super.clone();
@@ -120,6 +138,8 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
                 out.writeInt(e.getValue());
             }
         }
+
+        out.writeBoolean(broken);
     }
 
     /** {@inheritDoc} */
@@ -135,6 +155,8 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
             for (int i = 0; i < size; i++)
                 waiters.put(U.readUuid(in), in.readInt());
         }
+
+        broken = in.readBoolean();
     }
 
     /** {@inheritDoc} */

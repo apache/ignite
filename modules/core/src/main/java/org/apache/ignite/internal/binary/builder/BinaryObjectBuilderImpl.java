@@ -406,8 +406,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
         if (oldFldTypeName == null) {
             // It's a new field, we have to add it to metadata.
-            if (fieldsMeta == null)
-                fieldsMeta = new HashMap<>();
+            if (fieldsMeta == null) {
+                if (BinaryUtils.FIELDS_SORTED_ORDER)
+                    fieldsMeta = new TreeMap<>();
+                else
+                    fieldsMeta = new LinkedHashMap<>();
+            }
 
             fieldsMeta.put(name, newFldTypeId);
         }
@@ -538,11 +542,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
         Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
 
-        if (assignedVals == null)
+        if (assignedVals == null) {
             if (BinaryUtils.FIELDS_SORTED_ORDER)
                 assignedVals = new TreeMap<>();
             else
                 assignedVals = new LinkedHashMap<>();
+        }
 
         Object oldVal = assignedVals.put(name, val);
 

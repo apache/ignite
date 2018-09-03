@@ -66,6 +66,8 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testNotifierEnabledForCluster() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5413");
+
         checkNotifierStatusForCluster(true);
     }
 

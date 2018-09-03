@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -36,7 +37,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     private static final long serialVersionUID = 2006765505127197251L;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     protected Object val;
 
@@ -119,6 +120,8 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
     /** {@inheritDoc} */
     public String toString() {
-        return getClass().getSimpleName() + " [val=" + val + ", hasValBytes=" + (valBytes != null) + ']';
+        return S.toString(S.INCLUDE_SENSITIVE ? getClass().getSimpleName() : "CacheObject",
+            "val", val, true,
+            "hasValBytes", valBytes != null, false);
     }
 }

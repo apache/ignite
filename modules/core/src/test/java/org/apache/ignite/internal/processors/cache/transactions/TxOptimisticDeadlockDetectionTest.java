@@ -111,6 +111,9 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
+        // Test spi blocks message send, this can cause hang with striped pool.
+        cfg.setStripedPoolSize(-1);
+
         return cfg;
     }
 
@@ -274,8 +277,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     Object k;
 
-                    log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
-                        ", tx=" + tx + ", key=" + transformer.apply(key) + ']');
+                    log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode().id() +
+                        ", tx=" + tx.xid() + ", key=" + transformer.apply(key) + ']');
 
                     cache.put(transformer.apply(key), 0);
 
@@ -286,7 +289,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     key = keys.get(1);
 
                     ClusterNode primaryNode =
-                        ((IgniteCacheProxy)cache).context().affinity().primary(key, NONE);
+                        ((IgniteCacheProxy)cache).context().affinity().primaryByKey(key, NONE);
 
                     List<Integer> primaryKeys =
                         primaryKeys(grid(primaryNode).cache(CACHE_NAME), 5, key + (100 * threadNum));
@@ -309,23 +312,27 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                         entries.put(k, 2);
                     }
 
-                    log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
-                        ", tx=" + tx + ", entries=" + entries + ']');
+                    log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode().id() +
+                        ", tx=" + tx.xid() + ", entries=" + entries + ']');
 
                     cache.putAll(entries);
 
                     tx.commit();
                 }
                 catch (Throwable e) {
-                    U.error(log, "Expected exception: ", e);
+                    log.info("Expected exception: " + e);
+
+                    e.printStackTrace(System.out);
 
                     // At least one stack trace should contain TransactionDeadlockException.
                     if (hasCause(e, TransactionTimeoutException.class) &&
-                        hasCause(e, TransactionDeadlockException.class)
-                        ) {
-                        if (deadlockErr.compareAndSet(null, cause(e, TransactionDeadlockException.class)))
-                            U.error(log, "At least one stack trace should contain " +
-                                TransactionDeadlockException.class.getSimpleName(), e);
+                        hasCause(e, TransactionDeadlockException.class)) {
+                        if (deadlockErr.compareAndSet(null, cause(e, TransactionDeadlockException.class))) {
+                            log.info("At least one stack trace should contain " +
+                                TransactionDeadlockException.class.getSimpleName());
+
+                            e.printStackTrace(System.out);
+                        }
                     }
                 }
             }
@@ -344,7 +351,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         TransactionDeadlockException deadlockE = deadlockErr.get();
 
-        assertNotNull(deadlockE);
+        assertNotNull("Failed to detect deadlock", deadlockE);
 
         boolean fail = false;
 

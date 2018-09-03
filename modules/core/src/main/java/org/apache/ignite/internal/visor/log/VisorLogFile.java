@@ -19,12 +19,13 @@ package org.apache.ignite.internal.visor.log;
 
 import java.io.File;
 import java.io.Serializable;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Visor log file.
  */
-public class VisorLogFile implements Serializable {
+public class VisorLogFile implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

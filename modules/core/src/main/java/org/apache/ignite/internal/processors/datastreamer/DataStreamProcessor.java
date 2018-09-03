@@ -21,10 +21,10 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -80,7 +80,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
         if (!ctx.clientNode()) {
             ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     assert msg instanceof DataStreamerRequest;
 
                     processRequest(nodeId, (DataStreamerRequest)msg);
@@ -328,13 +328,15 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             if (!allowOverwrite)
                 cctx.topology().readLock();
 
+            GridDhtTopologyFuture topWaitFut = null;
+
             try {
                 GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
                 if (!allowOverwrite && !topVer.equals(req.topologyVersion())) {
-                    Exception err = new IgniteCheckedException(
+                    Exception err = new ClusterTopologyCheckedException(
                         "DataStreamer will retry data transfer at stable topology " +
                             "[reqTop=" + req.topologyVersion() + ", topVer=" + topVer + ", node=remote]");
 
@@ -352,17 +354,23 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
                     waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(topVer);
                 }
-                else {
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                            localUpdate(nodeId, req, updater, topic);
-                        }
-                    });
-                }
+                else
+                    topWaitFut = fut;
             }
             finally {
                 if (!allowOverwrite)
                     cctx.topology().readUnlock();
+            }
+
+            if (topWaitFut != null) {
+                // Need call 'listen' after topology read lock is released.
+                topWaitFut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
+                        localUpdate(nodeId, req, updater, topic);
+                    }
+                });
+
+                return;
             }
 
             if (job != null) {

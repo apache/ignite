@@ -20,7 +20,7 @@ import JavaTypes from '../../app/services/JavaTypes.service.js';
 import generator from '../../app/modules/configuration/generator/ConfigurationGenerator';
 import transformer from '../../app/modules/configuration/generator/JavaTransformer.service';
 
-import { assert } from 'chai';
+import { suite, test } from 'mocha';
 
 suite.skip('JavaTransformerTestsSuite', () => {
     test('AtomicConfiguration', () => {

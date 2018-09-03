@@ -97,7 +97,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public byte[] array() {
         byte[] bytes0 = new byte[off];
 
-        GridUnsafe.copyMemory(bytes, BYTE_ARR_OFF, bytes0, BYTE_ARR_OFF, off);
+        System.arraycopy(bytes, 0, bytes0, 0, off);
 
         return bytes0;
     }
@@ -130,7 +130,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         if (size > bytes.length) {
             byte[] newBytes = new byte[size << 1]; // Grow.
 
-            GridUnsafe.copyMemory(bytes, BYTE_ARR_OFF, newBytes, BYTE_ARR_OFF, off);
+            System.arraycopy(bytes, 0, newBytes, 0, off);
 
             bytes = newBytes;
         }
@@ -140,7 +140,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
             if (maxOff < halfSize) {
                 byte[] newBytes = new byte[halfSize]; // Shrink.
 
-                GridUnsafe.copyMemory(bytes, BYTE_ARR_OFF, newBytes, BYTE_ARR_OFF, off);
+                System.arraycopy(bytes, 0, newBytes, 0, off);
 
                 bytes = newBytes;
             }
@@ -165,7 +165,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void write(byte[] b) throws IOException {
         requestFreeSize(b.length);
 
-        GridUnsafe.copyMemory(b, BYTE_ARR_OFF, bytes, BYTE_ARR_OFF + off, b.length);
+        System.arraycopy(b, 0, bytes, off, b.length);
 
         onWrite(b.length);
     }
@@ -174,7 +174,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void write(byte[] b, int off, int len) throws IOException {
         requestFreeSize(len);
 
-        GridUnsafe.copyMemory(b, BYTE_ARR_OFF + off, bytes, BYTE_ARR_OFF + this.off, len);
+        System.arraycopy(b, off, bytes, this.off, len);
 
         onWrite(len);
     }
@@ -293,7 +293,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         requestFreeSize(arr.length);
 
-        GridUnsafe.copyMemory(arr, BYTE_ARR_OFF, bytes, BYTE_ARR_OFF + off, arr.length);
+        System.arraycopy(arr, 0, bytes, off, arr.length);
 
         onWrite(arr.length);
     }

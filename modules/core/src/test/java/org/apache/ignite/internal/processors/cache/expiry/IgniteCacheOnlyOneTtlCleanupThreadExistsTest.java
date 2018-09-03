@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.expiry;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -36,6 +39,9 @@ public class IgniteCacheOnlyOneTtlCleanupThreadExistsTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testOnlyOneTtlCleanupThreadExists() throws Exception {
+        if (!supportedMarshaller())
+            fail("https://ggsystems.atlassian.net/browse/GG-13132");
+
         try (final Ignite g = startGrid(0)) {
             checkCleanupThreadExists(false);
 
@@ -98,5 +104,14 @@ public class IgniteCacheOnlyOneTtlCleanupThreadExistsTest extends GridCommonAbst
             assertEquals("Ttl cleanup thread does not exist", cnt, 1);
         else
             assertEquals("Ttl cleanup thread exists", cnt, 0);
+    }
+
+    /**
+     * @return Supported marshaller.
+     */
+    private boolean supportedMarshaller() {
+        Marshaller marsh = grid().configuration().getMarshaller();
+
+        return marsh instanceof BinaryMarshaller || marsh instanceof OptimizedMarshaller;
     }
 }

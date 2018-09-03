@@ -172,6 +172,8 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      */
     protected final void doTest(IgfsPath inFile, boolean useNewMapper, boolean useNewCombiner, boolean useNewReducer)
         throws Exception {
+        log.info("useNewMapper=" + useNewMapper + ", useNewCombiner=" + useNewCombiner + ", useNewReducer=" + useNewReducer);
+
         igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
         JobConf jobConf = new JobConf();

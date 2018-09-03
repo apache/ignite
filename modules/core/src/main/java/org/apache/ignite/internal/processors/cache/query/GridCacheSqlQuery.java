@@ -47,11 +47,11 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
     public static final Object[] EMPTY_PARAMS = {};
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private String qry;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private Object[] params;
 

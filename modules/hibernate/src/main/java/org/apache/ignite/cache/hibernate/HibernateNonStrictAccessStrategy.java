@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -67,7 +66,7 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
      * @param cache Cache.
      * @param writeCtx Thread local instance used to track updates done during one Hibernate transaction.
      */
-    protected HibernateNonStrictAccessStrategy(Ignite ignite, IgniteInternalCache<Object, Object> cache, ThreadLocal writeCtx) {
+    protected HibernateNonStrictAccessStrategy(Ignite ignite, HibernateCacheProxy cache, ThreadLocal writeCtx) {
         super(ignite, cache);
 
         this.writeCtx = (ThreadLocal<WriteContext>)writeCtx;
@@ -212,7 +211,7 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
          * @param cache Cache.
          * @throws IgniteCheckedException If failed.
          */
-        void updateCache(IgniteInternalCache<Object, Object> cache) throws IgniteCheckedException {
+        void updateCache(HibernateCacheProxy cache) throws IgniteCheckedException {
             if (!F.isEmpty(rmvs))
                 cache.removeAll(rmvs);
 

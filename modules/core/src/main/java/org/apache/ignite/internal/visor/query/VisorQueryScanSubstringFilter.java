@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.query;
 
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
@@ -52,8 +53,8 @@ public class VisorQueryScanSubstringFilter implements IgniteBiPredicate<Object, 
      * @return {@code true} when string presentation of key or value contain specified string.
      */
     @Override public boolean apply(Object key, Object val) {
-        String k = key.toString();
-        String v = val.toString();
+        String k = key instanceof BinaryObject ? VisorQueryUtils.binaryToString((BinaryObject)key) : key.toString();
+        String v = val instanceof BinaryObject ? VisorQueryUtils.binaryToString((BinaryObject)val) : val.toString();
 
         if (caseSensitive)
             return k.contains(ptrn) || v.contains(ptrn);

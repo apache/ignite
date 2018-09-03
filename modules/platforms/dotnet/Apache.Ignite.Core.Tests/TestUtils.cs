@@ -55,7 +55,8 @@ namespace Apache.Ignite.Core.Tests
                 "-Xms1g",
                 "-Xmx4g",
                 "-ea",
-                "-DIGNITE_QUIET=true"
+                "-DIGNITE_QUIET=true",
+                "-Duser.timezone=UTC"
             }
             : new List<string>
             {

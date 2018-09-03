@@ -24,6 +24,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
+
 /**
  * JCL logger wrapper for Hadoop.
  */
@@ -31,6 +33,9 @@ public class HadoopIgfsJclLogger implements IgniteLogger {
     /** JCL implementation proxy. */
     @GridToStringInclude
     private Log impl;
+
+    /** Quiet flag. */
+    private final boolean quiet;
 
     /**
      * Constructor.
@@ -41,6 +46,8 @@ public class HadoopIgfsJclLogger implements IgniteLogger {
         assert impl != null;
 
         this.impl = impl;
+
+        quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
     }
 
     /** {@inheritDoc} */
@@ -81,7 +88,7 @@ public class HadoopIgfsJclLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public boolean isQuiet() {
-        return !isInfoEnabled() && !isDebugEnabled();
+        return quiet;
     }
 
     /** {@inheritDoc} */

@@ -36,9 +36,4 @@ public class GridCacheNearEvictionEventSelfTest extends GridCacheEvictionEventAb
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testEvictionEvent() throws Exception {
-        super.testEvictionEvent();
-    }
 }

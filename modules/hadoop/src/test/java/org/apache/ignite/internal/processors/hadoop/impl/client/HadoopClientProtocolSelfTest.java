@@ -50,7 +50,6 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopClientProtocolProvider;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopAbstractSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -100,9 +99,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    @Override protected void beforeTestsStarted0() throws Exception {
         startGrids(gridCount());
 
         setupLockFile.delete();
@@ -115,7 +112,6 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
         stopAllGrids();
 
         super.afterTestsStopped();
-//        IgniteHadoopClientProtocolProvider.cliMap.clear();
     }
 
     /** {@inheritDoc} */
@@ -196,43 +192,48 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
 
         final Job job = Job.getInstance(conf);
 
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
+        try {
+            job.setOutputKeyClass(Text.class);
+            job.setOutputValueClass(IntWritable.class);
 
-        job.setMapperClass(TestCountingMapper.class);
-        job.setReducerClass(TestCountingReducer.class);
-        job.setCombinerClass(TestCountingCombiner.class);
+            job.setMapperClass(TestCountingMapper.class);
+            job.setReducerClass(TestCountingReducer.class);
+            job.setCombinerClass(TestCountingCombiner.class);
 
-        FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
-        FileOutputFormat.setOutputPath(job, new Path(PATH_OUTPUT));
+            FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
+            FileOutputFormat.setOutputPath(job, new Path(PATH_OUTPUT));
 
-        job.submit();
+            job.submit();
 
-        final Counter cntr = job.getCounters().findCounter(TestCounter.COUNTER1);
+            final Counter cntr = job.getCounters().findCounter(TestCounter.COUNTER1);
 
-        assertEquals(0, cntr.getValue());
+            assertEquals(0, cntr.getValue());
 
-        cntr.increment(10);
+            cntr.increment(10);
 
-        assertEquals(10, cntr.getValue());
+            assertEquals(10, cntr.getValue());
 
-        // Transferring to map phase.
-        setupLockFile.delete();
+            // Transferring to map phase.
+            setupLockFile.delete();
 
-        // Transferring to reduce phase.
-        mapLockFile.delete();
+            // Transferring to reduce phase.
+            mapLockFile.delete();
 
-        job.waitForCompletion(false);
+            job.waitForCompletion(false);
 
-        assertEquals("job must end successfully", JobStatus.State.SUCCEEDED, job.getStatus().getState());
+            assertEquals("job must end successfully", JobStatus.State.SUCCEEDED, job.getStatus().getState());
 
-        final Counters counters = job.getCounters();
+            final Counters counters = job.getCounters();
 
-        assertNotNull("counters cannot be null", counters);
-        assertEquals("wrong counters count", 3, counters.countCounters());
-        assertEquals("wrong counter value", 15, counters.findCounter(TestCounter.COUNTER1).getValue());
-        assertEquals("wrong counter value", 3, counters.findCounter(TestCounter.COUNTER2).getValue());
-        assertEquals("wrong counter value", 3, counters.findCounter(TestCounter.COUNTER3).getValue());
+            assertNotNull("counters cannot be null", counters);
+            assertEquals("wrong counters count", 3, counters.countCounters());
+            assertEquals("wrong counter value", 15, counters.findCounter(TestCounter.COUNTER1).getValue());
+            assertEquals("wrong counter value", 3, counters.findCounter(TestCounter.COUNTER2).getValue());
+            assertEquals("wrong counter value", 3, counters.findCounter(TestCounter.COUNTER3).getValue());
+        }
+        finally {
+            job.getCluster().close();
+        }
     }
 
     /**
@@ -304,114 +305,119 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
 
         final Job job = Job.getInstance(conf);
 
-        job.setJobName(JOB_NAME);
+        try {
+            job.setJobName(JOB_NAME);
 
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
+            job.setOutputKeyClass(Text.class);
+            job.setOutputValueClass(IntWritable.class);
 
-        job.setMapperClass(TestMapper.class);
-        job.setReducerClass(TestReducer.class);
+            job.setMapperClass(TestMapper.class);
+            job.setReducerClass(TestReducer.class);
 
-        if (!noCombiners)
-            job.setCombinerClass(TestCombiner.class);
+            if (!noCombiners)
+                job.setCombinerClass(TestCombiner.class);
 
-        if (noReducers)
-            job.setNumReduceTasks(0);
+            if (noReducers)
+                job.setNumReduceTasks(0);
 
-        job.setInputFormatClass(TextInputFormat.class);
-        job.setOutputFormatClass(TestOutputFormat.class);
+            job.setInputFormatClass(TextInputFormat.class);
+            job.setOutputFormatClass(TestOutputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
-        FileOutputFormat.setOutputPath(job, new Path(PATH_OUTPUT));
+            FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
+            FileOutputFormat.setOutputPath(job, new Path(PATH_OUTPUT));
 
-        job.submit();
+            job.submit();
 
-        JobID jobId = job.getJobID();
+            JobID jobId = job.getJobID();
 
-        // Setup phase.
-        JobStatus jobStatus = job.getStatus();
-        checkJobStatus(jobStatus, jobId, JOB_NAME, JobStatus.State.RUNNING, 0.0f);
-        assert jobStatus.getSetupProgress() >= 0.0f && jobStatus.getSetupProgress() < 1.0f;
-        assert jobStatus.getMapProgress() == 0.0f;
-        assert jobStatus.getReduceProgress() == 0.0f;
+            // Setup phase.
+            JobStatus jobStatus = job.getStatus();
+            checkJobStatus(jobStatus, jobId, JOB_NAME, JobStatus.State.RUNNING, 0.0f);
+            assert jobStatus.getSetupProgress() >= 0.0f && jobStatus.getSetupProgress() < 1.0f;
+            assert jobStatus.getMapProgress() == 0.0f;
+            assert jobStatus.getReduceProgress() == 0.0f;
 
-        U.sleep(2100);
+            U.sleep(2100);
 
-        JobStatus recentJobStatus = job.getStatus();
+            JobStatus recentJobStatus = job.getStatus();
 
-        assert recentJobStatus.getSetupProgress() > jobStatus.getSetupProgress() :
-            "Old=" + jobStatus.getSetupProgress() + ", new=" + recentJobStatus.getSetupProgress();
+            assert recentJobStatus.getSetupProgress() > jobStatus.getSetupProgress() : "Old="
+                + jobStatus.getSetupProgress() + ", new=" + recentJobStatus.getSetupProgress();
 
-        // Transferring to map phase.
-        setupLockFile.delete();
+            // Transferring to map phase.
+            setupLockFile.delete();
 
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                try {
-                    return F.eq(1.0f, job.getStatus().getSetupProgress());
+            assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        return F.eq(1.0f, job.getStatus().getSetupProgress());
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException("Unexpected exception.", e);
+                    }
                 }
-                catch (Exception e) {
-                    throw new RuntimeException("Unexpected exception.", e);
-                }
-            }
-        }, 5000L);
+            }, 5000L);
 
-        // Map phase.
-        jobStatus = job.getStatus();
-        checkJobStatus(jobStatus, jobId, JOB_NAME, JobStatus.State.RUNNING, 0.0f);
-        assert jobStatus.getSetupProgress() == 1.0f;
-        assert jobStatus.getMapProgress() >= 0.0f && jobStatus.getMapProgress() < 1.0f;
-        assert jobStatus.getReduceProgress() == 0.0f;
-
-        U.sleep(2100);
-
-        recentJobStatus = job.getStatus();
-
-        assert recentJobStatus.getMapProgress() > jobStatus.getMapProgress() :
-            "Old=" + jobStatus.getMapProgress() + ", new=" + recentJobStatus.getMapProgress();
-
-        // Transferring to reduce phase.
-        mapLockFile.delete();
-
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                try {
-                    return F.eq(1.0f, job.getStatus().getMapProgress());
-                }
-                catch (Exception e) {
-                    throw new RuntimeException("Unexpected exception.", e);
-                }
-            }
-        }, 5000L);
-
-        if (!noReducers) {
-            // Reduce phase.
+            // Map phase.
             jobStatus = job.getStatus();
             checkJobStatus(jobStatus, jobId, JOB_NAME, JobStatus.State.RUNNING, 0.0f);
             assert jobStatus.getSetupProgress() == 1.0f;
-            assert jobStatus.getMapProgress() == 1.0f;
-            assert jobStatus.getReduceProgress() >= 0.0f && jobStatus.getReduceProgress() < 1.0f;
+            assert jobStatus.getMapProgress() >= 0.0f && jobStatus.getMapProgress() < 1.0f;
+            assert jobStatus.getReduceProgress() == 0.0f;
 
-            // Ensure that reduces progress increases.
             U.sleep(2100);
 
             recentJobStatus = job.getStatus();
 
-            assert recentJobStatus.getReduceProgress() > jobStatus.getReduceProgress() :
-                "Old=" + jobStatus.getReduceProgress() + ", new=" + recentJobStatus.getReduceProgress();
+            assert recentJobStatus.getMapProgress() > jobStatus.getMapProgress() : "Old=" + jobStatus.getMapProgress()
+                + ", new=" + recentJobStatus.getMapProgress();
 
-            reduceLockFile.delete();
+            // Transferring to reduce phase.
+            mapLockFile.delete();
+
+            assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        return F.eq(1.0f, job.getStatus().getMapProgress());
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException("Unexpected exception.", e);
+                    }
+                }
+            }, 5000L);
+
+            if (!noReducers) {
+                // Reduce phase.
+                jobStatus = job.getStatus();
+                checkJobStatus(jobStatus, jobId, JOB_NAME, JobStatus.State.RUNNING, 0.0f);
+                assert jobStatus.getSetupProgress() == 1.0f;
+                assert jobStatus.getMapProgress() == 1.0f;
+                assert jobStatus.getReduceProgress() >= 0.0f && jobStatus.getReduceProgress() < 1.0f;
+
+                // Ensure that reduces progress increases.
+                U.sleep(2100);
+
+                recentJobStatus = job.getStatus();
+
+                assert recentJobStatus.getReduceProgress() > jobStatus.getReduceProgress() : "Old="
+                    + jobStatus.getReduceProgress() + ", new=" + recentJobStatus.getReduceProgress();
+
+                reduceLockFile.delete();
+            }
+
+            job.waitForCompletion(false);
+
+            jobStatus = job.getStatus();
+            checkJobStatus(job.getStatus(), jobId, JOB_NAME, JobStatus.State.SUCCEEDED, 1.0f);
+            assert jobStatus.getSetupProgress() == 1.0f;
+            assert jobStatus.getMapProgress() == 1.0f;
+            assert jobStatus.getReduceProgress() == 1.0f;
+
+            dumpIgfs(igfs, new IgfsPath(PATH_OUTPUT));
         }
-
-        job.waitForCompletion(false);
-
-        jobStatus = job.getStatus();
-        checkJobStatus(job.getStatus(), jobId, JOB_NAME, JobStatus.State.SUCCEEDED, 1.0f);
-        assert jobStatus.getSetupProgress() == 1.0f;
-        assert jobStatus.getMapProgress() == 1.0f;
-        assert jobStatus.getReduceProgress() == 1.0f;
-
-        dumpIgfs(igfs, new IgfsPath(PATH_OUTPUT));
+        finally {
+            job.getCluster().close();
+        }
     }
 
     /**
@@ -517,7 +523,12 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      * Test Hadoop counters.
      */
     public enum TestCounter {
-        COUNTER1, COUNTER2, COUNTER3
+        /** */
+        COUNTER1,
+        /** */
+        COUNTER2,
+        /** */
+        COUNTER3
     }
 
     /**
@@ -535,6 +546,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      * Test combiner that counts invocations.
      */
     public static class TestCountingCombiner extends TestReducer {
+        /** {@inheritDoc} */
         @Override public void reduce(Text key, Iterable<IntWritable> values,
             Context ctx) throws IOException, InterruptedException {
             ctx.getCounter(TestCounter.COUNTER1).increment(1);
@@ -552,6 +564,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      * Test reducer that counts invocations.
      */
     public static class TestCountingReducer extends TestReducer {
+        /** {@inheritDoc} */
         @Override public void reduce(Text key, Iterable<IntWritable> values,
             Context ctx) throws IOException, InterruptedException {
             ctx.getCounter(TestCounter.COUNTER1).increment(1);
@@ -566,6 +579,9 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
         // No-op.
     }
 
+    /**
+     * Test output format.
+     */
     public static class TestOutputFormat<K, V> extends TextOutputFormat<K, V> {
         /** {@inheritDoc} */
         @Override public synchronized OutputCommitter getOutputCommitter(TaskAttemptContext ctx)

@@ -106,3 +106,40 @@
         @include make-lg-column(8);
     }
 }
+
+.ignite-form-field {
+    &__btn {
+        overflow: hidden;
+
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+
+        &.btn {
+            float: right;
+            margin-right: 0;
+
+            line-height: 20px;
+        }
+
+        input {
+            position: absolute;
+            left: 100px;
+        }
+
+        input:checked + span {
+            color: $brand-info;
+        }
+    }
+
+    &__btn ~ &__btn {
+        border-right: 0;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;  
+    }
+
+    &__btn ~ .input-tip input {
+        border-right: 0;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;  
+    }
+}

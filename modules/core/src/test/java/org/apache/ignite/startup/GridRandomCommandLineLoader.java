@@ -61,7 +61,7 @@ public final class GridRandomCommandLineLoader {
     private static final String IGNITE_PROG_NAME = "IGNITE_PROG_NAME";
 
     /** Copyright text. Ant processed. */
-    private static final String COPYRIGHT = "2016 Copyright(C) Apache Software Foundation.";
+    private static final String COPYRIGHT = "2017 Copyright(C) Apache Software Foundation.";
 
     /** Version. Ant processed. */
     private static final String VER = "x.x.x";

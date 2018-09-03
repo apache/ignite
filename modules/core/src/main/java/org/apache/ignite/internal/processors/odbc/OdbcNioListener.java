@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -100,7 +101,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             req = parser.decode(msg);
         }
         catch (Exception e) {
-            log.error("Failed to parse message [id=" + reqId + ", err=" + e + ']');
+            U.error(log, "Failed to parse message [id=" + reqId + ']', e);
 
             ses.close();
 

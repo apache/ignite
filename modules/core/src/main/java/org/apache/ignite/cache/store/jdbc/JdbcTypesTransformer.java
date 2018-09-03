@@ -20,11 +20,28 @@ package org.apache.ignite.cache.store.jdbc;
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static java.sql.Types.BIGINT;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.DOUBLE;
+import static java.sql.Types.FLOAT;
+import static java.sql.Types.INTEGER;
+import static java.sql.Types.NUMERIC;
+import static java.sql.Types.REAL;
+import static java.sql.Types.SMALLINT;
+import static java.sql.Types.TINYINT;
 
 /**
  * API for implementing custom mapping logic for loaded from store data.
  */
 public interface JdbcTypesTransformer extends Serializable {
+    /** Numeric types. */
+    public final List<Integer> NUMERIC_TYPES =
+        U.sealList(TINYINT, SMALLINT, INTEGER, BIGINT, REAL, FLOAT, DOUBLE, NUMERIC, DECIMAL);
+
+
     /**
      * Retrieves the value of the designated column in the current row of this <code>ResultSet</code> object and
      * will convert to the requested Java data type.

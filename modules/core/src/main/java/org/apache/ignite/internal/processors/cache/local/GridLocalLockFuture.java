@@ -231,7 +231,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
             !inTx(),
             inTx(),
             implicitSingle(),
-            true
+            false
         );
 
         entries.add(entry);

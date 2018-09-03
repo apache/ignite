@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
@@ -1722,15 +1723,23 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
                 BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId);
 
-                if (type == null || type.metadata() == null)
-                    throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
-                        typeId);
+                if (type == null || type.metadata() == null || type.metadata().schemas() == null || type.metadata().schemas().isEmpty()) {
+                    if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE, false)) {
+                        BinaryClassDescriptor desc = ctx.descriptorForTypeId(true, typeId, getClass().getClassLoader(), false);
 
-                for (BinarySchema typeSchema : type.metadata().schemas()) {
-                    if (schemaId == typeSchema.schemaId()) {
-                        schema = typeSchema;
+                        schema = desc.schema();
+                    }
+                    else
+                        throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
+                            typeId);
+                }
+                else {
+                    for (BinarySchema typeSchema : type.metadata().schemas()) {
+                        if (schemaId == typeSchema.schemaId()) {
+                            schema = typeSchema;
 
-                        break;
+                            break;
+                        }
                     }
                 }
 

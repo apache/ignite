@@ -1490,7 +1490,7 @@ public final class GridTestUtils {
             curTime = U.currentTimeMillis();
         }
 
-        return false;
+        return cond.apply();
     }
 
     /**

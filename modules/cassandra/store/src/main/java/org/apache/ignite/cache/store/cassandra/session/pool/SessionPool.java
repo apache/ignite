@@ -17,13 +17,13 @@
 
 package org.apache.ignite.cache.store.cassandra.session.pool;
 
-import com.datastax.driver.core.Session;
 import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import com.datastax.driver.core.Session;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
 
 /**
@@ -98,14 +98,14 @@ public class SessionPool {
      * @param cassandraSes Session wrapper.
      * @param driverSes Driver session.
      */
-    public static void put(CassandraSessionImpl cassandraSes, Session driverSes) {
+    public static void put(CassandraSessionImpl cassandraSes, Session driverSes, long expirationTimeout) {
         if (cassandraSes == null || driverSes == null)
             return;
 
         SessionWrapper old;
 
         synchronized (sessions) {
-            old = sessions.put(cassandraSes, new SessionWrapper(driverSes));
+            old = sessions.put(cassandraSes, new SessionWrapper(driverSes, expirationTimeout));
 
             if (monitorSingleton == null || State.TERMINATED.equals(monitorSingleton.getState())) {
                 monitorSingleton = new SessionMonitor();

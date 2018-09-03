@@ -49,7 +49,7 @@ public class GridCacheReturn implements Externalizable, Message {
     private static final long serialVersionUID = 0L;
 
     /** Value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private volatile Object v;
 

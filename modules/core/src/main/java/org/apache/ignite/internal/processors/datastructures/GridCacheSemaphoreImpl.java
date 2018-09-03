@@ -232,6 +232,10 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
         /** {@inheritDoc} */
         @Override protected final boolean tryReleaseShared(int releases) {
+            // Fail-fast path.
+            if(broken)
+                return true;
+
             // Check if some other node updated the state.
             // This method is called with release==0 only when trying to wake through update.
             if (releases == 0)
@@ -295,6 +299,13 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                     throw new IgniteCheckedException("Failed to find semaphore with given name: " +
                                         name);
 
+                                // Abort if state is already broken.
+                                if (val.isBroken()) {
+                                    tx.rollback();
+
+                                    return true;
+                                }
+
                                 boolean retVal = val.getCount() == expVal;
 
                                 if (retVal) {
@@ -349,11 +360,13 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
         /**
          * This method is used for releasing the permits acquired by failing node.
+         * In case the semaphore is broken, no permits are released and semaphore is set (globally) to broken state.
          *
          * @param nodeId ID of the failing node.
+         * @param broken Flag indicating that this semaphore is broken.
          * @return True if this is the call that succeeded to change the global state.
          */
-        protected boolean releaseFailedNode(final UUID nodeId) {
+        protected boolean releaseFailedNode(final UUID nodeId, final boolean broken) {
             try {
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
@@ -368,6 +381,25 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                                 if (val == null)
                                     throw new IgniteCheckedException("Failed to find semaphore with given name: " +
                                         name);
+
+                                // Quit early if semaphore is already broken.
+                                if( val.isBroken()) {
+                                    tx.rollback();
+
+                                    return false;
+                                }
+
+                                // Mark semaphore as broken. No permits are released,
+                                // since semaphore is useless from now on.
+                                if (broken) {
+                                    val.setBroken(true);
+
+                                    semView.put(key, val);
+
+                                    tx.commit();
+
+                                    return true;
+                                }
 
                                 Map<UUID, Integer> map = val.getWaiters();
 
@@ -473,7 +505,11 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
                                 tx.commit();
 
-                                return new Sync(count, waiters, failoverSafe);
+                                Sync sync = new Sync(count, waiters, failoverSafe);
+
+                                sync.setBroken(val.isBroken());
+
+                                return sync;
                             }
                         }
                     }),
@@ -520,6 +556,9 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         if (sync == null)
             return;
 
+        // Update broken flag.
+        sync.setBroken(val.isBroken());
+
         // Update permission count.
         sync.setPermits(val.getCount());
 
@@ -532,13 +571,28 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
     /** {@inheritDoc} */
     @Override public void onNodeRemoved(UUID nodeId) {
+        try {
+            initializeSemaphore();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to recover from failover because distributed semaphore cannot be initialized " +
+                "(Ignore if this node is failing also)." );
+
+            // Degrade gracefully, no exception is thrown
+            // because other semaphores might also attempt to recover from failover.
+            return;
+        }
+
         int numPermits = sync.getPermitsForNode(nodeId);
 
         if (numPermits > 0) {
-            if (sync.failoverSafe)
-                // Release permits acquired by threads on failing node.
-                sync.releaseFailedNode(nodeId);
-            else {
+            // Semaphore is broken if reaches this point in non-failover safe mode.
+            boolean broken = !sync.failoverSafe;
+
+            // Release permits acquired by threads on failing node.
+            sync.releaseFailedNode(nodeId, broken);
+
+            if (broken) {
                 // Interrupt every waiting thread if this semaphore is not failover safe.
                 sync.setBroken(true);
 
@@ -614,8 +668,11 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
             sync.acquireSharedInterruptibly(permits);
 
-            if (isBroken())
+            if (isBroken()) {
+                Thread.interrupted(); // Clear interrupt flag.
+
                 throw new InterruptedException();
+            }
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -731,8 +788,11 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
             boolean result = sync.nonfairTryAcquireShared(1) >= 0;
 
-            if (isBroken())
+            if (isBroken()) {
+                Thread.interrupted(); // Clear interrupt flag.
+
                 throw new InterruptedException();
+            }
 
             return result;
         }
@@ -756,8 +816,11 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
             boolean result = sync.tryAcquireSharedNanos(1, unit.toNanos(timeout));
 
-            if (isBroken())
+            if (isBroken()) {
+                Thread.interrupted(); // Clear interrupt flag.
+
                 throw new InterruptedException();
+            }
 
             return result;
         }
@@ -825,8 +888,11 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
             boolean result = sync.tryAcquireSharedNanos(permits, unit.toNanos(timeout));
 
-            if (isBroken())
+            if (isBroken()) {
+                Thread.interrupted();
+
                 throw new InterruptedException();
+            }
 
             return result;
         }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.cache;
 
 import java.io.Serializable;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.LessNamingBean;

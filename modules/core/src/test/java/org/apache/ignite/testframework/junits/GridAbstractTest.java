@@ -57,16 +57,20 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -102,6 +106,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -133,6 +138,9 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     private static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
+
+    /** */
+    private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
@@ -173,6 +181,7 @@ public abstract class GridAbstractTest extends TestCase {
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
+        System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
 
         if (BINARY_MARSHALLER)
             GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
@@ -644,12 +653,14 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGridsMultiThreaded(int cnt) throws Exception {
-        if (cnt == 1)
-            return startGrids(1);
+        assert cnt > 0 : "Number of grids must be a positive number";
 
-        Ignite ignite = startGridsMultiThreaded(0, cnt);
+        Ignite ignite = startGrids(1);
 
-        checkTopology(cnt);
+        if (cnt > 1) {
+            startGridsMultiThreaded(1, cnt - 1);
+            checkTopology(cnt);
+        }
 
         return ignite;
     }
@@ -858,18 +869,32 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String gridName, boolean cancel) {
+        stopGrid(gridName, cancel, true);
+    }
+
+    /**
+     * @param gridName Ignite instance name.
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     */
+    @SuppressWarnings({"deprecation"})
+    protected void stopGrid(@Nullable String gridName, boolean cancel, boolean awaitTop) {
         try {
-            Ignite ignite = grid(gridName);
+            IgniteEx ignite = grid(gridName);
 
             assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" +
-                ((IgniteKernal)ignite).context().localNodeId() + ']');
+            UUID id = ignite instanceof IgniteProcessProxy ? ignite.localNode().id() : ignite.context().localNodeId();
+
+            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
 
             if (!isRemoteJvm(gridName))
                 G.stop(gridName, cancel);
             else
                 IgniteProcessProxy.stop(gridName, cancel);
+
+            if (awaitTop)
+                awaitTopologyChange();
         }
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
@@ -904,10 +929,10 @@ public abstract class GridAbstractTest extends TestCase {
             }
 
             for (Ignite g : clients)
-                stopGrid(g.name(), cancel);
+                stopGrid(g.name(), cancel, false);
 
             for (Ignite g : srvs)
-                stopGrid(g.name(), cancel);
+                stopGrid(g.name(), cancel, false);
 
             assert G.allGrids().isEmpty();
         }
@@ -1156,6 +1181,15 @@ public abstract class GridAbstractTest extends TestCase {
 
             stopGridErr = true;
         }
+    }
+
+    /**
+     * @param idx Index of the grid to stop.
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     */
+    protected void stopGrid(int idx, boolean cancel, boolean awaitTop) {
+        stopGrid(getTestGridName(idx), false, awaitTop);
     }
 
     /**
@@ -1895,6 +1929,35 @@ public abstract class GridAbstractTest extends TestCase {
                 return IgniteNodeRunner.startedInstance();
             else
                 return IgniteProcessProxy.ignite(name);
+        }
+    }
+
+    /**
+     *
+     * @throws IgniteInterruptedCheckedException
+     */
+    public void awaitTopologyChange() throws IgniteInterruptedCheckedException {
+        for (Ignite g : G.allGrids()) {
+            final GridKernalContext ctx = ((IgniteKernal)g).context();
+
+            if (ctx.isStopping())
+                continue;
+
+            AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+            AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+            if (! topVer.equals(exchVer)) {
+                info("topology version mismatch: node "  + g.name() + " " + exchVer + ", " + topVer);
+
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+                        AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+                        return exchVer.equals(topVer);
+                    }
+                }, DFLT_TOP_WAIT_TIMEOUT);
+            }
         }
     }
 

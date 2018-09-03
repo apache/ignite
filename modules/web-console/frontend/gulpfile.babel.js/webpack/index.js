@@ -19,6 +19,8 @@ import _ from 'lodash';
 import commonConfig from './common';
 import devConfig from './environments/development';
 import prodConfig from './environments/production';
+
+// TODO check test config
 import testConfig from './environments/test';
 
 const env = process.env.NODE_ENV || 'production';
@@ -31,4 +33,4 @@ const configs = {
 };
 
 // Load config file by environment
-export default _.merge(commonConfig(), configs[env]());
+export default _.merge(commonConfig, configs[env]);

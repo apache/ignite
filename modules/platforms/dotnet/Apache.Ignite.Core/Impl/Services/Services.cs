@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Services;
@@ -204,13 +205,13 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(service, "service");
 
-            DoOutOp(OpDeployMultiple, w =>
+            DoOutInOp(OpDeployMultiple, w =>
             {
                 w.WriteString(name);
                 w.WriteObject(service);
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
-            });
+            }, s => ReadDeploymentResult(s));
         }
 
         /** <inheritDoc /> */
@@ -225,7 +226,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(service);
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
-            });
+            }, _keepBinary, s => ReadDeploymentResult(s));
         }
 
         /** <inheritDoc /> */
@@ -233,7 +234,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            DoOutOp(OpDeploy, w => WriteServiceConfiguration(configuration, w));
+            DoOutInOp(OpDeploy, w => WriteServiceConfiguration(configuration, w), s => ReadDeploymentResult(s));
         }
 
         /** <inheritDoc /> */
@@ -241,7 +242,8 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w));
+            return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w), 
+                _keepBinary, ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -399,6 +401,23 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(configuration.NodeFilter);
             else
                 w.WriteObject<object>(null);
+        }
+
+        /// <summary>
+        /// Reads the deployment result.
+        /// </summary>
+        private object ReadDeploymentResult(BinaryReader r)
+        {
+            return r != null ? ReadDeploymentResult(r.Stream) : null;
+        }
+
+        /// <summary>
+        /// Reads the deployment result.
+        /// </summary>
+        private object ReadDeploymentResult(IBinaryStream s)
+        {
+            ServiceProxySerializer.ReadDeploymentResult(s, Marshaller, _keepBinary);
+            return null;
         }
     }
 }

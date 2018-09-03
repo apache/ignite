@@ -219,6 +219,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         discoMap = null;

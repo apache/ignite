@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import templateUrl from './information.jade';
+import template from './information.pug';
 
 export default ['igniteInformation', [() => {
     return {
@@ -23,7 +23,7 @@ export default ['igniteInformation', [() => {
             title: '@'
         },
         restrict: 'E',
-        templateUrl,
+        template,
         replace: true,
         transclude: true
     };

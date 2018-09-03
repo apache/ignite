@@ -129,6 +129,13 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
+     * @return Partition ID this message is targeted to or {@code -1} if it cannot be determined.
+     */
+    public int partition() {
+        return -1;
+    }
+
+    /**
      * If class loading error occurred during unmarshalling and {@link #ignoreClassErrors()} is
      * set to {@code true}, then the error will be passed into this method.
      *

@@ -501,6 +501,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         record = true;
 
+        log.info("Checking GridDhtPartitions*Message absent (it will take 30 SECONDS) ... ");
+
         U.sleep(30_000);
 
         record = false;
