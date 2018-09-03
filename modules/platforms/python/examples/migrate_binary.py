@@ -113,28 +113,14 @@ accounting = client.get_or_create_cache('accounting')
 for key, value in old_data:
     accounting.put(key, ExpenseVoucher(**value))
 
-type_info = client.get_binary_type('ExpenseVoucher')
-print(type_info)
+data_classes = client.query_binary_type('ExpenseVoucher')
+print(data_classes)
 # {
-#     'is_enum': False,
-#     'schemas': [
-#         OrderedDict([
-#             ('date', DateObject),
-#             ('reported', BoolObject),
-#             ('purpose', String),
-#             ('sum', DecimalObject),
-#             ('recipient', String),
-#             ('cashier_id', LongObject),
-#         ]),
-#     ],
-#     'data_class': ExpenseVoucher,
-#     'type_id': -1171639466,
-#     'affinity_key_field': None,
-#     'type_name': 'ExpenseVoucher',
-#     'type_exists': True,
+#     -231598180: <class '__main__.ExpenseVoucher'>
 # }
 
-schema = type_info['schemas'][0]
+s_id, data_class = data_classes.popitem()
+schema = data_class.schema
 
 schema['expense_date'] = schema['date']
 del schema['date']

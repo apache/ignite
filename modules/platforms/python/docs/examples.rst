@@ -3,6 +3,7 @@
 =================
 Examples of usage
 =================
+*(file: 'examples/get_and_put.py')*
 
 Key-value
 ---------
@@ -44,6 +45,7 @@ Get multiple values from cache
 
 Type hints usage
 ================
+*(file: 'examples/type_hints.py')*
 
 .. literalinclude:: ../examples/type_hints.py
   :language: python
@@ -63,6 +65,7 @@ of parser/constructor classes you can use as type hints.
 
 Scan
 ====
+*(file: 'examples/scans.py')*
 
 Cache's :py:meth:`~pyignite.cache.Cache.scan` method queries allows you
 to get the whole contents of the cache, element by element.
@@ -103,6 +106,7 @@ Destroy created cache and close connection.
 
 SQL
 ---
+*(file: 'examples/sql.py')*
 
 These examples are similar to the ones given in the Apache Ignite SQL
 Documentation: `Getting Started`_.
@@ -176,6 +180,7 @@ Finally, delete the tables used in this example with the following queries:
 
 Complex objects
 ---------------
+*(file: 'examples/binary_basics.py')*
 
 `Complex object`_ (that is often called ‘Binary object’) is an Ignite data
 type, that is designed to represent a Java class. It have the following
@@ -256,6 +261,7 @@ Objects, let us move on to more elaborate examples.
 
 Read
 ====
+*(file: 'examples/read_binary.py')*
 
 Ignite SQL uses Complex objects internally to represent keys and rows
 in SQL tables. Normally SQL data is accessed via queries (see `SQL`_),
@@ -265,7 +271,7 @@ of how Binary objects (not Ignite SQL) work.
 In the :ref:`previous examples <sql_examples>` we have created some SQL tables.
 Let us do it again and examine the Ignite storage afterwards.
 
-.. literalinclude:: ../examples/binary_types.py
+.. literalinclude:: ../examples/read_binary.py
   :language: python
   :lines: 222-229
 
@@ -275,7 +281,7 @@ conveniently named using ‘`SQL_<schema name>_<table name>`’ pattern.
 Now let us examine a configuration of a cache that contains SQL data
 using a :py:attr:`~pyignite.cache.Cache.settings` property.
 
-.. literalinclude:: ../examples/binary_types.py
+.. literalinclude:: ../examples/read_binary.py
   :language: python
   :lines: 231-251
 
@@ -287,7 +293,7 @@ Now when we have the cache, in which the SQL data resides, and the names
 of the key and value data types, we can read the data without using SQL
 functions and verify the correctness of the result.
 
-.. literalinclude:: ../examples/binary_types.py
+.. literalinclude:: ../examples/read_binary.py
   :language: python
   :lines: 253-267
 
@@ -300,6 +306,7 @@ fields correspond to the SQL query.
 
 Create
 ======
+*(file: 'examples/create_binary.py')*
 
 Now, that we aware of the internal structure of the Ignite SQL storage,
 we can create a table and put data in it using only key-value functions.
@@ -357,6 +364,7 @@ It should be deleted as any other key-value cache.
 
 Migrate
 =======
+*(file: 'examples/migrate_binary.py')*
 
 Suppose we have an accounting app that stores its data in key-value format.
 Our task would be to introduce the following changes to the original expense
@@ -367,31 +375,32 @@ voucher's format and data:
 - set `report_date` to the current date if `reported` is True, None if False,
 - delete `reported`.
 
-First get the vouchers' cache and define the `ExpenseVoucher` data class.
+First get the vouchers' cache.
 
 .. literalinclude:: ../examples/migrate_binary.py
   :language: python
-  :lines: 101-111
+  :lines: 108-111
 
-If you do not store Complex objects' schemas in code, you can obtain them with
-:py:meth:`~pyignite.client.Client.get_binary_type` method.
+If you do not store the schema of the Complex object in code, you can obtain
+it as a dataclass property with
+:py:meth:`~pyignite.client.Client.query_binary_type` method.
 
 .. literalinclude:: ../examples/migrate_binary.py
   :language: python
-  :lines: 116-135
+  :lines: 116-123
 
 Let us modify the schema and create a new Complex object class with an updated
 schema.
 
 .. literalinclude:: ../examples/migrate_binary.py
   :language: python
-  :lines: 137-152
+  :lines: 125-138
 
 Now migrate the data from the old schema to the new one.
 
 .. literalinclude:: ../examples/migrate_binary.py
   :language: python
-  :lines: 155-200
+  :lines: 141-190
 
 At this moment all the fields, defined in both of our schemas, can be
 available in the resulting binary object, depending on which schema was used
@@ -410,6 +419,7 @@ As an alternative, you can rename the field or create a new Complex object.
 
 Failover
 --------
+*(file: 'examples/failover.py')*
 
 When connection to the server is broken or timed out,
 :class:`~pyignite.client.Client` object raises an appropriate

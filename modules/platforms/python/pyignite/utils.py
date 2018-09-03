@@ -130,6 +130,8 @@ def schema_id(schema: Union[int, dict]) -> int:
     """
     if type(schema) is int:
         return schema
+    if schema is None:
+        return 0
     s_id = FNV1_OFFSET_BASIS if schema else 0
     for field_name in schema.keys():
         field_id = entity_id(field_name)

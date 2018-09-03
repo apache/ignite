@@ -67,7 +67,7 @@ CITY_INSERT_QUERY = '''INSERT INTO City(
 LANGUAGE_CREATE_TABLE_QUERY = '''CREATE TABLE CountryLanguage (
     CountryCode CHAR(3),
     Language CHAR(30),
-    IsOfficial CHAR(2),
+    IsOfficial BOOLEAN,
     Percentage DECIMAL(4,1),
     PRIMARY KEY (CountryCode, Language)
 ) WITH "affinityKey=CountryCode"'''

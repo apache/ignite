@@ -185,6 +185,11 @@ def pytest_addoption(parser):
         type=str,
         help='password'
     )
+    parser.addoption(
+        '--examples',
+        action='store_true',
+        help='check if examples can be run',
+    )
 
 
 def pytest_generate_tests(metafunc):

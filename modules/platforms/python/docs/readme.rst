@@ -71,7 +71,11 @@ Some examples of using pyignite are provided in
 commented in the :ref:`examples_of_usage` section of the documentation.
 
 This code implies that it is run in the environment with `pyignite` package
-installed, and Apache Ignite node is running on localhost:10800.
+installed, and Apache Ignite node is running on localhost:10800, unless
+otherwise noted.
+
+There is also a possibility to run examples alone with tests. For
+the explanation of testing, look up the `Testing`_ section.
 
 Testing
 -------
@@ -122,11 +126,29 @@ SSL-related `pytest` parameters are:
 Other `pytest` parameters:
 
 ``--timeout`` − timeout (in seconds) for each socket operation, including
-`connect`. Can accept integer or float value. Default is None (blocking mode),
+`connect`. Accepts integer or float value. Default is None (blocking mode),
 
 ``--username`` and ``--password`` − credentials to authenticate to Ignite
 cluster. Used in conjunction with `authenticationEnabled` property in cluster
 configuration.
+
+``--examples`` − run the examples as one test. If you wish to run *only*
+the examples, supply also the name of the test function to `pytest` launcher:
+
+::
+
+$ pytest --examples ../tests/test_examples.py::test_examples
+
+In this test assertion fails if any of the examples' processes ends with
+non-zero exit code.
+
+Examples are not parameterized for the sake of simplicity. They always run
+with default parameters (host and port) regardless of any other
+`pytest` option.
+
+Since failover, SSL and authentication examples are meant to be controlled
+by user or depends on special configuration of the Ignite cluster, they
+can not be automated.
 
 Documentation
 -------------

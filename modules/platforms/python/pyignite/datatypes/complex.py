@@ -438,7 +438,7 @@ class BinaryObject:
                     frame = rec[0]
                     code = frame.f_code
                     for varname in code.co_varnames:
-                        if varname in ['client', 'self']:
+                        if varname in ['client', 'connection', 'self']:
                             suspect = frame.f_locals[varname]
                             if isinstance(suspect, Client):
                                 return suspect
