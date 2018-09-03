@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -29,140 +31,224 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 
 /**
  *
  */
+// TODO: Concurrent tests
+// TODO: Tests for cache API: failing tests or separate ticket
 public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.PARTITIONED;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInsert() throws Exception {
-        IgniteEx ignite = startGrid(0);
-        IgniteCache<?, ?> personTbl = createTable(ignite);
-
-        personTbl.query(q("begin"));
-        personTbl.query(q("insert into person values(1, 'a')"));
-
-        assertEquals(0, personTbl.size());
-        personTbl.query(q("commit"));
-
-        assertEquals(1, personTbl.size());
+    /** */
+    private void checkSizeModificationByOperation(String sql, boolean commit, int expSizeDelta) throws Exception {
+        checkSizeModificationByOperation(c -> {}, cache -> cache.query(q(sql)).getAll(), commit, expSizeDelta);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDelete() throws Exception {
-        IgniteEx ignite = startGrid(0);
-        IgniteCache<?, ?> personTbl = createTable(ignite);
-        personTbl.query(q("insert into person values(1, 'a')"));
-
-        personTbl.query(q("begin"));
-        personTbl.query(q("delete from person"));
-
-        assertEquals(1, personTbl.size());
-        personTbl.query(q("commit"));
-
-        assertEquals(0, personTbl.size());
+    /** */
+    private void checkSizeModificationByOperation(String initSql, String sql, boolean commit,
+        int expSizeDelta) throws Exception {
+        checkSizeModificationByOperation(
+            cache -> cache.query(q(initSql)).getAll(),
+            cache -> cache.query(q(sql)).getAll(),
+            commit,
+            expSizeDelta);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInsertMultipleKeys() throws Exception {
-        IgniteEx ignite = startGrid(0);
-        IgniteCache<?, ?> personTbl = createTable(ignite);
-
-        personTbl.query(q("begin"));
-        personTbl.query(q("insert into person values(1, 'a')"));
-        personTbl.query(q("insert into person values(%d, 'b')", keyInSamePartition(ignite, "person", 1)));
-        personTbl.query(q("insert into person values(%d, 'c')", keyInDifferentPartition(ignite, "person", 1)));
-
-        assertEquals(0, personTbl.size());
-        personTbl.query(q("commit"));
-
-        assertEquals(3, personTbl.size());
+    /** */
+    private void checkSizeModificationByOperation(Consumer<IgniteCache<?, ?>> inTx, boolean commit,
+        int expSizeDelta) throws Exception {
+        checkSizeModificationByOperation(c -> {}, inTx, commit, expSizeDelta);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInsertWithBackups() throws Exception {
-        startGridsMultiThreaded(2);
-        IgniteEx ignite = grid(0);
-        IgniteCache<?, ?> personTbl = createTable(ignite);
+    /** */
+    private void checkSizeModificationByOperation(Consumer<IgniteCache<?, ?>> beforeTx,
+        Consumer<IgniteCache<?, ?>> inTx, boolean commit, int expSizeDelta) throws Exception {
+        IgniteCache<Object, Object> tbl0 = grid(0).cache("person");
 
-        personTbl.query(q("begin"));
-        personTbl.query(q("insert into person values(1, 'a')"));
+        tbl0.query(q("delete from person"));
 
-        assertEquals(0, personTbl.size(BACKUP));
-        personTbl.query(q("commit"));
+        beforeTx.accept(tbl0);
 
-        assertEquals(1, personTbl.size(BACKUP));
-    }
+        int initSize = tbl0.size();
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDeleteWithBackups() throws Exception {
-        startGridsMultiThreaded(2);
-        IgniteEx ignite = grid(0);
-        IgniteCache<?, ?> personTbl = createTable(ignite);
-        personTbl.query(q("insert into person values(1, 'a')"));
+        tbl0.query(q("begin"));
 
-        personTbl.query(q("begin"));
-        personTbl.query(q("delete from person where id = 1"));
+        inTx.accept(tbl0);
 
-        assertEquals(1, personTbl.size(BACKUP));
-        personTbl.query(q("commit"));
+        // size is not changed before commit
+        assertEquals(0, tbl0.size() - initSize);
 
-        assertEquals(0, personTbl.size(BACKUP));
-    }
+        if (commit)
+            tbl0.query(q("commit"));
+        else
+            tbl0.query(q("rollback"));
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInsertAndDeleteWithBackups() throws Exception {
-        startGridsMultiThreaded(2);
-        IgniteEx ignite = grid(0);
-        IgniteCache<?, ?> personTbl = createTable(ignite);
-        personTbl.query(q("insert into person values(1, 'a')"));
+        assertEquals(expSizeDelta, tbl0.size() - initSize);
+        assertEquals(tbl0.size(), table(grid(1)).size());
 
-        personTbl.query(q("begin"));
-        personTbl.query(q("insert into person values(2, 'b')"));
-        personTbl.query(q("delete from person where id = 1"));
-
-        assertEquals(1, personTbl.size());
-        assertEquals(1, personTbl.size(BACKUP));
-        personTbl.query(q("commit"));
-
-        assertEquals(1, personTbl.size());
-        assertEquals(1, personTbl.size(BACKUP));
+        assertEquals(tbl0.size(), tbl0.size(BACKUP));
+        assertEquals(tbl0.size(), table(grid(1)).size(BACKUP));
     }
 
     /**
      * @throws Exception if failed.
      */
-    public void testSizeIsNotChangedByReader() throws Exception {
-        IgniteEx ignite = startGrid(0);
+    public void testSql() throws Exception {
+        startGridsMultiThreaded(2);
 
-        IgniteCache<?, ?> tbl = createTable(ignite);
+        createTable(grid(0));
 
-        tbl.query(q("insert into person values(1, 'a')"));
+        checkSizeModificationByOperation("insert into person values(1, 'a')", true, 1);
 
-        assertEquals(1, tbl.size());
+        checkSizeModificationByOperation("insert into person values(1, 'a')", false, 0);
 
-        tbl.query(q("select * from person")).getAll();
+        checkSizeModificationByOperation(
+            personTbl -> personTbl.query(q("insert into person values(1, 'a')")),
+            personTbl -> {
+                try {
+                    personTbl.query(q("insert into person values(1, 'a')"));
+                }
+                catch (Exception e) {
+                    if (e.getCause() instanceof IgniteSQLException) {
+                        assertEquals(IgniteQueryErrorCode.DUPLICATE_KEY,
+                            ((IgniteSQLException)e.getCause()).statusCode());
+                    }
+                    else {
+                        e.printStackTrace();
 
-        assertEquals(1, tbl.size());
+                        fail("Unexpected exceptions");
+                    }
+                }
+            },
+            true, 0);
+
+        checkSizeModificationByOperation("merge into person(id, name) values(1, 'a')", true, 1);
+
+        checkSizeModificationByOperation("merge into person(id, name) values(1, 'a')", false, 0);
+
+        checkSizeModificationByOperation(
+            "insert into person values(1, 'a')", "merge into person(id, name) values(1, 'b')", true, 0);
+
+        checkSizeModificationByOperation("update person set name = 'b' where id = 1", true, 0);
+
+        checkSizeModificationByOperation(
+            "insert into person values(1, 'a')", "update person set name = 'b' where id = 1", true, 0);
+
+        checkSizeModificationByOperation(
+            "insert into person values(1, 'a')", "delete from person where id = 1", true, -1);
+
+        checkSizeModificationByOperation(
+            "insert into person values(1, 'a')", "delete from person where id = 1", false, 0);
+
+        checkSizeModificationByOperation("delete from person where id = 1", true, 0);
+
+        checkSizeModificationByOperation(
+            "insert into person values(1, 'a')", "select * from person", true, 0);
+
+        checkSizeModificationByOperation("select * from person", true, 0);
+
+        checkSizeModificationByOperation(personTbl -> {
+            personTbl.query(q("insert into person values(1, 'a')"));
+            personTbl.query(q("insert into person values(%d, 'b')", keyInSamePartition(grid(0), "person", 1)));
+            personTbl.query(q("insert into person values(%d, 'c')", keyInDifferentPartition(grid(0), "person", 1)));
+        }, true, 3);
+
+        checkSizeModificationByOperation(personTbl -> {
+            personTbl.query(q("insert into person values(1, 'a')"));
+            personTbl.query(q("delete from person where id = 1"));
+        }, true, 0);
+
+        checkSizeModificationByOperation(personTbl -> {
+            personTbl.query(q("insert into person values(1, 'a')"));
+            personTbl.query(q("delete from person where id = 1"));
+            personTbl.query(q("insert into person values(1, 'a')"));
+        }, true, 1);
+
+        checkSizeModificationByOperation(
+            personTbl -> personTbl.query(q("insert into person values(1, 'a')")),
+            personTbl -> {
+                personTbl.query(q("delete from person where id = 1"));
+                personTbl.query(q("insert into person values(1, 'a')"));
+            }, true, 0);
+
+        checkSizeModificationByOperation(personTbl -> {
+            personTbl.query(q("merge into person(id, name) values(1, 'a')"));
+            personTbl.query(q("delete from person where id = 1"));
+        }, true, 0);
+
+        checkSizeModificationByOperation(personTbl -> {
+            personTbl.query(q("merge into person(id, name) values(1, 'a')"));
+            personTbl.query(q("delete from person where id = 1"));
+            personTbl.query(q("merge into person(id, name) values(1, 'a')"));
+        }, true, 1);
+
+        checkSizeModificationByOperation(
+            personTbl -> personTbl.query(q("merge into person(id, name) values(1, 'a')")),
+            personTbl -> {
+                personTbl.query(q("delete from person where id = 1"));
+                personTbl.query(q("merge into person(id, name) values(1, 'a')"));
+            }, true, 0);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testWriteConflictDoesNotChangeSize() throws Exception {
+        startGridsMultiThreaded(2);
+
+        IgniteCache<?, ?> tbl0 = createTable(grid(0));
+
+        tbl0.query(q("insert into person values(1, 'a')"));
+
+        tbl0.query(q("begin"));
+
+        tbl0.query(q("delete from person where id = 1"));
+
+        CompletableFuture<Void> conflictingStarted = new CompletableFuture<>();
+
+        CompletableFuture<Void> fut = CompletableFuture.runAsync(() -> {
+            tbl0.query(q("begin"));
+
+            try {
+                tbl0.query(q("select * from person")).getAll();
+                conflictingStarted.complete(null);
+
+                tbl0.query(q("merge into person(id, name) values(1, 'b')"));
+            }
+            finally {
+                tbl0.query(q("commit"));
+            }
+        });
+
+        conflictingStarted.join();
+        tbl0.query(q("commit"));
+
+        try {
+            fut.join();
+        }
+        catch (Exception e) {
+            if (e.getCause().getCause() instanceof IgniteSQLException)
+                assertTrue(e.getMessage().toLowerCase().contains("version mismatch"));
+            else {
+                e.printStackTrace();
+
+                fail("Unexpected exception");
+            }
+        }
+
+        assertEquals(0, tbl0.size());
+        assertEquals(0, table(grid(1)).size());
+
+        assertEquals(0, tbl0.size(BACKUP));
+        assertEquals(0, table(grid(1)).size(BACKUP));
     }
 
     /**
@@ -248,16 +334,24 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     }
 
     /** */
+    private static IgniteCache<?, ?> table(IgniteEx ignite) {
+        assert ignite.cachex("person").configuration().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
+        assert ignite.cachex("person").configuration().getCacheMode() == CacheMode.REPLICATED;
+
+        return ignite.cache("person");
+    }
+
+    /** */
     private static IgniteCache<?, ?> createTable(IgniteEx ignite) {
         IgniteCache<?, ?> sqlNexus = ignite.getOrCreateCache(new CacheConfiguration<>("sqlNexus").setSqlSchema("PUBLIC"));
+
         sqlNexus.query(q("" +
             "create table person(" +
             "  id int primary key," +
             "  name varchar" +
             ") with \"atomicity=transactional,template=replicated,cache_name=person\""));
-        assert ignite.cachex("person").configuration().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
-        assert ignite.cachex("person").configuration().getCacheMode() == CacheMode.REPLICATED;
-        return ignite.cache("person");
+
+        return table(ignite);
     }
 
     /** */
