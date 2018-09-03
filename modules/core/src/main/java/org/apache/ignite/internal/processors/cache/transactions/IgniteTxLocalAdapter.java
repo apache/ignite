@@ -1710,7 +1710,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         Map<Integer, PartitionUpdateCounters> updCntrs = applyAndCollectLocalUpdateCounters();
 
         // remember counters for subsequent sending to backups
-        txCounters().updateCounters(updCntrs);
+        txCounters(true).updateCounters(updCntrs);
     }
 
     /**

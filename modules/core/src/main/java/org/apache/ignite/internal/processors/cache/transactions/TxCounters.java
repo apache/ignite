@@ -72,7 +72,7 @@ public class TxCounters {
 
     /** */
     public Map<Integer, PartitionUpdateCounters> updateCounters() {
-        return updCntrs != null ? Collections.unmodifiableMap(updCntrs) : null;
+        return updCntrs != null ? Collections.unmodifiableMap(updCntrs) : Collections.emptyMap();
     }
 
     /** */

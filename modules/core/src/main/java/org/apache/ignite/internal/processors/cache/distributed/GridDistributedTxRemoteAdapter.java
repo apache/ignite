@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -850,10 +851,12 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @Override protected void applyTxCounters() {
         super.applyTxCounters();
 
-        Map<Integer, PartitionUpdateCounters> updCntrs = txCounters().updateCounters();
+        TxCounters txCntrs = txCounters(false);
 
-        if (F.isEmpty(updCntrs))
+        if (txCntrs == null)
             return;
+
+        Map<Integer, PartitionUpdateCounters> updCntrs = txCntrs.updateCounters();
 
         for (Map.Entry<Integer, PartitionUpdateCounters> entry : updCntrs.entrySet()) {
             int cacheId = entry.getKey();

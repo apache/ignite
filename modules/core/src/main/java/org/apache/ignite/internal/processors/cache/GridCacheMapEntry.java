@@ -1123,7 +1123,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 updateCntr = nextMvccPartitionCounter();
 
             if (res.resultType() == ResultType.PREV_NULL)
-                tx.txCounters().accumulateSizeDelta(cctx.cacheId(), partition(), 1);
+                tx.txCounters(true).accumulateSizeDelta(cctx.cacheId(), partition(), 1);
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
@@ -1221,7 +1221,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 updateCntr = nextMvccPartitionCounter();
 
             if (res.resultType() == ResultType.PREV_NOT_NULL)
-                tx.txCounters().accumulateSizeDelta(cctx.cacheId(), partition(), -1);
+                tx.txCounters(true).accumulateSizeDelta(cctx.cacheId(), partition(), -1);
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = logTxUpdate(tx, null, 0, updateCntr);
@@ -4997,7 +4997,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updateCntr0 = updateCntr;
 
                 if (res.resultType() == ResultType.PREV_NOT_NULL)
-                    tx.txCounters().accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
+                    tx.txCounters(true).accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
 
                 if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                     logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
@@ -5287,7 +5287,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 updateCntr0 = tx.local() ? entry.nextMvccPartitionCounter() : updateCntr;
 
                 if (res.resultType() == ResultType.PREV_NULL)
-                    tx.txCounters().accumulateSizeDelta(cctx.cacheId(), entry.partition(), 1);
+                    tx.txCounters(true).accumulateSizeDelta(cctx.cacheId(), entry.partition(), 1);
 
                 if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                     logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(

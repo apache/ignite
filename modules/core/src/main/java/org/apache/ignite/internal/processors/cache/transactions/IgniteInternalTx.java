@@ -653,6 +653,7 @@ public interface IgniteInternalTx {
 
     /**
      * @return Transaction counters.
+     * @param createIfAbsent {@code True} if non-null instance is needed.
      */
-    public TxCounters txCounters();
+    @Nullable public TxCounters txCounters(boolean createIfAbsent);
 }

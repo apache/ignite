@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -944,10 +945,12 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return Partition counters map for the given backup node.
      */
     public Map<Integer, PartitionUpdateCounters> filterUpdateCountersForBackupNode(ClusterNode node) {
-        Map<Integer, PartitionUpdateCounters> updCntrs = txCounters().updateCounters();
+        TxCounters txCntrs = txCounters(false);
 
-        if (F.isEmpty(updCntrs))
+        if (txCntrs == null)
             return null;
+
+        Map<Integer, PartitionUpdateCounters> updCntrs = txCntrs.updateCounters();
 
         Map<Integer, PartitionUpdateCounters> res = new HashMap<>();
 

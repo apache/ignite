@@ -139,6 +139,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, FinalizationStatus> FINALIZING_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, FinalizationStatus.class, "finalizing");
 
+    /** */
+    private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, TxCounters> TX_COUNTERS_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
+
     /** Logger. */
     protected static IgniteLogger log;
 
@@ -279,7 +283,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private volatile IgniteInternalFuture rollbackFut;
 
     /** */
-    private TxCounters txCounters = new TxCounters();
+    private volatile TxCounters txCounters = new TxCounters();
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -2021,7 +2025,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public TxCounters txCounters() {
+    @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+        if (createIfAbsent && txCounters == null)
+            TX_COUNTERS_UPD.compareAndSet(this, null, new TxCounters());
+
         return txCounters;
     }
 
@@ -2029,10 +2036,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * Make counters accumulated during transaction visible outside of transaciton.
      */
     protected void applyTxCounters() {
-        Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas = txCounters.sizeDeltas();
+        TxCounters txCntrs = txCounters(false);
 
-        if (F.isEmpty(sizeDeltas))
+        if (txCntrs == null)
             return;
+
+        Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas = txCntrs.sizeDeltas();
 
         for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
             Integer cacheId = entry.getKey();
@@ -2328,7 +2337,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public TxCounters txCounters() {
+        @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
             return null;
         }
 
