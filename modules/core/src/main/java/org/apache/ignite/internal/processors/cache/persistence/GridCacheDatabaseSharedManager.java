@@ -873,13 +873,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
-        DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();
-
-        boolean isBaselineNode = clusterState.hasBaselineTopology() &&
-            CU.baselineNode(cctx.localNode(), clusterState);
-
-        assert isBaselineNode : clusterState;
-
         assert metaStorage != null;
 
         checkpointReadLock();
