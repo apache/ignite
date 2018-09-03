@@ -244,7 +244,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                         for (int i = PageIO.COMMON_HEADER_END + DataPageIO.ITEMS_OFF; i < mem.pageSize(); i++)
                             PageUtils.putByte(pageAddr, i, (byte)0xAB);
 
-                        PageIO.printPage(pageAddr, mem.pageSize());
+                        PageIO.printPage(pageAddr, mem.realPageSize(fullId.groupId()));
                     }
                     finally {
                         mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
@@ -708,7 +708,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 long pageAddr = mem.readLock(fullId.groupId(), fullId.pageId(), page);
 
                 try {
-                    for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++) {
+                    for (int i = PageIO.COMMON_HEADER_END; i < mem.realPageSize(fullId.groupId()); i++) {
                         int expState = state & 0xFF;
                         int pageState = PageUtils.getByte(pageAddr, i) & 0xFF;
                         int walState = walData[i] & 0xFF;
@@ -819,7 +819,8 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                                                 ", bhc=" + U.hexLong(System.identityHashCode(pageAddr)) +
                                                 ", page=" + U.hexLong(System.identityHashCode(page)) + ']');
 
-                                        for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++)
+                                        for (int i = PageIO.COMMON_HEADER_END; i < mem.realPageSize(fullId.groupId());
+                                            i++) {
                                             assertEquals("Verify page failed [fullId=" + fullId +
                                                     ", i=" + i +
                                                     ", state=" + state +
@@ -827,6 +828,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                                                     ", bhc=" + U.hexLong(System.identityHashCode(pageAddr)) +
                                                     ", page=" + U.hexLong(System.identityHashCode(page)) + ']',
                                                 state & 0xFF, PageUtils.getByte(pageAddr, i) & 0xFF);
+                                        }
                                     }
 
                                     state = (state + 1) & 0xFF;
@@ -837,7 +839,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                                             ", bhc=" + U.hexLong(System.identityHashCode(pageAddr)) +
                                             ", page=" + U.hexLong(System.identityHashCode(page)) + ']');
 
-                                    for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++)
+                                    for (int i = PageIO.COMMON_HEADER_END; i < mem.realPageSize(fullId.groupId()); i++)
                                         PageUtils.putByte(pageAddr, i, (byte)state);
 
                                     resMap.put(fullId, state);
@@ -927,7 +929,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                         Integer first = null;
 
-                        for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++) {
+                        for (int i = PageIO.COMMON_HEADER_END; i < mem.realPageSize(fullId.groupId()); i++) {
                             int val = tmpBuf.get(i) & 0xFF;
 
                             if (first == null)

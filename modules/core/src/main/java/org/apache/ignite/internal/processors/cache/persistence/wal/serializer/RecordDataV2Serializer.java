@@ -98,9 +98,10 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
     }
 
     /** {@inheritDoc} */
-    @Override protected WALRecord readPlainRecord(
+    @Override WALRecord readPlainRecord(
         RecordType type,
-        ByteBufferBackedDataInput in
+        ByteBufferBackedDataInput in,
+        boolean encrypted
     ) throws IOException, IgniteCheckedException {
         switch (type) {
             case CHECKPOINT_RECORD:
@@ -162,7 +163,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
                 return txRecordSerializer.read(in);
 
             default:
-                return super.readPlainRecord(type, in);
+                return super.readPlainRecord(type, in, encrypted);
         }
     }
 

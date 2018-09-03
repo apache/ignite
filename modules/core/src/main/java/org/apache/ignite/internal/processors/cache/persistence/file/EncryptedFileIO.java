@@ -26,6 +26,7 @@ import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  * Implementation of {@code FileIO} that supports encryption(decryption) of pages written(readed) to(from) file.
@@ -94,8 +95,7 @@ public class EncryptedFileIO implements FileIO {
         this.encMgr = encMgr;
         this.encSpi = encSpi;
 
-        this.encryptionOverhead =
-            encSpi.encryptedSizeNoPadding(pageSize) - pageSize + encSpi.blockSize() /* For CRC. */;
+        this.encryptionOverhead = pageSize - CU.encryptedPageSize(pageSize, encSpi);
         this.zeroes =  new byte[encryptionOverhead];
     }
 
@@ -224,10 +224,9 @@ public class EncryptedFileIO implements FileIO {
         assert srcBuf.remaining() >= pageSize;
         assert tailIsEmpty(srcBuf, PageIO.getType(srcBuf));
 
-        int encDataLen = pageSize - encryptionOverhead;
         int srcLimit = srcBuf.limit();
 
-        srcBuf.limit(srcBuf.position() + encDataLen);
+        srcBuf.limit(srcBuf.position() + plainDataSize());
 
         encSpi.encryptNoPadding(srcBuf, key(), res);
 
@@ -249,9 +248,7 @@ public class EncryptedFileIO implements FileIO {
 
         checkCRC(encrypted);
 
-        int encDataLen = pageSize - encSpi.blockSize();
-
-        encrypted.limit(encDataLen);
+        encrypted.limit(encryptedDataSize());
 
         encSpi.decryptNoPadding(encrypted, key(), destBuf);
 
@@ -264,7 +261,7 @@ public class EncryptedFileIO implements FileIO {
      * @param res Destination buffer.
      */
     private void storeCRC(ByteBuffer res) {
-        int crc = PureJavaCrc32.calcCrc32(res, pageSize - encSpi.blockSize());
+        int crc = PureJavaCrc32.calcCrc32(res, encryptedDataSize());
 
         res.put((byte) (crc >> 24));
         res.put((byte) (crc >> 16));
@@ -278,7 +275,7 @@ public class EncryptedFileIO implements FileIO {
      * @param encrypted Encrypted data buffer.
      */
     private void checkCRC(ByteBuffer encrypted) {
-        int crc = PureJavaCrc32.calcCrc32(encrypted, pageSize - encSpi.blockSize());
+        int crc = PureJavaCrc32.calcCrc32(encrypted, encryptedDataSize());
 
         int storedCrc = 0;
 
@@ -292,17 +289,30 @@ public class EncryptedFileIO implements FileIO {
                 ", calculatedCrd=" + crc + "]");
         }
 
-        encrypted.position(encrypted.position() - (pageSize - encSpi.blockSize() + 4));
+        encrypted.position(encrypted.position() - (encryptedDataSize() + 4 /* CRC size. */));
+    }
+
+    /**
+     * @return Encrypted data size.
+     */
+    private int encryptedDataSize() {
+        return pageSize - encSpi.blockSize();
+    }
+
+    /**
+     * @return Plain data size.
+     */
+    private int plainDataSize() {
+        return pageSize - encryptionOverhead;
     }
 
     /** */
     private boolean tailIsEmpty(ByteBuffer src, int pageType) {
-        int start = src.capacity() - encryptionOverhead;
         int srcPos = src.position();
 
-        src.position(start);
+        src.position(srcPos + plainDataSize());
 
-        for (int i = start; i < src.capacity(); i++)
+        for (int i = 0; i < encryptionOverhead; i++)
             assert src.get() == 0 : "Tail of src should be empty [i=" + i + ", pageType=" + pageType + "]";
 
         src.position(srcPos);
