@@ -359,7 +359,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @param grpId Group id.
      */
-    public void removeGroupKey(int grpId) {
+    private void removeGroupKey(int grpId) {
         synchronized (mux) {
             ctx.cache().context().database().checkpointReadLock();
 
