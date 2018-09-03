@@ -582,8 +582,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         if (collectionCacheMode() == LOCAL)
             return;
 
-        fail("https://issues.apache.org/jira/browse/IGNITE-584");
-
         testNodeJoinsAndLeaves(false);
     }
 
@@ -593,8 +591,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     public void testNodeJoinsAndLeavesCollocated() throws Exception {
         if (collectionCacheMode() == LOCAL)
             return;
-
-        fail("https://issues.apache.org/jira/browse/IGNITE-584");
 
         testNodeJoinsAndLeaves(true);
     }
