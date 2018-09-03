@@ -72,7 +72,6 @@ import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EX
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EXEC_BATCH;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.STREAMING_BATCH;
-import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.STREAMING_BATCH_ORDERED;
 
 /**
  * SQL query handler.
@@ -112,7 +111,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     private ClientListenerProtocolVersion ver;
 
     /** Ordered batches queue. */
-    private final PriorityQueue<OdbcStreamingBatchOrderedRequest> orderedBatchesQueue = new PriorityQueue<>();
+    private final PriorityQueue<OdbcStreamingBatchRequest> orderedBatchesQueue = new PriorityQueue<>();
 
     /** Ordered batches mutex. */
     private final Object orderedBatchesMux = new Object();
@@ -232,10 +231,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                     return executeBatchQuery((OdbcQueryExecuteBatchRequest)req);
 
                 case STREAMING_BATCH:
-                    return processStreamingBatch((OdbcStreamingBatchRequest)req);
-
-                case STREAMING_BATCH_ORDERED:
-                    return dispatchBatchOrdered((OdbcStreamingBatchOrderedRequest)req);
+                    return dispatchBatchOrdered((OdbcStreamingBatchRequest)req);
 
                 case QRY_FETCH:
                     return fetchQuery((OdbcQueryFetchRequest)req);
@@ -456,7 +452,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Ordered batch request.
      * @return Response.
      */
-    private ClientListenerResponse dispatchBatchOrdered(OdbcStreamingBatchOrderedRequest req) {
+    private ClientListenerResponse dispatchBatchOrdered(OdbcStreamingBatchRequest req) {
         synchronized (orderedBatchesMux) {
             orderedBatchesQueue.add(req);
 
@@ -472,17 +468,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /**
      * @param req Ordered batch request.
      */
-    private void processStreamingBatchOrdered(OdbcStreamingBatchOrderedRequest req) {
+    private void processStreamingBatchOrdered(OdbcStreamingBatchRequest req) {
         try {
             if (req.last())
                 cliCtx.waitTotalProcessedOrderedRequests(req.order());
 
-            OdbcResponse resp = (OdbcResponse)processStreamingBatch(req);
-
-            resp = new OdbcResponse(
-                new OdbcStreamingBatchOrderedResult(resp, req.order()));
-
-            sender.send(resp);
+            sender.send(processStreamingBatch(req));
         } catch (Exception e) {
             U.error(null, "Error processing file batch", e);
 
@@ -528,12 +519,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             cliCtx.disableStreaming();
 
         if (firstErr.isEmpty())
-            return new OdbcResponse(null);
+            return new OdbcResponse(new OdbcStreamingBatchResult(req.order()));
         else
         {
             assert firstErr.getKey() != null;
 
-            return new OdbcResponse(firstErr.getKey(), firstErr.getValue());
+            return new OdbcResponse(new OdbcStreamingBatchResult(firstErr.getKey(), firstErr.getValue(), req.order()));
         }
     }
 
@@ -950,7 +941,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 if (!cliCtx.isStream())
                     return;
 
-                OdbcStreamingBatchOrderedRequest req;
+                OdbcStreamingBatchRequest req;
 
                 synchronized (orderedBatchesMux) {
                     req = orderedBatchesQueue.peek();

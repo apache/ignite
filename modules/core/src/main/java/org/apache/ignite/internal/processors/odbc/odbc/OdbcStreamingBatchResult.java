@@ -17,27 +17,52 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * ODBC query execute with batch of parameters result.
  */
-public class OdbcStreamingBatchOrderedResult {
-    /** Rows affected. */
-    private final OdbcResponse batchResult;
+public class OdbcStreamingBatchResult {
+    /** Success status. */
+    private int status;
+
+    /** Error. */
+    private String err;
 
     /** Order. */
     private final long order;
 
     /**
-     * @param batchResult Execute batch result.
      * @param order Order.
      */
-    public OdbcStreamingBatchOrderedResult(OdbcResponse batchResult, long order) {
-        this.batchResult = batchResult;
+    public OdbcStreamingBatchResult(long order) {
+        this(ClientListenerResponse.STATUS_SUCCESS, null, order);
+    }
+
+    /**
+     * @param status Response status.
+     * @param err Error, {@code null} if success is {@code true}.
+     * @param order Order.
+     */
+    public OdbcStreamingBatchResult(int status, @Nullable String err, long order) {
+        this.status = status;
+        this.err = err;
         this.order = order;
     }
 
-    public OdbcResponse batchResult() {
-        return batchResult;
+    /**
+     * @return Success flag.
+     */
+    public int status() {
+        return status;
+    }
+
+    /**
+     * @return Error.
+     */
+    public String error() {
+        return err;
     }
 
     /**

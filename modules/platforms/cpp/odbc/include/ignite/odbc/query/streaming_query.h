@@ -156,14 +156,6 @@ namespace ignite
                  */
                 SqlResult::Type MakeRequestStreamingBatch(bool last);
 
-                /**
-                 * Send batch ordered request.
-                 *
-                 * @param last Last page flag.
-                 * @return Result.
-                 */
-                SqlResult::Type MakeRequestStreamingBatchOrdered(bool last);
-
                 /** Connection associated with the statement. */
                 Connection& connection;
 

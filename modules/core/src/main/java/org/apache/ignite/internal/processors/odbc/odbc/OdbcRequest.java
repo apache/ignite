@@ -47,11 +47,8 @@ public class OdbcRequest extends ClientListenerRequestNoId {
     /** Get next result set. */
     public static final byte MORE_RESULTS = 9;
 
-    /** Process streaming batch. */
-    public static final byte STREAMING_BATCH = 10;
-
     /** Process ordered streaming batch. */
-    public static final byte STREAMING_BATCH_ORDERED = 11;
+    public static final byte STREAMING_BATCH = 10;
 
     /** Command. */
     private final byte cmd;
