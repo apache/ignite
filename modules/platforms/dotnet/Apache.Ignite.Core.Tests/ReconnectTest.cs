@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests
 {
-    using System;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -83,7 +82,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Check reconnect task.
             Assert.IsTrue(ex.ClientReconnectTask.Result);
-            
+
             // Wait a bit for notifications.
             Thread.Sleep(100);
 

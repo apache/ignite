@@ -69,7 +69,7 @@ namespace ignite
                  *
                  * @return Diagnostic record.
                  */
-                virtual const diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() const
+                virtual const DiagnosticRecordStorage& GetDiagnosticRecords() const
                 {
                     return diagnosticRecords;
                 }
@@ -79,7 +79,7 @@ namespace ignite
                  *
                  * @return Diagnostic record.
                  */
-                virtual diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords()
+                virtual DiagnosticRecordStorage& GetDiagnosticRecords()
                 {
                     return diagnosticRecords;
                 }
@@ -109,6 +109,13 @@ namespace ignite
                  * @param err Error.
                  */
                 virtual void AddStatusRecord(const OdbcError& err);
+
+                /**
+                 * Add new status record.
+                 *
+                 * @param rec Record.
+                 */
+                virtual void AddStatusRecord(const DiagnosticRecord& rec);
 
             protected:
                 /** Diagnostic records. */
