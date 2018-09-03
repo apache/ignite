@@ -65,34 +65,55 @@ public class MeanAbsValueCheckConvergenceStgy<K,V> extends ConvergenceCheckStrat
     @Override public Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
         ModelsComposition mdl) {
 
-        IgniteBiTuple<Double, Long> sumAndCnt = dataset.compute(partition -> {
-            Double sum = 0.0;
-
-            for(int i = 0; i < partition.getFeatures().length; i++) {
-                double error = computeError(VectorUtils.of(partition.getFeatures()[i]), partition.getLabels()[i], mdl);
-                sum += Math.abs(error);
-            }
-
-            return new IgniteBiTuple<>(sum, (long) partition.getLabels().length);
-        }, (left, right) -> {
-            if (left == null) {
-                if (right != null)
-                    return right;
-                else
-                    return new IgniteBiTuple<>(0.0, 0L);
-            }
-
-            if (right == null)
-                return left;
-
-            return new IgniteBiTuple<>(
-                left.getKey() + right.getKey(),
-                right.getValue() + left.getValue()
-            );
-        });
+        IgniteBiTuple<Double, Long> sumAndCnt = dataset.compute(
+            partition -> computeStatisticOnPartition(mdl, partition),
+            this::reduce
+        );
 
         if(sumAndCnt == null || sumAndCnt.getValue() == 0)
             return Double.NaN;
         return sumAndCnt.getKey() / sumAndCnt.getValue();
+    }
+
+    /**
+     * Compute sum of absolute value of errors and count of rows in partition.
+     *
+     * @param mdl Model.
+     * @param part Partition.
+     * @return Tuple (sum of errors, count of rows)
+     */
+    private IgniteBiTuple<Double, Long> computeStatisticOnPartition(ModelsComposition mdl, DecisionTreeData part) {
+        Double sum = 0.0;
+
+        for(int i = 0; i < part.getFeatures().length; i++) {
+            double error = computeError(VectorUtils.of(part.getFeatures()[i]), part.getLabels()[i], mdl);
+            sum += Math.abs(error);
+        }
+
+        return new IgniteBiTuple<>(sum, (long) part.getLabels().length);
+    }
+
+    /**
+     * Merge left and right statistics from partitions.
+     *
+     * @param left Left.
+     * @param right Right.
+     * @return merged value.
+     */
+    private IgniteBiTuple<Double, Long> reduce(IgniteBiTuple<Double, Long> left, IgniteBiTuple<Double, Long> right) {
+        if (left == null) {
+            if (right != null)
+                return right;
+            else
+                return new IgniteBiTuple<>(0.0, 0L);
+        }
+
+        if (right == null)
+            return left;
+
+        return new IgniteBiTuple<>(
+            left.getKey() + right.getKey(),
+            right.getValue() + left.getValue()
+        );
     }
 }

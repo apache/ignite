@@ -35,12 +35,12 @@ import org.apache.ignite.ml.tree.data.DecisionTreeData;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class SimpleCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy<K,V> {
+public class CheckConvergenceStgyStub<K,V> extends ConvergenceCheckStrategy<K,V> {
     /** Serial version uid. */
     private static final long serialVersionUID = 8534776439755210864L;
 
     /**
-     * Creates an intance of SimpleCheckConvergenceStgy.
+     * Creates an intance of CheckConvergenceStgyStub.
      *
      * @param sampleSize Sample size.
      * @param externalLbToInternalMapping External label to internal mapping.
@@ -49,7 +49,7 @@ public class SimpleCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy<K,
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    public SimpleCheckConvergenceStgy(long sampleSize,
+    public CheckConvergenceStgyStub(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping,
         IgniteTriFunction<Long, Double, Double, Double> lossGradient,
         DatasetBuilder<K, V> datasetBuilder,
@@ -60,10 +60,12 @@ public class SimpleCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy<K,
             featureExtractor, lbExtractor, 0.0);
     }
 
-    @Override public boolean isConverged(ModelsComposition currMdl) {
+    /** {@inheritDoc} */
+    @Override public boolean isConverged(DatasetBuilder<K, V> datasetBuilder, ModelsComposition currMdl) {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isConverged(Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
         ModelsComposition currMdl) {
         return false;

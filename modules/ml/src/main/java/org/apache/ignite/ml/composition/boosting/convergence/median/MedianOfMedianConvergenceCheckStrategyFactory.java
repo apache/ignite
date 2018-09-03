@@ -36,12 +36,13 @@ public class MedianOfMedianConvergenceCheckStrategyFactory extends ConvergenceCh
         super(precision);
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> ConvergenceCheckStrategy<K, V> create(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping,
         IgniteTriFunction<Long, Double, Double, Double> lossGradient, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return new MedianOfMedianConvergenceCheckStrategy(sampleSize, externalLbToInternalMapping, lossGradient,
+        return new MedianOfMedianConvergenceCheckStrategy<>(sampleSize, externalLbToInternalMapping, lossGradient,
             datasetBuilder, featureExtractor, lbExtractor, precision);
     }
 }

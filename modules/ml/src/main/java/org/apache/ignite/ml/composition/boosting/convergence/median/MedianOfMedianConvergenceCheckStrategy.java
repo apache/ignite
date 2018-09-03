@@ -29,7 +29,6 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Use median of median on partitions value of errors for estimating error on dataset. This algorithm may be less
@@ -74,7 +73,46 @@ public class MedianOfMedianConvergenceCheckStrategy<K, V> extends ConvergenceChe
         return getMedian(medians);
     }
 
-    @NotNull private double[] reduce(double[] left, double[] right) {
+    /**
+     * Compute median value on data partition.
+     *
+     * @param mdl Model.
+     * @param data Data.
+     * @return median value.
+     */
+    private double[] computeMedian(ModelsComposition mdl, DecisionTreeData data) {
+        double[] errors = new double[data.getLabels().length];
+        for (int i = 0; i < errors.length; i++)
+            errors[i] = Math.abs(computeError(VectorUtils.of(data.getFeatures()[i]), data.getLabels()[i], mdl));
+        return new double[] {getMedian(errors)};
+    }
+
+    /**
+     * Compute median value on array of errors.
+     *
+     * @param errors Error values.
+     * @return median value of errors.
+     */
+    private double getMedian(double[] errors) {
+        if(errors.length == 0)
+            return Double.POSITIVE_INFINITY;
+
+        Arrays.sort(errors);
+        final int middleIdx = (errors.length - 1) / 2;
+        if (errors.length % 2 == 1)
+            return errors[middleIdx];
+        else
+            return (errors[middleIdx + 1] + errors[middleIdx]) / 2;
+    }
+
+    /**
+     * Merge median values among partitions.
+     *
+     * @param left Left partition.
+     * @param right Right partition.
+     * @return merged median values.
+     */
+    private double[] reduce(double[] left, double[] right) {
         if (left == null)
             return right;
         if(right == null)
@@ -86,24 +124,5 @@ public class MedianOfMedianConvergenceCheckStrategy<K, V> extends ConvergenceChe
         for (int i = 0; i < right.length; i++)
             res[left.length + i] = right[i];
         return res;
-    }
-
-    @NotNull private double[] computeMedian(ModelsComposition mdl, DecisionTreeData data) {
-        double[] errors = new double[data.getLabels().length];
-        for (int i = 0; i < errors.length; i++)
-            errors[i] = Math.abs(computeError(VectorUtils.of(data.getFeatures()[i]), data.getLabels()[i], mdl));
-        return new double[] {getMedian(errors)};
-    }
-
-    private double getMedian(double[] errors) {
-        if(errors.length == 0)
-            return Double.POSITIVE_INFINITY;
-
-        Arrays.sort(errors);
-        final int middleIdx = (errors.length - 1) / 2;
-        if (errors.length % 2 == 1)
-            return errors[middleIdx];
-        else
-            return (errors[middleIdx + 1] + errors[middleIdx]) / 2;
     }
 }

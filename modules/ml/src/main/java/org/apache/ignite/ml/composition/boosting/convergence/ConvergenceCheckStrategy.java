@@ -40,9 +40,6 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 710762134746674105L;
 
-    /** Dataset builder. */
-    protected DatasetBuilder<K, V> datasetBuilder;
-
     /** Sample size. */
     private long sampleSize;
 
@@ -85,17 +82,18 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
         this.sampleSize = sampleSize;
         this.externalLbToInternalMapping = externalLbToInternalMapping;
         this.lossGradient = lossGradient;
-        this.datasetBuilder = datasetBuilder;
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
         this.precision = precision;
     }
 
     /**
+     * Checks convergency on dataset.
+     *
      * @param currMdl Current model.
      * @return true if GDB is converged.
      */
-    public boolean isConverged(ModelsComposition currMdl) {
+    public boolean isConverged(DatasetBuilder<K, V> datasetBuilder, ModelsComposition currMdl) {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
             new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
@@ -107,8 +105,15 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
         }
     }
 
-    public boolean isConverged(Dataset<EmptyContext, ? extends DecisionTreeData> dataset, ModelsComposition currentMdl) {
-        Double error = computeMeanErrorOnDataset(dataset, currentMdl);
+    /**
+     * Checks convergency on dataset.
+     *
+     * @param dataset Dataset.
+     * @param currMdl Current model.
+     * @return true if GDB is converged.
+     */
+    public boolean isConverged(Dataset<EmptyContext, ? extends DecisionTreeData> dataset, ModelsComposition currMdl) {
+        Double error = computeMeanErrorOnDataset(dataset, currMdl);
         return error < precision || error.isNaN();
     }
 

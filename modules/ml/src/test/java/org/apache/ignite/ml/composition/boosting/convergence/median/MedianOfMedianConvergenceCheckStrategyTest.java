@@ -69,8 +69,8 @@ public class MedianOfMedianConvergenceCheckStrategyTest {
 
         double error = stgy.computeError(VectorUtils.of(1, 2), 4.0, notConvergedModel);
         Assert.assertEquals(1.9, error, 0.01);
-        Assert.assertFalse(stgy.isConverged(notConvergedModel));
-        Assert.assertTrue(stgy.isConverged(convergedModel));
+        Assert.assertFalse(stgy.isConverged(datasetBuilder, notConvergedModel));
+        Assert.assertTrue(stgy.isConverged(datasetBuilder, convergedModel));
 
         try(LocalDataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(), new DecisionTreeDataBuilder<>(fExtr, lbExtr))) {

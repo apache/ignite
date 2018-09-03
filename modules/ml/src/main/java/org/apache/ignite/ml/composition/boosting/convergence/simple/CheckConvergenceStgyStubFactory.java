@@ -26,13 +26,13 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Factory for {@link SimpleCheckConvergenceStgy}.
+ * Factory for {@link CheckConvergenceStgyStub}.
  */
-public class SimpleCheckConvergenceStgyFactory extends ConvergenceCheckStrategyFactory {
+public class CheckConvergenceStgyStubFactory extends ConvergenceCheckStrategyFactory {
     /**
-     * Create an instance of SimpleCheckConvergenceStgyFactory.
+     * Create an instance of CheckConvergenceStgyStubFactory.
      */
-    public SimpleCheckConvergenceStgyFactory() {
+    public CheckConvergenceStgyStubFactory() {
         super(0.0);
     }
 
@@ -42,7 +42,7 @@ public class SimpleCheckConvergenceStgyFactory extends ConvergenceCheckStrategyF
         IgniteTriFunction<Long, Double, Double, Double> lossGradient, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return new SimpleCheckConvergenceStgy<>(sampleSize, externalLbToInternalMapping, lossGradient,
+        return new CheckConvergenceStgyStub<>(sampleSize, externalLbToInternalMapping, lossGradient,
             datasetBuilder, featureExtractor, lbExtractor);
     }
 }

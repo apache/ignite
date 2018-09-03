@@ -90,7 +90,7 @@ public class GDBLearningStrategy {
 
             WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLabelValue);
             ModelsComposition currComposition = new ModelsComposition(models, aggregator);
-            if (convCheck.isConverged(currComposition))
+            if (convCheck.isConverged(datasetBuilder, currComposition))
                 break;
 
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {

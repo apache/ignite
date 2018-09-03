@@ -27,8 +27,14 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * Factory for ConvergenceCheckStrategy.
  */
 public abstract class ConvergenceCheckStrategyFactory {
+    /** Precision of error checking. If error <= precision then it is equated to 0.0*/
     protected double precision;
 
+    /**
+     * Creates an instance of ConvergenceCheckStrategyFactory.
+     *
+     * @param precision Precision [0 <= precision < 1].
+     */
     public ConvergenceCheckStrategyFactory(double precision) {
         this.precision = precision;
     }

@@ -23,7 +23,7 @@ import java.util.function.BiFunction;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCheckConvergenceStgyFactory;
-import org.apache.ignite.ml.composition.boosting.convergence.simple.SimpleCheckConvergenceStgyFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.simple.CheckConvergenceStgyStubFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -154,7 +154,7 @@ public class GDBTrainerTest {
         assertTrue(composition.getModels().size() < 500);
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
 
-        trainer = trainer.withCheckConvergenceStgyFactory(new SimpleCheckConvergenceStgyFactory());
+        trainer = trainer.withCheckConvergenceStgyFactory(new CheckConvergenceStgyStubFactory());
         assertEquals(500, ((ModelsComposition)fitter.apply(trainer,learningSample)).getModels().size());
     }
 }
