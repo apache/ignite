@@ -27,8 +27,8 @@ import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
@@ -38,13 +38,7 @@ import static org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRu
 /**
  * JMH benchmark for {@link IgniteAtomicSequence}.
  */
-@State(Scope.Benchmark)
 public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
-    /** IP finder shared across nodes. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** 1/10 of batchSize. */
-    private int randomBound;
 
     /** Property: nodes count. */
     private static final String PROP_DATA_NODES = "ignite.jmh.sequence.dataNodes";
@@ -55,70 +49,79 @@ public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
     /** Property: reservation batch size. */
     private static final String PROP_BATCH_SIZE = "ignite.jmh.sequence.batchSize";
 
-    /** */
-    private IgniteAtomicSequence seq;
+    @State(Scope.Benchmark)
+    public static class SequenceState {
+        /** IP finder shared across nodes. */
+        private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /**
-     *
-     */
-    @Setup
-    public void setup() {
-        Ignite node = Ignition.start(configuration("NODE_0"));
+        /** 1/10 of batchSize. */
+        private int randomBound;
 
-        int nodes = intProperty(PROP_DATA_NODES, 4);
+        /** */
+        private IgniteAtomicSequence seq;
 
-        for (int i = 1; i < nodes; i++)
-            Ignition.start(configuration("NODE_" + i));
+        /**
+         * Setup.
+         */
+        @Setup
+        public void setup() {
+            Ignite node = Ignition.start(configuration("NODE_0"));
 
-        boolean isClient = booleanProperty(PROP_CLIENT_MODE);
+            int nodes = intProperty(PROP_DATA_NODES, 4);
 
-        if (isClient) {
-            IgniteConfiguration clientCfg = configuration("client");
+            for (int i = 1; i < nodes; i++)
+                Ignition.start(configuration("NODE_" + i));
 
-            clientCfg.setClientMode(true);
+            boolean isClient = booleanProperty(PROP_CLIENT_MODE);
 
-            node = Ignition.start(clientCfg);
+            if (isClient) {
+                IgniteConfiguration clientCfg = configuration("client");
+
+                clientCfg.setClientMode(true);
+
+                node = Ignition.start(clientCfg);
+            }
+
+            AtomicConfiguration acfg = new AtomicConfiguration();
+
+            int batchSize = intProperty(PROP_BATCH_SIZE);
+
+            randomBound = batchSize < 10 ? 1 : batchSize / 10;
+
+            acfg.setAtomicSequenceReserveSize(batchSize);
+
+            seq = node.atomicSequence("seq", acfg, 0, true);
         }
 
-        AtomicConfiguration acfg = new AtomicConfiguration();
+        /**
+         * Create Ignite configuration.
+         *
+         * @param igniteInstanceName Ignite instance name.
+         * @return Configuration.
+         */
+        private IgniteConfiguration configuration(String igniteInstanceName) {
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
-        int batchSize = intProperty(PROP_BATCH_SIZE);
+            cfg.setIgniteInstanceName(igniteInstanceName);
 
-        randomBound = batchSize < 10 ? 1 : batchSize / 10;
+            cfg.setLocalHost("127.0.0.1");
 
-        acfg.setAtomicSequenceReserveSize(batchSize);
+            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        seq = node.atomicSequence("seq", acfg, 0, true);
-    }
+            discoSpi.setIpFinder(IP_FINDER);
 
-    /**
-     * Create Ignite configuration.
-     *
-     * @param igniteInstanceName Ignite instance name.
-     * @return Configuration.
-     */
-    private IgniteConfiguration configuration(String igniteInstanceName) {
-        IgniteConfiguration cfg = new IgniteConfiguration();
+            cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setIgniteInstanceName(igniteInstanceName);
+            return cfg;
+        }
 
-        cfg.setLocalHost("127.0.0.1");
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
-        return cfg;
-    }
-
-    /**
-     * Tear down routine.
-     */
-    @TearDown
-    public void tearDown() {
-        Ignition.stopAll(true);
+        /**
+         * Tear down routine.
+         */
+        @TearDown
+        public void tearDown() {
+            Ignition.stopAll(true);
+        }
     }
 
     /**
@@ -172,8 +175,8 @@ public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
      * @return Long new value.
      */
     @Benchmark
-    public long incrementAndGet() {
-        return seq.incrementAndGet();
+    public long incrementAndGet(SequenceState state) {
+        return state.seq.incrementAndGet();
     }
 
     /**
@@ -182,8 +185,8 @@ public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
      * @return Long previous value.
      */
     @Benchmark
-    public long getAndIncrement() {
-        return seq.getAndIncrement();
+    public long getAndIncrement(SequenceState state) {
+        return state.seq.getAndIncrement();
     }
 
     /**
@@ -192,10 +195,10 @@ public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
      * @return Long new value.
      */
     @Benchmark
-    public long addAndGet() {
-        int key = ThreadLocalRandom.current().nextInt(randomBound) + 1;
+    public long addAndGet(SequenceState state) {
+        int key = ThreadLocalRandom.current().nextInt(state.randomBound) + 1;
 
-        return seq.getAndAdd(key);
+        return state.seq.getAndAdd(key);
     }
 
     /**
@@ -204,9 +207,9 @@ public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
      * @return Long previous value.
      */
     @Benchmark
-    public long getAndAdd() {
-        int key = ThreadLocalRandom.current().nextInt(randomBound) + 1;
+    public long getAndAdd(SequenceState state) {
+        int key = ThreadLocalRandom.current().nextInt(state.randomBound) + 1;
 
-        return seq.getAndAdd(key);
+        return state.seq.getAndAdd(key);
     }
 }
