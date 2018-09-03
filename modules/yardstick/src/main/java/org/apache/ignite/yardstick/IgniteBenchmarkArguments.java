@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -269,11 +270,14 @@ public class IgniteBenchmarkArguments {
     private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
 
     /** */
-    @Parameter(names = {"-mvcc", "--mvcc"}, description = "Enable MVCC for cache")
+    @Parameter(names = {"-mvcc", "--mvcc"}, description = "Forcibly turn on mvcc")
     private boolean mvcc;
 
     /**
-     * @return {@code True} if need enable cache mvcc (see {@link CacheConfiguration#isMvccEnabled()}).
+     * Returns {@code true} if yardstick server need to enable mvcc in {@link IgniteConfiguration};
+     * {@code false} - to use value from config.
+     *
+     * @see IgniteConfiguration#isMvccEnabled().
      */
     public boolean mvccEnabled() {
         return mvcc;
