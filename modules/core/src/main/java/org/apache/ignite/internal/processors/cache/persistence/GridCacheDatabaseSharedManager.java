@@ -3631,8 +3631,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 tracker.getStats().entrySet().stream().sorted((o1,
                                     o2) -> Long.compare(o2.getKey(), o1.getKey())).
                                     map(new Function<Map.Entry<Long, DbCheckpointListener.SaveMetadataStat>, String>() {
-                                        @Override
-                                        public String apply(
+                                        @Override public String apply(
                                             Map.Entry<Long, DbCheckpointListener.SaveMetadataStat> entry) {
                                             return '[' + "name=" + entry.getValue().getName() +
                                                 ", duration=" + (entry.getKey() / 1000 / 1000.) + " ms" +
