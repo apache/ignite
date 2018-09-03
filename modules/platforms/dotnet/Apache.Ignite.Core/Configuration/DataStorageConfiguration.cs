@@ -164,6 +164,11 @@ namespace Apache.Ignite.Core.Configuration
         public const int DefaultConcurrencyLevel = 0;
 
         /// <summary>
+        /// Default value for <see cref="MaxWalArchiveSize"/>.
+        /// </summary>
+        public const long DefaultMaxWalArchiveSize = 1024 * 1024 * 1024;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
         /// </summary>
         public DataStorageConfiguration()
@@ -190,6 +195,7 @@ namespace Apache.Ignite.Core.Configuration
             SystemRegionMaxSize = DefaultSystemRegionMaxSize;
             PageSize = DefaultPageSize;
             WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
+            MaxWalArchiveSize = DefaultMaxWalArchiveSize;
         }
 
         /// <summary>
@@ -221,6 +227,7 @@ namespace Apache.Ignite.Core.Configuration
             CheckpointWriteOrder = (CheckpointWriteOrder)reader.ReadInt();
             WriteThrottlingEnabled = reader.ReadBoolean();
             WalCompactionEnabled = reader.ReadBoolean();
+            MaxWalArchiveSize = reader.ReadLong();
 
             SystemRegionInitialSize = reader.ReadLong();
             SystemRegionMaxSize = reader.ReadLong();
@@ -272,6 +279,7 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt((int)CheckpointWriteOrder);
             writer.WriteBoolean(WriteThrottlingEnabled);
             writer.WriteBoolean(WalCompactionEnabled);
+            writer.WriteLong(MaxWalArchiveSize);
 
             writer.WriteLong(SystemRegionInitialSize);
             writer.WriteLong(SystemRegionMaxSize);
@@ -443,6 +451,12 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(DefaultWalCompactionEnabled)]
         public bool WalCompactionEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets maximum size of wal archive folder, in bytes.
+        /// </summary>
+        [DefaultValue(DefaultMaxWalArchiveSize)]
+        public long MaxWalArchiveSize { get; set; }
 
         /// <summary>
         /// Gets or sets the size of a memory chunk reserved for system needs.
