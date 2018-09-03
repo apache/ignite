@@ -169,7 +169,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 
 /**
@@ -1937,12 +1936,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void cacheProcessorStarted() throws IgniteCheckedException {
-        if (!cctx.kernalContext().state().clusterState().hasBaselineTopology())
-            return;
-
-        Collection<DynamicCacheDescriptor> caches = cctx.cache().cacheDescriptors().values();
-
+    @Override public void cacheProcessorStarted(
+        Collection<DynamicCacheDescriptor> caches
+    ) throws IgniteCheckedException {
         DataStorageConfiguration cfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
         checkpointReadLock();
@@ -2799,8 +2795,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param cp Checkpoint entry.
      * @param type Checkpoint type.
+     * @return Checkpoint file name.
      */
-    private static String checkpointFileName(CheckpointEntry cp, CheckpointEntryType type) {
+    public static String checkpointFileName(CheckpointEntry cp, CheckpointEntryType type) {
         return checkpointFileName(cp.timestamp(), cp.checkpointId(), type);
     }
 

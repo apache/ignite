@@ -814,8 +814,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * Handle {@link GridCacheProcessor} started event.
+     *
+     * @param caches Cache descriptons on started cache processor.
      */
-    public void cacheProcessorStarted() throws IgniteCheckedException {
+    public void cacheProcessorStarted(Collection<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
         // No-op.
     }
 
