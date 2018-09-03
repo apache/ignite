@@ -65,7 +65,9 @@ public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
     public void setup() {
         Ignite node = Ignition.start(configuration("NODE_0"));
 
-        for (int i = 1; i < 4; i++)
+        int nodes = intProperty(PROP_DATA_NODES, 4);
+
+        for (int i = 1; i < nodes; i++)
             Ignition.start(configuration("NODE_" + i));
 
         boolean isClient = booleanProperty(PROP_CLIENT_MODE);
