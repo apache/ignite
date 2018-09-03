@@ -749,38 +749,33 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Cache set items iterator.
      */
-    private GridCloseableIterator<IgniteBiTuple<K, V>> setIterator(GridCacheQueryAdapter<?> qry) {
+    private GridCloseableIterator<IgniteBiTuple<K, V>> setIterator(
+        GridCacheQueryAdapter<?> qry) throws IgniteCheckedException {
         final GridSetQueryPredicate filter = (GridSetQueryPredicate)qry.scanFilter();
 
         filter.init(cctx);
 
         IgniteUuid id = filter.setId();
 
-        try {
-            GridCacheQueryAdapter<CacheEntry<K, ?>> qry0 = new GridCacheQueryAdapter<>(cctx,
-                SCAN,
-                new IgniteBiPredicate<Object, Object>() {
-                    @Override public boolean apply(Object k, Object v) {
-                        return k instanceof SetItemKey &&
-                            id.equals(((SetItemKey)k).setId()) &&
-                            filter.apply(k, null);
-                    }
-                },
-                new IgniteClosure<Map.Entry, Object>() {
-                    @Override public Object apply(Map.Entry entry) {
-                        return new IgniteBiTuple<K, V>((K)((SetItemKey)entry.getKey()).item(), (V)Boolean.TRUE);
-                    }
-                },
-                qry.partition(),
-                false);
+        GridCacheQueryAdapter<CacheEntry<K, ?>> qry0 = new GridCacheQueryAdapter<>(cctx,
+            SCAN,
+            new IgniteBiPredicate<Object, Object>() {
+                @Override public boolean apply(Object k, Object v) {
+                    return k instanceof SetItemKey &&
+                        id.equals(((SetItemKey)k).setId()) &&
+                        filter.apply(k, null);
+                }
+            },
+            new IgniteClosure<Map.Entry, Object>() {
+                @Override public Object apply(Map.Entry entry) {
+                    return new IgniteBiTuple<K, V>((K)((SetItemKey)entry.getKey()).item(), (V)Boolean.TRUE);
+                }
+            },
+            qry.partition(),
+            false);
 
-            return scanQueryLocal(qry0, false);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+        return scanQueryLocal(qry0, false);
     }
-
 
     /**
      * @param qry Query.
