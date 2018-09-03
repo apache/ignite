@@ -39,10 +39,10 @@
         </layout>
 
         <!-- Do not log beyond INFO level. -->
-        <!--<filter class="org.apache.log4j.varia.LevelRangeFilter">-->
-            <!--<param name="levelMin" value="DEBUG"/>-->
-            <!--<param name="levelMax" value="INFO"/>-->
-        <!--</filter>-->
+        <filter class="org.apache.log4j.varia.LevelRangeFilter">
+            <param name="levelMin" value="DEBUG"/>
+            <param name="levelMax" value="INFO"/>
+        </filter>
     </appender>
 
     <!--
@@ -113,6 +113,6 @@
         <!-- Append to file and console. -->
         <appender-ref ref="FILE"/>
         <appender-ref ref="CONSOLE"/>
-        <!--<appender-ref ref="CONSOLE_ERR"/>-->
+        <appender-ref ref="CONSOLE_ERR"/>
     </root>
 </log4j:configuration>
