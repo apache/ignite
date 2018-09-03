@@ -83,6 +83,7 @@ import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
@@ -321,11 +322,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
-        EncryptionSpi encSpi = ctx.kernalContext().config().getEncryptionSpi();
-
-        encPageSize = pageSize
-            - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
-            - encSpi.blockSize() /* For CRC. */;
+        encPageSize = CU.encryptedPageSize(pageSize, ctx.kernalContext().config().getEncryptionSpi());
 
         rwLock = new OffheapReadWriteLock(128);
 
@@ -540,7 +537,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (PageIO.getType(pageAddr) == 0) {
                     trackingIO.initNewPage(pageAddr, pageId, realPageSize(grpId));
 
-                    if (!ctx.wal().disabled(fullId.groupId()))
+                    if (!ctx.wal().disabled(fullId.groupId())) {
                         if (!ctx.wal().isAlwaysWriteFullPages())
                             ctx.wal().log(
                                 new InitNewPageRecord(
@@ -550,8 +547,11 @@ public class PageMemoryImpl implements PageMemoryEx {
                                     trackingIO.getVersion(), pageId
                                 )
                             );
-                        else
-                            ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize()));
+                        else {
+                            ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize(),
+                                realPageSize(fullId.groupId())));
+                        }
+                    }
                 }
             }
 
@@ -1642,7 +1642,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     void beforeReleaseWrite(FullPageId pageId, long ptr, boolean pageWalRec) {
         if (walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages()) && !walMgr.disabled(pageId.groupId())) {
             try {
-                walMgr.log(new PageSnapshot(pageId, ptr, pageSize()));
+                walMgr.log(new PageSnapshot(pageId, ptr, pageSize(), realPageSize(pageId.groupId())));
             }
             catch (IgniteCheckedException e) {
                 // TODO ignite-db.

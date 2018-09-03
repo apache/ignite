@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -65,7 +66,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
@@ -1909,6 +1909,17 @@ public class GridCacheUtils {
         }
 
         return false;
+    }
+
+    /**
+     * @param pageSize Page size.
+     * @param encSpi Encryption spi.
+     * @return Page size without encryption overhead.
+     */
+    public static int encryptedPageSize(int pageSize, EncryptionSpi encSpi) {
+        return pageSize
+            - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
+            - encSpi.blockSize(); /* For CRC. */
     }
 
     /**

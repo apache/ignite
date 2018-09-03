@@ -29,10 +29,13 @@ import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.GridKernalGatewayImpl;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -43,7 +46,8 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      * @param log Logger to use in context config.
      */
     public GridTestKernalContext(IgniteLogger log) {
-        this(log, new IgniteConfiguration());
+        this(log, new IgniteConfiguration()
+            .setEncryptionSpi(new NoopEncryptionSpi()));
 
         try {
             add(new IgnitePluginProcessor(this, config(), Collections.<PluginProvider>emptyList()));
@@ -60,7 +64,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
     public GridTestKernalContext(IgniteLogger log, IgniteConfiguration cfg) {
         super(new GridLoggerProxy(log, null, null, null),
                 new IgniteKernal(null),
-                cfg,
+                cfg.setEncryptionSpi(cfg.getEncryptionSpi() == null ? new NoopEncryptionSpi(): cfg.getEncryptionSpi()),
                 new GridKernalGatewayImpl(null),
                 null,
                 null,
@@ -87,6 +91,9 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         GridTestUtils.setFieldValue(grid(), "ctx", this);
 
         config().setGridLogger(log);
+
+        add(new GridInternalSubscriptionProcessor(this));
+        add(new GridEncryptionManager(this));
     }
 
     /**

@@ -104,6 +104,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -124,8 +125,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Cache shared context */
     private final GridCacheSharedContext cctx;
 
-    /** Size of page used for PageMemory regions */
+    /** Size of page used for PageMemory regions. */
     private final int pageSize;
+
+    /** Size of page without encryption overhead. */
+    private final int realPageSize;
 
     /** Cache object processor to reading {@link DataEntry DataEntries} */
     private final IgniteCacheObjectProcessor co;
@@ -151,6 +155,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
         this.encSpi = cctx.gridConfig().getEncryptionSpi();
+        this.realPageSize = CU.encryptedPageSize(pageSize, encSpi);
     }
 
     /** {@inheritDoc} */
@@ -181,10 +186,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             if (clData.get1() == null)
                 return new EncryptedRecord(clData.get2(), clData.get3());
 
-            return readPlainRecord(clData.get3(), clData.get1());
+            return readPlainRecord(clData.get3(), clData.get1(), true);
         }
 
-        return readPlainRecord(type, in);
+        return readPlainRecord(type, in, false);
     }
 
     /** {@inheritDoc} */
@@ -503,11 +508,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      *
      * @param type Record type.
      * @param in Input
+     * @param encrypted Record was encrypted.
      * @return Deserialized record.
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    WALRecord readPlainRecord(RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    WALRecord readPlainRecord(RecordType type, ByteBufferBackedDataInput in,
+        boolean encrypted) throws IOException, IgniteCheckedException {
         WALRecord res;
 
         switch (type) {
@@ -519,7 +526,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(arr);
 
-                res = new PageSnapshot(new FullPageId(pageId, cacheId), arr);
+                res = new PageSnapshot(new FullPageId(pageId, cacheId), arr, encrypted ? realPageSize : pageSize);
 
                 break;
 

@@ -678,8 +678,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If failed.
      */
     private Metas getOrAllocateCacheMetas() throws IgniteCheckedException {
-        System.out.println("GridCacheOffheapManager.getOrAllocateCacheMetas - " + grp.encrypted() + ", grpId = " + grp.groupId() + ", name = " + grp.config().getName());
-
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
         IgniteWriteAheadLogManager wal = ctx.wal();
 
@@ -1434,8 +1432,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         io.setReuseListRoot(pageAddr, reuseListRoot);
                         io.setPendingTreeRoot(pageAddr, pendingTreeRoot);
 
-                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-                            wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr, pageMem.pageSize()));
+                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null)) {
+                            wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr,
+                                pageMem.pageSize(), pageMem.realPageSize(grpId)));
+                        }
 
                         allocated = true;
                     }
@@ -1464,8 +1464,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             io.setPendingTreeRoot(pageAddr, pendingTreeRoot);
 
-                            if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-                                wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr, pageMem.pageSize()));
+                            if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal,
+                                null)) {
+                                wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr,
+                                    pageMem.pageSize(), pageMem.realPageSize(grpId)));
+                            }
 
                             pendingTreeAllocated = true;
                         }
