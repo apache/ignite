@@ -107,6 +107,7 @@ class ClientSocket {
         this._error = null;
         this._wasConnected = false;
         this._buffer = null;
+        this._offset = 0;
     }
 
     async connect() {
@@ -195,29 +196,27 @@ class ClientSocket {
         if (this._state === STATE.DISCONNECTED) {
             return;
         }
-        let offset = 0;
-        while (offset < message.length) {
-            if (this._buffer) {
-                this._buffer.concat(message);
-                this._buffer.position = 0;
-            }
-            else {
-                this._buffer = MessageBuffer.from(message, 0);
-            }
-
+        if (this._buffer) {
+            this._buffer.concat(message);
+            this._buffer.position = this._offset;
+        }
+        else {
+            this._buffer = MessageBuffer.from(message, 0);
+        }
+        while (this._buffer && this._offset < this._buffer.length) {
             // Response length
-            const length = this._buffer.readInteger();
-            offset += length + BinaryUtils.getSize(BinaryUtils.TYPE_CODE.INTEGER);
-            if (this._buffer.length !== offset) {
-                break;
+            const length = this._buffer.readInteger() + BinaryUtils.getSize(BinaryUtils.TYPE_CODE.INTEGER);
+            if (this._buffer.length < this._offset + length) {
+              break;
             }
+            this._offset += length;
 
             let requestId, isSuccess;
             const isHandshake = this._state === STATE.HANDSHAKE;
 
             if (isHandshake) {
                 // Handshake status
-                isSuccess = (this._buffer.readByte() === HANDSHAKE_SUCCESS_STATUS_CODE)
+                isSuccess = (this._buffer.readByte() === HANDSHAKE_SUCCESS_STATUS_CODE);
                 requestId = this._handshakeRequestId.toString();
             }
             else {
@@ -230,7 +229,11 @@ class ClientSocket {
             this._logMessage(requestId, false, this._buffer.data);
 
             const buffer = this._buffer;
-            this._buffer = null;
+            if (this._offset === this._buffer.length) {
+                this._buffer = null;
+                this._offset = 0;
+            }
+
             if (this._requests.has(requestId)) {
                 const request = this._requests.get(requestId);
                 this._requests.delete(requestId);
