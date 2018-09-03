@@ -32,8 +32,10 @@ import org.apache.ignite.internal.util.typedef.F;
  * Check logging local node metrics with PDS enabled.
  */
 public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
+    /** */
+    private static final String UNKNOWN_SIZE = "unknown";
+
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -82,7 +84,8 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
 
         Set<String> regions = new HashSet<>();
 
-        Pattern ptrn = Pattern.compile("(?m).{2,}( {3}(?<name>.+) region|Ignite persistence) \\[used=(?<used>[-.\\d]*).*].*");
+        Pattern ptrn = Pattern.compile("(?m).{2,}( {3}(?<name>.+) region|Ignite persistence) " +
+            "\\[used=(?<used>([-.\\d]|" + UNKNOWN_SIZE + ")*).*].*");
 
         Matcher matcher = ptrn.matcher(logOutput);
 
@@ -91,7 +94,11 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
 
             assertFalse("\"used\" cannot be empty: " + subj, F.isEmpty(matcher.group("used")));
 
-            int used = Integer.parseInt(matcher.group("used"));
+            String usedSize = matcher.group("used");
+
+            // TODO https://issues.apache.org/jira/browse/IGNITE-9455
+            // TODO The actual value of the mtric should be printed when this issue is solved.
+            int used = UNKNOWN_SIZE.equals(usedSize) ? 0 : Integer.parseInt(usedSize);
 
             assertTrue(used + " should be non negative: " + subj, used >= 0);
 
