@@ -643,10 +643,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param cachesToStart Started caches.
      * @throws IgniteCheckedException If failed.
      */
-    public void readCheckpointAndRestoreMemory(List<DynamicCacheDescriptor> cachesToStart) throws IgniteCheckedException {
+    public void readCheckpointAndRestoreMemory() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
+     * @throws IgniteCheckedException If fails.
+     */
+    public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
         // No-op.
     }
 

@@ -820,43 +820,45 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void readCheckpointAndRestoreMemory(
-        List<DynamicCacheDescriptor> cachesToStart
-    ) throws IgniteCheckedException {
-        assert !cctx.localNode().isClient();
-
+    @Override public void readCheckpointAndRestoreMemory() throws IgniteCheckedException {
         checkpointReadLock();
 
         try {
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext())) {
-                lsnr.beforeMemoryRestore(this);
+            CheckpointStatus status = readCheckpointStatus();
+
+            metaStorage = new MetaStorage(
+                cctx,
+                dataRegionMap.get(METASTORE_DATA_REGION_NAME),
+                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
+            );
+
+            // First, bring memory to the last consistent checkpoint state if needed.
+            // This method should return a pointer to the last valid record in the WAL.
+            WALPointer restore = null;
+
+            if (!status.isInitial())
+                restore = restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
+
+            if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
+                throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
+                    status.endPtr + ". Can't restore memory - critical part of WAL archive is missing.");
             }
 
-            if (!F.isEmpty(cachesToStart)) {
-                for (DynamicCacheDescriptor desc : cachesToStart) {
-                    if (CU.affinityNode(cctx.localNode(), desc.cacheConfiguration().getNodeFilter()))
-                        storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
-                }
+            cctx.wal().resumeLogging(restore);
+
+            WALPointer ptr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+
+            if (ptr != null) {
+                cctx.wal().flush(ptr, true);
+
+                nodeStart(ptr);
             }
 
-            DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();
+            metaStorage.init(this);
 
-            boolean isBaselineNode = clusterState.hasBaselineTopology() &&
-                CU.baselineNode(cctx.localNode(), clusterState);
+            lastRestored = restore;
 
-            if (metaStorage == null || !isBaselineNode) {
-                CheckpointStatus status = readCheckpointStatus();
-
-                lastRestored = createMetaStorageAndRestoreMemory(status);
-            }
-            else
-                cctx.wal().resumeLogging(lastRestored); // Memory restored at startup, just resume logging.
-
-            notifyMetastorageReadyForReadWrite();
-
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext())) {
-                lsnr.afterMemoryRestore(this);
-            }
+            cctx.wal().suspendLogging();
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, StorageException.class, IOException.class))
@@ -869,46 +871,37 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /**
-     * Initialize {@link MetaStorage} and resore binary memory state.
-     *
-     * @param status Checkpoint status.
-     * @return Last pointer of restored memory state.
-     * @throws IgniteCheckedException If fails.
-     */
-    private WALPointer createMetaStorageAndRestoreMemory(CheckpointStatus status) throws IgniteCheckedException {
-        cctx.pageStore().initializeForMetastorage();
+    /** {@inheritDoc} */
+    @Override public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
+        DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();
 
-        metaStorage = new MetaStorage(
-            cctx,
-            dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-            (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
-        );
+        boolean isBaselineNode = clusterState.hasBaselineTopology() &&
+            CU.baselineNode(cctx.localNode(), clusterState);
 
-        // First, bring memory to the last consistent checkpoint state if needed.
-        // This method should return a pointer to the last valid record in the WAL.
-        WALPointer restore = restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
+        assert isBaselineNode : clusterState;
 
-        if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
-            throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
-                status.endPtr + ". Can't restore memory - critical part of WAL archive is missing.");
+        assert metaStorage != null;
+
+        checkpointReadLock();
+
+        try {
+            // Memory restored at startup, just resume logging.
+            cctx.wal().resumeLogging(lastRestored);
+
+            notifyMetastorageReadyForReadWrite();
+
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
+                lsnr.afterMemoryRestore(this);
         }
+        catch (IgniteCheckedException e) {
+            if (X.hasCause(e, StorageException.class, IOException.class))
+                cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
-        cctx.wal().resumeLogging(restore);
-
-        WALPointer ptr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
-
-        if (ptr != null) {
-            cctx.wal().flush(ptr, true);
-
-            nodeStart(ptr);
+            throw e;
         }
-
-        // Init metastore only after WAL logging resumed. Can't do it earlier because
-        // MetaStorage initialization also touches wal if #isWalDeltaRecordNeeded.
-        metaStorage.init(this);
-
-        return restore;
+        finally {
+            checkpointReadUnlock();
+        }
     }
 
     /**
@@ -1939,7 +1932,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void cacheProcessorStarted(
         Collection<DynamicCacheDescriptor> caches
     ) throws IgniteCheckedException {
+        if (cctx.kernalContext().clientNode())
+            return;
+
         DataStorageConfiguration cfg = cctx.kernalContext().config().getDataStorageConfiguration();
+
+        assert metaStorage == null : "Ignite instance hasn't been stopped properly";
 
         checkpointReadLock();
 
@@ -1947,6 +1945,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // Preform early regions startup before restoring state.
             initAndStartRegions(cfg);
 
+            // Initialize caches directories on node startup.
             for (DynamicCacheDescriptor desc : caches) {
                 if (isPersistentCache(desc.cacheConfiguration(), cfg)) {
                     storeMgr.initializeForCache(desc.groupDescriptor(),
@@ -1954,16 +1953,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-            CheckpointStatus status = readCheckpointStatus();
+            // Initialize metastorage and db listeners.
+            cctx.pageStore().initializeForMetastorage();
 
-            assert metaStorage == null : "Metastorage can't be initialized. Node hasn't been stopped properly";
-
-            lastRestored = createMetaStorageAndRestoreMemory(status);
-
-            cctx.wal().suspendLogging();
-
-            U.log(log, "Binary state before node joined to BaselineTopology restored [" +
-                "lastRestored=" + lastRestored + ']');
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
+                lsnr.beforeMemoryRestore(this);
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, StorageException.class, IOException.class))
@@ -1974,6 +1968,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             checkpointReadUnlock();
         }
+
+        readCheckpointAndRestoreMemory();
+
+        U.log(log, "Binary state restored on ignite instance startup [lastRestored=" + lastRestored + ']');
     }
 
     /**
@@ -4116,6 +4114,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public boolean needRestoreMemory() {
             return !F.eq(cpStartId, cpEndId) && !F.eq(NULL_UUID, cpStartId);
+        }
+
+        /**
+         * @return {@code True} if checkpoint status is undefined.
+         */
+        public boolean isInitial() {
+            return F.eq(cpStartId, NULL_UUID) &&
+                F.eq(startPtr, NULL_PTR) &&
+                F.eq(cpEndId, NULL_PTR) &&
+                F.eq(endPtr, NULL_PTR);
         }
 
         /** {@inheritDoc} */
