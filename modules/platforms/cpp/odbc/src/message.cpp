@@ -265,10 +265,11 @@ namespace ignite
         }
 
         StreamingBatchRequest::StreamingBatchRequest(const std::string& schema,
-            const query::streaming::StreamingBatch& batch, bool last) :
+            const query::streaming::StreamingBatch& batch, bool last, int64_t order) :
             schema(schema),
             batch(batch),
-            last(last)
+            last(last),
+            order(order)
         {
             // No-op.
         }
@@ -281,37 +282,6 @@ namespace ignite
         void StreamingBatchRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
             writer.WriteInt8(RequestType::STREAMING_BATCH);
-
-            writer.WriteString(schema);
-
-            impl::interop::InteropOutputStream* stream = writer.GetStream();
-
-            writer.WriteInt32(batch.GetSize());
-
-            if (batch.GetSize() != 0)
-                stream->WriteInt8Array(batch.GetData(), batch.GetDataLength());
-
-            writer.WriteBool(last);
-        }
-
-        StreamingBatchOrderedRequest::StreamingBatchOrderedRequest(const std::string& schema,
-            const query::streaming::StreamingBatch& batch, bool last, int64_t order) :
-            schema(schema),
-            batch(batch),
-            last(last),
-            order(order)
-        {
-            // No-op.
-        }
-
-        StreamingBatchOrderedRequest::~StreamingBatchOrderedRequest()
-        {
-            // No-op.
-        }
-
-        void StreamingBatchOrderedRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
-        {
-            writer.WriteInt8(RequestType::STREAMING_BATCH_ORDERED);
 
             writer.WriteString(schema);
 
@@ -454,7 +424,8 @@ namespace ignite
 
         StreamingBatchResponse::StreamingBatchResponse() :
             errorMessage(),
-            errorCode(ResponseStatus::SUCCESS)
+            errorCode(ResponseStatus::SUCCESS),
+            order(0)
         {
             // No-op.
         }
@@ -465,26 +436,6 @@ namespace ignite
         }
 
         void StreamingBatchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
-        {
-            errorMessage = reader.ReadObject<std::string>();
-
-            errorCode = reader.ReadInt32();
-        }
-
-        StreamingBatchOrderedResponse::StreamingBatchOrderedResponse() :
-            errorMessage(),
-            errorCode(ResponseStatus::SUCCESS),
-            order(0)
-        {
-            // No-op.
-        }
-
-        StreamingBatchOrderedResponse::~StreamingBatchOrderedResponse()
-        {
-            // No-op.
-        }
-
-        void StreamingBatchOrderedResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
         {
             errorMessage = reader.ReadObject<std::string>();
             errorCode = reader.ReadInt32();

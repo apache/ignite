@@ -1,3 +1,5 @@
+package org.apache.ignite.internal.processors.odbc.odbc;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,56 +17,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.odbc;
-
 import java.util.List;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * ODBC streaming batch request.
+ * ODBC query execute request with the batch of parameters.
  */
 public class OdbcStreamingBatchRequest extends OdbcRequest {
     /** Schema name. */
+    @GridToStringInclude(sensitive = true)
     private String schemaName;
 
     /** Sql query. */
-    @GridToStringInclude(sensitive = true)
+    @GridToStringExclude()
     private List<OdbcQuery> queries;
 
     /**
      * Last stream batch flag - whether open streamers on current connection
      * must be flushed and closed after this batch.
      */
+    @GridToStringInclude(sensitive = true)
     private boolean last;
 
-    /**
-     * @param schemaName Schema name.
-     * @param queries Queries.
-     * @param last {@code true} in case the request is the last batch at the stream.
-     */
-    public OdbcStreamingBatchRequest(String schemaName, List<OdbcQuery> queries, boolean last) {
-        this(STREAMING_BATCH, schemaName, queries, last);
-    }
+    /** Order. */
+    @GridToStringInclude(sensitive = true)
+    private long order;
 
     /**
-     * Constructor for child requests.
-     *
-     * @param type Request type.
-     * @param schemaName Schema name.
-     * @param queries Queries.
-     * @param last {@code true} in case the request is the last batch at the stream.
+     * @param schema Schema.
+     * @param queries SQL queries list.
+     * @param last Last page flag.
+     * @param order Order.
      */
-    protected OdbcStreamingBatchRequest(byte type, String schemaName, List<OdbcQuery> queries, boolean last) {
-        super(type);
+    public OdbcStreamingBatchRequest(@Nullable String schema, List<OdbcQuery> queries, boolean last, long order) {
+        super(STREAMING_BATCH);
 
-        assert last || !F.isEmpty(queries);
-
-        this.schemaName = schemaName;
+        this.schemaName = schema;
         this.queries = queries;
         this.last = last;
+        this.order = order;
     }
 
     /**
@@ -86,6 +80,13 @@ public class OdbcStreamingBatchRequest extends OdbcRequest {
      */
     public boolean last() {
         return last;
+    }
+
+    /**
+     * @return Request order.
+     */
+    public long order() {
+        return order;
     }
 
     /** {@inheritDoc} */

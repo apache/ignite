@@ -123,17 +123,12 @@ namespace ignite
 
             SqlResult::Type StreamingQuery::Flush(bool last)
             {
-                LOG_MSG("Flushing data.");
+                LOG_MSG("Flushing data");
 
                 if (currentBatch.GetSize() == 0 && !last)
                     return SqlResult::AI_SUCCESS;
 
-                SqlResult::Type res;
-
-                if (ordered)
-                    res = MakeRequestStreamingBatchOrdered(last);
-                else
-                    res = MakeRequestStreamingBatch(last);
+                SqlResult::Type res = MakeRequestStreamingBatch(last);
 
                 currentBatch.Clear();
 
@@ -149,46 +144,8 @@ namespace ignite
             {
                 const std::string& schema = connection.GetSchema();
 
-                StreamingBatchRequest req(schema, currentBatch, last);
-                Response rsp;
-
-                try
-                {
-                    connection.SyncMessage(req, rsp);
-                }
-                catch (const OdbcError& err)
-                {
-                    diag.AddStatusRecord(err);
-
-                    return SqlResult::AI_ERROR;
-                }
-                catch (const IgniteError& err)
-                {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
-
-                    return SqlResult::AI_ERROR;
-                }
-
-                currentBatch.Clear();
-                
-                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-                {
-                    LOG_MSG("Error: " << rsp.GetError());
-
-                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
-
-                    return SqlResult::AI_ERROR;
-                }
-
-                return SqlResult::AI_SUCCESS;
-            }
-
-            SqlResult::Type StreamingQuery::MakeRequestStreamingBatchOrdered(bool last)
-            {
-                const std::string& schema = connection.GetSchema();
-
-                StreamingBatchOrderedRequest req(schema, currentBatch, last, order);
-                StreamingBatchOrderedResponse rsp;
+                StreamingBatchRequest req(schema, currentBatch, last, order);
+                StreamingBatchResponse rsp;
 
                 try
                 {
