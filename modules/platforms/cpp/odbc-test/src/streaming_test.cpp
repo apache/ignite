@@ -274,10 +274,45 @@ BOOST_AUTO_TEST_CASE(TestStreamingNotAllowedOverwrite)
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    boost::this_thread::sleep_for(boost::chrono::milliseconds(250));
-
     BOOST_CHECK_EQUAL(cache.Size(), 10);
 }
 
+BOOST_AUTO_TEST_CASE(TestStreamingReset)
+{
+    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
+
+    SQLRETURN res = ExecQuery("set streaming 1 batch_size 100 flush_frequency 1000");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    InsertTestStrings(0, 10);
+
+    BOOST_CHECK_EQUAL(cache.Size(), 0);
+
+    InsertTestStrings(10, 20);
+
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(250));
+
+    BOOST_CHECK_EQUAL(cache.Size(), 0);
+
+    res = ExecQuery("set streaming 1 batch_size 10 flush_frequency 100");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(cache.Size(), 20);
+
+    InsertTestStrings(20, 50);
+
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(250));
+
+    BOOST_CHECK_EQUAL(cache.Size(), 50);
+
+    res = ExecQuery("set streaming 0");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+}
 
 BOOST_AUTO_TEST_SUITE_END()
