@@ -246,7 +246,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
          * @return Object constructed from string.
          */
         @Nullable private Object toObject(Class cls, String val) {
-            if (val == null  || "null".equals(val))
+            if (val == null  || "null".equals(val) || "nil".equals(val))
                 return null;
 
             if (String.class == cls)

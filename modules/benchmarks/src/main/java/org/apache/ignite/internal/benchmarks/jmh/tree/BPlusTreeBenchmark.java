@@ -176,7 +176,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         TestTree(ReuseList reuseList, int cacheId, PageMemory pageMem, long metaPageId)
             throws IgniteCheckedException {
             super("test", cacheId, pageMem, null, new AtomicLong(), metaPageId, reuseList,
-                new IOVersions<>(new LongInnerIO()), new IOVersions<>(new LongLeafIO()));
+                new IOVersions<>(new LongInnerIO()), new IOVersions<>(new LongLeafIO()), null);
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
 
@@ -192,7 +192,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override protected Long getRow(BPlusIO<Long> io, long pageAddr, int idx, Object ignore)
+        @Override public Long getRow(BPlusIO<Long> io, long pageAddr, int idx, Object ignore)
             throws IgniteCheckedException {
             assert io.canGetRow() : io;
 

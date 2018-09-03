@@ -17,7 +17,7 @@
 
 // TODO: Refactor this service for legacy tables with more than one input field.
 export default ['IgniteLegacyTable',
-    ['IgniteLegacyUtils', 'IgniteFocus', 'IgniteErrorPopover', (LegacyUtils, Focus, ErrorPopover) => {
+    ['IgniteLegacyUtils', 'IgniteFocus', 'IgniteErrorPopover', function(LegacyUtils, Focus, ErrorPopover) {
         function _model(item, field) {
             let path = field.path;
 

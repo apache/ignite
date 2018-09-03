@@ -23,102 +23,104 @@ import java.util.List;
  * POJO to model a movie.
  */
 public class Movie {
-    /** name of movie */
+    /** Name of movie. */
     private String name;
-    /** genre of movie */
+    /** Genre of movie. */
     private List genre;
-    /** rating of movie */
+    /** Rating of movie. */
     private String rating;
 
-    /** IMDB rating */
+    /** IMDB rating. */
     private double imdbRating;
 
-    /** year of movie */
+    /** Year of movie. */
     private String year;
 
     /**
-     * Get the year
+     * Get the year.
      *
-     * @return Year
+     * @return Year.
      */
     public String getYear() {
         return year;
     }
 
     /**
-     * Set the year
+     * Set the year.
      *
-     * @param year Year
+     * @param year Year.
      */
     public void setYear(String year) {
         this.year = year;
     }
 
     /**
-     * Get the IMDB rating
+     * Get the <a href="https://en.wikipedia.org/wiki/IMDb">IMDB rating</a>.
      *
-     * @return IMDB rating
+     * @return IMDB rating.
      */
     public double getImdbRating() {
         return imdbRating;
     }
 
     /**
-     * Set the IMDB rating
+     * Set the IMDB rating.
      *
-     * @param imdbRating IMDB rating
+     * @param imdbRating IMDB rating.
      */
     public void setImdbRating(double imdbRating) {
         this.imdbRating = imdbRating;
     }
 
     /**
-     * Get the name of movie
+     * Get the name of movie.
      *
-     * @return Name of movie
+     * @return Name of movie.
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Set the name of movie
+     * Set the name of movie.
      *
-     * @param name Movie name
+     * @param name Movie name.
      */
     public void setName(String name) {
         this.name = name;
     }
 
     /**
-     * @return List of genres
+     * Get movie genres.
+     *
+     * @return List of genres.
      */
     public List getGenre() {
         return genre;
     }
 
     /**
-     * Set the genre
+     * Set the genre.
      *
-     * @param genre Genre of movie
+     * @param genre List of genres of movie.
      */
     public void setGenre(List genre) {
         this.genre = genre;
     }
 
     /**
-     * Get the rating of the movie
+     * Get the rating of the movie.
      *
-     * @return Movie rating
+     * @return Movie rating.
      */
     public String getRating() {
         return rating;
     }
 
     /**
-     * Set the rating of the movie
+     * Set the rating of the movie.
      *
-     * @param rating Movie rating
+     * @param rating Movie rating.
      */
     public void setRating(String rating) {
         this.rating = rating;
@@ -129,5 +131,4 @@ public class Movie {
         return "Movie [name=" + name + ", genre=" + genre + ", rating=" + rating + ", imdbRating=" + imdbRating
             + ", year=" + year + "]";
     }
-
 }

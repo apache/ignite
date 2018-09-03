@@ -77,9 +77,13 @@ export default class GridColumnSelectorController {
     }
 
     findScrollToNext(columns, prevColumns) {
-        if (!prevColumns) return;
+        if (!prevColumns)
+            return;
+
         const diff = difference(columns, prevColumns);
-        if (diff.length === 1 && columns.includes(diff[0])) return diff[0];
+
+        if (diff.length === 1 && columns.includes(diff[0]))
+            return diff[0];
     }
 
     setSelectedColumns() {

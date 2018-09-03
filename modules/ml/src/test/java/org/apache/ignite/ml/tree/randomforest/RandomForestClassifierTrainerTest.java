@@ -21,11 +21,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.ml.composition.ModelOnFeaturesSubspace;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -33,6 +32,9 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link RandomForestClassifierTrainer}.
+ */
 @RunWith(Parameterized.class)
 public class RandomForestClassifierTrainerTest {
     /**
@@ -46,6 +48,9 @@ public class RandomForestClassifierTrainerTest {
     @Parameterized.Parameter
     public int parts;
 
+    /**
+     * Data iterator.
+     */
     @Parameterized.Parameters(name = "Data divided on {0} partitions")
     public static Iterable<Integer[]> data() {
         List<Integer[]> res = new ArrayList<>();
@@ -69,14 +74,14 @@ public class RandomForestClassifierTrainerTest {
             sample.put(new double[] {x1, x2, x3, x4}, (double)(i % 2));
         }
 
-        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(4, 3, 5, 0.3, 4, 0.1);
+        ArrayList<FeatureMeta> meta = new ArrayList<>();
+        for(int i = 0; i < 4; i++)
+            meta.add(new FeatureMeta("", i, false));
+        RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(meta)
+            .withCountOfTrees(5)
+            .withFeaturesCountSelectionStrgy(x -> 2);
 
         ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
-
-        mdl.getModels().forEach(m -> {
-            assertTrue(m instanceof ModelOnFeaturesSubspace);
-            assertTrue(((ModelOnFeaturesSubspace) m).getMdl() instanceof DecisionTreeConditionalNode);
-        });
 
         assertTrue(mdl.getPredictionsAggregator() instanceof OnMajorityPredictionsAggregator);
         assertEquals(5, mdl.getModels().size());

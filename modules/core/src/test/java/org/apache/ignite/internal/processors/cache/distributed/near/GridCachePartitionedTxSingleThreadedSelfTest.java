@@ -64,7 +64,6 @@ public class GridCachePartitionedTxSingleThreadedSelfTest extends IgniteTxSingle
 
         spi.setIpFinder(ipFinder);
 
-        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(spi);
 
         c.setCacheConfiguration(cc);

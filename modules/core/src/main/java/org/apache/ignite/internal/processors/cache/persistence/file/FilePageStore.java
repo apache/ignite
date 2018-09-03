@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
@@ -165,7 +166,7 @@ public class FilePageStore implements PageStore {
         try {
             ByteBuffer hdr = header(type, dbCfg.getPageSize());
 
-        fileIO.writeFully(hdr);
+            fileIO.writeFully(hdr);
 
             //there is 'super' page in every file
             return headerSize() + dbCfg.getPageSize();
@@ -182,7 +183,7 @@ public class FilePageStore implements PageStore {
      * Checks that file store has correct header and size.
      *
      * @return Next available position in the file to store a data.
-     * @throws IOException If check is failed.
+     * @throws IOException If check has failed.
      */
     private long checkFile(FileIO fileIO) throws IOException {
         ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
@@ -233,10 +234,10 @@ public class FilePageStore implements PageStore {
     }
 
     /**
-     * @param cleanFile {@code True} to delete file.
-     * @throws PersistentStorageIOException If failed.
+     * @param delete {@code True} to delete file.
+     * @throws StorageException If failed in case of underlying I/O exception.
      */
-    public void stop(boolean cleanFile) throws PersistentStorageIOException {
+    public void stop(boolean delete) throws StorageException {
         lock.writeLock().lock();
 
         try {
@@ -249,11 +250,12 @@ public class FilePageStore implements PageStore {
 
             fileIO = null;
 
-            if (cleanFile)
+            if (delete)
                 Files.delete(cfgFile.toPath());
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException(e);
+            throw new StorageException("Failed to stop serving partition file [file=" + cfgFile.getPath()
+                + ", delete=" + delete + "]", e);
         }
         finally {
             lock.writeLock().unlock();
@@ -264,9 +266,9 @@ public class FilePageStore implements PageStore {
      * Truncates and deletes partition file.
      *
      * @param tag New partition tag.
-     * @throws PersistentStorageIOException If failed
+     * @throws StorageException If failed in case of underlying I/O exception.
      */
-    public void truncate(int tag) throws PersistentStorageIOException {
+    public void truncate(int tag) throws StorageException {
         init();
 
         lock.writeLock().lock();
@@ -283,12 +285,10 @@ public class FilePageStore implements PageStore {
             Files.delete(cfgFile.toPath());
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Failed to delete partition file: " + cfgFile.getPath(), e);
+            throw new StorageException("Failed to truncate partition file [file=" + cfgFile.getPath() + "]", e);
         }
         finally {
-            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.get() / pageSize);
-
-            allocated.set(0);
+            allocatedTracker.updateTotalAllocatedPages(-1L * allocated.getAndSet(0) / pageSize);
 
             inited = false;
 
@@ -311,16 +311,15 @@ public class FilePageStore implements PageStore {
     }
 
     /**
-     *
+     * @throws StorageException If failed in case of underlying I/O exception.
      */
-    public void finishRecover() throws PersistentStorageIOException {
+    public void finishRecover() throws StorageException {
         lock.writeLock().lock();
 
         try {
-            // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than
-            // header + page.
+            // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than page.
             if (inited) {
-                long newSize = Math.max(headerSize() + pageSize, fileIO.size());
+                long newSize = Math.max(pageSize, fileIO.size() - headerSize());
 
                 long delta = newSize - allocated.getAndSet(newSize);
 
@@ -332,7 +331,7 @@ public class FilePageStore implements PageStore {
             recover = false;
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Failed to finish recover", e);
+            throw new StorageException("Failed to finish recover partition file [file=" + cfgFile.getAbsolutePath() + "]", e);
         }
         finally {
             lock.writeLock().unlock();
@@ -347,28 +346,20 @@ public class FilePageStore implements PageStore {
             long off = pageOffset(pageId);
 
             assert pageBuf.capacity() == pageSize;
+            assert pageBuf.remaining() == pageSize;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
-            assert off <= (allocated.get() - headerSize()) : "calculatedOffset=" + off +
-                ", allocated=" + allocated.get() + ", headerSize="+headerSize();
+            assert off <= allocated.get() : "calculatedOffset=" + off +
+                ", allocated=" + allocated.get() + ", headerSize=" + headerSize();
 
-            int len = pageSize;
+            int n = readWithFailover(pageBuf, off);
 
-            do {
-                int n = readWithFailover(pageBuf, off);
+            // If page was not written yet, nothing to read.
+            if (n < 0) {
+                pageBuf.put(new byte[pageBuf.remaining()]);
 
-                // If page was not written yet, nothing to read.
-                if (n < 0) {
-                    pageBuf.put(new byte[pageBuf.remaining()]);
-
-                    return;
-                }
-
-                off += n;
-
-                len -= n;
+                return;
             }
-            while (len > 0);
 
             int savedCrc32 = PageIO.getCrc(pageBuf);
 
@@ -394,7 +385,7 @@ public class FilePageStore implements PageStore {
                 PageIO.setCrc(pageBuf, savedCrc32);
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Read error", e);
+            throw new StorageException("Failed to read page [file=" + cfgFile.getAbsolutePath() + ", pageId=" + pageId + "]", e);
         }
     }
 
@@ -405,32 +396,17 @@ public class FilePageStore implements PageStore {
         try {
             assert buf.remaining() == headerSize();
 
-            int len = headerSize();
-
-            long off = 0;
-
-            do {
-                int n = readWithFailover(buf, off);
-
-                // If page was not written yet, nothing to read.
-                if (n < 0)
-                    return;
-
-                off += n;
-
-                len -= n;
-            }
-            while (len > 0);
+            readWithFailover(buf, 0);
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Read error", e);
+            throw new StorageException("Failed to read header [file=" + cfgFile.getAbsolutePath() + "]", e);
         }
     }
 
     /**
-     * @throws PersistentStorageIOException If failed to initialize store file.
+     * @throws StorageException If failed to initialize store file.
      */
-    private void init() throws PersistentStorageIOException {
+    private void init() throws StorageException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -438,7 +414,7 @@ public class FilePageStore implements PageStore {
                 if (!inited) {
                     FileIO fileIO = null;
 
-                    PersistentStorageIOException err = null;
+                    StorageException err = null;
 
                     long newSize;
 
@@ -449,7 +425,7 @@ public class FilePageStore implements PageStore {
                             try {
                                 this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
-                                newSize = cfgFile.length() == 0 ? initFile(fileIO) : checkFile(fileIO);
+                                newSize = (cfgFile.length() == 0 ? initFile(fileIO) : checkFile(fileIO)) - headerSize();
 
                                 if (interrupted)
                                     Thread.currentThread().interrupt();
@@ -465,15 +441,17 @@ public class FilePageStore implements PageStore {
 
                         assert allocated.get() == 0;
 
-                        allocatedTracker.updateTotalAllocatedPages(newSize / pageSize);
-
                         allocated.set(newSize);
 
                         inited = true;
+
+                        // Order is important, update of total allocated pages must be called after allocated update
+                        // and setting inited to true, because it affects pages() returned value.
+                        allocatedTracker.updateTotalAllocatedPages(pages());
                     }
                     catch (IOException e) {
-                        err = new PersistentStorageIOException(
-                            "Failed to initialize partition file: " + cfgFile.getName(), e);
+                        err = new StorageException(
+                            "Failed to initialize partition file: " + cfgFile.getAbsolutePath(), e);
 
                         throw err;
                     }
@@ -572,7 +550,7 @@ public class FilePageStore implements PageStore {
 
                     long off = pageOffset(pageId);
 
-                    assert (off >= 0 && off + headerSize() <= allocated.get()) || recover :
+                    assert (off >= 0 && off <= allocated.get()) || recover :
                         "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
 
                     assert pageBuf.capacity() == pageSize;
@@ -631,8 +609,8 @@ public class FilePageStore implements PageStore {
                     }
                 }
 
-                throw new PersistentStorageIOException("Failed to write the page to the file store [pageId=" + pageId
-                    + ", file=" + cfgFile.getAbsolutePath() + ']', e);
+                throw new StorageException("Failed to write page [file=" + cfgFile.getAbsolutePath()
+                    + ", pageId=" + pageId + ", tag=" + tag + "]", e);
             }
         }
     }
@@ -658,7 +636,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void sync() throws IgniteCheckedException {
+    @Override public void sync() throws StorageException {
         lock.writeLock().lock();
 
         try {
@@ -670,7 +648,7 @@ public class FilePageStore implements PageStore {
                 fileIO.force();
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Sync error", e);
+            throw new StorageException("Failed to fsync partition file [file=" + cfgFile.getAbsolutePath() + "]", e);
         }
         finally {
             lock.writeLock().unlock();
@@ -686,9 +664,7 @@ public class FilePageStore implements PageStore {
     @Override public long allocatePage() throws IgniteCheckedException {
         init();
 
-        long off = allocPage();
-
-        return (off - headerSize()) / pageSize;
+        return allocPage() / pageSize;
     }
 
     /**
@@ -716,7 +692,7 @@ public class FilePageStore implements PageStore {
         if (!inited)
             return 0;
 
-        return (int)((allocated.get() - headerSize()) / pageSize);
+        return (int)(allocated.get() / pageSize);
     }
 
     /**
@@ -738,7 +714,7 @@ public class FilePageStore implements PageStore {
             try {
                 assert destBuf.remaining() > 0;
 
-                int bytesRead = fileIO.read(destBuf, position);
+                int bytesRead = fileIO.readFully(destBuf, position);
 
                 if (interrupted)
                     Thread.currentThread().interrupt();

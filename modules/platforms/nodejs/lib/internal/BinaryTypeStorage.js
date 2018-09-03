@@ -22,15 +22,26 @@ const BinaryUtils = require('./BinaryUtils');
 
 class BinaryTypeStorage {
 
-    static getEntity() {
-        if (!BinaryTypeStorage._entity) {
-            throw Errors.IgniteClientError.internalError();
-        }
-        return BinaryTypeStorage._entity;
+    constructor(communicator) {
+        this._communicator = communicator;
+        this._types = new Map();
     }
 
-    static createEntity(socket) {
-        BinaryTypeStorage._entity = new BinaryTypeStorage(socket);
+    static getByComplexObjectType(complexObjectType) {
+        return BinaryTypeStorage.complexObjectTypes.get(complexObjectType);
+    }
+
+    static setByComplexObjectType(complexObjectType, type, schema) {
+        if (!BinaryTypeStorage.complexObjectTypes.has(complexObjectType)) {
+            BinaryTypeStorage.complexObjectTypes.set(complexObjectType, [type, schema]);
+        }
+    }
+
+    static get complexObjectTypes() {
+        if (!BinaryTypeStorage._complexObjectTypes) {
+            BinaryTypeStorage._complexObjectTypes = new Map();
+        }
+        return BinaryTypeStorage._complexObjectTypes;
     }
 
     async addType(binaryType, binarySchema) {
@@ -61,29 +72,13 @@ class BinaryTypeStorage {
         return storageType;
     }
 
-    getByComplexObjectType(complexObjectType) {
-        return this._complexObjectTypes.get(complexObjectType);
-    }
-
-    setByComplexObjectType(complexObjectType, type, schema) {
-        if (!this._complexObjectTypes.has(complexObjectType)) {
-            this._complexObjectTypes.set(complexObjectType, [type, schema]);
-        }
-    }
-
     /** Private methods */
-
-    constructor(socket) {
-        this._socket = socket;
-        this._types = new Map();
-        this._complexObjectTypes = new Map();
-    }
 
     async _getBinaryType(typeId) {
         const BinaryType = require('./BinaryType');
         let binaryType = new BinaryType(null);
         binaryType._id = typeId;
-        await this._socket.send(
+        await this._communicator.send(
             BinaryUtils.OPERATION.GET_BINARY_TYPE,
             async (payload) => {
                 payload.writeInteger(typeId);
@@ -101,7 +96,7 @@ class BinaryTypeStorage {
     }
 
     async _putBinaryType(binaryType) {
-        await this._socket.send(
+        await this._communicator.send(
             BinaryUtils.OPERATION.PUT_BINARY_TYPE,
             async (payload) => {
                 await binaryType._write(payload);

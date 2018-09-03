@@ -495,7 +495,11 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         if (persistence)
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                )
                 .setWalMode(WALMode.LOG_ONLY)
             );
 

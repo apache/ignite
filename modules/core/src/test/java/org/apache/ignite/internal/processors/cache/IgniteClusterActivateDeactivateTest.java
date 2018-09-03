@@ -42,6 +42,7 @@ import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -53,6 +54,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -355,11 +357,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @return State change future.
      * @throws Exception If failed.
      */
-    private IgniteInternalFuture<?> startNodesAndBlockStatusChange(int srvs,
+    private IgniteInternalFuture<?> startNodesAndBlockStatusChange(
+        int srvs,
         int clients,
         final int stateChangeFrom,
         final boolean initiallyActive,
-        int... blockMsgNodes) throws Exception {
+        int... blockMsgNodes
+    ) throws Exception {
         active = initiallyActive;
         testSpi = true;
 
@@ -1136,20 +1140,16 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         client = false;
 
-        IgniteInternalFuture startFut1 = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(4);
+        IgniteInternalFuture startFut1 = GridTestUtils.runAsync((Callable) () -> {
+            startGrid(4);
 
-                return null;
-            }
+            return null;
         }, "start-node1");
 
-        IgniteInternalFuture startFut2 = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(5);
+        IgniteInternalFuture startFut2 = GridTestUtils.runAsync((Callable) () -> {
+            startGrid(5);
 
-                return null;
-            }
+            return null;
         }, "start-node2");
 
         U.sleep(1000);
@@ -1173,6 +1173,52 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             startGrid(i);
 
         checkCaches1(6);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClusterStateNotWaitForDeactivation() throws Exception {
+        testSpi = true;
+
+        final int nodes = 2;
+
+        IgniteEx crd = (IgniteEx) startGrids(nodes);
+
+        crd.cluster().active(true);
+
+        AffinityTopologyVersion curTopVer = crd.context().discovery().topologyVersionEx();
+
+        AffinityTopologyVersion deactivationTopVer = new AffinityTopologyVersion(
+            curTopVer.topologyVersion(),
+            curTopVer.minorTopologyVersion() + 1
+        );
+
+        for (int gridIdx = 0; gridIdx < nodes; gridIdx++) {
+            TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(gridIdx));
+
+            blockExchangeSingleMessage(spi, deactivationTopVer);
+        }
+
+        IgniteInternalFuture deactivationFut = GridTestUtils.runAsync(() -> crd.cluster().active(false));
+
+        // Wait for deactivation start.
+        GridTestUtils.waitForCondition(() -> {
+            DiscoveryDataClusterState clusterState = crd.context().state().clusterState();
+
+            return clusterState.transition() && !clusterState.active();
+        }, getTestTimeout());
+
+        // Check that deactivation transition wait is not happened.
+        Assert.assertFalse(crd.context().state().publicApiActiveState(true));
+
+        for (int gridIdx = 0; gridIdx < nodes; gridIdx++) {
+            TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(gridIdx));
+
+            spi.stopBlock();
+        }
+
+        deactivationFut.get();
     }
 
     /**

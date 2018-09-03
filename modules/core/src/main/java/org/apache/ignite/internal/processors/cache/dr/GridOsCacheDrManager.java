@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.lang.IgniteFuture;
@@ -74,6 +75,18 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
         GridCacheVersion ver,
         GridDrType drType,
         AffinityTopologyVersion topVer) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccReplicate(KeyCacheObject key, @Nullable CacheObject val, long ttl, long expireTime,
+        GridCacheVersion ver, GridDrType drType, AffinityTopologyVersion topVer,
+        MvccVersion mvccVer) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTxFinished(MvccVersion mvccVer, boolean commit, AffinityTopologyVersion topVer) {
         // No-op.
     }
 

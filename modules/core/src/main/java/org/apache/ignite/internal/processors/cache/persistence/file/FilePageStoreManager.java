@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
@@ -270,7 +271,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     partStore.finishRecover();
             }
         }
-        catch (PersistentStorageIOException e) {
+        catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
@@ -278,8 +279,24 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeForCache(CacheGroupDescriptor grpDesc, StoredCacheData cacheData)
+    @Override public void initialize(int cacheId, int partitions, String workingDir, AllocatedPageTracker tracker)
         throws IgniteCheckedException {
+        if (!idxCacheStores.containsKey(cacheId)) {
+            CacheStoreHolder holder = initDir(
+                new File(storeWorkDir, workingDir),
+                cacheId,
+                partitions,
+                tracker
+            );
+
+            CacheStoreHolder old = idxCacheStores.put(cacheId, holder);
+
+            assert old == null : "Non-null old store holder for cacheId: " + cacheId;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initializeForCache(CacheGroupDescriptor grpDesc, StoredCacheData cacheData) throws IgniteCheckedException {
         int grpId = grpDesc.groupId();
 
         if (!idxCacheStores.containsKey(grpId)) {
@@ -292,8 +309,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeForMetastorage()
-        throws IgniteCheckedException {
+    @Override public void initializeForMetastorage() throws IgniteCheckedException {
         int grpId = MetaStorage.METASTORAGE_CACHE_ID;
 
         if (!idxCacheStores.containsKey(grpId)) {
@@ -301,7 +317,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 new File(storeWorkDir, META_STORAGE_NAME),
                 grpId,
                 1,
-                delta -> {/* No-op */} );
+                AllocatedPageTracker.NO_OP );
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
 
@@ -399,7 +415,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try {
             store.read(pageId, pageBuf, keepCrc);
         }
-        catch (PersistentStorageIOException e) {
+        catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
@@ -420,7 +436,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try {
             store.readHeader(buf);
         }
-        catch (PersistentStorageIOException e) {
+        catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
@@ -456,7 +472,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try {
             store.write(pageId, pageBuf, tag, calculateCrc);
         }
-        catch (PersistentStorageIOException e) {
+        catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
@@ -503,7 +519,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cacheWorkDir Work directory.
      * @param grpId Group ID.
      * @param partitions Number of partitions.
-     * @param allocatedTracker Metrics updater
+     * @param allocatedTracker Metrics updater.
      * @return Cache store holder.
      * @throws IgniteCheckedException If failed.
      */
@@ -542,7 +558,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             return new CacheStoreHolder(idxStore, partStores);
         }
-        catch (PersistentStorageIOException e) {
+        catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
@@ -634,7 +650,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try {
             getStore(grpId, partId).sync();
         }
-        catch (PersistentStorageIOException e) {
+        catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
@@ -646,7 +662,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try {
             getStore(grpId, partId).ensure();
         }
-        catch (PersistentStorageIOException e) {
+        catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
@@ -664,7 +680,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             return PageIdUtils.pageId(partId, flags, (int)pageIdx);
         }
-        catch (PersistentStorageIOException e) {
+        catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
@@ -1013,7 +1029,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /**
          *
          */
-        public CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores) {
+        CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores) {
             this.idxStore = idxStore;
             this.partStores = partStores;
         }

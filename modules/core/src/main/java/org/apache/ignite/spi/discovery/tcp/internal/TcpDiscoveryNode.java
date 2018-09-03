@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -467,7 +466,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public boolean isClient() {
-        return clientRouterNodeId != null;
+        if (!cacheCliInit) {
+            Boolean clientModeAttr = ((ClusterNode) this).attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+
+            cacheCli = clientModeAttr != null && clientModeAttr;
+
+            cacheCliInit = true;
+        }
+
+        return cacheCli;
     }
 
     /**
@@ -526,17 +533,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         node.clientRouterNodeId = clientRouterNodeId;
 
         return node;
-    }
-
-    /** {@inheritDoc} */
-    public boolean isCacheClient() {
-        if (!cacheCliInit) {
-            cacheCli = CU.clientNodeDirect(this);
-
-            cacheCliInit = true;
-        }
-
-        return cacheCli;
     }
 
     /** {@inheritDoc} */
@@ -627,7 +623,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         ver = (IgniteProductVersion)in.readObject();
         clientRouterNodeId = U.readUuid(in);
 
-        if (isClient())
+        if (clientRouterNodeId() != null)
             consistentId = consistentIdAttr != null ? consistentIdAttr : id;
         else
             consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);

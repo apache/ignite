@@ -18,7 +18,7 @@
 import {CancellationError} from 'app/errors/CancellationError';
 
 // Service to show various information and error messages.
-export default ['IgniteMessages', ['$alert', 'IgniteErrorParser', ($alert, errorParser) => {
+export default ['IgniteMessages', ['$alert', 'IgniteErrorParser', function($alert, errorParser) {
     // Common instance of alert modal.
     let msgModal;
 

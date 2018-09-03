@@ -496,62 +496,40 @@ button.form-control {
         border-top: 1px solid $ignite-border-color;
     }
 
+    .btn-ignite-group {
+        padding: 0;
+        border: none;
+        margin-right: 0;
+        background: transparent;
+    }
+
     .sql-controls {
-        position: relative;
-        top: -1px;
+        display: flex;
+        justify-content: space-between;
         border-top: 1px solid #ddd;
 
-        padding: 10px 10px;
+        & > div {
+            display: flex;
+            padding: 10px;
+            align-items: flex-start;
 
-        input[type="checkbox"] {
-            line-height: 20px;
-            margin-right: 5px;
-        }
-
-        label {
-            line-height: 28px;
-            vertical-align: middle;
-        }
-
-        .btn {
-            line-height: 20px;
-        }
-
-        .ignite-form-field {
-            margin-right: 10px;
-
-            .ignite-form-field__label {
-                float: left;
-                width: auto;
-                margin-right: 5px;
-                line-height: 28px;
+            &:nth-child(2) {
+                flex: 1;
+                justify-content: flex-end;
             }
 
-            .ignite-form-field__label + div {
-                display: block;
-                float: none;
-                width: auto;
+            &:last-child {
+                flex-direction: column;
+                flex-basis: 25%;
             }
         }
 
-        .tipLabel .btn {
-            float: right;
+        button + button {
+            margin-left: 20px;
         }
 
-        .pull-right {
-            margin-left: 10px;
-
-            .ignite-form-field {
-                margin-right: -24px;
-
-                label {
-                    margin-left: 5px;
-                }
-            }
-        }
-
-        .col-sm-3 + .tipLabel {
-            margin-left: 0;
+        .form-field--inline + .form-field--inline {
+            margin-left: 20px;
         }
     }
 
@@ -620,14 +598,6 @@ button.form-control {
     cursor: pointer;
     font-size: $font-size-large;
     line-height: 24px;
-
-    label {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: calc(100% - 85px);
-        cursor: pointer;
-    }
 
     .btn-group {
         vertical-align: top;
@@ -2114,6 +2084,7 @@ header.header-with-selector {
 
     div {
         display: flex;
+        align-items: center;
 
         &:nth-child(2) {
             .btn-ignite {

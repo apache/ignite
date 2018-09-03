@@ -17,25 +17,23 @@
 include /app/helpers/jade/mixins
 
 .panel--ignite
-    .panel-heading.ui-grid-settings.ui-grid-ignite__panel(ng-if='!$ctrl.hideHeader')
-        .panel-title
-            .pc-items-table__table-name.ng-animate-disabled(
-                ng-hide='$ctrl.gridAPI.selection.getSelectedCount()'
-            )
-                | {{ $ctrl.tableTitle }}
-                grid-column-selector(grid-api='$ctrl.gridAPI')
-            .pc-items-table__selection-count.ng-animate-disabled(
-                ng-show='$ctrl.gridAPI.selection.getSelectedCount()'
-            )
-                i {{ $ctrl.gridAPI.selection.getSelectedCount() }} of {{ $ctrl.items.length }} selected
-            .pco-clusters-table__actions-button
-                +ignite-form-field-bsdropdown({
-                    label: 'Actions',
-                    name: 'action',
-                    disabled: '!$ctrl.gridAPI.selection.getSelectedCount()',
-                    required: false,
-                    options: '$ctrl.actionsMenu'
-                })
+    header.header-with-selector(ng-if='!$ctrl.hideHeader')
+        div(ng-hide='$ctrl.gridAPI.selection.getSelectedCount()')
+            span {{ $ctrl.tableTitle }}
+            grid-column-selector(grid-api='$ctrl.gridAPI')
+
+        div(ng-show='$ctrl.gridAPI.selection.getSelectedCount()')
+            grid-item-selected(grid-api='$ctrl.gridAPI')
+
+        div
+            +ignite-form-field-bsdropdown({
+                label: 'Actions',
+                name: 'action',
+                disabled: '!$ctrl.gridAPI.selection.getSelectedCount()',
+                required: false,
+                options: '$ctrl.actionsMenu'
+            })
+
     .grid.ui-grid--ignite(
         ui-grid='$ctrl.grid'
         ui-grid-selection

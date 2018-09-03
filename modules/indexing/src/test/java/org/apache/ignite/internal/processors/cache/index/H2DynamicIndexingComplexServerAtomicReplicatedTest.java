@@ -23,7 +23,7 @@ import org.apache.ignite.cache.CacheMode;
 /**
  * Test to check work of DML+DDL operations of atomic replicated cache with queries initiated from server node.
  */
-public class H2DynamicIndexingComplexServerAtomicReplicatedTest extends H2DynamicIndexingComplexTest {
+public class H2DynamicIndexingComplexServerAtomicReplicatedTest extends H2DynamicIndexingComplexAbstractTest {
     /**
      * Constructor.
      */

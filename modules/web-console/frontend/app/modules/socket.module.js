@@ -32,7 +32,7 @@ angular
     };
 
     this.$get = ['socketFactory', function(socketFactory) {
-        return () => {
+        return function() {
             const ioSocket = io.connect(_options);
 
             return socketFactory({ioSocket});

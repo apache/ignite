@@ -26,9 +26,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.TimeZone;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -82,6 +85,9 @@ public class VisorTxInfo extends VisorDataTransferObject {
     /** */
     private Collection<UUID> masterNodeIds;
 
+    /** */
+    private AffinityTopologyVersion topVer;
+
     /**
      * Default constructor.
      */
@@ -103,7 +109,7 @@ public class VisorTxInfo extends VisorDataTransferObject {
      */
     public VisorTxInfo(IgniteUuid xid, long startTime, long duration, TransactionIsolation isolation,
         TransactionConcurrency concurrency, long timeout, String lb, Collection<UUID> primaryNodes,
-        TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds) {
+        TransactionState state, int size, IgniteUuid nearXid, Collection<UUID> masterNodeIds, AffinityTopologyVersion topVer) {
         this.xid = xid;
         this.startTime = startTime;
         this.duration = duration;
@@ -116,11 +122,12 @@ public class VisorTxInfo extends VisorDataTransferObject {
         this.size = size;
         this.nearXid = nearXid;
         this.masterNodeIds = masterNodeIds;
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V2;
+        return V3;
     }
 
     /** */
@@ -151,6 +158,11 @@ public class VisorTxInfo extends VisorDataTransferObject {
     /** */
     public TransactionConcurrency getConcurrency() {
         return concurrency;
+    }
+
+    /** */
+    public AffinityTopologyVersion getTopologyVersion() {
+        return topVer;
     }
 
     /** */
@@ -202,6 +214,8 @@ public class VisorTxInfo extends VisorDataTransferObject {
         U.writeGridUuid(out, nearXid);
         U.writeCollection(out, masterNodeIds);
         out.writeLong(startTime);
+        out.writeLong(topVer == null ? -1 : topVer.topologyVersion());
+        out.writeInt(topVer == null ? -1 : topVer.minorTopologyVersion());
     }
 
     /** {@inheritDoc} */
@@ -217,12 +231,48 @@ public class VisorTxInfo extends VisorDataTransferObject {
         size = in.readInt();
         if (protoVer >= V2) {
             nearXid = U.readGridUuid(in);
-
             masterNodeIds = U.readCollection(in);
-
             startTime = in.readLong();
         }
+        if (protoVer >= V3) {
+            long topVer = in.readLong();
+            int minorTopVer = in.readInt();
 
+            if (topVer != -1)
+                this.topVer = new AffinityTopologyVersion(topVer, minorTopVer);
+        }
+    }
+
+    /**
+     * Get tx info as user string.
+     *
+     * @return User string.
+     */
+    public String toUserString() {
+        return "    Tx: [xid=" + getXid() +
+            ", label=" + getLabel() +
+            ", state=" + getState() +
+            ", startTime=" + getFormattedStartTime() +
+            ", duration=" + getDuration() / 1000 +
+            ", isolation=" + getIsolation() +
+            ", concurrency=" + getConcurrency() +
+            ", topVer=" + (getTopologyVersion() == null ? "N/A" : getTopologyVersion()) +
+            ", timeout=" + getTimeout() +
+            ", size=" + getSize() +
+            ", dhtNodes=" + (getPrimaryNodes() == null ? "N/A" :
+            F.transform(getPrimaryNodes(), new IgniteClosure<UUID, String>() {
+                @Override public String apply(UUID id) {
+                    return U.id8(id);
+                }
+            })) +
+            ", nearXid=" + getNearXid() +
+            ", parentNodeIds=" + (getMasterNodeIds() == null ? "N/A" :
+            F.transform(getMasterNodeIds(), new IgniteClosure<UUID, String>() {
+                @Override public String apply(UUID id) {
+                    return U.id8(id);
+                }
+            })) +
+            ']';
     }
 
     /** {@inheritDoc} */

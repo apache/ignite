@@ -33,12 +33,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -82,9 +80,8 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
     /**
      * @param name Cache name.
      * @return Cache configuration.
-     * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@NotNull String name) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String name) {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(name);
@@ -110,8 +107,6 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
-
-        conn = createConnection();
     }
 
     /** {@inheritDoc} */
@@ -133,14 +128,8 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testCreateSelect() throws Exception {
-        GridTestUtils.assertThrows(null, new IgniteCallable<Object>() {
-            @Override public Object call() throws Exception {
-                sql(new ResultChecker(new Object[][] {}), "SELECT * from Person");
-
-                return null;
-            }
-        }, SQLException.class, "Table \"PERSON\" not found");
+    public void testCreateSelectDrop() throws Exception {
+        conn = createConnection();
 
         sql(new UpdateChecker(0),
             "CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +
@@ -228,6 +217,9 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
         assert cnt[0] == 34 : "Invalid rows count";
 
         sql(new UpdateChecker(0), "DROP INDEX idx");
+
+        sql(new UpdateChecker(0), "DROP TABLE city");
+        sql(new UpdateChecker(0), "DROP TABLE person");
     }
 
     /**

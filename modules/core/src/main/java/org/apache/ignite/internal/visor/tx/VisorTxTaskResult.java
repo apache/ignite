@@ -20,17 +20,10 @@ package org.apache.ignite.internal.visor.tx;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import org.apache.ignite.cluster.BaselineNode;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 
 /**
  * Result for {@link VisorTxTask}.
