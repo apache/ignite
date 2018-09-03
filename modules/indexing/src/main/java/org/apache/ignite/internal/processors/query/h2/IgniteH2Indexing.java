@@ -136,7 +136,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecut
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -146,7 +145,6 @@ import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.SqlStrictParseException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
-import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
@@ -154,8 +152,6 @@ import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
-import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
-import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
@@ -2258,6 +2254,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteSQLException In case DML not allowed.
      */
     private void checkDmlOperationIsAllowed() throws IgniteSQLException {
+        //For MVCC DML operation is always allowed.
+        if (mvccEnabled(ctx))
+            return;
+
         if (ctx.cache().context().tm().inUserTx() && !isDmlAllowedOverride)
             throw new IgniteSQLException("DML statement doesn't allowed within a transaction");
     }
