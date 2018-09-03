@@ -69,6 +69,7 @@ libignite_odbc_la_SOURCES = \
     src/odbc.cpp \
     src/entry_points.cpp \
     src/dsn_config.cpp \
+    src/query/streaming/streaming_batch.cpp \
     src/query/column_metadata_query.cpp \
     src/query/data_query.cpp \
     src/query/batch_query.cpp \
@@ -77,9 +78,14 @@ libignite_odbc_la_SOURCES = \
     src/query/table_metadata_query.cpp \
     src/query/type_info_query.cpp \
     src/query/special_columns_query.cpp \
+    src/query/streaming_query.cpp \
     src/ssl/ssl_gateway.cpp \
     src/ssl/secure_socket_client.cpp \
     src/ssl/ssl_mode.cpp \
+    src/sql/sql_lexer.cpp \
+    src/sql/sql_parser.cpp \
+    src/sql/sql_set_streaming_command.cpp \
+    src/sql/sql_utils.cpp \
     src/protocol_version.cpp \
     src/result_page.cpp \
     src/row.cpp \
