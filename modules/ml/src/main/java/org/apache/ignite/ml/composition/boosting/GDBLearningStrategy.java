@@ -24,7 +24,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategyFactory;
-import org.apache.ignite.ml.composition.boosting.convergence.simple.SimpleCheckConvergenceStgyFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCheckConvergenceStgyFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -65,7 +65,7 @@ public class GDBLearningStrategy {
     protected double[] compositionWeights;
 
     /** Check convergence strategy factory. */
-    protected ConvergenceCheckStrategyFactory checkConvergenceStgyFactory = new SimpleCheckConvergenceStgyFactory();
+    protected ConvergenceCheckStrategyFactory checkConvergenceStgyFactory = new MeanAbsValueCheckConvergenceStgyFactory(0.1);
 
     /**
      * Implementation of gradient boosting iterations. At each step of iterations this algorithm build a regression
