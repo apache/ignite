@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -30,7 +32,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public abstract class IgniteTxLocalStateAdapter implements IgniteTxLocalState {
     /** */
-    private volatile Map<Integer, Set<Integer>> touchedParts;
+    private static final Function<Integer, Set<Integer>> CREATE_INT_SET = k -> new HashSet<>();
+    /** */
+    private Map<Integer, Set<Integer>> touchedParts;
 
     /**
      * @param cacheCtx Cache context.
@@ -58,9 +62,8 @@ public abstract class IgniteTxLocalStateAdapter implements IgniteTxLocalState {
     /** {@inheritDoc} */
     @Override public void touchPartition(int cacheId, int partId) {
         if (touchedParts == null)
-            touchedParts = new ConcurrentHashMap<>();
+            touchedParts = new HashMap<>();
 
-        touchedParts.computeIfAbsent(cacheId, k -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
-            .add(partId);
+        touchedParts.computeIfAbsent(cacheId, CREATE_INT_SET).add(partId);
     }
 }
