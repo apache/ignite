@@ -161,7 +161,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
-        reuseList.saveMetadata();
+        reuseList.saveMetadata(ctx);
 
         boolean metaWasUpdated = false;
 
@@ -188,7 +188,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (rowStore0 != null) {
             CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
 
-            freeList.saveMetadata();
+            freeList.saveMetadata(ctx);
 
             long updCntr = store.updateCounter();
             long size = store.fullSize();
@@ -221,6 +221,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 int grpId = grp.groupId();
                 long partMetaId = pageMem.partitionMetaPageId(grpId, store.partId());
                 long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
+
+                long t0 = System.nanoTime();
+
+                SaveMetadataStat stat = new SaveMetadataStat(store.name());
+
+                ctx.tracker().addMetaStat(stat);
 
                 try {
                     long partMetaPageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
@@ -328,10 +334,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
                     finally {
                         pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
+
+                        stat.setDirtyPages(changed ? 1 : 0);
                     }
                 }
                 finally {
                     pageMem.releasePage(grpId, partMetaId, partMetaPage);
+
+                    stat.setDuration(System.nanoTime() - t0);
+
                 }
             }
             else if (needSnapshot)

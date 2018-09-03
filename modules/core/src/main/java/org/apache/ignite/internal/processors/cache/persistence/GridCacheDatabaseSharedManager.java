@@ -52,6 +52,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
+import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -3458,6 +3460,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 tracker.onMarkStart();
 
                 synchronized (this) {
+                    tracker.onCheckpointerLockGet();
+
                     curr = scheduledCp;
 
                     curr.started = true;
@@ -3486,14 +3490,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     @Override public boolean needToSnapshot(String cacheOrGrpName) {
                         return curr.snapshotOperation.cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
                     }
+
+                    @Override public CheckpointMetricsTracker tracker() {
+                        return tracker;
+                    }
                 };
 
                 // Listeners must be invoked before we write checkpoint record to WAL.
                 for (DbCheckpointListener lsnr : lsnrs)
                     lsnr.onCheckpointBegin(ctx0);
 
+                tracker.onAfterCheckpointListeners();
+
                 if (curr.nextSnapshot)
                     snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
+
+                tracker.onSnapshotFutureReady();
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (grp.isLocal() || !grp.walEnabled())
@@ -3518,7 +3530,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cpRec.addCacheGroupState(grp.groupId(), state);
                 }
 
+                tracker.onCacheGroupStatesReady();
+
                 cpPagesTuple = beginAllCheckpoints();
+
+                tracker.onDirtyPagesCollected();
 
                 hasPages = hasPageForWrite(cpPagesTuple.get1());
 
@@ -3543,6 +3559,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     cpHistory.addCheckpoint(cp);
                 }
+
+                tracker.onCheckpointEntryLogged();
             }
             finally {
                 checkpointLock.writeLock().unlock();
@@ -3580,14 +3598,47 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (printCheckpointStats)
                     if (log.isInfoEnabled())
                         log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
-                                "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
-                            cpRec.checkpointId(),
-                            cpPtr,
-                            tracker.lockWaitDuration(),
-                            tracker.lockHoldDuration(),
-                            tracker.walCpRecordFsyncDuration(),
-                            cpPages.size(),
-                            curr.reason)
+                                    "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s', " +
+                                    "checkpointLockGetDuration=%dms" +
+                                    ", checkpointListenersDuration=%dms" +
+                                    ", snapshotFutureReadyDuration=%dms" +
+                                    ", cacheGroupStatesDuration=%dms" +
+                                    ", drtyPagesCollectedDuration=%dms" +
+                                    ", checkpointEntryLoggerDuration=%dms" +
+                                    ", totalDirtyMetaPages=%d" +
+                                    ", metas=%s" +
+                                    ']',
+                                cpRec.checkpointId(),
+                                cpPtr,
+                                tracker.lockWaitDuration(),
+                                tracker.lockHoldDuration(),
+                                tracker.walCpRecordFsyncDuration(),
+                                cpPages.size(),
+                                curr.reason,
+                                tracker.checkpointLockGetDuration(),
+                                tracker.checkpointListenersDuration(),
+                                tracker.snapshotFutureReadyDuration(),
+                                tracker.cacheGroupStatesDuration(),
+                                tracker.drtyPagesCollectedDuration(),
+                                tracker.checkpointEntryLoggerDuration(),
+                                tracker.getStats().values().stream().collect(Collectors.summarizingLong(new ToLongFunction<DbCheckpointListener.SaveMetadataStat>() {
+                                    @Override public long applyAsLong(DbCheckpointListener.SaveMetadataStat val) {
+                                        return val.getPages();
+                                    }
+                                })).getSum(),
+                                tracker.getStats().entrySet().stream().sorted((o1,
+                                    o2) -> Long.compare(o2.getKey(), o1.getKey())).
+                                    filter(entry -> entry.getValue().getPages() > 0).
+                                map(new Function<Map.Entry<Long, DbCheckpointListener.SaveMetadataStat>, String>() {
+                                    @Override public String apply(Map.Entry<Long, DbCheckpointListener.SaveMetadataStat> entry) {
+                                        return '[' + "name=" + entry.getValue().getName() +
+                                            ", duration=" + (entry.getKey() / 1000 / 1000.) + " ms" +
+                                            ", stripes=" + entry.getValue().getStripes() +
+                                            ", dirtyPages=" + entry.getValue().getPages() +
+                                            ']';
+                                    }
+                                }).limit(500).collect(Collectors.toList()).toString()
+                            )
                         );
 
                 return new Checkpoint(cp, cpPages, curr);

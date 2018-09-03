@@ -37,9 +37,9 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration("default");
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, CacheConfiguration.MAX_PARTITIONS_COUNT));
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -49,7 +49,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
             DataStorageConfiguration memCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration().setPersistenceEnabled(true))
-                .setWalMode(WALMode.LOG_ONLY);
+                .setWalMode(WALMode.LOG_ONLY).setCheckpointFrequency(30_000);
 
             cfg.setDataStorageConfiguration(memCfg);
         }
@@ -78,9 +78,15 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
      */
     private void checkManyPartitions() throws Exception {
         try {
-            startGrids(4);
+            startGrids(1);
 
             grid(0).active(true);
+
+            grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+            forceCheckpoint(grid(0));
+
+            doSleep(5000);
         }
         finally {
             stopAllGrids();

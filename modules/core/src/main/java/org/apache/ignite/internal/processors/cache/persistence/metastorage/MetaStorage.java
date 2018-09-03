@@ -410,21 +410,28 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        freeList.saveMetadata();
+        freeList.saveMetadata(ctx);
 
-        saveStoreMetadata();
+        saveStoreMetadata(ctx);
     }
 
     /**
      * @throws IgniteCheckedException If failed.
+     * @param ctx Context.
      */
-    private void saveStoreMetadata() throws IgniteCheckedException {
+    private void saveStoreMetadata(Context ctx) throws IgniteCheckedException {
         PageMemoryEx pageMem = (PageMemoryEx) pageMemory();
 
         int partId = 0;
 
         long partMetaId = pageMem.partitionMetaPageId(METASTORAGE_CACHE_ID, partId);
         long partMetaPage = pageMem.acquirePage(METASTORAGE_CACHE_ID, partMetaId);
+
+        long t0 = System.nanoTime();
+
+        SaveMetadataStat stat = new SaveMetadataStat(METASTORAGE_CACHE_NAME);
+
+        ctx.tracker().addMetaStat(stat);
 
         try {
             long partMetaPageAddr = pageMem.writeLock(METASTORAGE_CACHE_ID, partMetaId, partMetaPage);
@@ -444,10 +451,14 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             }
             finally {
                 pageMem.writeUnlock(METASTORAGE_CACHE_ID, partMetaId, partMetaPage, null, changed);
+
+                stat.setDirtyPages(changed ? 1 : 0);
             }
         }
         finally {
             pageMem.releasePage(METASTORAGE_CACHE_ID, partMetaId, partMetaPage);
+
+            stat.setDuration(System.nanoTime() - t0);
         }
     }
 

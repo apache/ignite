@@ -36,6 +36,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRe
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
@@ -251,8 +252,9 @@ public abstract class PagesList extends DataStructure {
 
     /**
      * @throws IgniteCheckedException If failed.
+     * @param ctx Context.
      */
-    public void saveMetadata() throws IgniteCheckedException {
+    public void saveMetadata(DbCheckpointListener.Context ctx) throws IgniteCheckedException {
         assert metaPageId != 0;
 
         long curId = 0L;
@@ -266,11 +268,20 @@ public abstract class PagesList extends DataStructure {
         if (!changed)
             return;
 
+        DbCheckpointListener.SaveMetadataStat stat = new DbCheckpointListener.SaveMetadataStat(name);
+
+        long t0 = System.nanoTime();
+
+        int stripes = 0;
+        int dirtyPages = 0;
+
         try {
             for (int bucket = 0; bucket < buckets; bucket++) {
                 Stripe[] tails = getBucket(bucket);
 
                 if (tails != null) {
+                    stripes += tails.length;
+
                     int tailIdx = 0;
 
                     while (tailIdx < tails.length) {
@@ -284,6 +295,8 @@ public abstract class PagesList extends DataStructure {
                                     curIo.setNextMetaPageId(curAddr, nextPageId);
 
                                     releaseAndClose(curId, curPage, curAddr);
+
+                                    dirtyPages++;
                                 }
 
                                 curId = nextPageId;
@@ -296,6 +309,9 @@ public abstract class PagesList extends DataStructure {
                             }
                             else {
                                 releaseAndClose(curId, curPage, curAddr);
+
+                                if (curPage != 0)
+                                    dirtyPages++;
 
                                 curId = nextPageId;
                                 curPage = acquirePage(curId);
@@ -316,6 +332,9 @@ public abstract class PagesList extends DataStructure {
         }
         finally {
             releaseAndClose(curId, curPage, curAddr);
+
+            if (curPage != 0)
+                dirtyPages++;
         }
 
         while (nextPageId != 0L) {
@@ -343,6 +362,12 @@ public abstract class PagesList extends DataStructure {
                 releasePage(pageId, page);
             }
         }
+
+        stat.setDirtyPages(dirtyPages);
+        stat.setStripes(stripes);
+        stat.setDuration(System.nanoTime() - t0);
+
+        ctx.tracker().addMetaStat(stat);
 
         changed = false;
     }

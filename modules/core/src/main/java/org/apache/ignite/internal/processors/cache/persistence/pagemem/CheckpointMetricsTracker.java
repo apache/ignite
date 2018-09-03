@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 
 /**
  * Tracks various checkpoint phases and stats.
@@ -75,6 +78,24 @@ public class CheckpointMetricsTracker {
 
     /** */
     private long walCpRecordFsyncEnd;
+
+    /** */
+    private long checkpointerLockGet;
+
+    /** */
+    private long afterCheckpointListeners;
+
+    /** */
+    private long snapshotFutureReady;
+
+    /** */
+    private long cacheGroupStatesReady;
+
+    /** */
+    private long dirtyPagesCollected;
+
+    /** */
+    private long checkpointEntryLogged;
 
     /**
      * Increments counter if copy on write page was written.
@@ -207,5 +228,80 @@ public class CheckpointMetricsTracker {
      */
     public long walCpRecordFsyncDuration() {
         return walCpRecordFsyncEnd - walCpRecordFsyncStart;
+    }
+
+    /** */
+    public void onCheckpointerLockGet() {
+        checkpointerLockGet = System.currentTimeMillis();
+    }
+
+    /** */
+    public long checkpointLockGetDuration() {
+        return cpMarkStart - checkpointerLockGet;
+    }
+
+    /** */
+    public void onAfterCheckpointListeners() {
+        afterCheckpointListeners = System.currentTimeMillis();
+    }
+
+    /** */
+    public long checkpointListenersDuration() {
+        return afterCheckpointListeners - checkpointerLockGet;
+    }
+
+    /** */
+    public void onSnapshotFutureReady() {
+        snapshotFutureReady = System.currentTimeMillis();
+    }
+
+    /** */
+    public long snapshotFutureReadyDuration() {
+        return snapshotFutureReady - afterCheckpointListeners;
+    }
+
+    /** */
+    public void onCacheGroupStatesReady() {
+        cacheGroupStatesReady = System.currentTimeMillis();
+    }
+
+    /** */
+    public long cacheGroupStatesDuration() {
+        return cacheGroupStatesReady - snapshotFutureReady;
+    }
+
+    /** */
+    public void onDirtyPagesCollected() {
+        dirtyPagesCollected = System.currentTimeMillis();
+    }
+
+    /** */
+    public long drtyPagesCollectedDuration() {
+        return dirtyPagesCollected - cacheGroupStatesReady;
+    }
+
+    /** */
+    public void onCheckpointEntryLogged() {
+        checkpointEntryLogged = System.currentTimeMillis();
+    }
+
+    /** */
+    public long checkpointEntryLoggerDuration() {
+        return checkpointEntryLogged - dirtyPagesCollected;
+    }
+
+    /** */
+    private SortedMap<Long, DbCheckpointListener.SaveMetadataStat> stats = new TreeMap<>();
+
+    /**
+     * @param stat Stat.
+     */
+    public void addMetaStat(DbCheckpointListener.SaveMetadataStat stat) {
+        stats.put(stat.getDuration(), stat);
+    }
+
+    /** */
+    public SortedMap<Long, DbCheckpointListener.SaveMetadataStat> getStats() {
+        return stats;
     }
 }

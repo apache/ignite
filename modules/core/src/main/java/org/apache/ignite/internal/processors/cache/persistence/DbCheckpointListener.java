@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 
 /**
@@ -42,6 +43,52 @@ public interface DbCheckpointListener {
          * @param cacheOrGrpName Cache or group name.
          */
         public boolean needToSnapshot(String cacheOrGrpName);
+
+        /**
+         * Checkpoint metrics tracker.
+         *
+         * @return Tracker.
+         */
+        public CheckpointMetricsTracker tracker();
+    }
+
+    public class SaveMetadataStat {
+        private final String name;
+        private int pages;
+        private int stripes;
+        private long duration;
+
+        public SaveMetadataStat(String name) {
+            this.name = name;
+        }
+
+        public void setDirtyPages(int pages) {
+            this.pages = pages;
+        }
+
+        public void setStripes(int stripes) {
+            this.stripes = stripes;
+        }
+
+        public void setDuration(long duration) {
+            this.duration = duration;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public int getPages() {
+            return pages;
+        }
+
+        public int getStripes() {
+            return stripes;
+        }
+
+        public long getDuration() {
+            return duration;
+        }
     }
 
     /**
