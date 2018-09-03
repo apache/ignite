@@ -158,18 +158,23 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
 
         checkSizeModificationByOperation(personTbl -> {
             personTbl.query(q("insert into person values(1, 'a')"));
+
             personTbl.query(q("insert into person values(%d, 'b')", keyInSamePartition(grid(0), "person", 1)));
+
             personTbl.query(q("insert into person values(%d, 'c')", keyInDifferentPartition(grid(0), "person", 1)));
         }, true, 3);
 
         checkSizeModificationByOperation(personTbl -> {
             personTbl.query(q("insert into person values(1, 'a')"));
+
             personTbl.query(q("delete from person where id = 1"));
         }, true, 0);
 
         checkSizeModificationByOperation(personTbl -> {
             personTbl.query(q("insert into person values(1, 'a')"));
+
             personTbl.query(q("delete from person where id = 1"));
+
             personTbl.query(q("insert into person values(1, 'a')"));
         }, true, 1);
 
@@ -177,17 +182,21 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
             personTbl -> personTbl.query(q("insert into person values(1, 'a')")),
             personTbl -> {
                 personTbl.query(q("delete from person where id = 1"));
+
                 personTbl.query(q("insert into person values(1, 'a')"));
             }, true, 0);
 
         checkSizeModificationByOperation(personTbl -> {
             personTbl.query(q("merge into person(id, name) values(1, 'a')"));
+
             personTbl.query(q("delete from person where id = 1"));
         }, true, 0);
 
         checkSizeModificationByOperation(personTbl -> {
             personTbl.query(q("merge into person(id, name) values(1, 'a')"));
+
             personTbl.query(q("delete from person where id = 1"));
+
             personTbl.query(q("merge into person(id, name) values(1, 'a')"));
         }, true, 1);
 
@@ -195,6 +204,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
             personTbl -> personTbl.query(q("merge into person(id, name) values(1, 'a')")),
             personTbl -> {
                 personTbl.query(q("delete from person where id = 1"));
+
                 personTbl.query(q("merge into person(id, name) values(1, 'a')"));
             }, true, 0);
     }
@@ -324,6 +334,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
 
         assertEquals(1, grid(0).cache("test").localSize());
         assertEquals(1, grid(0).cache("test").localSize(BACKUP));
+
         assertEquals(1, grid(1).cache("test").localSize());
         assertEquals(1, grid(1).cache("test").localSize(BACKUP));
     }
@@ -411,6 +422,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /** */
     private static int keyInSamePartition(Ignite ignite, String cacheName, int key) {
         Affinity<Object> affinity = ignite.affinity(cacheName);
+
         return IntStream.iterate(key + 1, i -> i + 1)
             .filter(i -> affinity.partition(i) == affinity.partition(key))
             .findFirst().getAsInt();
@@ -419,6 +431,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /** */
     private static int keyInDifferentPartition(Ignite ignite, String cacheName, int key) {
         Affinity<Object> affinity = ignite.affinity(cacheName);
+
         return IntStream.iterate(key + 1, i -> i + 1)
             .filter(i -> affinity.partition(i) != affinity.partition(key))
             .findFirst().getAsInt();
