@@ -40,22 +40,13 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorExceptionDuringReadTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -64,7 +55,6 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
 
 /**
  * Tests node recovering after disk errors during interaction with persistent storage.
@@ -350,17 +340,15 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         int failedPosition = -1;
 
-        Thread.currentThread().setName(Thread.currentThread().getName()+"_10001");
         for (int i = 0; i < 1000; i++) {
             byte payload = (byte) i;
             byte[] data = new byte[2048];
             Arrays.fill(data, payload);
-            Thread.currentThread().setName(Thread.currentThread().getName().replaceFirst("_[0-9]*", "_"+i));
+
             try {
                 grid.cache(CACHE_NAME).put(i, data);
             }
             catch (Exception e) {
-                log.error("Failed put : " + i, e);
                 failedPosition = i;
 
                 break;
@@ -372,28 +360,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         // Grid should be automatically stopped after WAL fail.
         awaitStop(grid);
-
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(log);
-
-        IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-            .filesOrDirs(U.defaultWorkDirectory());
-
-        try (WALIterator it = iteratorFactory.iterator(builder)) {
-
-            while (it.hasNext()) {
-                try {
-                    IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
-
-//                    log.info("Record : "+tup.get2());
-                }
-                catch (IgniteException e) {
-                    log.error("Failed read : ", e);
-
-                    break;
-                }
-            }
-
-        }
 
         ioFactory = null;
 
@@ -407,7 +373,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             Arrays.fill(data, payload);
 
             byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
-            Assert.assertArrayEquals("Failed position : " + failedPosition + ", current position : " + i, data, actualData);
+            Assert.assertArrayEquals(data, actualData);
         }
     }
 
@@ -449,7 +415,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             int written = super.write(srcBuf);
             availableSpaceBytes.addAndGet(-written);
             if (availableSpaceBytes.get() < 0)
-                throw new IOException("Not enough space!_"+written);
+                throw new IOException("Not enough space!");
             return written;
         }
 
@@ -458,24 +424,24 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             int written = super.write(srcBuf, position);
             availableSpaceBytes.addAndGet(-written);
             if (availableSpaceBytes.get() < 0)
-                throw new IOException("Not enough space!_"+written);
+                throw new IOException("Not enough space!");
             return written;
         }
 
         /** {@inheritDoc} */
         @Override public int write(byte[] buf, int off, int len) throws IOException {
-            int written = super.write(buf, off, len);
+            final int num = super.write(buf, off, len);
             availableSpaceBytes.addAndGet(-len);
             if (availableSpaceBytes.get() < 0)
-                throw new IOException("Not enough space!_"+written);
-            return written;
+                throw new IOException("Not enough space!");
+            return num;
         }
 
         /** {@inheritDoc} */
         @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
-            long written = availableSpaceBytes.addAndGet(-sizeBytes);
+            availableSpaceBytes.addAndGet(-sizeBytes);
             if (availableSpaceBytes.get() < 0)
-                throw new IOException("Not enough space!_"+written);
+                throw new IOException("Not enough space!");
             return super.map(sizeBytes);
         }
     }

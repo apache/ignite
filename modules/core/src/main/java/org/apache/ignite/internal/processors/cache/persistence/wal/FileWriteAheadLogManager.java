@@ -110,6 +110,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -808,11 +809,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
 
-        if (mode == LOG_ONLY) {
+        if (mode == LOG_ONLY)
             cur.flushOrWait(filePtr);
-            if (cctx.kernalContext().invalid())
-                throw new StorageException("Flush is fail");
-        }
 
         if (!explicitFsync && mode != WALMode.FSYNC)
             return; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
@@ -1299,7 +1297,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         false,
                         serializer,
                         rbuf);
-
 
                     if (interrupted)
                         Thread.currentThread().interrupt();
@@ -2703,7 +2700,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          *
          * @param ptr Pointer.
          */
-        private void flushOrWait(FileWALPointer ptr) {
+        private void flushOrWait(FileWALPointer ptr) throws IgniteCheckedException {
             if (ptr != null) {
                 // If requested obsolete file index, it must be already flushed by close.
                 if (ptr.index() != idx)
@@ -2716,7 +2713,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @param ptr Pointer.
          */
-        private void flush(FileWALPointer ptr) {
+        private void flush(FileWALPointer ptr) throws IgniteCheckedException {
             if (ptr == null) { // Unconditional flush.
                 walWriter.flushAll();
 
@@ -2910,10 +2907,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         if (mode != WALMode.NONE) {
                             if (mmap)
                                 ((MappedByteBuffer)buf.buf).force();
-                            else {
-                                log.info("File IO force");
+                            else
                                 fileIO.force();
-                            }
 
                             lastFsyncPos = written;
                         }
@@ -3296,8 +3291,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            Throwable err = null;
-
             try {
                 while (!isCancelled()) {
                     while (waiters.isEmpty()) {
@@ -3412,16 +3405,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (val != Long.MIN_VALUE)
                         waiters.put(e.getKey(), Long.MIN_VALUE);
 
-                    log.info("Unpark waiters : " + e.getKey().getName() + " , isInvalid=" + cctx.kernalContext().invalid());
-
-                    if(cctx.kernalContext().invalid()){
-                        StringBuilder builder = new StringBuilder();
-                        for (StackTraceElement traceElement : e.getKey().getStackTrace()) {
-                            builder.append(traceElement.toString() + "\n");
-                        }
-
-                        log.info("Invalid stacktrace: " + builder.toString());
-                    }
                     LockSupport.unpark(e.getKey());
                 }
             }
@@ -3430,21 +3413,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * Forces all made changes to the file.
          */
-        void force() {
+        void force() throws IgniteCheckedException {
             flushBuffer(FILE_FORCE);
         }
 
         /**
          * Closes file.
          */
-        void close() {
+        void close() throws IgniteCheckedException {
             flushBuffer(FILE_CLOSE);
         }
 
         /**
          * Flushes all data from the buffer.
          */
-        void flushAll() {
+        void flushAll() throws IgniteCheckedException {
             flushBuffer(UNCONDITIONAL_FLUSH);
         }
 
@@ -3452,7 +3435,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param expPos Expected position.
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        void flushBuffer(long expPos) {
+        void flushBuffer(long expPos) throws IgniteCheckedException {
             if (mmap)
                 return;
 
@@ -3477,6 +3460,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 if (val == Long.MIN_VALUE) {
                     waiters.remove(t);
+
+                    Throwable walWriterError = walWriter.err;
+                    if(walWriterError!=null)
+                        throw new IgniteCheckedException("Flush buffer by WAL writer was fail", walWriterError);
 
                     return;
                 }
@@ -3539,7 +3526,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 metrics.onWalBytesWritten(size);
 
                 assert hdl.written == hdl.fileIO.position();
-
             }
             catch (IOException e) {
                 StorageException se = new StorageException("Failed to write buffer.", e);
