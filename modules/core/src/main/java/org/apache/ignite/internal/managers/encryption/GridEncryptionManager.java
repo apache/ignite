@@ -83,7 +83,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MA
  * </ul>
  *
  * @see GridCacheProcessor#genEncKeysAndStartCacheAfter(Collection, GridPlainClosure)
- * @see GridCacheProcessor#onGenerateEncryptionKeyRequest(GenerateEncryptionKeyRequest)
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements MetastorageLifecycleListener {
     /**
@@ -360,7 +359,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @param grpId Group id.
      */
-    public void removeGroupKey(int grpId) {
+    private void removeGroupKey(int grpId) {
         synchronized (mux) {
             ctx.cache().context().database().checkpointReadLock();
 
