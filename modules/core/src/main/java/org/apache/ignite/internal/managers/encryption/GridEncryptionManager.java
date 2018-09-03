@@ -347,7 +347,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (log.isDebugEnabled())
                 log.debug("Key added. [grp=" + grpId + "]");
 
-            System.out.println("GridEncryptionManager.groupKey - " + grpId);
             grpEncKeys.put(grpId, encKey);
 
             if (metaStorage != null)
@@ -365,7 +364,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             ctx.cache().context().database().checkpointReadLock();
 
             try {
-                System.out.println("GridEncryptionManager.remove - " + grpId);
                 grpEncKeys.remove(grpId);
 
                 metaStorage.remove(ENCRYPTION_KEY_PREFIX + grpId);
@@ -418,7 +416,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 byte[] encGrpKey = (byte[])encKeys.get(key);
 
-                System.out.println("GridEncryptionManager.onReadyForRead - " + grpId);
                 grpEncKeys.putIfAbsent(grpId, getSpi().decryptKey(encGrpKey));
             }
 

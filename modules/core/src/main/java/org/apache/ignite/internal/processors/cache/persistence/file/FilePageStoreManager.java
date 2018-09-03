@@ -507,8 +507,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         AllocatedPageTracker allocatedTracker = regionMetrics.getOrAllocateGroupPageAllocationTracker(grpId);
 
-        System.out.println("ccfg.isEncryptionEnabled() = " + ccfg.isEncryptionEnabled() + ", name = " + ccfg.getName() + ", grpId = " + grpDesc.groupId());
-
         return initDir(
             cacheWorkDir,
             grpDesc.groupId(),
