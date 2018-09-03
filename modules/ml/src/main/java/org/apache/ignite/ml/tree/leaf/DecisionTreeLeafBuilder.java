@@ -21,7 +21,7 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
 import org.apache.ignite.ml.tree.TreeFilter;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
 
 /**
  * Base interface for decision tree leaf builders.
@@ -34,5 +34,5 @@ public interface DecisionTreeLeafBuilder {
      * @param pred Node predicate.
      * @return Leaf node.
      */
-    public DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter pred);
+    public DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeDataWithIndex> dataset, TreeFilter pred);
 }

@@ -25,10 +25,10 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link DecisionTreeData}.
+ * Tests for {@link DecisionTreeDataWithIndex}.
  */
 @RunWith(Parameterized.class)
-public class DecisionTreeDataTest {
+public class DecisionTreeDataWithIndexTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "Use index {0}")
     public static Iterable<Boolean[]> data() {
@@ -48,8 +48,8 @@ public class DecisionTreeDataTest {
         double[][] features = new double[][]{{0}, {1}, {2}, {3}, {4}, {5}};
         double[] labels = new double[]{0, 1, 2, 3, 4, 5};
 
-        DecisionTreeData data = new DecisionTreeData(features, labels, useIndex);
-        DecisionTreeData filteredData = data.filter(obj -> obj[0] > 2);
+        DecisionTreeDataWithIndex data = new DecisionTreeDataWithIndex(features, labels, useIndex);
+        DecisionTreeDataWithIndex filteredData = data.filter(obj -> obj[0] > 2);
 
         assertArrayEquals(new double[][]{{3}, {4}, {5}}, filteredData.getFeatures());
         assertArrayEquals(new double[]{3, 4, 5}, filteredData.getLabels(), 1e-10);
@@ -61,7 +61,7 @@ public class DecisionTreeDataTest {
         double[][] features = new double[][]{{4, 1}, {3, 3}, {2, 0}, {1, 4}, {0, 2}};
         double[] labels = new double[]{0, 1, 2, 3, 4};
 
-        DecisionTreeData data = new DecisionTreeData(features, labels, useIndex);
+        DecisionTreeDataWithIndex data = new DecisionTreeDataWithIndex(features, labels, useIndex);
 
         data.sort(0);
 

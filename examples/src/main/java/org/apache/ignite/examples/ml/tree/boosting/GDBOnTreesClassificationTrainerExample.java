@@ -22,8 +22,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCheckConvergenceStgyFactory;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
@@ -58,10 +58,11 @@ public class GDBOnTreesClassificationTrainerExample {
                 IgniteCache<Integer, double[]> trainingSet = fillTrainingData(ignite, trainingSetCfg);
 
                 // Create regression trainer.
-                DatasetTrainer<Model<Vector, Double>, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(1.0, 300, 2, 0.);
+                DatasetTrainer<ModelsComposition, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(1.0, 300, 2, 0.)
+                    .withCheckConvergenceStgyFactory(new MeanAbsValueCheckConvergenceStgyFactory(0.1));
 
                 // Train decision tree model.
-                Model<Vector, Double> mdl = trainer.fit(
+                ModelsComposition mdl = trainer.fit(
                     ignite,
                     trainingSet,
                     (k, v) -> VectorUtils.of(v[0]),
@@ -80,6 +81,8 @@ public class GDBOnTreesClassificationTrainerExample {
                 }
 
                 System.out.println(">>> ---------------------------------");
+                System.out.println(">>> Count of trees = " + mdl.getModels().size());
+                System.out.println(">>> ---------------------------------");
 
                 System.out.println(">>> GDB classification trainer example completed.");
             });
@@ -95,7 +98,7 @@ public class GDBOnTreesClassificationTrainerExample {
     @NotNull private static CacheConfiguration<Integer, double[]> createCacheConfiguration() {
         CacheConfiguration<Integer, double[]> trainingSetCfg = new CacheConfiguration<>();
         trainingSetCfg.setName("TRAINING_SET");
-        trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
+        trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 1));
         return trainingSetCfg;
     }
 

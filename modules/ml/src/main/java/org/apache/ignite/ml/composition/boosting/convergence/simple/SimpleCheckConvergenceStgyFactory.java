@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.boosting.convergence;
+package org.apache.ignite.ml.composition.boosting.convergence.simple;
 
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategyFactory;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -24,30 +26,23 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Factory for ConvergenceCheckStrategy.
+ * Factory for {@link SimpleCheckConvergenceStgy}.
  */
-public abstract class ConvergenceCheckStrategyFactory {
-    protected double precision;
-
-    public ConvergenceCheckStrategyFactory(double precision) {
-        this.precision = precision;
+public class SimpleCheckConvergenceStgyFactory extends ConvergenceCheckStrategyFactory {
+    /**
+     * Create an instance of SimpleCheckConvergenceStgyFactory.
+     */
+    public SimpleCheckConvergenceStgyFactory() {
+        super(0.0);
     }
 
-    /**
-     * Create an instance of ConvergenceCheckStrategy.
-     *
-     * @param sampleSize Sample size.
-     * @param externalLbToInternalMapping External label to internal mapping.
-     * @param lossGradient Loss gradient.
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @return ConvergenceCheckStrategyFactory instance.
-     */
-    public abstract <K,V> ConvergenceCheckStrategy<K,V> create(long sampleSize,
+    /** {@inheritDoc} */
+    @Override public <K, V> ConvergenceCheckStrategy<K, V> create(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping,
-        IgniteTriFunction<Long, Double, Double, Double> lossGradient,
-        DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor);
+        IgniteTriFunction<Long, Double, Double, Double> lossGradient, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return new SimpleCheckConvergenceStgy<>(sampleSize, externalLbToInternalMapping, lossGradient,
+            datasetBuilder, featureExtractor, lbExtractor);
+    }
 }

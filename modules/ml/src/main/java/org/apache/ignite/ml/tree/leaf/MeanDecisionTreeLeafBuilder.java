@@ -21,14 +21,14 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
 import org.apache.ignite.ml.tree.TreeFilter;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
 
 /**
  * Decision tree leaf node builder that chooses mean value as a leaf value.
  */
 public class MeanDecisionTreeLeafBuilder implements DecisionTreeLeafBuilder {
     /** {@inheritDoc} */
-    @Override public DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset,
+    @Override public DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeDataWithIndex> dataset,
         TreeFilter pred) {
         double[] aa = dataset.compute(part -> {
             double mean = 0;

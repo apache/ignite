@@ -19,7 +19,7 @@ package org.apache.ignite.ml.tree;
 
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasure;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureCalculator;
@@ -65,7 +65,7 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
 
     /** {@inheritDoc} */
     @Override protected ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(
-        Dataset<EmptyContext, DecisionTreeData> dataset) {
+        Dataset<EmptyContext, DecisionTreeDataWithIndex> dataset) {
 
         return new MSEImpurityMeasureCalculator(useIndex);
     }

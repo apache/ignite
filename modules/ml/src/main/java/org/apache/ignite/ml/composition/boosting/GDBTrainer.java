@@ -22,6 +22,8 @@ import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategyFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.simple.SimpleCheckConvergenceStgyFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -36,8 +38,8 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndexBuilder;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,7 +54,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
-public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
+public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Double> {
     /** Gradient step. */
     private final double gradientStep;
 
@@ -64,6 +66,9 @@ public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, D
      * current model prediction.
      */
     protected final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
+
+    /** Check convergence strategy factory. */
+    protected ConvergenceCheckStrategyFactory checkConvergenceStgyFactory = new SimpleCheckConvergenceStgyFactory();
 
     /**
      * Constructs GDBTrainer instance.
@@ -81,7 +86,7 @@ public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, D
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Model<Vector, Double> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -94,7 +99,6 @@ public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, D
 
         double[] compositionWeights = new double[cntOfIterations];
         Arrays.fill(compositionWeights, gradientStep);
-        WeightedPredictionsAggregator resAggregator = new WeightedPredictionsAggregator(compositionWeights, mean);
 
         long learningStartTs = System.currentTimeMillis();
 
@@ -107,11 +111,14 @@ public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, D
             .withLossGradient(lossGradient)
             .withSampleSize(sampleSize)
             .withMeanLabelValue(mean)
+            .withCheckConvergenceStgyFactory(checkConvergenceStgyFactory)
             .learnModels(datasetBuilder, featureExtractor, lbExtractor);
 
         double learningTime = (double)(System.currentTimeMillis() - learningStartTs) / 1000.0;
         environment.logger(getClass()).log(MLLogger.VerboseLevel.LOW, "The training time was %.2fs", learningTime);
 
+        double[] compositionWeightsCp = Arrays.copyOf(compositionWeights, models.size());
+        WeightedPredictionsAggregator resAggregator = new WeightedPredictionsAggregator(compositionWeightsCp, mean);
         return new ModelsComposition(models, resAggregator) {
             @Override public Double apply(Vector features) {
                 return internalLabelToExternal(super.apply(features));
@@ -160,9 +167,9 @@ public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, D
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        try (Dataset<EmptyContext, DecisionTreeData> dataset = builder.build(
+        try (Dataset<EmptyContext, DecisionTreeDataWithIndex> dataset = builder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, false)
+            new DecisionTreeDataWithIndexBuilder<>(featureExtractor, lbExtractor, false)
         )) {
             IgniteBiTuple<Double, Long> meanTuple = dataset.compute(
                 data -> {
@@ -187,6 +194,11 @@ public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, D
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public GDBTrainer withCheckConvergenceStgyFactory(ConvergenceCheckStrategyFactory factory) {
+        this.checkConvergenceStgyFactory = factory;
+        return this;
     }
 
     /**

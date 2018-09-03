@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasure;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureCalculator;
@@ -97,7 +97,7 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
 
     /** {@inheritDoc} */
     @Override protected ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
-        Dataset<EmptyContext, DecisionTreeData> dataset) {
+        Dataset<EmptyContext, DecisionTreeDataWithIndex> dataset) {
         Set<Double> labels = dataset.compute(part -> {
 
             if (part.getLabels() != null) {

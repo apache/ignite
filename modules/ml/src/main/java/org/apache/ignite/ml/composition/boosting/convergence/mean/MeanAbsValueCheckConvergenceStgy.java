@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.boosting.convergence;
+package org.apache.ignite.ml.composition.boosting.convergence.mean;
 
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
@@ -26,8 +27,8 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.structures.LabeledVectorSet;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 
 /**
  * Use mean value of errors for estimating error on dataset.
@@ -35,12 +36,12 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class MeanValueCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy<K,V> {
+public class MeanAbsValueCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy<K,V> {
     /** Serial version uid. */
     private static final long serialVersionUID = 8534776439755210864L;
 
     /**
-     * Creates an intance of MeanValueCheckConvergenceStgy.
+     * Creates an intance of MeanAbsValueCheckConvergenceStgy.
      *
      * @param sampleSize Sample size.
      * @param externalLbToInternalMapping External label to internal mapping.
@@ -49,7 +50,7 @@ public class MeanValueCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    public MeanValueCheckConvergenceStgy(long sampleSize,
+    public MeanAbsValueCheckConvergenceStgy(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping,
         IgniteTriFunction<Long, Double, Double, Double> lossGradient,
         DatasetBuilder<K, V> datasetBuilder,
@@ -61,17 +62,15 @@ public class MeanValueCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy
     }
 
     /** {@inheritDoc} */
-    @Override protected Double computeMeanErrorOnDataset(
-        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector<Vector, Double>>> dataset,
+    @Override protected Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
         ModelsComposition mdl) {
 
         IgniteBiTuple<Double, Long> sumAndCnt = dataset.compute(partition -> {
             Double sum = 0.0;
             Long cnt = 0L;
 
-            for(int i = 0; i < partition.rowSize(); i++) {
-                LabeledVector<Vector, Double> vec = partition.getRow(i);
-                sum += computeError(vec.features(), vec.label(), mdl);
+            for(int i = 0; i < partition.getFeatures().length; i++) {
+                sum += Math.abs(computeError(VectorUtils.of(partition.getFeatures()[i]), partition.getLabels()[i], mdl));
                 cnt++;
             }
 

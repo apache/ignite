@@ -27,9 +27,8 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 
 /**
  * Contains logic of error computing and convergence checking for Gradient Boosting algorithms.
@@ -81,6 +80,8 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
         IgniteBiFunction<K, V, Double> lbExtractor,
         double precision) {
 
+        assert precision < 1 && precision > 0;
+
         this.sampleSize = sampleSize;
         this.externalLbToInternalMapping = externalLbToInternalMapping;
         this.lossGradient = lossGradient;
@@ -95,16 +96,20 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
      * @return true if GDB is converged.
      */
     public boolean isConverged(ModelsComposition currMdl) {
-        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector<Vector, Double>>> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new LabeledDatasetPartitionDataBuilderOnHeap<>(featureExtractor, lbExtractor)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
         )) {
-            Double error = computeMeanErrorOnDataset(dataset, currMdl);
-            return error < precision || error.isNaN();
+            return isConverged(dataset, currMdl);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public boolean isConverged(Dataset<EmptyContext, ? extends DecisionTreeData> dataset, ModelsComposition currentMdl) {
+        Double error = computeMeanErrorOnDataset(dataset, currentMdl);
+        return error < precision || error.isNaN();
     }
 
     /**
@@ -115,7 +120,7 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
      * @return error mean value.
      */
     protected abstract Double computeMeanErrorOnDataset(
-        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector<Vector, Double>>> dataset,
+        Dataset<EmptyContext, ? extends DecisionTreeData> dataset,
         ModelsComposition mdl);
 
     /**

@@ -23,6 +23,8 @@ import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategyFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.simple.SimpleCheckConvergenceStgyFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -62,9 +64,12 @@ public class GDBLearningStrategy {
     /** Composition weights. */
     protected double[] compositionWeights;
 
+    /** Check convergence strategy factory. */
+    protected ConvergenceCheckStrategyFactory checkConvergenceStgyFactory = new SimpleCheckConvergenceStgyFactory();
+
     /**
-     * Implementation of gradient boosting iterations. At each step of iterations this algorithm
-     * build a regression model based on gradient of loss-function for current models composition.
+     * Implementation of gradient boosting iterations. At each step of iterations this algorithm build a regression
+     * model based on gradient of loss-function for current models composition.
      *
      * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
@@ -75,12 +80,18 @@ public class GDBLearningStrategy {
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         List<Model<Vector, Double>> models = new ArrayList<>();
+
+        ConvergenceCheckStrategy<K, V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
+            externalLbToInternalMapping, lossGradient, datasetBuilder, featureExtractor, lbExtractor);
+
         DatasetTrainer<? extends Model<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         for (int i = 0; i < cntOfIterations; i++) {
             double[] weights = Arrays.copyOf(compositionWeights, i);
 
             WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLabelValue);
             ModelsComposition currComposition = new ModelsComposition(models, aggregator);
+            if (convCheck.isConverged(currComposition))
+                break;
 
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
                 Double realAnswer = externalLbToInternalMapping.apply(lbExtractor.apply(k, v));
@@ -142,7 +153,8 @@ public class GDBLearningStrategy {
      *
      * @param buildBaseMdlTrainer Build base model trainer.
      */
-    public GDBLearningStrategy withBaseModelTrainerBuilder(IgniteSupplier<DatasetTrainer<? extends Model<Vector, Double>, Double>> buildBaseMdlTrainer) {
+    public GDBLearningStrategy withBaseModelTrainerBuilder(
+        IgniteSupplier<DatasetTrainer<? extends Model<Vector, Double>, Double>> buildBaseMdlTrainer) {
         this.baseMdlTrainerBuilder = buildBaseMdlTrainer;
         return this;
     }
@@ -174,6 +186,11 @@ public class GDBLearningStrategy {
      */
     public GDBLearningStrategy withCompositionWeights(double[] compositionWeights) {
         this.compositionWeights = compositionWeights;
+        return this;
+    }
+
+    public GDBLearningStrategy withCheckConvergenceStgyFactory(ConvergenceCheckStrategyFactory factory) {
+        this.checkConvergenceStgyFactory = factory;
         return this;
     }
 }

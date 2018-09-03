@@ -31,10 +31,10 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class DecisionTreeDataBuilder<K, V, C extends Serializable>
-    implements PartitionDataBuilder<K, V, C, DecisionTreeData> {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 6273736987424171813L;
+public class DecisionTreeDataWithIndexBuilder<K, V, C extends Serializable>
+    implements PartitionDataBuilder<K, V, C, DecisionTreeDataWithIndex> {
+    /** */
+    private static final long serialVersionUID = 3678784980215216039L;
 
     /** Function that extracts features from an {@code upstream} data. */
     private final IgniteBiFunction<K, V, Vector> featureExtractor;
@@ -42,20 +42,25 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
     /** Function that extracts labels from an {@code upstream} data. */
     private final IgniteBiFunction<K, V, Double> lbExtractor;
 
+    /** Build index. */
+    private final boolean buildIndex;
+
     /**
      * Constructs a new instance of decision tree data builder.
      *
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
      * @param lbExtractor Function that extracts labels from an {@code upstream} data.
+     * @param buildIdx Build index.
      */
-    public DecisionTreeDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+    public DecisionTreeDataWithIndexBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor, boolean buildIdx) {
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
+        this.buildIndex = buildIdx;
     }
 
     /** {@inheritDoc} */
-    @Override public DecisionTreeData build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
+    @Override public DecisionTreeDataWithIndex build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
         double[][] features = new double[Math.toIntExact(upstreamDataSize)][];
         double[] labels = new double[Math.toIntExact(upstreamDataSize)];
 
@@ -70,6 +75,6 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
             ptr++;
         }
 
-        return new DecisionTreeData(features, labels);
+        return new DecisionTreeDataWithIndex(features, labels, buildIndex);
     }
 }

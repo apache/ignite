@@ -21,7 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.TreeFilter;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
 import org.apache.ignite.ml.tree.data.TreeDataIndex;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 
@@ -50,7 +50,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @param data Features and labels.
      * @return Impurity measures as an array of {@link StepFunction} (for every column).
      */
-    public abstract StepFunction<T>[] calculate(DecisionTreeData data, TreeFilter filter, int depth);
+    public abstract StepFunction<T>[] calculate(DecisionTreeDataWithIndex data, TreeFilter filter, int depth);
 
 
     /**
@@ -60,7 +60,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @param idx Index.
      * @return Columns count in current dataset.
      */
-    protected int columnsCount(DecisionTreeData data, TreeDataIndex idx) {
+    protected int columnsCount(DecisionTreeDataWithIndex data, TreeDataIndex idx) {
         return useIndex ? idx.columnsCount() : data.getFeatures()[0].length;
     }
 
@@ -71,7 +71,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @param idx Index.
      * @return rows count in current dataset
      */
-    protected int rowsCount(DecisionTreeData data, TreeDataIndex idx) {
+    protected int rowsCount(DecisionTreeDataWithIndex data, TreeDataIndex idx) {
         return useIndex ? idx.rowsCount() : data.getFeatures().length;
     }
 
@@ -84,7 +84,7 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @param k K-th statistic.
      * @return label value in according to kth order statistic
      */
-    protected double getLabelValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
+    protected double getLabelValue(DecisionTreeDataWithIndex data, TreeDataIndex idx, int featureId, int k) {
         return useIndex ? idx.labelInSortedOrder(k, featureId) : data.getLabels()[k];
     }
 
@@ -97,11 +97,11 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      * @param k K-th statistic.
      * @return feature value in according to kth order statistic.
      */
-    protected double getFeatureValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
+    protected double getFeatureValue(DecisionTreeDataWithIndex data, TreeDataIndex idx, int featureId, int k) {
         return useIndex ? idx.featureInSortedOrder(k, featureId) : data.getFeatures()[k][featureId];
     }
 
-    protected Vector getFeatureValues(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
+    protected Vector getFeatureValues(DecisionTreeDataWithIndex data, TreeDataIndex idx, int featureId, int k) {
         return VectorUtils.of(useIndex ? idx.featuresInSortedOrder(k, featureId) : data.getFeatures()[k]);
     }
 }
