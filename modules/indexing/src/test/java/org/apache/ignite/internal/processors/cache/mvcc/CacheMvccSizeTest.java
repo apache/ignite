@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
@@ -32,6 +34,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 import static org.apache.ignite.cache.CachePeekMode.BACKUP;
@@ -39,8 +42,6 @@ import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 /**
  *
  */
-// TODO: Concurrent tests
-// TODO: Tests for cache API: failing tests or separate ticket
 public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -196,6 +197,54 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
                 personTbl.query(q("delete from person where id = 1"));
                 personTbl.query(q("merge into person(id, name) values(1, 'a')"));
             }, true, 0);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteConcurrent() throws Exception {
+        startGridsMultiThreaded(2);
+
+        IgniteCache<?, ?> tbl0 = createTable(grid(0));
+
+        SqlFieldsQuery insert = new SqlFieldsQuery("insert into person(id, name) values(?, 'a')");
+
+        SqlFieldsQuery delete = new SqlFieldsQuery("delete from person where id = ?");
+
+        CompletableFuture<Integer> insertFut = CompletableFuture.supplyAsync(() -> {
+            int cnt = 0;
+
+            for (int i = 0; i < 1000; i++)
+                cnt += update(insert.setArgs(ThreadLocalRandom.current().nextInt(10)), tbl0);
+
+            return cnt;
+        });
+
+        CompletableFuture<Integer> deleteFut = CompletableFuture.supplyAsync(() -> {
+            int cnt = 0;
+
+            for (int i = 0; i < 1000; i++)
+                cnt += update(delete.setArgs(ThreadLocalRandom.current().nextInt(10)), tbl0);
+
+            return cnt;
+        });
+
+        int expSize = insertFut.join() - deleteFut.join();
+
+        assertEquals(expSize, tbl0.size());
+        assertEquals(expSize, table(grid(1)).size());
+
+        assertEquals(expSize, tbl0.size(BACKUP));
+        assertEquals(expSize, table(grid(1)).size(BACKUP));
+    }
+
+    /** */
+    private int update(SqlFieldsQuery qry, IgniteCache<?, ?> cache) {
+        try {
+            return Integer.parseInt(cache.query(qry).getAll().get(0).get(0).toString());
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     /**
