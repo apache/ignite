@@ -44,7 +44,6 @@ import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -108,10 +107,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
-import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
@@ -142,9 +140,6 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
     /** */
     private static final Waiter LOCAL_TRANSACTION_MARKER = new LocalTransactionMarker();
-
-    /** For tests only. */
-    public static final String DISABLE_MVCC_SUPPORT_SYSTEM_PROPERTY = "ATTR_MVCC_SUPPORTED_DISABLE";
 
     /** Dummy tx for vacuum. */
     private static final IgniteInternalTx DUMMY_TX = new GridNearTxLocal();
@@ -240,9 +235,6 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (!"true".equals(System.getProperty(DISABLE_MVCC_SUPPORT_SYSTEM_PROPERTY)))
-            ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_MVCC_SUPPORTED, Boolean.TRUE);
-
         ctx.event().addLocalEventListener(new CacheCoordinatorNodeFailListener(),
             EVT_NODE_FAILED, EVT_NODE_LEFT);
 
@@ -293,17 +285,6 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     }
 
     /** {@inheritDoc} */
-    @Override public void ensureStarted() throws IgniteCheckedException {
-        if (!ctx.clientNode() && txLog == null) {
-            assert mvccEnabled && mvccSupported;
-
-            txLog = new TxLog(ctx, ctx.cache().context().database());
-
-            startVacuumWorkers();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         if (mvccEnabled && node.version().compareToIgnoreTimestamp(MVCC_SUPPORTED_SINCE) < 0) {
             String errMsg = "Failed to add node to topology because MVCC is enabled on the cluster, but " +
@@ -313,6 +294,17 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void ensureStarted() throws IgniteCheckedException {
+        if (!ctx.clientNode() && txLog == null) {
+            assert mvccEnabled && mvccSupported;
+
+            txLog = new TxLog(ctx, ctx.cache().context().database());
+
+            startVacuumWorkers();
+        }
     }
 
     /** {@inheritDoc} */
@@ -354,34 +346,20 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     }
 
     /** {@inheritDoc} */
-    @Override public DiscoveryDataExchangeType discoveryDataType() {
-        return DiscoveryDataExchangeType.CACHE_CRD_PROC;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer,
         @Nullable DiscoveryCustomMessage customMsg) {
+        if (evtType == EVT_NODE_METRICS_UPDATED)
+            return;
 
-        switch (evtType) {
-            case EVT_DISCOVERY_CUSTOM_EVT:
-                checkMvccCacheStarted(customMsg);
-
-                break;
-            case EVT_NODE_JOINED:
-            case EVT_NODE_LEFT:
-            case EVT_NODE_FAILED:
-            case EVT_NODE_SEGMENTED:
-            case EVT_CLIENT_NODE_DISCONNECTED:
-            case EVT_CLIENT_NODE_RECONNECTED:
-                checkMvccSupported(nodes);
-
-                assignMvccCoordinator(evtType, nodes, topVer);
-        }
+        if (evtType == EVT_DISCOVERY_CUSTOM_EVT)
+            checkMvccCacheStarted(customMsg);
+        else
+            assignMvccCoordinator(evtType, nodes, topVer);
     }
 
     /** {@inheritDoc} */
     @Override public void onExchangeStart(MvccCoordinator mvccCrd, ExchangeContext exchCtx, ClusterNode exchCrd) {
-        if (!exchCtx.newMvccCoordinator() || !mvccEnabled)
+        if (!exchCtx.newMvccCoordinator())
             return;
 
         GridLongList activeQryTrackers = collectActiveQueryTrackers();
@@ -421,7 +399,7 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
             log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
                 ", crdVer=" + crdVer + ']');
 
-            prevCrdQueries.init(activeQueries, discoCache, ctx.discovery());
+            prevCrdQueries.init(activeQueries, F.view(discoCache.allNodes(), this::supportsMvcc), ctx.discovery());
 
             initFut.onDone();
         }
@@ -825,6 +803,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
     /** */
     private void assignMvccCoordinator(int evtType, Collection<ClusterNode> nodes, long topVer) {
+        checkMvccSupported(nodes);
+
         MvccCoordinator crd;
 
         if (evtType == EVT_NODE_SEGMENTED || evtType == EVT_CLIENT_NODE_DISCONNECTED)
@@ -845,7 +825,7 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
                 else {
                     // Expect nodes are sorted by order.
                     for (ClusterNode node : nodes) {
-                        if (!node.isClient()) {
+                        if (!node.isClient() && supportsMvcc(node)) {
                             crdNode = node;
 
                             break;
@@ -853,7 +833,10 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
                     }
                 }
 
-                crd = crdNode != null ? new MvccCoordinator(crdNode.id(), coordinatorVersion(topVer), new AffinityTopologyVersion(topVer, 0)) : null;
+                crd = crdNode != null ? new MvccCoordinator(
+                    crdNode.id(),
+                    crdNode.order() + ctx.discovery().gridStartTime(),
+                    new AffinityTopologyVersion(topVer, 0)) : null;
 
                 if (crd != null) {
                     if (log.isInfoEnabled())
@@ -878,7 +861,7 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
         boolean res = true, was = mvccSupported;
 
         for (ClusterNode node : nodes) {
-            if (node.version().compareToIgnoreTimestamp(MVCC_SUPPORTED_SINCE) < 0) {
+            if (!supportsMvcc(node)) {
                 res = false;
 
                 break;
@@ -887,6 +870,11 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
         if (was != res)
             mvccSupported = res;
+    }
+
+    /** */
+    private boolean supportsMvcc(ClusterNode node) {
+        return node.version().compareToIgnoreTimestamp(MVCC_SUPPORTED_SINCE) >= 0;
     }
 
     /** */
@@ -907,14 +895,6 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
                 }
             }
         }
-    }
-
-    /**
-     * @param topVer Topology version.
-     * @return Coordinator version.
-     */
-    private long coordinatorVersion(long topVer) {
-        return topVer + ctx.discovery().gridStartTime();
     }
 
     /**
