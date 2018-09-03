@@ -272,6 +272,8 @@ public class GridCacheSharedContext<K, V> {
 
         boolean success = false;
 
+        long ttime = System.currentTimeMillis();
+
         try {
             for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs) {
                 long time = System.currentTimeMillis();
@@ -285,6 +287,9 @@ public class GridCacheSharedContext<K, V> {
             success = true;
         }
         finally {
+            if (msgLog.isInfoEnabled())
+                msgLog.info("Activation took " + (System.currentTimeMillis() - ttime) + " ms.");
+
             if (!success) {
                 if (!kernalCtx.clientNode())
                     dbMgr.unLock();

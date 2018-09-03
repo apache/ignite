@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -483,6 +482,17 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         }
     }
 
+    public void testSimpleActivation1() throws Exception {
+        persistence = true;
+
+        IgniteEx crd = (IgniteEx) startGrids(3);
+
+        client = true;
+
+        IgniteEx clnt = startGrid(3);
+
+        clnt.cluster().active(true);
+    }
 
     /**
      * Wait for Zookeeper testing cluster ready for communications.

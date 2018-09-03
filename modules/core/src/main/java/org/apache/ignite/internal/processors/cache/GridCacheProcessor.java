@@ -1914,8 +1914,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ccfg.setNearConfiguration(reqNearCfg);
         }
 
+        long time = System.currentTimeMillis();
+
         if (sharedCtx.pageStore() != null && affNode)
             sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData());
+
+        if (log.isInfoEnabled())
+            log.info("Create partition files for " + desc.cacheName() + " took " + (System.currentTimeMillis() - time) + " ms.");
 
         String grpName = startCfg.getGroupName();
 

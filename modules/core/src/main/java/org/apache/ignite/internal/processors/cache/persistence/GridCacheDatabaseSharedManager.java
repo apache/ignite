@@ -824,12 +824,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
+            long time = System.currentTimeMillis();
+
             if (!F.isEmpty(cachesToStart)) {
                 for (DynamicCacheDescriptor desc : cachesToStart) {
                     if (CU.affinityNode(cctx.localNode(), desc.cacheConfiguration().getNodeFilter()))
                         storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
                 }
             }
+
+            if (log.isInfoEnabled())
+                log.info("Create partition files took " + (System.currentTimeMillis() - time) + " ms.");
 
             CheckpointStatus status = readCheckpointStatus();
 
@@ -841,7 +846,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
             );
 
-            long time = System.currentTimeMillis();
+            time = System.currentTimeMillis();
 
             WALPointer restore = restoreMemory(status);
 
@@ -873,7 +878,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (log.isInfoEnabled())
                 log.info("Finished node start marker finished in " + (System.currentTimeMillis() - time) + " ms.");
 
+            time = System.currentTimeMillis();
+
             notifyMetastorageReadyForReadWrite();
+
+            if (log.isInfoEnabled())
+                log.info("Notyfing metastorage took " + (System.currentTimeMillis() - time) + " ms.");
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, StorageException.class, PersistentStorageIOException.class, IOException.class))

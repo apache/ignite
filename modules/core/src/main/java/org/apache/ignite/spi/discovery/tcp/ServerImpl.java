@@ -5555,8 +5555,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (node != null) {
                     try {
+                        long sertime = System.currentTimeMillis();
+
                         DiscoverySpiCustomMessage msgObj = msg.message(spi.marshaller(),
                             U.resolveClassLoader(spi.ignite().configuration()));
+
+                        if (log.isInfoEnabled())
+                            log.info("Unmarshalling custom event " + msg.id() + " took " + (System.currentTimeMillis() - sertime) + " ms.");
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
@@ -5575,7 +5580,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (log.isInfoEnabled())
-                log.info("[TIME] Notifying about message " + msg.id() + " took " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TCP-TIME] Notifying about message " + msg.id() + " took " + (System.currentTimeMillis() - time) + " ms.");
         }
 
         /**

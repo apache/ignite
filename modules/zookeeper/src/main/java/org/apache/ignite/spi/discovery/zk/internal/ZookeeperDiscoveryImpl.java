@@ -2080,8 +2080,8 @@ public class ZookeeperDiscoveryImpl {
 
             prevSavedEvtsTopVer = rtState.evtsData.topVer;
         }
-        else if (log.isDebugEnabled()) {
-            log.debug("Discovery coordinator saved new topology events [topVer=" + rtState.evtsData.topVer +
+        else if (log.isInfoEnabled()) {
+            log.info("Discovery coordinator saved new topology events [topVer=" + rtState.evtsData.topVer +
                 ", size=" + evtsBytes.length +
                 ", evts=" + rtState.evtsData.evts.size() +
                 ", lastEvt=" + rtState.evtsData.evtIdGen +
@@ -2379,7 +2379,14 @@ public class ZookeeperDiscoveryImpl {
             ZookeeperClusterNode sndNode = rtState.top.nodesById.get(sndNodeId);
 
             if (sndNode != null) {
+                long time = System.currentTimeMillis();
+
                 byte[] evtBytes = readCustomEventData(zkClient, evtPath, sndNodeId);
+
+                if (log.isInfoEnabled())
+                    log.info("Reading custom event data took " + (System.currentTimeMillis() - time) + " ms.");
+
+                time = System.currentTimeMillis();
 
                 DiscoverySpiCustomMessage msg;
 
@@ -2393,6 +2400,9 @@ public class ZookeeperDiscoveryImpl {
 
                     continue;
                 }
+
+                if (log.isInfoEnabled())
+                    log.info("Unmarashalling custom event took " + (System.currentTimeMillis() - time) + " ms.");
 
                 generateAndProcessCustomEventOnCoordinator(evtPath, sndNode, msg);
             }
@@ -2476,15 +2486,20 @@ public class ZookeeperDiscoveryImpl {
 
         evtData.resolvedMsg = msg;
 
-        if (log.isDebugEnabled())
-            log.debug("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
+        if (log.isInfoEnabled())
+            log.info("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
 
         boolean fastStopProcess = false;
 
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
         else {
+            long time = System.currentTimeMillis();
+
             notifyCustomEvent(evtData, msg);
+
+            if (log.isInfoEnabled())
+                log.info("[ZK] Notyfing discovery took " + (System.currentTimeMillis() - time) + " ms.");
 
             if (msg.stopProcess()) {
                 if (log.isDebugEnabled())
@@ -2552,8 +2567,10 @@ public class ZookeeperDiscoveryImpl {
      * @param evtPath Event path.
      */
     private void deleteCustomEventDataAsync(ZookeeperClient zkClient, String evtPath) {
-        if (log.isDebugEnabled())
-            log.debug("Delete custom event data: " + evtPath);
+        if (log.isInfoEnabled())
+            log.info("Delete custom event data: " + evtPath);
+
+        long time = System.currentTimeMillis();
 
         String prefix = ZkIgnitePaths.customEventPrefix(evtPath);
         UUID sndNodeId = ZkIgnitePaths.customEventSendNodeId(evtPath);
@@ -2570,6 +2587,9 @@ public class ZookeeperDiscoveryImpl {
         }
 
         zkClient.deleteIfExistsAsync(zkPaths.customEvtsDir + "/" + evtPath);
+
+        if (log.isInfoEnabled())
+            log.info("Deleting custom event data took in: " + zkPaths.customEvtsDir + " took " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**
@@ -2628,10 +2648,12 @@ public class ZookeeperDiscoveryImpl {
         boolean evtProcessed = false;
         boolean updateNodeInfo = false;
 
+        long time = System.currentTimeMillis();
+
         try {
             for (ZkDiscoveryEventData evtData : evts.tailMap(rtState.locNodeInfo.lastProcEvt, false).values()) {
-                if (log.isDebugEnabled())
-                    log.debug("New discovery event data [evt=" + evtData + ", evtsHist=" + evts.size() + ']');
+                if (log.isInfoEnabled())
+                    log.info("New discovery event data [evt=" + evtData + ", evtsHist=" + evts.size() + ']');
 
                 switch (evtData.eventType()) {
                     case ZkDiscoveryEventData.ZK_EVT_NODE_JOIN: {
@@ -2664,6 +2686,8 @@ public class ZookeeperDiscoveryImpl {
 
                         DiscoverySpiCustomMessage msg;
 
+                        time = System.currentTimeMillis();
+
                         if (rtState.crd) {
                             assert evtData0.resolvedMsg != null : evtData0;
 
@@ -2691,6 +2715,9 @@ public class ZookeeperDiscoveryImpl {
 
                             evtData0.resolvedMsg = msg;
                         }
+
+                        if (log.isInfoEnabled())
+                            log.info("Unmarshalling new custom event took " + (System.currentTimeMillis() - time) + " ms.");
 
                         if (msg instanceof ZkInternalMessage)
                             processInternalMessage(evtData0, (ZkInternalMessage)msg);
@@ -2742,10 +2769,18 @@ public class ZookeeperDiscoveryImpl {
             throw e;
         }
 
+        long htime = System.currentTimeMillis();
+
         if (rtState.crd)
             handleProcessedEvents("procEvt");
         else
             onEventProcessed(rtState, updateNodeInfo, evtProcessed);
+
+        if (log.isInfoEnabled())
+            log.info("Handling processing new events took " + (System.currentTimeMillis() - htime) + " ms.");
+
+        if (log.isInfoEnabled())
+            log.info("Processing new events finished in " + (System.currentTimeMillis() - time) + " ms.");
 
         ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
 
@@ -2783,6 +2818,8 @@ public class ZookeeperDiscoveryImpl {
                     joiningData = joinedEvtData.joiningNodeData;
                 }
                 else {
+                    long time = System.currentTimeMillis();
+
                     joiningData = unmarshalJoinData(joinedEvtData.nodeId, joinedEvtData.joinDataPrefixId);
 
                     DiscoveryDataBag dataBag = new DiscoveryDataBag(joinedEvtData.nodeId, joiningData.node().isClient());
@@ -2790,12 +2827,20 @@ public class ZookeeperDiscoveryImpl {
                     dataBag.joiningNodeData(joiningData.discoveryData());
 
                     exchange.onExchange(dataBag);
+
+                    if (log.isInfoEnabled())
+                        log.info("Process on exchange local join took " + (System.currentTimeMillis() - time) + " ms.");
                 }
 
                 if (joinedEvtData.secSubjPartCnt > 0 && joiningData.node().attribute(ATTR_SECURITY_SUBJECT_V2) == null)
                     readAndInitSecuritySubject(joiningData.node(), joinedEvtData);
 
+                long time = System.currentTimeMillis();
+
                 notifyNodeJoin(joinedEvtData, joiningData);
+
+                if (log.isInfoEnabled())
+                    log.info("Notyfing discovery on NODE JOIN took " + (System.currentTimeMillis() - time) + " ms.");
             }
         }
 
@@ -2816,8 +2861,8 @@ public class ZookeeperDiscoveryImpl {
             if (updateNodeInfo) {
                 assert rtState.locNodeZkPath != null;
 
-                if (log.isDebugEnabled())
-                    log.debug("Update processed events: " + rtState.locNodeInfo.lastProcEvt);
+                if (log.isInfoEnabled())
+                    log.info("Update processed events: " + rtState.locNodeInfo.lastProcEvt);
 
                 updateProcessedEvents(rtState);
 
@@ -3416,9 +3461,6 @@ public class ZookeeperDiscoveryImpl {
     private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, final DiscoverySpiCustomMessage msg) {
         assert !(msg instanceof ZkInternalMessage) : msg;
 
-        if (log.isDebugEnabled())
-            log.debug(" [topVer=" + evtData.topologyVersion() + ", msg=" + msg + ']');
-
         final ZookeeperClusterNode sndNode = rtState.top.nodesById.get(evtData.sndNodeId);
 
         assert sndNode != null : evtData;
@@ -3557,6 +3599,8 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void handleProcessedEvents(String ctx) throws Exception {
+        long time = System.currentTimeMillis();
+
         Iterator<ZkDiscoveryEventData> it = rtState.evtsData.evts.values().iterator();
 
         List<ZkDiscoveryCustomEventData> newEvts = null;
@@ -3616,6 +3660,9 @@ public class ZookeeperDiscoveryImpl {
             else
                 prevEvtData = evtData;
         }
+
+        if (log.isInfoEnabled())
+            log.info("Handling processed events took " + (System.currentTimeMillis() - time) + " ms.");
 
         if (newEvts != null) {
             Collection<ZookeeperClusterNode> nodes = rtState.top.nodesByOrder.values();
@@ -3759,8 +3806,8 @@ public class ZookeeperDiscoveryImpl {
      */
     @Nullable private DiscoverySpiCustomMessage handleProcessedCustomEvent(String ctx, ZkDiscoveryCustomEventData evtData)
         throws Exception {
-        if (log.isDebugEnabled())
-            log.debug("All nodes processed custom event [ctx=" + ctx + ", evtData=" + evtData + ']');
+        if (log.isInfoEnabled())
+            log.info("All nodes processed custom event [ctx=" + ctx + ", evtData=" + evtData + ']');
 
         if (!evtData.ackEvent()) {
             if (evtData.evtPath != null)
@@ -4069,6 +4116,9 @@ public class ZookeeperDiscoveryImpl {
         @Override public void process0(WatchedEvent evt) {
             if (evt.getType() == Event.EventType.NodeDataChanged) {
                 if (evt.getPath().equals(zkPaths.evtsPath)) {
+                    if (log.isInfoEnabled())
+                        log.info("New event for: " + evt.getPath());
+
                     if (!rtState.crd)
                         rtState.zkClient.getDataAsync(evt.getPath(), this, this);
                 }
@@ -4076,10 +4126,18 @@ public class ZookeeperDiscoveryImpl {
                     U.warn(log, "Received NodeDataChanged for unexpected path: " + evt.getPath());
             }
             else if (evt.getType() == Event.EventType.NodeChildrenChanged) {
-                if (evt.getPath().equals(zkPaths.aliveNodesDir))
+                if (evt.getPath().equals(zkPaths.aliveNodesDir)) {
+                    if (log.isInfoEnabled())
+                        log.info("Alives path has changes -> " + evt.getPath());
+
                     rtState.zkClient.getChildrenAsync(evt.getPath(), this, this);
-                else if (evt.getPath().equals(zkPaths.customEvtsDir))
+                }
+                else if (evt.getPath().equals(zkPaths.customEvtsDir)) {
+                    if (log.isInfoEnabled())
+                        log.info("Custom events path has changes -> " + evt.getPath());
+
                     rtState.zkClient.getChildrenAsync(evt.getPath(), this, this);
+                }
                 else
                     U.warn(log, "Received NodeChildrenChanged for unexpected path: " + evt.getPath());
             }
@@ -4093,10 +4151,18 @@ public class ZookeeperDiscoveryImpl {
             try {
                 assert rc == 0 : KeeperException.Code.get(rc);
 
-                if (path.equals(zkPaths.aliveNodesDir))
+                if (path.equals(zkPaths.aliveNodesDir)) {
+                    if (log.isInfoEnabled())
+                        log.info("Generate topology events for " + path);
+
                     generateTopologyEvents(children);
-                else if (path.equals(zkPaths.customEvtsDir))
+                }
+                else if (path.equals(zkPaths.customEvtsDir)) {
+                    if (log.isInfoEnabled())
+                        log.info("Generate custom events for " + path);
+
                     generateCustomEvents(children);
+                }
                 else
                     U.warn(log, "Children callback for unexpected path: " + path);
 
