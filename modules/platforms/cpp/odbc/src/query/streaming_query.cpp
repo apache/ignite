@@ -40,8 +40,7 @@ namespace ignite
                 batchSize(cmd.GetBatchSize()),
                 order(0),
                 enabled(true),
-                currentBatch(),
-                responseBuffer(1024)
+                currentBatch()
             {
                 // No-op.
             }
@@ -72,7 +71,7 @@ namespace ignite
             {
                 if (!enabled)
                 {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not enabled.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Streaming was not enabled.");
 
                     return SqlResult::AI_ERROR;
                 }
@@ -84,7 +83,7 @@ namespace ignite
             {
                 if (!enabled)
                 {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not enabled.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Streaming was not enabled.");
 
                     return SqlResult::AI_ERROR;
                 }
@@ -153,8 +152,6 @@ namespace ignite
                 StreamingBatchRequest req(schema, currentBatch, last);
                 Response rsp;
 
-                currentBatch.Synchronize();
-
                 try
                 {
                     connection.SyncMessage(req, rsp);
@@ -192,8 +189,6 @@ namespace ignite
 
                 StreamingBatchOrderedRequest req(schema, currentBatch, last, order);
                 StreamingBatchOrderedResponse rsp;
-
-                currentBatch.Synchronize();
 
                 try
                 {

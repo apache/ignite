@@ -187,9 +187,6 @@ namespace ignite
 
                 /** Current batch. */
                 streaming::StreamingBatch currentBatch;
-
-                /** Current response. */
-                impl::interop::InteropUnpooledMemory responseBuffer;
             };
         }
     }

@@ -286,7 +286,10 @@ namespace ignite
 
             impl::interop::InteropOutputStream* stream = writer.GetStream();
 
-            stream->WriteInt8Array(batch.GetData(), batch.GetDataLength());
+            writer.WriteInt32(batch.GetSize());
+
+            if (batch.GetSize() != 0)
+                stream->WriteInt8Array(batch.GetData(), batch.GetDataLength());
 
             writer.WriteBool(last);
         }
@@ -314,7 +317,10 @@ namespace ignite
 
             impl::interop::InteropOutputStream* stream = writer.GetStream();
 
-            stream->WriteInt8Array(batch.GetData(), batch.GetDataLength());
+            writer.WriteInt32(batch.GetSize());
+
+            if (batch.GetSize() != 0)
+                stream->WriteInt8Array(batch.GetData(), batch.GetDataLength());
 
             writer.WriteBool(last);
             writer.WriteInt64(order);

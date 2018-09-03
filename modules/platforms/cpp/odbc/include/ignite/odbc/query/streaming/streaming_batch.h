@@ -70,18 +70,13 @@ namespace ignite
                     void Clear();
 
                     /**
-                     * Prepare data for flushing.
-                     */
-                    void Synchronize();
-
-                    /**
                      * Get data.
                      *
                      * @return Data.
                      */
                     const int8_t* GetData() const
                     {
-                        return data.Get()->Data();
+                        return data.Data();
                     }
 
                     /**
@@ -91,7 +86,7 @@ namespace ignite
                      */
                     int32_t GetDataLength() const
                     {
-                        return data.Get()->Length();
+                        return data.Length();
                     }
 
                     /**
@@ -114,7 +109,7 @@ namespace ignite
                     int32_t size;
 
                     /** Batch data. */
-                    common::concurrent::SharedPointer<impl::interop::InteropMemory> data;
+                    impl::interop::InteropUnpooledMemory data;
                 };
             }
         }

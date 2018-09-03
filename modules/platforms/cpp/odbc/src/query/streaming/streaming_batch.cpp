@@ -21,12 +21,6 @@
 #include "ignite/odbc/app/parameter_set.h"
 #include "ignite/odbc/query/streaming/streaming_batch.h"
 
-namespace
-{
-    // Size field position
-    enum { SIZE_POS = 0 };
-}
-
 namespace ignite
 {
     namespace odbc
@@ -38,7 +32,7 @@ namespace ignite
                 StreamingBatch::StreamingBatch() :
                     currentSql(),
                     size(0),
-                    data(new impl::interop::InteropUnpooledMemory(1024 * 16))
+                    data(1024 * 16)
                 {
                     // No-op.
                 }
@@ -50,19 +44,11 @@ namespace ignite
 
                 void StreamingBatch::AddRow(const std::string& sql, const app::ParameterSet& params)
                 {
-                    impl::interop::InteropOutputStream out(data.Get());
+                    impl::interop::InteropOutputStream out(&data);
 
-                    out.Position(data.Get()->Length());
+                    out.Position(data.Length());
 
                     impl::binary::BinaryWriterImpl writer(&out, 0);
-
-                    if (size == 0)
-                    {
-                        // Reserving space for the size of the batch.
-                        int32_t lenPos = out.Reserve(4);
-
-                        assert(lenPos == SIZE_POS);
-                    }
 
                     if (currentSql != sql)
                     {
@@ -85,14 +71,7 @@ namespace ignite
 
                     size = 0;
 
-                    data.Get()->Length(0);
-                }
-
-                void StreamingBatch::Synchronize()
-                {
-                    impl::interop::InteropOutputStream out(data.Get());
-
-                    out.WriteInt32(SIZE_POS, size);
+                    data.Length(0);
                 }
             }
         }
