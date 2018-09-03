@@ -244,14 +244,14 @@ BOOST_AUTO_TEST_CASE(TestStreamingAllOptions)
 
     BOOST_CHECK_EQUAL(cache.Size(), 0);
 
-    InsertTestStrings(0, 1000);
+    InsertTestStrings(0, 512);
 
     res = ExecQuery("set streaming off");
 
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    BOOST_CHECK_EQUAL(cache.Size(), 1000);
+    BOOST_CHECK_EQUAL(cache.Size(), 512);
 }
 
 BOOST_AUTO_TEST_CASE(TestStreamingNotAllowedOverwrite)
