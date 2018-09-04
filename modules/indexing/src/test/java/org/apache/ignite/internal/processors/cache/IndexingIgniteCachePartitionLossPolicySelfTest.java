@@ -71,14 +71,16 @@ public class IndexingIgniteCachePartitionLossPolicySelfTest extends IgniteCacheP
         // 1. Check query against all partitions.
         validateQuery0(safe, node, false);
 
-        if (execLocQry)
-            validateQuery0(safe, node, true);
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-7039
+//        if (execLocQry)
+//            validateQuery0(safe, node, true);
 
         // 2. Check query against LOST partition.
         validateQuery0(safe, node, false, part);
 
-        if (execLocQry)
-            validateQuery0(safe, node, true, part);
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-7039
+//        if (execLocQry)
+//            validateQuery0(safe, node, true, part);
 
         // 3. Check query on remaining partition.
         if (remainingPart != null) {
@@ -110,18 +112,8 @@ public class IndexingIgniteCachePartitionLossPolicySelfTest extends IgniteCacheP
             }
         }
         else {
-            executeQuery(node);
+            executeQuery(node, loc, parts);
         }
-    }
-
-    /**
-     * Execute SQL query on a given node.
-     *
-     * @param node Node.
-     * @param parts Partitions.
-     */
-    private static void executeQuery(Ignite node, int... parts) {
-        executeQuery(node, false, parts);
     }
 
     /**
