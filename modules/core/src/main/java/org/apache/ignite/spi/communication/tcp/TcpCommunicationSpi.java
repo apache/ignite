@@ -4661,6 +4661,63 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
+     * Context initialization timeout message
+     */
+    @SuppressWarnings("PublicInnerClass")
+    public static class InitTimeoutMessage implements Message {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        public static InitTimeoutMessage getInstance() {
+            return SingletonHandler.INSTANCE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+            try {
+                buf.put(INIT_TIMEOUT_MSG_TYPE);
+                return true;
+            }
+            catch (BufferOverflowException ex) {
+                return false;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public short directType() {
+            return INIT_TIMEOUT_MSG_TYPE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(InitTimeoutMessage.class, this);
+        }
+
+        private static final class SingletonHandler {
+
+            private static final InitTimeoutMessage INSTANCE = new InitTimeoutMessage();
+        }
+
+    }
+
+     /**
      *
      */
     private class ConnectGateway {
@@ -4855,62 +4912,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** {@inheritDoc} */
         @Override public long getConnectTimeout() {
             return TcpCommunicationSpi.this.getConnectTimeout();
-        }
-    }
-
-    /**
-     * Context initialization timeout message
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class InitTimeoutMessage implements Message {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        public static InitTimeoutMessage getInstance() {
-            return SingletonHandler.INSTANCE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            try {
-                buf.put(INIT_TIMEOUT_MSG_TYPE);
-                return true;
-            }
-            catch (BufferOverflowException ex) {
-                return false;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte directType() {
-            return INIT_TIMEOUT_MSG_TYPE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(InitTimeoutMessage.class, this);
-        }
-
-        private static final class SingletonHandler {
-
-            private static final InitTimeoutMessage INSTANCE = new InitTimeoutMessage();
         }
 
         /** {@inheritDoc} */
