@@ -203,7 +203,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                         centroidStat.put(lb, 1);
                         res.centroidStat.put(centroidIdx, centroidStat);
                     } else {
-                        int cnt = centroidStat.containsKey(lb) ? centroidStat.get(lb) : 0;
+                        int cnt = centroidStat.getOrDefault(lb, 0);
                         centroidStat.put(lb, cnt + 1);
                     }
 

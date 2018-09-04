@@ -300,10 +300,12 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
             return this;
         }
 
+        /**
+         * @return centroid statistics.
+         */
         public ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> getCentroidStat() {
             return centroidStat;
         }
-
     }
 
     /**
