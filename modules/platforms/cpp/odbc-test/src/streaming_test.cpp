@@ -562,7 +562,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingDifferentStatements)
 
 BOOST_AUTO_TEST_CASE(TestStreamingManyObjects)
 {
-    enum { NUM = 100000 };
+    const static int32_t OBJECT_NUM = 100000;
 
     Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
 
@@ -571,7 +571,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingManyObjects)
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    InsertTestStrings(0, NUM);
+    InsertTestStrings(0, OBJECT_NUM);
 
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -581,9 +581,9 @@ BOOST_AUTO_TEST_CASE(TestStreamingManyObjects)
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    BOOST_CHECK_EQUAL(cache.Size(), NUM);
+    BOOST_CHECK_EQUAL(cache.Size(), OBJECT_NUM);
 
-    CheckValues(0, NUM);
+    CheckValues(0, OBJECT_NUM);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
