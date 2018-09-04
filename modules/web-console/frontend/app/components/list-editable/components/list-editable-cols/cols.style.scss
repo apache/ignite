@@ -19,7 +19,6 @@
     $index-column-width: 46px;
     $remove-column-width: 36px;
 
-    margin-left: 10px;
     margin-right: $remove-column-width;
     transition: 0.2s opacity;
 
@@ -27,7 +26,7 @@
         margin-left: $index-column-width;
     }
 
-    .ignite-form-field__label {
+    .form-field__label {
         padding-left: 0;
         padding-right: 0;
         float: none;
@@ -41,8 +40,13 @@
     }
 
     &+list-editable {
+        .form-field__label,
         .ignite-form-field__label {
             display: none;
+        }
+
+        .form-field:not(.form-field__checkbox) {
+            margin-left: -11px;
         }
 
         .le-row-item-view:nth-last-child(2) {

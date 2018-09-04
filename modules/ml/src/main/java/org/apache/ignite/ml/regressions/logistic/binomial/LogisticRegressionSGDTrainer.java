@@ -34,6 +34,7 @@ import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Trainer of the logistic regression model based on stochastic gradient descent algorithm.
@@ -64,7 +65,7 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
      * @param seed Seed for random generator.
      */
     public LogisticRegressionSGDTrainer(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations,
-                                        int batchSize, int locIterations, long seed) {
+        int batchSize, int locIterations, long seed) {
         this.updatesStgy = updatesStgy;
         this.maxIterations = maxIterations;
         this.batchSize = batchSize;
@@ -76,13 +77,26 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
     @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
 
+    /** {@inheritDoc} */
+    @Override protected <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
             int cols = dataset.compute(data -> {
                 if (data.getFeatures() == null)
                     return null;
                 return data.getFeatures().length / data.getRows();
-            }, (a, b) -> a == null ? b : a);
+            }, (a, b) -> {
+                if (a == null)
+                    return b == null ? 0 : b;
+                if (b == null)
+                    return a;
+                return b;
+            });
 
             MLPArchitecture architecture = new MLPArchitecture(cols);
             architecture = architecture.withAddedLayer(1, true, Activators.SIGMOID);
@@ -100,12 +114,42 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
             seed
         );
 
-        MultilayerPerceptron mlp = trainer.fit(datasetBuilder, featureExtractor, (k, v) -> new double[]{lbExtractor.apply(k, v)});
+        IgniteBiFunction<K, V, double[]> lbExtractorWrapper = (k, v) -> new double[] {lbExtractor.apply(k, v)};
+        MultilayerPerceptron mlp;
+        if(mdl != null) {
+            mlp = restoreMLPState(mdl);
+            mlp = trainer.update(mlp, datasetBuilder, featureExtractor, lbExtractorWrapper);
+        } else
+            mlp = trainer.fit(datasetBuilder, featureExtractor, lbExtractorWrapper);
 
         double[] params = mlp.parameters().getStorage().data();
 
         return new LogisticRegressionModel(new DenseVector(Arrays.copyOf(params, params.length - 1)),
             params[params.length - 1]
         );
+    }
+
+    /**
+     * @param mdl Model.
+     * @return state of MLP from last learning.
+     */
+    @NotNull private MultilayerPerceptron restoreMLPState(LogisticRegressionModel mdl) {
+        Vector weights = mdl.weights();
+        double intercept = mdl.intercept();
+        MLPArchitecture architecture1 = new MLPArchitecture(weights.size());
+        architecture1 = architecture1.withAddedLayer(1, true, Activators.SIGMOID);
+        MLPArchitecture architecture = architecture1;
+        MultilayerPerceptron perceptron = new MultilayerPerceptron(architecture);
+
+        Vector mlpState = weights.like(weights.size() + 1);
+        weights.nonZeroes().forEach(ith -> mlpState.set(ith.index(), ith.get()));
+        mlpState.set(mlpState.size() - 1, intercept);
+        perceptron.setParameters(mlpState);
+        return perceptron;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(LogisticRegressionModel mdl) {
+        return true;
     }
 }

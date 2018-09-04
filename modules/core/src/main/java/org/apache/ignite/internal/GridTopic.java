@@ -82,9 +82,6 @@ public enum GridTopic {
     TOPIC_CONTINUOUS,
 
     /** */
-    TOPIC_MONGO,
-
-    /** */
     TOPIC_TIME_SYNC,
 
     /** */
@@ -127,7 +124,10 @@ public enum GridTopic {
     TOPIC_AUTH,
 
     /** */
-    TOPIC_EXCHANGE;
+    TOPIC_EXCHANGE,
+
+    /** */
+    TOPIC_CACHE_COORDINATOR;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

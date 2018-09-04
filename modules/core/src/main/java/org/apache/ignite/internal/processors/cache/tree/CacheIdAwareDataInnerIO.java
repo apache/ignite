@@ -37,12 +37,12 @@ public final class CacheIdAwareDataInnerIO extends AbstractDataInnerIO {
     }
 
     /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return PageUtils.getInt(pageAddr, offset(idx) + 12);
+    @Override protected boolean storeCacheId() {
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean storeCacheId() {
-        return true;
+    @Override public int getCacheId(long pageAddr, int idx) {
+        return PageUtils.getInt(pageAddr, offset(idx) + 12);
     }
 }
