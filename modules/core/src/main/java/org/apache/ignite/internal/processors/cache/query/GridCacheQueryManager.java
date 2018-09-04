@@ -1278,7 +1278,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                 continue;
                         }
                         else
-                            data.add(!loc ? new GridCacheQueryResponseEntry<>(key, val) : F.t(key, val));
+                            data.add(new T2<>(key, val));
                     }
 
                     if (!loc) {
@@ -3119,7 +3119,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             }
                         }
                         else
-                            next0 = !locNode ? new GridCacheQueryResponseEntry<>(key0, val0):
+                            next0 = !locNode ? new T2<>(key0, val0):
                                 new CacheQueryEntry<>(key0, val0);
 
                         break;
