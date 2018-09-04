@@ -21,7 +21,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
@@ -34,7 +33,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 import static org.apache.ignite.cache.CachePeekMode.BACKUP;
@@ -155,6 +153,11 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
             "insert into person values(1, 'a')", "select * from person", true, 0);
 
         checkSizeModificationByOperation("select * from person", true, 0);
+
+        checkSizeModificationByOperation(
+            "insert into person values(1, 'a')", "select * from person where id = 1 for update", true, 0);
+
+        checkSizeModificationByOperation("select * from person where id = 1 for update", true, 0);
 
         checkSizeModificationByOperation(personTbl -> {
             personTbl.query(q("insert into person values(1, 'a')"));
@@ -302,6 +305,52 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
                 fail("Unexpected exception");
             }
         }
+
+        assertEquals(0, tbl0.size());
+        assertEquals(0, table(grid(1)).size());
+
+        assertEquals(0, tbl0.size(BACKUP));
+        assertEquals(0, table(grid(1)).size(BACKUP));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testDeleteChangesSizeAfterUnlock() throws Exception {
+        startGridsMultiThreaded(2);
+
+        IgniteCache<?, ?> tbl0 = createTable(grid(0));
+
+        tbl0.query(q("insert into person values(1, 'a')"));
+
+        tbl0.query(q("begin"));
+
+        tbl0.query(q("select * from person where id = 1 for update")).getAll();
+
+        CompletableFuture<Thread> asyncThread = new CompletableFuture<>();
+
+        CompletableFuture<Void> fut = CompletableFuture.runAsync(() -> {
+            tbl0.query(q("begin"));
+
+            try {
+                tbl0.query(q("select * from person")).getAll();
+
+                asyncThread.complete(Thread.currentThread());
+                tbl0.query(q("delete from person where id = 1"));
+            }
+            finally {
+                tbl0.query(q("commit"));
+            }
+        });
+
+        Thread concThread = asyncThread.join();
+
+        // wait until concurrent thread blocks awaiting entry mvcc lock release
+        while (concThread.getState() == Thread.State.RUNNABLE && !Thread.currentThread().isInterrupted());
+
+        tbl0.query(q("commit"));
+
+        fut.join();
 
         assertEquals(0, tbl0.size());
         assertEquals(0, table(grid(1)).size());
