@@ -298,7 +298,7 @@ public abstract class AbstractWalRecordsIterator
      * @return Initialized file read header.
      * @throws IgniteCheckedException If initialized failed due to another unexpected error.
      */
-    protected AbstractReadFileHandle initReadHandleAfterSegmentHeaderRead(
+    protected AbstractReadFileHandle initReadHandle(
         @NotNull final AbstractFileDescriptor desc,
         @Nullable final FileWALPointer start,
         @NotNull final FileIO fileIO,
@@ -393,7 +393,7 @@ public abstract class AbstractWalRecordsIterator
                 throw e;
             }
 
-            return initReadHandleAfterSegmentHeaderRead(desc, start, fileIO, segmentHeader);
+            return initReadHandle(desc, start, fileIO, segmentHeader);
         }
         catch (FileNotFoundException e) {
             U.closeQuiet(fileIO);

@@ -78,7 +78,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check correct closing file descriptors
+     * Check correct closing file descriptors.
      * @throws Exception if test failed.
      */
     public void testCorrectClosingFileDescriptors() throws Exception {
@@ -131,7 +131,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
     /**
      * Evaluate path to directory with WAL archive.
-     * @param ignite instance of Ignite
+     * @param ignite instance of Ignite.
      * @return path to directory with WAL archive.
      * @throws IgniteCheckedException if error occur.
      */

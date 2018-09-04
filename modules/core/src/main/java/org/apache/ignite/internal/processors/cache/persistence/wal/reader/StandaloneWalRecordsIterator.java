@@ -283,7 +283,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             }
         }
 
-        return initReadHandleAfterSegmentHeaderRead(fd, start, fileIO, segmentHeader);
+        return initReadHandle(fd, start, fileIO, segmentHeader);
     }
 
     /** {@inheritDoc} */
