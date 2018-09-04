@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.datastructures.GridTransactionalCac
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -472,7 +473,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             while (true) {
                 AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
 
-                Collection<ClusterNode> nodes = CU.affinityNodes(cctx, topVer);
+                Collection<ClusterNode> nodes = F.view(cctx.discovery().nodes(topVer), node -> !node.isDaemon());
 
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
@@ -502,10 +503,12 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         throw e;
                 }
 
+                Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
+
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
                         new RemoveSetDataCallable(cctx.name(), id, topVer),
-                        nodes,
+                        affNodes,
                         true,
                         0, false).get();
                 }
@@ -516,7 +519,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                         continue;
                     }
-                    else if (!pingNodes(nodes)) {
+                    else if (!pingNodes(affNodes)) {
                         if (log.isDebugEnabled())
                             log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
 
@@ -650,9 +653,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             GridCacheAdapter cache = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
-            assert cache != null : cacheName;
-
-            cache.context().dataStructures().blockSet(setId);
+            // On non-affinity node cache can be stopped.
+            if (cache != null)
+                cache.context().dataStructures().blockSet(setId);
 
             return null;
         }

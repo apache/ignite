@@ -514,7 +514,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @throws IgniteCheckedException If all cache nodes left grid.
      */
     private Collection<ClusterNode> dataNodes(AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        if (ctx.isLocal() || ctx.isReplicated())
+        if (ctx.isLocal() || (ctx.isReplicated() && ctx.affinityNode()))
             return Collections.singleton(ctx.localNode());
 
         Collection<ClusterNode> nodes;
