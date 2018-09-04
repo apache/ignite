@@ -17,22 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.JobContextImpl;
-import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.util.RunJar;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -43,6 +27,22 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileUtil;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.JobContextImpl;
+import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.util.RunJar;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopFileSystemsUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides all resources are needed to the job execution. Downloads the main jar, the configuration and additional
@@ -234,7 +234,7 @@ class HadoopV2JobResourceManager {
 
                 if (archiveNameLC.endsWith(".jar"))
                     RunJar.unJar(archiveFile, dstPath);
-                else if (archiveNameLC.endsWith(".zip"))
+                else if (archiveNameLC.endsWith(FilePageStoreManager.ZIP_SUFFIX))
                     FileUtil.unZip(archiveFile, dstPath);
                 else if (archiveNameLC.endsWith(".tar.gz") ||
                     archiveNameLC.endsWith(".tgz") ||
