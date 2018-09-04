@@ -112,6 +112,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private volatile boolean incBackups;
 
+    /** Local query. */
+    private boolean forceLocal;
+
     /** */
     private volatile boolean dedup;
 
@@ -133,13 +136,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param filter Scan filter.
      * @param part Partition.
      * @param keepBinary Keep binary flag.
+     * @param forceLocal Flag to force local query.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         @Nullable IgniteBiPredicate<Object, Object> filter,
         @Nullable IgniteClosure<Map.Entry, Object> transform,
         @Nullable Integer part,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean forceLocal) {
         assert cctx != null;
         assert type != null;
         assert part == null || part >= 0;
@@ -150,6 +155,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.transform = transform;
         this.part = part;
         this.keepBinary = keepBinary;
+        this.forceLocal = forceLocal;
 
         log = cctx.logger(getClass());
 
@@ -290,6 +296,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      */
     public void keepBinary(boolean keepBinary) {
         this.keepBinary = keepBinary;
+    }
+
+    /**
+     * @return {@code True} if the query is forced local.
+     */
+    public boolean forceLocal() {
+        return forceLocal;
     }
 
     /**
@@ -496,15 +509,20 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "unchecked"})
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
-        assert type == SCAN : "Wrong processing of qyery: " + type;
+        assert type == SCAN : "Wrong processing of query: " + type;
 
         // Affinity nodes snapshot.
         Collection<ClusterNode> nodes = new ArrayList<>(nodes());
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        if (nodes.isEmpty() && part == null)
+        if (nodes.isEmpty()) {
+            if (part != null && forceLocal)
+                throw new IgniteCheckedException("No queryable nodes for partition " + part
+                    + " [forced local query=" + this + "]");
+
             return new GridEmptyCloseableIterator();
+        }
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
@@ -573,9 +591,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param cctx Cache context.
      * @param prj Projection (optional).
      * @return Collection of data nodes in provided projection (if any).
+     * @throws IgniteCheckedException If partition number is invalid.
      */
     private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx,
-        @Nullable final ClusterGroup prj, @Nullable final Integer part) {
+        @Nullable final ClusterGroup prj, @Nullable final Integer part) throws IgniteCheckedException {
         assert cctx != null;
 
         final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
@@ -584,6 +603,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         if (prj == null && part == null)
             return affNodes;
+
+        if (part != null && part >= cctx.affinity().partitions())
+            throw new IgniteCheckedException("Invalid partition number: " + part);
 
         final Set<ClusterNode> owners =
             part == null ? Collections.<ClusterNode>emptySet() : new HashSet<>(cctx.topology().owners(part, topVer));
