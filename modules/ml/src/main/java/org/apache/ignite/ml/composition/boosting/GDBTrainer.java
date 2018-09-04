@@ -52,7 +52,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * But in practice Decision Trees is most used regressors (see: {@link DecisionTreeRegressionTrainer}).
  */
-public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, Double> {
+public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Double> {
     /** Gradient step. */
     private final double gradientStep;
 
@@ -81,7 +81,7 @@ public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, D
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Model<Vector, Double> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
@@ -117,6 +117,21 @@ public abstract class GDBTrainer extends DatasetTrainer<Model<Vector, Double>, D
                 return internalLabelToExternal(super.apply(features));
             }
         };
+    }
+
+
+    //TODO: This method will be implemented in IGNITE-9412
+    /** {@inheritDoc} */
+    @Override public <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        throw new UnsupportedOperationException();
+    }
+
+    //TODO: This method will be implemented in IGNITE-9412
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(ModelsComposition mdl) {
+        throw new UnsupportedOperationException();
     }
 
     /**
