@@ -120,7 +120,7 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt0));
 
         // Inserting values.
-        for (SQLSMALLINT i = begin; i < end; ++i)
+        for (int32_t i = begin; i < end; ++i)
         {
             key = i;
             std::string val = getTestString(i);
@@ -240,7 +240,7 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         // Fetching values.
-        for (SQLSMALLINT i = begin; i < end; ++i)
+        for (int32_t i = begin; i < end; ++i)
         {
             ret = SQLFetch(stmt);
 
@@ -558,6 +558,32 @@ BOOST_AUTO_TEST_CASE(TestStreamingDifferentStatements)
     BOOST_CHECK_EQUAL(GetI32Field(8), 42);
     BOOST_CHECK_EQUAL(GetI32Field(13), 0);
     BOOST_CHECK_EQUAL(GetI32Field(42), 42);
+}
+
+BOOST_AUTO_TEST_CASE(TestStreamingManyObjects)
+{
+    enum { NUM = 100000 };
+
+    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
+
+    SQLRETURN res = ExecQuery("set streaming on");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    InsertTestStrings(0, NUM);
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    res = ExecQuery("set streaming 0");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(cache.Size(), NUM);
+
+    CheckValues(0, NUM);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
