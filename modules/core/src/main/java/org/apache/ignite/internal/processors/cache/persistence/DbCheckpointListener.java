@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
@@ -50,6 +51,19 @@ public interface DbCheckpointListener {
          * @return Tracker.
          */
         public CheckpointMetricsTracker tracker();
+
+        /**
+         * Checkpoint async runner.
+         *
+         * @return Service.
+         */
+        public ExecutorService asyncRunner();
+
+        /**
+         *
+         * @return
+         */
+        public int concurrency();
     }
 
     public class SaveMetadataStat {

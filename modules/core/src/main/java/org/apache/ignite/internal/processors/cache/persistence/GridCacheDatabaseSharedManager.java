@@ -1499,9 +1499,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public boolean checkpointLockIsHeldByThread() {
-        return !ASSERTION_ENABLED ||
-            checkpointLock.isWriteLockedByCurrentThread() ||
-            CHECKPOINT_LOCK_HOLD_COUNT.get() > 0;
+        return true; // FIXME
+
+//        return !ASSERTION_ENABLED ||
+//            checkpointLock.isWriteLockedByCurrentThread() ||
+//            CHECKPOINT_LOCK_HOLD_COUNT.get() > 0;
     }
 
     /**
@@ -3493,6 +3495,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     @Override public CheckpointMetricsTracker tracker() {
                         return tracker;
+                    }
+
+                    @Override public ExecutorService asyncRunner() {return asyncRunner; }
+
+                    @Override public int concurrency() {
+                        return persistenceCfg.getCheckpointThreads();
                     }
                 };
 

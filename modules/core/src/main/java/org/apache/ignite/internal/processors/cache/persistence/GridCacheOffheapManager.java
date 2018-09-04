@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -165,8 +170,74 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         boolean metaWasUpdated = false;
 
-        for (CacheDataStore store : partDataStores.values())
-            metaWasUpdated |= saveStoreMetadata(store, ctx, !metaWasUpdated, false);
+        if (ctx.asyncRunner() == null || ctx.nextSnapshot()) {
+            for (CacheDataStore store : partDataStores.values())
+                metaWasUpdated |= saveStoreMetadata(store, ctx, !metaWasUpdated, false);
+        }
+        else {
+            int conc = ctx.concurrency();
+
+            assert conc > 0 : "Bad concurrent value";
+
+            int threshold = partDataStores.size() / conc;
+
+            int lastBatchMark = threshold * (conc - 1);
+
+            List<CacheDataStore> batch = new ArrayList<>(threshold + 1);
+
+            List<Future<IgniteCheckedException>> futs = new ArrayList<>(conc);
+
+            Iterator<CacheDataStore> it = partDataStores.values().iterator();
+
+            int proc = 0;
+
+            while (it.hasNext()) {
+                CacheDataStore store = it.next();
+
+                batch.add(store);
+
+                boolean lastBatch = proc >= lastBatchMark;
+
+                if (!lastBatch && batch.size() == threshold || !it.hasNext()) {
+                    final List<CacheDataStore> batchCpy = new ArrayList<>(batch);
+
+                    batch.clear();
+
+                    futs.add(ctx.asyncRunner().submit(() -> {
+                        try {
+                            for (CacheDataStore dataStore : batchCpy)
+                                saveStoreMetadata(dataStore, ctx, false, false);
+                        }
+                        catch (IgniteCheckedException e) {
+                            return e;
+                        }
+
+                        return null;
+                    }));
+
+                    proc += batchCpy.size();
+                }
+            }
+
+            assert proc == partDataStores.values().size() : "Not all data stores are processed";
+
+            IgniteCheckedException ex = new IgniteCheckedException("Failed to process metadata");
+
+            for (Future<IgniteCheckedException> fut : futs) {
+                try {
+                    IgniteCheckedException e = fut.get();
+
+                    if (e != null)
+                        ex.addSuppressed(e);
+                }
+                catch (InterruptedException | ExecutionException e) {
+                    ex.addSuppressed(e);
+                }
+            }
+
+            if (ex.getSuppressed().length > 0)
+                throw ex;
+        }
     }
 
     /**
@@ -342,7 +413,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageMem.releasePage(grpId, partMetaId, partMetaPage);
 
                     stat.setDuration(System.nanoTime() - t0);
-
                 }
             }
             else if (needSnapshot)

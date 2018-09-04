@@ -28,33 +28,28 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class Cache64kPartitionsTest extends GridCommonAbstractTest {
+public class CacheConcurrentMetadataSaveOnCheckpointTest extends GridCommonAbstractTest {
     /** */
-    private boolean persistenceEnabled;
+    private static final int PART_CNT = 33;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration("default");
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, CacheConfiguration.MAX_PARTITIONS_COUNT));
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, PART_CNT));
 
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setActiveOnStart(false);
 
-        if (persistenceEnabled) {
-            DataStorageConfiguration memCfg = new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setPersistenceEnabled(true)
-                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
-                )
-                .setWalMode(WALMode.LOG_ONLY);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY).setCheckpointFrequency(300_000);
 
-            cfg.setDataStorageConfiguration(memCfg);
-        }
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -62,31 +57,44 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testManyPartitionsNoPersistence() throws Exception {
-        checkManyPartitions();
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testManyPartitionsWithPersistence() throws Exception {
-        persistenceEnabled = true;
-
-        checkManyPartitions();
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    private void checkManyPartitions() throws Exception {
+    public void testConcurrentMetadataSave() throws Exception {
         try {
-            startGrids(4);
+            startGrids(1);
 
-            grid(0).active(true);
+            grid(0).cluster().active(true);
+
+            forceCheckpoint(grid(0));
+
+            for (int i = 0; i < PART_CNT; i++)
+                grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
+
+            forceCheckpoint(grid(0));
+
+            for (int i = 0; i < PART_CNT; i++)
+                assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
+
+            assertEquals(PART_CNT, grid(0).cache(DEFAULT_CACHE_NAME).size());
+
+            stopGrid(0);
+
+            startGrid(0);
+
+            grid(0).cluster().active(true);
+
+            for (int i = 0; i < PART_CNT; i++)
+                assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
+
+            assertEquals(PART_CNT, grid(0).cache(DEFAULT_CACHE_NAME).size());
+
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
