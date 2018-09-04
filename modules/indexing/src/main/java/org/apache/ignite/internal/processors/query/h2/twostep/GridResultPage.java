@@ -72,8 +72,6 @@ public class GridResultPage {
             Collection<?> plainRows = res.plainRows();
 
             if (plainRows != null) {
-                assert plainRows instanceof ArrayList;
-
                 rowsInPage = plainRows.size();
 
                 if (rowsInPage == 0 || ((ArrayList<Value[]>)plainRows).get(0).length == res.columns())
