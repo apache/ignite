@@ -56,14 +56,19 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 2;
+
     /** */
     private static final String ORG_SQL = "select * from Organization";
+
     /** */
     private static final String ORG = "org";
+
     /** */
     private IgniteCache<String, Person> personCache;
+
     /** */
     private IgniteCache<String, Organization> orgCache;
+
     /** */
     private IgniteH2Indexing h2Idx;
 
