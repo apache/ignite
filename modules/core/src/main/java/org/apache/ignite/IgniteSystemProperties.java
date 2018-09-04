@@ -964,6 +964,10 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
+     * Proper partitions co-location check is enabled
+     */
+    public static final String IGNITE_PARTITIONS_CO_LOCATION_CHECK_ENABLED = "IGNITE_PARTITIONS_CO_LOCATION_CHECK_ENABLED";
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
