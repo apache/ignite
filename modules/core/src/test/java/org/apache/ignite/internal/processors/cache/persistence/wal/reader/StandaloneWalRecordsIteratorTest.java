@@ -92,12 +92,12 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
 
+        // generate WAL segments for filling WAL archive folder
         for (int i = 0; i < 2 * ig.configuration().getDataStorageConfiguration().getWalSegments(); i++) {
             sharedMgr.checkpointReadLock();
 
             try {
                 walMgr.log(new SnapshotRecord(i, false));
-
             }
             finally {
                 sharedMgr.checkpointReadUnlock();
