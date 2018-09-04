@@ -15,9 +15,30 @@
 
 from collections import defaultdict
 import setuptools
+import sys
 
 
-def is_a_requirement(line: str) -> bool:
+PYTHON_REQUIRED = (3, 4)
+PYTHON_INSTALLED = sys.version_info[:2]
+
+if PYTHON_INSTALLED < PYTHON_REQUIRED:
+    sys.stderr.write('''
+
+`pyignite` is not compatible with Python {}.{}!
+Use Python {}.{} or above.
+
+
+'''.format(
+            PYTHON_INSTALLED[0],
+            PYTHON_INSTALLED[1],
+            PYTHON_REQUIRED[0],
+            PYTHON_REQUIRED[1],
+        )
+    )
+    sys.exit(1)
+
+
+def is_a_requirement(line):
     return not any([
         line.startswith('#'),
         line.startswith('-r'),
@@ -45,7 +66,8 @@ with open('README.md', 'r') as readme_file:
 
 setuptools.setup(
     name='pyignite',
-    version='0.3.0',
+    version='0.3.1',
+    python_requires='>={}.{}'.format(*PYTHON_REQUIRED),
     author='Dmitry Melnichuk',
     author_email='dmitry.melnichuk@nobitlost.com',
     description='Apache Ignite binary client Python API',
@@ -63,10 +85,12 @@ setuptools.setup(
         'docs': requirements['docs'],
     },
     classifiers=[
+        'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3 :: Only',
         'Intended Audience :: Developers',
         'Topic :: Database :: Front-Ends',
         'Topic :: Software Development :: Libraries :: Python Modules',

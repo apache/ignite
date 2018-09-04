@@ -22,7 +22,7 @@ by instantiating the `Client` object and calling
 :py:meth:`~pyignite.connection.Connection.connect` method with proper
 parameters.
 
-The whole storage room of Ignite cluster is split up onto named structures,
+The whole storage room of Ignite cluster is split up into named structures,
 called caches. For accessing the particular cache in key-value style
 (a-la Redis or memcached) you should first create
 the :class:`~pyignite.cache.Cache` object by calling

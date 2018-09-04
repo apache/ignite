@@ -60,8 +60,12 @@ CACHE_CREATE_FUNCS = {
 
 class Cache:
     """
-    Ignite cache abstraction. Can be obtained by calling
-    `Client.create_cache` or `Client.get_or_create_cache` methods.
+    Ignite cache abstraction. Users should never use this class directly,
+    but construct its instances with
+    :py:meth:`~pyignite.client.Client.create_cache`,
+    :py:meth:`~pyignite.client.Client.get_or_create_cache` or
+    :py:meth:`~pyignite.client.Client.get_cache` methods instead. See
+    :ref:`this example <create_cache>` on how to do it.
     """
     _cache_id = None
     _name = None
@@ -93,9 +97,7 @@ class Cache:
         with_get: bool=False, get_only: bool=False,
     ):
         """
-        Initialize cache object. Normally you should not calling this directly.
-        `Client.create_cache` or `Client.get_or_create_cache` methods
-        will do it for you.
+        Initialize cache object.
 
         :param client: Ignite client,
         :param settings: cache settings. Can be a string (cache name) or a dict

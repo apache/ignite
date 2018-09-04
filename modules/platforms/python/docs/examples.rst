@@ -15,6 +15,8 @@ Open connection
   :language: python
   :lines: 16-19
 
+.. _create_cache:
+
 Create cache
 ============
 

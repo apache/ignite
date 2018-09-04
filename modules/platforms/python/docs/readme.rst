@@ -24,7 +24,6 @@ Prerequisites
 - Access to *Apache Ignite* node, local or remote. The current thin client
   version was tested on *Apache Ignite 2.7.0* (binary client protocol 1.2.0).
 
-
 Installation
 ------------
 
@@ -147,7 +146,7 @@ with default parameters (host and port) regardless of any other
 `pytest` option.
 
 Since failover, SSL and authentication examples are meant to be controlled
-by user or depends on special configuration of the Ignite cluster, they
+by user or depend on special configuration of the Ignite cluster, they
 can not be automated.
 
 Documentation
