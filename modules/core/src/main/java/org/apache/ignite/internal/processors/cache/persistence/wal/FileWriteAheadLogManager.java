@@ -48,7 +48,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -148,22 +147,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.sleep;
  */
 @SuppressWarnings("IfMayBeConditional")
 public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
-    public static ConcurrentLinkedQueue<FileWALPointer> fillBUffer = new ConcurrentLinkedQueue<FileWALPointer>() {
-        @Override public boolean add(FileWALPointer o) {
-            if (size() > 10) {
-                poll();
-            }
-            return super.add(o);
-        }
-    };
-    public static ConcurrentLinkedQueue<Long> writeBUffer = new ConcurrentLinkedQueue<Long>() {
-        @Override public boolean add(Long o) {
-            if (size() > 10) {
-                poll();
-            }
-            return super.add(o);
-        }
-    };
     /** Dfault wal segment sync timeout. */
     public static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
     /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
@@ -2624,7 +2607,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             seg.release();
         }
 
-
         /**
          * @param rec Record to be added to write queue.
          * @return Pointer or null if roll over to next segment is required or already started by other thread.
@@ -2660,7 +2642,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         rec.position(ptr);
 
-                        fillBUffer.add(ptr);
                         fillBuffer(buf, rec);
 
                         if (mmap) {
@@ -3346,10 +3327,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
 
                         try {
-                            long position = seg.position();
-
-                            writeBUffer.add(position);
-                            writeBuffer(position, seg.buffer());
+                            writeBuffer(seg.position(), seg.buffer());
                         }
                         catch (Throwable e) {
                             log.error("Exception in WAL writer thread:", e);

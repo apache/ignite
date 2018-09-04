@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
@@ -365,9 +364,7 @@ public class RecordV1Serializer implements RecordSerializer {
     ) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc);
-
-        try {
+        try (FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
             startPos = in0.position();
 
             WALRecord res = reader.readWithHeaders(in, expPtr);
@@ -376,11 +373,9 @@ public class RecordV1Serializer implements RecordSerializer {
 
             res.size((int)(in0.position() - startPos + CRC_SIZE)); // Account for CRC which will be read afterwards.
 
-            in.close();
-
             return res;
         }
-        catch (EOFException | SegmentEofException | WalSegmentTailReachedException | IgniteDataIntegrityViolationException e) {
+        catch (EOFException | SegmentEofException | WalSegmentTailReachedException e) {
             throw e;
         }
         catch (Exception e) {

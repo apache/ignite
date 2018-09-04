@@ -162,7 +162,7 @@ public abstract class AbstractWalRecordsIterator
                         return;
                 }
             }
-            catch (WalSegmentTailReachedException | IgniteDataIntegrityViolationException e) {
+            catch (IgniteCheckedException e) {
                 AbstractReadFileHandle currWalSegment = this.currWalSegment;
 
                 IgniteCheckedException e0 = validateTailReachedException(e, currWalSegment);
@@ -246,10 +246,6 @@ public abstract class AbstractWalRecordsIterator
             return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
-            log.error("Stop iteration : " + curWalSegmIdx + ", value : " + curRec + ", curPos : " + actualFilePtr, e);
-            log.error("fill buffer " + FileWriteAheadLogManager.fillBUffer);
-            log.error("write buffer " + FileWriteAheadLogManager.writeBUffer);
-
             if (e instanceof WalSegmentTailReachedException) {
                 throw new WalSegmentTailReachedException(
                     "WAL segment tail reached. [idx=" + hnd.idx() +
@@ -264,10 +260,6 @@ public abstract class AbstractWalRecordsIterator
             }
 
             return null;
-        }
-        catch (Exception e) {
-            log.error("Stop iteration ex: "+ curWalSegmIdx + ", value : " + curRec, e);
-            throw e;
         }
     }
 
