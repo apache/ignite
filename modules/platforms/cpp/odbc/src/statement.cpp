@@ -612,6 +612,9 @@ namespace ignite
 
             if (IsStreamingActive())
             {
+                if (!currentQuery.get())
+                    currentQuery.reset(new query::StreamingQuery(*this, connection, parameters));
+
                 query::StreamingQuery* currentQuery0 = static_cast<query::StreamingQuery*>(currentQuery.get());
 
                 currentQuery0->PrepareQuery(query);
