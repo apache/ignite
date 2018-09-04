@@ -23,14 +23,14 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
 import org.apache.ignite.ml.tree.TreeFilter;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 
 /**
  * Decision tree leaf node builder that chooses most common value as a leaf node value.
  */
 public class MostCommonDecisionTreeLeafBuilder implements DecisionTreeLeafBuilder {
     /** {@inheritDoc} */
-    @Override public DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeDataWithIndex> dataset,
+    @Override public DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset,
         TreeFilter pred) {
         Map<Double, Integer> cnt = dataset.compute(part -> {
 

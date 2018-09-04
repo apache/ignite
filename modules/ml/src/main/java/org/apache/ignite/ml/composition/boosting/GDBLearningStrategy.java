@@ -22,9 +22,9 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
-import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategyFactory;
-import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCheckConvergenceStgyFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -65,7 +65,7 @@ public class GDBLearningStrategy {
     protected double[] compositionWeights;
 
     /** Check convergence strategy factory. */
-    protected ConvergenceCheckStrategyFactory checkConvergenceStgyFactory = new MeanAbsValueCheckConvergenceStgyFactory(0.001);
+    protected ConvergenceCheckerFactory checkConvergenceStgyFactory = new MeanAbsValueConvergenceCheckerFactory(0.001);
 
     /**
      * Implementation of gradient boosting iterations. At each step of iterations this algorithm build a regression
@@ -81,7 +81,7 @@ public class GDBLearningStrategy {
 
         List<Model<Vector, Double>> models = new ArrayList<>();
 
-        ConvergenceCheckStrategy<K, V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
+        ConvergenceChecker<K, V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
             externalLbToInternalMapping, lossGradient, datasetBuilder, featureExtractor, lbExtractor);
 
         DatasetTrainer<? extends Model<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
@@ -194,7 +194,7 @@ public class GDBLearningStrategy {
      *
      * @param factory Factory.
      */
-    public GDBLearningStrategy withCheckConvergenceStgyFactory(ConvergenceCheckStrategyFactory factory) {
+    public GDBLearningStrategy withCheckConvergenceStgyFactory(ConvergenceCheckerFactory factory) {
         this.checkConvergenceStgyFactory = factory;
         return this;
     }

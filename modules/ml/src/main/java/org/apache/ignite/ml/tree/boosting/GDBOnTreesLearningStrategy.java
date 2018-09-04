@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.GDBLearningStrategy;
-import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -35,8 +35,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTree;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndexBuilder;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 
 /**
  * Gradient boosting on trees specific learning strategy reusing learning dataset with index between
@@ -62,13 +62,13 @@ public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
         assert trainer instanceof DecisionTree;
         DecisionTree decisionTreeTrainer = (DecisionTree) trainer;
 
-        ConvergenceCheckStrategy<K,V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
+        ConvergenceChecker<K,V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
             externalLbToInternalMapping, lossGradient, datasetBuilder, featureExtractor, lbExtractor);
         List<Model<Vector, Double>> models = new ArrayList<>();
 
-        try (Dataset<EmptyContext, DecisionTreeDataWithIndex> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataWithIndexBuilder<>(featureExtractor, lbExtractor, useIndex)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIndex)
         )) {
             for (int i = 0; i < cntOfIterations; i++) {
                 double[] weights = Arrays.copyOf(compositionWeights, i);

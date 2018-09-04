@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.tree.impurity.mse;
 
 import java.util.Arrays;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,7 +53,7 @@ public class MSEImpurityMeasureCalculatorTest {
 
         MSEImpurityMeasureCalculator calculator = new MSEImpurityMeasureCalculator(useIndex);
 
-        StepFunction<MSEImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeDataWithIndex(data, labels, useIndex), fs -> true, 0);
+        StepFunction<MSEImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIndex), fs -> true, 0);
 
         assertEquals(2, impurity.length);
 

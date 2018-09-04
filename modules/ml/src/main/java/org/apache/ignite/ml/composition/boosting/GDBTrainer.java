@@ -22,8 +22,8 @@ import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategyFactory;
-import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCheckConvergenceStgyFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -38,8 +38,8 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndexBuilder;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -68,7 +68,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     protected final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
 
     /** Check convergence strategy factory. */
-    protected ConvergenceCheckStrategyFactory checkConvergenceStgyFactory = new MeanAbsValueCheckConvergenceStgyFactory(0.001);
+    protected ConvergenceCheckerFactory checkConvergenceStgyFactory = new MeanAbsValueConvergenceCheckerFactory(0.001);
 
     /**
      * Constructs GDBTrainer instance.
@@ -167,9 +167,9 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        try (Dataset<EmptyContext, DecisionTreeDataWithIndex> dataset = builder.build(
+        try (Dataset<EmptyContext, DecisionTreeData> dataset = builder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataWithIndexBuilder<>(featureExtractor, lbExtractor, false)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, false)
         )) {
             IgniteBiTuple<Double, Long> meanTuple = dataset.compute(
                 data -> {
@@ -202,7 +202,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      * @param factory
      * @return trainer.
      */
-    public GDBTrainer withCheckConvergenceStgyFactory(ConvergenceCheckStrategyFactory factory) {
+    public GDBTrainer withCheckConvergenceStgyFactory(ConvergenceCheckerFactory factory) {
         this.checkConvergenceStgyFactory = factory;
         return this;
     }

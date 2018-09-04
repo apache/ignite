@@ -23,7 +23,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCheckConvergenceStgyFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
@@ -59,7 +59,7 @@ public class GDBOnTreesClassificationTrainerExample {
 
                 // Create regression trainer.
                 DatasetTrainer<ModelsComposition, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(1.0, 300, 2, 0.)
-                    .withCheckConvergenceStgyFactory(new MeanAbsValueCheckConvergenceStgyFactory(0.1));
+                    .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.1));
 
                 // Train decision tree model.
                 ModelsComposition mdl = trainer.fit(
@@ -98,7 +98,7 @@ public class GDBOnTreesClassificationTrainerExample {
     @NotNull private static CacheConfiguration<Integer, double[]> createCacheConfiguration() {
         CacheConfiguration<Integer, double[]> trainingSetCfg = new CacheConfiguration<>();
         trainingSetCfg.setName("TRAINING_SET");
-        trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 1));
+        trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         return trainingSetCfg;
     }
 

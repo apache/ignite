@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCheckConvergenceStgyFactory;
-import org.apache.ignite.ml.composition.boosting.convergence.simple.CheckConvergenceStgyStubFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.simple.ConvergenceCheckerStubFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -86,7 +86,7 @@ public class GDBTrainerTest {
         assertEquals(2000, composition.getModels().size());
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
 
-        trainer = trainer.withCheckConvergenceStgyFactory(new MeanAbsValueCheckConvergenceStgyFactory(0.1));
+        trainer = trainer.withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.1));
         assertTrue(trainer.fit(
             learningSample, 1,
             (k, v) -> VectorUtils.of(v[0]),
@@ -132,7 +132,7 @@ public class GDBTrainerTest {
 
         GDBTrainer trainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0)
             .withUseIndex(true)
-            .withCheckConvergenceStgyFactory(new MeanAbsValueCheckConvergenceStgyFactory(0.3));
+            .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
 
         Model<Vector, Double> mdl = fitter.apply(trainer, learningSample);
 
@@ -154,7 +154,7 @@ public class GDBTrainerTest {
         assertTrue(composition.getModels().size() < 500);
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
 
-        trainer = trainer.withCheckConvergenceStgyFactory(new CheckConvergenceStgyStubFactory());
+        trainer = trainer.withCheckConvergenceStgyFactory(new ConvergenceCheckerStubFactory());
         assertEquals(500, ((ModelsComposition)fitter.apply(trainer,learningSample)).getModels().size());
     }
 }

@@ -19,7 +19,7 @@ package org.apache.ignite.ml.composition.boosting.convergence.median;
 
 import java.util.Arrays;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
@@ -37,12 +37,12 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class MedianOfMedianConvergenceCheckStrategy<K, V> extends ConvergenceCheckStrategy<K, V> {
+public class MedianOfMedianConvergenceChecker<K, V> extends ConvergenceChecker<K, V> {
     /** Serial version uid. */
     private static final long serialVersionUID = 4902502002933415287L;
 
     /**
-     * Creates an instance of MedianOfMedianConvergenceCheckStrategy.
+     * Creates an instance of MedianOfMedianConvergenceChecker.
      *
      * @param sampleSize Sample size.
      * @param lblMapping External label to internal mapping.
@@ -52,7 +52,7 @@ public class MedianOfMedianConvergenceCheckStrategy<K, V> extends ConvergenceChe
      * @param lbExtr Label extractor.
      * @param precision Precision.
      */
-    public MedianOfMedianConvergenceCheckStrategy(long sampleSize, IgniteFunction<Double, Double> lblMapping,
+    public MedianOfMedianConvergenceChecker(long sampleSize, IgniteFunction<Double, Double> lblMapping,
         IgniteTriFunction<Long, Double, Double, Double> lossGradient, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> fExtr, IgniteBiFunction<K, V, Double> lbExtr, double precision) {
 

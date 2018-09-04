@@ -24,23 +24,23 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Factory for ConvergenceCheckStrategy.
+ * Factory for ConvergenceChecker.
  */
-public abstract class ConvergenceCheckStrategyFactory {
+public abstract class ConvergenceCheckerFactory {
     /** Precision of error checking. If error <= precision then it is equated to 0.0*/
     protected double precision;
 
     /**
-     * Creates an instance of ConvergenceCheckStrategyFactory.
+     * Creates an instance of ConvergenceCheckerFactory.
      *
      * @param precision Precision [0 <= precision < 1].
      */
-    public ConvergenceCheckStrategyFactory(double precision) {
+    public ConvergenceCheckerFactory(double precision) {
         this.precision = precision;
     }
 
     /**
-     * Create an instance of ConvergenceCheckStrategy.
+     * Create an instance of ConvergenceChecker.
      *
      * @param sampleSize Sample size.
      * @param externalLbToInternalMapping External label to internal mapping.
@@ -48,9 +48,9 @@ public abstract class ConvergenceCheckStrategyFactory {
      * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
-     * @return ConvergenceCheckStrategyFactory instance.
+     * @return ConvergenceCheckerFactory instance.
      */
-    public abstract <K,V> ConvergenceCheckStrategy<K,V> create(long sampleSize,
+    public abstract <K,V> ConvergenceChecker<K,V> create(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping,
         IgniteTriFunction<Long, Double, Double, Double> lossGradient,
         DatasetBuilder<K, V> datasetBuilder,

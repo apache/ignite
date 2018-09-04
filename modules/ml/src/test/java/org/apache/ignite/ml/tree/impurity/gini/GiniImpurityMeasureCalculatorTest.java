@@ -20,7 +20,7 @@ package org.apache.ignite.ml.tree.impurity.gini;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,7 +58,7 @@ public class GiniImpurityMeasureCalculatorTest {
         encoder.put(1.0, 1);
         GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIndex);
 
-        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeDataWithIndex(data, labels, useIndex), fs -> true, 0);
+        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIndex), fs -> true, 0);
 
         assertEquals(2, impurity.length);
 
@@ -90,7 +90,7 @@ public class GiniImpurityMeasureCalculatorTest {
         encoder.put(1.0, 1);
         GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder, useIndex);
 
-        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeDataWithIndex(data, labels, useIndex), fs -> true, 0);
+        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels, useIndex), fs -> true, 0);
 
         assertEquals(1, impurity.length);
 

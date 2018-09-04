@@ -19,7 +19,7 @@ package org.apache.ignite.ml.composition.boosting.convergence.mean;
 
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.composition.ModelsComposition;
-import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
@@ -36,12 +36,12 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class MeanAbsValueCheckConvergenceStgy<K,V> extends ConvergenceCheckStrategy<K,V> {
+public class MeanAbsValueConvergenceChecker<K,V> extends ConvergenceChecker<K,V> {
     /** Serial version uid. */
     private static final long serialVersionUID = 8534776439755210864L;
 
     /**
-     * Creates an intance of MeanAbsValueCheckConvergenceStgy.
+     * Creates an intance of MeanAbsValueConvergenceChecker.
      *
      * @param sampleSize Sample size.
      * @param externalLbToInternalMapping External label to internal mapping.
@@ -50,7 +50,7 @@ public class MeanAbsValueCheckConvergenceStgy<K,V> extends ConvergenceCheckStrat
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    public MeanAbsValueCheckConvergenceStgy(long sampleSize,
+    public MeanAbsValueConvergenceChecker(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping,
         IgniteTriFunction<Long, Double, Double, Double> lossGradient,
         DatasetBuilder<K, V> datasetBuilder,

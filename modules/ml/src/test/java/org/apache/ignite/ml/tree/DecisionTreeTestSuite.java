@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.tree;
 
-import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndexTest;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataTest;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureCalculatorTest;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureTest;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureCalculatorTest;
@@ -36,7 +36,7 @@ import org.junit.runners.Suite;
     DecisionTreeRegressionTrainerTest.class,
     DecisionTreeClassificationTrainerIntegrationTest.class,
     DecisionTreeRegressionTrainerIntegrationTest.class,
-    DecisionTreeDataWithIndexTest.class,
+    DecisionTreeDataTest.class,
     GiniImpurityMeasureCalculatorTest.class,
     GiniImpurityMeasureTest.class,
     MSEImpurityMeasureCalculatorTest.class,

@@ -26,7 +26,7 @@ import org.apache.ignite.ml.tree.TreeFilter;
  * A partition {@code data} of the containing matrix of features and vector of labels stored in heap
  * with index on features.
  */
-public class DecisionTreeDataWithIndex extends FeatureMatrixWithLabelsOnHeapData implements AutoCloseable {
+public class DecisionTreeData extends FeatureMatrixWithLabelsOnHeapData implements AutoCloseable {
     /** Copy of vector with original labels. Auxiliary for Gradient Boosting on Trees.*/
     private double[] copyOfOriginalLabels;
 
@@ -43,7 +43,7 @@ public class DecisionTreeDataWithIndex extends FeatureMatrixWithLabelsOnHeapData
      * @param labels Vector with labels.
      * @param buildIdx Build index.
      */
-    public DecisionTreeDataWithIndex(double[][] features, double[] labels, boolean buildIdx) {
+    public DecisionTreeData(double[][] features, double[] labels, boolean buildIdx) {
         super(features, labels);
         this.buildIndex = buildIdx;
 
@@ -58,7 +58,7 @@ public class DecisionTreeDataWithIndex extends FeatureMatrixWithLabelsOnHeapData
      * @param filter Filter.
      * @return Data passed filter.
      */
-    public DecisionTreeDataWithIndex filter(TreeFilter filter) {
+    public DecisionTreeData filter(TreeFilter filter) {
         int size = 0;
 
         double[][] features = getFeatures();
@@ -81,7 +81,7 @@ public class DecisionTreeDataWithIndex extends FeatureMatrixWithLabelsOnHeapData
             }
         }
 
-        return new DecisionTreeDataWithIndex(newFeatures, newLabels, buildIndex);
+        return new DecisionTreeData(newFeatures, newLabels, buildIndex);
     }
 
     /**

@@ -25,14 +25,14 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * A partition {@code data} builder that makes {@link DecisionTreeDataWithIndex}.
+ * A partition {@code data} builder that makes {@link DecisionTreeData}.
  *
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class DecisionTreeDataWithIndexBuilder<K, V, C extends Serializable>
-    implements PartitionDataBuilder<K, V, C, DecisionTreeDataWithIndex> {
+public class DecisionTreeDataBuilder<K, V, C extends Serializable>
+    implements PartitionDataBuilder<K, V, C, DecisionTreeData> {
     /** */
     private static final long serialVersionUID = 3678784980215216039L;
 
@@ -52,7 +52,7 @@ public class DecisionTreeDataWithIndexBuilder<K, V, C extends Serializable>
      * @param lbExtractor Function that extracts labels from an {@code upstream} data.
      * @param buildIdx Build index.
      */
-    public DecisionTreeDataWithIndexBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
+    public DecisionTreeDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor, boolean buildIdx) {
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
@@ -60,7 +60,7 @@ public class DecisionTreeDataWithIndexBuilder<K, V, C extends Serializable>
     }
 
     /** {@inheritDoc} */
-    @Override public DecisionTreeDataWithIndex build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
+    @Override public DecisionTreeData build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
         double[][] features = new double[Math.toIntExact(upstreamDataSize)][];
         double[] labels = new double[Math.toIntExact(upstreamDataSize)];
 
@@ -75,6 +75,6 @@ public class DecisionTreeDataWithIndexBuilder<K, V, C extends Serializable>
             ptr++;
         }
 
-        return new DecisionTreeDataWithIndex(features, labels, buildIndex);
+        return new DecisionTreeData(features, labels, buildIndex);
     }
 }

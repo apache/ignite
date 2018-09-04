@@ -36,7 +36,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
+public abstract class ConvergenceChecker<K, V> implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 710762134746674105L;
 
@@ -59,7 +59,7 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
     private double precision;
 
     /**
-     * Constructs an instance of ConvergenceCheckStrategy.
+     * Constructs an instance of ConvergenceChecker.
      *
      * @param sampleSize Sample size.
      * @param externalLbToInternalMapping External label to internal mapping.
@@ -69,7 +69,7 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
      * @param lbExtractor Label extractor.
      * @param precision
      */
-    public ConvergenceCheckStrategy(long sampleSize,
+    public ConvergenceChecker(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping,
         IgniteTriFunction<Long, Double, Double, Double> lossGradient,
         DatasetBuilder<K, V> datasetBuilder,
@@ -129,7 +129,7 @@ public abstract class ConvergenceCheckStrategy<K, V> implements Serializable {
         ModelsComposition mdl);
 
     /**
-     * Compute error on one element of dataset.
+     * Compute error for the specific vector of dataset.
      *
      * @param currMdl Current model.
      * @return error.

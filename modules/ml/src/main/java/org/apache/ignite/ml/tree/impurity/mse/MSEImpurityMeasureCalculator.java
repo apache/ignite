@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.tree.impurity.mse;
 
 import org.apache.ignite.ml.tree.TreeFilter;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.TreeDataIndex;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
@@ -40,7 +40,7 @@ public class MSEImpurityMeasureCalculator extends ImpurityMeasureCalculator<MSEI
     }
 
     /** {@inheritDoc} */
-    @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeDataWithIndex data, TreeFilter filter, int depth) {
+    @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
         TreeDataIndex index = null;
         boolean canCalculate = false;
 

@@ -20,7 +20,7 @@ package org.apache.ignite.ml.tree.impurity.gini;
 import java.util.Arrays;
 import java.util.Map;
 import org.apache.ignite.ml.tree.TreeFilter;
-import org.apache.ignite.ml.tree.data.DecisionTreeDataWithIndex;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.TreeDataIndex;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
@@ -48,7 +48,7 @@ public class GiniImpurityMeasureCalculator extends ImpurityMeasureCalculator<Gin
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public StepFunction<GiniImpurityMeasure>[] calculate(DecisionTreeDataWithIndex data, TreeFilter filter, int depth) {
+    @Override public StepFunction<GiniImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
         TreeDataIndex index = null;
         boolean canCalculate = false;
 

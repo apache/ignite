@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence.mean;
 
-import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
-import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategyFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -26,23 +26,23 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Factory for {@link MeanAbsValueCheckConvergenceStgy}.
+ * Factory for {@link MeanAbsValueConvergenceChecker}.
  */
-public class MeanAbsValueCheckConvergenceStgyFactory extends ConvergenceCheckStrategyFactory {
+public class MeanAbsValueConvergenceCheckerFactory extends ConvergenceCheckerFactory {
     /**
      * @param precision Precision.
      */
-    public MeanAbsValueCheckConvergenceStgyFactory(double precision) {
+    public MeanAbsValueConvergenceCheckerFactory(double precision) {
         super(precision);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ConvergenceCheckStrategy<K, V> create(long sampleSize,
+    @Override public <K, V> ConvergenceChecker<K, V> create(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping,
         IgniteTriFunction<Long, Double, Double, Double> lossGradient, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return new MeanAbsValueCheckConvergenceStgy<>(sampleSize, externalLbToInternalMapping, lossGradient,
+        return new MeanAbsValueConvergenceChecker<>(sampleSize, externalLbToInternalMapping, lossGradient,
             datasetBuilder, featureExtractor, lbExtractor, precision);
     }
 }

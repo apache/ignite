@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence.simple;
 
-import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategy;
-import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckStrategyFactory;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
+import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -26,23 +26,23 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Factory for {@link CheckConvergenceStgyStub}.
+ * Factory for {@link ConvergenceCheckerStub}.
  */
-public class CheckConvergenceStgyStubFactory extends ConvergenceCheckStrategyFactory {
+public class ConvergenceCheckerStubFactory extends ConvergenceCheckerFactory {
     /**
-     * Create an instance of CheckConvergenceStgyStubFactory.
+     * Create an instance of ConvergenceCheckerStubFactory.
      */
-    public CheckConvergenceStgyStubFactory() {
+    public ConvergenceCheckerStubFactory() {
         super(0.0);
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ConvergenceCheckStrategy<K, V> create(long sampleSize,
+    @Override public <K, V> ConvergenceChecker<K, V> create(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping,
         IgniteTriFunction<Long, Double, Double, Double> lossGradient, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return new CheckConvergenceStgyStub<>(sampleSize, externalLbToInternalMapping, lossGradient,
+        return new ConvergenceCheckerStub<>(sampleSize, externalLbToInternalMapping, lossGradient,
             datasetBuilder, featureExtractor, lbExtractor);
     }
 }
