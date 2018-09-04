@@ -74,9 +74,14 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
 
     void InsertTestStrings(int32_t begin, int32_t end)
     {
+        InsertTestStrings(stmt, begin, end);
+    }
+
+    void InsertTestStrings(SQLHSTMT stmt0, int32_t begin, int32_t end)
+    {
         SQLCHAR req[] = "INSERT INTO TestType(_key, strField) VALUES(?, ?)";
 
-        SQLRETURN ret = SQLPrepare(stmt, req, SQL_NTS);
+        SQLRETURN ret = SQLPrepare(stmt0, req, SQL_NTS);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -86,16 +91,16 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
         SQLLEN strFieldLen = 0;
 
         // Binding parameters.
-        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+        ret = SQLBindParameter(stmt0, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt0));
 
-        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, sizeof(strField),
+        ret = SQLBindParameter(stmt0, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, sizeof(strField),
                                 sizeof(strField), &strField, sizeof(strField), &strFieldLen);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt0));
 
         // Inserting values.
         for (SQLSMALLINT i = begin; i < end; ++i)
@@ -106,17 +111,17 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
             strncpy(strField, val.c_str(), sizeof(strField));
             strFieldLen = SQL_NTS;
 
-            ret = SQLExecute(stmt);
+            ret = SQLExecute(stmt0);
 
             if (!SQL_SUCCEEDED(ret))
-                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt0));
         }
 
         // Resetting parameters.
-        ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
+        ret = SQLFreeStmt(stmt0, SQL_RESET_PARAMS);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt0));
     }
 
     void CheckValues(int32_t begin, int32_t end)
@@ -210,10 +215,6 @@ BOOST_AUTO_TEST_CASE(TestStreamingSimple)
 
     InsertTestStrings(10, 110);
 
-    boost::this_thread::sleep_for(boost::chrono::milliseconds(250));
-
-    BOOST_CHECK_EQUAL(cache.Size(), 100);
-
     res = ExecQuery("set streaming off");
 
     if (res != SQL_SUCCESS)
@@ -292,8 +293,6 @@ BOOST_AUTO_TEST_CASE(TestStreamingReset)
 
     InsertTestStrings(10, 20);
 
-    boost::this_thread::sleep_for(boost::chrono::milliseconds(250));
-
     BOOST_CHECK_EQUAL(cache.Size(), 0);
 
     res = ExecQuery("set streaming 1 batch_size 10 flush_frequency 100");
@@ -305,14 +304,134 @@ BOOST_AUTO_TEST_CASE(TestStreamingReset)
 
     InsertTestStrings(20, 50);
 
-    boost::this_thread::sleep_for(boost::chrono::milliseconds(250));
-
-    BOOST_CHECK_EQUAL(cache.Size(), 50);
+    BOOST_CHECK_EQUAL(cache.Size(), 20);
 
     res = ExecQuery("set streaming 0");
 
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(cache.Size(), 50);
+}
+
+BOOST_AUTO_TEST_CASE(TestStreamingClosingStatement)
+{
+    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
+
+    SQLRETURN res = ExecQuery("set streaming 1 batch_size 100 flush_frequency 1000");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    InsertTestStrings(0, 10);
+
+    BOOST_CHECK_EQUAL(cache.Size(), 0);
+
+    SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+    BOOST_CHECK_EQUAL(cache.Size(), 0);
+
+    res = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    res = ExecQuery("set streaming 0");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(cache.Size(), 10);
+}
+
+BOOST_AUTO_TEST_CASE(TestStreamingSeveralStatements)
+{
+    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
+
+    SQLHSTMT stmt2;
+
+    SQLRETURN res = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt2);
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    res = ExecQuery("set streaming 1 batch_size 100 flush_frequency 1000");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    InsertTestStrings(0, 10);
+
+    InsertTestStrings(stmt2, 10, 20);
+
+    InsertTestStrings(20, 30);
+
+    InsertTestStrings(stmt2, 30, 50);
+
+    BOOST_CHECK_EQUAL(cache.Size(), 0);
+
+    res = ExecQuery("set streaming 0");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(cache.Size(), 50);
+
+    res = SQLFreeHandle(SQL_HANDLE_STMT, stmt2);
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt2));
+}
+
+BOOST_AUTO_TEST_CASE(TestStreamingSeveralStatementsClosing)
+{
+    Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
+
+    SQLHSTMT stmt2;
+
+    SQLRETURN res = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt2);
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    res = ExecQuery("set streaming 1 batch_size 100 flush_frequency 1000");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    InsertTestStrings(0, 10);
+
+    InsertTestStrings(stmt2, 10, 20);
+
+    InsertTestStrings(20, 30);
+
+    InsertTestStrings(stmt2, 30, 50);
+
+    BOOST_CHECK_EQUAL(cache.Size(), 0);
+
+    res = SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    res = SQLFreeHandle(SQL_HANDLE_STMT, stmt2);
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt2));
+
+    BOOST_CHECK_EQUAL(cache.Size(), 0);
+
+    res = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    res = ExecQuery("set streaming 0");
+
+    if (res != SQL_SUCCESS)
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(cache.Size(), 50);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
