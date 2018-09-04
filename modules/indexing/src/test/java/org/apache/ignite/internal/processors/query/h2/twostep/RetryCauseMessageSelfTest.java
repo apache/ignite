@@ -398,11 +398,6 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void stopAndUnregisterCurrentLazyWorker() {
-            startedExecutor.stopAndUnregisterCurrentLazyWorker();
-        }
-
-        /** {@inheritDoc} */
         @Override public void unregisterLazyWorker(MapQueryLazyWorker worker) {
             startedExecutor.unregisterLazyWorker(worker);
         }

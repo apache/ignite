@@ -1433,7 +1433,7 @@ public class GridMapQueryExecutor {
      * Unregister lazy worker if needed.
      * @param worker Lazy worker.
      */
-    public void stopAndUnregisterLazyWorker(MapQueryLazyWorker worker) {
+    private void stopAndUnregisterLazyWorker(MapQueryLazyWorker worker) {
         assert worker != null;
 
         worker.stop(false);
