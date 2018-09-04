@@ -15,87 +15,76 @@
 # limitations under the License.
 #
 
-#Frontend build step.
+
+#~~~~~~~~~~~~~~~~~~#
+#  Frontend build  #
+#~~~~~~~~~~~~~~~~~~#
 FROM node:8-slim as frontend-build
 
 ENV NPM_CONFIG_LOGLEVEL error
 
 WORKDIR /opt/web-console
 
-# Install node modules for frontend.
-COPY frontend/package*.json frontend/
-RUN (cd frontend && npm install --no-optional)
-
-# Copy source.
+# Install node modules and build sources
 COPY frontend frontend
-
-RUN (cd frontend && npm run build)
-
-#Backend build step.
-FROM node:8-slim as backend-build
-
-ENV NPM_CONFIG_LOGLEVEL error
-
-# Update package list & install.
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6 \
-    && echo "deb http://repo.mongodb.org/apt/debian jessie/mongodb-org/3.4 main" | tee /etc/apt/sources.list.d/mongodb-org-3.4.list
-
-# Update package list & install.
-RUN apt-get update \
-    && apt-get install -y nginx-light mongodb-org-server dos2unix \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN cd frontend && \
+    npm install --no-optional && \
+    npm run build
 
 
-WORKDIR /opt/web-console
-
-COPY backend/package*.json backend/
-RUN (cd backend && npm install --no-optional --production)
-
-# Copy source.
-COPY backend backend
-
-#Copy Ignite Web Agent module package
-COPY ignite-web-agent-*.zip backend/agent_dists
-
-#Build Web Console Docker image.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#  Web Console Standalone assemble  #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 FROM node:8-slim
 
 ENV NPM_CONFIG_LOGLEVEL error
 
-# Install global node packages.
+# Install global node packages
 RUN npm install -g pm2
 
-# Update package list & install.
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6 \
-    && echo "deb http://repo.mongodb.org/apt/debian jessie/mongodb-org/3.4 main" | tee /etc/apt/sources.list.d/mongodb-org-3.4.list
-
-# Update package list & install.
-RUN apt-get update \
-    && apt-get install -y nginx-light mongodb-org-server dos2unix \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Update software sources and install missing applications
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6 && \
+    echo "deb http://repo.mongodb.org/apt/debian jessie/mongodb-org/3.4 main" > /etc/apt/sources.list.d/mongodb-org-3.4.list && \
+    apt update && \
+    apt install -y --no--install-recommends \
+        nginx-light \
+        mongodb-org-server \
+        dos2unix && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/web-console
 
-# COPY backend/package*.json backend/
-# RUN (cd backend && npm install --no-optional --production)
+# Install node modules for backend
+COPY backend/package*.json backend/
+RUN cd backend && \
+    npm install --no-optional --production
 
-# Copy source.
+# Copy and build sources
+COPY backend backend
+RUN cd backend && \
+    npm run build
+
+# Copy Ignite Web Agent module package
+COPY ignite-web-agent-*.zip backend/agent_dists
+
+# Copy previously built frontend
 COPY --from=frontend-build /opt/web-console/frontend/build static
-COPY --from=backend-build /opt/web-console/backend backend
-COPY docker-entrypoint.sh docker-entrypoint.sh
 
+# Copy and fix entrypoint script
+COPY docker-entrypoint.sh docker-entrypoint.sh
 RUN chmod +x docker-entrypoint.sh \
     && dos2unix docker-entrypoint.sh
 
-# Copy nginx config.
+# Copy nginx configuration
 COPY nginx/* /etc/nginx/
 
-
+# Mount required volumes
 VOLUME ["/etc/nginx"]
 VOLUME ["/data/db"]
 VOLUME ["/opt/web-console/serve/agent_dists"]
 
 EXPOSE 80
+
 ENTRYPOINT ["/opt/web-console/docker-entrypoint.sh"]
+
