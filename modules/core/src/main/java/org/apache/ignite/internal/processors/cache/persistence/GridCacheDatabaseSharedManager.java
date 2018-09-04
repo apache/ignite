@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -3615,7 +3616,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     ", checkpointEntryLoggedDuration=%dms" +
                                     ", totalMetasProcessed=%d" +
                                     ", totalDirtyMetaPages=%d" +
-                                    ", metas=%s" +
+                                    ", totalMetasDuration=%dms" +
                                     ']',
                                 cpRec.checkpointId(),
                                 cpPtr,
@@ -3631,23 +3632,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 tracker.drtyPagesCollectedDuration(),
                                 tracker.checkpointEntryLoggedDuration(),
                                 tracker.getStats().size(),
-                                tracker.getStats().values().stream().collect(Collectors.summarizingLong(new ToLongFunction<DbCheckpointListener.SaveMetadataStat>() {
+                                tracker.getStats().stream().collect(Collectors.summarizingLong(new ToLongFunction<DbCheckpointListener.SaveMetadataStat>() {
                                     @Override public long applyAsLong(DbCheckpointListener.SaveMetadataStat val) {
                                         return val.getPages();
                                     }
                                 })).getSum(),
-                                tracker.getStats().entrySet().stream().sorted((o1,
-                                    o2) -> Long.compare(o2.getKey(), o1.getKey())).
-                                    map(new Function<Map.Entry<Long, DbCheckpointListener.SaveMetadataStat>, String>() {
-                                        @Override public String apply(
-                                            Map.Entry<Long, DbCheckpointListener.SaveMetadataStat> entry) {
-                                            return '[' + "name=" + entry.getValue().getName() +
-                                                ", duration=" + (entry.getKey() / 1000 / 1000.) + " ms" +
-                                                ", stripes=" + entry.getValue().getStripes() +
-                                                ", dirtyPages=" + entry.getValue().getPages() +
-                                                ']';
-                                        }
-                                    }).collect(Collectors.toList()).toString()
+                                (long)tracker.getStats().stream().collect(Collectors.summarizingDouble(new ToDoubleFunction<DbCheckpointListener.SaveMetadataStat>() {
+                                    @Override public double applyAsDouble(DbCheckpointListener.SaveMetadataStat val) {
+                                        return val.getDuration();
+                                    }
+                                })).getSum() / 1000 / 1000
+//                                tracker.getStats().entrySet().stream().sorted((o1,
+//                                    o2) -> Long.compare(o2.getKey(), o1.getKey())).
+//                                    map(new Function<Map.Entry<Long, DbCheckpointListener.SaveMetadataStat>, String>() {
+//                                        @Override public String apply(
+//                                            Map.Entry<Long, DbCheckpointListener.SaveMetadataStat> entry) {
+//                                            return '[' + "name=" + entry.getValue().getName() +
+//                                                ", duration=" + (entry.getKey() / 1000 / 1000.) + " ms" +
+//                                                ", stripes=" + entry.getValue().getStripes() +
+//                                                ", dirtyPages=" + entry.getValue().getPages() +
+//                                                ']';
+//                                        }
+//                                    }).collect(Collectors.toList()).toString()
                             )
                         );
 

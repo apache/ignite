@@ -177,7 +177,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         else {
             int conc = ctx.concurrency();
 
-            assert conc > 0 : "Bad concurrent value";
+            assert conc > 0 : "Bad concurrency value: " + conc;
 
             int threshold = partDataStores.size() / conc;
 
@@ -261,6 +261,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             freeList.saveMetadata(ctx);
 
+            long t0 = System.nanoTime();
+
             long updCntr = store.updateCounter();
             long size = store.fullSize();
             long rmvId = globalRemoveId().get();
@@ -292,8 +294,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 int grpId = grp.groupId();
                 long partMetaId = pageMem.partitionMetaPageId(grpId, store.partId());
                 long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
-
-                long t0 = System.nanoTime();
 
                 SaveMetadataStat stat = new SaveMetadataStat(store.name());
 

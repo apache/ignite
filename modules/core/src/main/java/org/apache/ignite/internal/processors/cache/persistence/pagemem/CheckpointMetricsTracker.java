@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -291,17 +293,17 @@ public class CheckpointMetricsTracker {
     }
 
     /** */
-    private SortedMap<Long, DbCheckpointListener.SaveMetadataStat> stats = new TreeMap<>();
+    private List<DbCheckpointListener.SaveMetadataStat> stats = new ArrayList<>();
 
     /**
      * @param stat Stat.
      */
     public void addMetaStat(DbCheckpointListener.SaveMetadataStat stat) {
-        stats.put(stat.getDuration(), stat);
+        stats.add(stat);
     }
 
     /** */
-    public SortedMap<Long, DbCheckpointListener.SaveMetadataStat> getStats() {
+    public List<DbCheckpointListener.SaveMetadataStat> getStats() {
         return stats;
     }
 }
