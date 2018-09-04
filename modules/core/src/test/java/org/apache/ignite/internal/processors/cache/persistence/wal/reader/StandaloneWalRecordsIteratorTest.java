@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+
 /**
  * The test check, that StandaloneWalRecordsIterator correctly close file descriptors associated with WAL files.
  */
@@ -75,7 +77,10 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
-    /** */
+    /**
+     * Check correct closing file descriptors
+     * @throws Exception if test failed.
+     */
     public void testCorrectClosingFileDescriptors() throws Exception {
         IgniteEx ig = (IgniteEx)startGrid();
 
@@ -110,16 +115,26 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         assertEquals("All WAL files must be closed!", CountedFileIO.getCountOpenedWalFiles(), CountedFileIO.getCountClosedWalFiles());
     }
 
-    /** */
+    /**
+     * Creates WALIterator associated with files inside walDir.
+     * @param walDir - path to WAL directory.
+     * @return WALIterator associated with files inside walDir.
+     * @throws IgniteCheckedException if error occur.
+     */
     private WALIterator createWalIterator(String walDir) throws IgniteCheckedException {
-        IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder();
+        IteratorParametersBuilder params = new IteratorParametersBuilder();
 
         params.ioFactory(new CountedFileIOFactory());
 
-        return new IgniteWalIteratorFactory(log).iterator(params.copy().filesOrDirs(walDir));
+        return new IgniteWalIteratorFactory(log).iterator(params.filesOrDirs(walDir));
     }
 
-    /** */
+    /**
+     * Evaluate path to directory with WAL archive.
+     * @param ignite instance of Ignite
+     * @return path to directory with WAL archive.
+     * @throws IgniteCheckedException if error occur.
+     */
     private String getArchiveWalDirPath(Ignite ignite) throws IgniteCheckedException {
         return U.resolveWorkDirectory(
             U.defaultWorkDirectory(),
@@ -128,7 +143,9 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         ).getAbsolutePath();
     }
 
-    /** */
+    /**
+     *
+     */
     private static class CountedFileIOFactory extends RandomAccessFileIOFactory {
         /** {@inheritDoc} */
         @Override public FileIO create(File file) throws IOException {
@@ -141,7 +158,9 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static class CountedFileIO extends RandomAccessFileIO {
         /** Wal open counter. */
         private static final AtomicInteger WAL_OPEN_COUNTER = new AtomicInteger();
@@ -169,12 +188,16 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
                 WAL_CLOSE_COUNTER.incrementAndGet();
         }
 
-        /** */
+        /**
+         *
+         * @return number of opened files.
+         */
         public static int getCountOpenedWalFiles() { return WAL_OPEN_COUNTER.get(); }
 
-        /** */
-        public static int getCountClosedWalFiles() {
-            return WAL_CLOSE_COUNTER.get();
-        }
+        /**
+         *
+         * @return number of closed files.
+         */
+        public static int getCountClosedWalFiles() { return WAL_CLOSE_COUNTER.get(); }
     }
 }
