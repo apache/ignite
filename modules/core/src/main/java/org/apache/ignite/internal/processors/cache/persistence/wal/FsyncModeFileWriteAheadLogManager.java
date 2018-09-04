@@ -55,6 +55,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -73,7 +74,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
@@ -120,6 +121,8 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -132,9 +135,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
     /** */
     public static final FileDescriptor[] EMPTY_DESCRIPTORS = new FileDescriptor[0];
-
-    /** */
-    public static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
     /** */
     private static final byte[] FILL_BUF = new byte[1024 * 1024];
@@ -190,11 +190,33 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** Latest serializer version to use. */
     private static final int LATEST_SERIALIZER_VERSION = 2;
 
+    /**
+     * Percentage of archive size for checkpoint trigger. Need for calculate max size of WAL after last checkpoint.
+     * Checkpoint should be triggered when max size of WAL after last checkpoint more than maxWallArchiveSize * thisValue
+     */
+    private static final double CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE =
+        IgniteSystemProperties.getDouble(IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE, 0.25);
+
+    /**
+     * Percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
+     */
+    private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
+        IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, 0.5);
+
     /** */
     private final boolean alwaysWriteFullPages;
 
     /** WAL segment size in bytes */
     private final long maxWalSegmentSize;
+
+    /**
+     * Maximum number of allowed segments without checkpoint. If we have their more checkpoint should be triggered.
+     * It is simple way to calculate wal size without checkpoint instead fair wal size calculating.
+     */
+    private final long maxSegCountWithoutCheckpoint;
+
+    /** Size of wal archive since which removing of old archive should be started */
+    private final long allowedThresholdWalArchiveSize;
 
     /** */
     private final WALMode mode;
@@ -327,6 +349,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         fileInputFactory = new SimpleFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
+
+        maxSegCountWithoutCheckpoint =
+            (long)((dsCfg.getMaxWalArchiveSize() * CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE) / dsCfg.getWalSegmentSize());
+
+        allowedThresholdWalArchiveSize = (long)(dsCfg.getMaxWalArchiveSize() * THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
 
         assert mode == WALMode.FSYNC : dsCfg;
     }
@@ -876,6 +903,40 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         return res >= 0 ? res : 0;
     }
 
+    /**
+     * Files from archive WAL directory.
+     */
+    private FileDescriptor[] walArchiveFiles() {
+        return scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
+    }
+
+    /** {@inheritDoc} */
+    @Override public long maxArchivedSegmentToDelete() {
+        //When maxWalArchiveSize==MAX_VALUE deleting files is not permit.
+        if (dsCfg.getMaxWalArchiveSize() == Long.MAX_VALUE)
+            return -1;
+
+        FileDescriptor[] archivedFiles = walArchiveFiles();
+
+        Long totalArchiveSize = Stream.of(archivedFiles)
+            .map(desc -> desc.file().length())
+            .reduce(0L, Long::sum);
+
+        if (archivedFiles.length == 0 || totalArchiveSize < allowedThresholdWalArchiveSize)
+            return -1;
+
+        long sizeOfOldestArchivedFiles = 0;
+
+        for (FileDescriptor desc : archivedFiles) {
+            sizeOfOldestArchivedFiles += desc.file().length();
+
+            if (totalArchiveSize - sizeOfOldestArchivedFiles < allowedThresholdWalArchiveSize)
+                return desc.getIdx();
+        }
+
+        return archivedFiles[archivedFiles.length - 1].getIdx();
+    }
+
     /** {@inheritDoc} */
     @Override public long lastArchivedSegment() {
         return archiver.lastArchivedAbsoluteIndex();
@@ -1065,6 +1126,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             FileWriteHandle next = initNextWriteHandle(cur.getSegmentId());
 
+            if (next.idx - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
+                cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
+
             boolean swapped = currentHndUpd.compareAndSet(this, hnd, next);
 
             assert swapped : "Concurrent updates on rollover are not allowed";
@@ -1079,6 +1143,15 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             hnd.awaitNext();
 
         return currentHandle();
+    }
+
+    /**
+     * Give last checkpoint file idx
+     */
+    private long lashCheckpointFileIdx() {
+        WALPointer lastCheckpointMark = cctx.database().lastCheckpointMarkWalPointer();
+
+        return lastCheckpointMark == null ? 0 : ((FileWALPointer)lastCheckpointMark).index();
     }
 
     /**

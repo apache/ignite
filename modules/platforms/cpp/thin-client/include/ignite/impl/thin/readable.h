@@ -84,7 +84,7 @@ namespace ignite
                  */
                 virtual void Read(binary::BinaryReaderImpl& reader)
                 {
-                    reader.ReadTopObject0(value);
+                    reader.ReadTopObject0<ignite::binary::BinaryReader, ValueType>(value);
                 }
 
             private:

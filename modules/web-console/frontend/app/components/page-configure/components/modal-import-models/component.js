@@ -1140,7 +1140,7 @@ export class ModalImportModels {
                 ></tables-action-cell>
             `,
             visible: true,
-            minWidth: 500
+            minWidth: 450
         }
     ];
 }

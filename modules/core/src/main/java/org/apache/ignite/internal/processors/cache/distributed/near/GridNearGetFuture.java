@@ -319,7 +319,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
                         skipVals,
-                        recovery);
+                        recovery,
+                        null); // TODO IGNITE-7371
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -382,7 +383,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     true,
                     skipVals,
                     cctx.deploymentEnabled(),
-                    recovery);
+                    recovery,
+                    null); // TODO IGNITE-7371
 
                 add(fut); // Append new future.
 
@@ -455,7 +457,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            null);
+                            null,
+                            null); // TODO IGNITE-7371
 
                         if (res != null) {
                             v = res.value();
@@ -473,7 +476,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary);
+                            !deserializeBinary,
+                            null); // TODO IGNITE-7371
                     }
                 }
 
@@ -599,7 +603,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            null);
+                            null,
+                            null); // TODO IGNITE-7371
 
                         if (res != null) {
                             v = res.value();
@@ -617,7 +622,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary);
+                            !deserializeBinary,
+                            null); // TODO IGNITE-7371
                     }
 
                     // Entry was not in memory or in swap, so we remove it from cache.

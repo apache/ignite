@@ -29,18 +29,22 @@ import org.jetbrains.annotations.Nullable;
 /**
  * WAL file descriptor.
  */
-public class FileDescriptor implements
-    Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
-    /** WAL segment file extension. */
+public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
+
+    /** file extension of WAL segment. */
     private static final String WAL_SEGMENT_FILE_EXT = ".wal";
-    /** */
+
+    /** Length of WAL segment file name. */
+    private static final int WAL_SEGMENT_FILE_NAME_LENGTH = 16;
+
+    /** File represented by this class. */
     protected final File file;
 
-    /** Absolute WAL segment file index */
+    /** Absolute WAL segment file index. */
     protected final long idx;
 
     /**
-     * Creates file descriptor. Index is restored from file name
+     * Creates file descriptor. Index is restored from file name.
      *
      * @param file WAL segment file.
      */
@@ -50,7 +54,7 @@ public class FileDescriptor implements
 
     /**
      * @param file WAL segment file.
-     * @param idx Absolute WAL segment file index. For null value index is restored from file name
+     * @param idx Absolute WAL segment file index. For null value index is restored from file name.
      */
     public FileDescriptor(@NotNull File file, @Nullable Long idx) {
         this.file = file;
@@ -59,7 +63,7 @@ public class FileDescriptor implements
 
         assert fileName.contains(WAL_SEGMENT_FILE_EXT);
 
-        this.idx = idx == null ? Long.parseLong(fileName.substring(0, 16)) : idx;
+        this.idx = idx == null ? Long.parseLong(fileName.substring(0, WAL_SEGMENT_FILE_NAME_LENGTH)) : idx;
     }
 
     /**
@@ -71,7 +75,7 @@ public class FileDescriptor implements
 
         String segmentStr = Long.toString(segment);
 
-        for (int i = segmentStr.length(); i < 16; i++)
+        for (int i = segmentStr.length(); i < WAL_SEGMENT_FILE_NAME_LENGTH; i++)
             b.a('0');
 
         b.a(segmentStr).a(WAL_SEGMENT_FILE_EXT);
@@ -103,8 +107,20 @@ public class FileDescriptor implements
     }
 
     /**
-     * @return True if segment is ZIP compressed.
+     * @return Absolute WAL segment file index
      */
+    public long getIdx() {
+        return idx;
+    }
+
+    /**
+     * @return absolute pathname string of this file descriptor pathname.
+     */
+    public String getAbsolutePath() {
+        return file.getAbsolutePath();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isCompressed() {
         return file.getName().endsWith(".zip");
     }

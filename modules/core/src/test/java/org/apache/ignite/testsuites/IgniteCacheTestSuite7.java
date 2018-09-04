@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.authentication.Authentication1kUsersNodeRestartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationConfigurationClusterTest;
@@ -33,15 +34,15 @@ import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAf
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithPrimaryIndexCorruptionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
-
-import java.util.Set;
 
 /**
  * Test suite.
@@ -94,6 +95,9 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(TxWithSmallTimeoutAndContentionOneKeyTest.class);
 
         suite.addTestSuite(CacheRentingStateRepairTest.class);
+
+        suite.addTestSuite(TransactionIntegrityWithPrimaryIndexCorruptionTest.class);
+        suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
 
         return suite;
     }
