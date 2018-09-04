@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -242,7 +241,7 @@ public class EncryptedFileIO implements FileIO {
      * @param encrypted Encrypted buffer.
      * @param destBuf Destination buffer.
      */
-    private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) {
+    private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) throws IOException {
         assert encrypted.remaining() >= pageSize;
         assert encrypted.limit() >= pageSize;
 
@@ -274,7 +273,7 @@ public class EncryptedFileIO implements FileIO {
      *
      * @param encrypted Encrypted data buffer.
      */
-    private void checkCRC(ByteBuffer encrypted) {
+    private void checkCRC(ByteBuffer encrypted) throws IOException {
         int crc = PureJavaCrc32.calcCrc32(encrypted, encryptedDataSize());
 
         int storedCrc = 0;
@@ -285,7 +284,7 @@ public class EncryptedFileIO implements FileIO {
         storedCrc |= encrypted.get() & 0xff;
 
         if(crc != storedCrc) {
-            throw new IgniteException("Content of encrypted page is broken. [StoredCrc=" + storedCrc +
+            throw new IOException("Content of encrypted page is broken. [StoredCrc=" + storedCrc +
                 ", calculatedCrd=" + crc + "]");
         }
 

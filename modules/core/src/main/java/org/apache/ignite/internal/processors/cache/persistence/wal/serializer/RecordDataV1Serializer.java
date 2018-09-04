@@ -155,7 +155,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
         this.encSpi = cctx.gridConfig().getEncryptionSpi();
-        this.realPageSize = CU.encryptedPageSize(pageSize, encSpi);
+
+        //This happen on offline WAL iteration(we don't have encryption keys available).
+        if (encSpi != null)
+            this.realPageSize = CU.encryptedPageSize(pageSize, encSpi);
+        else
+            this.realPageSize = pageSize;
     }
 
     /** {@inheritDoc} */
