@@ -2438,7 +2438,7 @@ public class IgnitionEx {
                 if (cfg.getEncryptionSpi() == null) {
                     AESEncryptionSpi encSpi = new AESEncryptionSpi();
 
-                    encSpi.setKeyStorePath(this.getClass().getResource("/tde.jks").getPath());
+                    encSpi.setKeyStorePath("deleteinmaster/tde.jks");
                     encSpi.setKeyStorePassword("love_sex_god".toCharArray());
 
                     cfg.setEncryptionSpi(encSpi);
