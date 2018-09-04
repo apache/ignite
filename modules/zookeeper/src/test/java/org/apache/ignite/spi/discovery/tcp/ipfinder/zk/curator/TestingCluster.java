@@ -36,6 +36,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Manages an internally running ensemble of ZooKeeper servers. FOR TESTING PURPOSES ONLY.
+ * This class is a copy of {{org.apache.curator.test.TestingCluster}},
+ * but have very small change, that allow to run testing cluster with ZooKeeper 2.4.13 ver.
  */
 public class TestingCluster implements Closeable {
     static {
