@@ -39,27 +39,28 @@ public class IgniteCacheTestSuite8 extends TestSuite {
         System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
 
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 8");
-
-        // Cache metrics.
-        suite.addTest(IgniteCacheMetricsSelfTestSuite.suite());
-
-        // Topology validator.
-        suite.addTest(IgniteTopologyValidatorTestSuite.suite());
-
-        // Eviction.
-        suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());
-
-        // Iterators.
-        suite.addTest(IgniteCacheIteratorsSelfTestSuite.suite());
+//
+//        // Cache metrics.
+//        suite.addTest(IgniteCacheMetricsSelfTestSuite.suite());
+//
+//        // Topology validator.
+//        suite.addTest(IgniteTopologyValidatorTestSuite.suite());
+//
+//        // Eviction.
+//        suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());
+//
+//        // Iterators.
+//        suite.addTest(IgniteCacheIteratorsSelfTestSuite.suite());
 
         // Rebalancing.
-        suite.addTestSuite(GridCacheOrderedPreloadingSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingSyncSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingSyncCheckDataTest.class);
-        suite.addTestSuite(GridCacheRebalancingUnmarshallingFailedSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingAsyncSelfTest.class);
-        suite.addTestSuite(GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingCancelTest.class);
+//        suite.addTestSuite(GridCacheOrderedPreloadingSelfTest.class);
+        for (int i = 0; i < 20; i++)
+            suite.addTestSuite(GridCacheRebalancingSyncSelfTest.class);
+//        suite.addTestSuite(GridCacheRebalancingSyncCheckDataTest.class);
+//        suite.addTestSuite(GridCacheRebalancingUnmarshallingFailedSelfTest.class);
+//        suite.addTestSuite(GridCacheRebalancingAsyncSelfTest.class);
+//        suite.addTestSuite(GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class);
+//        suite.addTestSuite(GridCacheRebalancingCancelTest.class);
 
         return suite;
     }
