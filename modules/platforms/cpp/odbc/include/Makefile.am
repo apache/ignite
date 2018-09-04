@@ -19,7 +19,6 @@ ACLOCAL_AMFLAGS =-I m4
 
 noinst_HEADERS = \
     ignite/odbc.h \
-    ignite/odbc/query/streaming/streaming_batch.h \
     ignite/odbc/query/table_metadata_query.h \
     ignite/odbc/query/special_columns_query.h \
     ignite/odbc/query/streaming_query.h \
@@ -63,6 +62,8 @@ noinst_HEADERS = \
     ignite/odbc/sql/sql_set_streaming_command.h \
     ignite/odbc/sql/sql_token.h \
     ignite/odbc/sql/sql_utils.h \
+    ignite/odbc/streaming/streaming_batch.h \
+    ignite/odbc/streaming/streaming_context.h \
     ignite/odbc/connection.h \
     ignite/odbc/odbc_error.h \
     ignite/odbc/message.h \
