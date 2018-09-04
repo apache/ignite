@@ -943,8 +943,6 @@ namespace ignite
 
             SqlResult::Type result = connection.GetStreamingContext().Disable();
 
-            currentQuery.reset();
-
             return result;
         }
 
