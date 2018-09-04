@@ -309,6 +309,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
      *
      * @deprecated Since Ignite 2.7.
      */
+    @Deprecated
     public SqlFieldsQuery setLazy(boolean lazy) {
         this.lazy = lazy;
 
@@ -322,6 +323,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
      *
      * @return Lazy flag.
      */
+    @Deprecated
     public boolean isLazy() {
         return lazy;
     }
