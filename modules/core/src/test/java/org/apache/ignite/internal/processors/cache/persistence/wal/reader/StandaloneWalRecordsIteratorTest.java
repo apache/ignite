@@ -34,56 +34,83 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ * The test check, that StandaloneWalRecordsIterator correctly close file descriptors associated with WAL files.
+ */
 public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
-    /** Index. */
-    protected static final int IDX = 0;
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(name);
 
-    /** Cache name. */
-    protected static final String CACHE_NAME = "cache1";
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration().
+                setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                )
+        );
 
-    /** Keys count. */
-    protected static final int KEYS_CNT = 50;
+        return cfg;
+    }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** */
     public void testCorrectClosingFileDescriptors() throws Exception {
-        startGrid(getConfiguration());
+        IgniteEx ig = (IgniteEx)startGrid();
 
-        Ignite ignite = ignite(IDX);
+        String archiveWalDir = getArchiveWalDirPath(ig);
 
-        final String archiveWalDir = getArchiveWalDirPath(ignite);
+        ig.cluster().active(true);
 
-        ignite.cluster().active(true);
+        IgniteCacheDatabaseSharedManager sharedMgr = ig.context().cache().context().database();
 
-        IgniteCacheDatabaseSharedManager sharedMgr = ((IgniteEx)ignite).context().cache().context().database();
+        IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
 
-        IgniteWriteAheadLogManager walMgr = ((IgniteEx)ignite).context().cache().context().wal();
-
-        for (int i = 0; i < 2 * ignite.configuration().getDataStorageConfiguration().getWalSegments(); i++) {
+        for (int i = 0; i < 2 * ig.configuration().getDataStorageConfiguration().getWalSegments(); i++) {
             sharedMgr.checkpointReadLock();
 
-            walMgr.log(new SnapshotRecord(i, false));
+            try {
+                walMgr.log(new SnapshotRecord(i, false));
 
-            sharedMgr.checkpointReadUnlock();
+            }
+            finally {
+                sharedMgr.checkpointReadUnlock();
+            }
         }
 
-        stopGrid(IDX);
+        stopGrid();
 
-        createWalIterator(archiveWalDir).forEach(x -> {});
+        // Iterate by all archived WAL segments.
+        createWalIterator(archiveWalDir).forEach(x -> {
+        });
 
         assertTrue("At least one WAL file must be opened!", CountedFileIO.getCountOpenedWalFiles() > 0);
+
         assertEquals("All WAL files must be closed!", CountedFileIO.getCountOpenedWalFiles(), CountedFileIO.getCountClosedWalFiles());
     }
 
-    /**
-     * @param walDir
-     * @return
-     * @throws IgniteCheckedException
-     */
+    /** */
     private WALIterator createWalIterator(String walDir) throws IgniteCheckedException {
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder();
 
@@ -94,52 +121,28 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
     /** */
     private String getArchiveWalDirPath(Ignite ignite) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(U.defaultWorkDirectory(), ignite.configuration().getDataStorageConfiguration().getWalArchivePath(), false).getAbsolutePath();
+        return U.resolveWorkDirectory(
+            U.defaultWorkDirectory(),
+            ignite.configuration().getDataStorageConfiguration().getWalArchivePath(),
+            false
+        ).getAbsolutePath();
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(IDX));
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
-        cfg.getDataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setPersistenceEnabled(true));
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-        stopAllGrids();
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-        stopAllGrids();
-        cleanPersistenceDir();
-    }
-
-    /**
-     *
-     */
+    /** */
     private static class CountedFileIOFactory extends RandomAccessFileIOFactory {
+        /** {@inheritDoc} */
         @Override public FileIO create(File file) throws IOException {
-            return this.create(file, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+            return create(file, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
         }
 
+        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             return new CountedFileIO(file, modes);
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private static class CountedFileIO extends RandomAccessFileIO {
-
-        /** Wal file extension. */
-        private static final String WAL_FILE_EXTENSION = ".wal";
         /** Wal open counter. */
         private static final AtomicInteger WAL_OPEN_COUNTER = new AtomicInteger();
         /** Wal close counter. */
@@ -148,34 +151,28 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         /** File name. */
         private final String fileName;
 
-        /**
-         * @param file File.
-         * @param modes Modes.
-         */
+        /** */
         public CountedFileIO(File file, OpenOption... modes) throws IOException {
             super(file, modes);
-            fileName = file.getAbsolutePath();
-            if (fileName.endsWith(WAL_FILE_EXTENSION))
+
+            fileName = file.getName();
+
+            if (FileWriteAheadLogManager.WAL_NAME_PATTERN.matcher(fileName).matches())
                 WAL_OPEN_COUNTER.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void close() throws IOException {
             super.close();
-            if (fileName.endsWith(WAL_FILE_EXTENSION))
+
+            if (FileWriteAheadLogManager.WAL_NAME_PATTERN.matcher(fileName).matches())
                 WAL_CLOSE_COUNTER.incrementAndGet();
         }
 
-        /**
-         * @return
-         */
-        public static int getCountOpenedWalFiles() {
-            return WAL_OPEN_COUNTER.get();
-        }
+        /** */
+        public static int getCountOpenedWalFiles() { return WAL_OPEN_COUNTER.get(); }
 
-        /**
-         * @return
-         */
+        /** */
         public static int getCountClosedWalFiles() {
             return WAL_CLOSE_COUNTER.get();
         }

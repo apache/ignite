@@ -295,7 +295,7 @@ public abstract class AbstractWalRecordsIterator
      * @param start Optional start pointer. Null means read from the beginning.
      * @param fileIO fileIO associated with file descriptor
      * @param segmentHeader read segment header from fileIO
-     * @return Initialized file handle.
+     * @return Initialized file read header.
      * @throws IgniteCheckedException If initialized failed due to another unexpected error.
      */
     protected AbstractReadFileHandle initReadHandleAfterSegmentHeaderRead(
@@ -359,7 +359,7 @@ public abstract class AbstractWalRecordsIterator
      *
      * @param desc File descriptor.
      * @param start Optional start pointer. Null means read from the beginning
-     * @return Initialized file handle.
+     * @return Initialized file read header.
      * @throws FileNotFoundException If segment file is missing.
      * @throws IgniteCheckedException If initialized failed due to another unexpected error.
      */
