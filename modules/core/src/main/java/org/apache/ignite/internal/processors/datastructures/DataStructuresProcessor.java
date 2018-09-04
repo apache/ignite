@@ -193,7 +193,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      */
     public void onBeforeActivate() {
-        initLatch = new CountDownLatch(1);
+        CountDownLatch latch0 = initLatch;
+
+        if (latch0 == null || latch0.getCount() == 0)
+            initLatch = new CountDownLatch(1);
     }
 
     /**
