@@ -2433,15 +2433,18 @@ public class IgnitionEx {
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());
 
-            if (cfg.getEncryptionSpi() == null && CU.isPersistenceEnabled(cfg)) {
-                AESEncryptionSpi encSpi = new AESEncryptionSpi();
+            if ((cfg.getEncryptionSpi() == null || cfg.getEncryptionSpi() instanceof AESEncryptionSpi) &&
+                CU.isPersistenceEnabled(cfg)) {
+                if (cfg.getEncryptionSpi() == null) {
+                    AESEncryptionSpi encSpi = new AESEncryptionSpi();
 
-                encSpi.setKeyStorePath(this.getClass().getResource("/tde.jks").getPath());
-                encSpi.setKeyStorePassword("love_sex_god".toCharArray());
+                    encSpi.setKeyStorePath(this.getClass().getResource("/tde.jks").getPath());
+                    encSpi.setKeyStorePassword("love_sex_god".toCharArray());
+
+                    cfg.setEncryptionSpi(encSpi);
+                }
 
                 CacheConfiguration.encryptionEnabled = true;
-
-                cfg.setEncryptionSpi(encSpi);
             }
             else {
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
