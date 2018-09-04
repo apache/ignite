@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -121,7 +122,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
     /** {@inheritDoc} */
     @Override public boolean isCompressed() {
-        return file.getName().endsWith(".zip");
+        return file.getName().endsWith(FilePageStoreManager.ZIP_SUFFIX);
     }
 
     /** {@inheritDoc} */

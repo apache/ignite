@@ -77,6 +77,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** File suffix. */
     public static final String FILE_SUFFIX = ".bin";
 
+    /** Suffix for zip files */
+    public static final String ZIP_SUFFIX = ".zip";
+
+    /** Suffix for tmp files */
+    public static final String TMP_SUFFIX = ".tmp";
+
     /** Partition file prefix. */
     public static final String PART_FILE_PREFIX = "part-";
 
@@ -96,7 +102,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
     /** */
-    public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + ".tmp";
+    public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
 
     /** */
     public static final String DFLT_STORE_DIR = "db";
@@ -341,7 +347,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         if (overwrite || !file.exists() || file.length() == 0) {
             try {
-                File tmp = new File(file.getParent(), file.getName() + ".tmp");
+                File tmp = new File(file.getParent(), file.getName() + TMP_SUFFIX);
 
                 tmp.createNewFile();
 
@@ -596,7 +602,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             Path cacheWorkDirPath = cacheWorkDir.toPath();
 
-            Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + ".tmp");
+            Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + TMP_SUFFIX);
 
             if (Files.exists(tmp) && Files.isDirectory(tmp) &&
                     Files.exists(tmp.resolve(IgniteCacheSnapshotManager.TEMP_FILES_COMPLETENESS_MARKER))) {
