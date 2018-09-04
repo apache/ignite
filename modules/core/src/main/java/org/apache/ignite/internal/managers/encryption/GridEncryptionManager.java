@@ -31,11 +31,11 @@ import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.GenerateEncryptionKeyRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.lang.GridPlainClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -84,7 +84,8 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MA
  *
  * @see GridCacheProcessor#genEncKeysAndStartCacheAfter(Collection, GridPlainClosure)
  */
-public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements MetastorageLifecycleListener {
+public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements MetastorageLifecycleListener,
+    IgniteChangeGlobalStateSupport {
     /**
      * Cache encryption introduced in this Ignite version.
      */
@@ -92,6 +93,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** Synchronization mutex. */
     private final Object mux = new Object();
+
+    /** Flag to enable/disable write to metastore on cluster state change. */
+    private volatile boolean writeToMetaStoreEnabled;
 
     /** Prefix for a encryption group key in meta store. */
     public static final String ENCRYPTION_KEY_PREFIX = "grp-encryption-key-";
@@ -349,8 +353,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             grpEncKeys.put(grpId, encKey);
 
-            if (metaStorage != null)
-                writeToMetaStore(grpId, encGrpKey);
+            writeToMetaStore(grpId, encGrpKey);
         }
     }
 
@@ -437,12 +440,28 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         synchronized (mux) {
             this.metaStorage = metaStorage;
 
+            writeToMetaStoreEnabled = true;
+
             for (Map.Entry<Integer, Serializable> entry : grpEncKeys.entrySet()) {
                 if (metaStorage.read(ENCRYPTION_KEY_PREFIX + entry.getKey()) != null)
                     continue;
 
                 writeToMetaStore(entry.getKey(), getSpi().encryptKey(entry.getValue()));
             }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        synchronized (mux) {
+            writeToMetaStoreEnabled = metaStorage != null;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        synchronized (mux) {
+            writeToMetaStoreEnabled = false;
         }
     }
 
@@ -474,6 +493,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param encGrpKey Group encryption key.
      */
     private void writeToMetaStore(int grpId, byte[] encGrpKey) {
+        if (metaStorage == null || !writeToMetaStoreEnabled)
+            return;
+
         ctx.cache().context().database().checkpointReadLock();
 
         try {
