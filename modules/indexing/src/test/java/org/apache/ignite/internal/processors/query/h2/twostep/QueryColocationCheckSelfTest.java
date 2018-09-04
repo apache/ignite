@@ -112,7 +112,7 @@ public class QueryColocationCheckSelfTest extends GridCommonAbstractTest {
         try {
             List<Cache.Entry<String, Kid>> kids = kidCache.query(qry).getAll();
 
-            fail("No exceptions are emitted");
+            fail("No exceptions are emitted. Check property is set to"+IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PARTITIONS_CO_LOCATION_CHECK_ENABLED));
         }catch (Exception e){
             log().error("Caught exception", e);
             
@@ -127,7 +127,7 @@ public class QueryColocationCheckSelfTest extends GridCommonAbstractTest {
         try {
             List<Cache.Entry<String, JoinSqlTestHelper.Person>> prsns = personCache.query(qry).getAll();
 
-            fail("No exceptions are emitted");
+            fail("No exceptions are emitted. Check property is set to"+IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PARTITIONS_CO_LOCATION_CHECK_ENABLED));
         }catch (Exception e){
             log().error("Caught exception", e);
 
