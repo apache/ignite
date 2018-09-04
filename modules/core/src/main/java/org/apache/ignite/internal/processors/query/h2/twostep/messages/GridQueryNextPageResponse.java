@@ -67,6 +67,9 @@ public class GridQueryNextPageResponse implements Message {
     /** */
     private AffinityTopologyVersion retry;
 
+    /** Retry cause description*/
+    private String retryCause;
+
     /** Last page flag. */
     private boolean last;
 
@@ -235,6 +238,12 @@ public class GridQueryNextPageResponse implements Message {
                 writer.incrementState();
 
             case 9:
+                if (!writer.writeString("retryCause", retryCause))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
                 if (!writer.writeBoolean("removeMapping", removeMapping))
                     return false;
 
@@ -323,13 +332,23 @@ public class GridQueryNextPageResponse implements Message {
                     return false;
 
                 reader.incrementState();
+
             case 9:
+                retryCause = reader.readString("retryCause");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
                 removeMapping = reader.readBoolean("removeMapping");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridQueryNextPageResponse.class);
@@ -342,7 +361,7 @@ public class GridQueryNextPageResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /**
@@ -357,6 +376,20 @@ public class GridQueryNextPageResponse implements Message {
      */
     public void retry(AffinityTopologyVersion retry) {
         this.retry = retry;
+    }
+
+    /**
+     * @return Retry Ccause message.
+     */
+    public String retryCause() {
+        return retryCause;
+    }
+
+    /**
+     * @param retryCause Retry Ccause message.
+     */
+    public void retryCause(String retryCause){
+        this.retryCause = retryCause;
     }
 
     /**
