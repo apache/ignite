@@ -339,6 +339,10 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case TcpCommunicationSpi.INIT_TIMEOUT_MSG_TYPE:
+                msg = TcpCommunicationSpi.InitTimeoutMessage.getInstance();
+                break;
+
             case 0:
                 msg = new GridJobCancelRequest();
 
