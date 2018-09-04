@@ -202,17 +202,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         updateReplyClos = new UpdateReplyClosure() {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
             @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
-                if (req.writeSynchronizationMode() != FULL_ASYNC) {
-                    // Early prepare cache return to estimate size.
-                    try {
-                        res.returnValue().prepareMarshal(ctx);
-                    }
-                    catch (IgniteCheckedException e) {
-                        e.printStackTrace();
-                    }
-
+                if (req.writeSynchronizationMode() != FULL_ASYNC)
                     sendNearUpdateReply(res.nodeId(), res);
-                }
                 else {
                     if (res.remapTopologyVersion() != null)
                         // Remap keys on primary node in FULL_ASYNC mode.
@@ -3341,9 +3332,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             // TODO handle failure: probably drop the node from topology
             // TODO fire events only after successful fsync
-
-            long t0 = System.nanoTime();
-
             if (ctx.shared().wal() != null)
                 ctx.shared().wal().flush(null, false);
         }
