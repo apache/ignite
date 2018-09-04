@@ -385,7 +385,7 @@ public class GridReduceQueryExecutor {
      * @return {@code True} If cache has partitions in {@link GridDhtPartitionState#MOVING} state.
      */
     private boolean hasMovingPartitions(GridCacheContext<?, ?> cctx) {
-        assert cctx!=null;
+        assert cctx != null;
 
         return !cctx.isLocal() && cctx.topology().hasMovingPartitions();
     }
