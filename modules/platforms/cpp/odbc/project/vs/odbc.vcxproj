@@ -205,6 +205,7 @@
     <ClCompile Include="..\..\src\ssl\ssl_mode.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
     <ClCompile Include="..\..\src\streaming\streaming_batch.cpp" />
+    <ClCompile Include="..\..\src\streaming\streaming_context.cpp" />
     <ClCompile Include="..\..\src\type_traits.cpp" />
     <ClCompile Include="..\..\src\utility.cpp" />
     <ClCompile Include="..\..\src\log.cpp" />
@@ -267,6 +268,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_mode.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
     <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_batch.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_context.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\tcp_socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h" />

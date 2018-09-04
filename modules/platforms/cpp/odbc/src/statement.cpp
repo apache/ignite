@@ -941,7 +941,7 @@ namespace ignite
 
             LOG_MSG("Stopping streaming");
 
-            SqlResult::Type result = connection.GetStreamingContext().Close();
+            SqlResult::Type result = connection.GetStreamingContext().Disable();
 
             currentQuery.reset();
 

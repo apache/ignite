@@ -193,6 +193,9 @@
     <ClCompile Include="..\..\src\query\streaming_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\streaming\streaming_context.cpp">
+      <Filter>Code\streaming</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -385,6 +388,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\streaming_query.h">
       <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_context.h">
+      <Filter>Code\streaming</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
