@@ -195,8 +195,10 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
      */
     public void testNodesViews() throws Exception {
         Ignite igniteSrv = startGrid(getTestIgniteInstanceName(), getConfiguration().setMetricsUpdateFrequency(500L));
+
         Ignite igniteCli = startGrid(getTestIgniteInstanceName(1), getConfiguration().setMetricsUpdateFrequency(500L)
             .setClientMode(true));
+
         startGrid(getTestIgniteInstanceName(2), getConfiguration().setMetricsUpdateFrequency(500L).setDaemon(true));
 
         UUID nodeId0 = igniteSrv.cluster().localNode().id();
