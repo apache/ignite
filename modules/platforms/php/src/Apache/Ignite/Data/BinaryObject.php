@@ -67,7 +67,9 @@ class BinaryObject
     private $modified;
     private $buffer;
     private $schemaOffset;
+    private $hasSchema;
     private $compactFooter;
+    private $hasRawData;
     private $offsetType;
     private $startPos;
     private $length;
@@ -90,7 +92,9 @@ class BinaryObject
         $this->modified = false;
         $this->buffer = null;
         $this->schemaOffset = null;
+        $this->hasSchema = false;
         $this->compactFooter = false;
+        $this->hasRawData = false;
     }
 
     /**
@@ -327,14 +331,21 @@ class BinaryObject
             $this->typeBuilder->finalize($communicator);
             $this->startPos = $buffer->getPosition();
             $buffer->setPosition($this->startPos + BinaryObject::HEADER_LENGTH);
-            // write fields
-            foreach ($this->fields as $field) {
-                $field->writeValue($communicator, $buffer, ($this->typeBuilder->getField($field->getId()))->getTypeCode());
-            }
-            $this->schemaOffset = $buffer->getPosition() - $this->startPos;
-            // write schema
-            foreach ($this->fields as $field) {
-                $field->writeOffset($buffer, $this->startPos);
+            $this->hasSchema = count($this->fields) > 0;
+            if ($this->hasSchema) {
+                // write fields
+                $field = null;
+                foreach ($this->fields as $field) {
+                    $field->writeValue($communicator, $buffer, ($this->typeBuilder->getField($field->getId()))->getTypeCode());
+                }
+                $this->schemaOffset = $buffer->getPosition() - $this->startPos;
+                $this->offsetType = $field->getOffsetType($this->startPos);
+                // write schema
+                foreach ($this->fields as $field) {
+                    $field->writeOffset($buffer, $this->startPos, $this->offsetType);
+                }
+            } else {
+                $this->schemaOffset = 0;
             }
             $this->length = $buffer->getPosition() - $this->startPos;
             $this->buffer = $buffer;
@@ -358,7 +369,16 @@ class BinaryObject
         // version
         $this->buffer->writeByte(BinaryObject::VERSION);
         // flags
-        $this->buffer->writeShort(BinaryObject::FLAG_USER_TYPE | BinaryObject::FLAG_HAS_SCHEMA | BinaryObject::FLAG_COMPACT_FOOTER);
+        $flags = BinaryObject::FLAG_USER_TYPE;
+        if ($this->hasSchema) {
+            $flags = $flags | BinaryObject::FLAG_COMPACT_FOOTER | BinaryObject::FLAG_HAS_SCHEMA;
+        }
+        if ($this->offsetType === ObjectType::BYTE) {
+            $flags = $flags | BinaryObject::FLAG_OFFSET_ONE_BYTE;
+        } elseif ($this->offsetType === ObjectType::SHORT) {
+            $flags = $flags | BinaryObject::FLAG_OFFSET_TWO_BYTES;
+        }
+        $this->buffer->writeShort($flags);
         // type id
         $this->buffer->writeInteger($this->typeBuilder->getTypeId());
         // hash code
@@ -367,7 +387,7 @@ class BinaryObject
         // length
         $this->buffer->writeInteger($this->length);
         // schema id
-        $this->buffer->writeInteger($this->typeBuilder->getSchemaId());
+        $this->buffer->writeInteger($this->hasSchema ? $this->typeBuilder->getSchemaId() : 0);
         // schema offset
         $this->buffer->writeInteger($this->schemaOffset);
     }
@@ -375,36 +395,42 @@ class BinaryObject
     private function read(BinaryCommunicator $communicator): void
     {
         $this->readHeader($communicator);
-        $this->buffer->setPosition($this->startPos + $this->schemaOffset);
-        $fieldOffsets = [];
-        $fieldIds = $this->typeBuilder->getSchema()->getFieldIds();
-        $index = 0;
-        while ($this->buffer->getPosition() < $this->startPos + $this->length) {
-            if (!$this->compactFooter) {
-                $fieldId = $this->buffer->readInteger();
-                $this->typeBuilder->getSchema()->addField($fieldId);
-            } else {
-                if ($index >= count($fieldIds)) {
-                    BinaryUtils::serializationError(
-                        false, 'wrong number of fields in schema');
-                }
-                $fieldId = $fieldIds[$index];
-                $index++;
+        if ($this->hasSchema) {
+            $this->buffer->setPosition($this->startPos + $this->schemaOffset);
+            $fieldOffsets = [];
+            $fieldIds = $this->typeBuilder->getSchema()->getFieldIds();
+            $index = 0;
+            $schemaEndOffset = $this->startPos + $this->length;
+            if ($this->hasRawData) {
+                $schemaEndOffset -= TypeInfo::getTypeInfo(ObjectType::INTEGER)->getSize();
             }
-            array_push($fieldOffsets, [$fieldId, $this->buffer->readNumber($this->offsetType)]);
-        }
-        usort($fieldOffsets,
-            function (array $val1, array $val2): int
-            {
-                return $val1[1] - $val2[1];
-            });
-        for ($i = 0; $i < count($fieldOffsets); $i++) {
-            $fieldId = $fieldOffsets[$i][0];
-            $offset = $fieldOffsets[$i][1];
-            $nextOffset = $i + 1 < count($fieldOffsets) ? $fieldOffsets[$i + 1][1] : $this->schemaOffset;
-            $field = BinaryObjectField::fromBuffer(
-                $communicator, $this->buffer, $this->startPos + $offset, $nextOffset - $offset, $fieldId);
-            $this->fields[$field->getId()] = $field;
+            while ($this->buffer->getPosition() < $schemaEndOffset) {
+                if (!$this->compactFooter) {
+                    $fieldId = $this->buffer->readInteger();
+                    $this->typeBuilder->getSchema()->addField($fieldId);
+                } else {
+                    if ($index >= count($fieldIds)) {
+                        BinaryUtils::serializationError(
+                            false, 'wrong number of fields in schema');
+                    }
+                    $fieldId = $fieldIds[$index];
+                    $index++;
+                }
+                array_push($fieldOffsets, [$fieldId, $this->buffer->readNumber($this->offsetType)]);
+            }
+            usort($fieldOffsets,
+                function (array $val1, array $val2): int
+                {
+                    return $val1[1] - $val2[1];
+                });
+            for ($i = 0; $i < count($fieldOffsets); $i++) {
+                $fieldId = $fieldOffsets[$i][0];
+                $offset = $fieldOffsets[$i][1];
+                $nextOffset = $i + 1 < count($fieldOffsets) ? $fieldOffsets[$i + 1][1] : $this->schemaOffset;
+                $field = BinaryObjectField::fromBuffer(
+                    $communicator, $this->buffer, $this->startPos + $offset, $nextOffset - $offset, $fieldId);
+                $this->fields[$field->getId()] = $field;
+            }
         }
         $this->buffer->setPosition($this->startPos + $this->length);
     }
@@ -430,22 +456,14 @@ class BinaryObject
         $schemaId = $this->buffer->readInteger();
         // schema offset
         $this->schemaOffset = $this->buffer->readInteger();
-        $hasSchema = BinaryObject::isFlagSet($flags, BinaryObject::FLAG_HAS_SCHEMA);
+        $this->hasSchema = BinaryObject::isFlagSet($flags, BinaryObject::FLAG_HAS_SCHEMA);
         $this->compactFooter = BinaryObject::isFlagSet($flags, BinaryObject::FLAG_COMPACT_FOOTER);
+        $this->hasRawData = BinaryObject::isFlagSet($flags, BinaryObject::FLAG_HAS_RAW_DATA);
         $this->offsetType = BinaryObject::isFlagSet($flags, BinaryObject::FLAG_OFFSET_ONE_BYTE) ?
             ObjectType::BYTE :
             (BinaryObject::isFlagSet($flags, BinaryObject::FLAG_OFFSET_TWO_BYTES) ?
                 ObjectType::SHORT :
                 ObjectType::INTEGER);
-
-        if (BinaryObject::isFlagSet($flags, BinaryObject::FLAG_HAS_RAW_DATA)) {
-            BinaryUtils::serializationError(
-                false, 'complex objects with raw data are not supported');
-        }
-        if ($this->compactFooter && !$hasSchema) {
-            BinaryUtils::serializationError(
-                false, 'schema is absent for object with compact footer');
-        }
-        $this->typeBuilder = BinaryTypeBuilder::fromTypeId($communicator, $typeId, $schemaId, $hasSchema);
+        $this->typeBuilder = BinaryTypeBuilder::fromTypeId($communicator, $typeId, $this->compactFooter ? $schemaId : null);
     }
 }

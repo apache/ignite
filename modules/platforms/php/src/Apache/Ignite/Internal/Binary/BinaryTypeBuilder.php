@@ -40,13 +40,13 @@ class BinaryTypeBuilder
         return $result;
     }
 
-    public static function fromTypeId(BinaryCommunicator $communicator, int $typeId, int $schemaId, bool $hasSchema): BinaryTypeBuilder
+    public static function fromTypeId(BinaryCommunicator $communicator, int $typeId, ?int $schemaId): BinaryTypeBuilder
     {
         $result = new BinaryTypeBuilder();
-        if ($hasSchema) {
-            $type = $communicator->getTypeStorage()->getType($typeId, $schemaId);
-            if ($type) {
-                $result->type = $type;
+        $type = $communicator->getTypeStorage()->getType($typeId, $schemaId);
+        if ($type) {
+            $result->type = $type;
+            if ($schemaId !== null) {
                 $result->schema = $type->getSchema($schemaId);
                 if (!$result->schema) {
                     BinaryUtils::serializationError(
@@ -54,8 +54,10 @@ class BinaryTypeBuilder
                         sprintf('schema id "%d" specified for complex object of type "%s" not found', $schemaId, $type->getName()));
                 }
                 $result->fromStorage = true;
-                return $result;
+            } else {
+                $result->schema = new BinarySchema();
             }
+            return $result;
         }
         $result->init(null);
         $result->getType()->setId($typeId);
@@ -166,7 +168,7 @@ class BinaryTypeBuilder
         $this->setFields($complexObjectType, $object);
     }
 
-    private function init(string $typeName): void
+    private function init(?string $typeName): void
     {
         $this->type = new BinaryType($typeName);
         $this->schema = new BinarySchema();

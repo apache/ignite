@@ -210,9 +210,7 @@ class BinaryUtils
 
     public static function calcObjectType($object)
     {
-        if ($object === null) {
-            return ObjectType::NULL;
-        } elseif (is_integer($object)) {
+        if (is_integer($object)) {
             return ObjectType::INTEGER;
         } elseif (is_float($object)) {
             return ObjectType::DOUBLE;
@@ -232,7 +230,7 @@ class BinaryUtils
                     return new MapObjectType();
                 }
             } else {
-                BinaryUtils::unsupportedType("empty array");
+                BinaryUtils::noDefaultMapping("empty array");
             }
         } elseif ($object instanceof Time) {
             return ObjectType::TIME;
@@ -253,7 +251,7 @@ class BinaryUtils
         } elseif (is_object($object)) {
             return new ComplexObjectType();
         }
-        BinaryUtils::unsupportedType(BinaryUtils::getPhpTypeName($object));
+        BinaryUtils::noDefaultMapping(BinaryUtils::getPhpTypeName($object));
         return null;
     }
 
@@ -405,6 +403,11 @@ class BinaryUtils
     public static function unsupportedType($type): void
     {
         throw new ClientException(sprintf('Type %s is not supported', BinaryUtils::getTypeName($type)));
+    }
+
+    public static function noDefaultMapping($type): void
+    {
+        throw new ClientException(sprintf('%s has no default type mapping', BinaryUtils::getTypeName($type)));
     }
 
     public static function serializationError(bool $serialize, string $message = null): void

@@ -18,6 +18,7 @@
 
 namespace Apache\Ignite\Internal\Binary;
 
+use Apache\Ignite\Type\ObjectType;
 use Apache\Ignite\Exception\ClientException;
 
 class BinaryObjectField
@@ -52,7 +53,7 @@ class BinaryObjectField
         return $this->id;
     }
     
-    public function getTypeCode(): int
+    public function getTypeCode(): ?int
     {
         return $this->typeCode;
     }
@@ -96,8 +97,19 @@ class BinaryObjectField
         $this->offset = $offset;
     }
 
-    public function writeOffset(MessageBuffer $buffer, int $headerStartPos): void
+    public function writeOffset(MessageBuffer $buffer, int $headerStartPos, int $offsetType): void
     {
-        $buffer->writeInteger($this->offset - $headerStartPos);
+        $buffer->writeNumber($this->offset - $headerStartPos, $offsetType);
+    }
+
+    public function getOffsetType(int $headerStartPos): int
+    {
+        $offset = $this->offset - $headerStartPos;
+        if ($offset < TypeInfo::getTypeInfo(ObjectType::BYTE)->getMaxValue()) {
+            return ObjectType::BYTE;
+        } elseif ($offset < TypeInfo::getTypeInfo(ObjectType::SHORT)->getMaxValue()) {
+            return ObjectType::SHORT;
+        }
+        return ObjectType::INTEGER;
     }
 }

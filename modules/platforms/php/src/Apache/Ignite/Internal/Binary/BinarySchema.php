@@ -112,8 +112,7 @@ class BinarySchema
             $len = strlen($hexValue);
             $size = TypeInfo::getTypeInfo(ObjectType::INTEGER)->getSize() * 2;
             $this->id = hexdec($len > $size ? substr($hexValue, $len - $size) : $hexValue);
-        }
-        else {
+        } else {
             $this->id = $this->id * BinarySchema::FNV1_PRIME;
         }
         $this->id &= 0xFFFFFFFF; // Convert to 32bit integer
