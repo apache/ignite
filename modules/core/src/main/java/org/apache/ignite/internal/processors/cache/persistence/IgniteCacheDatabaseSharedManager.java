@@ -767,7 +767,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * No-op for non-persistent storage.
      */
-    public void cleanupCheckpointDirectory() throws IgniteCheckedException {
+    public void cleanupCheckpointState() throws IgniteCheckedException {
         // No-op.
     }
 

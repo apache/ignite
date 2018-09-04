@@ -526,10 +526,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Cleanup checkpoint directory.
+     * Cleanup checkpoint state.
      */
-    @Override public void cleanupCheckpointDirectory() throws IgniteCheckedException {
+    @Override public void cleanupCheckpointState() throws IgniteCheckedException {
         try {
+            // Reset binary restored state
+            lastRestored = CheckpointStatus.NULL_PTR;
+
             try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath())) {
                 for (Path path : files)
                     Files.delete(path);
@@ -853,10 +856,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
-        // Memory have been already restored.
-        if (!CheckpointStatus.NULL_PTR.equals(lastRestored))
-            return;
-
         checkpointReadLock();
 
         try {
@@ -867,9 +866,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             for (DynamicCacheDescriptor desc : cachesToStart)
                 storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
 
-            CheckpointStatus status = readCheckpointStatus();
-
             cctx.pageStore().initializeForMetastorage();
+
+            // Memory have been already restored.
+            if (!CheckpointStatus.NULL_PTR.equals(lastRestored))
+                return;
+
+            CheckpointStatus status = readCheckpointStatus();
 
             metaStorage = new MetaStorage(
                 cctx,
@@ -897,7 +900,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             // Init metastore only after WAL logging resumed. Can't do it earlier because
-            // MetaStorage initialization also touches wal if #isWalDeltaRecordNeeded.
+            // MetaStorage first initialization also touches wal if #isWalDeltaRecordNeeded.
             metaStorage.init(this);
 
             lastRestored = restore;
@@ -1876,7 +1879,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!dir.exists()) {
             log.warning("Read checkpoint status: checkpoint directory is not found.");
 
-            return new CheckpointStatus(0, startId, startPtr, endId, endPtr);
+            return new CheckpointStatus(0, 0, startId, startPtr, endId, endPtr);
         }
 
         File[] files = dir.listFiles();
@@ -1912,9 +1915,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             endPtr = readPointer(endFile, buf);
 
         if (log.isInfoEnabled())
-            log.info("Read checkpoint status [startMarker=" + startFile + ", endMarker=" + endFile + ']');
+            log.info("Read checkpoint status [startFile=" + startFile + ", lastStartTs=" + lastStartTs +
+                ", endFile=" + endFile + ", lastEndTs" + lastEndTs + ']');
 
-        return new CheckpointStatus(lastStartTs, startId, startPtr, endId, endPtr);
+        return new CheckpointStatus(lastStartTs, lastEndTs, startId, startPtr, endId, endPtr);
     }
 
     /**
@@ -4061,6 +4065,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private long cpStartTs;
 
         /** */
+        private long cpEndTs;
+
+        /** */
         private UUID cpStartId;
 
         /** */
@@ -4075,13 +4082,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private WALPointer endPtr;
 
         /**
+         * @param cpStartTs Checkpoint START timestamp.
+         * @param cpEndTs Checkpoint END timestamp.
          * @param cpStartId Checkpoint start ID.
          * @param startPtr Checkpoint start pointer.
          * @param cpEndId Checkpoint end ID.
          * @param endPtr Checkpoint end pointer.
          */
-        private CheckpointStatus(long cpStartTs, UUID cpStartId, WALPointer startPtr, UUID cpEndId, WALPointer endPtr) {
+        private CheckpointStatus(
+            long cpStartTs,
+            long cpEndTs,
+            UUID cpStartId,
+            WALPointer startPtr,
+            UUID cpEndId,
+            WALPointer endPtr
+        ) {
             this.cpStartTs = cpStartTs;
+            this.cpEndTs = cpEndTs;
             this.cpStartId = cpStartId;
             this.startPtr = startPtr;
             this.cpEndId = cpEndId;
@@ -4092,7 +4109,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return {@code True} if need to apply page log to restore tree structure.
          */
         public boolean needRestoreMemory() {
-            return !F.eq(cpStartId, cpEndId) && !F.eq(NULL_UUID, cpStartId);
+            return !F.eq(cpStartId, cpEndId) && !F.eq(NULL_UUID, cpStartId) && (cpStartTs >= cpEndTs);
         }
 
         /** {@inheritDoc} */

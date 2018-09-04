@@ -822,12 +822,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isLocalNodeNotInBaseline()) {
             cctx.cache().cleanupCachesDirectories();
 
-            cctx.database().cleanupCheckpointDirectory();
+            cctx.database().cleanupCheckpointState();
 
             if (cctx.wal() != null)
                 cctx.wal().cleanupWalDirectories();
 
-            // Empty list is enough to pass into method because it will skip reading checkpoints.
+            // Empty list is enough to pass into method because it will skip checkpoint anyway.
             cctx.database().readCheckpointAndRestoreMemory(Collections.emptyList());
         }
 
