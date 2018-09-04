@@ -375,7 +375,7 @@ namespace ignite
             return config;
         }
 
-        bool Connection::IsAutoCommit()
+        bool Connection::IsAutoCommit() const
         {
             return autoCommit;
         }

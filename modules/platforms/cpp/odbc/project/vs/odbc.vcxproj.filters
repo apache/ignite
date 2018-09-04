@@ -35,8 +35,8 @@
     <Filter Include="Code\sql">
       <UniqueIdentifier>{7f412a6b-279a-4a22-b87f-eafb1545a8d0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\query\streaming">
-      <UniqueIdentifier>{f8424c1b-37fa-49c1-81ad-6c0f0e353371}</UniqueIdentifier>
+    <Filter Include="Code\streaming">
+      <UniqueIdentifier>{a14eb935-4a95-4202-a83b-12e715cf1cf1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -187,11 +187,11 @@
     <ClCompile Include="..\..\src\sql\sql_utils.cpp">
       <Filter>Code\sql</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\streaming\streaming_batch.cpp">
+      <Filter>Code\streaming</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\query\streaming_query.cpp">
       <Filter>Code\query</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\query\streaming\streaming_batch.cpp">
-      <Filter>Code\query\streaming</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -377,14 +377,14 @@
     <ClInclude Include="..\..\include\ignite\odbc\sql\sql_utils.h">
       <Filter>Code\sql</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\query\streaming_query.h">
-      <Filter>Code\query</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\internal_query.h">
       <Filter>Code\query</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\query\streaming\streaming_batch.h">
-      <Filter>Code\query\streaming</Filter>
+    <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_batch.h">
+      <Filter>Code\streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\streaming_query.h">
+      <Filter>Code\query</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

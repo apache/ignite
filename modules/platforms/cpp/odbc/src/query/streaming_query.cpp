@@ -31,16 +31,10 @@ namespace ignite
             StreamingQuery::StreamingQuery(
                 diagnostic::Diagnosable& diag,
                 Connection& connection,
-                const app::ParameterSet& params,
-                const SqlSetStreamingCommand& cmd) :
+                const app::ParameterSet& params) :
                 Query(diag, QueryType::STREAMING),
                 connection(connection),
-                params(params),
-                ordered(cmd.IsOrdered()),
-                batchSize(cmd.GetBatchSize()),
-                order(0),
-                enabled(true),
-                currentBatch()
+                params(params)
             {
                 // No-op.
             }
@@ -52,12 +46,7 @@ namespace ignite
 
             SqlResult::Type StreamingQuery::Execute()
             {
-                currentBatch.AddRow(sql, params);
-
-                if (currentBatch.GetSize() < batchSize)
-                    return SqlResult::AI_SUCCESS;
-
-                return Flush(false);
+                return connection.GetStreamingContext().Execute(sql, params);
             }
 
             const meta::ColumnMetaVector& StreamingQuery::GetMeta() const
@@ -69,40 +58,18 @@ namespace ignite
 
             SqlResult::Type StreamingQuery::FetchNextRow(app::ColumnBindingMap&)
             {
-                if (!enabled)
-                {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Streaming was not enabled.");
-
-                    return SqlResult::AI_ERROR;
-                }
-
                 return SqlResult::AI_NO_DATA;
             }
 
             SqlResult::Type StreamingQuery::GetColumn(uint16_t, app::ApplicationDataBuffer&)
             {
-                if (!enabled)
-                {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Streaming was not enabled.");
-
-                    return SqlResult::AI_ERROR;
-                }
-
-                diag.AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
-                    "Cursor has reached end of the result set.");
+                diag.AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE, "Column is not available.");
 
                 return SqlResult::AI_ERROR;
             }
 
             SqlResult::Type StreamingQuery::Close()
             {
-                LOG_MSG("Closing streaming context.");
-
-                if (enabled)
-                    Flush(true);
-
-                enabled = false;
-
                 return SqlResult::AI_SUCCESS;
             }
 
@@ -119,76 +86,6 @@ namespace ignite
             SqlResult::Type StreamingQuery::NextResultSet()
             {
                 return SqlResult::AI_NO_DATA;
-            }
-
-            SqlResult::Type StreamingQuery::Flush(bool last)
-            {
-                LOG_MSG("Flushing data");
-
-                if (currentBatch.GetSize() == 0 && !last)
-                    return SqlResult::AI_SUCCESS;
-
-                SqlResult::Type res = MakeRequestStreamingBatch(last);
-
-                currentBatch.Clear();
-
-                return res;
-            }
-
-            void StreamingQuery::PrepareQuery(const std::string& query)
-            {
-                sql = query;
-            }
-
-            SqlResult::Type StreamingQuery::MakeRequestStreamingBatch(bool last)
-            {
-                const std::string& schema = connection.GetSchema();
-
-                StreamingBatchRequest req(schema, currentBatch, last, order);
-                StreamingBatchResponse rsp;
-
-                try
-                {
-                    connection.SyncMessage(req, rsp);
-                }
-                catch (const OdbcError& err)
-                {
-                    diag.AddStatusRecord(err);
-
-                    return SqlResult::AI_ERROR;
-                }
-                catch (const IgniteError& err)
-                {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
-
-                    return SqlResult::AI_ERROR;
-                }
-
-                currentBatch.Clear();
-
-                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-                {
-                    LOG_MSG("Error: " << rsp.GetError());
-
-                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
-
-                    return SqlResult::AI_ERROR;
-                }
-
-                if (rsp.GetErrorCode() != ResponseStatus::SUCCESS)
-                {
-                    LOG_MSG("Error: " << rsp.GetErrorMessage());
-
-                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetErrorCode()), rsp.GetErrorMessage());
-
-                    return SqlResult::AI_ERROR;
-                }
-
-                assert(order == rsp.GetOrder());
-
-                ++order;
-
-                return SqlResult::AI_SUCCESS;
             }
         }
     }
