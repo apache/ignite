@@ -576,7 +576,7 @@ public class GridReduceQueryExecutor {
         boolean lazy,
         MvccQueryTracker mvccTracker) {
         if (CHECK_CO_LOCATION)
-            checkCorrectCollocation(qry); //throws exception if not valid
+            checkCorrectCoLocation(qry); //throws exception if not valid
 
         assert !qry.mvccEnabled() || mvccTracker != null;
 
@@ -985,7 +985,8 @@ public class GridReduceQueryExecutor {
     }
 
     /** */
-    private void checkCorrectCollocation(GridCacheTwoStepQuery qry) {
+    private void checkCorrectCoLocation(GridCacheTwoStepQuery qry) {
+        log.info("Proper partitions co-location check is enabled");
         if (qry.distributedJoins())
             return;
 
