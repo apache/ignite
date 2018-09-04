@@ -240,7 +240,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         HashMap<Integer, byte[]> newKeys =
             newEncKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
 
-        if (knownEncKeys == null && newKeys == null)
+        if ((knownEncKeys == null && newKeys == null) || dataBag.isJoiningNodeClient())
             return;
 
         if (log.isInfoEnabled()) {
@@ -262,7 +262,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         NodeEncryptionKeys nodeEncryptionKeys = (NodeEncryptionKeys)data.joiningNodeData();
 
-        if (nodeEncryptionKeys == null || nodeEncryptionKeys.newKeys == null)
+        if (nodeEncryptionKeys == null || nodeEncryptionKeys.newKeys == null || ctx.clientNode())
             return;
 
         for (Map.Entry<Integer, byte[]> entry : nodeEncryptionKeys.newKeys.entrySet()) {
@@ -442,12 +442,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             writeToMetaStoreEnabled = true;
 
-            for (Map.Entry<Integer, Serializable> entry : grpEncKeys.entrySet()) {
-                if (metaStorage.read(ENCRYPTION_KEY_PREFIX + entry.getKey()) != null)
-                    continue;
-
-                writeToMetaStore(entry.getKey(), getSpi().encryptKey(entry.getValue()));
-            }
+            writeAllToMetaStore();
         }
     }
 
@@ -455,6 +450,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         synchronized (mux) {
             writeToMetaStoreEnabled = metaStorage != null;
+
+            if (writeToMetaStoreEnabled)
+                writeAllToMetaStore();
         }
     }
 
@@ -462,6 +460,19 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     @Override public void onDeActivate(GridKernalContext kctx) {
         synchronized (mux) {
             writeToMetaStoreEnabled = false;
+        }
+    }
+
+    /**
+     * Writes all unsaved grpEncKeys to metaStorage.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void writeAllToMetaStore() throws IgniteCheckedException {
+        for (Map.Entry<Integer, Serializable> entry : grpEncKeys.entrySet()) {
+            if (metaStorage.read(ENCRYPTION_KEY_PREFIX + entry.getKey()) != null)
+                continue;
+
+            writeToMetaStore(entry.getKey(), getSpi().encryptKey(entry.getValue()));
         }
     }
 
