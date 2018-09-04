@@ -46,54 +46,14 @@ public class IndexingIgniteCachePartitionLossPolicySelfTest extends IgniteCacheP
         Collection<Integer> lost = cache.lostPartitions();
 
         // 1. Check query against all partitions.
-        if (safe) {
-            try {
-                executeQuery(null, node);
-
-                fail("Exception is not thrown.");
-            }
-            catch (Exception e) {
-                // TODO
-                System.out.println("EXPECTED ERROR: " + e);
-            }
-        }
-        else {
-            executeQuery(null, node);
-        }
+        validateQuery0(safe, node, false);
+//        validateQuery0(safe, node, true); // TODO
 
         // 2. Check query against LOST partition.
-        if (safe) {
-            try {
-                executeQuery(part, node);
+        validateQuery0(safe, node, false, part);
+//        validateQuery0(safe, node, true, part); // TODO
 
-                fail("Exception is not thrown.");
-            }
-            catch (Exception e) {
-                // TODO
-                System.out.println("EXPECTED ERROR: " + e);
-            }
-        }
-        else {
-            executeQuery(part, node);
-        }
-
-        // 3. Check local query against LOST partition.
-        if (safe) {
-            try {
-                executeQuery(part, node);
-
-                fail("Exception is not thrown.");
-            }
-            catch (Exception e) {
-                // TODO
-                System.out.println("EXPECTED ERROR: " + e);
-            }
-        }
-        else {
-            executeQuery(part, node);
-        }
-
-        // 4. Check query on remaining partition.
+        // 3. Check query on remaining partition.
         Integer remainingPart = null;
 
         for (int i = 0; i < node.affinity(CACHE_NAME).partitions(); i++) {
@@ -106,34 +66,64 @@ public class IndexingIgniteCachePartitionLossPolicySelfTest extends IgniteCacheP
         }
 
         if (remainingPart != null) {
-            executeQuery(remainingPart, node);
+            executeQuery(node, false, remainingPart);
+            //executeQuery(node, true, remainingPart);
+
+            // 4. Check query over two partitions - normal and LOST.
+            validateQuery0(safe, node, false, part, remainingPart);
+//            validateQuery0(safe, node, true, part, remainingPart); // TODO
+        }
+    }
+
+    /**
+     * Query validation routine.
+     *
+     * @param safe Safe flag.
+     * @param node Node.
+     * @param loc Local flag.
+     * @param parts Partitions.
+     */
+    private void validateQuery0(boolean safe, Ignite node, boolean loc, int... parts) {
+        if (safe) {
+            try {
+                executeQuery(node, loc, parts);
+
+                fail("Exception is not thrown.");
+            }
+            catch (Exception e) {
+                // TODO
+                System.out.println("EXPECTED ERROR: " + e);
+            }
+        }
+        else {
+            executeQuery(node);
         }
     }
 
     /**
      * Execute SQL query on a given node.
      *
-     * @param part Partition.
      * @param node Node.
+     * @param parts Partitions.
      */
-    private static void executeQuery(Integer part, Ignite node) {
-        executeQuery(part, node, false);
+    private static void executeQuery(Ignite node, int... parts) {
+        executeQuery(node, false, parts);
     }
 
     /**
      * Execute SQL query on a given node.
      *
-     * @param part Partition.
+     * @param parts Partitions.
      * @param node Node.
      * @param loc Local flag.
      */
-    private static void executeQuery(Integer part, Ignite node, boolean loc) {
+    private static void executeQuery(Ignite node, boolean loc, int... parts) {
         IgniteCache cache = node.cache(CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM Integer");
 
-        if (part != null)
-            qry.setPartitions((int)part);
+        if (parts != null && parts.length != 0)
+            qry.setPartitions(parts);
 
         if (loc)
             qry.setLocal(true);

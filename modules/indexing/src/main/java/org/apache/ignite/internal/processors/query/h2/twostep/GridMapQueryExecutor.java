@@ -436,6 +436,8 @@ public class GridMapQueryExecutor {
                             if (partState == LOST) {
                                 ignoreLostPartitionIfPossible(cctx, part);
 
+                                part.release();
+
                                 continue;
                             }
 
@@ -453,9 +455,13 @@ public class GridMapQueryExecutor {
                                 partState
                             );
                         }
+
+                        reserved.add(part);
+
+                        reservedCnt++;
                     }
 
-                    if (explicitParts == null) {
+                    if (explicitParts == null && reservedCnt > 0) {
                         // We reserved all the primary partitions for cache, attempt to add group reservation.
                         GridDhtPartitionsReservation grp = new GridDhtPartitionsReservation(topVer, cctx, "SQL");
 
