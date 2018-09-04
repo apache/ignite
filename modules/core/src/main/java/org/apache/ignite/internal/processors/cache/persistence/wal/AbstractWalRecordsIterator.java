@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
@@ -89,7 +89,7 @@ public abstract class AbstractWalRecordsIterator
     private final ByteBufferExpander buf;
 
     /** Factory to provide I/O interfaces for read primitives with files. */
-    private final FileInputFactory fileInputFactory;
+    private final SegmentFileInputFactory segmentFileInputFactory;
 
     /**
      * @param log Logger.
@@ -97,7 +97,7 @@ public abstract class AbstractWalRecordsIterator
      * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
      * @param initialReadBufferSize buffer for reading records size.
-     * @param fileInputFactory Factory to provide I/O interfaces for read primitives with files.
+     * @param segmentFileInputFactory Factory to provide I/O interfaces for read primitives with files.
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
@@ -105,12 +105,12 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
         final int initialReadBufferSize,
-        FileInputFactory fileInputFactory) {
+        SegmentFileInputFactory segmentFileInputFactory) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
-        this.fileInputFactory = fileInputFactory;
+        this.segmentFileInputFactory = segmentFileInputFactory;
 
         buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
     }
@@ -308,17 +308,17 @@ public abstract class AbstractWalRecordsIterator
         @Nullable final FileWALPointer start
     ) throws IgniteCheckedException, FileNotFoundException {
         try {
-            SegmentIO fileIO = new SegmentIO(curWalSegmIdx, desc.toIO(ioFactory));
+            SegmentIO fileIO = desc.toIO(ioFactory);
 
             try {
-                SegmentHeader segmentHeader = readSegmentHeader(fileIO, fileInputFactory);
+                SegmentHeader segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
 
                 boolean isCompacted = segmentHeader.isCompacted();
 
                 if (isCompacted)
                     serializerFactory.skipPositionCheck(true);
 
-                FileInput in = fileInputFactory.createFileInput(fileIO, buf);
+                FileInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
 
                 if (start != null && desc.idx() == start.index()) {
                     if (isCompacted) {
@@ -417,7 +417,10 @@ public abstract class AbstractWalRecordsIterator
         /** */
         RecordSerializer ser();
 
-        /** */
+        /**
+         * @deprecated Handle can not be sure about work directory because it required last archived index.
+         */
+        @Deprecated
         boolean workDir();
     }
 
@@ -432,6 +435,13 @@ public abstract class AbstractWalRecordsIterator
         /** */
         long idx();
 
-        FileIO toIO(FileIOFactory fileIOFactory) throws IOException;
+        /**
+         * Make fileIo by this description.
+         *
+         * @param fileIOFactory Factory for fileIo creation.
+         * @return One of implementation of {@link FileIO}.
+         * @throws IOException if creation of fileIo was not success.
+         */
+        SegmentIO toIO(FileIOFactory fileIOFactory) throws IOException;
     }
 }

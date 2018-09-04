@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -135,7 +136,10 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
         return idx;
     }
 
-    @Override public FileIO toIO(FileIOFactory fileIOFactory) throws IOException {
-        return isCompressed() ? new UnzipFileIO(file()) : fileIOFactory.create(file());
+    /** {@inheritDoc} */
+    @Override public SegmentIO toIO(FileIOFactory fileIOFactory) throws IOException {
+        FileIO fileIO = isCompressed() ? new UnzipFileIO(file()) : fileIOFactory.create(file());
+
+        return new SegmentIO(idx, fileIO);
     }
 }

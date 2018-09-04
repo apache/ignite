@@ -21,14 +21,13 @@ import java.io.IOException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 
 /**
- * Factory to provide I/O interfaces for read primitives with files.
+ * Simple implementation of {@link SegmentFileInputFactory}.
  */
-public interface FileInputFactory {
-    /**
-     * @param segmentIO FileIO of segment for reading.
-     * @param buf ByteBuffer wrapper for dynamically expand buffer size.
-     * @return Instance of {@link FileInput}.
-     * @throws IOException If have some trouble with I/O.
-     */
-    FileInput createFileInput(SegmentIO segmentIO, ByteBufferExpander buf) throws IOException;
+public class SimpleSegmentFileInputFactory implements SegmentFileInputFactory {
+
+    /** {@inheritDoc} */
+    @Override public FileInput createFileInput(SegmentIO segmentIO,
+        ByteBufferExpander buf) throws IOException {
+        return new SimpleFileInput(segmentIO, buf);
+    }
 }

@@ -28,38 +28,38 @@ class SegmentCurrentStateStorage {
     /** Flag of force interrupt of waiting on this object. Needed for uninterrupted waiters. */
     private volatile boolean forceInterrupted;
     /** Total WAL segments count. */
-    private final int walSegmentsCount;
+    private final int walSegmentsCnt;
     /** Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedStorage segmentArchivedStorage;
     /**
      * Absolute current segment index WAL Manager writes to. Guarded by <code>this</code>. Incremented during rollover.
      * Also may be directly set if WAL is resuming logging after start.
      */
-    private long curAbsWalIdx = -1;
+    private volatile long curAbsWalIdx = -1;
 
     /**
-     * @param walSegmentsCount Total WAL segments count.
+     * @param walSegmentsCnt Total WAL segments count.
      * @param segmentArchivedStorage Last archived segment storage.
      */
-    private SegmentCurrentStateStorage(int walSegmentsCount, SegmentArchivedStorage segmentArchivedStorage) {
-        this.walSegmentsCount = walSegmentsCount;
+    private SegmentCurrentStateStorage(int walSegmentsCnt, SegmentArchivedStorage segmentArchivedStorage) {
+        this.walSegmentsCnt = walSegmentsCnt;
         this.segmentArchivedStorage = segmentArchivedStorage;
     }
 
     /**
-     * @param walSegmentsCount Total WAL segments count.
+     * @param walSegmentsCnt Total WAL segments count.
      * @param segmentArchivedStorage Last archived segment storage.
      */
     static SegmentCurrentStateStorage buildCurrentStateStorage(
-        int walSegmentsCount,
+        int walSegmentsCnt,
         SegmentArchivedStorage segmentArchivedStorage
     ) {
 
-        SegmentCurrentStateStorage currentStorage = new SegmentCurrentStateStorage(walSegmentsCount, segmentArchivedStorage);
+        SegmentCurrentStateStorage currStorage = new SegmentCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
 
-        segmentArchivedStorage.addObserver(currentStorage::onSegmentArchived);
+        segmentArchivedStorage.addObserver(currStorage::onSegmentArchived);
 
-        return currentStorage;
+        return currStorage;
     }
 
     /**
@@ -83,11 +83,13 @@ class SegmentCurrentStateStorage {
      * Waiting until archivation of next segment will be allowed.
      */
     synchronized long waitNextSegmentForArchivation() throws IgniteInterruptedCheckedException {
-        long nextArchivedIdx = segmentArchivedStorage.lastArchivedAbsoluteIndex();
+        long lastArchivedSegment = segmentArchivedStorage.lastArchivedAbsoluteIndex();
 
-        awaitSegment(nextArchivedIdx + 2);
+        //We can archive segment if it less than current work segment so for archivate lastArchiveSegment + 1
+        // we should be ensure that currentWorkSegment = lastArchiveSegment + 2
+        awaitSegment(lastArchivedSegment + 2);
 
-        return nextArchivedIdx + 1;
+        return lastArchivedSegment + 1;
     }
 
     /**
@@ -102,7 +104,7 @@ class SegmentCurrentStateStorage {
         notifyAll();
 
         try {
-            while (curAbsWalIdx - segmentArchivedStorage.lastArchivedAbsoluteIndex() > walSegmentsCount && !forceInterrupted)
+            while (curAbsWalIdx - segmentArchivedStorage.lastArchivedAbsoluteIndex() > walSegmentsCnt && !forceInterrupted)
                 wait();
         }
         catch (InterruptedException e) {
@@ -124,6 +126,13 @@ class SegmentCurrentStateStorage {
         this.curAbsWalIdx = curAbsWalIdx;
 
         notifyAll();
+    }
+
+    /**
+     * @return Current WAL index.
+     */
+    long curAbsWalIdx() {
+        return this.curAbsWalIdx;
     }
 
     /**

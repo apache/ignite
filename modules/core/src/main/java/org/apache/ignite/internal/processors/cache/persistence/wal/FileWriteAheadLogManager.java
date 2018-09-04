@@ -96,10 +96,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.LockedFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.LockedSegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -254,13 +254,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
         IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, 0.5);
 
-    /** Interrupted flag. */
-    private final ThreadLocal<Boolean> interrupted = new ThreadLocal<Boolean>() {
-        @Override protected Boolean initialValue() {
-            return false;
-        }
-    };
-
     /** */
     private final boolean alwaysWriteFullPages;
 
@@ -317,7 +310,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile FileIOFactory ioFactory;
 
     /** Factory to provide I/O interfaces for read primitives with files */
-    private final FileInputFactory fileInputFactory;
+    private final SegmentFileInputFactory segmentFileInputFactory;
 
     /** Holder of actual information of latest manipulation on WAL segments. */
     private final SegmentAware segmentAware;
@@ -388,6 +381,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private SegmentRouter segmentRouter;
 
+    /** Segment factory with ability locked segment during reading. */
+    private SegmentFileInputFactory lockedSegmentFileInputFactory;
+
     /**
      * @param ctx Kernal context.
      */
@@ -406,7 +402,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         fsyncDelay = dsCfg.getWalFsyncDelayNanos();
         alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();
         ioFactory = new RandomAccessFileIOFactory();
-        fileInputFactory = new SimpleFileInputFactory();
+        segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
 
         maxSegCountWithoutCheckpoint =
@@ -510,6 +506,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             else
                 U.quietAndWarn(log, "Started write-ahead log manager in NONE mode, persisted data may be lost in " +
                     "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
+
+            lockedSegmentFileInputFactory = new LockedSegmentFileInputFactory(
+                segmentAware,
+                segmentRouter,
+                ioFactory
+            );
         }
     }
 
@@ -884,7 +886,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             decompressor,
             log,
             segmentAware,
-            segmentRouter);
+            segmentRouter,
+            lockedSegmentFileInputFactory);
     }
 
     /** {@inheritDoc} */
@@ -1179,7 +1182,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             next.writeHeader();
 
-            if (next.idx - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
+            if (next.getSegmentId() - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
                 cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
 
             boolean swapped = CURR_HND_UPD.compareAndSet(this, hnd, next);
@@ -1238,7 +1241,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 // If we have existing segment, try to read version from it.
                 if (lastReadPtr != null) {
                     try {
-                        serVer = readSegmentHeader(fileIO, fileInputFactory).getSerializerVersion();
+                        serVer = readSegmentHeader(fileIO, segmentFileInputFactory).getSerializerVersion();
                     }
                     catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVer;
@@ -1320,7 +1323,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             FileWriteHandle hnd;
 
-            boolean interrupted = this.interrupted.get();
+            boolean interrupted = false;
 
             while (true) {
                 try {
@@ -1371,9 +1374,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         rbuf = null;
                     }
-                }
-                finally {
-                    this.interrupted.set(false);
                 }
             }
 
@@ -1764,8 +1764,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     throw e;
                 }
                 catch (InterruptedException e) {
-                    interrupted.set(true);
-
                     throw new IgniteInterruptedCheckedException(e);
                 }
             }
@@ -2021,7 +2019,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             int segmentSerializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
-                segmentSerializerVer = readSegmentHeader(new SegmentIO(nextSegment, fileIO), fileInputFactory).getSerializerVersion();
+                segmentSerializerVer = readSegmentHeader(new SegmentIO(nextSegment, fileIO), segmentFileInputFactory).getSerializerVersion();
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
@@ -2333,12 +2331,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileInput in;
 
         /**
-         * <code>true</code> if this file handle came from work directory. <code>false</code> if this file handle came
-         * from archive directory.
-         */
-        private boolean workDir;
-
-        /**
          * @param fileIO I/O interface for read/write operations of FileHandle.
          * @param ser Entry serializer.
          * @param in File input.
@@ -2385,7 +2377,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override public boolean workDir() {
-            return workDir;
+            throw new UnsupportedOperationException("workDir method nou supported");
         }
     }
 
@@ -2867,7 +2859,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private FileWALPointer end;
 
         /** Manager of segment location. */
-        SegmentRouter segmentRouter;
+        private SegmentRouter segmentRouter;
+
+        /** Holder of actual information of latest manipulation on WAL segments. */
+        private SegmentAware segmentAware;
 
         /**
          * @param cctx Shared context.
@@ -2881,6 +2876,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param log Logger  @throws IgniteCheckedException If failed to initialize WAL segment.
          * @param segmentAware Segment aware.
          * @param segmentRouter Segment router.
+         * @param segmentFileInputFactory
          */
         private RecordsIterator(
             GridCacheSharedContext cctx,
@@ -2894,17 +2890,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileDecompressor decompressor,
             IgniteLogger log,
             SegmentAware segmentAware,
-            SegmentRouter segmentRouter) throws IgniteCheckedException {
+            SegmentRouter segmentRouter,
+            SegmentFileInputFactory segmentFileInputFactory
+        ) throws IgniteCheckedException {
             super(log,
                 cctx,
                 serializerFactory,
                 ioFactory,
                 dsCfg.getWalRecordIteratorBufferSize(),
-                new LockedFileInputFactory(
-                    segmentAware,
-                    segmentRouter,
-                    ioFactory
-                )
+                segmentFileInputFactory
             );
             this.walArchiveDir = walArchiveDir;
             this.archiver = archiver;
@@ -2912,6 +2906,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             this.end = end;
             this.decompressor = decompressor;
             this.segmentRouter = segmentRouter;
+            this.segmentAware = segmentAware;
 
             init();
 
@@ -2943,6 +2938,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             closeCurrentWalSegment();
 
             curWalSegmIdx = Integer.MAX_VALUE;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteCheckedException validateTailReachedException(
+            WalSegmentTailReachedException tailReachedException,
+            AbstractReadFileHandle currWalSegment) {
+            return curWalSegmIdx < (segmentAware.curAbsWalIdx() - 1)
+                ? new IgniteCheckedException("WAL tail reached in archive directory, " +
+                "WAL segment file is corrupted.", tailReachedException)
+                : null;
         }
 
         /**

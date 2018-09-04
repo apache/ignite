@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
@@ -1169,7 +1170,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             ignite0.active(true);
 
-            IgniteCache<Object, Object> cache0 = ignite0.cache(cacheName);
+            IgniteCache<Object, Object> cache0 = ignite0.cache(CACHE_NAME);
 
             for (int i = 0; i < 100; i++)
                 cache0.put(i, new IndexedObject(i));

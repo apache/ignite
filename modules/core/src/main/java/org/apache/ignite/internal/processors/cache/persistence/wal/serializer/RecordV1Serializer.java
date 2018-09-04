@@ -29,12 +29,11 @@ import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
@@ -249,14 +248,14 @@ public class RecordV1Serializer implements RecordSerializer {
      * NOTE: Method mutates position of {@code io}.
      *
      * @param io I/O interface for file.
-     * @param fileInputFactory File input factory.
+     * @param segmentFileInputFactory File input factory.
      * @return Instance of {@link SegmentHeader} extracted from the file.
      * @throws IgniteCheckedException If failed to read serializer version.
      */
-    public static SegmentHeader readSegmentHeader(SegmentIO io, FileInputFactory fileInputFactory)
+    public static SegmentHeader readSegmentHeader(SegmentIO io, SegmentFileInputFactory segmentFileInputFactory)
         throws IgniteCheckedException, IOException {
         try (ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
-            ByteBufferBackedDataInput in = fileInputFactory.createFileInput(io, buf);
+            ByteBufferBackedDataInput in = segmentFileInputFactory.createFileInput(io, buf);
 
             in.ensure(HEADER_RECORD_SIZE);
 

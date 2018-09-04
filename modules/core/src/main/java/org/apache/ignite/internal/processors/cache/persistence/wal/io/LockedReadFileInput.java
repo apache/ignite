@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * File input, backed by byte buffer file input. This class allows to read data by chunks from file and then read
@@ -46,7 +44,7 @@ final class LockedReadFileInput extends SimpleFileInput {
      * @param initFileIo Initial File I/O for reading.
      * @param segmentAware Holder of actual information of latest manipulation on WAL segments.
      * @param segmentIOFactory Factory of file I/O for segment.
-     * @throws IOException
+     * @throws IOException if initFileIo would be fail during reading.
      */
     LockedReadFileInput(
         ByteBufferExpander buf,
@@ -62,7 +60,7 @@ final class LockedReadFileInput extends SimpleFileInput {
     }
 
     /** {@inheritDoc} */
-    public void ensure(int requested) throws IOException {
+    @Override public void ensure(int requested) throws IOException {
         int available = buffer().remaining();
 
         if (available >= requested)
@@ -87,7 +85,7 @@ final class LockedReadFileInput extends SimpleFileInput {
     /**
      * Refresh current file io.
      *
-     * @throws IOException
+     * @throws IOException if old fileIO is fail during reading or new file is fail during creation.
      */
     private void refreshIO() throws IOException {
         FileIO io = fileIOFactory.build(segmentId);
@@ -106,7 +104,7 @@ final class LockedReadFileInput extends SimpleFileInput {
         /**
          * @param segmentId Segment for IO action.
          * @return {@link FileIO}.
-         * @throws IOException
+         * @throws IOException if creation would be fail.
          */
         FileIO build(long segmentId) throws IOException;
     }

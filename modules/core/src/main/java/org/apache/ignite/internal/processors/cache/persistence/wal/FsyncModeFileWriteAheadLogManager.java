@@ -90,9 +90,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
@@ -262,7 +262,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private volatile FileIOFactory ioFactory;
 
     /** Factory to provide I/O interfaces for read primitives with files */
-    private final FileInputFactory fileInputFactory;
+    private final SegmentFileInputFactory segmentFileInputFactory;
 
     /** Updater for {@link #currentHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FsyncModeFileWriteAheadLogManager, FileWriteHandle> currentHndUpd =
@@ -346,7 +346,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         fsyncDelay = dsCfg.getWalFsyncDelayNanos();
         alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();
         ioFactory = dsCfg.getFileIOFactory();
-        fileInputFactory = new SimpleFileInputFactory();
+        segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
 
@@ -774,7 +774,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             ioFactory,
             archiver,
             decompressor,
-            log
+            log,
+            segmentFileInputFactory
         );
     }
 
@@ -1126,7 +1127,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             FileWriteHandle next = initNextWriteHandle(cur.getSegmentId());
 
-            if (next.idx - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
+            if (next.getSegmentId() - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
                 cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
 
             boolean swapped = currentHndUpd.compareAndSet(this, hnd, next);
@@ -1178,7 +1179,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 // If we have existing segment, try to read version from it.
                 if (lastReadPtr != null) {
                     try {
-                        serVer = readSegmentHeader(fileIO, fileInputFactory).getSerializerVersion();
+                        serVer = readSegmentHeader(fileIO, segmentFileInputFactory).getSerializerVersion();
                     }
                     catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVersion;
@@ -2000,7 +2001,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             int segmentSerializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
-                segmentSerializerVer = readSegmentHeader(new SegmentIO(nextSegment, fileIO), fileInputFactory).getSerializerVersion();
+                segmentSerializerVer = readSegmentHeader(new SegmentIO(nextSegment, fileIO), segmentFileInputFactory).getSerializerVersion();
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
@@ -3108,7 +3109,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * @param serializerFactory Serializer factory.
          * @param archiver Archiver.
          * @param decompressor Decompressor.
-         *@param log Logger  @throws IgniteCheckedException If failed to initialize WAL segment.
+         * @param log Logger  @throws IgniteCheckedException If failed to initialize WAL segment.
+         * @param segmentFileInputFactory Segment file input factory.
          */
         private RecordsIterator(
             GridCacheSharedContext cctx,
@@ -3121,14 +3123,17 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             FileIOFactory ioFactory,
             FileArchiver archiver,
             FileDecompressor decompressor,
-            IgniteLogger log
+            IgniteLogger log,
+            SegmentFileInputFactory segmentFileInputFactory
         ) throws IgniteCheckedException {
-            super(log,
+            super(
+                log,
                 cctx,
                 serializerFactory,
                 ioFactory,
                 psCfg.getWalRecordIteratorBufferSize(),
-                new SimpleFileInputFactory());
+                segmentFileInputFactory
+            );
             this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
             this.psCfg = psCfg;
@@ -3179,6 +3184,15 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 releaseWorkSegment(curWalSegmIdx);
 
             curWalSegmIdx = Integer.MAX_VALUE;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteCheckedException validateTailReachedException(
+            WalSegmentTailReachedException tailReachedException,
+            AbstractReadFileHandle currWalSegment) {
+            return !currWalSegment.workDir() ? new IgniteCheckedException(
+                "WAL tail reached in archive directory, " +
+                    "WAL segment file is corrupted.", tailReachedException) : null;
         }
 
         /**

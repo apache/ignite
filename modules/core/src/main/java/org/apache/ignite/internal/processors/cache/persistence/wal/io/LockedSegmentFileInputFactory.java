@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter
  *
  * Creating {@link FileInput} with ability locked segment during reading.
  */
-public class LockedFileInputFactory implements FileInputFactory {
+public class LockedSegmentFileInputFactory implements SegmentFileInputFactory {
     /** Holder of actual information of latest manipulation on WAL segments. */
     private final SegmentAware segmentAware;
     /** Manager of segment location. */
@@ -43,7 +43,7 @@ public class LockedFileInputFactory implements FileInputFactory {
      * @param segmentRouter Manager of segment location.
      * @param fileIOFactory {@link FileIO} factory definition.
      */
-    public LockedFileInputFactory(
+    public LockedSegmentFileInputFactory(
         SegmentAware segmentAware,
         SegmentRouter segmentRouter,
         FileIOFactory fileIOFactory) {

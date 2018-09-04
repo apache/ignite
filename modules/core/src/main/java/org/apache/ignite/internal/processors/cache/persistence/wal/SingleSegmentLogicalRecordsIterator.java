@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.RecordTypes;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
@@ -73,7 +73,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         File archiveDir,
         CIX1<WALRecord> advanceC
     ) throws IgniteCheckedException {
-        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize, new SimpleFileInputFactory());
+        super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize, new SimpleSegmentFileInputFactory());
 
         curWalSegmIdx = archivedSegIdx;
         this.archiveDir = archiveDir;
@@ -120,6 +120,13 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
 
         if (curRec != null && advanceC != null)
             advanceC.apply(curRec.get2());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteCheckedException validateTailReachedException(
+        WalSegmentTailReachedException tailReachedException,
+        AbstractReadFileHandle currWalSegment) {
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -37,17 +37,16 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInputFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInputFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -71,7 +70,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     private static final long serialVersionUID = 0L;
 
     /** Factory to provide I/O interfaces for read primitives with files. */
-    private static final FileInputFactory FILE_INPUT_FACTORY = new SimpleFileInputFactory();
+    private static final SegmentFileInputFactory FILE_INPUT_FACTORY = new SimpleSegmentFileInputFactory();
     /**
      * File descriptors remained to scan.
      * <code>null</code> value means directory scan mode
@@ -267,8 +266,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         while (true) {
             try {
-                try (FileIO fileIO = fd.toIO(ioFactory)) {
-                    readSegmentHeader(new SegmentIO(curWalSegmIdx, fileIO), FILE_INPUT_FACTORY);
+                try (SegmentIO fileIO = fd.toIO(ioFactory)) {
+                    readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
                 }
 
                 break;

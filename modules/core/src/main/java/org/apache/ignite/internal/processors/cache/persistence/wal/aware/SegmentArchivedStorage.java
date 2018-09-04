@@ -94,7 +94,7 @@ class SegmentArchivedStorage extends SegmentObservable {
      * Mark segment as moved to archive under lock.
      *
      * @param toArchive Segment which was should be moved to archive.
-     * @throws IgniteInterruptedCheckedException
+     * @throws IgniteInterruptedCheckedException if interrupted during waiting.
      */
     synchronized void markAsMovedToArchive(long toArchive) throws IgniteInterruptedCheckedException {
         try {

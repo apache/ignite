@@ -38,13 +38,13 @@ public class SegmentAware {
     /** Storage of actual information about current index of compressed segments. */
     private final SegmentCompressStorage segmentCompressStorage = buildCompressStorage(segmentArchivedStorage);
     /** Storage of absolute current segment index. */
-    private final SegmentCurrentStateStorage segmentCurrentStateStorage;
+    private final SegmentCurrentStateStorage segmentCurrStateStorage;
 
     /**
-     * @param walSegmentsCount Total WAL segments count.
+     * @param walSegmentsCnt Total WAL segments count.
      */
-    public SegmentAware(int walSegmentsCount) {
-        segmentCurrentStateStorage = buildCurrentStateStorage(walSegmentsCount, segmentArchivedStorage);
+    public SegmentAware(int walSegmentsCnt) {
+        segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
     }
 
     /**
@@ -53,7 +53,7 @@ public class SegmentAware {
      * @param absSegIdx Target WAL index.
      */
     public void awaitSegment(long absSegIdx) throws IgniteInterruptedCheckedException {
-        segmentCurrentStateStorage.awaitSegment(absSegIdx);
+        segmentCurrStateStorage.awaitSegment(absSegIdx);
     }
 
     /**
@@ -62,21 +62,28 @@ public class SegmentAware {
      * @return Next absolute segment index.
      */
     public long nextAbsoluteSegmentIndex() throws IgniteInterruptedCheckedException {
-        return segmentCurrentStateStorage.nextAbsoluteSegmentIndex();
+        return segmentCurrStateStorage.nextAbsoluteSegmentIndex();
+    }
+
+    /**
+     * @return Current WAL index.
+     */
+    public long curAbsWalIdx() {
+        return segmentCurrStateStorage.curAbsWalIdx();
     }
 
     /**
      * Waiting until archivation of next segment will be allowed.
      */
     public long waitNextSegmentForArchivation() throws IgniteInterruptedCheckedException {
-        return segmentCurrentStateStorage.waitNextSegmentForArchivation();
+        return segmentCurrStateStorage.waitNextSegmentForArchivation();
     }
 
     /**
      * Mark segment as moved to archive under lock.
      *
      * @param toArchive Segment which was should be moved to archive.
-     * @throws IgniteInterruptedCheckedException
+     * @throws IgniteInterruptedCheckedException if interrupted during waiting.
      */
     public void markAsMovedToArchive(long toArchive) throws IgniteInterruptedCheckedException {
         segmentArchivedStorage.markAsMovedToArchive(toArchive);
@@ -122,7 +129,7 @@ public class SegmentAware {
      * @param curAbsWalIdx New current WAL index.
      */
     public void curAbsWalIdx(long curAbsWalIdx) {
-        segmentCurrentStateStorage.curAbsWalIdx(curAbsWalIdx);
+        segmentCurrStateStorage.curAbsWalIdx(curAbsWalIdx);
     }
 
     /**
@@ -211,7 +218,7 @@ public class SegmentAware {
 
         segmentCompressStorage.interrupt();
 
-        segmentCurrentStateStorage.interrupt();
+        segmentCurrStateStorage.interrupt();
     }
 
     /**
@@ -222,6 +229,6 @@ public class SegmentAware {
 
         segmentCompressStorage.interrupt();
 
-        segmentCurrentStateStorage.forceInterrupt();
+        segmentCurrStateStorage.forceInterrupt();
     }
 }

@@ -29,7 +29,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDe
  */
 public class SegmentRouter {
     /** */
-    private static final String ZIP_SUFFIX = ".zip";
+    public static final String ZIP_SUFFIX = ".zip";
     /** */
     private File walWorkDir;
 
@@ -48,8 +48,11 @@ public class SegmentRouter {
      * @param segmentAware Holder of actual information of latest manipulation on WAL segments.
      * @param dsCfg Data storage configuration.
      */
-    public SegmentRouter(File walWorkDir, File walArchiveDir,
-        SegmentAware segmentAware, DataStorageConfiguration dsCfg) {
+    public SegmentRouter(
+        File walWorkDir,
+        File walArchiveDir,
+        SegmentAware segmentAware,
+        DataStorageConfiguration dsCfg) {
         this.walWorkDir = walWorkDir;
         this.walArchiveDir = walArchiveDir;
         this.segmentAware = segmentAware;
