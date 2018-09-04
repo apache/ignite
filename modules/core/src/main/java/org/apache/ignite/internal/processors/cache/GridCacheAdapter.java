@@ -276,14 +276,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Whether this cache is IGFS data cache. */
     private boolean igfsDataCache;
 
-    /** Whether this cache is Mongo data cache. */
-    @SuppressWarnings("UnusedDeclaration")
-    private boolean mongoDataCache;
-
-    /** Whether this cache is Mongo meta cache. */
-    @SuppressWarnings("UnusedDeclaration")
-    private boolean mongoMetaCache;
-
     /** Current IGFS data cache size. */
     private LongAdder igfsDataCacheSize;
 
@@ -4570,16 +4562,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         assert igfsDataCache;
 
         return igfsDataCacheSize.longValue();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        return mongoDataCache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        return mongoMetaCache;
     }
 
     /**
