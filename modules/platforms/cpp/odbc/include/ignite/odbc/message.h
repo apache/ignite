@@ -35,13 +35,10 @@ namespace ignite
 {
     namespace odbc
     {
-        namespace query
+        namespace streaming
         {
-            namespace streaming
-            {
-                // Forward declaration.
-                class StreamingBatch;
-            }
+            // Forward declaration.
+            class StreamingBatch;
         }
 
         struct ClientType
@@ -450,7 +447,7 @@ namespace ignite
              * @param last Last batch indicator.
              * @param order Order.
              */
-            StreamingBatchRequest(const std::string& schema, const query::streaming::StreamingBatch& batch,
+            StreamingBatchRequest(const std::string& schema, const streaming::StreamingBatch& batch,
                 bool last, int64_t order);
 
             /**
@@ -469,7 +466,7 @@ namespace ignite
             std::string schema;
 
             /** Batch. */
-            const query::streaming::StreamingBatch& batch;
+            const streaming::StreamingBatch& batch;
 
             /** Last page flag. */
             bool last;

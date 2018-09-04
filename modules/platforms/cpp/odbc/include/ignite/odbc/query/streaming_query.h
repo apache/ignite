@@ -20,17 +20,11 @@
 
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/app/parameter_set.h"
-#include "ignite/odbc/cursor.h"
-
-#include "ignite/odbc/query/streaming/streaming_batch.h"
 
 namespace ignite
 {
     namespace odbc
     {
-        /** Set streaming forward-declaration. */
-        class SqlSetStreamingCommand;
-
         /** Connection forward-declaration. */
         class Connection;
 
@@ -48,13 +42,11 @@ namespace ignite
                  * @param diag Diagnostics collector.
                  * @param connection Associated connection.
                  * @param params SQL params.
-                 * @param cmd Set streaming command.
                  */
                 StreamingQuery(
                     diagnostic::Diagnosable& diag,
                     Connection& connection,
-                    const app::ParameterSet& params,
-                    const SqlSetStreamingCommand& cmd);
+                    const app::ParameterSet& params);
 
                 /**
                  * Destructor.
@@ -131,30 +123,17 @@ namespace ignite
                 }
 
                 /**
-                 * Flush collected streaming data to remote server.
-                 *
-                 * @param last Last page indicator.
-                 * @return Operation result.
-                 */
-                SqlResult::Type Flush(bool last);
-
-                /**
                  * Prepare query for execution in a streaming mode.
                  *
                  * @param query Query.
                  */
-                void PrepareQuery(const std::string& query);
+                void PrepareQuery(const std::string& query)
+                {
+                    sql = query;
+                }
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(StreamingQuery);
-
-                /**
-                 * Send batch request.
-                 *
-                 * @param last Last page flag.
-                 * @return Result.
-                 */
-                SqlResult::Type MakeRequestStreamingBatch(bool last);
 
                 /** Connection associated with the statement. */
                 Connection& connection;
@@ -164,21 +143,6 @@ namespace ignite
 
                 /** Parameter bindings. */
                 const app::ParameterSet& params;
-
-                /** Ordered flag. */
-                bool ordered;
-
-                /** Batch size. */
-                int32_t batchSize;
-
-                /** Order. */
-                int64_t order;
-
-                /** Streaming enabled. */
-                bool enabled;
-
-                /** Current batch. */
-                streaming::StreamingBatch currentBatch;
             };
         }
     }

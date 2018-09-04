@@ -191,7 +191,6 @@
     <ClCompile Include="..\..\src\query\foreign_keys_query.cpp" />
     <ClCompile Include="..\..\src\query\primary_keys_query.cpp" />
     <ClCompile Include="..\..\src\query\special_columns_query.cpp" />
-    <ClCompile Include="..\..\src\query\streaming\streaming_batch.cpp" />
     <ClCompile Include="..\..\src\query\streaming_query.cpp" />
     <ClCompile Include="..\..\src\query\table_metadata_query.cpp" />
     <ClCompile Include="..\..\src\query\type_info_query.cpp" />
@@ -205,6 +204,7 @@
     <ClCompile Include="..\..\src\ssl\ssl_gateway.cpp" />
     <ClCompile Include="..\..\src\ssl\ssl_mode.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
+    <ClCompile Include="..\..\src\streaming\streaming_batch.cpp" />
     <ClCompile Include="..\..\src\type_traits.cpp" />
     <ClCompile Include="..\..\src\utility.cpp" />
     <ClCompile Include="..\..\src\log.cpp" />
@@ -249,7 +249,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\query\primary_keys_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\special_columns_query.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\query\streaming\streaming_batch.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\streaming_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\table_metadata_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h" />
@@ -267,6 +266,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_gateway.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_mode.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_batch.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\tcp_socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h" />

@@ -27,8 +27,8 @@
 #include "ignite/odbc/config/connection_info.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
+#include "ignite/odbc/streaming/streaming_context.h"
 #include "ignite/odbc/odbc_error.h"
-#include "message.h"
 
 namespace ignite
 {
@@ -166,7 +166,17 @@ namespace ignite
              *
              * @return @c true if the auto commit is enabled.
              */
-            bool IsAutoCommit();
+            bool IsAutoCommit() const;
+
+            /**
+             * Get streaming context.
+             *
+             * @return Streaming context.
+             */
+            streaming::StreamingContext& GetStreamingContext()
+            {
+                return streamingContext;
+            }
 
             /**
              * Create diagnostic record associated with the Connection instance.
@@ -507,6 +517,9 @@ namespace ignite
 
             /** Connection info. */
             config::ConnectionInfo info;
+
+            /** Streaming context. */
+            streaming::StreamingContext streamingContext;
         };
     }
 }

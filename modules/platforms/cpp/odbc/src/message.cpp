@@ -18,7 +18,7 @@
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/utility.h"
 
-#include "ignite/odbc/query/streaming/streaming_batch.h"
+#include "ignite/odbc/streaming/streaming_batch.h"
 
 namespace
 {
@@ -265,7 +265,7 @@ namespace ignite
         }
 
         StreamingBatchRequest::StreamingBatchRequest(const std::string& schema,
-            const query::streaming::StreamingBatch& batch, bool last, int64_t order) :
+            const streaming::StreamingBatch& batch, bool last, int64_t order) :
             schema(schema),
             batch(batch),
             last(last),
