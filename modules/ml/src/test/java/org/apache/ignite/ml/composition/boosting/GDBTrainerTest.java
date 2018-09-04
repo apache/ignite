@@ -54,7 +54,7 @@ public class GDBTrainerTest {
             learningSample.put(i, new double[] {xs[i], ys[i]});
         }
 
-        DatasetTrainer<Model<Vector, Double>, Double> trainer
+        DatasetTrainer<ModelsComposition, Double> trainer
             = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0).withUseIndex(true);
 
         Model<Vector, Double> mdl = trainer.fit(

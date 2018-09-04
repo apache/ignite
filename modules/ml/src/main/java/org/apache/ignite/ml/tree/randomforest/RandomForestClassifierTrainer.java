@@ -64,8 +64,9 @@ public class RandomForestClassifierTrainer
      * This id can be used as index in arrays or lists.
      *
      * @param dataset Dataset.
+     * @return true if initialization was done.
      */
-    @Override protected void init(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
+    @Override protected boolean init(Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
         Set<Double> uniqLabels = dataset.compute(
             x -> {
                 Set<Double> labels = new HashSet<>();
@@ -85,11 +86,14 @@ public class RandomForestClassifierTrainer
             }
         );
 
+        if(uniqLabels == null)
+            return false;
+
         int i = 0;
         for (Double label : uniqLabels)
             lblMapping.put(label, i++);
 
-        super.init(dataset);
+        return super.init(dataset);
     }
 
     /** {@inheritDoc} */
