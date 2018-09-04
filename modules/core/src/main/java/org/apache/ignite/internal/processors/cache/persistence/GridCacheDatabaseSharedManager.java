@@ -831,11 +831,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.beforeMemoryRestore(this);
-
-            cctx.pageStore().initializeForMetastorage();
-
             // Memory restored at startup, just resume logging.
             cctx.wal().resumeLogging(lastRestored);
 
@@ -873,10 +868,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.pageStore().initializeForMetastorage();
 
-            // Memory have been already restored.
-            if (!CheckpointStatus.NULL_PTR.equals(lastRestored))
-                return;
-
             CheckpointStatus status = readCheckpointStatus();
 
             metaStorage = new MetaStorage(
@@ -905,7 +896,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             // Init metastore only after WAL logging resumed. Can't do it earlier because
-            // MetaStorage first initialization also touches wal if #isWalDeltaRecordNeeded.
+            // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
             metaStorage.init(this);
 
             lastRestored = restore;
@@ -2009,6 +2000,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (rec == null)
                     break;
 
+                if (!apply && !metastoreOnly)
+                    continue;
+
                 switch (rec.type()) {
                     case PAGE_RECORD:
                         if (restoreBinaryState.needApplyBinaryUpdate()) {
@@ -2382,8 +2376,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     log.info("Finished restoring partition state for local groups [cntProcessed=" + proc +
                         ", cntPartStateWal=" + partStates.size() +
                         ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
-
-                lastRestored = restoreLogicalState.lastReadRecordPointer();
             }
         }
         finally {

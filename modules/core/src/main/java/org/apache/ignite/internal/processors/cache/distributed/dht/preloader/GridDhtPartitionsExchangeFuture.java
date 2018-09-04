@@ -833,7 +833,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         cctx.activate();
 
-
         if (!cctx.kernalContext().clientNode())
             cctx.database().onDoneRestoreBinaryMemory();
 
@@ -980,6 +979,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 startDescs.add(desc);
                         }
 
+                        cctx.database().readCheckpointAndRestoreMemory(startDescs);
                         cctx.database().onDoneRestoreBinaryMemory();
                     }
 
