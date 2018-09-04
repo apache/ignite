@@ -49,7 +49,8 @@ if [ -z "$IGNITE_CONSISTENT_ID" ]; then
     if [ ! -z "$IGNITE_CONSISTENT_ID_PREFIX" ] ; then
         EXIST=()
         if [ ! -z "$IGNITE_PERSISTENT_STORE" ] ; then
-            EXIST=( `cd ${IGNITE_PERSISTENT_STORE}/store; ls -d ${IGNITE_CONSISTENT_ID_PREFIX}_* 2>/dev/null` )
+            PREFIX=`echo $IGNITE_CONSISTENT_ID_PREFIX | tr '-' '_'`
+            EXIST=( `cd ${IGNITE_PERSISTENT_STORE}/store; ls -d ${PREFIX}_* 2>/dev/null` )
         fi
 
         if [ ${#EXIST[@]} -eq 1 ] ; then
@@ -61,7 +62,8 @@ if [ -z "$IGNITE_CONSISTENT_ID" ]; then
         elif [ ${#EXIST[@]} -eq 0 ]; then
             export IGNITE_CONSISTENT_ID=${IGNITE_CLUSTER_NAME}-`cat /proc/sys/kernel/random/uuid`
         else
-            echo "Cannnot select  IGNITE_CONSISTENT_ID from ${EXIST[@]}, leaving unset"
+            echo "Cannnot select  IGNITE_CONSISTENT_ID from ${EXIST[@]}, failing"
+            exit 1
         fi
     fi
 fi
