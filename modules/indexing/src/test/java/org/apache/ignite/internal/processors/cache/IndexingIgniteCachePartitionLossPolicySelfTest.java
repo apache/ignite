@@ -41,23 +41,15 @@ public class IndexingIgniteCachePartitionLossPolicySelfTest extends IgniteCacheP
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void validateQuery(boolean safe, int part, Ignite node) {
+        // Get node lost and remaining partitions.
         IgniteCache cache = node.cache(CACHE_NAME);
 
-        Collection<Integer> lost = cache.lostPartitions();
+        Collection<Integer> lostParts = cache.lostPartitions();
 
-        // 1. Check query against all partitions.
-        validateQuery0(safe, node, false);
-//        validateQuery0(safe, node, true); // TODO
-
-        // 2. Check query against LOST partition.
-        validateQuery0(safe, node, false, part);
-//        validateQuery0(safe, node, true, part); // TODO
-
-        // 3. Check query on remaining partition.
         Integer remainingPart = null;
 
         for (int i = 0; i < node.affinity(CACHE_NAME).partitions(); i++) {
-            if (lost.contains(i))
+            if (lostParts.contains(i))
                 continue;
 
             remainingPart = i;
@@ -65,13 +57,35 @@ public class IndexingIgniteCachePartitionLossPolicySelfTest extends IgniteCacheP
             break;
         }
 
+        // Determine whether local query should be executed on that node.
+        boolean execLocQry = false;
+
+        for (int nodePrimaryPart : node.affinity(CACHE_NAME).primaryPartitions(node.cluster().localNode())) {
+            if (part == nodePrimaryPart) {
+                execLocQry = true;
+
+                break;
+            }
+        }
+
+        // 1. Check query against all partitions.
+        validateQuery0(safe, node, false);
+
+        if (execLocQry)
+            validateQuery0(safe, node, true);
+
+        // 2. Check query against LOST partition.
+        validateQuery0(safe, node, false, part);
+
+        if (execLocQry)
+            validateQuery0(safe, node, true, part);
+
+        // 3. Check query on remaining partition.
         if (remainingPart != null) {
             executeQuery(node, false, remainingPart);
-            //executeQuery(node, true, remainingPart);
 
             // 4. Check query over two partitions - normal and LOST.
             validateQuery0(safe, node, false, part, remainingPart);
-//            validateQuery0(safe, node, true, part, remainingPart); // TODO
         }
     }
 
@@ -91,8 +105,8 @@ public class IndexingIgniteCachePartitionLossPolicySelfTest extends IgniteCacheP
                 fail("Exception is not thrown.");
             }
             catch (Exception e) {
-                // TODO
-                System.out.println("EXPECTED ERROR: " + e);
+                assertTrue(e.getMessage(), e.getMessage() != null &&
+                    e.getMessage().contains("Failed to execute query because cache partition has been lost"));
             }
         }
         else {
