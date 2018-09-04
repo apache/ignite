@@ -101,4 +101,55 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
 
         assertEquals(intercept, mdl.getIntercept(), 1e-6);
     }
+
+    /** */
+    @Test
+    public void testUpdate() {
+        Random rnd = new Random(0);
+        Map<Integer, double[]> data = new HashMap<>();
+        double[] coef = new double[100];
+        double intercept = rnd.nextDouble() * 10;
+
+        for (int i = 0; i < 100000; i++) {
+            double[] x = new double[coef.length + 1];
+
+            for (int j = 0; j < coef.length; j++)
+                x[j] = rnd.nextDouble() * 10;
+
+            x[coef.length] = intercept;
+
+            data.put(i, x);
+        }
+
+        LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
+
+        LinearRegressionModel originalModel = trainer.fit(
+            data,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[coef.length]
+        );
+
+        LinearRegressionModel updatedOnSameDS = trainer.update(
+            originalModel,
+            data,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[coef.length]
+        );
+
+        LinearRegressionModel updatedOnEmpyDS = trainer.update(
+            originalModel,
+            new HashMap<Integer, double[]>(),
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+            (k, v) -> v[coef.length]
+        );
+
+        assertArrayEquals(originalModel.getWeights().getStorage().data(), updatedOnSameDS.getWeights().getStorage().data(), 1e-6);
+        assertEquals(originalModel.getIntercept(), updatedOnSameDS.getIntercept(), 1e-6);
+
+        assertArrayEquals(originalModel.getWeights().getStorage().data(), updatedOnEmpyDS.getWeights().getStorage().data(), 1e-6);
+        assertEquals(originalModel.getIntercept(), updatedOnEmpyDS.getIntercept(), 1e-6);
+    }
 }
