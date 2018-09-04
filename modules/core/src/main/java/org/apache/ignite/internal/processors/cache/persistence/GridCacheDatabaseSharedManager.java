@@ -848,11 +848,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void readCheckpointAndRestoreMemory() throws IgniteCheckedException {
+    @Override public void readCheckpointAndRestoreMemory(
+        List<DynamicCacheDescriptor> cachesToStart
+    ) throws IgniteCheckedException {
+        assert !cctx.kernalContext().clientNode();
+
+        // Memory have been already restored.
+        if (!CheckpointStatus.NULL_PTR.equals(lastRestored))
+            return;
+
         checkpointReadLock();
 
         try {
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
+                lsnr.beforeMemoryRestore(this);
+
+            // Only presistence caches to start.
+            for (DynamicCacheDescriptor desc : cachesToStart)
+                storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
+
             CheckpointStatus status = readCheckpointStatus();
+
+            cctx.pageStore().initializeForMetastorage();
 
             metaStorage = new MetaStorage(
                 cctx,
@@ -886,32 +903,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             lastRestored = restore;
 
             cctx.wal().suspendLogging();
-        }
-        catch (IgniteCheckedException e) {
-            if (X.hasCause(e, StorageException.class, IOException.class))
-                cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-            throw e;
-        }
-        finally {
-            checkpointReadUnlock();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
-        assert metaStorage != null;
-
-        checkpointReadLock();
-
-        try {
-            // Memory restored at startup, just resume logging.
-            cctx.wal().resumeLogging(lastRestored);
-
-            notifyMetastorageReadyForReadWrite();
-
-            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
-                lsnr.afterMemoryRestore(this);
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, StorageException.class, IOException.class))
@@ -4102,16 +4093,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public boolean needRestoreMemory() {
             return !F.eq(cpStartId, cpEndId) && !F.eq(NULL_UUID, cpStartId);
-        }
-
-        /**
-         * @return {@code True} if checkpoint status is undefined.
-         */
-        public boolean isInitial() {
-            return F.eq(cpStartId, NULL_UUID) &&
-                F.eq(startPtr, NULL_PTR) &&
-                F.eq(cpEndId, NULL_PTR) &&
-                F.eq(endPtr, NULL_PTR);
         }
 
         /** {@inheritDoc} */
