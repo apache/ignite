@@ -643,16 +643,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If fails.
      */
-    public void readCheckpointAndRestoreMemory() throws IgniteCheckedException {
+    public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
         // No-op.
     }
 
     /**
-     * @throws IgniteCheckedException If fails.
+     * @throws IgniteCheckedException If failed.
      */
-    public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
+    public void readCheckpointAndRestoreMemory(List<DynamicCacheDescriptor> cachesToStart) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -823,7 +823,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param caches Cache descriptons on started cache processor.
      */
-    public void cacheProcessorStarted(Collection<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
+    public void cacheProcessorStarted(List<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
         // No-op.
     }
 

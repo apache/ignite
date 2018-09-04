@@ -496,6 +496,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                         CheckpointEntryType.END);
 
                     Files.delete(Paths.get(dbMgr.checkpointDirectory().getAbsolutePath(), cpEndFileName));
+
+                    log.info("Checkpoint marker removed [cpEndFileName=" + cpEndFileName + ']');
                 }
                 catch (IOException e) {
                     throw new IgniteCheckedException(e);
