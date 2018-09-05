@@ -111,12 +111,25 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedModel,
+        DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
-            MLPArchitecture arch = archSupplier.apply(dataset);
-            MultilayerPerceptron mdl = new MultilayerPerceptron(arch, new RandomInitializer(seed));
+            MultilayerPerceptron mdl;
+            if (lastLearnedModel != null) {
+                mdl = lastLearnedModel;
+            } else {
+                MLPArchitecture arch = archSupplier.apply(dataset);
+                mdl = new MultilayerPerceptron(arch, new RandomInitializer(seed));
+            }
             ParameterUpdateCalculator<? super MultilayerPerceptron, P> updater = updatesStgy.getUpdatesCalculator();
 
             for (int i = 0; i < maxIterations; i += locIterations) {
@@ -178,6 +191,9 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
                     }
                 );
 
+                if (totUp == null)
+                    return getLastTrainedModelOrThrowEmptyDatasetException(lastLearnedModel);
+
                 P update = updatesStgy.allUpdatesReducer().apply(totUp);
                 mdl = updater.update(mdl, update);
             }
@@ -187,6 +203,11 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(MultilayerPerceptron mdl) {
+        return true;
     }
 
     /**
