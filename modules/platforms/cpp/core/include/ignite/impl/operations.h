@@ -344,7 +344,7 @@ namespace ignite
 
             virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
-                reader.ReadTopObject0<T>(val);
+                reader.ReadTopObject<T>(val);
             }
 
             virtual void SetNull()
@@ -381,8 +381,8 @@ namespace ignite
 
             virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
-                reader.ReadTopObject0<T1>(val1);
-                reader.ReadTopObject0<T2>(val2);
+                reader.ReadTopObject<T1>(val1);
+                reader.ReadTopObject<T2>(val2);
             }
 
             virtual void SetNull()
@@ -427,10 +427,10 @@ namespace ignite
 
             virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
             {
-                reader.ReadTopObject0<T1>(val1);
-                reader.ReadTopObject0<T2>(val2);
-                reader.ReadTopObject0<T3>(val3);
-                reader.ReadTopObject0<T4>(val4);
+                reader.ReadTopObject<T1>(val1);
+                reader.ReadTopObject<T2>(val2);
+                reader.ReadTopObject<T3>(val3);
+                reader.ReadTopObject<T4>(val4);
             }
 
             virtual void SetNull()
