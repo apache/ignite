@@ -57,6 +57,9 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     /** Policy enabled. */
     private boolean plcEnabled;
 
+    /** Filter enabled. */
+    private boolean filterEnabled;
+
     /** Busy lock. */
     private final GridBusyLock busyLock = new GridBusyLock();
 
@@ -94,14 +97,19 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         if (plcEnabled)
             prepare(cfg, plc, cctx.isNear());
 
-        filterFactory = cfg.getEvictionFilterFactory();
-        if (filterFactory != null){
-            prepare(cfg, filterFactory, cctx.isNear());
-            filter = (EvictionFilter)filterFactory.create();
-        }
-        else{
-            filter = cfg.getEvictionFilter();
-            prepare(cfg, filter, cctx.isNear());
+        if (!cctx.isNear()) {
+            filterFactory = cfg.getEvictionFilterFactory();
+            if (filterFactory != null) {
+                prepare(cfg, filterFactory, cctx.isNear());
+                filter = (EvictionFilter)filterFactory.create();
+            }
+            else
+                filter = cfg.getEvictionFilter();
+
+            filterEnabled = filter != null;
+
+            if (filterEnabled)
+                prepare(cfg, filter, cctx.isNear());
         }
 
         if (log.isDebugEnabled())
@@ -405,10 +413,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel, boolean destroy) {
-        cleanup(cctx.config(), filter, cctx.isNear());
-        cleanup(cctx.config(), filterFactory, cctx.isNear());
         cleanup(cctx.config(), plc, cctx.isNear());
         cleanup(cctx.config(), plcFactory, cctx.isNear());
+        cleanup(cctx.config(), filter, cctx.isNear());
+        cleanup(cctx.config(), filterFactory, cctx.isNear());
     }
 
     /**
