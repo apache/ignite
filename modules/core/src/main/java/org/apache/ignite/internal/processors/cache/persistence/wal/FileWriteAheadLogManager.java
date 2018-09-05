@@ -3440,8 +3440,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     waiters.remove(t);
 
                     Throwable walWriterError = walWriter.err;
+
                     if (walWriterError != null)
-                        throw new IgniteCheckedException("Flush buffer failed", walWriterError);
+                        throw new IgniteCheckedException("Flush buffer failed.", walWriterError);
 
                     return;
                 }
