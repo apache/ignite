@@ -50,7 +50,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public void resumeLogging(WALPointer lastWrittenPtr) throws IgniteCheckedException;
 
     /**
-     * Suspend logging to avoid WAL changes. The opposite action of {@link #resumeLogging(WALPointer)}.
+     * Suspend logging to avoid WAL changes. The opposite of {@link #resumeLogging(WALPointer)}.
      */
     public void suspendLogging() throws IgniteCheckedException;
 

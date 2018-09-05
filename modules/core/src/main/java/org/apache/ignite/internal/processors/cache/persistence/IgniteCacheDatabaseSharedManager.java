@@ -650,11 +650,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param cachesToStart Started caches.
+     * @return Last touched WAL pointer during binary memory recovery.
      * @throws IgniteCheckedException If failed.
      */
-    public void readCheckpointAndRestoreMemory(List<DynamicCacheDescriptor> cachesToStart) throws IgniteCheckedException {
-        // No-op.
+    public WALPointer readCheckpointAndRestoreMemory() throws IgniteCheckedException {
+        return null;
     }
 
     /**
@@ -765,9 +765,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * No-op for non-persistent storage.
+     * Clean checkpoint directory {@link GridCacheDatabaseSharedManager#cpDir}. The operation
+     * is necessary when local node joined to baseline topology with different consistentId.
      */
-    public void cleanupCheckpointState() throws IgniteCheckedException {
+    public void cleanupCheckpointDirectory() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -824,7 +825,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param caches Cache descriptons on started cache processor.
      */
-    public void cacheProcessorStarted(List<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
+    public void cacheProcessorStarted(Collection<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
         // No-op.
     }
 

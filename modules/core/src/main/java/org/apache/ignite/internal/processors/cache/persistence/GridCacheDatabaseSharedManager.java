@@ -340,14 +340,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private volatile MetaStorage metaStorage;
 
-    /**
-     * Last restored pointer throught node startup or activation. Can be {@code null} if
-     * tail is undefined. If equals to {@code CheckpointStatus.NULL_PTR} that it haven't
-     * been initialized yet.
-     * Guarded by {@link GridCacheDatabaseSharedManager#checkpointReadLock()}
-     */
-    private volatile WALPointer lastRestored = CheckpointStatus.NULL_PTR;
-
     /** */
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
 
@@ -525,14 +517,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /**
-     * Cleanup checkpoint state.
-     */
-    @Override public void cleanupCheckpointState() throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void cleanupCheckpointDirectory() throws IgniteCheckedException {
         try {
-            // Reset binary restored state
-            lastRestored = CheckpointStatus.NULL_PTR;
-
             try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath())) {
                 for (Path path : files)
                     Files.delete(path);
@@ -736,8 +723,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /* Must be here, because after deactivate we can invoke activate and file lock must be already configured */
         stopping = false;
-
-        lastRestored = CheckpointStatus.NULL_PTR;
     }
 
     /**
@@ -855,8 +840,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             WALPointer lastPtr = restoreLastWalPointer();
 
-            // Memory restored at startup, just resume logging.
-            cctx.wal().resumeLogging(CheckpointStatus.NULL_PTR.equals(lastRestored) ? lastPtr : lastRestored);
+            // Memory restored at startup, just resume logging from last WAL pointer.
+            cctx.wal().resumeLogging(lastPtr);
 
             createMetaStorage();
 
@@ -877,9 +862,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void readCheckpointAndRestoreMemory(
-        List<DynamicCacheDescriptor> cachesToStart
-    ) throws IgniteCheckedException {
+    @Override public WALPointer readCheckpointAndRestoreMemory() throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
         checkpointReadLock();
@@ -887,10 +870,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
                 lsnr.beforeMemoryRestore(this);
-
-            // Only presistence caches to start.
-            for (DynamicCacheDescriptor desc : cachesToStart)
-                storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
 
             cctx.pageStore().initializeForMetastorage();
 
@@ -920,6 +899,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             createMetaStorage();
 
             cctx.wal().suspendLogging();
+
+            return ptr == null ? restore : ptr;
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, StorageException.class, IOException.class))
@@ -1058,8 +1039,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 fileLockHolder.close();
             }
         }
-
-        lastRestored = CheckpointStatus.NULL_PTR;
     }
 
     /** */
@@ -1959,16 +1938,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void cacheProcessorStarted(List<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
+    @Override public void cacheProcessorStarted(Collection<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
         if (cctx.kernalContext().clientNode())
             return;
 
         // Preform early regions startup before restoring state.
         initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
 
-        readCheckpointAndRestoreMemory(caches);
+        // Only presistence caches to start.
+        for (DynamicCacheDescriptor desc : caches)
+            storeMgr.initializeForCache(desc.groupDescriptor(), new StoredCacheData(desc.cacheConfiguration()));
 
-        U.log(log, "Binary memory state restored at node startup [lastRestored=" + lastRestored + ']');
+        WALPointer restoredPtr = readCheckpointAndRestoreMemory();
+
+        U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restoredPtr + ']');
     }
 
     /**
@@ -1980,11 +1963,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         CheckpointStatus status = readCheckpointStatus();
 
+        // Checkpoint END marked shoudl be flushed on deactivation. If not, node should be restarted.
         assert !status.needRestoreMemory() : status;
 
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
             while (it.hasNextX())
-                it.nextX(); // Can ignore return value.
+                it.nextX(); // Ignore return value.
         }
 
         return state.lastReadRecordPointer();
@@ -4137,7 +4121,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @return {@code True} if need to apply page log to restore tree structure.
+         * @return {@code True} if need perform binary memory recovery. Records {@link PageDeltaRecord}
+         * and {@link PageSnapshot} will be applyed.
          */
         public boolean needRestoreMemory() {
             return !F.eq(cpStartId, cpEndId) && !F.eq(NULL_UUID, cpStartId) && (cpStartTs >= cpEndTs);
