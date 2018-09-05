@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -305,6 +306,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Validator for partition states. */
     @GridToStringExclude
     private final GridDhtPartitionsStateValidator validator;
+
+    /** Register caches future. Initialized on exchange init. Must be waited on exchange end. */
+    private volatile IgniteInternalFuture<?> registerCachesFuture = new GridFinishedFuture<>();
 
     /**
      * @param cctx Cache context.
@@ -812,8 +816,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!cctx.kernalContext().clientNode())
             cctx.database().onDoneRestoreBinaryMemory();
 
-        cctx.cache().startCachesOnLocalJoin(exchActions == null ? null : exchActions.localJoinContext(),
-            initialVersion());
+        cctx.cache().startCachesOnLocalJoin(this, exchActions == null ? null : exchActions.localJoinContext());
     }
 
     /**
@@ -1691,6 +1694,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         assert res != null || err != null;
+
+        try {
+            registerCachesFuture.get();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to wait for cache registration", e);
+        }
 
         if (err == null &&
             !cctx.kernalContext().clientNode() &&
@@ -4026,6 +4036,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return (e instanceof IgniteNeedReconnectException
             || X.hasCause(e, IOException.class, IgniteClientDisconnectedCheckedException.class))
             && cctx.discovery().reconnectSupported();
+    }
+
+    /**
+     * @param registerCachesFuture Register caches future.
+     */
+    public void registerCachesFuture(IgniteInternalFuture<?> registerCachesFuture) {
+        this.registerCachesFuture = registerCachesFuture;
     }
 
     /** {@inheritDoc} */
