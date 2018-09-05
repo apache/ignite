@@ -75,7 +75,6 @@ public class GDBTrainerTest {
 
         assertEquals(0.0, mse, 0.0001);
 
-        assertTrue(mdl instanceof ModelsComposition);
         ModelsComposition composition = (ModelsComposition)mdl;
         assertTrue(composition.toString().length() > 0);
         assertTrue(composition.toString(true).length() > 0);
