@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
@@ -1831,17 +1832,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param fut Current exchange future.
      * @param locJoinCtx Local join cache context.
-     * @param exchTopVer Current exchange version.
      * @throws IgniteCheckedException If failed.
      */
     public void startCachesOnLocalJoin(
-        LocalJoinCachesContext locJoinCtx,
-        AffinityTopologyVersion exchTopVer
+        GridDhtPartitionsExchangeFuture fut,
+        LocalJoinCachesContext locJoinCtx
     ) throws IgniteCheckedException {
         if (locJoinCtx != null) {
             sharedCtx.affinity().initCachesOnLocalJoin(
-                locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
+                fut, locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
 
             for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : locJoinCtx.caches()) {
                 DynamicCacheDescriptor desc = t.get1();
@@ -1850,7 +1851,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     desc.cacheConfiguration(),
                     desc,
                     t.get2(),
-                    exchTopVer,
+                    fut.initialVersion(),
                     false);
             }
         }

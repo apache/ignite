@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -38,6 +39,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -59,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -184,13 +186,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * Must be called from exchange thread.
      */
     public void initCachesOnLocalJoin(
+        GridDhtPartitionsExchangeFuture fut,
         Map<Integer, CacheGroupDescriptor> cacheGroupDescriptors,
         Map<String, DynamicCacheDescriptor> cacheDescriptors
     ) {
         // Clean-up in case of client reconnect.
         caches.clear();
 
-        caches.init(cacheGroupDescriptors, cacheDescriptors);
+        fut.registerCachesFuture(caches.init(cacheGroupDescriptors, cacheDescriptors));
     }
 
     /**
@@ -755,7 +758,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     ) {
         assert exchActions != null && !exchActions.empty() && exchActions.cacheStartRequests().isEmpty(): exchActions;
 
-        caches.updateCachesInfo(exchActions);
+        fut.registerCachesFuture(caches.updateCachesInfo(exchActions));
 
         processCacheStopRequests(fut, crd, exchActions, true);
 
@@ -777,7 +780,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     ) throws IgniteCheckedException {
         assert exchActions != null && !exchActions.empty() : exchActions;
 
-        caches.updateCachesInfo(exchActions);
+        fut.registerCachesFuture(caches.updateCachesInfo(exchActions));
 
         // Affinity did not change for existing caches.
         onCustomMessageNoAffinityChange(fut, crd, exchActions);
@@ -1246,7 +1249,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final GridDhtPartitionsExchangeFuture fut,
         Collection<DynamicCacheDescriptor> descs
     ) throws IgniteCheckedException {
-        caches.initStartedCaches(descs);
+        fut.registerCachesFuture(caches.initStartedCaches(descs));
 
         if (fut.context().mergeExchanges())
             return;
@@ -2699,22 +2702,46 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param grps Registered groups.
          * @param caches Registered caches.
          */
-        void init(Map<Integer, CacheGroupDescriptor> grps, Map<String, DynamicCacheDescriptor> caches) {
+        IgniteInternalFuture init(Map<Integer, CacheGroupDescriptor> grps, Map<String, DynamicCacheDescriptor> caches) {
             for (CacheGroupDescriptor grpDesc : grps.values())
                 registerGroup(grpDesc);
 
-            for (DynamicCacheDescriptor cacheDesc : caches.values())
-                registerCache(cacheDesc);
+            return registerAllCaches(caches.values());
         }
 
+        /**
+         * Registers caches and persists cache configurations on disk if needed.
+         *
+         * @param descs Cache descriptors.
+         * @return Future that will be completed when all unregistered caches will be registered.
+         */
+        private IgniteInternalFuture<?> registerAllCaches(Collection<DynamicCacheDescriptor> descs) {
+            Collection<DynamicCacheDescriptor> notRegistered = descs.stream()
+                .filter(desc -> !registeredCaches.containsKey(desc.cacheId()))
+                .collect(Collectors.toList());
+
+            if (notRegistered.isEmpty())
+                return new GridFinishedFuture<>();
+
+            GridCompoundFuture registerAllCachesFut = new GridCompoundFuture();
+
+            for (DynamicCacheDescriptor cacheDesc : notRegistered)
+                registerAllCachesFut.add(registerCache(cacheDesc));
+
+            registerAllCachesFut.markInitialized();
+
+            return registerAllCachesFut;
+        }
 
         /**
          * @param desc Description.
          */
-        private DynamicCacheDescriptor registerCache(DynamicCacheDescriptor desc) {
-            saveCacheConfiguration(desc.cacheConfiguration(), desc.sql());
+        private IgniteInternalFuture registerCache(DynamicCacheDescriptor desc) {
+            IgniteInternalFuture saveConfFut = saveCacheConfiguration(desc.cacheConfiguration(), desc.sql());
 
-            return registeredCaches.put(desc.cacheId(), desc);
+            registeredCaches.put(desc.cacheId(), desc);
+
+            return saveConfFut;
         }
 
         /**
@@ -2746,22 +2773,21 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         /**
           * @param descs Cache descriptor.
          */
-        void initStartedCaches(Collection<DynamicCacheDescriptor> descs) {
+        IgniteInternalFuture initStartedCaches(Collection<DynamicCacheDescriptor> descs) {
             for (DynamicCacheDescriptor desc : descs) {
                 CacheGroupDescriptor grpDesc = desc.groupDescriptor();
 
                 if (!registeredGrps.containsKey(grpDesc.groupId()))
                     registerGroup(grpDesc);
-
-                if (!registeredCaches.containsKey(desc.cacheId()))
-                    registerCache(desc);
             }
+
+            return registerAllCaches(descs);
         }
 
         /**
          * @param exchActions Exchange actions.
          */
-        void updateCachesInfo(ExchangeActions exchActions) {
+        IgniteInternalFuture updateCachesInfo(ExchangeActions exchActions) {
             for (ExchangeActions.CacheGroupActionData stopAction : exchActions.cacheGroupsToStop()) {
                 CacheGroupDescriptor rmvd = registeredGrps.remove(stopAction.descriptor().groupId());
 
@@ -2777,8 +2803,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             for (ExchangeActions.CacheActionData req : exchActions.cacheStopRequests())
                 registeredCaches.remove(req.descriptor().cacheId());
 
-            for (ExchangeActions.CacheActionData req : exchActions.cacheStartRequests())
-                registerCache(req.descriptor());
+            return registerAllCaches(exchActions.cacheStartRequests().stream()
+                .map(ExchangeActions.CacheActionData::descriptor)
+                .collect(Collectors.toList())
+            );
         }
 
         /**
@@ -2802,20 +2830,38 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param cfg cache configuration
      * @param sql SQL flag.
+     * @return Future that will be completed when cache configuration will be persisted to cache work directory.
      */
-    private void saveCacheConfiguration(CacheConfiguration<?, ?> cfg, boolean sql) {
-        if (cctx.pageStore() != null && CU.isPersistentCache(cfg, cctx.gridConfig().getDataStorageConfiguration()) &&
+    private IgniteInternalFuture<?> saveCacheConfiguration(CacheConfiguration<?, ?> cfg, boolean sql) {
+        if (cctx.pageStore() != null &&
+            CU.isPersistentCache(cfg, cctx.gridConfig().getDataStorageConfiguration()) &&
             !cctx.kernalContext().clientNode()) {
+
+            StoredCacheData data = new StoredCacheData(cfg);
+
+            data.sql(sql);
+
             try {
-                StoredCacheData data = new StoredCacheData(cfg);
-
-                data.sql(sql);
-
-                cctx.pageStore().storeCacheData(data, false);
+                cctx.pageStore().checkAndInitCacheWorkDir(data.config());
             }
             catch (IgniteCheckedException e) {
-                U.error(log(), "Error while saving cache configuration on disk, cfg = " + cfg, e);
+                if (!cctx.kernalContext().isStopping()) {
+                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                    U.error(log, "Failed to initialize cache work directory for " + data.config(), e);
+                }
             }
+
+            return cctx.kernalContext().closure().runLocalSafe(() -> {
+                try {
+                    cctx.pageStore().storeCacheData(data, false);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log(), "Error while saving cache configuration on disk, cfg = " + cfg, e);
+                }
+            });
         }
+
+        return new GridFinishedFuture<>();
     }
 }
