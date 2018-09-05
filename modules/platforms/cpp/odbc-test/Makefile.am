@@ -80,10 +80,8 @@ ignite_odbc_tests_SOURCES = \
     src/sql_value_expressions_test.cpp \
     src/sql_types_test.cpp \
     src/sql_date_time_functions_test.cpp \
-    src/sql_parsing_test.cpp \
     src/sql_outer_join_test.cpp \
     src/sql_get_info_test.cpp \
-    src/streaming_test.cpp \
     src/api_robustness_test.cpp \
     src/attributes_test.cpp \
     src/errors_test.cpp \
@@ -91,6 +89,8 @@ ignite_odbc_tests_SOURCES = \
     src/types_test.cpp \
     src/transaction_test.cpp \
     src/authentication_test.cpp \
+    src/sql_parsing_test.cpp \
+    src/streaming_test.cpp \
     ../odbc/src/log.cpp \
     ../odbc/src/cursor.cpp \
     ../odbc/src/diagnostic/diagnostic_record.cpp \
