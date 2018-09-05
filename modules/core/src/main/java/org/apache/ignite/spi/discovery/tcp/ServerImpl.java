@@ -70,6 +70,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
@@ -2833,7 +2834,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
-                processCustomMessage((TcpDiscoveryCustomEventMessage)msg);
+                processCustomMessage((TcpDiscoveryCustomEventMessage)msg, false);
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
@@ -5343,8 +5344,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * @param msg Message.
+         * @param waitForNotification If {@code true} then thread will wait when discovery event notification has finished.
          */
-        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
+        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             if (isLocalNodeCoordinator()) {
                 boolean delayMsg;
 
@@ -5378,12 +5380,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                     msg.topologyVersion(ring.topologyVersion());
 
                     if (pendingMsgs.procCustomMsgs.add(msg.id())) {
-                        notifyDiscoveryListener(msg);
+                        notifyDiscoveryListener(msg, waitForNotification);
 
                         if (sendMessageToRemotes(msg))
                             sendMessageAcrossRing(msg);
                         else
-                            processCustomMessage(msg);
+                            processCustomMessage(msg, waitForNotification);
                     }
 
                     msg.message(null, msg.messageBytes());
@@ -5412,7 +5414,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 ackMsg.topologyVersion(msg.topologyVersion());
 
-                                processCustomMessage(ackMsg);
+                                processCustomMessage(ackMsg, waitForNotification);
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to marshal discovery custom message.", e);
@@ -5439,7 +5441,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     assert msg.topologyVersion() == ring.topologyVersion() :
                         "msg: " + msg + ", topVer=" + ring.topologyVersion();
 
-                    notifyDiscoveryListener(msg);
+                    notifyDiscoveryListener(msg, waitForNotification);
                 }
 
                 if (msg.verified())
@@ -5515,7 +5517,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryCustomEventMessage msg;
 
                 while ((msg = pollPendingCustomeMessage()) != null)
-                    processCustomMessage(msg);
+                    processCustomMessage(msg, true);
             }
         }
 
@@ -5530,10 +5532,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * @param msg Custom message.
+         * @param waitForNotification If {@code true} thread will wait when discovery event notification has finished.
          */
-        private void notifyDiscoveryListener(TcpDiscoveryCustomEventMessage msg) {
+        private void notifyDiscoveryListener(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             long time = System.currentTimeMillis();
-
             DiscoverySpiListener lsnr = spi.lsnr;
 
             TcpDiscoverySpiState spiState = spiStateCopy();
@@ -5559,12 +5561,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (log.isInfoEnabled())
                             log.info("[TIME] Unmarshalling custom event " + msg.id() + " took " + (System.currentTimeMillis() - sertime) + " ms.");
 
-                        lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                        IgniteInternalFuture fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
                             node,
                             snapshot,
                             hist,
                             msgObj);
+
+                        if (waitForNotification || (msgObj != null && msgObj.isMutable()))
+                            fut.get();
 
                         if (msgObj.isMutable())
                             msg.message(msgObj, U.marshal(spi.marshaller(), msgObj));
