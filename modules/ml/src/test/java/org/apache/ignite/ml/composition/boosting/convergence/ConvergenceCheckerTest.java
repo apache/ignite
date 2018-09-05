@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -66,7 +67,15 @@ public abstract class ConvergenceCheckerTest {
 
         return factory.create(data.size(),
             x -> x,
-            (size, validAnswer, mdlAnswer) -> mdlAnswer - validAnswer,
+            new Loss() {
+                @Override public double error(long sampleSize, double lb, double mdlAnswer) {
+                    return mdlAnswer - lb;
+                }
+
+                @Override public double gradient(long sampleSize, double lb, double mdlAnswer) {
+                    return mdlAnswer - lb;
+                }
+            },
             datasetBuilder, fExtr, lbExtr
         );
     }

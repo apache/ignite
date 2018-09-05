@@ -20,13 +20,13 @@ package org.apache.ignite.ml.composition.boosting.convergence.median;
 import java.util.Arrays;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
@@ -46,17 +46,17 @@ public class MedianOfMedianConvergenceChecker<K, V> extends ConvergenceChecker<K
      *
      * @param sampleSize Sample size.
      * @param lblMapping External label to internal mapping.
-     * @param lossGradient Loss gradient.
+     * @param loss Loss function.
      * @param datasetBuilder Dataset builder.
      * @param fExtr Feature extractor.
      * @param lbExtr Label extractor.
      * @param precision Precision.
      */
-    public MedianOfMedianConvergenceChecker(long sampleSize, IgniteFunction<Double, Double> lblMapping,
-        IgniteTriFunction<Long, Double, Double, Double> lossGradient, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> fExtr, IgniteBiFunction<K, V, Double> lbExtr, double precision) {
+    public MedianOfMedianConvergenceChecker(long sampleSize, IgniteFunction<Double, Double> lblMapping, Loss loss,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> fExtr,
+        IgniteBiFunction<K, V, Double> lbExtr, double precision) {
 
-        super(sampleSize, lblMapping, lossGradient, datasetBuilder, fExtr, lbExtr, precision);
+        super(sampleSize, lblMapping, loss, datasetBuilder, fExtr, lbExtr, precision);
     }
 
     /** {@inheritDoc} */

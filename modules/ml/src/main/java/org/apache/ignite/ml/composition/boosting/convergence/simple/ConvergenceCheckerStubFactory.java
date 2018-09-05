@@ -19,10 +19,10 @@ package org.apache.ignite.ml.composition.boosting.convergence.simple;
 
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -38,11 +38,11 @@ public class ConvergenceCheckerStubFactory extends ConvergenceCheckerFactory {
 
     /** {@inheritDoc} */
     @Override public <K, V> ConvergenceChecker<K, V> create(long sampleSize,
-        IgniteFunction<Double, Double> externalLbToInternalMapping,
-        IgniteTriFunction<Long, Double, Double, Double> lossGradient, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        return new ConvergenceCheckerStub<>(sampleSize, externalLbToInternalMapping, lossGradient,
+        return new ConvergenceCheckerStub<>(sampleSize, externalLbToInternalMapping, loss,
             datasetBuilder, featureExtractor, lbExtractor);
     }
 }

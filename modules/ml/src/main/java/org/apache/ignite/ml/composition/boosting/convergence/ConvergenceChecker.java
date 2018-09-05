@@ -19,6 +19,7 @@ package org.apache.ignite.ml.composition.boosting.convergence;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.composition.ModelsComposition;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
@@ -27,7 +28,6 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -46,8 +46,8 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
     /** External label to internal mapping. */
     private IgniteFunction<Double, Double> externalLbToInternalMapping;
 
-    /** Loss of gradient. */
-    private IgniteTriFunction<Long, Double, Double, Double> lossGradient;
+    /** Loss function. */
+    private Loss loss;
 
     /** Feature extractor. */
     private IgniteBiFunction<K, V, Vector> featureExtractor;
@@ -63,17 +63,15 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
      *
      * @param sampleSize Sample size.
      * @param externalLbToInternalMapping External label to internal mapping.
-     * @param lossGradient Loss gradient.
+     * @param loss Loss gradient.
      * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      * @param precision
      */
     public ConvergenceChecker(long sampleSize,
-        IgniteFunction<Double, Double> externalLbToInternalMapping,
-        IgniteTriFunction<Long, Double, Double, Double> lossGradient,
-        DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor,
         double precision) {
 
@@ -81,7 +79,7 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
 
         this.sampleSize = sampleSize;
         this.externalLbToInternalMapping = externalLbToInternalMapping;
-        this.lossGradient = lossGradient;
+        this.loss = loss;
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
         this.precision = precision;
@@ -137,6 +135,6 @@ public abstract class ConvergenceChecker<K, V> implements Serializable {
     public double computeError(Vector features, Double answer, ModelsComposition currMdl) {
         Double realAnswer = externalLbToInternalMapping.apply(answer);
         Double mdlAnswer = currMdl.apply(features);
-        return -lossGradient.apply(sampleSize, realAnswer, mdlAnswer);
+        return -loss.gradient(sampleSize, realAnswer, mdlAnswer);
     }
 }

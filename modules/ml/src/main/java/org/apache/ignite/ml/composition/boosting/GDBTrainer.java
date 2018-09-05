@@ -24,6 +24,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -33,7 +34,6 @@ import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
@@ -63,10 +63,9 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     private final int cntOfIterations;
 
     /**
-     * Gradient of loss function. First argument is sample size, second argument is valid answer, third argument is
-     * current model prediction.
+     * Loss function.
      */
-    protected final IgniteTriFunction<Long, Double, Double, Double> lossGradient;
+    protected final Loss loss;
 
     /** Check convergence strategy factory. */
     protected ConvergenceCheckerFactory checkConvergenceStgyFactory = new MeanAbsValueConvergenceCheckerFactory(0.001);
@@ -76,14 +75,13 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
      *
      * @param gradStepSize Grad step size.
      * @param cntOfIterations Count of learning iterations.
-     * @param lossGradient Gradient of loss function. First argument is sample size, second argument is valid answer
+     * @param loss Gradient of loss function. First argument is sample size, second argument is valid answer
      * third argument is current model prediction.
      */
-    public GDBTrainer(double gradStepSize, Integer cntOfIterations,
-        IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
+    public GDBTrainer(double gradStepSize, Integer cntOfIterations, Loss loss) {
         gradientStep = gradStepSize;
         this.cntOfIterations = cntOfIterations;
-        this.lossGradient = lossGradient;
+        this.loss = loss;
     }
 
     /** {@inheritDoc} */
@@ -115,7 +113,7 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
             .withExternalLabelToInternal(this::externalLabelToInternal)
             .withCntOfIterations(cntOfIterations)
             .withEnvironment(environment)
-            .withLossGradient(lossGradient)
+            .withLossGradient(loss)
             .withSampleSize(sampleSize)
             .withMeanLabelValue(mean)
             .withDefaultGradStepSize(gradientStep)

@@ -25,6 +25,7 @@ import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
@@ -32,7 +33,6 @@ import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +48,7 @@ public class GDBLearningStrategy {
     protected int cntOfIterations;
 
     /** Loss of gradient. */
-    protected IgniteTriFunction<Long, Double, Double, Double> lossGradient;
+    protected Loss loss;
 
     /** External label to internal mapping. */
     protected IgniteFunction<Double, Double> externalLbToInternalMapping;
@@ -105,7 +105,7 @@ public class GDBLearningStrategy {
         List<Model<Vector, Double>> models = initLearningState(mdlToUpdate);
 
         ConvergenceChecker<K, V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
-            externalLbToInternalMapping, lossGradient, datasetBuilder, featureExtractor, lbExtractor);
+            externalLbToInternalMapping, loss, datasetBuilder, featureExtractor, lbExtractor);
 
         DatasetTrainer<? extends Model<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         for (int i = 0; i < cntOfIterations; i++) {
@@ -119,7 +119,7 @@ public class GDBLearningStrategy {
             IgniteBiFunction<K, V, Double> lbExtractorWrap = (k, v) -> {
                 Double realAnswer = externalLbToInternalMapping.apply(lbExtractor.apply(k, v));
                 Double mdlAnswer = currComposition.apply(featureExtractor.apply(k, v));
-                return -lossGradient.apply(sampleSize, realAnswer, mdlAnswer);
+                return -loss.gradient(sampleSize, realAnswer, mdlAnswer);
             };
 
             long startTs = System.currentTimeMillis();
@@ -175,12 +175,12 @@ public class GDBLearningStrategy {
     }
 
     /**
-     * Sets gradient of loss function.
+     * Loss function.
      *
-     * @param lossGradient Loss gradient.
+     * @param loss Loss function.
      */
-    public GDBLearningStrategy withLossGradient(IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
-        this.lossGradient = lossGradient;
+    public GDBLearningStrategy withLossGradient(Loss loss) {
+        this.loss = loss;
         return this;
     }
 

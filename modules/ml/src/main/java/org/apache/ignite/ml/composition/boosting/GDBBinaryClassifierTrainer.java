@@ -21,11 +21,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.ignite.ml.composition.boosting.loss.LogLoss;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
@@ -49,9 +50,7 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
      * @param cntOfIterations Count of learning iterations.
      */
     public GDBBinaryClassifierTrainer(double gradStepSize, Integer cntOfIterations) {
-        super(gradStepSize,
-            cntOfIterations,
-            LossGradientPerPredictionFunctions.LOG_LOSS);
+        super(gradStepSize, cntOfIterations, new LogLoss());
     }
 
     /**
@@ -59,14 +58,10 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
      *
      * @param gradStepSize Grad step size.
      * @param cntOfIterations Count of learning iterations.
-     * @param lossGradient Gradient of loss function. First argument is sample size, second argument is valid answer,
-     * third argument is current model prediction.
+     * @param loss Loss function.
      */
-    public GDBBinaryClassifierTrainer(double gradStepSize,
-        Integer cntOfIterations,
-        IgniteTriFunction<Long, Double, Double, Double> lossGradient) {
-
-        super(gradStepSize, cntOfIterations, lossGradient);
+    public GDBBinaryClassifierTrainer(double gradStepSize, Integer cntOfIterations, Loss loss) {
+        super(gradStepSize, cntOfIterations, loss);
     }
 
     /** {@inheritDoc} */

@@ -20,13 +20,13 @@ package org.apache.ignite.ml.composition.boosting.convergence.mean;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
@@ -45,20 +45,17 @@ public class MeanAbsValueConvergenceChecker<K,V> extends ConvergenceChecker<K,V>
      *
      * @param sampleSize Sample size.
      * @param externalLbToInternalMapping External label to internal mapping.
-     * @param lossGradient Loss gradient.
+     * @param loss Loss.
      * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
-    public MeanAbsValueConvergenceChecker(long sampleSize,
-        IgniteFunction<Double, Double> externalLbToInternalMapping,
-        IgniteTriFunction<Long, Double, Double, Double> lossGradient,
-        DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
+    public MeanAbsValueConvergenceChecker(long sampleSize, IgniteFunction<Double, Double> externalLbToInternalMapping,
+        Loss loss, DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor,
         double precision) {
 
-        super(sampleSize, externalLbToInternalMapping, lossGradient, datasetBuilder, featureExtractor, lbExtractor, precision);
+        super(sampleSize, externalLbToInternalMapping, loss, datasetBuilder, featureExtractor, lbExtractor, precision);
     }
 
     /** {@inheritDoc} */

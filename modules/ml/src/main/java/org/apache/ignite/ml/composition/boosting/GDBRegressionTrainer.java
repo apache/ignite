@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
+import org.apache.ignite.ml.composition.boosting.loss.SquaredError;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -33,9 +34,7 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
      * @param cntOfIterations Count of learning iterations.
      */
     public GDBRegressionTrainer(double gradStepSize, Integer cntOfIterations) {
-        super(gradStepSize,
-            cntOfIterations,
-            LossGradientPerPredictionFunctions.MSE);
+        super(gradStepSize, cntOfIterations, new SquaredError());
     }
 
     /** {@inheritDoc} */

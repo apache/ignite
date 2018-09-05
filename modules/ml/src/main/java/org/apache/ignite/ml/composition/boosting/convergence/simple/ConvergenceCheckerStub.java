@@ -19,13 +19,13 @@ package org.apache.ignite.ml.composition.boosting.convergence.simple;
 
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -44,19 +44,18 @@ public class ConvergenceCheckerStub<K,V> extends ConvergenceChecker<K,V> {
      *
      * @param sampleSize Sample size.
      * @param externalLbToInternalMapping External label to internal mapping.
-     * @param lossGradient Loss gradient.
+     * @param loss Loss function.
      * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
      */
     public ConvergenceCheckerStub(long sampleSize,
-        IgniteFunction<Double, Double> externalLbToInternalMapping,
-        IgniteTriFunction<Long, Double, Double, Double> lossGradient,
+        IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
         DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        super(sampleSize, externalLbToInternalMapping, lossGradient, datasetBuilder,
+        super(sampleSize, externalLbToInternalMapping, loss, datasetBuilder,
             featureExtractor, lbExtractor, 0.0);
     }
 
