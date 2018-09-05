@@ -25,7 +25,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SelectableChannel;
@@ -107,7 +106,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -146,6 +144,7 @@ import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnecti
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationNodeConnectionCheckFuture;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -367,7 +366,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final short HANDSHAKE_MSG_TYPE = -3;
 
     /** */
-    public static final byte INIT_TIMEOUT_MSG_TYPE = -28;
+    public static final byte HANDSHAKE_WAIT_MSG_TYPE = -28;
 
     /** */
     private ConnectGateway connectGate;
@@ -404,11 +403,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         log.info("Accepted incoming communication connection [locAddr=" + ses.localAddress() +
                             ", rmtAddr=" + ses.remoteAddress() + ']');
 
-                    if (log.isDebugEnabled())
-                        log.debug("Sending local node ID to newly accepted session: " + ses);
-
                     try {
-                        ses.sendNoFuture(ctxInitLatch.getCount() > 0 ? InitTimeoutMessage.getInstance() : nodeIdMessage(), null);
+                        if (ctxInitLatch.getCount() > 0) {
+                            if (log.isDebugEnabled())
+                                log.debug("Sending init timeout message to newly accepted session: " + ses);
+
+                            ses.sendNoFuture(new HandshakeWaitMessage(), null);
+                        }
+                        else {
+                            if (log.isDebugEnabled())
+                                log.debug("Sending local node ID to newly accepted session: " + ses);
+
+                            ses.sendNoFuture(nodeIdMessage(), null);
+                        }
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send message: " + e, e);
@@ -2298,6 +2305,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
                         throws IgniteCheckedException {
                         final IgniteSpiContext ctx = TcpCommunicationSpi.super.getSpiContext();
+
                         if (formatter == null || context != ctx) {
                             context = ctx;
                             formatter = context.messageFormatter();
@@ -2317,6 +2325,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
                         final IgniteSpiContext ctx = TcpCommunicationSpi.super.getSpiContext();
+
                         if (formatter == null || context != ctx) {
                             context = ctx;
                             formatter = context.messageFormatter();
@@ -3663,7 +3672,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         throw new HandshakeException("Failed to read remote node ID (connection closed).");
                             if (i == 0 && read > 0) {
                                 byte msgType = buf.array()[0];
-                                if (msgType == INIT_TIMEOUT_MSG_TYPE)
+                                if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
                                     return rcvCnt = -1;
                                 else if (msgType != NODE_ID_MSG_TYPE)
                                     throw new IgniteCheckedException("Unexpected message type [expected=" + NODE_ID_MSG_TYPE + ", rcvd=" + msgType);
@@ -4658,63 +4667,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 throw new IgniteCheckedException("Failed to perform handshake.", e);
             }
         }
-    }
-
-    /**
-     * Context initialization timeout message
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class InitTimeoutMessage implements Message {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        public static InitTimeoutMessage getInstance() {
-            return SingletonHandler.INSTANCE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            try {
-                buf.put(INIT_TIMEOUT_MSG_TYPE);
-                return true;
-            }
-            catch (BufferOverflowException ex) {
-                return false;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return INIT_TIMEOUT_MSG_TYPE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(InitTimeoutMessage.class, this);
-        }
-
-        private static final class SingletonHandler {
-
-            private static final InitTimeoutMessage INSTANCE = new InitTimeoutMessage();
-        }
-
     }
 
      /**

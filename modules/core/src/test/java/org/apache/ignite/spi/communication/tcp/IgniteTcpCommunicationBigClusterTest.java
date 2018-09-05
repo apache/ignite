@@ -14,196 +14,108 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.Ignite;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
-import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * Testing {@link TcpCommunicationSpi} under big cluster conditions (long DiscoverySpi delivery)
- *
- * @author Alexandr Kuramshin <ein.nsk.ru@gmail.com>
  */
 public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest {
-
-    /** */
-    private static final int IGNITE_NODES_NUMBER = 10;
-
     /** */
     private static final long COMMUNICATION_TIMEOUT = 1000;
 
-    /** Should be about of the COMMUNICATION_TIMEOUT value to get the error */
-    private static final long ADDED_MESSAGE_DELAY = 2 * COMMUNICATION_TIMEOUT;
+    /** */
+    private static final long DISCOVERY_MESSAGE_DELAY = 200;
 
     /** */
-    private static final long RUNNING_TIMESPAN = ADDED_MESSAGE_DELAY * IGNITE_NODES_NUMBER;
+    private static final int CLUSTER_SIZE = 10;
 
-    /** */
-    private static final long BROADCAST_PERIOD = 100L;
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-    /** */
-    private static final String CONTROL_ANSWER = "ignite";
-
-    /** */
-    private static final Logger LOGGER = Logger.getLogger(IgniteTcpCommunicationBigClusterTest.class.getName());
-
-    /** */
-    private static final Level LOG_LEVEL = Level.FINE;
-
-    /** */
-    private CountDownLatch startLatch;
-
-    /** */
-    private static IgniteConfiguration config(String gridName) {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-        cfg.setGridName(gridName);
         cfg.setPeerClassLoadingEnabled(false);
 
-        TcpDiscoverySpi discovery = new SlowTcpDiscoverySpi();
-        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47510"));
-        discovery.setIpFinder(ipFinder);
-        cfg.setDiscoverySpi(discovery);
+        TcpDiscoverySpi discoSpi = new SlowTcpDiscoverySpi();
+
+        cfg.setDiscoverySpi(discoSpi);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+
         commSpi.setConnectTimeout(COMMUNICATION_TIMEOUT);
         commSpi.setMaxConnectTimeout(2 * COMMUNICATION_TIMEOUT);
         commSpi.setReconnectCount(1);
+
         cfg.setCommunicationSpi(commSpi);
 
         return cfg;
     }
 
-    /** */
-    private static void println(String str) {
-        LOGGER.log(LOG_LEVEL, str);
-    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testHandshakeNoHangOnNodeJoining() throws Exception {
+        AtomicInteger idx = new AtomicInteger();
 
-    /** */
-    private static void println(String str, Throwable ex) {
-        LOGGER.log(LOG_LEVEL, str, ex);
-    }
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    IgniteEx ignite = startGrid(idx.getAndIncrement());
 
-    /** */
-    private static void printf(String format, Object... args) {
-        LOGGER.log(LOG_LEVEL, MessageFormat.format(format, args));
-    }
+                    while (ignite.cluster().forServers().nodes().size() < CLUSTER_SIZE) {
+                        ignite.compute().broadcast(new IgniteRunnable() {
+                            @Override public void run() {
+                                // No-op.
+                            }
+                        });
 
-    /** */
-    private static void printf(String format, Throwable ex, Object... args) {
-        LOGGER.log(LOG_LEVEL, MessageFormat.format(format, args), ex);
-    }
-
-    /** */
-    @Override protected long getTestTimeout() {
-        return Math.max(super.getTestTimeout(), RUNNING_TIMESPAN * 2);
-    }
-
-    /** */
-    public synchronized void testBigCluster() throws Exception {
-        startLatch = new CountDownLatch(IGNITE_NODES_NUMBER);
-        final ExecutorService execSvc = Executors.newCachedThreadPool();
-        for (int i = 0; i < IGNITE_NODES_NUMBER; ++i) {
-            final String name = "testBigClusterNode-" + i;
-            execSvc.submit(new IgniteRunnable() {
-                @Override public void run() {
-                    startNode(name);
-                }
-            });
-        }
-        startLatch.await();
-        println("All nodes running");
-        Thread.sleep(RUNNING_TIMESPAN);
-        println("Stopping all nodes");
-        execSvc.shutdownNow();
-        execSvc.awaitTermination(1, TimeUnit.MINUTES);
-        println("Stopped all nodes");
-        final IgniteExceptionRegistry exReg = IgniteExceptionRegistry.get();
-        if (exReg.errorCount() > 0) {
-            for (IgniteExceptionRegistry.ExceptionInfo info : exReg.getErrors(0L))
-                if (info.error() instanceof IgniteCheckedException
-                    && "HandshakeTimeoutException".equals(info.error().getClass().getSimpleName()))
-                    throw new IgniteCheckedException("Test failed", info.error());
-        }
-    }
-
-    /** */
-    private void startNode(String name) {
-        printf("Starting node = {0}", name);
-        try (final Ignite ignite = Ignition.start(config(name))) {
-            printf("Started node = {0}", name);
-            startLatch.countDown();
-            nodeWork(ignite);
-            printf("Stopping node = {0}", name);
-        }
-        printf("Stopped node = {0}", name);
-    }
-
-    /** */
-    private void nodeWork(final Ignite ignite) {
-        try {
-            int count = 0;
-            for (; ; ) {
-                Thread.sleep(BROADCAST_PERIOD);
-                Collection<String> results = ignite.compute().broadcast(new IgniteCallable<String>() {
-                    @Override public String call() throws Exception {
-                        return CONTROL_ANSWER;
+                        U.sleep(10);
                     }
-                });
-                for (String result : results)
-                    if (!CONTROL_ANSWER.equals(result))
-                        throw new IllegalArgumentException("Wrong answer from node: " + result);
-                if (count != results.size())
-                    printf("Computed results: node = {0}, count = {1}", ignite.name(), count = results.size());
+                }
+                catch (Exception e) {
+                    error("Test failed.", e);
+                }
             }
-        }
-        catch (InterruptedException | IgniteInterruptedException ex) {
-            printf("Node thread interrupted: node = {0}", ignite.name());
-        }
-        catch (Throwable ex) {
-            printf("Node thread exit on error: node = {0}", ex, ignite.name());
+        }, CLUSTER_SIZE);
+
+        fut.get();
+
+        final IgniteExceptionRegistry exReg = IgniteExceptionRegistry.get();
+
+        for (IgniteExceptionRegistry.ExceptionInfo info : exReg.getErrors(0L)) {
+            if (info.error() instanceof IgniteCheckedException
+                && "HandshakeTimeoutException".equals(info.error().getClass().getSimpleName()))
+                throw new IgniteCheckedException("Test failed because handshake hangs.", info.error());
         }
     }
 
     /** */
     private static class SlowTcpDiscoverySpi extends TcpDiscoverySpi {
-
-        /** */
+        /** {@inheritDoc} */
         @Override protected boolean ensured(TcpDiscoveryAbstractMessage msg) {
-            if (ADDED_MESSAGE_DELAY > 0 && msg instanceof TcpDiscoveryNodeAddFinishedMessage)
+            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                 try {
-                    Thread.sleep(ADDED_MESSAGE_DELAY);
+                    U.sleep(DISCOVERY_MESSAGE_DELAY);
                 }
-                catch (InterruptedException | IgniteInterruptedException ex) {
-                    println("Long delivery of TcpDiscoveryNodeAddFinishedMessage interrupted");
-                    throw ex instanceof IgniteInterruptedException ? (IgniteInterruptedException)ex
-                        : new IgniteInterruptedException((InterruptedException)ex);
+                catch (IgniteInterruptedCheckedException e) {
+                    e.printStackTrace();
                 }
-                catch (Throwable ex) {
-                    println("Long delivery of TcpDiscoveryNodeAddFinishedMessage error", ex);
-                    throw ex instanceof RuntimeException ? (RuntimeException)ex : new RuntimeException(ex);
-                }
+            }
+
             return super.ensured(msg);
         }
     }
