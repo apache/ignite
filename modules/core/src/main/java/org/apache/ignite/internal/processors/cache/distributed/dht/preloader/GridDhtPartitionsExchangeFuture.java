@@ -1171,7 +1171,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         boolean distributed = true;
 
         // Do not perform distributed partition release in case of cluster activation or caches start.
-        if (activateCluster() || hasCachesToStart())
+        if (activateCluster())
             distributed = false;
 
         // On first phase we wait for finishing all local tx updates, atomic updates and lock releases on all nodes.
