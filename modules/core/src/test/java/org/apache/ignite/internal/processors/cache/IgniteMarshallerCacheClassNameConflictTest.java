@@ -31,13 +31,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -193,7 +193,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
             }
 
             /** {@inheritDoc} */
-            @Override public void onDiscovery(
+            @Override public IgniteInternalFuture onDiscovery(
                     int type,
                     long topVer,
                     ClusterNode node,
@@ -219,7 +219,9 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 }
 
                 if (delegate != null)
-                    delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+                    return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+                return new GridFinishedFuture();
             }
 
             /** {@inheritDoc} */
