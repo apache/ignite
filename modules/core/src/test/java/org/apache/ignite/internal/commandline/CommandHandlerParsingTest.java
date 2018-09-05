@@ -61,6 +61,7 @@ public class CommandHandlerParsingTest extends TestCase {
      * validate_indexes command arguments parsing and validation
      */
     public void testValidateIndexArguments() {
+
         CommandHandler hnd = new CommandHandler();
 
         //happy case for all parameters
@@ -143,6 +144,7 @@ public class CommandHandlerParsingTest extends TestCase {
      * Test that experimental command (i.e. WAL command) is disabled by default.
      */
     public void testExperimentalCommandIsDisabled() {
+
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         CommandHandler hnd = new CommandHandler();
@@ -167,9 +169,111 @@ public class CommandHandlerParsingTest extends TestCase {
     }
 
     /**
+     * Tests parsing and validation for the SSL arguments.
+     */
+    public void testParseAndValidateSSLArguments() {
+
+        CommandHandler hnd = new CommandHandler();
+
+        for (Command cmd : Command.values()) {
+        	
+        	if (cmd == Command.CACHE || cmd == Command.WAL)
+        		continue; // --cache subcommand requires its own specific arguments.
+        	
+            try {
+                hnd.parseAndValidate(asList("--ssl-protocol"));
+
+                fail("expected exception: Expected SSL protocol");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                hnd.parseAndValidate(asList("--ssl-key-algorithm"));
+
+                fail("expected exception: Expected SSL key algorithm");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+            
+            try {
+                hnd.parseAndValidate(asList("--keystore"));
+
+                fail("expected exception: Expected keystore");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+            
+            try {
+                hnd.parseAndValidate(asList("--keystore-password"));
+
+                fail("expected exception: Expected keystore password");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                hnd.parseAndValidate(asList("--keystore-type"));
+
+                fail("expected exception: Expected keystore type");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                hnd.parseAndValidate(asList("--truststore"));
+
+                fail("expected exception: Expected truststore");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                hnd.parseAndValidate(asList("--truststore-password"));
+
+                fail("expected exception: Expected truststore password");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                hnd.parseAndValidate(asList("--truststore-type"));
+
+                fail("expected exception: Expected truststore type");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+            
+            Arguments args = hnd.parseAndValidate(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
+            		"--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
+            		"--ssl-key-algorithm", "testSSLKeyAlgorithm" ,cmd.text()));
+
+            assertEquals("testKeystore", args.keystore());
+            assertEquals("testKeystorePassword", args.keystorePassword());
+            assertEquals("testKeystoreType", args.keystoreType());
+            assertEquals("testTruststore", args.truststore());
+            assertEquals("testTruststorePassword", args.truststorePassword());
+            assertEquals("testTruststoreType", args.truststoreType());
+            assertEquals("testSSLKeyAlgorithm", args.sslKeyAlgorithm());
+            
+            assertEquals(cmd, args.command());
+        }
+    }
+
+
+    /**
      * Tests parsing and validation for user and password arguments.
      */
     public void testParseAndValidateUserAndPassword() {
+
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
@@ -220,10 +324,12 @@ public class CommandHandlerParsingTest extends TestCase {
         }
     }
 
+    
     /**
      * Tests parsing and validation  of WAL commands.
      */
     public void testParseAndValidateWalActions() {
+
         CommandHandler hnd = new CommandHandler();
 
         Arguments args = hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_PRINT));
@@ -263,6 +369,7 @@ public class CommandHandlerParsingTest extends TestCase {
      * Tests that the auto confirmation flag was correctly parsed.
      */
     public void testParseAutoConfirmationFlag() {
+
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
@@ -324,7 +431,8 @@ public class CommandHandlerParsingTest extends TestCase {
      * Tests connection settings arguments.
      */
     public void testConnectionSettings() {
-        CommandHandler hnd = new CommandHandler();
+
+    	CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
             if (cmd == Command.CACHE || cmd == Command.WAL)
@@ -379,6 +487,7 @@ public class CommandHandlerParsingTest extends TestCase {
      */
     @SuppressWarnings("Null")
     public void testTransactionArguments() {
+
         CommandHandler hnd = new CommandHandler();
         Arguments args;
 
