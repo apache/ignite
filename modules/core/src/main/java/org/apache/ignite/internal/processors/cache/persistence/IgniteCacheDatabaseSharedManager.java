@@ -45,6 +45,7 @@ import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
@@ -89,6 +90,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** */
     private volatile boolean dataRegionsInitialized;
+
+    /** */
+    private volatile boolean dataRegionsStarted;
 
     /** */
     protected Map<String, DataRegionMetrics> memMetricsMap;
@@ -590,6 +594,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @throws IgniteCheckedException If fails.
+     */
+    public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
      * @param cachesToStart Started caches.
      * @throws IgniteCheckedException If failed.
      */
@@ -735,7 +746,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * No-op for non-persistent storage.
      */
-    public void cleanupCheckpointDirectory() throws IgniteCheckedException {
+    public void cleanupCheckpointState() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -778,6 +789,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public boolean beforeExchange(GridDhtPartitionsExchangeFuture discoEvt) throws IgniteCheckedException {
         return false;
+    }
+
+    /**
+     * Handle {@link GridCacheProcessor} started event.
+     *
+     * @param caches Cache descriptons on started cache processor.
+     */
+    public void cacheProcessorStarted(List<DynamicCacheDescriptor> caches) throws IgniteCheckedException {
+        // No-op.
     }
 
     /**
@@ -1051,42 +1071,50 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
             return;
 
-        DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
+        initAndStartRegions(cctx.kernalContext().config().getDataStorageConfiguration());
+    }
 
-        assert memCfg != null;
+    /**
+     * Initialize and start CacheDatabaseSharedManager data regions.
+     *
+     * @param cfg Regions configuration.
+     */
+    protected void initAndStartRegions(DataStorageConfiguration cfg) throws IgniteCheckedException {
+        assert cfg != null;
 
-        long time = System.currentTimeMillis();
+        if (!dataRegionsStarted) {
+            initDataRegions(cfg);
 
-        initDataRegions(memCfg);
+            registerMetricsMBeans();
 
-        if (log.isInfoEnabled())
-            log.info("[TIME] Data regions activation finished in " + (System.currentTimeMillis() - time) + " ms.");
+            startMemoryPolicies();
 
-        time = System.currentTimeMillis();
+            initPageMemoryDataStructures(cfg);
 
-        registerMetricsMBeans();
+            dataRegionsStarted = true;
+        }
 
-        if (log.isInfoEnabled())
-            log.info("[TIME] Mbeans activation finished in " + (System.currentTimeMillis() - time) + " ms.");
-
-        time = System.currentTimeMillis();
-
-        startMemoryPolicies();
-
-        if (log.isInfoEnabled())
-            log.info("[TIME] Memory policies finished in " + (System.currentTimeMillis() - time) + " ms.");
-
-        time = System.currentTimeMillis();
-
-        initPageMemoryDataStructures(memCfg);
-
-        if (log.isInfoEnabled())
-            log.info("[TIME] Page memory datastructures in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        stop0(false);
+        if (dataRegionMap != null) {
+            for (DataRegion memPlc : dataRegionMap.values()) {
+                memPlc.pageMemory().stop();
+
+                memPlc.evictionTracker().stop();
+
+                unregisterMBean(memPlc.memoryMetrics().getName());
+            }
+
+            dataRegionMap.clear();
+
+            dataRegionMap = null;
+
+            dataRegionsInitialized = false;
+        }
+
+        dataRegionsStarted = false;
     }
 
     /**

@@ -1270,7 +1270,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                 dbMgr.cleanupTempCheckpointDirectory();
 
-                dbMgr.cleanupCheckpointDirectory();
+                dbMgr.cleanupCheckpointState();
             }
         }
 

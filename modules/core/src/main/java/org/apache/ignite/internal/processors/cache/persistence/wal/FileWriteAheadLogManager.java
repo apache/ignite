@@ -655,6 +655,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             scheduleNextInactivityPeriodElapsedCheck();
     }
 
+    /** {@inheritDoc} */
+    @Override public void suspendLogging() throws IgniteCheckedException {
+        onDeActivate(cctx.kernalContext());
+
+        U.log(log, "Suspended logging to WAL.");
+    }
+
     /**
      * Schedules next check of inactivity period expired. Based on current record update timestamp. At timeout method
      * does check of inactivity period and schedules new launch.

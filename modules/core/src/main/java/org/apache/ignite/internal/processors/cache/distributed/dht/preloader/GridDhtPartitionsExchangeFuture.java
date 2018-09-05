@@ -44,7 +44,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
@@ -76,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
@@ -798,35 +798,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isLocalNodeNotInBaseline()) {
             cctx.cache().cleanupCachesDirectories();
 
-            cctx.database().cleanupCheckpointDirectory();
+            cctx.database().cleanupCheckpointState();
 
             if (cctx.wal() != null)
                 cctx.wal().cleanupWalDirectories();
+
+            // Empty list is enough to pass into method because it will skip checkpoint anyway.
+            cctx.database().readCheckpointAndRestoreMemory(Collections.emptyList());
         }
 
         cctx.activate();
 
-        LocalJoinCachesContext locJoinCtx = exchActions == null ? null : exchActions.localJoinContext();
+        if (!cctx.kernalContext().clientNode())
+            cctx.database().onDoneRestoreBinaryMemory();
 
-        List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches = locJoinCtx == null ? null :
-            locJoinCtx.caches();
-
-        if (!cctx.kernalContext().clientNode()) {
-            List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
-
-            if (caches != null) {
-                for (T2<DynamicCacheDescriptor, NearCacheConfiguration> c : caches) {
-                    DynamicCacheDescriptor startDesc = c.get1();
-
-                    if (CU.isPersistentCache(startDesc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
-                        startDescs.add(startDesc);
-                }
-            }
-
-            cctx.database().readCheckpointAndRestoreMemory(startDescs);
-        }
-
-        cctx.cache().startCachesOnLocalJoin(locJoinCtx, initialVersion());
+        cctx.cache().startCachesOnLocalJoin(exchActions == null ? null : exchActions.localJoinContext(),
+            initialVersion());
     }
 
     /**
@@ -934,11 +921,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             DynamicCacheDescriptor desc = startReq.descriptor();
 
                             if (CU.isPersistentCache(desc.cacheConfiguration(),
-                                cctx.gridConfig().getDataStorageConfiguration()))
+                                cctx.gridConfig().getDataStorageConfiguration()) &&
+                                CU.affinityNode(cctx.localNode(), desc.cacheConfiguration().getNodeFilter()))
                                 startDescs.add(desc);
                         }
 
-                        cctx.database().readCheckpointAndRestoreMemory(startDescs);
+                        cctx.database().onDoneRestoreBinaryMemory();
                     }
 
                     cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
