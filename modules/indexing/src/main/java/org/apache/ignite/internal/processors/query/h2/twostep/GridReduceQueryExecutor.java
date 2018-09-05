@@ -575,15 +575,8 @@ public class GridReduceQueryExecutor {
         final int[] parts,
         boolean lazy,
         MvccQueryTracker mvccTracker) {
-        if (CHECK_CO_LOCATION) {
-            log.info("Proper partitions co-location check is enabled");
-
+        if (CHECK_CO_LOCATION)
             checkCorrectCoLocation(qry); //throws exception if not valid
-        }else
-            throw new CacheException(String.format("Check co-location is not enabled [prop=%s]",
-                IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PARTITIONS_CO_LOCATION_CHECK_ENABLED)
-            ));
-
 
         assert !qry.mvccEnabled() || mvccTracker != null;
 

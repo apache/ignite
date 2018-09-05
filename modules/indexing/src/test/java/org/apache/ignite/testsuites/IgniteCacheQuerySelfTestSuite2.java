@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallbackSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCrossCacheJoinRandomTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheObjectKeyIndexingSelfTest;
@@ -120,6 +121,8 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(RetryCauseMessageSelfTest.class);
         suite.addTestSuite(DisappearedCacheCauseRetryMessageSelfTest.class);
         suite.addTestSuite(DisappearedCacheWasNotFoundMessageSelfTest.class);
+
+        System.setProperty(IgniteSystemProperties.IGNITE_PARTITIONS_CO_LOCATION_CHECK_ENABLED, "true");
 
         return suite;
     }

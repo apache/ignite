@@ -137,8 +137,6 @@ public class QueryColocationCheckSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_PARTITIONS_CO_LOCATION_CHECK_ENABLED, "true");
-
         startGridsMultiThreaded(NODES_COUNT, false);
 
         final AffinityFunction statefulAffinity = new TestAffinityFunction();
