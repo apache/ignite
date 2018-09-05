@@ -901,7 +901,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.wal().suspendLogging();
 
-            return ptr == null ? restore : ptr;
+            return restore;
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, StorageException.class, IOException.class))
