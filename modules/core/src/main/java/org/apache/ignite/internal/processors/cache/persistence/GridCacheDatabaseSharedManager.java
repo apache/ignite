@@ -395,6 +395,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private void notifyMetastorageReadyForReadWrite() throws IgniteCheckedException {
+        long ttime = System.currentTimeMillis();
+
         for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs) {
             long time = System.currentTimeMillis();
 
@@ -403,6 +405,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (log.isInfoEnabled())
                 log.info("[TIME] Metastorage listener " + lsnr + " read-write notify invoked in " + (System.currentTimeMillis() - time) + " ms.");
         }
+
+        if (log.isInfoEnabled())
+            log.info("[TIME] Metastorage read-write notifications finished in " + (System.currentTimeMillis() - ttime) + " ms.");
     }
 
     /**
@@ -854,17 +859,39 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
+        long time;
+
         checkpointReadLock();
 
         try {
+            time = System.currentTimeMillis();
+
             cctx.pageStore().initializeForMetastorage();
 
+            if (log.isInfoEnabled())
+                log.info("[TIME] Page store init for metastorage finished in " + (System.currentTimeMillis() - time) + " ms.");
+
+            time = System.currentTimeMillis();
+
             WALPointer lastPtr = restoreLastWalPointer();
+
+            if (log.isInfoEnabled())
+                log.info("[TIME] Restore WAL pointer finished in " + (System.currentTimeMillis() - time) + " ms.");
+
+            time = System.currentTimeMillis();
 
             // Memory restored at startup, just resume logging.
             cctx.wal().resumeLogging(CheckpointStatus.NULL_PTR.equals(lastRestored) ? lastPtr : lastRestored);
 
+            if (log.isInfoEnabled())
+                log.info("[TIME] Resume logging finished in " + (System.currentTimeMillis() - time) + " ms.");
+
+            time = System.currentTimeMillis();
+
             createMetaStorage();
+
+            if (log.isInfoEnabled())
+                log.info("[TIME] Creating metastorage finished in " + (System.currentTimeMillis() - time) + " ms.");
 
             notifyMetastorageReadyForReadWrite();
         }

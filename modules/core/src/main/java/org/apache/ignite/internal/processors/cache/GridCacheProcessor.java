@@ -1928,6 +1928,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheGroupContext grp = null;
 
+        time = System.currentTimeMillis();
+
         if (grpName != null) {
             for (CacheGroupContext grp0 : cacheGrps.values()) {
                 if (grp0.sharedGroup() && grpName.equals(grp0.name())) {
@@ -1953,6 +1955,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 exchTopVer);
         }
 
+        if (log.isInfoEnabled())
+            log.info("[TIME] Starting cache group " + desc.cacheName() + " took " + (System.currentTimeMillis() - time) + " ms.");
+
+        time = System.currentTimeMillis();
+
         GridCacheContext cacheCtx = createCache(ccfg,
             grp,
             null,
@@ -1964,6 +1971,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             disabledAfterStart
         );
 
+        if (log.isInfoEnabled())
+            log.info("[TIME] Creating cache " + desc.cacheName() + " finished in " + (System.currentTimeMillis() - time) + " ms.");
+
         cacheCtx.dynamicDeploymentId(desc.deploymentId());
 
         GridCacheAdapter cache = cacheCtx.cache();
@@ -1972,11 +1982,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         caches.put(cacheCtx.name(), cache);
 
+        time = System.currentTimeMillis();
+
         startCache(cache, desc.schema() != null ? desc.schema() : new QuerySchema());
+
+        if (log.isInfoEnabled())
+            log.info("[TIME] Starting cache " + desc.cacheName() + " finished in " + (System.currentTimeMillis() - time) + " ms.");
 
         grp.onCacheStarted(cacheCtx);
 
+        time = System.currentTimeMillis();
+
         onKernalStart(cache);
+
+        if (log.isInfoEnabled())
+            log.info("[TIME] On kernal start of cache finished in " + (System.currentTimeMillis() - time) + " ms.");
 
         IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(ccfg.getName());
 

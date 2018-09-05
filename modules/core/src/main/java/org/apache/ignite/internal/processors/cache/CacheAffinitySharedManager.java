@@ -895,6 +895,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Set<Integer> gprs = new HashSet<>();
 
+        long time = System.currentTimeMillis();
+
         for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
             int grpId = action.descriptor().groupId();
 
@@ -912,6 +914,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
         }
+
+        if (log.isInfoEnabled())
+            log.info("Init affinity for caches finished in " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**
