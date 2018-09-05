@@ -808,25 +808,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         };
     }
 
-    /**
-     * @throws IgniteCheckedException If fails
-     */
-    private void createMetaStorage() throws IgniteCheckedException {
-        assert checkpointLockIsHeldByThread();
-
-        final MetaStorage storage = new MetaStorage(
-            cctx,
-            dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-            (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
-        );
-
-        // Init metastore only after WAL logging resumed. Can't do it earlier because
-        // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
-        storage.init(this);
-
-        metaStorage = storage;
-    }
-
     /** {@inheritDoc} */
     @Override public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
@@ -844,7 +825,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // Memory restored at startup, just resume logging from last WAL pointer.
             cctx.wal().resumeLogging(lastPtr);
 
-            createMetaStorage();
+            final MetaStorage storage = new MetaStorage(
+                cctx,
+                dataRegionMap.get(METASTORE_DATA_REGION_NAME),
+                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
+            );
+
+            // Init metastore only after WAL logging resumed. Can't do it earlier because
+            // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
+            storage.init(this);
+
+            metaStorage = storage;
 
             notifyMetastorageReadyForReadWrite();
 
@@ -896,8 +887,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 nodeStart(ptr);
             }
-
-            createMetaStorage();
 
             cctx.wal().suspendLogging();
 

@@ -530,11 +530,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                                 .context()
                                 .database();
 
-                        // Memory restored to the last pointer.
-                        assertNotNull(GridTestUtils.getFieldValue(dbMgr,
-                            GridCacheDatabaseSharedManager.class,
-                            "lastRestored"));
-
                         // Checkpoint history initialized on node start.
                         assertFalse(dbMgr.checkpointHistory().checkpoints().isEmpty());
                     }
