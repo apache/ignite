@@ -57,6 +57,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.ObjectName;
 import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -826,13 +827,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
 
-        assert !CheckpointStatus.NULL_PTR.equals(lastRestored);
-
         checkpointReadLock();
 
         try {
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
+                lsnr.beforeMemoryRestore(this);
+
+            cctx.pageStore().initializeForMetastorage();
+
+            WALPointer lastPtr = restoreLastWalPointer();
+
             // Memory restored at startup, just resume logging.
-            cctx.wal().resumeLogging(lastRestored);
+            cctx.wal().resumeLogging(CheckpointStatus.NULL_PTR.equals(lastRestored) ? lastPtr : lastRestored);
 
             notifyMetastorageReadyForReadWrite();
 
@@ -870,7 +876,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointStatus status = readCheckpointStatus();
 
-            metaStorage = new MetaStorage(
+            final MetaStorage storage = new MetaStorage(
                 cctx,
                 dataRegionMap.get(METASTORE_DATA_REGION_NAME),
                 (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
@@ -878,7 +884,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
-            WALPointer restore = restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
+            WALPointer restore = restoreMemory(status, false, (PageMemoryEx)storage.pageMemory());
 
             if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
@@ -897,8 +903,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Init metastore only after WAL logging resumed. Can't do it earlier because
             // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
-            metaStorage.init(this);
+            storage.init(this);
 
+            metaStorage = storage;
             lastRestored = restore;
 
             cctx.wal().suspendLogging();
@@ -1954,6 +1961,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @return {@link RestoreStateContext#lastReadRecordPointer()} from WAL.
+     * @throws IgniteCheckedException If fails.
+     */
+    private WALPointer restoreLastWalPointer() throws IgniteCheckedException {
+        RestoreWALState state = new RestoreWALState(cctx.wal().lastArchivedSegment(), log);
+
+        CheckpointStatus status = readCheckpointStatus();
+
+        assert !status.needRestoreMemory() : status;
+
+        try (WALIterator it = cctx.wal().replay(status.endPtr)) {
+            while (it.hasNextX())
+                it.nextX(); // Can ignore return value.
+        }
+
+        return state.lastReadRecordPointer();
+    }
+
+    /**
      * @param status Checkpoint status.
      * @param metastoreOnly If {@code True} restores Metastorage only.
      * @param storePageMem Metastore page memory.
@@ -1999,9 +2025,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (rec == null)
                     break;
-
-                if (!apply && !metastoreOnly)
-                    continue;
 
                 switch (rec.type()) {
                     case PAGE_RECORD:
@@ -4691,6 +4714,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param log Ignite logger.
          */
         public RestoreLogicalState(long lastArchivedSegment, IgniteLogger log) {
+            super(lastArchivedSegment, log);
+        }
+    }
+
+    /**
+     * Restore last read wal pointer state.
+     */
+    private static class RestoreWALState extends RestoreStateContext {
+        /**
+         * @param lastArchivedSegment Last archived segment index.
+         * @param log Ignite logger.
+         */
+        public RestoreWALState(long lastArchivedSegment, IgniteLogger log) {
             super(lastArchivedSegment, log);
         }
     }

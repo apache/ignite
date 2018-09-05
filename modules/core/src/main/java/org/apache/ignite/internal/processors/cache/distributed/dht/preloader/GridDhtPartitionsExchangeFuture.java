@@ -980,6 +980,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         }
 
                         cctx.database().readCheckpointAndRestoreMemory(startDescs);
+
                         cctx.database().onDoneRestoreBinaryMemory();
                     }
 
