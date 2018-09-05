@@ -74,8 +74,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
@@ -1695,12 +1693,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert res != null || err != null;
 
+        long time = System.currentTimeMillis();
+
         try {
             registerCachesFuture.get();
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to wait for cache registration", e);
         }
+
+        if (log.isInfoEnabled())
+            log.info("[TIME] Caches registration wait finished in " + (System.currentTimeMillis() - time) + " ms.");
 
         if (err == null &&
             !cctx.kernalContext().clientNode() &&
