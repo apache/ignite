@@ -107,7 +107,7 @@ public class ANNClassificationTest extends TrainerTest {
             (k, v) -> v[2]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.SIMPLE);;
+            .withStrategy(NNStrategy.SIMPLE);
 
         Vector v1 = VectorUtils.of(550, 550);
         Vector v2 = VectorUtils.of(-550, -550);
