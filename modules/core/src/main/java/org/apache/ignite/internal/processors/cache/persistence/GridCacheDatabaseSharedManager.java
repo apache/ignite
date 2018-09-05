@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1945,23 +1944,27 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @return {@link RestoreStateContext#lastReadRecordPointer()} from WAL.
+     * @return The next pointer after {@link RestoreStateContext#lastReadRecordPointer()}.
      * @throws IgniteCheckedException If fails.
      */
     private WALPointer restoreLastWalPointer() throws IgniteCheckedException {
-        RestoreWALState state = new RestoreWALState(cctx.wal().lastArchivedSegment(), log);
-
         CheckpointStatus status = readCheckpointStatus();
 
         // Checkpoint END marked shoudl be flushed on deactivation. If not, node should be restarted.
         assert !status.needRestoreMemory() : status;
 
+        U.log(log, "Restore last WAL pointer [status=" + status + ']');
+
+        RestoreWALState state = new RestoreWALState(cctx.wal().lastArchivedSegment(), log);
+
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
             while (it.hasNextX())
-                it.nextX(); // Ignore return value.
+                state.next(it); // Can ignore return value.
         }
 
-        return state.lastReadRecordPointer();
+        WALPointer lastReadPtr = state.lastReadRecordPointer();
+
+        return lastReadPtr == null ? null : lastReadPtr.next();
     }
 
     /**
