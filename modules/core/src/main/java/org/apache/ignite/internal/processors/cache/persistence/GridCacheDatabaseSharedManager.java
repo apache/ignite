@@ -1909,8 +1909,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             endPtr = readPointer(endFile, buf);
 
         if (log.isInfoEnabled())
-            log.info("Read checkpoint status [startFile=" + startFile + ", lastStartTs=" + new Date(lastStartTs) +
-                ", endFile=" + endFile + ", lastEndTs=" + new Date(lastEndTs) + ']');
+            log.info("Read checkpoint status [startFile=" + startFile + ", lastStartTs=" + lastStartTs +
+                ", endFile=" + endFile + ", lastEndTs=" + lastEndTs + ']');
 
         return new CheckpointStatus(lastStartTs, startId, startPtr, endId, endPtr);
     }
