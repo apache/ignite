@@ -48,8 +48,8 @@ public class GridLogThrottle {
     private static final int throttleCap = IgniteSystemProperties.getInteger(IGNITE_LOG_THROTTLE_CAPACITY, 128);
 
     /** Errors. */
-    private static final ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
-        new ConcurrentLinkedHashMap<>(throttleCap, 1f, DFLT_CONCUR_LVL, throttleCap);
+    private static volatile ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
+        new ConcurrentLinkedHashMap<>(throttleCap, 0.75f, DFLT_CONCUR_LVL, throttleCap);
 
     /**
      * Sets system-wide log throttle timeout.
@@ -175,7 +175,7 @@ public class GridLogThrottle {
      * Clears all stored data. This will make throttle to behave like a new one.
      */
     public static void clear() {
-        errors.clear();
+        errors = new ConcurrentLinkedHashMap<>(throttleCap, 0.75f, DFLT_CONCUR_LVL, throttleCap);
     }
 
     /**

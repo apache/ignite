@@ -18,8 +18,12 @@
 package org.apache.ignite.ml.clustering.kmeans;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,8 +39,8 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.util.MapUtil;
-import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
@@ -69,21 +73,41 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
         assert datasetBuilder != null;
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
             featureExtractor,
             lbExtractor
         );
 
         Vector[] centers;
 
-        try (Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
-            centers = initClusterCentersRandomly(dataset, k);
+            final Integer cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
+                if (a == null)
+                    return b == null ? 0 : b;
+                if (b == null)
+                    return a;
+                return b;
+            });
+
+            if (cols == null)
+                return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
+
+            centers = Optional.ofNullable(mdl)
+                .map(KMeansModel::centers)
+                .orElseGet(() -> initClusterCentersRandomly(dataset, k));
 
             boolean converged = false;
             int iteration = 0;
@@ -105,13 +129,21 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
                 }
 
                 iteration++;
-                centers = newCentroids;
+                for (int i = 0; i < centers.length; i++) {
+                    if (newCentroids[i] != null)
+                        centers[i] = newCentroids[i];
+                }
             }
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
         return new KMeansModel(centers, distance);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(KMeansModel mdl) {
+        return mdl.centers().length == k && mdl.distanceMeasure().equals(distance);
     }
 
     /**
@@ -123,11 +155,10 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * @return Helper data to calculate the new centroids.
      */
     private TotalCostAndCounts calcDataForNewCentroids(Vector[] centers,
-        Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset, int cols) {
+        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset, int cols) {
         final Vector[] finalCenters = centers;
 
         return dataset.compute(data -> {
-
             TotalCostAndCounts res = new TotalCostAndCounts();
 
             for (int i = 0; i < data.rowSize(); i++) {
@@ -142,13 +173,22 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
                 int finalI = i;
                 res.sums.compute(centroidIdx,
-                    (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> v.plus(data.getRow(finalI).features()));
+                    (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> {
+                        Vector features = data.getRow(finalI).features();
+                        return v == null ? features : v.plus(features);
+                    });
 
                 res.counts.merge(centroidIdx, 1,
                     (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
             }
             return res;
-        }, (a, b) -> a == null ? b : a.merge(b));
+        }, (a, b) -> {
+            if (a == null)
+                return b == null ? new TotalCostAndCounts() : b;
+            if (b == null)
+                return a;
+            return a.merge(b);
+        });
     }
 
     /**
@@ -178,28 +218,66 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * @param k Amount of clusters.
      * @return K cluster centers.
      */
-    private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset,
+    private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset,
         int k) {
-
         Vector[] initCenters = new DenseVector[k];
 
+        // Gets k or less vectors from each partition.
         List<LabeledVector> rndPnts = dataset.compute(data -> {
             List<LabeledVector> rndPnt = new ArrayList<>();
-            rndPnt.add(data.getRow(new Random(seed).nextInt(data.rowSize())));
-            return rndPnt;
-        }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
 
-        for (int i = 0; i < k; i++) {
-            final LabeledVector rndPnt = rndPnts.get(new Random(seed).nextInt(rndPnts.size()));
-            rndPnts.remove(rndPnt);
-            initCenters[i] = rndPnt.features();
+            if (data.rowSize() != 0) {
+                if (data.rowSize() > k) { // If it's enough rows in partition to pick k vectors.
+                    final Random random = new Random(seed);
+
+                    for (int i = 0; i < k; i++) {
+                        Set<Integer> uniqueIndices = new HashSet<>();
+                        int nextIdx = random.nextInt(data.rowSize());
+                        int maxRandomSearch = k; // It required to make the next cycle is finite.
+                        int cntr = 0;
+
+                        // Repeat nextIdx generation if it was picked earlier.
+                        while (uniqueIndices.contains(nextIdx) && cntr < maxRandomSearch) {
+                            nextIdx = random.nextInt(data.rowSize());
+                            cntr++;
+                        }
+                        uniqueIndices.add(nextIdx);
+
+                        rndPnt.add(data.getRow(nextIdx));
+                    }
+                }
+                else // If it's not enough vectors to pick k vectors.
+                    for (int i = 0; i < data.rowSize(); i++)
+                        rndPnt.add(data.getRow(i));
+            }
+            return rndPnt;
+        }, (a, b) -> {
+            if (a == null)
+                return b == null ? new ArrayList<>() : b;
+            if (b == null)
+                return a;
+            return Stream.concat(a.stream(), b.stream()).collect(Collectors.toList());
+        });
+
+        // Shuffle them.
+        Collections.shuffle(rndPnts);
+
+        // Pick k vectors randomly.
+        if (rndPnts.size() >= k) {
+            for (int i = 0; i < k; i++) {
+                final LabeledVector rndPnt = rndPnts.get(new Random(seed).nextInt(rndPnts.size()));
+                rndPnts.remove(rndPnt);
+                initCenters[i] = rndPnt.features();
+            }
         }
+        else
+            throw new RuntimeException("The KMeans Trainer required more than " + k + " vectors to find " + k + " clusters");
 
         return initCenters;
     }
 
     /** Service class used for statistics. */
-    private static class TotalCostAndCounts {
+    public static class TotalCostAndCounts {
         /** */
         double totalCost;
 
@@ -209,12 +287,24 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
         /** Count of points closest to the center with a given index. */
         ConcurrentHashMap<Integer, Integer> counts = new ConcurrentHashMap<>();
 
+        /** Count of points closest to the center with a given index. */
+        ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> centroidStat = new ConcurrentHashMap<>();
+
         /** Merge current */
         TotalCostAndCounts merge(TotalCostAndCounts other) {
             this.totalCost += totalCost;
             this.sums = MapUtil.mergeMaps(sums, other.sums, Vector::plus, ConcurrentHashMap::new);
             this.counts = MapUtil.mergeMaps(counts, other.counts, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
+            this.centroidStat = MapUtil.mergeMaps(centroidStat, other.centroidStat, (m1, m2) ->
+                MapUtil.mergeMaps(m1, m2, (i1, i2) -> i1 + i2, ConcurrentHashMap::new), ConcurrentHashMap::new);
             return this;
+        }
+
+        /**
+         * @return centroid statistics.
+         */
+        public ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> getCentroidStat() {
+            return centroidStat;
         }
     }
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default [() => {
+export default [function() {
     return ($scope, $element) => {
         $element.on('click', () => {
             $element.siblings('.input-tip').find('input').focus();

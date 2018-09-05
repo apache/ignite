@@ -30,18 +30,18 @@ include /app/helpers/jade/mixins
                     | Enter the text, which will show for all users of the Web Console about an important event or
                     | warning about ongoing technical works. It will appear #[b on the yellow bar] in the header.
 
-                .ignite-form-field
-                    +ignite-form-field__label('Your notification:', 'notification', true)
-
-                    .ignite-form-field__control
-                        .input-tip
-                            div(ignite-ace='{onLoad: $ctrl.onLoad, mode: "xml"}' ng-trim='true' ng-model='$ctrl.message')
+                .form-field__ace.ignite-form-field
+                    +form-field__label({ label: 'Your notification:', name: 'notification', required: true})
+                    .form-field__control
+                        div(ignite-ace='{onLoad: $ctrl.onLoad, mode: "xml"}' ng-trim='true' ng-model='$ctrl.message')
 
             .modal-footer
-                .pull-left
-                    label.show-message
-                        input(type='checkbox' ng-model='$ctrl.isShown')
-                        span Show message
+                +form-field__checkbox({
+                    label: 'Show message',
+                    name: 'showMessages',
+                    model: '$ctrl.isShown'
+                })
 
-                button.btn-ignite.btn-ignite--link-success(id='btn-cancel' ng-click='$hide()') Cancel
-                button.btn-ignite.btn-ignite--success(id='btn-submit' ng-click='$ctrl.submit()') Submit
+                div
+                    button.btn-ignite.btn-ignite--link-success(id='btn-cancel' ng-click='$hide()') Cancel
+                    button.btn-ignite.btn-ignite--success(id='btn-submit' ng-click='$ctrl.submit()') Submit

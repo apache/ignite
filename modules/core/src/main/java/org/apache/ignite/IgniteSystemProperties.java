@@ -483,6 +483,9 @@ public final class IgniteSystemProperties {
     /** SQL retry timeout. */
     public static final String IGNITE_SQL_RETRY_TIMEOUT = "IGNITE_SQL_RETRY_TIMEOUT";
 
+    /** Enable backward compatible handling of UUID through DDL. */
+    public static final String IGNITE_SQL_UUID_DDL_BYTE_FORMAT = "IGNITE_SQL_UUID_DDL_BYTE_FORMAT";
+
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
 
@@ -783,6 +786,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
+    /** Property for setup Ignite WAL segment sync timeout. */
+    public static final String IGNITE_WAL_SEGMENT_SYNC_TIMEOUT = "IGNITE_WAL_SEGMENT_SYNC_TIMEOUT";
+
     /**
      * If the property is set Ignite will use legacy node comparator (based on node order) inste
      *
@@ -869,6 +875,17 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
     /**
+     * Property for setup percentage of archive size for checkpoint trigger. Default value is 0.25
+     */
+    public static final String IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE";
+
+    /**
+     * Property for setup percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
+     * Default value is 0.5
+     */
+    public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
+
+    /**
      * Whenever read load balancing is enabled, that means 'get' requests will be distributed between primary and backup
      * nodes if it is possible and {@link CacheConfiguration#readFromBackup} is {@code true}.
      *
@@ -935,6 +952,16 @@ public final class IgniteSystemProperties {
      * Default is 500 ms.
      */
     public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
+
+    /**
+     * Threshold for throttling operations logging.
+     */
+    public static final String IGNITE_THROTTLE_LOG_THRESHOLD = "IGNITE_THROTTLE_LOG_THRESHOLD";
+
+    /**
+     * Number of concurrent operation for evict partitions.
+     */
+    public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
      * Enforces singleton.

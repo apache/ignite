@@ -40,21 +40,34 @@ import org.apache.ignite.thread.IgniteThread;
 
 /**
  * To choose the best hyperparameters the cross-validation will be used in this example.
- *
- * The purpose of cross-validation is model checking, not model building.
- *
- * We train k different models.
- *
- * They differ in that 1/(k-1)th of the training data is exchanged against other cases.
- *
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * <p>
+ * After that it defines how to split the data to train and test sets and configures preprocessors that extract
+ * features from an upstream data and perform other desired changes over the extracted data.</p>
+ * <p>
+ * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on
+ * the processed data using decision tree classification and the obtained hyperparams.</p>
+ * <p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
+ * <p>
+ * The purpose of cross-validation is model checking, not model building.</p>
+ * <p>
+ * We train {@code k} different models.</p>
+ * <p>
+ * They differ in that {@code 1/(k-1)}th of the training data is exchanged against other cases.</p>
+ * <p>
  * These models are sometimes called surrogate models because the (average) performance measured for these models
- * is taken as a surrogate of the performance of the model trained on all cases.
- *
- * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html
+ * is taken as a surrogate of the performance of the model trained on all cases.</p>
+ * <p>
+ * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html</p>
  */
 public class Step_8_CV {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
+        System.out.println();
+        System.out.println(">>> Tutorial step 8 (cross-validation) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 Step_8_CV.class.getSimpleName(), () -> {
@@ -62,7 +75,7 @@ public class Step_8_CV {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
                     // Defines first preprocessor that extracts features from an upstream data.
-                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
+                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
                         = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
@@ -74,7 +87,7 @@ public class Step_8_CV {
                     IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
                         .withEncoderType(EncoderType.STRING_ENCODER)
                         .encodeFeature(1)
-                        .encodeFeature(6) // <--- Changed index here
+                        .encodeFeature(6) // <--- Changed index here.
                         .fit(ignite,
                             dataCache,
                             featureExtractor
@@ -88,12 +101,12 @@ public class Step_8_CV {
 
                     IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
                         .fit(
-                        ignite,
-                        dataCache,
-                        imputingPreprocessor
-                    );
+                            ignite,
+                            dataCache,
+                            imputingPreprocessor
+                        );
 
-                    // Tune hyperparams with K-fold Cross-Validation on the splitted training set.
+                    // Tune hyperparams with K-fold Cross-Validation on the split training set.
                     int[] pSet = new int[]{1, 2};
                     int[] maxDeepSet = new int[]{1, 2, 3, 4, 5, 10, 20};
                     int bestP = 1;
@@ -102,7 +115,8 @@ public class Step_8_CV {
 
                     for(int p: pSet){
                         for(int maxDeep: maxDeepSet){
-                            IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                            IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor
+                                = new NormalizationTrainer<Integer, Object[]>()
                                 .withP(p)
                                 .fit(
                                     ignite,
@@ -110,7 +124,8 @@ public class Step_8_CV {
                                     minMaxScalerPreprocessor
                                 );
 
-                            DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(maxDeep, 0);
+                            DecisionTreeClassificationTrainer trainer
+                                = new DecisionTreeClassificationTrainer(maxDeep, 0);
 
                             CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
                                 = new CrossValidation<>();
@@ -161,6 +176,8 @@ public class Step_8_CV {
                         lbExtractor
                     );
 
+                    System.out.println("\n>>> Trained model: " + bestMdl);
+
                     double accuracy = Evaluator.evaluate(
                         dataCache,
                         split.getTestFilter(),
@@ -172,6 +189,8 @@ public class Step_8_CV {
 
                     System.out.println("\n>>> Accuracy " + accuracy);
                     System.out.println("\n>>> Test Error " + (1 - accuracy));
+
+                    System.out.println(">>> Tutorial step 8 (cross-validation) example completed.");
                 }
                 catch (FileNotFoundException e) {
                     e.printStackTrace();
