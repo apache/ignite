@@ -30,6 +30,9 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
  * @see ANNClassificationModel
  */
 public class ANNModelFormat extends KNNModelFormat implements Serializable {
+    /** Centroid statistics. */
+    private final ANNClassificationTrainer.CentroidStat candidatesStat;
+
     /** The labeled set of candidates. */
     private LabeledVectorSet<ProbableLabel, LabeledVector> candidates;
 
@@ -38,15 +41,18 @@ public class ANNModelFormat extends KNNModelFormat implements Serializable {
      * @param k Amount of nearest neighbors.
      * @param measure Distance measure.
      * @param stgy kNN strategy.
+     * @param candidatesStat
      */
     public ANNModelFormat(int k,
-                          DistanceMeasure measure,
-                          NNStrategy stgy,
-                          LabeledVectorSet<ProbableLabel, LabeledVector> candidates) {
+        DistanceMeasure measure,
+        NNStrategy stgy,
+        LabeledVectorSet<ProbableLabel, LabeledVector> candidates,
+        ANNClassificationTrainer.CentroidStat candidatesStat) {
         this.k = k;
         this.distanceMeasure = measure;
         this.stgy = stgy;
         this.candidates = candidates;
+        this.candidatesStat = candidatesStat;
     }
 
     /** */
