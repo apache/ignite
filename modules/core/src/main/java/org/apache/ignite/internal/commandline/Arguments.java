@@ -101,6 +101,7 @@ public class Arguments {
     /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
     private long pingTimeout;
 
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
     private long pingInterval;
 
     /**
