@@ -3064,6 +3064,33 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testMixedRawCollections() throws Exception {
+        Collection<String> excludedClasses = Arrays.asList(
+            ObjectRaw.class.getName(),
+            ObjectWithRaw.class.getName(),
+            Value.class.getName());
+
+        BinaryMarshaller m0 = binaryMarshaller(null, excludedClasses);
+        BinaryMarshaller m1 = binaryMarshaller();
+
+        Value obj = new Value(27);
+        ObjectWithRaw objectWithRaw = new ObjectWithRaw(27, 13);
+        ObjectRaw objectRaw = new ObjectRaw(27, 13);
+
+        Value objOther = new Value(26);
+        ObjectWithRaw objectWithRawOther = new ObjectWithRaw(26, 13);
+        ObjectRaw objectRawOther = new ObjectRaw(26, 13);
+
+        ArrayList collection = new ArrayList(Arrays.asList(
+            obj, objectWithRawOther, objectRaw, objectWithRaw, objectRawOther, objOther));
+
+        marshalUnmarshal(collection, m0);
+        marshalUnmarshal(collection, m1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testBinaryEquals() throws Exception {
         Collection<String> excludedClasses = Arrays.asList(
             ObjectRaw.class.getName(),
@@ -5473,8 +5500,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            val0 = reader.rawReader().readInt();
-            val1 = reader.rawReader().readInt();
+            BinaryRawReader rawReader = reader.rawReader();
+
+            val0 = rawReader.readInt();
+            val1 = rawReader.readInt();
         }
     }
 
