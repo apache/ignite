@@ -1707,6 +1707,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         GridIoManager.AtomicInvokeProcessingStat statHolder = (GridIoManager.AtomicInvokeProcessingStat)ctx.kernalContext().io().ctxStatHolder.get();
 
+        if (statHolder == null && req.operation() == TRANSFORM)
+            ctx.kernalContext().io().ctxStatHolder.set(statHolder = new GridIoManager.AtomicInvokeProcessingStat());
+
         GridDhtAtomicAbstractUpdateFuture dhtFut = null;
 
         IgniteCacheExpiryPolicy expiry = null;
