@@ -1271,6 +1271,7 @@ public class QueryUtils {
 
         Map<String, Object> dfltVals = entity.getDefaultFieldValues();
         Map<String, Integer> precision = entity.getFieldsPrecision();
+        Map<String, Integer> scale = entity.getFieldsScale();
 
         if (!F.isEmpty(precision)) {
             for (String fld : precision.keySet()) {
@@ -1282,9 +1283,35 @@ public class QueryUtils {
                 if (dfltVal == null)
                     continue;
 
-                if (dfltVal.toString().length() > precision.get(fld)) {
+                if (dfltVal.getClass() == BigDecimal.class) {
+                    if (((BigDecimal)dfltVal).precision() > precision.get(fld)) {
+                        throw new IgniteSQLException("Default decimal value precision '" + dfltVal +
+                            "' is longer than maximum decimal value precision " + precision.get(fld));
+                    }
+                    else
+                        continue;
+                }
+                else if (dfltVal.toString().length() > precision.get(fld)) {
                     throw new IgniteSQLException("Default value '" + dfltVal +
                         "' is longer than maximum length " + precision.get(fld));
+                }
+            }
+        }
+
+        if (!F.isEmpty(scale)) {
+            for (String fld : scale.keySet()) {
+                if (!dfltVals.containsKey(fld))
+                    continue;
+
+                Object dfltVal = dfltVals.get(fld);
+
+                if (dfltVal == null)
+                    continue;
+
+                if (dfltVal.getClass() == BigDecimal.class &&
+                    ((BigDecimal)dfltVal).scale() > scale.get(fld)) {
+                    throw new IgniteSQLException("Default decimal value scale '" + dfltVal +
+                        "' is longer than maximum decimal value scale " + scale.get(fld));
                 }
             }
         }
