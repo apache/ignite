@@ -1773,6 +1773,8 @@ public abstract class GridAbstractTest extends TestCase {
         finally {
             serializedObj.clear();
 
+            Exception err = null;
+
             if (isLastTest()) {
                 info(">>> Stopping test class: " + testClassDescription() + " <<<");
 
@@ -1787,10 +1789,21 @@ public abstract class GridAbstractTest extends TestCase {
                 // Set reset flags, so counters will be reset on the next setUp.
                 counters.setReset(true);
 
-                afterTestsStopped();
+                try {
+                    afterTestsStopped();
+                }
+                catch (Exception e) {
+                    err = e;
+                }
 
-                if(isSafeTopology())
+                if (isSafeTopology()) {
                     stopAllGrids(false);
+
+                    if (stopGridErr) {
+                        err = new RuntimeException("Not all Ignite instances has been stopped. " +
+                            "Please, see log for details.", err);
+                    }
+                }
 
                 // Remove counters.
                 tests.remove(getClass());
@@ -1808,8 +1821,8 @@ public abstract class GridAbstractTest extends TestCase {
 
             cleanReferences();
 
-           if (isLastTest() && isSafeTopology() && stopGridErr)
-               throw new RuntimeException("Not all Ignite instances has been stopped. Please, see log for details.");
+            if (err != null)
+                throw err;
         }
     }
 
