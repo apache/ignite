@@ -39,9 +39,10 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
     }
 
     /** {@inheritDoc} */
-    @Override protected <V, K> void learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, Vector> featureExtractor,
+    @Override protected <V, K> boolean learnLabels(DatasetBuilder<K, V> builder, IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lExtractor) {
 
+        return true;
     }
 
     /** {@inheritDoc} */

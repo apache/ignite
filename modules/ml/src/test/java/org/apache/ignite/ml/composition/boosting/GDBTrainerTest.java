@@ -26,6 +26,7 @@ import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueCo
 import org.apache.ignite.ml.composition.boosting.convergence.simple.ConvergenceCheckerStubFactory;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
@@ -154,6 +155,57 @@ public class GDBTrainerTest {
         assertTrue(composition.getPredictionsAggregator() instanceof WeightedPredictionsAggregator);
 
         trainer = trainer.withCheckConvergenceStgyFactory(new ConvergenceCheckerStubFactory());
-        assertEquals(500, ((ModelsComposition)fitter.apply(trainer,learningSample)).getModels().size());
+        assertEquals(500, ((ModelsComposition)fitter.apply(trainer, learningSample)).getModels().size());
+    }
+
+    /** */
+    @Test
+    public void testUpdate() {
+        int sampleSize = 100;
+        double[] xs = new double[sampleSize];
+        double[] ys = new double[sampleSize];
+
+        for (int i = 0; i < sampleSize; i++) {
+            xs[i] = i;
+            ys[i] = ((int)(xs[i] / 10.0) % 2) == 0 ? -1.0 : 1.0;
+        }
+
+        Map<Integer, double[]> learningSample = new HashMap<>();
+        for (int i = 0; i < sampleSize; i++)
+            learningSample.put(i, new double[] {xs[i], ys[i]});
+        IgniteBiFunction<Integer, double[], Vector> fExtr = (k, v) -> VectorUtils.of(v[0]);
+        IgniteBiFunction<Integer, double[], Double> lExtr = (k, v) -> v[1];
+
+        GDBTrainer classifTrainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0)
+            .withUseIndex(true)
+            .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
+        GDBTrainer regressTrainer = new GDBRegressionOnTreesTrainer(0.3, 500, 3, 0.0)
+            .withUseIndex(true)
+            .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
+
+        testUpdate(learningSample, fExtr, lExtr, classifTrainer);
+        testUpdate(learningSample, fExtr, lExtr, regressTrainer);
+    }
+
+    /** */
+    private void testUpdate(Map<Integer, double[]> dataset, IgniteBiFunction<Integer, double[], Vector> fExtr,
+        IgniteBiFunction<Integer, double[], Double> lExtr, GDBTrainer trainer) {
+
+        ModelsComposition originalMdl = trainer.fit(dataset, 1, fExtr, lExtr);
+        ModelsComposition updatedOnSameDataset = trainer.update(originalMdl, dataset, 1, fExtr, lExtr);
+
+        LocalDatasetBuilder<Integer, double[]> epmtyDataset = new LocalDatasetBuilder<>(new HashMap<>(), 1);
+        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl, epmtyDataset, fExtr, lExtr);
+
+        dataset.forEach((k,v) -> {
+            Vector features = fExtr.apply(k, v);
+
+            Double originalAnswer = originalMdl.apply(features);
+            Double updatedMdlAnswer1 = updatedOnSameDataset.apply(features);
+            Double updatedMdlAnswer2 = updatedOnEmptyDataset.apply(features);
+
+            assertEquals(originalAnswer, updatedMdlAnswer1, 0.01);
+            assertEquals(originalAnswer, updatedMdlAnswer2, 0.01);
+        });
     }
 }

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.tree.boosting;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.GDBLearningStrategy;
+import org.apache.ignite.ml.composition.boosting.GDBTrainer;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -55,23 +55,25 @@ public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> List<Model<Vector, Double>> learnModels(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override public <K, V> List<Model<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
 
         DatasetTrainer<? extends Model<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         assert trainer instanceof DecisionTree;
         DecisionTree decisionTreeTrainer = (DecisionTree) trainer;
 
+        List<Model<Vector, Double>> models = initLearningState(mdlToUpdate);
+
         ConvergenceChecker<K,V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
             externalLbToInternalMapping, lossGradient, datasetBuilder, featureExtractor, lbExtractor);
-        List<Model<Vector, Double>> models = new ArrayList<>();
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
             new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIndex)
         )) {
             for (int i = 0; i < cntOfIterations; i++) {
-                double[] weights = Arrays.copyOf(compositionWeights, i);
+                double[] weights = Arrays.copyOf(compositionWeights, models.size());
                 WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLabelValue);
                 ModelsComposition currComposition = new ModelsComposition(models, aggregator);
 
@@ -99,6 +101,7 @@ public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
             throw new RuntimeException(e);
         }
 
+        compositionWeights = Arrays.copyOf(compositionWeights, models.size());
         return models;
     }
 }
