@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteReplayWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteStandaloneWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteWalReaderTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
 
 /**
  *
@@ -100,7 +101,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
     }
 
     /**
-     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to execute.
+     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to
+     * execute.
      *
      * @param suite suite to add tests into.
      */
@@ -148,7 +150,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsWholeClusterRestartTest.class);
 
-
         // Rebalancing test
         suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
 
@@ -194,6 +195,10 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteWalIteratorExceptionDuringReadTest.class);
 
         suite.addTestSuite(IgniteNodeStoppedDuringDisableWALTest.class);
+
+        suite.addTestSuite(StandaloneWalRecordsIteratorTest.class);
+
+        //suite.addTestSuite(IgniteWalRecoverySeveralRestartsTest.class);
 
         suite.addTestSuite(IgniteRebalanceScheduleResendPartitionsTest.class);
 
