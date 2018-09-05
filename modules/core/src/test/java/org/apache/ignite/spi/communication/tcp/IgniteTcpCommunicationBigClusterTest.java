@@ -39,7 +39,7 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     private static final long COMMUNICATION_TIMEOUT = 1000;
 
     /** */
-    private static final long DISCOVERY_MESSAGE_DELAY = 200;
+    private static final long DISCOVERY_MESSAGE_DELAY = 500;
 
     /** */
     private static final int CLUSTER_SIZE = 10;

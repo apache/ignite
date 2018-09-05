@@ -157,6 +157,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
+import static org.apache.ignite.plugin.extensions.communication.Message.DIRECT_TYPE_SIZE;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.SES_FUT_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -263,7 +264,6 @@ import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastRecei
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message> {
-
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -365,8 +365,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Handshake message type. */
     public static final short HANDSHAKE_MSG_TYPE = -3;
 
-    /** */
-    public static final byte HANDSHAKE_WAIT_MSG_TYPE = -28;
+    /** Handshake wait message type. */
+    public static final short HANDSHAKE_WAIT_MSG_TYPE = -28;
 
     /** */
     private ConnectGateway connectGate;
@@ -3670,13 +3670,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (read == -1)
                         throw new HandshakeException("Failed to read remote node ID (connection closed).");
-                            if (i == 0 && read > 0) {
-                                byte msgType = buf.array()[0];
-                                if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
-                                    return rcvCnt = -1;
-                                else if (msgType != NODE_ID_MSG_TYPE)
-                                    throw new IgniteCheckedException("Unexpected message type [expected=" + NODE_ID_MSG_TYPE + ", rcvd=" + msgType);
-                            }
+
+                    if (read >= DIRECT_TYPE_SIZE) {
+                        short msgType = buf.get(0);
+
+                        if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
+                            return rcvCnt = NEED_WAIT;
+                    }
 
                     i += read;
                 }

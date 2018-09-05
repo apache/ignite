@@ -70,7 +70,6 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpSelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiTcpNoDelayOffSelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiShmemSelfTest.class));
-        suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterTest.class));
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiStartStopSelfTest.class));
 
@@ -89,6 +88,8 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpCommunicationSpiHalfOpenedConnectionTest.class));
 
         suite.addTest(new TestSuite(TcpCommunicationStatisticsTest.class));
+
+        suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterTest.class));
 
         //suite.addTest(new TestSuite(GridCacheDhtLockBackupSelfTest.class));
 
