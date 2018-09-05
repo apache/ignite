@@ -2807,11 +2807,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            // Don't validate partitions state in case of caches start.
-            boolean skipValidation = hasCachesToStart();
-
-            if (!skipValidation)
-                validatePartitionsState();
+            validatePartitionsState();
 
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert firstDiscoEvt instanceof DiscoveryCustomEvent;
