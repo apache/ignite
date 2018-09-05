@@ -126,6 +126,21 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
         };
     }
 
+
+    //TODO: This method will be implemented in IGNITE-9412
+    /** {@inheritDoc} */
+    @Override public <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        throw new UnsupportedOperationException();
+    }
+
+    //TODO: This method will be implemented in IGNITE-9412
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(ModelsComposition mdl) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Defines unique labels in dataset if need (useful in case of classification).
      *
