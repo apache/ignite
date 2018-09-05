@@ -98,8 +98,11 @@ public abstract class GDBTrainer extends DatasetTrainer<ModelsComposition, Doubl
     @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
+        if (!learnLabels(datasetBuilder, featureExtractor, lbExtractor))
+            return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
+
         IgniteBiTuple<Double, Long> initAndSampleSize = computeInitialValue(datasetBuilder, featureExtractor, lbExtractor);
-        if (!learnLabels(datasetBuilder, featureExtractor, lbExtractor) || initAndSampleSize == null)
+        if(initAndSampleSize == null)
             return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
         Double mean = initAndSampleSize.get1();
