@@ -54,8 +54,10 @@ public class IgniteCacheTestSuite8 extends TestSuite {
 
         // Rebalancing.
 //        suite.addTestSuite(GridCacheOrderedPreloadingSelfTest.class);
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 10; i++) {
             suite.addTestSuite(GridCacheRebalancingSyncSelfTest.class);
+            suite.addTestSuite(GridCacheRebalancingAsyncSelfTest.class);
+        }
 //        suite.addTestSuite(GridCacheRebalancingSyncCheckDataTest.class);
 //        suite.addTestSuite(GridCacheRebalancingUnmarshallingFailedSelfTest.class);
 //        suite.addTestSuite(GridCacheRebalancingAsyncSelfTest.class);
