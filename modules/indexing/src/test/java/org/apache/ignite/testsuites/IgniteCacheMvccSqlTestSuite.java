@@ -51,9 +51,10 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("IgniteCache SQL MVCC Test Suite");
 
-        // Simle tests.
+        // Simple tests.
         suite.addTestSuite(CacheMvccDmlSimpleTest.class);
         suite.addTestSuite(SqlTransactionsCommandsWithMvccEnabledSelfTest.class);
+        suite.addTestSuite(CacheMvccSizeTest.class);
 
         suite.addTestSuite(GridIndexRebuildWithMvccEnabledSelfTest.class);
 
@@ -83,10 +84,6 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
 
         suite.addTestSuite(CacheMvccPartitionedSqlCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheMvccReplicatedSqlCoordinatorFailoverTest.class);
-        suite.addTestSuite(CacheMvccBulkLoadTest.class);
-        suite.addTestSuite(CacheMvccStreamingInsertTest.class);
-        suite.addTestSuite(CacheMvccDmlSimpleTest.class);
-        suite.addTestSuite(CacheMvccSizeTest.class);
 
         return suite;
     }
