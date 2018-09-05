@@ -699,7 +699,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Override public void suspendLogging() throws IgniteCheckedException {
         onDeActivate(cctx.kernalContext());
 
-        U.log(log, "Suspended logging to WAL.");
+        U.log(log, "Suspended logging to WAL");
     }
 
     /**
