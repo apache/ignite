@@ -91,9 +91,6 @@ public class GridH2QueryContext {
     private MvccSnapshot mvccSnapshot;
 
     /** */
-    private MapQueryLazyWorker lazyWorker;
-
-    /** */
     private Set<GridH2Table> lockedTables = new HashSet<>();
 
     /**
@@ -409,9 +406,6 @@ public class GridH2QueryContext {
 
         x.clearContext(nodeStop);
 
-        if (x.lazyWorker() != null)
-            x.lazyWorker().stop(nodeStop);
-
         return true;
     }
 
@@ -520,23 +514,6 @@ public class GridH2QueryContext {
      */
     public GridH2QueryContext pageSize(int pageSize) {
         this.pageSize = pageSize;
-
-        return this;
-    }
-
-    /**
-     * @return Lazy worker, if any, or {@code null} if none.
-     */
-    public MapQueryLazyWorker lazyWorker() {
-        return lazyWorker;
-    }
-
-    /**
-     * @param lazyWorker Lazy worker, if any, or {@code null} if none.
-     * @return {@code this}.
-     */
-    public GridH2QueryContext lazyWorker(MapQueryLazyWorker lazyWorker) {
-        this.lazyWorker = lazyWorker;
 
         return this;
     }

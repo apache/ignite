@@ -163,11 +163,8 @@ class MapQueryResults {
             for (int i = 0; i < results.length(); i++) {
                 MapQueryResult res = results.get(i);
 
-                if (res != null) {
+                if (res != null)
                     res.close();
-
-                    continue;
-                }
             }
 
             if (lazyWorker != null)

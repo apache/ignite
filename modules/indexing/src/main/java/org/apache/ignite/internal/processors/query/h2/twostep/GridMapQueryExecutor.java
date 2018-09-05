@@ -98,7 +98,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.thread.IgniteThread;
 import org.h2.api.ErrorCode;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcResultSet;
@@ -145,8 +144,8 @@ public class GridMapQueryExecutor {
     /** Busy lock for lazy workers. */
     private final GridSpinBusyLock lazyWorkerBusyLock = new GridSpinBusyLock();
 
-    /** Lazy worker stop guard. */
-    private final AtomicBoolean lazyWorkerStopGuard = new AtomicBoolean();
+    /** Stop guard. */
+    private final AtomicBoolean stopGuard = new AtomicBoolean();
 
     /**
      * @param busyLock Busy lock.
@@ -203,26 +202,24 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * Cancel active lazy queries and prevent submit of new queries.
+     * Stop query map executor, cleanup resources.
      */
-    public void cancelLazyWorkers() {
-        if (!lazyWorkerStopGuard.compareAndSet(false, true))
+    public void stop() {
+        if (!stopGuard.compareAndSet(false, true))
             return;
 
         lazyWorkerBusyLock.block();
 
-        for (MapQueryLazyWorker worker : lazyWorkers.values())
-            worker.stop(false);
-
-        lazyWorkers.clear();
-    }
-
-    /**
-     * Stop query map executor, cleanup resources.
-     */
-    public void stop() {
         for (MapNodeResults res : qryRess.values())
             res.cancelAll();
+
+        for (MapQueryLazyWorker w : lazyWorkers.values()) {
+            w.stop(true);
+
+            w.awaitStop();
+        }
+
+        assert lazyWorkers.isEmpty() : "Not cleaned lazy workers: " + lazyWorkers.size();
     }
 
     /**
@@ -757,7 +754,7 @@ public class GridMapQueryExecutor {
                 if (!F.isEmpty(err)) {
                     // Unregister lazy worker because re-try may never reach this node again.
                     if (lazy)
-                        stopAndUnregisterLazyWorker(worker);
+                        worker.stop(false);
 
                     sendRetry(node, reqId, segmentId, err);
 
@@ -779,8 +776,7 @@ public class GridMapQueryExecutor {
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
                 .reservations(reserved)
-                .mvccSnapshot(mvccSnapshot)
-                .lazyWorker(worker);
+                .mvccSnapshot(mvccSnapshot);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
@@ -998,7 +994,7 @@ public class GridMapQueryExecutor {
             else {
                 // Stop and unregister worker after possible cancellation.
                 if (lazy)
-                    stopAndUnregisterLazyWorker(worker);
+                    worker.stop(false);
 
                 JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
 
@@ -1047,23 +1043,7 @@ public class GridMapQueryExecutor {
     private MapQueryLazyWorker createLazyWorker(ClusterNode node, long reqId, int segmentId) {
         MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
 
-        MapQueryLazyWorker worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
-
-        if (lazyWorkerBusyLock.enterBusy()) {
-            try {
-                MapQueryLazyWorker oldWorker = lazyWorkers.put(key, worker);
-
-                if (oldWorker != null)
-                    oldWorker.stop(false);
-            }
-            finally {
-                lazyWorkerBusyLock.leaveBusy();
-            }
-        }
-        else
-            log.info("Ignored query request (node is stopping) [nodeId=" + node.id() + ", reqId=" + reqId + ']');
-
-        return worker;
+        return  new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
     }
 
     /**
@@ -1430,24 +1410,11 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * Unregister lazy worker if needed.
-     * @param worker Lazy worker.
-     */
-    private void stopAndUnregisterLazyWorker(MapQueryLazyWorker worker) {
-        assert worker != null;
-
-        worker.stop(false);
-
-        // Just stop is not enough as worker may be registered, but not started due to exception.
-        unregisterLazyWorker(worker);
-    }
-
-    /**
      * Unregister lazy worker.
      *
      * @param worker Worker.
      */
-    public void unregisterLazyWorker(MapQueryLazyWorker worker) {
+    void unregisterLazyWorker(MapQueryLazyWorker worker) {
         lazyWorkers.remove(worker.key(), worker);
     }
 
@@ -1456,5 +1423,18 @@ public class GridMapQueryExecutor {
      */
     public int registeredLazyWorkers() {
         return lazyWorkers.size();
+    }
+
+    /**
+     * @param worker Worker to register.
+     */
+    void registerLazyWorker(MapQueryLazyWorker worker) {
+        MapQueryLazyWorker oldWorker = lazyWorkers.put(worker.key(), worker);
+
+        if (oldWorker != null) {
+            log.warning("Duplicates lazy worker: [key=" + worker.key() + ']');
+
+            oldWorker.stop(false);
+        }
     }
 }

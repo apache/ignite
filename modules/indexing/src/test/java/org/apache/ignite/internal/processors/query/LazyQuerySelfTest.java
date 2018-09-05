@@ -474,8 +474,8 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private static void assertNoWorkers() throws Exception {
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+    private void assertNoWorkers() throws Exception {
+        if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (Ignite node : Ignition.allGrids()) {
                     IgniteH2Indexing idx = (IgniteH2Indexing) ((IgniteKernal)node).context().query().getIndexing();
@@ -486,7 +486,22 @@ public class LazyQuerySelfTest extends GridCommonAbstractTest {
 
                 return MapQueryLazyWorker.activeCount() == 0;
             }
-        }, 1000L);
+        }, 1000L)) {
+            log.error("Lazy workers on nodes:");
+
+            for (Ignite node : Ignition.allGrids()) {
+                IgniteH2Indexing idx = (IgniteH2Indexing) ((IgniteKernal)node).context().query().getIndexing();
+
+                if (idx.mapQueryExecutor().registeredLazyWorkers() != 0) {
+                    log.error("[node=" + node + ", " + "registeredLazyWorkers="
+                        + idx.mapQueryExecutor().registeredLazyWorkers() + ']');
+                }
+
+                log.error("Active lazy workers: " + MapQueryLazyWorker.activeCount());
+
+                fail("There are not stopped lazy workers. See error message above.");
+            }
+        }
     }
 
     /**

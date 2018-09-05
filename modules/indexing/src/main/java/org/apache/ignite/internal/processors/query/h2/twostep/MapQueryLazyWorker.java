@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -40,6 +41,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoin
  * Worker for lazy query execution.
  */
 public class MapQueryLazyWorker extends GridWorker {
+    /** Poll task timeout milliseconds. */
+    private static final int POLL_TASK_TIMEOUT_MS = 1000;
+
     /** Lazy thread flag. */
     private static final ThreadLocal<MapQueryLazyWorker> LAZY_WORKER = new ThreadLocal<>();
 
@@ -64,9 +68,6 @@ public class MapQueryLazyWorker extends GridWorker {
     /** Worker is started flag. */
     private volatile boolean started;
 
-    /** Worker is stopped flag. */
-    private volatile boolean stopped;
-
     /** Detached connection. */
     private ObjectPool.Reusable<H2ConnectionWrapper> detached;
 
@@ -90,14 +91,27 @@ public class MapQueryLazyWorker extends GridWorker {
      *
      */
     void start() {
-        if (started)
+        if (!exec.busyLock().enterBusy()) {
+            log.warning("Lazy worker isn't started. Node is stopped [key=" + key + ']');
+
             return;
+        }
 
-        started = true;
+        try {
+            if (started)
+                return;
 
-        IgniteThread thread = new IgniteThread(this);
+            started = true;
 
-        thread.start();
+            exec.registerLazyWorker(this);
+
+            IgniteThread thread = new IgniteThread(this);
+
+            thread.start();
+        }
+        finally {
+            exec.busyLock().leaveBusy();
+        }
     }
 
     /** {@inheritDoc} */
@@ -114,7 +128,7 @@ public class MapQueryLazyWorker extends GridWorker {
                 GridH2Table.attachReadLocksToCurrentThread(H2Utils.session(detached.object().connection()));
 
             while (!isCancelled()) {
-                Runnable task = tasks.take();
+                Runnable task = tasks.poll(POLL_TASK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
                 if (task != null) {
                     try {
@@ -124,14 +138,27 @@ public class MapQueryLazyWorker extends GridWorker {
                         log.warning("Lazy task error", t);
                     }
                 }
+                else
+                    try{
+                        if (!exec.busyLock().enterBusy()) {
+                            log.info("Stop lazy worker [key=" + key + ']');
+
+                            return;
+                        }
+                    }
+                    finally {
+                        exec.busyLock().leaveBusy();
+                    }
             }
         }
         finally {
+            exec.unregisterLazyWorker(this);
+
             LAZY_WORKER.set(null);
 
             ACTIVE_CNT.decrement();
 
-            exec.unregisterLazyWorker(this);
+            stopLatch.countDown();
         }
     }
 
@@ -141,7 +168,8 @@ public class MapQueryLazyWorker extends GridWorker {
      * @param task Task to be executed.
      */
     public void submit(Runnable task) {
-        assert !stopped;
+        if (isCancelled)
+            return;
 
         tasks.add(task);
     }
@@ -158,7 +186,7 @@ public class MapQueryLazyWorker extends GridWorker {
      * @param nodeStop Node is stopping.
      */
     public void stop(final boolean nodeStop) {
-        if (stopped)
+        if (isCancelled)
             return;
 
         if (started && currentWorker() == null) {
@@ -168,21 +196,14 @@ public class MapQueryLazyWorker extends GridWorker {
                 }
             });
         }
-        else if(currentWorker() != null) {
+        else if (currentWorker() != null) {
             if (qctx != null && qctx.distributedJoinMode() == OFF && !qctx.isCleared())
                 qctx.clearContext(nodeStop);
-
-            if (GridH2QueryContext.get() != null)
-                GridH2QueryContext.clearThreadLocal();
-
-            isCancelled = true;
-
-            stopLatch.countDown();
 
             if (detached != null)
                 detached.recycle();
 
-            stopped = true;
+            isCancelled = true;
         }
     }
 
