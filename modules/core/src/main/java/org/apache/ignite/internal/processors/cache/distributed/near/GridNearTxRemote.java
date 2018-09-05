@@ -243,11 +243,14 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         return nearXidVer;
     }
 
-    /**
-     * @param cntrs Partition indexes.
-     */
+    /** {@inheritDoc} */
     @Override public void setPartitionUpdateCounters(long[] cntrs) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("Near tx doesn't track active caches.");
     }
 
     /**

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
@@ -35,14 +36,19 @@ public class OdbcResultSet {
     /** Current iterator. */
     private Iterator iter;
 
+    /** Client version. */
+    private ClientListenerProtocolVersion ver;
+
     /**
      * Constructor.
      * @param cursor Result set cursor.
+     * @param ver Client version.
      */
-    OdbcResultSet(FieldsQueryCursor<List<?>> cursor) {
+    OdbcResultSet(FieldsQueryCursor<List<?>> cursor, ClientListenerProtocolVersion ver) {
         assert cursor instanceof QueryCursorImpl;
 
         this.cursor = (QueryCursorImpl<List<?>>)cursor;
+        this.ver = ver;
 
         if (this.cursor.isQuery())
             iter = this.cursor.iterator();
@@ -61,7 +67,7 @@ public class OdbcResultSet {
      * @return Fields metadata of the current result set.
      */
     public Collection<OdbcColumnMeta> fieldsMeta() {
-        return convertMetadata(cursor.fieldsMeta());
+        return convertMetadata(cursor.fieldsMeta(), ver);
     }
 
     /**
@@ -86,14 +92,16 @@ public class OdbcResultSet {
      * {@link OdbcColumnMeta}.
      *
      * @param meta Internal query field metadata.
+     * @param ver Client version.
      * @return Odbc query field metadata.
      */
-    private static Collection<OdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
+    private static Collection<OdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta,
+        ClientListenerProtocolVersion ver) {
         List<OdbcColumnMeta> res = new ArrayList<>();
 
         if (meta != null) {
             for (GridQueryFieldMetadata info : meta)
-                res.add(new OdbcColumnMeta(info));
+                res.add(new OdbcColumnMeta(info, ver));
         }
 
         return res;
