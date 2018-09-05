@@ -58,13 +58,13 @@ public class MapQueryLazyWorker extends GridWorker {
     /** Latch decremented when worker finishes. */
     private final CountDownLatch stopLatch = new CountDownLatch(1);
 
-    /** Latch decremented when worker finishes. */
+    /** Query context. */
     private GridH2QueryContext qctx;
 
-    /** Worker is started. */
+    /** Worker is started flag. */
     private volatile boolean started;
 
-    /** Worker is stopped. */
+    /** Worker is stopped flag. */
     private volatile boolean stopped;
 
     /** Detached connection. */
