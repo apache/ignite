@@ -21,12 +21,13 @@ import java.util.List;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * ODBC query execute request with the batch of parameters.
  */
-public class OdbcStreamingBatchRequest extends OdbcRequest {
+public class OdbcStreamingBatchRequest extends OdbcRequest implements java.lang.Comparable<OdbcStreamingBatchRequest> {
     /** Schema name. */
     @GridToStringInclude(sensitive = true)
     private String schemaName;
@@ -92,5 +93,10 @@ public class OdbcStreamingBatchRequest extends OdbcRequest {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(OdbcStreamingBatchRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(@NotNull OdbcStreamingBatchRequest o) {
+        return Long.compare(order, o.order);
     }
 }
