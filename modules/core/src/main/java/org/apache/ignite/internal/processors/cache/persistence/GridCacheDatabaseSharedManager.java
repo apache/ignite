@@ -57,7 +57,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.ObjectName;
 import org.apache.ignite.DataStorageMetrics;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -823,6 +822,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         };
     }
 
+    /**
+     * @throws IgniteCheckedException If fails
+     */
+    private void createMetaStorage() throws IgniteCheckedException {
+        assert checkpointLockIsHeldByThread();
+
+        final MetaStorage storage = new MetaStorage(
+            cctx,
+            dataRegionMap.get(METASTORE_DATA_REGION_NAME),
+            (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
+        );
+
+        // Init metastore only after WAL logging resumed. Can't do it earlier because
+        // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
+        storage.init(this);
+
+        metaStorage = storage;
+    }
+
     /** {@inheritDoc} */
     @Override public void onDoneRestoreBinaryMemory() throws IgniteCheckedException {
         assert !cctx.kernalContext().clientNode();
@@ -839,6 +857,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Memory restored at startup, just resume logging.
             cctx.wal().resumeLogging(CheckpointStatus.NULL_PTR.equals(lastRestored) ? lastPtr : lastRestored);
+
+            createMetaStorage();
 
             notifyMetastorageReadyForReadWrite();
 
@@ -876,15 +896,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointStatus status = readCheckpointStatus();
 
-            final MetaStorage storage = new MetaStorage(
-                cctx,
-                dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME)
-            );
-
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
-            WALPointer restore = restoreMemory(status, false, (PageMemoryEx)storage.pageMemory());
+            WALPointer restore = restoreMemory(status,
+                false,
+                (PageMemoryEx)dataRegionMap.get(METASTORE_DATA_REGION_NAME).pageMemory());
 
             if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
@@ -901,12 +917,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 nodeStart(ptr);
             }
 
-            // Init metastore only after WAL logging resumed. Can't do it earlier because
-            // MetaStorage first initialization also touches WAL, look at #isWalDeltaRecordNeeded.
-            storage.init(this);
-
-            metaStorage = storage;
-            lastRestored = restore;
+            createMetaStorage();
 
             cctx.wal().suspendLogging();
         }
