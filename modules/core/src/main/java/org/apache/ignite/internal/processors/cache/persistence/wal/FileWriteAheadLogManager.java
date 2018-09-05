@@ -590,7 +590,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         if (log.isInfoEnabled())
-            log.info("WAL manager activated in: " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("[TIME] WAL manager activated in: " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /** {@inheritDoc} */
@@ -3047,14 +3047,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             init();
 
             if (log.isInfoEnabled())
-                log.info("Records iterator init finished in " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TIME] Records iterator init finished in " + (System.currentTimeMillis() - time) + " ms.");
 
             time = System.currentTimeMillis();
 
             advance();
 
             if (log.isInfoEnabled())
-                log.info("Records iterator first advance finished in " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TIME] Records iterator first advance finished in " + (System.currentTimeMillis() - time) + " ms.");
         }
 
         /** {@inheritDoc} */

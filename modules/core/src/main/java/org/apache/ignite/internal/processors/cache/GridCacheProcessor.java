@@ -1920,7 +1920,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData());
 
         if (log.isInfoEnabled())
-            log.info("Create partition files for " + desc.cacheName() + " took " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("[TIME] Create partition files for " + desc.cacheName() + " took " + (System.currentTimeMillis() - time) + " ms.");
 
         String grpName = startCfg.getGroupName();
 

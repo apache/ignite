@@ -2384,7 +2384,7 @@ public class ZookeeperDiscoveryImpl {
                 byte[] evtBytes = readCustomEventData(zkClient, evtPath, sndNodeId);
 
                 if (log.isInfoEnabled())
-                    log.info("Reading custom event data took " + (System.currentTimeMillis() - time) + " ms.");
+                    log.info("[TIME] Reading custom event data took " + (System.currentTimeMillis() - time) + " ms.");
 
                 time = System.currentTimeMillis();
 
@@ -2402,7 +2402,7 @@ public class ZookeeperDiscoveryImpl {
                 }
 
                 if (log.isInfoEnabled())
-                    log.info("Unmarashalling custom event took " + (System.currentTimeMillis() - time) + " ms.");
+                    log.info("[TIME] Unmarashalling custom event took " + (System.currentTimeMillis() - time) + " ms.");
 
                 generateAndProcessCustomEventOnCoordinator(evtPath, sndNode, msg);
             }
@@ -2499,7 +2499,7 @@ public class ZookeeperDiscoveryImpl {
             notifyCustomEvent(evtData, msg);
 
             if (log.isInfoEnabled())
-                log.info("[ZK] Notyfing discovery took " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TIME] [ZK] Notyfing discovery took " + (System.currentTimeMillis() - time) + " ms.");
 
             if (msg.stopProcess()) {
                 if (log.isDebugEnabled())
@@ -2589,7 +2589,7 @@ public class ZookeeperDiscoveryImpl {
         zkClient.deleteIfExistsAsync(zkPaths.customEvtsDir + "/" + evtPath);
 
         if (log.isInfoEnabled())
-            log.info("Deleting custom event data took in: " + zkPaths.customEvtsDir + " took " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("[TIME] Deleting custom event data took in: " + zkPaths.customEvtsDir + " took " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /**
@@ -2717,7 +2717,7 @@ public class ZookeeperDiscoveryImpl {
                         }
 
                         if (log.isInfoEnabled())
-                            log.info("Unmarshalling new custom event took " + (System.currentTimeMillis() - time) + " ms.");
+                            log.info("[TIME] Unmarshalling new custom event took " + (System.currentTimeMillis() - time) + " ms.");
 
                         if (msg instanceof ZkInternalMessage)
                             processInternalMessage(evtData0, (ZkInternalMessage)msg);
@@ -2777,10 +2777,10 @@ public class ZookeeperDiscoveryImpl {
             onEventProcessed(rtState, updateNodeInfo, evtProcessed);
 
         if (log.isInfoEnabled())
-            log.info("Handling processing new events took " + (System.currentTimeMillis() - htime) + " ms.");
+            log.info("[TIME] Handling processing new events finished in " + (System.currentTimeMillis() - htime) + " ms.");
 
         if (log.isInfoEnabled())
-            log.info("Processing new events finished in " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("[TIME] Processing new events finished in " + (System.currentTimeMillis() - time) + " ms.");
 
         ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
 
@@ -2829,7 +2829,7 @@ public class ZookeeperDiscoveryImpl {
                     exchange.onExchange(dataBag);
 
                     if (log.isInfoEnabled())
-                        log.info("Process on exchange local join took " + (System.currentTimeMillis() - time) + " ms.");
+                        log.info("[TIME] Process on exchange local join took " + (System.currentTimeMillis() - time) + " ms.");
                 }
 
                 if (joinedEvtData.secSubjPartCnt > 0 && joiningData.node().attribute(ATTR_SECURITY_SUBJECT_V2) == null)
@@ -2840,7 +2840,7 @@ public class ZookeeperDiscoveryImpl {
                 notifyNodeJoin(joinedEvtData, joiningData);
 
                 if (log.isInfoEnabled())
-                    log.info("Notyfing discovery on NODE JOIN took " + (System.currentTimeMillis() - time) + " ms.");
+                    log.info("[TIME] Notyfing discovery on NODE JOIN took " + (System.currentTimeMillis() - time) + " ms.");
             }
         }
 
@@ -3662,7 +3662,7 @@ public class ZookeeperDiscoveryImpl {
         }
 
         if (log.isInfoEnabled())
-            log.info("Handling processed events took " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("[TIME] Handling processed events took " + (System.currentTimeMillis() - time) + " ms.");
 
         if (newEvts != null) {
             Collection<ZookeeperClusterNode> nodes = rtState.top.nodesByOrder.values();

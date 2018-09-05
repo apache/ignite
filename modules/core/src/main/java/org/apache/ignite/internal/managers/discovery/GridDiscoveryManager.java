@@ -890,7 +890,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         c.collectJoiningNodeData(dataBag);
 
-                        log.info("Component " + c.getClass().getSimpleName() + " collected joining node data bag in " +
+                        log.info("[TIME] Component " + c.getClass().getSimpleName() + " collected joining node data bag in " +
                                 (U.currentTimeMillis() - joinDataStart) + "ms");
                     }
                 }
@@ -900,12 +900,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         c.collectGridNodeData(dataBag);
 
-                        log.info("Component " + c.getClass().getSimpleName() + " collected grid data bag in " +
+                        log.info("[TIME] Component " + c.getClass().getSimpleName() + " collected grid data bag in " +
                                 (U.currentTimeMillis() - gridDataStart) + "ms");
                     }
                 }
 
-                log.info("Total time of collecting discovery data bag: " + (U.currentTimeMillis() - start) + "ms");
+                log.info("[TIME] Total time of collecting discovery data bag: " + (U.currentTimeMillis() - start) + "ms");
 
                 return dataBag;
             }
@@ -931,7 +931,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                             c.onGridDataReceived(dataBag.gridDiscoveryData(c.discoveryDataType().ordinal()));
 
-                            log.info("Component " + c.getClass().getSimpleName() + " processed received grid data bag in " +
+                            log.info("[TIME] Component " + c.getClass().getSimpleName() + " processed received grid data bag in " +
                                     (U.currentTimeMillis() - onDataRec) + "ms");
                         }
                     }
@@ -961,14 +961,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                                 c.onJoiningNodeDataReceived(data);
 
-                                log.info("Component " + c.getClass().getSimpleName() +
+                                log.info("[TIME] Component " + c.getClass().getSimpleName() +
                                         " processed joining node data bag in " + (U.currentTimeMillis() - onJoinData) + "ms");
                             }
                         }
                     }
                 }
 
-                log.info("Total time of processing discovery data bag: " + (U.currentTimeMillis() - start) + "ms");
+                log.info("[TIME] Total time of processing discovery data bag: " + (U.currentTimeMillis() - start) + "ms");
             }
         });
 

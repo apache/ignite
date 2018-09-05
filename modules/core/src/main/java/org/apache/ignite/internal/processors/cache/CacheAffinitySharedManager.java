@@ -771,7 +771,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         caches.updateCachesInfo(exchActions);
 
         if (log.isInfoEnabled())
-            log.info("Updating caches info took " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("[TIME] Updating caches info took " + (System.currentTimeMillis() - time) + " ms.");
 
         // Affinity did not change for existing caches.
         onCustomMessageNoAffinityChange(fut, crd, exchActions);

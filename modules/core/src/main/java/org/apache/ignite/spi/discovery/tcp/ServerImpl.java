@@ -2662,14 +2662,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 startQueuedTime = System.currentTimeMillis();
 
                 timeTrackerMap.put(msg.id(), startQueuedTime);
-
-                this.log.info("New message created type = " + msg.getClass().getSimpleName()
-                    + " id = " + msg.id()
-                    + "\n msg = " + msg);
             }
 
 
-            this.log.info("Queueing message type = " + msg.getClass().getSimpleName()
+            this.log.info("[TIME] Queueing message type = " + msg.getClass().getSimpleName()
                 + " id = " + msg.id()
                 + " time = " + (System.currentTimeMillis() - startQueuedTime));
 
@@ -2678,7 +2674,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             else
                 queue.add(msg);
 
-            this.log.info("Queued message type = " + msg.getClass().getSimpleName()
+            this.log.info("[TIME] Queued message type = " + msg.getClass().getSimpleName()
                 + " id = " + msg.id()
                 + " time = " + (System.currentTimeMillis() - startQueuedTime));
 
@@ -5561,7 +5557,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             U.resolveClassLoader(spi.ignite().configuration()));
 
                         if (log.isInfoEnabled())
-                            log.info("Unmarshalling custom event " + msg.id() + " took " + (System.currentTimeMillis() - sertime) + " ms.");
+                            log.info("[TIME] Unmarshalling custom event " + msg.id() + " took " + (System.currentTimeMillis() - sertime) + " ms.");
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
@@ -5580,7 +5576,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (log.isInfoEnabled())
-                log.info("[TCP-TIME] Notifying about message " + msg.id() + " took " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TIME] Notifying discovery listener about message " + msg.id() + " took " + (System.currentTimeMillis() - time) + " ms.");
         }
 
         /**
@@ -6116,14 +6112,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             timeTrackerMap.put(msg.id(), startMessageRidding);
 
-                            log.info("New message unmarshalled type = " + msg.getClass().getSimpleName()
+                            log.info("[TIME] New message unmarshalled type = " + msg.getClass().getSimpleName()
                                 + " id = " + msg.id()
                                 + " size = " + FileUtils.byteCountToDisplaySize(cis.getCount())
                                 + " unmarshal = " + (System.currentTimeMillis() - start)
                                 + "\n msg = " + msg);
                         }
                         else {
-                            log.info("Unmarshalled message type = " + msg.getClass().getSimpleName()
+                            log.info("[TIME] Unmarshalled message type = " + msg.getClass().getSimpleName()
                                 + " id = " + msg.id()
                                 + " size = " + FileUtils.byteCountToDisplaySize(cis.getCount())
                                 + " unmarshal = " + (System.currentTimeMillis() - start)
@@ -6146,7 +6142,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                            log.info("[TIME] Acknowledged message type = " + msg.getClass().getSimpleName()
                                 + " id = " + msg.id()
                                 + " time = " + (System.currentTimeMillis() - startMessageRidding));
 
@@ -6173,7 +6169,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (state == CONNECTED) {
                                 spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                                log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                                log.info("[TIME] Acknowledged message type = " + msg.getClass().getSimpleName()
                                     + " id = " + msg.id()
                                     + " time = " + (System.currentTimeMillis() - startMessageRidding));
 
@@ -6187,7 +6183,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             else {
                                 spi.writeToSocket(msg, sock, RES_CONTINUE_JOIN, sockTimeout);
 
-                                log.info("Acknowledged message (RES_CONTINUE_JOIN) type = " + msg.getClass().getSimpleName()
+                                log.info("[TIME] Acknowledged message (RES_CONTINUE_JOIN) type = " + msg.getClass().getSimpleName()
                                     + " id = " + msg.id()
                                     + " time = " + (System.currentTimeMillis() - startMessageRidding));
 
@@ -6198,7 +6194,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Send receipt back.
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                            log.info("[TIME] Acknowledged message type = " + msg.getClass().getSimpleName()
                                 + " id = " + msg.id()
                                 + " time = " + (System.currentTimeMillis() - startMessageRidding));
 
@@ -6231,7 +6227,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Send receipt back.
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                            log.info("[TIME] Acknowledged message type = " + msg.getClass().getSimpleName()
                                 + " id = " + msg.id()
                                 + " time = " + (System.currentTimeMillis() - startMessageRidding));
 
@@ -6264,7 +6260,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Send receipt back.
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                            log.info("[TIME] Acknowledged message type = " + msg.getClass().getSimpleName()
                                 + " id = " + msg.id()
                                 + " time = " + (System.currentTimeMillis() - startMessageRidding));
 
@@ -6311,7 +6307,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Send receipt back.
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                            log.info("[TIME] Acknowledged message type = " + msg.getClass().getSimpleName()
                                 + " id = " + msg.id()
                                 + " time = " + (System.currentTimeMillis() - startMessageRidding));
 
@@ -6379,7 +6375,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                            log.info("Acknowledged message type = " + msg.getClass().getSimpleName()
+                            log.info("[TIME] Acknowledged message type = " + msg.getClass().getSimpleName()
                                 + " id = " + msg.id()
                                 + " time = " + (System.currentTimeMillis() - startMessageRidding));
                         }
@@ -7040,13 +7036,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     long start = timeTrackerMap.getOrDefault((discoMsg).id(), Long.MAX_VALUE);
 
-                    log.info("Enqueued message type = " + discoMsg.getClass().getSimpleName()
+                    log.info("[TIME] Enqueued message type = " + discoMsg.getClass().getSimpleName()
                             + " id = " + discoMsg.id()
                             + " time = " + (System.currentTimeMillis() - start));
 
                     processMessage(msg);
 
-                    log.info("Processed message type = " + discoMsg.getClass().getSimpleName()
+                    log.info("[TIME] Processed message type = " + discoMsg.getClass().getSimpleName()
                             + " id = " + discoMsg.id()
                             + " time = " + (System.currentTimeMillis() - start));
                 }

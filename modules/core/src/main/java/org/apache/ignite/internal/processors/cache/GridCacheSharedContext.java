@@ -281,14 +281,14 @@ public class GridCacheSharedContext<K, V> {
                 mgr.onActivate(kernalCtx);
 
                 if (msgLog.isInfoEnabled())
-                    msgLog.info(mgr + " activated in " + (System.currentTimeMillis() - time) + " ms.");
+                    msgLog.info("[TIME] activation support manager " + mgr + " activated in " + (System.currentTimeMillis() - time) + " ms.");
             }
 
             success = true;
         }
         finally {
             if (msgLog.isInfoEnabled())
-                msgLog.info("Activation took " + (System.currentTimeMillis() - ttime) + " ms.");
+                msgLog.info("[TIME] All activation took " + (System.currentTimeMillis() - ttime) + " ms.");
 
             if (!success) {
                 if (!kernalCtx.clientNode())

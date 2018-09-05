@@ -230,7 +230,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         start0();
 
         if (log.isInfoEnabled())
-            log.info("File page store manager activated in: " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("[TIME] File page store manager activated in: " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /** {@inheritDoc} */

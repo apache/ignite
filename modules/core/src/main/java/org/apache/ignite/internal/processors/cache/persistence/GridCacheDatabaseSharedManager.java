@@ -390,7 +390,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             lsnr.onReadyForReadWrite(metaStorage);
 
             if (log.isInfoEnabled())
-                log.info(lsnr + " listener metastorage read-write invoked in " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TIME] Metastorage listener " + lsnr + " read-write notify invoked in " + (System.currentTimeMillis() - time) + " ms.");
         }
     }
 
@@ -710,7 +710,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         super.onActivate(ctx);
 
         if (log.isInfoEnabled())
-            log.info("Database shared manager activated in: " + (System.currentTimeMillis() - time) + " ms.");
+            log.info("[TIME] Database shared manager activated in: " + (System.currentTimeMillis() - time) + " ms.");
     }
 
     /** {@inheritDoc} */
@@ -834,7 +834,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             if (log.isInfoEnabled())
-                log.info("Create partition files took " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TIME] Create partition files took " + (System.currentTimeMillis() - time) + " ms.");
 
             CheckpointStatus status = readCheckpointStatus();
 
@@ -851,7 +851,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             WALPointer restore = restoreMemory(status);
 
             if (log.isInfoEnabled())
-                log.info("Restore memory finished in " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TIME] Restore memory finished in " + (System.currentTimeMillis() - time) + " ms.");
 
             if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
                 throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
@@ -876,14 +876,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             metaStorage.init(this);
 
             if (log.isInfoEnabled())
-                log.info("Finished node start marker finished in " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TIME] Finished node start marker finished in " + (System.currentTimeMillis() - time) + " ms.");
 
             time = System.currentTimeMillis();
 
             notifyMetastorageReadyForReadWrite();
 
             if (log.isInfoEnabled())
-                log.info("Notyfing metastorage took " + (System.currentTimeMillis() - time) + " ms.");
+                log.info("[TIME] Notyfing metastorage took " + (System.currentTimeMillis() - time) + " ms.");
         }
         catch (IgniteCheckedException e) {
             if (X.hasCause(e, StorageException.class, PersistentStorageIOException.class, IOException.class))
