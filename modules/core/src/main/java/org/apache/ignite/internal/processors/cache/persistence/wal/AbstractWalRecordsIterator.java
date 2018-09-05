@@ -350,7 +350,6 @@ public abstract class AbstractWalRecordsIterator
             throw new IgniteCheckedException(
                 "Failed to initialize WAL segment after reading segment header: " + desc.file().getAbsolutePath(), e);
         }
-
     }
 
     /**
