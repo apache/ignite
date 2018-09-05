@@ -259,9 +259,25 @@ public interface MvccProcessor extends GridProcessor {
      */
     boolean mvccEnabled();
 
+    /**
+     * Preprocesses cache configuration before start.
+     *
+     * @param ccfg Cache configuration to preprocess.
+     */
     void preProcessCacheConfiguration(CacheConfiguration ccfg);
 
+    /**
+     * Validates cache configuration before start.
+     *
+     * @param ccfg Cache configuration to validate.
+     * @throws IgniteCheckedException If validation failed.
+     */
     void validateCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException;
 
+    /**
+     * Starts MVCC processor (i.e. initialises data structures and vacuum) if it has not been started yet.
+     *
+     * @throws IgniteCheckedException If failed to initialize.
+     */
     void ensureStarted() throws IgniteCheckedException;
 }

@@ -30,7 +30,6 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -223,18 +222,15 @@ public class CacheGroupContext {
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
-        mvccEnabled = mvccEnabled(ctx.gridConfig(), ccfg, cacheType);
+        mvccEnabled = mvccEnabled(ccfg);
     }
 
     /**
-     * @param cfg Ignite configuration.
      * @param ccfg Cache configuration.
-     * @param cacheType Cache typr.
      * @return {@code True} if mvcc is enabled for given cache.
      */
-    public static boolean mvccEnabled(IgniteConfiguration cfg, CacheConfiguration ccfg, CacheType cacheType) {
-        return cacheType == CacheType.USER &&
-            ccfg.getCacheMode() != LOCAL &&
+    public static boolean mvccEnabled(CacheConfiguration ccfg) {
+        return ccfg.getCacheMode() != LOCAL &&
             ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
     }
 

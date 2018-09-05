@@ -3418,7 +3418,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     CacheConfiguration ccfg = req.startCacheConfiguration();
 
                     try {
-                        cachesInfo.validateStartCacheConfiguration(ccfg, req.cacheType());
+                        cachesInfo.validateStartCacheConfiguration(ccfg);
                     }
                     catch (IgniteCheckedException e) {
                         fut.onDone(e);

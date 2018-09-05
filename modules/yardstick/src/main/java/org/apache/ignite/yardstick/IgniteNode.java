@@ -24,6 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -103,8 +104,6 @@ public class IgniteNode implements BenchmarkServer {
 
         CacheConfiguration[] ccfgs = c.getCacheConfiguration();
 
-        c.setMvccEnabled(args.mvccEnabled());
-
         if (ccfgs != null) {
             for (CacheConfiguration cc : ccfgs) {
                 // IgniteNode can not run in CLIENT_ONLY mode,
@@ -148,6 +147,9 @@ public class IgniteNode implements BenchmarkServer {
                 cc.setWriteThrough(args.isStoreEnabled());
 
                 cc.setWriteBehindEnabled(args.isWriteBehind());
+
+                if (args.mvccEnabled())
+                    cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
 
                 BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);
             }
