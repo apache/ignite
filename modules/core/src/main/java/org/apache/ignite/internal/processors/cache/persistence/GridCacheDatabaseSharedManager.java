@@ -486,6 +486,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cleanupTempCheckpointDirectory();
 
             persStoreMetrics.wal(cctx.wal());
+
+            // Here we can get data from metastorage.
+            readMetastore(false);
         }
     }
 
@@ -602,8 +605,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /** */
-    private void readMetastore() throws IgniteCheckedException {
+    /**
+     * @param notifyListeners {@code true} if {@link MetastorageLifecycleListener} should be notified.
+     */
+    private void readMetastore(boolean notifyListeners) throws IgniteCheckedException {
         try {
             DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
@@ -642,7 +647,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 fillWalDisabledGroups();
 
-                notifyMetastorageReadyForRead();
+                if (notifyListeners)
+                    notifyMetastorageReadyForRead();
             }
             finally {
                 checkpointReadUnlock();
@@ -4322,7 +4328,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public void notifyMetaStorageSubscribersOnReadyForRead() throws IgniteCheckedException {
         metastorageLifecycleLsnrs = cctx.kernalContext().internalSubscriptionProcessor().getMetastorageSubscribers();
 
-        readMetastore();
+        readMetastore(true);
     }
 
     /** {@inheritDoc} */
