@@ -541,7 +541,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
-        cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new TestTcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
 
         if (filterNodeName != null && F.eq(name, filterNodeName))
             cfg.setUserAttributes(Collections.singletonMap("AFF_NODE", true));
@@ -591,7 +591,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
 
-        cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
+        cfg.setDiscoverySpi(new TestTcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
 
         return (IgniteEx)Ignition.start(cfg);
     }
