@@ -17,20 +17,28 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
+import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
  * Testing {@link TcpCommunicationSpi} under big cluster conditions (long DiscoverySpi delivery)
@@ -40,10 +48,18 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     private static final long COMMUNICATION_TIMEOUT = 1000;
 
     /** */
-    private static final long DISCOVERY_MESSAGE_DELAY = 500;
+    private static final long DISCOVERY_MESSAGE_DELAY = 300;
 
     /** */
     private static final int CLUSTER_SIZE = 5;
+
+    static {
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
+            @Override public Message apply() {
+                return new GridTestMessage();
+            }
+        });
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -75,14 +91,15 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    Ignite ignite = startGrid(idx.getAndIncrement());
+                    IgniteEx ignite = startGrid(idx.getAndIncrement());
+
+                    GridIoManager ioMgr = ignite.context().io();
 
                     while (ignite.cluster().forServers().nodes().size() < CLUSTER_SIZE) {
-                        ignite.compute().broadcast(new IgniteRunnable() {
-                            @Override public void run() {
-                                // No-op.
-                            }
-                        });
+                        Collection<ClusterNode> nodes = ignite.context().discovery().aliveServerNodes();
+
+                        for (ClusterNode node : nodes)
+                            ioMgr.sendToCustomTopic(node, "Test topic", new GridTestMessage(), PUBLIC_POOL);
 
                         U.sleep(100);
                     }
@@ -97,6 +114,11 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
 
         final IgniteExceptionRegistry exReg = IgniteExceptionRegistry.get();
 
+        for (IgniteExceptionRegistry.ExceptionInfo info : exReg.getErrors(0L)) {
+            if (info.error() instanceof IgniteCheckedException
+                && "HandshakeTimeoutException".equals(info.error().getClass().getSimpleName()))
+                info.error().printStackTrace();
+        }
         for (IgniteExceptionRegistry.ExceptionInfo info : exReg.getErrors(0L)) {
             if (info.error() instanceof IgniteCheckedException
                 && "HandshakeTimeoutException".equals(info.error().getClass().getSimpleName()))
