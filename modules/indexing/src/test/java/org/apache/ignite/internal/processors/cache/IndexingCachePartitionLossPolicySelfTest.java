@@ -28,7 +28,7 @@ import java.util.Collection;
 /**
  * Partition loss policy test with enabled indexing.
  */
-public class IndexingIgniteCachePartitionLossPolicySelfTest extends IgniteCachePartitionLossPolicySelfTest {
+public class IndexingCachePartitionLossPolicySelfTest extends IgniteCachePartitionLossPolicySelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<Integer, Integer> cacheConfiguration() {
         CacheConfiguration<Integer, Integer> ccfg = super.cacheConfiguration();
