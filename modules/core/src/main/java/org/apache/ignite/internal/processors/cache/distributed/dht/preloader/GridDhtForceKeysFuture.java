@@ -274,8 +274,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                         assert !n.id().equals(loc.id());
 
-                        if (log.isDebugEnabled())
-                            log.debug("Sending force key request [cacheName=" + cctx.name() + "node=" + n.id() +
+                        if (log.isTraceEnabled())
+                            log.trace("Sending force key request [cacheName=" + cctx.name() + "node=" + n.id() +
                                 ", req=" + req + ']');
 
                         cctx.io().send(n, req, cctx.ioPolicy());
@@ -310,10 +310,10 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
         try {
             if (e != null && !e.isNewLocked()) {
-                if (log.isDebugEnabled()) {
+                if (log.isTraceEnabled()) {
                     int part = cctx.affinity().partition(key);
 
-                    log.debug("Will not rebalance key (entry is not new) [cacheName=" + cctx.name() +
+                    log.trace("Will not rebalance key (entry is not new) [cacheName=" + cctx.name() +
                         ", key=" + key + ", part=" + part + ", locId=" + cctx.nodeId() + ']');
                 }
 
@@ -322,8 +322,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             }
         }
         catch (GridCacheEntryRemovedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Received removed DHT entry for force keys request [entry=" + e +
+            if (log.isTraceEnabled())
+                log.trace("Received removed DHT entry for force keys request [entry=" + e +
                     ", locId=" + cctx.nodeId() + ']');
         }
 
@@ -333,8 +333,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             new ArrayList<>(F.view(top.owners(part, topVer), F.notIn(exc)));
 
         if (owners.isEmpty() || (owners.contains(loc) && cctx.rebalanceEnabled())) {
-            if (log.isDebugEnabled())
-                log.debug("Will not rebalance key (local node is owner) [key=" + key + ", part=" + part +
+            if (log.isTraceEnabled())
+                log.trace("Will not rebalance key (local node is owner) [key=" + key + ", part=" + part +
                     "topVer=" + topVer + ", locId=" + cctx.nodeId() + ']');
 
             // Key is already rebalanced.
@@ -344,8 +344,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         // Create partition.
         GridDhtLocalPartition locPart = top.localPartition(part, topVer, false);
 
-        if (log.isDebugEnabled())
-            log.debug("Mapping local partition [loc=" + cctx.localNodeId() + ", topVer" + topVer +
+        if (log.isTraceEnabled())
+            log.trace("Mapping local partition [loc=" + cctx.localNodeId() + ", topVer" + topVer +
                 ", part=" + locPart + ", owners=" + owners + ", allOwners=" + U.toShortString(top.owners(part)) + ']');
 
         if (locPart == null)
@@ -362,8 +362,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 pick = F.first(F.view(owners, F.remoteNodes(loc.id())));
 
             if (pick == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Will not rebalance key (no nodes to request from with rebalancing disabled) [key=" +
+                if (log.isTraceEnabled())
+                    log.trace("Will not rebalance key (no nodes to request from with rebalancing disabled) [key=" +
                         key + ", part=" + part + ", locId=" + cctx.nodeId() + ']');
 
                 return mappings;
@@ -378,15 +378,15 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             mappedKeys.add(key);
 
-            if (log.isDebugEnabled())
-                log.debug("Will rebalance key from node [cacheName=" + cctx.name() + ", key=" + key + ", part=" +
+            if (log.isTraceEnabled())
+                log.trace("Will rebalance key from node [cacheName=" + cctx.name() + ", key=" + key + ", part=" +
                     part + ", node=" + pick.id() + ", locId=" + cctx.nodeId() + ']');
         }
         else if (locPart.state() != OWNING)
             invalidParts.add(part);
         else {
-            if (log.isDebugEnabled())
-                log.debug("Will not rebalance key (local partition is not MOVING) [cacheName=" + cctx.name() +
+            if (log.isTraceEnabled())
+                log.trace("Will not rebalance key (local partition is not MOVING) [cacheName=" + cctx.name() +
                     ", key=" + key + ", part=" + locPart + ", locId=" + cctx.nodeId() + ']');
         }
 
@@ -563,8 +563,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                         return;
                     }
                     catch (GridCacheEntryRemovedException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("Trying to rebalance removed entry (will ignore) [cacheName=" +
+                        if (log.isTraceEnabled())
+                            log.trace("Trying to rebalance removed entry (will ignore) [cacheName=" +
                                 cctx.name() + ", entry=" + entry + ']');
                     }
                     finally {

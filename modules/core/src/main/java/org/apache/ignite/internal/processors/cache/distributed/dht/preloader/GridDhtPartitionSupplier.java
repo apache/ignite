@@ -402,8 +402,8 @@ class GridDhtPartitionSupplier {
                 if (preloadPred == null || preloadPred.apply(info))
                     s.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
                 else {
-                    if (log.isDebugEnabled())
-                        log.debug("Rebalance predicate evaluated to false (will not send " +
+                    if (log.isTraceEnabled())
+                        log.trace("Rebalance predicate evaluated to false (will not send " +
                             "cache entry): " + info);
                 }
 

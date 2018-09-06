@@ -313,7 +313,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partCnt);
                 }
                 else {
-                    Collection<ClusterNode> picked = pickOwners(p, topVer);
+                    List<ClusterNode> picked = remoteOwners(p, topVer);
 
                     if (picked.isEmpty()) {
                         top.own(part);
@@ -330,7 +330,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             log.debug("Owning partition as there are no other owners: " + part);
                     }
                     else {
-                        ClusterNode n = F.rand(picked);
+                        ClusterNode n = picked.get(0);
 
                         GridDhtPartitionDemandMessage msg = assignments.get(n);
 
@@ -359,42 +359,23 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /**
-     * Picks owners for specified partition {@code p} from affinity.
-     *
-     * @param p Partition.
-     * @param topVer Topology version.
-     * @return Picked owners.
-     */
-    private Collection<ClusterNode> pickOwners(int p, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> affNodes = grp.affinity().cachedAffinity(topVer).get(p);
-
-        int affCnt = affNodes.size();
-
-        Collection<ClusterNode> rmts = remoteOwners(p, topVer);
-
-        int rmtCnt = rmts.size();
-
-        if (rmtCnt <= affCnt)
-            return rmts;
-
-        List<ClusterNode> sorted = new ArrayList<>(rmts);
-
-        // Sort in descending order, so nodes with higher order will be first.
-        Collections.sort(sorted, CU.nodeComparator(false));
-
-        // Pick newest nodes.
-        return sorted.subList(0, affCnt);
-    }
-
-    /**
      * Returns remote owners (excluding local node) for specified partition {@code p}.
      *
      * @param p Partition.
      * @param topVer Topology version.
      * @return Nodes owning this partition.
      */
-    private Collection<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer) {
-        return F.view(grp.topology().owners(p, topVer), F.remoteNodes(ctx.localNodeId()));
+    private List<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer) {
+        List<ClusterNode> owners = grp.topology().owners(p, topVer);
+
+        List<ClusterNode> res = new ArrayList<>(owners.size());
+
+        for (ClusterNode owner : owners) {
+            if (!owner.id().equals(ctx.localNodeId()))
+                res.add(owner);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

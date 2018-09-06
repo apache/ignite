@@ -761,9 +761,9 @@ public class GridDhtPartitionDemander {
                                         GridCacheEntryInfo entry = infos.next();
 
                                         if (!preloadEntry(node, p, entry, topVer)) {
-                                            if (log.isDebugEnabled())
-                                                log.debug("Got entries for invalid partition during " +
-                                                        "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
+                                            if (log.isTraceEnabled())
+                                                log.trace("Got entries for invalid partition during " +
+                                                    "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
 
                                             break;
                                         }
@@ -877,8 +877,8 @@ public class GridDhtPartitionDemander {
 
                 cached = cctx.cache().entryEx(entry.key());
 
-                if (log.isDebugEnabled())
-                    log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + from.id() + ']');
+                if (log.isTraceEnabled())
+                    log.trace("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + from.id() + ']');
 
                 if (preloadPred == null || preloadPred.apply(entry)) {
                     if (cached.initialValue(
@@ -905,17 +905,17 @@ public class GridDhtPartitionDemander {
                     else {
                         cached.touch(topVer); // Start tracking.
 
-                        if (log.isDebugEnabled())
-                            log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
+                        if (log.isTraceEnabled())
+                            log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
                                 ", part=" + p + ']');
                     }
                 }
-                else if (log.isDebugEnabled())
-                    log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
+                else if (log.isTraceEnabled())
+                    log.trace("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
             }
             catch (GridCacheEntryRemovedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
+                if (log.isTraceEnabled())
+                    log.trace("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
                         cached.key() + ", part=" + p + ']');
             }
             catch (GridDhtInvalidPartitionException ignored) {
