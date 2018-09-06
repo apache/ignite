@@ -688,10 +688,20 @@ public class GridDhtPartitionDemander {
         if (log.isDebugEnabled())
             log.debug("Received supply message [grp=" + grp.cacheOrGroupName() + ", msg=" + supply + ']');
 
-        // Check whether there were class loading errors on unmarshal
+        // Check whether there were error during supply message unmarshalling process.
         if (supply.classError() != null) {
             U.warn(log, "Rebalancing from node cancelled [grp=" + grp.cacheOrGroupName() + ", node=" + nodeId +
-                "]. Class got undeployed during preloading: " + supply.classError());
+                "]. Supply message couldn't be unmarshalled: " + supply.classError());
+
+            fut.cancel(nodeId);
+
+            return;
+        }
+
+        // Check whether there were error during supplying process.
+        if (supply.error() != null) {
+            U.warn(log, "Rebalancing from node cancelled [grp=" + grp.cacheOrGroupName() + ", node=" + nodeId +
+                "]. Supplier has failed with error: " + supply.error());
 
             fut.cancel(nodeId);
 

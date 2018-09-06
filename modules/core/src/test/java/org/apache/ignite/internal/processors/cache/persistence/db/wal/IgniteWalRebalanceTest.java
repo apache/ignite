@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,18 +42,31 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCachePreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
@@ -61,6 +78,9 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
     /** Partitions count. */
     private static final int PARTS_CNT = 32;
+
+    /** Block message predicate to set to Communication SPI in node configuration. */
+    private IgniteBiPredicate<ClusterNode, Message> blockMessagePredicate;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -91,6 +111,12 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(dbCfg);
 
         cfg.setCommunicationSpi(new WalRebalanceCheckingCommunicationSpi());
+
+        if (blockMessagePredicate != null) {
+            TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi) cfg.getCommunicationSpi();
+
+            spi.blockMessages(blockMessagePredicate);
+        }
 
         return cfg;
     }
@@ -227,6 +253,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 cache.put(k, new IndexedObject(k - 1));
         }
 
+        forceCheckpoint();
+
         stopAllGrids();
 
         IgniteEx ig0 = (IgniteEx) startGrids(2);
@@ -239,6 +267,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         for (int k = 0; k < entryCnt; k++)
             cache.put(k, new IndexedObject(k));
+
+        forceCheckpoint();
 
         // This node should rebalance data from other nodes and shouldn't have WAL history.
         Ignite ignite = startGrid(2);
@@ -257,6 +287,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             else if (k % 3 == 1) // Spread removes across all partitions.
                 cache.remove(k);
         }
+
+        forceCheckpoint();
 
         // Stop grids which have actual WAL history.
         stopGrid(0);
@@ -309,6 +341,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 cache.put(k, new IndexedObject(k - 1));
         }
 
+        forceCheckpoint();
+
         stopAllGrids();
 
         // Rewrite data with globally disabled WAL.
@@ -324,6 +358,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         for (int k = 0; k < entryCnt; k++)
             cache.put(k, new IndexedObject(k));
+
+        forceCheckpoint();
 
         crd.cluster().enableWal(CACHE_NAME);
 
@@ -361,6 +397,100 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
             for (int k = 0; k < entryCnt; k++)
                 assertEquals(new IndexedObject(k + 1), cache1.get(k));
+        }
+    }
+
+    /**
+     * Tests that cache rebalance is cancelled if supplyer node got exception during iteration over WAL.
+     *
+     * @throws Exception If failed.
+     */
+    public void testRebalanceCancelOnSupplyError() throws Exception {
+        // Prepare some data.
+        IgniteEx crd = (IgniteEx) startGrids(3);
+
+        crd.cluster().active(true);
+
+        final int entryCnt = PARTS_CNT * 10;
+
+        {
+            IgniteCache<Object, Object> cache = crd.cache(CACHE_NAME);
+
+            for (int k = 0; k < entryCnt; k++)
+                cache.put(k, new IndexedObject(k - 1));
+        }
+
+        forceCheckpoint();
+
+        stopAllGrids();
+
+        // Rewrite data to trigger further rebalance.
+        IgniteEx supplierNode = (IgniteEx) startGrid(0);
+
+        supplierNode.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = supplierNode.cache(CACHE_NAME);
+
+        for (int k = 0; k < entryCnt; k++)
+            cache.put(k, new IndexedObject(k));
+
+        forceCheckpoint();
+
+        final int groupId = supplierNode.cachex(CACHE_NAME).context().groupId();
+
+        // Delay rebalance process for specified group.
+        blockMessagePredicate = (node, msg) -> {
+            if (msg instanceof GridDhtPartitionDemandMessage)
+                return ((GridDhtPartitionDemandMessage) msg).groupId() == groupId;
+
+            return false;
+        };
+
+        IgniteEx demanderNode = startGrid(2);
+
+        AffinityTopologyVersion curTopVer = demanderNode.context().discovery().topologyVersionEx();
+
+        // Wait for rebalance process start on demander node.
+        final GridCachePreloader preloader = demanderNode.cachex(CACHE_NAME).context().group().preloader();
+
+        GridTestUtils.waitForCondition(() ->
+            ((GridDhtPartitionDemander.RebalanceFuture) preloader.rebalanceFuture()).topologyVersion().equals(curTopVer),
+            getTestTimeout()
+        );
+
+        // Inject I/O factory which can throw exception during WAL read on supplier node.
+        FailingIOFactory ioFactory = new FailingIOFactory(new RandomAccessFileIOFactory());
+
+        ((FileWriteAheadLogManager) supplierNode.cachex(CACHE_NAME).context().shared().wal()).setFileIOFactory(ioFactory);
+
+        ioFactory.throwExceptionOnWalRead();
+
+        // Resume rebalance process.
+        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi) demanderNode.configuration().getCommunicationSpi();
+
+        spi.stopBlock();
+
+        // Wait till rebalance will be failed and cancelled.
+        Boolean result = preloader.rebalanceFuture().get();
+
+        Assert.assertEquals("Rebalance should be cancelled on demander node: " + preloader.rebalanceFuture(), false, result);
+
+        // Stop blocking messages and fail WAL during read.
+        blockMessagePredicate = null;
+
+        ioFactory.reset();
+
+        // Start last grid and wait for rebalance.
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        // Check data consistency.
+        for (Ignite ig : G.allGrids()) {
+            IgniteCache<Object, Object> cache1 = ig.cache(CACHE_NAME);
+
+            for (int k = 0; k < entryCnt; k++)
+                assertEquals(new IndexedObject(k), cache1.get(k));
         }
     }
 
@@ -409,7 +539,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     /**
      * Wrapper of communication spi to detect on what topology versions WAL rebalance has happened.
      */
-    public static class WalRebalanceCheckingCommunicationSpi extends TcpCommunicationSpi {
+    public static class WalRebalanceCheckingCommunicationSpi extends TestRecordingCommunicationSpi {
         /** (Group ID, Set of topology versions). */
         private static final Map<Integer, Set<Long>> topVers = new HashMap<>();
 
@@ -462,6 +592,57 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             }
 
             super.sendMessage(node, msg, ackC);
+        }
+    }
+
+    /**
+     *
+     */
+    static class FailingIOFactory implements FileIOFactory {
+        /** Fail read operations. */
+        private volatile boolean failRead;
+
+        /** Delegate. */
+        private final FileIOFactory delegate;
+
+        /**
+         * @param delegate Delegate.
+         */
+        FailingIOFactory(FileIOFactory delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file) throws IOException {
+            return create(file, CREATE, WRITE, READ);
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            FileIO delegateIO = delegate.create(file, modes);
+
+            if (file.getName().endsWith(".wal") && failRead)
+                return new FileIODecorator(delegateIO) {
+                    @Override public int read(ByteBuffer destBuf) throws IOException {
+                        throw new IgniteException("Test exception.");
+                    }
+                };
+
+            return delegateIO;
+        }
+
+        /**
+         *
+         */
+        public void throwExceptionOnWalRead() {
+            failRead = true;
+        }
+
+        /**
+         *
+         */
+        public void reset() {
+            failRead = false;
         }
     }
 }
