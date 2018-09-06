@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -790,7 +791,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @return All accounts
      */
-    private static Map<Integer, MvccTestAccount> getAllSql(TestCache<Integer, MvccTestAccount> cache) {
+    protected static Map<Integer, MvccTestAccount> getAllSql(TestCache<Integer, MvccTestAccount> cache) {
         Map<Integer, MvccTestAccount> accounts = new HashMap<>();
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select _key, val, updateCnt from MvccTestAccount");
@@ -829,8 +830,24 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @param key Key.
      */
-    private static void removeSql(TestCache<Integer, MvccTestAccount> cache, Integer key) {
+    protected static void removeSql(TestCache<Integer, MvccTestAccount> cache, Integer key) {
         SqlFieldsQuery qry = new SqlFieldsQuery("delete from MvccTestAccount where _key=" + key);
+
+        cache.cache.query(qry).getAll();
+    }
+
+
+    /**
+     * Merge account by means of SQL API.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Value.
+     * @param updateCnt Update counter.
+     */
+    protected static void mergeSql(TestCache<Integer, MvccTestAccount> cache, Integer key, Integer val, Integer updateCnt) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("merge into MvccTestAccount(_key, val, updateCnt) values " +
+            " (" + key+ ", " + val + ", " + updateCnt + ")");
 
         cache.cache.query(qry).getAll();
     }
@@ -2108,6 +2125,23 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
             this.val = val;
             this.updateCnt = updateCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            MvccTestAccount account = (MvccTestAccount)o;
+            return val == account.val &&
+                updateCnt == account.updateCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+
+            return Objects.hash(val, updateCnt);
         }
 
         /** {@inheritDoc} */
