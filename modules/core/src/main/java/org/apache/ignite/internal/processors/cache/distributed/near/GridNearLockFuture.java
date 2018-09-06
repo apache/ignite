@@ -129,7 +129,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
     /** Timeout object. */
     @GridToStringExclude
-    private LockTimeoutObject timeoutObj;
+    private volatile LockTimeoutObject timeoutObj;
 
     /** Lock timeout. */
     private final long timeout;
@@ -481,34 +481,63 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param nodeId Sender.
      * @param res Result.
      */
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     void onResult(UUID nodeId, GridNearLockResponse res) {
-        if (!isDone()) {
-            if (log.isDebugEnabled())
-                log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
+        boolean done = isDone();
 
-            MiniFuture mini = miniFuture(res.miniId());
-
-            if (mini != null) {
-                assert mini.node().id().equals(nodeId);
-
-                if (log.isDebugEnabled())
-                    log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
-
-                mini.onResult(res);
-
-                if (log.isDebugEnabled())
-                    log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
-                        ", res=" + res + ']');
+        if (!done) {
+            // onResult is always called after map() and timeoutObj is never reset to null, so this is
+            // a race-free null check.
+            if (timeoutObj == null) {
+                onResult0(nodeId, res);
 
                 return;
             }
 
-            U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
-                ", fut=" + this + ']');
+            synchronized (timeoutObj) {
+                if (!isDone()) {
+                    if (onResult0(nodeId, res))
+                        return;
+                }
+                else
+                    done = true;
+            }
         }
-        else if (log.isDebugEnabled())
+
+        if (done && log.isDebugEnabled())
             log.debug("Ignoring lock response from node (future is done) [nodeId=" + nodeId + ", res=" + res +
                 ", fut=" + this + ']');
+    }
+
+    /**
+     * @param nodeId Sender.
+     * @param res Result.
+     */
+    private boolean onResult0(UUID nodeId, GridNearLockResponse res) {
+        if (log.isDebugEnabled())
+            log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
+
+        MiniFuture mini = miniFuture(res.miniId());
+
+        if (mini != null) {
+            assert mini.node().id().equals(nodeId);
+
+            if (log.isDebugEnabled())
+                log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
+
+            mini.onResult(res);
+
+            if (log.isDebugEnabled())
+                log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
+                    ", res=" + res + ']');
+
+            return true;
+        }
+
+        U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
+            ", fut=" + this + ']');
+
+        return false;
     }
 
     /**
@@ -1496,15 +1525,20 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                 U.warn(log, "Failed to detect deadlock.", e);
                             }
 
-                            onComplete(false, true);
+                            synchronized (LockTimeoutObject.this) {
+                                onComplete(false, true);
+                            }
                         }
                     });
                 }
                 else
                     err = tx.timeoutException();
             }
-            else
-                onComplete(false, true);
+            else {
+                synchronized (this) {
+                    onComplete(false, true);
+                }
+            }
         }
 
         /** {@inheritDoc} */

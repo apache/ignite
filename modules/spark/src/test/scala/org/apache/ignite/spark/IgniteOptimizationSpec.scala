@@ -60,7 +60,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
         it("SELECT id, name FROM person WHERE id > 3 ORDER BY id") {
             val df = igniteSession.sql("SELECT id, name FROM person WHERE id > 3 ORDER BY id")
 
-            checkOptimizationResult(df, "SELECT id, name FROM person WHERE id IS NOT NULL AND id > 3 ORDER BY id")
+            checkOptimizationResult(df, "SELECT id, name FROM person WHERE id > 3 ORDER BY id")
 
             val data = (
                 (4, "Richard Miles"),
@@ -72,7 +72,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
         it("SELECT id, name FROM person WHERE id > 3 ORDER BY id DESC") {
             val df = igniteSession.sql("SELECT id, name FROM person WHERE id > 3 ORDER BY id DESC")
 
-            checkOptimizationResult(df, "SELECT id, name FROM person WHERE id IS NOT NULL AND id > 3 ORDER BY id DESC")
+            checkOptimizationResult(df, "SELECT id, name FROM person WHERE id > 3 ORDER BY id DESC")
 
             val data = (
                 (5, null),
@@ -111,7 +111,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
         it("SELECT id FROM city HAVING id > 1") {
             val df = igniteSession.sql("SELECT id FROM city HAVING id > 1")
 
-            checkOptimizationResult(df, "SELECT id FROM city WHERE id IS NOT NULL AND id > 1")
+            checkOptimizationResult(df, "SELECT id FROM city WHERE id > 1")
 
             val data = (2, 3, 4)
 
@@ -145,7 +145,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
         it("SELECT id, name FROM city WHERE id > 1 ORDER BY id") {
             val df = igniteSession.sql("SELECT id, name FROM city WHERE id > 1 ORDER BY id")
 
-            checkOptimizationResult(df, "SELECT id, name FROM city WHERE id IS NOT NULL and id > 1 ORDER BY id")
+            checkOptimizationResult(df, "SELECT id, name FROM city WHERE id > 1 ORDER BY id")
 
             val data = (
                 (2, "Denver"),

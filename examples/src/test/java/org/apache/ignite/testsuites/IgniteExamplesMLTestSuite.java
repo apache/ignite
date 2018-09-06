@@ -30,7 +30,7 @@ import javassist.CtClass;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
 import junit.framework.TestSuite;
-import org.apache.ignite.examples.ml.MLExamplesCommonArgs;
+import org.apache.ignite.examples.ml.util.MLExamplesCommonArgs;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 

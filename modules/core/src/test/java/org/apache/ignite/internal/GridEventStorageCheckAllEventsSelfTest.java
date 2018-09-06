@@ -22,12 +22,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskMapAsync;
 import org.apache.ignite.compute.ComputeTaskSession;
@@ -52,11 +54,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
+import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
 import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_REMOVED;
 import static org.apache.ignite.events.EventType.EVT_CHECKPOINT_SAVED;
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
 import static org.apache.ignite.events.EventType.EVT_JOB_FAILED;
+import static org.apache.ignite.events.EventType.EVT_JOB_FAILED_OVER;
 import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_JOB_QUEUED;
@@ -145,6 +150,9 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         assertEvent(evts.get(8).type(), EVT_TASK_REDUCED, evts);
         assertEvent(evts.get(9).type(), EVT_TASK_FINISHED, evts);
         assertEvent(evts.get(10).type(), EVT_JOB_FINISHED, evts);
+
+        assertNotNull(((JobEvent)evts.get(7)).resultPolicy());
+        assertEquals(WAIT, ((JobEvent)evts.get(7)).resultPolicy());
     }
 
     /**
@@ -185,6 +193,9 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         assertEvent(evts.get(9).type(), EVT_JOB_FINISHED, evts);
         assertEvent(evts.get(10).type(), EVT_TASK_UNDEPLOYED, evts);
         assertEvent(evts.get(11).type(), EVT_TASK_DEPLOYED, evts);
+
+        assertNotNull(((JobEvent)evts.get(6)).resultPolicy());
+        assertEquals(WAIT, ((JobEvent)evts.get(6)).resultPolicy());
     }
 
     /**
@@ -209,7 +220,51 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         assertEvent(evts.get(7).type(), EVT_TASK_REDUCED, evts);
         assertEvent(evts.get(8).type(), EVT_TASK_FINISHED, evts);
         assertEvent(evts.get(9).type(), EVT_JOB_FINISHED, evts);
+
+        assertNotNull(((JobEvent)evts.get(6)).resultPolicy());
+        assertEquals(WAIT, ((JobEvent)evts.get(6)).resultPolicy());
     }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testFailoverJobTask() throws Exception {
+        startGrid(0);
+
+        try {
+            generateEvents(null, new GridAllEventsSuccessTestJob()).get();
+
+            ignite.compute().execute(GridFailoverTestTask.class.getName(), new GridAllEventsSuccessTestJob());
+
+            long tstamp = startTimestamp();
+
+            ignite.compute().execute(GridFailoverTestTask.class.getName(), new GridAllEventsSuccessTestJob());
+
+            List<Event> evts = pullEvents(tstamp, 12, GridFailoverTestTask.class.getName());
+
+            int cnt = 0;
+
+            assertEvent(evts.get(cnt++).type(), EVT_TASK_STARTED, evts);
+            assertEvent(evts.get(cnt++).type(), EVT_JOB_MAPPED, evts);
+            assertEvent(evts.get(cnt++).type(), EVT_JOB_RESULTED, evts);
+
+            assertEquals(((JobEvent)evts.get(cnt - 1)).resultPolicy(), FAILOVER);
+
+            assertEvent(evts.get(cnt++).type(), EVT_JOB_FAILED_OVER, evts);
+            assertEvent(evts.get(cnt++).type(), EVT_JOB_QUEUED, evts);
+            assertEvent(evts.get(cnt++).type(), EVT_JOB_STARTED, evts);
+            assertEvent(evts.get(cnt++).type(), EVT_CHECKPOINT_SAVED, evts);
+            assertEvent(evts.get(cnt++).type(), EVT_CHECKPOINT_REMOVED, evts);
+            assertEvent(evts.get(cnt++).type(), EVT_JOB_RESULTED, evts);
+            assertEvent(evts.get(cnt++).type(), EVT_TASK_REDUCED, evts);
+            assertEvent(evts.get(cnt++).type(), EVT_TASK_FINISHED, evts);
+            assertEvent(evts.get(cnt++).type(), EVT_JOB_FINISHED, evts);
+        }
+        finally {
+            stopGrid(0);
+        }
+    }
+
 
     /**
      * @throws Exception If test failed.
@@ -237,6 +292,9 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         assertEvent(evts.get(4).type(), EVT_JOB_RESULTED, evts);
         assertEvent(evts.get(5).type(), EVT_TASK_FAILED, evts);
         assertEvent(evts.get(6).type(), EVT_JOB_FAILED, evts);
+
+        // Exception was thrown, so policy is null.
+        assertNull(((JobEvent)evts.get(4)).resultPolicy());
     }
 
     /**
@@ -326,7 +384,20 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private List<Event> pullEvents(long since, int evtCnt) throws Exception {
-        IgnitePredicate<Event> filter = new CustomEventFilter(GridAllEventsTestTask.class.getName(), since);
+        return pullEvents(since, evtCnt, GridAllEventsTestTask.class.getName());
+    }
+
+    /**
+     * Pull all test task related events since the given moment.
+     *
+     * @param since Earliest time to pulled events.
+     * @param evtCnt Expected event count.
+     * @param taskName Name of the task.
+     * @return List of events.
+     * @throws Exception If failed.
+     */
+    private List<Event> pullEvents(long since, int evtCnt, String taskName) throws Exception {
+        IgnitePredicate<Event> filter = new CustomEventFilter(taskName, since);
 
         for (int i = 0; i < 3; i++) {
             List<Event> evts = new ArrayList<>(ignite.events().localQuery((filter)));
@@ -495,6 +566,23 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
             assert results.size() == 1;
 
             return (Serializable)results;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GridFailoverTestTask extends GridAllEventsTestTask {
+        /** */
+        private final AtomicBoolean failed = new AtomicBoolean();
+
+        /** {@inheritDoc} */
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res,
+            List<ComputeJobResult> rcvd) throws IgniteException {
+            if (failed.compareAndSet(false, true))
+                return FAILOVER;
+
+            return super.result(res, rcvd);
         }
     }
 }

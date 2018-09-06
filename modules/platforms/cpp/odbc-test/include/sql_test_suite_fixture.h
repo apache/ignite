@@ -109,7 +109,7 @@ namespace ignite
         }
 
         /**
-         * Run query returning single result and check it to be equal to expected.
+         * Run query returning single result.
          *
          * @param request SQL request.
          * @param type Result type.
@@ -143,13 +143,13 @@ namespace ignite
     void SqlTestSuiteFixture::CheckSingleResult<std::string>(const char* request, const std::string& expected);
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request, const int64_t& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<SQLBIGINT>(const char* request, const SQLBIGINT& expected);
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request, const int32_t& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<SQLINTEGER>(const char* request, const SQLINTEGER& expected);
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request, const int16_t& expected);
+    void SqlTestSuiteFixture::CheckSingleResult<SQLSMALLINT>(const char* request, const SQLSMALLINT& expected);
 
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<int8_t>(const char* request, const int8_t& expected);
@@ -170,13 +170,13 @@ namespace ignite
     void SqlTestSuiteFixture::CheckSingleResult<std::string>(const char* request);
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<SQLBIGINT>(const char* request);
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<SQLINTEGER>(const char* request);
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request);
+    void SqlTestSuiteFixture::CheckSingleResult<SQLSMALLINT>(const char* request);
 
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<int8_t>(const char* request);

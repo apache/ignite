@@ -150,8 +150,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
         boolean tx = txConc != null && txIsolation != null;
 
-        final IgniteCache<String, String> clientCache = this.cache;
-        final IgniteCache<String, String> srvCache = srv.<String, String>cache(CACHE_NAME);
+        final IgniteCache<String, String> clientCache = this.cache.withAllowAtomicOpsInTx();
+        final IgniteCache<String, String> srvCache = srv.<String, String>cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
         if (tx) {
             doInTransaction(client, txConc, txIsolation, new Callable<Object>() {
@@ -278,8 +278,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
             data2.put(String.valueOf(i), "other");
         }
 
-        final IgniteCache<String, String> clientCache = this.cache;
-        final IgniteCache<String, String> srvCache = srv.cache(CACHE_NAME);
+        final IgniteCache<String, String> clientCache = this.cache.withAllowAtomicOpsInTx();
+        final IgniteCache<String, String> srvCache = srv.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
         boolean tx = txConc != null && txIsolation != null;
 

@@ -16,7 +16,7 @@
  */
 
 import { Selector } from 'testcafe';
-import { dropTestDB, insertTestUser, resolveUrl } from '../../envtools';
+import { dropTestDB, insertTestUser, resolveUrl } from '../../environment/envtools';
 import { createRegularUser } from '../../roles';
 import {pageProfile} from '../../page-models/pageProfile';
 

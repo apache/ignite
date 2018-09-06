@@ -18,7 +18,9 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.spring.GridSpringCacheManagerMultiJvmSelfTest;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerSelfTest;
+import org.apache.ignite.cache.spring.GridSpringCacheManagerSpringBeanSelfTest;
 import org.apache.ignite.cache.spring.SpringCacheManagerContextInjectionTest;
 import org.apache.ignite.cache.spring.SpringCacheTest;
 import org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest;
@@ -36,8 +38,10 @@ import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
 import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
 import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
 import org.apache.ignite.spring.injection.GridServiceInjectionSpringResourceTest;
+import org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
+import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSpringBeanSelfTest;
 import org.apache.ignite.transactions.spring.SpringTransactionManagerContextInjectionTest;
 
 /**
@@ -63,6 +67,7 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTestSuite(GridP2PUserVersionChangeSelfTest.class);
 
         suite.addTestSuite(GridSpringCacheManagerSelfTest.class);
+        suite.addTestSuite(GridSpringCacheManagerSpringBeanSelfTest.class);
 
         suite.addTestSuite(IgniteDynamicCacheConfigTest.class);
 
@@ -76,6 +81,7 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTestSuite(CachePojoStoreXmlWithSqlEscapeSelfTest.class);
 
         suite.addTestSuite(GridSpringTransactionManagerSelfTest.class);
+        suite.addTestSuite(GridSpringTransactionManagerSpringBeanSelfTest.class);
 
         suite.addTestSuite(GridServiceInjectionSpringResourceTest.class);
         suite.addTestSuite(IgniteSpringBeanSpringResourceInjectionTest.class);
@@ -86,6 +92,10 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTestSuite(SpringTransactionManagerContextInjectionTest.class);
 
         suite.addTestSuite(SpringCacheTest.class);
+
+        //suite.addTestSuite(GridSpringCacheManagerMultiJvmSelfTest.class);
+
+        //suite.addTestSuite(GridCommandLineLoaderTest.class);
 
         return suite;
     }

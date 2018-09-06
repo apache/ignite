@@ -19,7 +19,9 @@ import {CancellationError} from 'app/errors/CancellationError';
 
 export function $exceptionHandler($log) {
     return function(exception, cause) {
-        if (exception instanceof CancellationError) return;
+        if (exception instanceof CancellationError)
+            return;
+
         $log.error(exception, cause);
     };
 }

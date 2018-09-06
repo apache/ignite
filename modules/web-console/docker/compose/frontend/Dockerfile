@@ -15,16 +15,29 @@
 # limitations under the License.
 #
 
-FROM nginx
+FROM node:8-slim as frontend-build
 
-RUN mkdir -p /data/www
+ENV NPM_CONFIG_LOGLEVEL error
+
+WORKDIR /opt/web-console
+
+# Install node modules for frontend.
+COPY frontend/package*.json frontend/
+RUN (cd frontend && npm install --no-optional)
+
+# Copy source.
+COPY frontend frontend
+
+RUN (cd frontend && npm run build)
+
+FROM nginx:1-alpine
 
 WORKDIR /data/www
 
-COPY ./build .
+COPY --from=frontend-build /opt/web-console/frontend/build .
 
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
-COPY nginx/web-console.conf /etc/nginx/web-console.conf
+COPY docker/compose/frontend/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY docker/compose/frontend/nginx/web-console.conf /etc/nginx/web-console.conf
 
 VOLUME /etc/nginx
 VOLUME /data/www

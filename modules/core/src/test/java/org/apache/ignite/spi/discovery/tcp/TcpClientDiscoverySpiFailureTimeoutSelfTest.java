@@ -62,6 +62,9 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /** */
     private static boolean useTestSpi;
 
+    /** */
+    private static boolean disableTopChangeRecovery;
+
     /** {@inheritDoc} */
     @Override protected boolean useFailureDetectionTimeout() {
         return true;
@@ -89,7 +92,19 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
     /** {@inheritDoc} */
     @Override protected TcpDiscoverySpi getDiscoverySpi() {
-        return useTestSpi ? new TestTcpDiscoverySpi2() : super.getDiscoverySpi();
+        TcpDiscoverySpi spi = useTestSpi ? new TestTcpDiscoverySpi2() : super.getDiscoverySpi();
+
+        if (disableTopChangeRecovery)
+            spi.setConnectionRecoveryTimeout(0);
+
+        return spi;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        disableTopChangeRecovery = false;
     }
 
     /**
@@ -202,6 +217,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         failureThreshold = 1000;
         clientFailureDetectionTimeout = 10000;
         useTestSpi = true;
+        disableTopChangeRecovery = true;
 
         try {
             startServerNodes(3);

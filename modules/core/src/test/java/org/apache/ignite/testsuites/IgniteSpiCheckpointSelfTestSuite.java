@@ -27,6 +27,7 @@ import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpiCustomConfigSelfTe
 import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpiDefaultConfigSelfTest;
 import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpiStartStopSelfTest;
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiConfigSelfTest;
+import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiMultiThreadedSelfTest;
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest;
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiSelfTest;
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiStartStopSelfTest;
@@ -59,6 +60,7 @@ public class IgniteSpiCheckpointSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridSharedFsCheckpointSpiSelfTest.class));
         suite.addTest(new TestSuite(GridSharedFsCheckpointSpiStartStopSelfTest.class));
         suite.addTest(new TestSuite(GridSharedFsCheckpointSpiConfigSelfTest.class));
+        //suite.addTest(new TestSuite(GridSharedFsCheckpointSpiMultiThreadedSelfTest.class));
 
         return suite;
     }

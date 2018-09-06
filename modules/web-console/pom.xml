@@ -31,11 +31,16 @@
     </parent>
 
     <artifactId>ignite-web-console</artifactId>
-    <version>2.6.0-SNAPSHOT</version>
+    <version>2.7.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <node.version>v8.9.0</node.version>
+        <node.version>v8.11.2</node.version>
+        <docker.registry.host>docker.io</docker.registry.host>
+        <docker.repository>apacheignite</docker.repository>
+        <docker.backend.image>web-console-backend</docker.backend.image>
+        <docker.frontend.image>web-console-frontend</docker.frontend.image>
+        <docker.standalone.image>web-console-standalone</docker.standalone.image>
     </properties>
 
     <dependencies>
@@ -47,210 +52,370 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>direct-install</id>
+
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>com.github.eirslett</groupId>
+                            <artifactId>frontend-maven-plugin</artifactId>
+                            <version>1.6</version>
+                            <configuration>
+                                <nodeVersion>${node.version}</nodeVersion>
+                                <installDirectory>target</installDirectory>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.eirslett</groupId>
+                        <artifactId>frontend-maven-plugin</artifactId>
+
+                        <executions>
+                            <execution>
+                                <id>install node and npm for frontend</id>
+                                <goals>
+                                    <goal>install-node-and-npm</goal>
+                                </goals>
+                            </execution>
+
+                            <execution>
+                                <id>download dependencies for frontend</id>
+                                <goals>
+                                    <goal>npm</goal>
+                                </goals>
+
+                                <configuration>
+                                    <workingDirectory>frontend</workingDirectory>
+                                    <arguments>install --no-optional</arguments>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>download dependencies for backend</id>
+                                <goals>
+                                    <goal>npm</goal>
+                                </goals>
+
+                                <configuration>
+                                    <workingDirectory>backend</workingDirectory>
+                                    <arguments>install --no-optional --production</arguments>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>build frontend</id>
+                                <goals>
+                                    <goal>npm</goal>
+                                </goals>
+
+                                <phase>compile</phase>
+
+                                <configuration>
+                                    <workingDirectory>frontend</workingDirectory>
+                                    <arguments>run build</arguments>
+                                    <environmentVariables>
+                                        <NODE_ENV>production</NODE_ENV>
+                                    </environmentVariables>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>build backend</id>
+                                <goals>
+                                    <goal>npm</goal>
+                                </goals>
+
+                                <phase>compile</phase>
+
+                                <configuration>
+                                    <workingDirectory>backend</workingDirectory>
+                                    <arguments>run build</arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <version>2.5</version>
+                        <executions>
+                            <execution>
+                                <id>clean-frontend-build</id>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>${project.basedir}/frontend/build</directory>
+                                        </fileset>
+                                    </filesets>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>clean-backend-build</id>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>${project.basedir}/backend/build</directory>
+                                        </fileset>
+                                    </filesets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+
+                        <dependencies>
+                            <dependency>
+                                <groupId>ant-contrib</groupId>
+                                <artifactId>ant-contrib</artifactId>
+                                <version>1.0b3</version>
+                                <exclusions>
+                                    <exclusion>
+                                        <groupId>ant</groupId>
+                                        <artifactId>ant</artifactId>
+                                    </exclusion>
+                                </exclusions>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>fixed-getos-logic-path</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+
+                                    <tasks>
+                                        <taskdef resource="net/sf/antcontrib/antlib.xml"/>
+                                        <if>
+                                            <available
+                                                file="${project.basedir}/backend/node_modules/mongodb-download/node_modules/getos/index.js"/>
+                                            <then>
+                                                <replace dir="${project.basedir}/backend/node_modules/mongodb-download/node_modules/getos"
+                                                         token='"./logic/"' value='__dirname+"/logic/"'>
+                                                    <include name="index.js"/>
+                                                </replace>
+                                            </then>
+                                        </if>
+                                    </tasks>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>fixed-rhel-detection</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <target>
+                                        <replace dir="${project.basedir}/backend/node_modules/mongodb-download/built"
+                                                 token="/rhel/" value="/Red Hat Linux/i.test(os.dist) || /rhel/">
+                                            <include name="mongodb-download.js"/>
+                                        </replace>
+                                    </target>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>fixed-download-url</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <target>
+                                        <replace dir="${project.basedir}/backend/node_modules/mongodb-download/built"
+                                                 token="https://downloads.mongodb.org" value="https://fastdl.mongodb.org">
+                                            <include name="mongodb-download.js"/>
+                                        </replace>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+
+                        <executions>
+                            <execution>
+                                <id>release-direct-install</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/direct-install.xml</descriptor>
+                                    </descriptors>
+                                    <finalName>ignite-web-console-direct-install-${project.version}</finalName>
+                                    <outputDirectory>target</outputDirectory>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>docker-image</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docker-build-backend</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                        <argument>-f</argument>
+                                        <argument>docker/compose/backend/Dockerfile</argument>
+                                        <argument>-t</argument>
+                                        <argument>
+                                            ${docker.registry.host}/${docker.repository}/${docker.backend.image}:${project.version}
+                                        </argument>
+                                        <argument>${project.basedir}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>docker-build-frontend</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                        <argument>-f</argument>
+                                        <argument>docker/compose/frontend/Dockerfile</argument>
+                                        <argument>-t</argument>
+                                        <argument>
+                                            ${docker.registry.host}/${docker.repository}/${docker.frontend.image}:${project.version}
+                                        </argument>
+                                        <argument>${project.basedir}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>docker-build-standalone</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                        <argument>-f</argument>
+                                        <argument>docker/standalone/Dockerfile</argument>
+                                        <argument>-t</argument>
+                                        <argument>
+                                            ${docker.registry.host}/${docker.repository}/${docker.standalone.image}:${project.version}
+                                        </argument>
+                                        <argument>${project.basedir}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>docker-push-backend</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>push</argument>
+                                        <argument>
+                                            ${docker.registry.host}/${docker.repository}/${docker.backend.image}:${project.version}
+                                        </argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>docker-push-frontend</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>push</argument>
+                                        <argument>
+                                            ${docker.registry.host}/${docker.repository}/${docker.frontend.image}:${project.version}
+                                        </argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>docker-push-standalone</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>push</argument>
+                                        <argument>
+                                            ${docker.registry.host}/${docker.repository}/${docker.standalone.image}:${project.version}
+                                        </argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <build>
-        <pluginManagement>
-            <plugins>
-                 <plugin>
-                     <groupId>com.github.eirslett</groupId>
-                     <artifactId>frontend-maven-plugin</artifactId>
-                     <version>1.6</version>
-                     <configuration>
-                         <nodeVersion>${node.version}</nodeVersion>
-                         <installDirectory>target</installDirectory>
-                     </configuration>
-                 </plugin>
-            </plugins>
-        </pluginManagement>
-
         <plugins>
-            <plugin>
-                <groupId>com.github.eirslett</groupId>
-                <artifactId>frontend-maven-plugin</artifactId>
-
-                <executions>
-                    <execution>
-                        <id>install node and npm for frontend</id>
-                        <goals>
-                            <goal>install-node-and-npm</goal>
-                        </goals>
-                    </execution>
-
-                    <execution>
-                        <id>download dependencies for frontend</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-
-                        <configuration>
-                            <workingDirectory>frontend</workingDirectory>
-                            <arguments>install --no-optional --prod</arguments>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>download dependencies for backend</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-
-                        <configuration>
-                            <workingDirectory>backend</workingDirectory>
-                            <arguments>install --no-optional</arguments>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>build frontend</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-
-                        <phase>compile</phase>
-
-                        <configuration>
-                            <workingDirectory>frontend</workingDirectory>
-                            <arguments>run build</arguments>
-                            <environmentVariables>
-                                <NODE_ENV>production</NODE_ENV>
-                            </environmentVariables>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>build backend</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-
-                        <phase>compile</phase>
-
-                        <configuration>
-                            <workingDirectory>backend</workingDirectory>
-                            <arguments>run build</arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-clean-plugin</artifactId>
-                <version>2.5</version>
-                <executions>
-                    <execution>
-                        <id>clean-frontend-build</id>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                            <filesets>
-                                <fileset>
-                                    <directory>${project.basedir}/frontend/build</directory>
-                                </fileset>
-                            </filesets>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>clean-backend-build</id>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                            <filesets>
-                                <fileset>
-                                    <directory>${project.basedir}/backend/build</directory>
-                                </fileset>
-                            </filesets>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>remove-old-getos</id>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                            <filesets>
-                                <fileset>
-                                    <directory>${project.basedir}/backend/node_modules/mongodb-download/node_modules</directory>
-                                </fileset>
-                            </filesets>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
-                <executions>
-                    <execution>
-                        <id>fixed-rhel-detection</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <target>
-                                <replace dir="${basedir}/backend/node_modules/mongodb-download/built"
-                                         token="/rhel/" value="/Red Hat Linux/i.test(os.dist) || /rhel/">
-                                    <include name="mongodb-download.js"/>
-                                </replace>
-                            </target>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>fixed-download-url</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <target>
-                                <replace dir="${basedir}/backend/node_modules/mongodb-download/built"
-                                         token="http://downloads.mongodb.org" value="https://fastdl.mongodb.org">
-                                    <include name="mongodb-download.js"/>
-                                </replace>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.4</version>
-                <inherited>false</inherited>
-
-                <executions>
-                    <execution>
-                        <id>release-direct-install</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>assembly/direct-install.xml</descriptor>
-                            </descriptors>
-                            <finalName>ignite-web-console-direct-install-${project.version}</finalName>
-                            <outputDirectory>target</outputDirectory>
-                            <appendAssemblyId>false</appendAssemblyId>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>

@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,9 +71,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 
 /**
@@ -237,10 +237,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     {
         waitInitialization();
 
-        // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc0 = create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
-
-        return queue0(name, cap, colloc0, create);
+        return queue0(name, cap, colloc, create);
     }
 
     /**
@@ -298,7 +295,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                                     for (final GridCacheQueueProxy queue : queuesMap.values()) {
                                         if (queue.name().equals(key.queueName())) {
-                                            if (hdr == null) {
+                                            if (e.getEventType() == REMOVED) {
                                                 GridCacheQueueHeader oldHdr = (GridCacheQueueHeader)e.getOldValue();
 
                                                 assert oldHdr != null;
@@ -323,6 +320,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                     new QueueHeaderPredicate(),
                     cctx.isLocal() || (cctx.isReplicated() && cctx.affinityNode()),
                     true,
+                    false,
                     false);
             }
 
@@ -388,32 +386,31 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
+     * @param separated Separated cache flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
-        final boolean create)
-        throws IgniteCheckedException
+        boolean create,
+        boolean separated) throws IgniteCheckedException
     {
-        // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc0 =
-            create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
-
-        return set0(name, colloc0, create);
+        return set0(name, colloc, create, separated);
     }
 
     /**
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
+     * @param separated Separated cache flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
-        boolean create)
+        boolean create,
+        boolean separated)
         throws IgniteCheckedException
     {
         cctx.gate().enter();
@@ -426,7 +423,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             if (create) {
-                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
+                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated, separated);
 
                 GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 
@@ -611,6 +608,10 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param rmv {@code True} if item was removed.
      */
     private void onSetItemUpdated(SetItemKey key, boolean rmv) {
+        // Items stored in a separate cache don't have identifier.
+        if (key.setId() == null)
+            return;
+
         GridConcurrentHashSet<SetItemKey> set = setDataMap.get(key.setId());
 
         if (set == null) {

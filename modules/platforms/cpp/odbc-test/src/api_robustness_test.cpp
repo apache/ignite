@@ -22,6 +22,8 @@
 #include <sql.h>
 #include <sqlext.h>
 
+#include <cstdio>
+
 #include <vector>
 #include <string>
 
@@ -1099,6 +1101,24 @@ BOOST_AUTO_TEST_CASE(TestSQLDiagnosticRecords)
     ret = SQLFreeStmt(stmt, 4);
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
     CheckSQLStatementDiagnosticError("HY092");
+}
+
+BOOST_AUTO_TEST_CASE(TestManyFds)
+{
+    enum { FDS_NUM = 2000 };
+
+    std::FILE* fds[FDS_NUM];
+
+    for (int i = 0; i < FDS_NUM; ++i)
+        fds[i] = tmpfile();
+
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    for (int i = 0; i < FDS_NUM; ++i)
+    {
+        if (fds[i])
+            fclose(fds[i]);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

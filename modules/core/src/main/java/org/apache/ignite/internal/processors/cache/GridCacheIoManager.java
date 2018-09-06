@@ -34,6 +34,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -1057,10 +1059,18 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 log.debug("Finished processing cache communication message [nodeId=" + nodeId + ", msg=" + msg + ']');
         }
         catch (Throwable e) {
-            U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=" + msg + ']', e);
+            try {
+                U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=" + msg + ']', e);
+            }
+            catch (Throwable e0) {
+                U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=(failed to log message)", e);
 
-            if (e instanceof Error)
-                throw e;
+                U.error(log, "Failed to log message due to an error: ", e0);
+            }
+
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw e;
         }
         finally {
             onMessageProcessed(msg);

@@ -19,6 +19,8 @@
 
 // Fire me up!
 
+const _ = require('lodash');
+
 const testAccounts = require('../data/accounts.json');
 const testClusters = require('../data/clusters.json');
 const testCaches = require('../data/caches.json');
@@ -28,10 +30,10 @@ const testSpaces = require('../data/spaces.json');
 
 module.exports = {
     implements: 'dbHelper',
-    inject: ['require(lodash)', 'mongo', 'mongoose']
+    inject: ['mongo', 'mongoose']
 };
 
-module.exports.factory = (_, mongo, mongoose) => {
+module.exports.factory = (mongo, mongoose) => {
     const prepareUserSpaces = () => Promise.all([mongo.Account.create(testAccounts), mongo.Space.create(testSpaces)]);
     const prepareClusters = () => mongo.Cluster.create(testClusters);
     const prepareDomains = () => mongo.DomainModel.create(testDomains);

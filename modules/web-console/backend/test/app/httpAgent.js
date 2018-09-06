@@ -35,7 +35,7 @@ module.exports.factory = (apiSrv, http, request) => {
 
             return new Promise((resolve, reject) => {
                 authAgentInstance = request.agent(express);
-                authAgentInstance.post('/signin')
+                authAgentInstance.post('/api/v1/signin')
                     .send({email, password})
                     .end((err, res) => {
                         if (res.status === 401 || err)

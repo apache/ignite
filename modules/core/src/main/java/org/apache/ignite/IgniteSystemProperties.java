@@ -118,8 +118,11 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
 
-    /** This property allow rewriting default ({@code 30}) rest session expire time (in seconds). */
+    /** This property allow rewriting default ({@code 30}) REST session expire time (in seconds). */
     public static final String IGNITE_REST_SESSION_TIMEOUT = "IGNITE_REST_SESSION_TIMEOUT";
+
+    /** This property allow rewriting default ({@code 300}) REST session security token expire time (in seconds). */
+    public static final String IGNITE_REST_SECURITY_TOKEN_TIMEOUT = "IGNITE_REST_SECURITY_TOKEN_TIMEOUT";
 
     /**
      * This property allows to override maximum count of task results stored on one node
@@ -332,6 +335,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED = "IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED";
 
     /**
+     * Flag indicating whether atomic operations allowed for use inside transactions.
+     */
+    public static final String IGNITE_ALLOW_ATOMIC_OPS_IN_TX = "IGNITE_ALLOW_ATOMIC_OPS_IN_TX";
+
+    /**
      * Atomic cache deferred update response buffer size.
      */
     public static final String IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE = "IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE";
@@ -468,6 +476,15 @@ public final class IgniteSystemProperties {
 
     /** Force all SQL queries to be processed lazily regardless of what clients request. */
     public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
+
+    /** Disable SQL system views. */
+    public static final String IGNITE_SQL_DISABLE_SYSTEM_VIEWS = "IGNITE_SQL_DISABLE_SYSTEM_VIEWS";
+
+    /** SQL retry timeout. */
+    public static final String IGNITE_SQL_RETRY_TIMEOUT = "IGNITE_SQL_RETRY_TIMEOUT";
+
+    /** Enable backward compatible handling of UUID through DDL. */
+    public static final String IGNITE_SQL_UUID_DDL_BYTE_FORMAT = "IGNITE_SQL_UUID_DDL_BYTE_FORMAT";
 
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
@@ -769,6 +786,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
+    /** Property for setup Ignite WAL segment sync timeout. */
+    public static final String IGNITE_WAL_SEGMENT_SYNC_TIMEOUT = "IGNITE_WAL_SEGMENT_SYNC_TIMEOUT";
+
     /**
      * If the property is set Ignite will use legacy node comparator (based on node order) inste
      *
@@ -855,6 +875,17 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
     /**
+     * Property for setup percentage of archive size for checkpoint trigger. Default value is 0.25
+     */
+    public static final String IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE";
+
+    /**
+     * Property for setup percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
+     * Default value is 0.5
+     */
+    public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
+
+    /**
      * Whenever read load balancing is enabled, that means 'get' requests will be distributed between primary and backup
      * nodes if it is possible and {@link CacheConfiguration#readFromBackup} is {@code true}.
      *
@@ -892,6 +923,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
     /**
+     * Sets timeout for TCP client recovery descriptor reservation.
+     */
+    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
+            "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
+
+    /**
      * When set to {@code true}, Ignite will skip partitions sizes check on partition validation after rebalance has finished.
      * Partitions sizes may differs on nodes when Expiry Policy is in use and it is ok due to lazy entry eviction mechanics.
      *
@@ -908,6 +945,23 @@ public final class IgniteSystemProperties {
      * Default is {@code true}.
      */
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
+
+    /**
+     * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
+     *
+     * Default is 500 ms.
+     */
+    public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
+
+    /**
+     * Threshold for throttling operations logging.
+     */
+    public static final String IGNITE_THROTTLE_LOG_THRESHOLD = "IGNITE_THROTTLE_LOG_THRESHOLD";
+
+    /**
+     * Number of concurrent operation for evict partitions.
+     */
+    public static final String IGNITE_EVICTION_PERMITS = "IGNITE_EVICTION_PERMITS";
 
     /**
      * Enforces singleton.
@@ -982,7 +1036,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code int} using {@code Integer.parseInt()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -1010,7 +1064,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code float} using {@code Float.parseFloat()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Float value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -1038,7 +1092,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code long} using {@code Long.parseLong()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.
@@ -1066,7 +1120,7 @@ public final class IgniteSystemProperties {
      * The result is transformed to {@code double} using {@code Double.parseDouble()} method.
      *
      * @param name Name of the system property or environment variable.
-     * @param dflt Default value
+     * @param dflt Default value.
      * @return Integer value of the system property or environment variable.
      *         Returns default value in case neither system property
      *         nor environment variable with given name is found.

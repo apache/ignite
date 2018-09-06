@@ -103,6 +103,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MAN
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
 
 /**
  * Grid task worker. Handles full task life cycle.
@@ -314,7 +315,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         marsh = ctx.config().getMarshaller();
 
-        resCache = dep.annotation(taskCls, ComputeTaskNoResultCache.class) == null;
+        boolean noResCacheAnnotation = dep.annotation(taskCls, ComputeTaskNoResultCache.class) != null;
+
+        Boolean noResCacheCtxFlag = getThreadContext(TC_NO_RESULT_CACHE);
+
+        resCache = !(noResCacheAnnotation || (noResCacheCtxFlag != null && noResCacheCtxFlag));
 
         Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
 
@@ -599,7 +604,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (resCache)
                 sibs.add(sib);
 
-            recordJobEvent(EVT_JOB_MAPPED, jobId, node, "Job got mapped.");
+            recordJobEvent(EVT_JOB_MAPPED, jobId, node, null, "Job got mapped.");
         }
 
         synchronized (mux) {
@@ -1057,7 +1062,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
                     finally {
                         recordJobEvent(EVT_JOB_RESULTED, jobRes.getJobContext().getJobId(),
-                            jobRes.getNode(), "Job got resulted with: " + plc);
+                            jobRes.getNode(), plc, "Job got resulted with: " + plc);
                     }
 
                     if (log.isDebugEnabled())
@@ -1262,7 +1267,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         if (timeout > 0) {
             recordJobEvent(EVT_JOB_FAILED_OVER, jobRes.getJobContext().getJobId(),
-                jobRes.getNode(), "Job failed over.");
+                jobRes.getNode(), FAILOVER, "Job failed over.");
 
             // Send new reference to remote nodes for execution.
             sendRequest(jobRes);
@@ -1542,9 +1547,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param evtType Event type.
      * @param jobId Job ID.
      * @param evtNode Event node.
+     * @param plc Job result policy.
      * @param msg Event message.
      */
-    private void recordJobEvent(int evtType, IgniteUuid jobId, ClusterNode evtNode, String msg) {
+    private void recordJobEvent(int evtType, IgniteUuid jobId, ClusterNode evtNode,
+        @Nullable ComputeJobResultPolicy plc, String msg) {
         if (!internal && ctx.event().isRecordable(evtType)) {
             JobEvent evt = new JobEvent();
 
@@ -1557,6 +1564,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             evt.jobId(jobId);
             evt.type(evtType);
             evt.taskSubjectId(ses.subjectId());
+            evt.resultPolicy(plc);
 
             ctx.event().record(evt);
         }

@@ -52,11 +52,7 @@ namespace ignite
             SqlResult::Type DataQuery::Execute()
             {
                 if (cursor.get())
-                {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query cursor is in open state already.");
-
-                    return SqlResult::AI_ERROR;
-                }
+                    InternalClose();
 
                 return MakeRequestExecute();
             }
@@ -210,7 +206,7 @@ namespace ignite
             {
                 const std::string& schema = connection.GetSchema();
 
-                QueryExecuteRequest req(schema, sql, params, timeout);
+                QueryExecuteRequest req(schema, sql, params, timeout, connection.IsAutoCommit());
                 QueryExecuteResponse rsp;
 
                 try

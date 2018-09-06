@@ -147,7 +147,7 @@ class ClusterCachesInfo {
             if (ccfg == null)
                 grpCfgs.put(info.cacheData().config().getGroupName(), info.cacheData().config());
             else
-                validateCacheGroupConfiguration(ccfg, info.cacheData().config());
+                validateCacheGroupConfiguration(ccfg, info.cacheData().config(), info.cacheType());
         }
 
         String conflictErr = processJoiningNode(joinDiscoData, ctx.localNodeId(), true);
@@ -220,7 +220,7 @@ class ClusterCachesInfo {
                 }
 
                 if (checkConsistency)
-                    validateStartCacheConfiguration(locCfg);
+                    validateStartCacheConfiguration(locCfg, cacheData.cacheType());
             }
         }
 
@@ -393,6 +393,31 @@ class ClusterCachesInfo {
                 }
             }
         }
+    }
+
+    /**
+     * Creates exchanges actions. Forms a list of caches and cache groups to be stopped
+     * due to dynamic cache start failure.
+     *
+     * @param failMsg Dynamic change request fail message.
+     * @param topVer Topology version.
+     */
+    public void onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg, AffinityTopologyVersion topVer) {
+        ExchangeActions exchangeActions = new ExchangeActions();
+
+        List<DynamicCacheChangeRequest> requests = new ArrayList<>(failMsg.cacheNames().size());
+
+        for (String cacheName : failMsg.cacheNames()) {
+            DynamicCacheDescriptor cacheDescr = registeredCaches.get(cacheName);
+
+            assert cacheDescr != null : "Dynamic cache descriptor is missing [cacheName=" + cacheName + "]";
+
+            requests.add(DynamicCacheChangeRequest.stopRequest(ctx, cacheName, cacheDescr.sql(), true));
+        }
+
+        processCacheChangeRequests(exchangeActions, requests, topVer,false);
+
+        failMsg.exchangeActions(exchangeActions);
     }
 
     /**
@@ -1839,16 +1864,17 @@ class ClusterCachesInfo {
 
     /**
      * @param ccfg Cache configuration to start.
+     * @param cacheType Cache type.
      * @throws IgniteCheckedException If failed.
      */
-    public void validateStartCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
+    void validateStartCacheConfiguration(CacheConfiguration ccfg, CacheType cacheType) throws IgniteCheckedException {
         if (ccfg.getGroupName() != null) {
             CacheGroupDescriptor grpDesc = cacheGroupByName(ccfg.getGroupName());
 
             if (grpDesc != null) {
                 assert ccfg.getGroupName().equals(grpDesc.groupName());
 
-                validateCacheGroupConfiguration(grpDesc.config(), ccfg);
+                validateCacheGroupConfiguration(grpDesc.config(), ccfg, cacheType);
             }
         }
     }
@@ -1856,15 +1882,21 @@ class ClusterCachesInfo {
     /**
      * @param cfg Existing configuration.
      * @param startCfg Cache configuration to start.
+     * @param cacheType Cache type.
      * @throws IgniteCheckedException If validation failed.
      */
-    private void validateCacheGroupConfiguration(CacheConfiguration cfg, CacheConfiguration startCfg)
+    private void validateCacheGroupConfiguration(CacheConfiguration cfg, CacheConfiguration startCfg, CacheType cacheType)
         throws IgniteCheckedException {
         GridCacheAttributes attr1 = new GridCacheAttributes(cfg);
         GridCacheAttributes attr2 = new GridCacheAttributes(startCfg);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "mvccEnabled", "MVCC mode",
+            CacheGroupContext.mvccEnabled(ctx.config(), cfg, cacheType),
+            CacheGroupContext.mvccEnabled(ctx.config(), startCfg, cacheType),
+            true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "affinity", "Affinity function",
             attr1.cacheAffinityClassName(), attr2.cacheAffinityClassName(), true);

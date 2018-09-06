@@ -82,6 +82,13 @@ namespace ignite
                  */
                 virtual void AddStatusRecord(const OdbcError& err) = 0;
 
+                /**
+                 * Add new status record.
+                 *
+                 * @param rec Record.
+                 */
+                virtual void AddStatusRecord(const DiagnosticRecord& rec) = 0;
+
             protected:
                 /**
                  * Default constructor.

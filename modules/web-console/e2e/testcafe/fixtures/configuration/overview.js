@@ -17,7 +17,7 @@
 
 import {Selector} from 'testcafe';
 import {getLocationPathname} from '../../helpers';
-import {dropTestDB, insertTestUser, resolveUrl} from '../../envtools';
+import {dropTestDB, insertTestUser, resolveUrl} from '../../environment/envtools';
 import {createRegularUser} from '../../roles';
 import {PageConfigurationOverview} from '../../page-models/PageConfigurationOverview';
 import {PageConfigurationBasic} from '../../page-models/PageConfigurationBasic';

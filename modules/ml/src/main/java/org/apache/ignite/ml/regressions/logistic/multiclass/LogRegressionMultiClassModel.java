@@ -21,11 +21,12 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 
 /** Base class for multi-classification model for set of Logistic Regression classifiers. */
@@ -77,11 +78,21 @@ public class LogRegressionMultiClassModel implements Model<Vector, Double>, Expo
     @Override public String toString() {
         StringBuilder wholeStr = new StringBuilder();
 
-        models.forEach((clsLb, mdl) -> {
-            wholeStr.append("The class with label ").append(clsLb).append(" has classifier: ").append(mdl.toString()).append(System.lineSeparator());
-        });
+        models.forEach((clsLb, mdl) ->
+            wholeStr
+                .append("The class with label ")
+                .append(clsLb)
+                .append(" has classifier: ")
+                .append(mdl.toString())
+                .append(System.lineSeparator())
+        );
 
         return wholeStr.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return toString();
     }
 
     /**
@@ -92,5 +103,13 @@ public class LogRegressionMultiClassModel implements Model<Vector, Double>, Expo
      */
     public void add(double clsLb, LogisticRegressionModel mdl) {
         models.put(clsLb, mdl);
+    }
+
+    /**
+     * @param clsLb Class label.
+     * @return model for class label if it exists.
+     */
+    public Optional<LogisticRegressionModel> getModel(Double clsLb) {
+        return Optional.ofNullable(models.get(clsLb));
     }
 }

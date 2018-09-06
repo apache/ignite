@@ -505,12 +505,21 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
         long current = 0;
         long processedNumber = 0;
 
+        KeyCacheObject previousKey = null;
+
         while (!enoughIssues) {
             KeyCacheObject h2key = null;
 
             try {
-                if (!cursor.next())
-                    break;
+                try {
+                    if (!cursor.next())
+                        break;
+                }
+                catch (IllegalStateException e) {
+                    throw new IgniteCheckedException("Key is present in SQL index, but is missing in corresponding " +
+                        "data page. Previous successfully read key: " +
+                        CacheObjectUtils.unwrapBinaryIfNeeded(ctx.cacheObjectContext(), previousKey, true, true), e);
+                }
 
                 GridH2Row h2Row = (GridH2Row)cursor.get();
 
@@ -541,6 +550,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 if (cacheDataStoreRow == null)
                     throw new IgniteCheckedException("Key is present in SQL index, but can't be found in CacheDataTree.");
+
+                previousKey = h2key;
             }
             catch (Throwable t) {
                 Object o = CacheObjectUtils.unwrapBinaryIfNeeded(

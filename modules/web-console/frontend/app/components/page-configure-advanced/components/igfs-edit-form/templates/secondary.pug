@@ -30,7 +30,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             -var secondaryFileSystem = `${model}.secondaryFileSystem`
 
             .pc-form-grid-col-60
-                +sane-form-field-checkbox({
+                +form-field__checkbox({
                     label: 'Enabled',
                     name: '"secondaryFileSystemEnabled"',
                     model: enabled
@@ -43,8 +43,8 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     ui-validate-watch-collection=`"[${model}.defaultMode, ${model}.pathModes]"`
                     ui-validate-watch-object-equality='true'
                 )
-                    +form-field-feedback(null, 'requiredWhenIGFSProxyMode', 'Secondary file system should be configured for "PROXY" IGFS mode')
-                    +form-field-feedback(null, 'requiredWhenPathModeProxyMode', 'Secondary file system should be configured for "PROXY" path mode')
+                    +form-field__error({ error: 'requiredWhenIGFSProxyMode', message: 'Secondary file system should be configured for "PROXY" IGFS mode' })
+                    +form-field__error({ error: 'requiredWhenPathModeProxyMode', message: 'Secondary file system should be configured for "PROXY" path mode' })
             .pc-form-grid-col-60
                 +text-enabled('URI:', `${secondaryFileSystem}.uri`, '"hadoopURI"', enabled, 'false', 'hdfs://[namenodehost]:[port]/[path]', 'URI of file system')
             .pc-form-grid-col-60

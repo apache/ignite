@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {dropTestDB, resolveUrl, insertTestUser} from 'envtools';
+import {dropTestDB, resolveUrl, insertTestUser} from '../../environment/envtools';
 import {createRegularUser} from '../../roles';
 import {userMenu} from '../../components/userMenu';
 import {pageSignin} from '../../page-models/pageSignin';

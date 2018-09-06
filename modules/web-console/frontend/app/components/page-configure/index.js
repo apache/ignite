@@ -36,7 +36,6 @@ import effects from './store/effects';
 import projectStructurePreview from './components/modal-preview-project';
 import itemsTable from './components/pc-items-table';
 import pcUiGridFilters from './components/pc-ui-grid-filters';
-import pcFormFieldSize from './components/pc-form-field-size';
 import isInCollection from './components/pcIsInCollection';
 import pcValidation from './components/pcValidation';
 import fakeUiCanExit from './components/fakeUICanExit';
@@ -61,6 +60,7 @@ Observable.prototype.debug = function(l) {
 
 import {
     editReducer2,
+    shortObjectsReducer,
     reducer,
     editReducer,
     loadingReducer,
@@ -98,7 +98,6 @@ export default angular
         'ui.router',
         'asyncFilter',
         uiValidate,
-        pcFormFieldSize.name,
         pcUiGridFilters.name,
         projectStructurePreview.name,
         itemsTable.name,
@@ -124,16 +123,18 @@ export default angular
             });
 
             ConfigureState.actions$
-            .filter((e) => e.type !== 'DISPATCH')
-            .withLatestFrom(ConfigureState.state$.skip(1))
-            .subscribe(([action, state]) => devTools.send(action, state));
+                .filter((e) => e.type !== 'DISPATCH')
+                .withLatestFrom(ConfigureState.state$.skip(1))
+                .subscribe(([action, state]) => devTools.send(action, state));
 
             ConfigureState.addReducer(reduxDevtoolsReducer);
         }
+
         ConfigureState.addReducer(refsReducer({
             models: {at: 'domains', store: 'caches'},
             caches: {at: 'caches', store: 'models'}
         }));
+
         ConfigureState.addReducer((state, action) => Object.assign({}, state, {
             clusterConfiguration: editReducer(state.clusterConfiguration, action),
             configurationLoading: loadingReducer(state.configurationLoading, action),
@@ -148,14 +149,19 @@ export default angular
             shortIgfss: mapCacheReducerFactory(shortIGFSsActionTypes)(state.shortIgfss, action),
             edit: editReducer2(state.edit, action)
         }));
+
+        ConfigureState.addReducer(shortObjectsReducer);
+
         ConfigureState.addReducer((state, action) => {
             switch (action.type) {
                 case 'APPLY_ACTIONS_UNDO':
                     return action.state;
+
                 default:
                     return state;
             }
         });
+
         const la = ConfigureState.actions$.scan((acc, action) => [...acc, action], []);
 
         ConfigureState.actions$

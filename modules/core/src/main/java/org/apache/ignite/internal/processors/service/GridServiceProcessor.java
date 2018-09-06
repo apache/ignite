@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
@@ -110,6 +111,7 @@ import org.apache.ignite.thread.OomExceptionHandler;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
+import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
@@ -255,7 +257,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 // It is also invoked on rebalancing.
                 // Otherwise remote listener is registered.
                 serviceCache.context().continuousQueries().executeInternalQuery(
-                    new ServiceEntriesListener(), null, isLocLsnr, true, false
+                    new ServiceEntriesListener(), null, isLocLsnr, true, false, false
                 );
             }
             else { // Listener for client nodes is registered in onContinuousProcessorStarted method.
@@ -1526,9 +1528,11 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
 
-            qry.keepAll(false);
+            DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 
-            if (!cache.context().affinityNode()) {
+            if ((clusterState.hasBaselineTopology()
+                && !CU.baselineNode(ctx.cluster().get().localNode(), clusterState))
+                || !cache.context().affinityNode()) {
                 ClusterNode oldestSrvNode =
                     ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
@@ -1630,7 +1634,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 throw ex;
         }
 
-        if (dep != null) {
+        if (e.getEventType() != REMOVED) {
             svcName.set(dep.configuration().getName());
 
             // Ignore other utility cache events.
@@ -1735,6 +1739,48 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         /** */
         private volatile AffinityTopologyVersion currTopVer = null;
 
+        /**
+         * Check that listening-in topology version is the latest and wait until exchange is finished.
+         *
+         * @param initTopVer listening-in topology version.
+         * @return {@code True} if current event is not last and should be skipped.
+         */
+        private boolean skipExchange(final AffinityTopologyVersion initTopVer) {
+            AffinityTopologyVersion pendingTopVer = null;
+            AffinityTopologyVersion newTopVer;
+
+            if (!initTopVer.equals(newTopVer = currTopVer))
+                pendingTopVer = newTopVer;
+            else {
+                IgniteInternalFuture<?> affReadyFut = ctx.cache().context().exchange().affinityReadyFuture(initTopVer);
+
+                if (affReadyFut != null) {
+                    try {
+                        affReadyFut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.warn(log, "Failed to wait for affinity ready future " +
+                            "(the assignment will be recalculated anyway):" + e.toString());
+                    }
+                }
+
+                // If exchange already moved forward - skip current version.
+                if (!initTopVer.equals(newTopVer = currTopVer))
+                    pendingTopVer = newTopVer;
+            }
+
+            boolean skipExchange = pendingTopVer != null;
+
+            if (skipExchange && log.isInfoEnabled()) {
+                log.info("Service processor detected a topology change during " +
+                    "assignments calculation (will abort current iteration and " +
+                    "re-calculate on the newer version): " +
+                    "[topVer=" + initTopVer + ", newTopVer=" + pendingTopVer + ']');
+            }
+
+            return skipExchange;
+        }
+
         /** {@inheritDoc} */
         @Override public void onEvent(final DiscoveryEvent evt, final DiscoCache discoCache) {
             GridSpinBusyLock busyLock = GridServiceProcessor.this.busyLock;
@@ -1788,17 +1834,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
                                 while (it.hasNext()) {
                                     // If topology changed again, let next event handle it.
-                                    AffinityTopologyVersion currTopVer0 = currTopVer;
-
-                                    if (currTopVer0 != topVer) {
-                                        if (log.isInfoEnabled())
-                                            log.info("Service processor detected a topology change during " +
-                                                "assignments calculation (will abort current iteration and " +
-                                                "re-calculate on the newer version): " +
-                                                "[topVer=" + topVer + ", newTopVer=" + currTopVer0 + ']');
-
+                                    if (skipExchange(topVer))
                                         return;
-                                    }
 
                                     Cache.Entry<Object, Object> e = it.next();
 
@@ -1807,12 +1844,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                                     try {
                                         svcName.set(dep.configuration().getName());
 
-                                        ctx.cache().context().exchange().affinityReadyFuture(topVer).get();
-
                                         reassign(dep, topVer);
                                     }
                                     catch (IgniteCheckedException ex) {
-                                        if (!(e instanceof ClusterTopologyCheckedException))
+                                        if (!(ex instanceof ClusterTopologyCheckedException))
                                             LT.error(log, ex, "Failed to do service reassignment (will retry): " +
                                                 dep.configuration().getName());
 
@@ -1835,6 +1870,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         IgniteInternalCache<Object, Object> cache = serviceCache();
 
                         while (it.hasNext()) {
+                            // If topology changed again, let next event handle it.
+                            if (skipExchange(topVer))
+                                return;
+
                             Cache.Entry<Object, Object> e = it.next();
 
                             if (cache.context().affinity().primaryByKey(ctx.grid().localNode(), e.getKey(), topVer)) {
@@ -1942,7 +1981,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 throw ex;
         }
 
-        if (assigns != null) {
+        if (e.getEventType() != REMOVED) {
             svcName.set(assigns.name());
 
             Throwable t = null;

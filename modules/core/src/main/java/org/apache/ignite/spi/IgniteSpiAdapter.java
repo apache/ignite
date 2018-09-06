@@ -519,7 +519,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         if (!enabled)
             return;
 
-        if (!checkClient && (CU.clientNode(getLocalNode()) || CU.clientNode(node)))
+        if (!checkClient && (getLocalNode().isClient() || node.isClient()))
             return;
 
         String clsAttr = createSpiAttributeName(IgniteNodeAttributes.ATTR_SPI_CLASS);

@@ -134,6 +134,9 @@ public class RecordV1Serializer implements RecordSerializer {
                 throw new SegmentEofException("WAL segment rollover detected (will end iteration) [expPtr=" + expPtr +
                         ", readPtr=" + ptr + ']', null);
 
+            if (recType == null)
+                throw new IOException("Unknown record type: " + recType);
+
             final WALRecord rec = dataSerializer.readRecord(recType, in);
 
             rec.position(ptr);
@@ -341,12 +344,7 @@ public class RecordV1Serializer implements RecordSerializer {
         if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
             throw new SegmentEofException("Reached logical end of the segment", null);
 
-        RecordType recType = RecordType.fromOrdinal(type - 1);
-
-        if (recType == null)
-            throw new IOException("Unknown record type: " + type);
-
-        return recType;
+        return RecordType.fromOrdinal(type - 1);
     }
 
     /**
@@ -359,7 +357,11 @@ public class RecordV1Serializer implements RecordSerializer {
      * @throws EOFException In case of end of file.
      * @throws IgniteCheckedException If it's unable to read record.
      */
-    static WALRecord readWithCrc(FileInput in0, WALPointer expPtr, RecordIO reader) throws EOFException, IgniteCheckedException {
+    static WALRecord readWithCrc(
+        FileInput in0,
+        WALPointer expPtr,
+        RecordIO reader
+    ) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
         try (FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
@@ -377,7 +379,16 @@ public class RecordV1Serializer implements RecordSerializer {
             throw e;
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to read WAL record at position: " + startPos, e);
+            long size = -1;
+
+            try {
+                size = in0.io().size();
+            }
+            catch (IOException ignore) {
+                // No-op. It just for information. Fail calculate file size.
+            }
+
+            throw new IgniteCheckedException("Failed to read WAL record at position: " + startPos + " size: " + size, e);
         }
     }
 

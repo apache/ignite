@@ -17,11 +17,13 @@
 
 package org.apache.ignite.spi.deployment;
 
+import java.util.EventListener;
+
 /**
  * Listener for deployment events. It is used by grid implementation
  * to properly create or release resources associated with any deployment.
  */
-public interface DeploymentListener {
+public interface DeploymentListener extends EventListener {
     /**
      * Called when a deployment has been unregistered..
      *

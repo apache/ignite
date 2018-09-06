@@ -110,6 +110,9 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
                 "checkThrough", "10"));
 
         assertTrue(testOut.toString().contains("validate_indexes has finished with errors"));
+
+        assertTrue(testOut.toString().contains(
+            "Key is present in SQL index, but is missing in corresponding data page."));
     }
 
     /**

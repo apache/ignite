@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,6 +60,10 @@ public interface GridDhtPartitionTopology {
     public void readUnlock();
 
     /**
+     * @return {@code True} if locked by current thread.
+     */
+    public boolean holdsLock();
+    /**
      * Updates topology version.
      *
      * @param exchFut Exchange future.
@@ -70,6 +75,7 @@ public interface GridDhtPartitionTopology {
     public void updateTopologyVersion(
         GridDhtTopologyFuture exchFut,
         DiscoCache discoCache,
+        MvccCoordinator mvccCrd,
         long updateSeq,
         boolean stopping
     ) throws IgniteInterruptedCheckedException;
@@ -287,6 +293,7 @@ public interface GridDhtPartitionTopology {
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap cntrMap,
         Set<Integer> partsToReload,
+        @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer);
 
     /**
@@ -383,6 +390,16 @@ public interface GridDhtPartitionTopology {
     public void printMemoryStats(int threshold);
 
     /**
+     * @return Sizes of up-to-date partition versions in topology.
+     */
+    Map<Integer, Long> globalPartSizes();
+
+    /**
+     * @param partSizes Sizes of up-to-date partition versions in topology.
+     */
+    void globalPartSizes(@Nullable Map<Integer, Long> partSizes);
+
+    /**
      * @param topVer Topology version.
      * @return {@code True} if rebalance process finished.
      */
@@ -406,4 +423,6 @@ public interface GridDhtPartitionTopology {
      * @param updateRebalanceVer {@code True} if need check rebalance state.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment, boolean updateRebalanceVer);
+
+    public MvccCoordinator mvccCoordinator();
 }

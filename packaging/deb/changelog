@@ -1,3 +1,9 @@
+apache-ignite (2.6.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.6.0
+
+ -- Petr Ivanov <mr.weider@gmail.com>  Fri, 15 Jun 2018 12:00:00 +0300
+
 apache-ignite (2.5.0-1) unstable; urgency=low
 
   * Updated Apache Ignite to version 2.5.0

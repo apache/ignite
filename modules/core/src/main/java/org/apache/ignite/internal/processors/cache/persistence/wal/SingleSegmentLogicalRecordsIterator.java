@@ -86,9 +86,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     private static RecordSerializerFactory initLogicalRecordsSerializerFactory(GridCacheSharedContext sharedCtx)
         throws IgniteCheckedException {
 
-        return new RecordSerializerFactoryImpl(sharedCtx)
-            .recordDeserializeFilter(new LogicalRecordsFilter())
-            .marshalledMode(true);
+        return new RecordSerializerFactoryImpl(sharedCtx, new LogicalRecordsFilter()).marshalledMode(true);
     }
 
     /** {@inheritDoc} */
@@ -102,8 +100,8 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         else {
             segmentInitialized = true;
 
-            FileWriteAheadLogManager.FileDescriptor fd = new FileWriteAheadLogManager.FileDescriptor(
-                new File(archiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(curWalSegmIdx)));
+            FileDescriptor fd = new FileDescriptor(
+                new File(archiveDir, FileDescriptor.fileName(curWalSegmIdx)));
 
             try {
                 return initReadHandle(fd, null);

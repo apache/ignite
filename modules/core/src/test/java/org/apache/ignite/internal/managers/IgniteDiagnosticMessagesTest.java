@@ -302,6 +302,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             GridStringLogger strLog = this.strLog = new GridStringLogger();
 
+            strLog.logLength(65536);
+
             startGrid(1);
 
             awaitPartitionMapExchange();

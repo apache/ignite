@@ -37,7 +37,9 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheLargeValueExpireTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicLocalExpiryPolicyTest.class);
+        //suite.addTestSuite(IgniteCacheAtomicLocalOnheapExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicExpiryPolicyTest.class);
+        //suite.addTestSuite(IgniteCacheAtomicOnheapExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicWithStoreExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicReplicatedExpiryPolicyTest.class);
 
@@ -50,8 +52,6 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxExpiryPolicyWithStoreTest.class);
 
         suite.addTestSuite(IgniteCacheExpiryStoreLoadSelfTest.class);
-
-        suite.addTestSuite(IgniteCacheTtlCleanupSelfTest.class);
 
         suite.addTestSuite(IgniteCacheClientNearCacheExpiryTest.class);
 

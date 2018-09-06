@@ -18,11 +18,27 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 
 /**
  *
  */
 public class IgnitePdsAtomicCacheHistoricalRebalancingTest extends IgnitePdsAtomicCacheRebalancingTest {
+    /** {@inheritDoc */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setCommunicationSpi(new IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi());
+
+        return cfg;
+    }
+
+    /** {@inheritDoc */
+    @Override protected long checkpointFrequency() {
+        return 15 * 1000;
+    }
+
     /** {@inheritDoc */
     @Override protected void beforeTest() throws Exception {
         // Use rebalance from WAL if possible.
@@ -33,8 +49,16 @@ public class IgnitePdsAtomicCacheHistoricalRebalancingTest extends IgnitePdsAtom
 
     /** {@inheritDoc */
     @Override protected void afterTest() throws Exception {
+        boolean walRebalanceInvoked = !IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances()
+            .isEmpty();
+
+        IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
+
         System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
 
         super.afterTest();
+
+        if (!walRebalanceInvoked)
+            throw new AssertionError("WAL rebalance hasn't been invoked.");
     }
 }

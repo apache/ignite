@@ -60,7 +60,7 @@ public class SHA256UniformMapper<K, V> implements UniformMapper<K,V> {
 
     /** {@inheritDoc} */
     @Override public double map(K key, V val) {
-        int h = key.hashCode();
+        int h = Math.abs(key.hashCode());
         String str = String.valueOf(key.hashCode());
 
         byte[] hash = getDigest().digest(str.getBytes(StandardCharsets.UTF_8));

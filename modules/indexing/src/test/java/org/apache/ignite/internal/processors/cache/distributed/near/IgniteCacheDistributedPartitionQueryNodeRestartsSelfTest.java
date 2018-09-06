@@ -24,14 +24,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 
 /**
  * Tests distributed queries over set of partitions on unstable topology.
  */
-public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
-        extends IgniteCacheDistributedPartitionQueryAbstractSelfTest {
+public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
+    IgniteCacheDistributedPartitionQueryAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT, Long.toString(1000_000L));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT,
+            Long.toString(GridReduceQueryExecutor.DFLT_RETRY_TIMEOUT));
+
+        super.afterTestsStopped();
+    }
+
     /**
      * Tests join query within region on unstable topology.
      */

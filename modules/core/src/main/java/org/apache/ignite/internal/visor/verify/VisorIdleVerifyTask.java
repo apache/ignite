@@ -37,6 +37,7 @@ import org.apache.ignite.resources.JobContextResource;
  * Task to verify checksums of backup partitions.
  */
 @GridInternal
+@Deprecated
 public class VisorIdleVerifyTask extends VisorOneNodeTask<VisorIdleVerifyTaskArg, VisorIdleVerifyTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -49,6 +50,7 @@ public class VisorIdleVerifyTask extends VisorOneNodeTask<VisorIdleVerifyTaskArg
     /**
      *
      */
+    @Deprecated
     private static class VisorIdleVerifyJob extends VisorJob<VisorIdleVerifyTaskArg, VisorIdleVerifyTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;

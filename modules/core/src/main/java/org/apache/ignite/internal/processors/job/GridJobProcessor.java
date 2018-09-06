@@ -132,7 +132,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final Collection<IgniteUuid> heldJobs = new GridConcurrentHashSet<>();
 
     /** If value is {@code true}, job was cancelled from future. */
-    private final GridBoundedConcurrentLinkedHashMap<IgniteUuid, Boolean> cancelReqs =
+    private volatile GridBoundedConcurrentLinkedHashMap<IgniteUuid, Boolean> cancelReqs =
         new GridBoundedConcurrentLinkedHashMap<>(FINISHED_JOBS_COUNT,
             FINISHED_JOBS_COUNT < 128 ? FINISHED_JOBS_COUNT : 128,
             0.75f, 16);
@@ -263,7 +263,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
         // Clear collections.
         activeJobs.clear();
         cancelledJobs.clear();
-        cancelReqs.clear();
+        cancelReqs = new GridBoundedConcurrentLinkedHashMap<>(FINISHED_JOBS_COUNT,
+            FINISHED_JOBS_COUNT < 128 ? FINISHED_JOBS_COUNT : 128,
+            0.75f, 16);
 
         if (log.isDebugEnabled())
             log.debug("Job processor stopped.");
