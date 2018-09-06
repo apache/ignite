@@ -2294,7 +2294,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheGroupContext gctx = cacheGrps.get(action.descriptor().groupId());
 
             // Cancel all operations blocking gateway
-            if (gctx != null) {
+            if (gctx != null && ctx.cache().context().snapshot().snapshotOperationInProgress()) {
                 final String msg = "Failed to wait for topology update, cache group is stopping.";
 
                 // If snapshot operation in progress we must throw CacheStoppedException
