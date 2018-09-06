@@ -1283,23 +1283,25 @@ public class QueryUtils {
                 if (dfltVal == null)
                     continue;
 
-                if (dfltVal.getClass() == BigDecimal.class) {
-                    BigDecimal dec = (BigDecimal)dfltVal;
-                    if (dec.precision() > precision.get(fld)) {
-                        throw new IgniteSQLException("Default decimal value precision '" + dfltVal +
-                            "' is longer than maximum decimal value precision " + precision.get(fld));
-                    }
-                    else if (!F.isEmpty(scale) &&
-                        scale.containsKey(fld) &&
-                        dec.scale() > scale.get(fld)) {
-                        throw new IgniteSQLException("Default decimal value scale '" + dfltVal +
-                            "' is longer than maximum decimal value scale " + scale.get(fld));
-                    }
-                }
-                else if (dfltVal.getClass() == String.class &&
-                    dfltVal.toString().length() > precision.get(fld)) {
+                if (dfltVal.getClass() == String.class && dfltVal.toString().length() > precision.get(fld)) {
                     throw new IgniteSQLException("Default value '" + dfltVal +
                         "' is longer than maximum length " + precision.get(fld));
+                }
+                else if (dfltVal.getClass() == BigDecimal.class) {
+                    BigDecimal dec = (BigDecimal)dfltVal;
+
+                    if (dec.precision() > precision.get(fld)) {
+                        throw new IgniteSQLException("Default value: '" + dfltVal +
+                            "' for a column " + fld +
+                            " is out of range. Maximum precision: " + precision.get(fld) +
+                            ", actual precision: " + dec.precision());
+                    }
+                    else if (!F.isEmpty(scale) && scale.containsKey(fld) && dec.scale() > scale.get(fld)) {
+                        throw new IgniteSQLException("Scale of default value: '" + dfltVal +
+                            "' for a column " + fld +
+                            " is too long. Maximum scale: " + scale.get(fld) +
+                            ", actual scale: " + dec.scale());
+                    }
                 }
             }
         }

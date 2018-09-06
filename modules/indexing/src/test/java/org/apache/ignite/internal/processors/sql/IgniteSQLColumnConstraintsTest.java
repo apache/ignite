@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.sql;
 
+import java.math.BigDecimal;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -29,6 +29,24 @@ import static org.apache.ignite.internal.processors.odbc.SqlStateCode.CONSTRAINT
 /**
  */
 public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
+    /** */
+    private final static String DECIMAL_INSERT_STMT = "INSERT INTO decimal_table_4 VALUES(?, ?)";
+
+    /** */
+    private final static String DECIMAL_MERGE_STMT = "MERGE INTO decimal_table_4(id, field) VALUES(?, ?)";
+
+    /** */
+    private final static String DECIMAL_UPDATE_STMT = "UPDATE decimal_table_4 SET field = ? WHERE id = ?";
+
+    /** */
+    private final static String CHAR_INSERT_STMT = "INSERT INTO char_table_4(id, field) VALUES(?, ?)";
+
+    /** */
+    private final static String CHAR_MERGE_STMT = "MERGE INTO char_table_4(id, field) VALUES(?, ?)";
+
+    /** */
+    private final static String CHAR_UPDATE_STMT = "UPDATE char_table_4 SET field = ? WHERE id = ?";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
@@ -163,6 +181,9 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
         execSQL("INSERT INTO char_table_3(id, field2) VALUES(?, ?)", 3, 3);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testDecimalDropColumnWithConstraint() throws Exception {
         execSQL("CREATE TABLE decimal_table_3(id INT PRIMARY KEY, field DECIMAL(4, 2), field2 INTEGER)");
 
@@ -175,61 +196,49 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
         execSQL("INSERT INTO decimal_table_3(id, field2) VALUES(?, ?)", 3, 3);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testCharSqlState() throws Exception {
         execSQL("CREATE TABLE char_table_4(id INT PRIMARY KEY, field CHAR(5))");
 
-        IgniteSQLException err = (IgniteSQLException)
-            checkSQLThrows("INSERT INTO char_table_4(id, field) VALUES(?, ?)", 1, "123456");
-
-        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
+        checkSqlRequestState(CHAR_INSERT_STMT, CONSTRAINT_VIOLATION, 1, "123456");
 
         execSQL("INSERT INTO char_table_4(id, field) VALUES(?, ?)", 2, "12345");
 
-        err = (IgniteSQLException)
-            checkSQLThrows("UPDATE char_table_4 SET field = ? WHERE id = ?", "123456", 2);
+        checkSqlRequestState(CHAR_UPDATE_STMT, CONSTRAINT_VIOLATION, "123456", 2);
 
-        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
-
-        err = (IgniteSQLException)
-            checkSQLThrows("MERGE INTO char_table_4(id, field) VALUES(?, ?)", 2, "123456");
-
-        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
+        checkSqlRequestState(CHAR_MERGE_STMT, CONSTRAINT_VIOLATION, 2, "123456");
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testDecimalSqlState() throws Exception {
         execSQL("CREATE TABLE decimal_table_4(id INT PRIMARY KEY, field DECIMAL(4, 2))");
 
-        IgniteSQLException err = (IgniteSQLException)
-            checkSQLThrows("INSERT INTO decimal_table_4(id, field) VALUES(?, ?)", 1, 12.3456);
+        checkSqlRequestState(DECIMAL_INSERT_STMT, CONSTRAINT_VIOLATION, 1, BigDecimal.valueOf(1234.56));
 
-        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
+        checkSqlRequestState(DECIMAL_INSERT_STMT, CONSTRAINT_VIOLATION, 1, BigDecimal.valueOf(1.345));
 
-        err = (IgniteSQLException)
-            checkSQLThrows("INSERT INTO decimal_table_4(id, field) VALUES(?, ?)", 1, 1.345);
+        execSQL("INSERT INTO decimal_table_4 (id, field) VALUES(?, ?)", 2, 12.34);
 
-        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
+        checkSqlRequestState(DECIMAL_UPDATE_STMT, CONSTRAINT_VIOLATION, BigDecimal.valueOf(1234.56), 2);
 
-        execSQL("INSERT INTO decimal_table_4(id, field) VALUES(?, ?)", 2, 12.34);
+        checkSqlRequestState(DECIMAL_MERGE_STMT, CONSTRAINT_VIOLATION, 2, BigDecimal.valueOf(1234.56));
 
-        err = (IgniteSQLException)
-            checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?", 12.3456, 2);
+        checkSqlRequestState(DECIMAL_UPDATE_STMT, CONSTRAINT_VIOLATION, BigDecimal.valueOf(1.345), 2);
 
-        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
+        checkSqlRequestState(DECIMAL_MERGE_STMT, CONSTRAINT_VIOLATION, 2, BigDecimal.valueOf(1.345));
+    }
 
-        err = (IgniteSQLException)
-            checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)", 2, 12.3456);
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkSqlRequestState(String sqlStmt, String sqlStateCode, Object arg1, Object arg2) throws Exception {
+        IgniteSQLException err = (IgniteSQLException)checkSQLThrows(sqlStmt, arg1, arg2);
 
-        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
-
-        err = (IgniteSQLException)
-            checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?", 1.345, 2);
-
-        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
-
-        err = (IgniteSQLException)
-            checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)", 2, 1.345);
-
-        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
+        assertEquals(err.sqlState(), sqlStateCode);
     }
 
     /** */
