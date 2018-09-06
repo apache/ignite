@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
@@ -102,5 +103,13 @@ public class LogRegressionMultiClassModel implements Model<Vector, Double>, Expo
      */
     public void add(double clsLb, LogisticRegressionModel mdl) {
         models.put(clsLb, mdl);
+    }
+
+    /**
+     * @param clsLb Class label.
+     * @return model for class label if it exists.
+     */
+    public Optional<LogisticRegressionModel> getModel(Double clsLb) {
+        return Optional.ofNullable(models.get(clsLb));
     }
 }

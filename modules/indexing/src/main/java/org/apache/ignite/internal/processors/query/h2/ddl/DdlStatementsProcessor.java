@@ -38,6 +38,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -124,6 +126,8 @@ public class DdlStatementsProcessor {
 
         try {
             isDdlOnSchemaSupported(cmd.schemaName());
+
+            finishActiveTxIfNecessary();
 
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
@@ -260,6 +264,8 @@ public class DdlStatementsProcessor {
         IgniteInternalFuture fut = null;
 
         try {
+            finishActiveTxIfNecessary();
+
             GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(prepared);
 
             if (stmt0 instanceof GridSqlCreateIndex) {
@@ -442,6 +448,10 @@ public class DdlStatementsProcessor {
                 else {
                     assert tbl.rowDescriptor() != null;
 
+                    if (tbl.cache().mvccEnabled())
+                        throw new IgniteSQLException("Cannot drop column(s) with enabled MVCC. " +
+                            "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
                     if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
                         throw new SchemaOperationException("Cannot drop column(s) because table was created " +
                             "with " + PARAM_WRAP_VALUE + "=false option.");
@@ -570,6 +580,23 @@ public class DdlStatementsProcessor {
     }
 
     /**
+     * Commits active transaction if exists.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void finishActiveTxIfNecessary() throws IgniteCheckedException {
+        try (GridNearTxLocal tx = MvccUtils.tx(ctx)) {
+            if (tx == null)
+                return;
+
+            if (!tx.isRollbackOnly())
+                tx.commit();
+            else
+                tx.rollback();
+        }
+    }
+
+    /**
      * @return {@link IgniteSQLException} with the message same as of {@code this}'s and
      */
     private IgniteSQLException convert(SchemaOperationException e) {
@@ -631,7 +658,8 @@ public class DdlStatementsProcessor {
 
         HashMap<String, Object> dfltValues = new HashMap<>();
 
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+        Map<String, Integer> precision = new HashMap<>();
+        Map<String, Integer> scale = new HashMap<>();
 
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
@@ -652,15 +680,27 @@ public class DdlStatementsProcessor {
             if (dfltVal != null)
                 dfltValues.put(e.getKey(), dfltVal);
 
-            if (col.getType() == Value.DECIMAL)
-                decimalInfo.put(e.getKey(), F.t((int)col.getPrecision(), col.getScale()));
+            if (col.getType() == Value.DECIMAL) {
+                precision.put(e.getKey(), (int)col.getPrecision());
+
+                scale.put(e.getKey(), col.getScale());
+            }
+
+            if (col.getType() == Value.STRING || 
+                col.getType() == Value.STRING_FIXED || 
+                col.getType() == Value.STRING_IGNORECASE) {
+                precision.put(e.getKey(), (int)col.getPrecision());
+            }
         }
 
         if (!F.isEmpty(dfltValues))
             res.setDefaultFieldValues(dfltValues);
 
-        if (!F.isEmpty(decimalInfo))
-            res.setDecimalInfo(decimalInfo);
+        if (!F.isEmpty(precision))
+            res.setFieldsPrecision(precision);
+
+        if (!F.isEmpty(scale))
+            res.setFieldsScale(scale);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
