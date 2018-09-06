@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
@@ -62,6 +63,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         TestSuite suite = new TestSuite("IgniteCache With Persistence Test Suite");
 
         suite.addTestSuite(CheckpointBufferDeadlockTest.class);
+        suite.addTestSuite(IgniteCacheStartWithLoadTest.class);
 
         suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
         suite.addTestSuite(AuthenticationProcessorSelfTest.class);
