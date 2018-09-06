@@ -49,7 +49,7 @@ public class IgniteProvider {
 
     // This constants are set by maven-ant-plugin.
     /** */
-    private static final String DOWNLOAD_URL_PATTERN = "";
+    private static final String DOWNLOAD_URL_PATTERN = "https://archive.apache.org/dist/ignite/%s/apache-ignite-fabric-%s-bin.zip";
 
     /** URL for request Ignite latest version. */
     private final static String IGNITE_LATEST_VERSION_URL = "";
@@ -94,10 +94,15 @@ public class IgniteProvider {
 
         // get the latest version.
         if (ver.equals(ClusterProperties.DEFAULT_IGNITE_VERSION)) {
-            ver = findLatestVersion();
+            try {
+                ver = findLatestVersion();
 
-            // and try to retrieve from a mirror.
-            url = new URL(String.format(findMirror() + IGNITE_PATH, ver, ver));
+                // and try to retrieve from a mirror.
+                url = new URL(String.format(findMirror() + IGNITE_PATH, ver, ver));
+            }
+            catch (Exception e) {
+                throw new RuntimeException("Failed to find URL for " + ClusterProperties.DEFAULT_IGNITE_VERSION, e);
+            }
         }
         else {
             // or from archive.
