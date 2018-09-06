@@ -29,12 +29,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
  */
 public interface AffinityAssignment {
     /**
-     * @return {@code True} if related discovery event did not not cause affinity assignment change and
-     *    this assignment is just reference to the previous one.
-     */
-    public boolean clientEventChange();
-
-    /**
      * @return Affinity assignment computed by affinity function.
      */
     public List<List<ClusterNode>> idealAssignment();

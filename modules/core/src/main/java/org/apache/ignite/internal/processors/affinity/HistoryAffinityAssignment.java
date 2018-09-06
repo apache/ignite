@@ -43,9 +43,6 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     private final List<List<ClusterNode>> idealAssignment;
 
     /** */
-    private final boolean clientEvtChange;
-
-    /** */
     private final MvccCoordinator mvccCrd;
 
     /**
@@ -56,17 +53,11 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
         this.assignment = assign.assignment();
         this.idealAssignment = assign.idealAssignment();
         this.mvccCrd = assign.mvccCoordinator();
-        this.clientEvtChange = assign.clientEventChange();
     }
 
     /** {@inheritDoc} */
     @Override public MvccCoordinator mvccCoordinator() {
         return mvccCrd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean clientEventChange() {
-        return clientEvtChange;
     }
 
     /** {@inheritDoc} */
