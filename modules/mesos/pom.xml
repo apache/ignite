@@ -20,8 +20,7 @@
 <!--
     POM file.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -37,7 +36,6 @@
 
     <properties>
         <mesos.version>0.22.0</mesos.version>
-        <ignite.archive.url>https://archive.apache.org/dist/ignite/%s/apache-ignite-fabric-%s-bin.zip</ignite.archive.url>
         <ignite.version.url>https://ignite.apache.org/latest</ignite.version.url>
         <ignite.path>/ignite/%s/apache-ignite-fabric-%s-bin.zip</ignite.path>
         <apache.mirror.url>https://www.apache.org/dyn/closer.cgi?as_json=1</apache.mirror.url>
@@ -92,14 +90,6 @@
                                 <replaceregexp byline="true" encoding="UTF-8">
                                     <regexp pattern="(.*IGNITE_LATEST_VERSION_URL = &quot;)(.*)(&quot;.*)"/>
                                     <substitution expression="\1${ignite.version.url}\3"/>
-                                    <fileset dir="${basedir}/">
-                                        <include name="**/IgniteProvider.java"/>
-                                    </fileset>
-                                </replaceregexp>
-
-                                <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(.*DOWNLOAD_URL_PATTERN = &quot;)(.*)(&quot;.*)"/>
-                                    <substitution expression="\1${ignite.archive.url}\3"/>
                                     <fileset dir="${basedir}/">
                                         <include name="**/IgniteProvider.java"/>
                                     </fileset>
