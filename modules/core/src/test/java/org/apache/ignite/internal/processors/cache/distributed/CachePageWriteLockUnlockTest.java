@@ -80,6 +80,13 @@ public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
 
             grid0.cache(DEFAULT_CACHE_NAME).put(0, 0);
 
+            // Second iteration ensures what page is taken from reuse bucket.
+            grid0.cache(DEFAULT_CACHE_NAME).remove(0);
+
+            grid0.cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+            forceCheckpoint();
+
             stopGrid(0);
 
             grid0 = startGrid(0);
