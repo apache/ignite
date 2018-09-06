@@ -851,6 +851,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return new BinaryObjectImpl(binaryContext(), bytes, 0);
         else if (type == BinaryObjectImpl.TYPE_BINARY_ENUM)
             return new BinaryEnumObjectImpl(binaryContext(), bytes);
+        else if (type == BinaryObjectImpl.TYPE_BINARY_COMPRESSED)
+            return new BinaryObjectImpl(binaryContext(), binaryContext().decompress(bytes), 0);
 
         return super.toCacheObject(ctx, type, bytes);
     }
@@ -860,6 +862,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         throws IgniteCheckedException {
         if (type == BinaryObjectImpl.TYPE_BINARY)
             return new BinaryObjectImpl(binaryContext(), bytes, 0);
+        else if (type == BinaryObjectImpl.TYPE_BINARY_COMPRESSED)
+            return new BinaryObjectImpl(binaryContext(), binaryContext().decompress(bytes), 0);
 
         return super.toKeyCacheObject(ctx, type, bytes);
     }

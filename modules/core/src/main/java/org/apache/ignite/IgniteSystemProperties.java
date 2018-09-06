@@ -284,6 +284,13 @@ public final class IgniteSystemProperties {
     /** System property to enable experimental commands in control.sh script. */
     public static final String IGNITE_ENABLE_EXPERIMENTAL_COMMAND = "IGNITE_ENABLE_EXPERIMENTAL_COMMAND";
 
+    public static final String IGNITE_ENABLE_COMPRESSION = "IGNITE_ENABLE_COMPRESSION";
+    public static final String IGNITE_COMPRESSION_SAMPLES = "IGNITE_COMPRESSION_SAMPLES";
+    public static final String IGNITE_COMPRESSION_BUFFER = "IGNITE_COMPRESSION_BUFFER";
+    public static final String IGNITE_COMPRESSION_DICTIONARY_LENGTH = "IGNITE_COMPRESSION_DICTIONARY_LENGTH";
+    public static final String IGNITE_COMPRESSION_LEVEL = "IGNITE_COMPRESSION_LEVEL";
+    public static final String IGNITE_COMPRESSION_CHECK = "IGNITE_COMPRESSION_CHECK";
+
     /** System property to hold SSH user name for visor-started nodes. */
     public static final String IGNITE_SSH_USER_NAME = "IGNITE_SSH_USER_NAME";
 
