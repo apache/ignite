@@ -90,8 +90,11 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(TcpCommunicationStatisticsTest.class));*/
 
-        suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterTest.class));
-        suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterSslTest.class));
+        for (int i = 0; i < 10; i++)
+            suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterTest.class));
+
+        for (int i = 0; i < 10; i++)
+            suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterSslTest.class));
 
         //suite.addTest(new TestSuite(GridCacheDhtLockBackupSelfTest.class));
 
