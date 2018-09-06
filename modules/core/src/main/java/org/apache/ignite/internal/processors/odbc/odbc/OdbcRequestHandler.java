@@ -149,7 +149,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         log = ctx.log(getClass());
 
-        if (MvccUtils.mvccEnabled(ctx)) // TODO IGNITE-9320
+        if (MvccUtils.mvccEnabled(ctx)) // TODO IGNITE-9484
             worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
         else
             worker = null;

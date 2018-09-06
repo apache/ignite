@@ -191,7 +191,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         log = ctx.log(getClass());
 
-        if (MvccUtils.mvccEnabled(ctx)) // TODO IGNITE-9320
+        if (MvccUtils.mvccEnabled(ctx)) // TODO IGNITE-9484
             worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
         else
             worker = null;

@@ -54,9 +54,8 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
 
         startGrid(commonConfiguration(0));
 
-        // TODO IGNITE-9320 transactional_snapshot
         super.execute(node(), "CREATE TABLE INTS(k int primary key, v int) WITH \"wrap_value=false,cache_name=ints," +
-            "atomicity=transactional\"");
+            "atomicity=transactional_snapshot\"");
     }
 
     /** {@inheritDoc} */

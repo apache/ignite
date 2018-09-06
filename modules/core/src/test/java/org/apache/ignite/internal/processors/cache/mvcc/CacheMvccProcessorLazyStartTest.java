@@ -43,15 +43,18 @@ public class CacheMvccProcessorLazyStartTest extends CacheMvccAbstractTest {
 
         IgniteConfiguration cfg = getConfiguration();
         cfg.setCacheConfiguration(ccfg);
+        IgniteConfiguration cfg2 = getConfiguration("node2");
 
-        IgniteEx node = startGrid(cfg);
+        IgniteEx node1 = startGrid(cfg);
+        IgniteEx node2 = startGrid(cfg2);
 
-        IgniteCache cache = node.cache(ccfg.getName());
+        IgniteCache cache = node1.cache(ccfg.getName());
 
         cache.put(1, 1);
         cache.put(1, 2);
 
-        assertFalse(mvccEnabled(node));
+        assertFalse(mvccEnabled(node1));
+        assertFalse(mvccEnabled(node2));
     }
 
     /**
@@ -60,17 +63,20 @@ public class CacheMvccProcessorLazyStartTest extends CacheMvccAbstractTest {
     public void testPreconfiguredCacheMvccStarted() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 0, 1);
 
-        IgniteConfiguration cfg = getConfiguration();
-        cfg.setCacheConfiguration(ccfg);
+        IgniteConfiguration cfg1 = getConfiguration();
+        cfg1.setCacheConfiguration(ccfg);
+        IgniteConfiguration cfg2 = getConfiguration("node2");
 
-        IgniteEx node = startGrid(cfg);
+        IgniteEx node1 = startGrid(cfg1);
+        IgniteEx node2 = startGrid(cfg2);
 
-        IgniteCache cache = node.cache(ccfg.getName());
+        IgniteCache cache = node1.cache(ccfg.getName());
 
         cache.put(1, 1);
         cache.put(1, 2);
 
-        assertTrue(mvccEnabled(node));
+        assertTrue(mvccEnabled(node1));
+        assertTrue(mvccEnabled(node2));
     }
 
     /**
@@ -79,69 +85,84 @@ public class CacheMvccProcessorLazyStartTest extends CacheMvccAbstractTest {
     public void testMvccRestartedWithDynamicCache() throws Exception {
         persistence = true;
 
-        IgniteEx node = startGrid(1);
+        IgniteEx node1 = startGrid(1);
+        IgniteEx node2 = startGrid(2);
 
-        assertFalse(mvccEnabled(node));
+        assertFalse(mvccEnabled(node1));
+        assertFalse(mvccEnabled(node2));
 
-        node.cluster().active(true);
+        node1.cluster().active(true);
 
-        assertFalse(mvccEnabled(node));
+        assertFalse(mvccEnabled(node1));
+        assertFalse(mvccEnabled(node2));
 
         CacheConfiguration ccfg = cacheConfiguration(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 0, 1);
 
-        IgniteCache cache = node.createCache(ccfg);
+        IgniteCache cache = node1.createCache(ccfg);
 
         cache.put(1, 1);
         cache.put(1, 2);
 
-        assertTrue(mvccEnabled(node));
+        assertTrue(mvccEnabled(node1));
+        assertTrue(mvccEnabled(node2));
 
         stopGrid(1);
+        stopGrid(2);
 
-        node = startGrid(1);
+        node1 = startGrid(1);
+        node2 = startGrid(2);
 
-        node.cluster().active(true);
+        node1.cluster().active(true);
 
-        assertTrue(mvccEnabled(node));
+        assertTrue(mvccEnabled(node1));
+        assertTrue(mvccEnabled(node2));
 
-        cache = node.cache(ccfg.getName());
+        cache = node1.cache(ccfg.getName());
 
         cache.put(1, 1);
         cache.put(1, 2);
 
-        assertTrue(mvccEnabled(node));
+        assertTrue(mvccEnabled(node1));
+        assertTrue(mvccEnabled(node2));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMvccStartedWithDynamicCache() throws Exception {
-        IgniteEx node = startGrid(1);
+        IgniteEx node1 = startGrid(1);
+        IgniteEx node2 = startGrid(2);
 
-        assertFalse(mvccEnabled(node));
+        assertFalse(mvccEnabled(node1));
+        assertFalse(mvccEnabled(node2));
 
         CacheConfiguration ccfg = cacheConfiguration(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 0, 1);
 
-        IgniteCache cache = node.createCache(ccfg);
+        IgniteCache cache = node1.createCache(ccfg);
 
         cache.put(1, 1);
         cache.put(1, 2);
 
-        assertTrue(mvccEnabled(node));
+        assertTrue(mvccEnabled(node1));
+        assertTrue(mvccEnabled(node2));
 
         stopGrid(1);
+        stopGrid(2);
 
-        node = startGrid(1);
+        node1 = startGrid(1);
+        node2 = startGrid(2);
 
         // Should not be started because we do not have persistence enabled
-        assertFalse(mvccEnabled(node));
+        assertFalse(mvccEnabled(node1));
+        assertFalse(mvccEnabled(node2));
 
-        cache = node.createCache(ccfg);
+        cache = node1.createCache(ccfg);
 
         cache.put(1, 1);
         cache.put(1, 2);
 
-        assertTrue(mvccEnabled(node));
+        assertTrue(mvccEnabled(node1));
+        assertTrue(mvccEnabled(node2));
     }
 
     /**

@@ -253,6 +253,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
             if (!mvccSupported)
                 throw new IgniteException("Cannot start cache with MVCC transactional snapshot when there some nodes " +
                     "in cluster do not support it.");
+
+            mvccEnabled = true;
         }
     }
 
@@ -282,6 +284,8 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
             if (ccfg.getCacheMode() == CacheMode.LOCAL)
                 throw new IgniteCheckedException("Local caches are not supported by MVCC engine. Use " +
                     "CacheAtomicityMode.TRANSACTIONAL for local caches.");
+
+            mvccEnabled = true;
         }
     }
 
@@ -299,14 +303,14 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
     /** {@inheritDoc} */
     @Override public void ensureStarted() throws IgniteCheckedException {
-        mvccEnabled = true;
-
         if (!ctx.clientNode() && txLog == null) {
-            assert mvccSupported;
+            assert mvccEnabled && mvccSupported;
 
             txLog = new TxLog(ctx, ctx.cache().context().database());
 
             startVacuumWorkers();
+
+            log.info("Mvcc processor started.");
         }
     }
 

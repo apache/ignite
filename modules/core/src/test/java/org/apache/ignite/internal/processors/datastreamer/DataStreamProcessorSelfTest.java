@@ -34,6 +34,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -122,7 +123,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(mode);
-            cc.setAtomicityMode(TRANSACTIONAL);
+            cc.setAtomicityMode(getCacheAtomicityMode());
 
             if (nearEnabled) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
@@ -147,6 +148,13 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         }
 
         return cfg;
+    }
+
+    /**
+     * @return Default cache atomicity mode.
+     */
+    protected CacheAtomicityMode getCacheAtomicityMode() {
+        return TRANSACTIONAL;
     }
 
     /**
