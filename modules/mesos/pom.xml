@@ -85,7 +85,6 @@
                             <target>
                                 <echo message="Update download url in mesos module."/>
                                 <echo message="Latest version ${ignite.version.url}."/>
-                                <echo message="Archive link ${ignite.archive.url}."/>
 
                                 <replaceregexp byline="true" encoding="UTF-8">
                                     <regexp pattern="(.*IGNITE_LATEST_VERSION_URL = &quot;)(.*)(&quot;.*)"/>
