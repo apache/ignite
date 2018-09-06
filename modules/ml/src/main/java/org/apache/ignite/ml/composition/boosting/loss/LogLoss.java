@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.boosting;
-
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+package org.apache.ignite.ml.composition.boosting.loss;
 
 /**
- * Contains implementations of per-prediction loss functions for gradient boosting algorithm.
+ * Logistic regression loss function.
  */
-public class LossGradientPerPredictionFunctions {
-    /** Mean squared error loss for regression. */
-    public static IgniteTriFunction<Long, Double, Double, Double> MSE =
-        (sampleSize, answer, prediction) -> (2.0 / sampleSize) * (prediction - answer);
+public class LogLoss implements Loss {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 2251384437214194977L;
 
-    /** Logarithmic loss for binary classification. */
-    public static IgniteTriFunction<Long, Double, Double, Double> LOG_LOSS =
-        (sampleSize, answer, prediction) -> (prediction - answer) / (prediction * (1.0 - prediction));
+    /** {@inheritDoc} */
+    @Override public double error(long sampleSize, double answer, double prediction) {
+        return -(answer * Math.log(prediction) + (1 - answer) * Math.log(1 - prediction));
+    }
+
+    /** {@inheritDoc} */
+    @Override public double gradient(long sampleSize, double answer, double prediction) {
+        return (prediction - answer) / (prediction * (1.0 - prediction));
+    }
 }
