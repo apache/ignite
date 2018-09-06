@@ -406,45 +406,32 @@ public class GridMapQueryExecutor {
 
                         GridDhtPartitionState partState = part != null ? part.state() : null;
 
-                        if (partState != OWNING || !part.reserve()) {
-                            if (partState == LOST) {
+                        if (partState != OWNING) {
+                            if (partState == LOST)
                                 ignoreLostPartitionIfPossible(cctx, part);
-
-                                continue;
+                            else {
+                                return String.format("Failed to reserve partitions for query " +
+                                        "(partition of PARTITIONED cache is not found or not in OWNING state) [" +
+                                        "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
+                                        "cacheName=%s, part=%s, partFound=%s, partState=%s]",
+                                    ctx.localNodeId(),
+                                    nodeId,
+                                    reqId,
+                                    topVer,
+                                    cacheIds.get(i),
+                                    cctx.name(),
+                                    partId,
+                                    (part != null),
+                                    partState
+                                );
                             }
-
-                            return String.format("Failed to reserve partitions for query " +
-                                    "(partition of PARTITIONED cache cannot be reserved) [" +
-                                    "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, cacheName=%s, " +
-                                    "part=%s, partFound=%s, partState=%s]",
-                                ctx.localNodeId(),
-                                nodeId,
-                                reqId,
-                                topVer,
-                                cacheIds.get(i),
-                                cctx.name(),
-                                partId,
-                                (part != null),
-                                partState
-                            );
                         }
 
-                        // Double check that we are still in owning state and partition contents are not cleared.
-                        partState = part.state();
-
-                        if (partState != OWNING) {
-                            if (partState == LOST) {
-                                ignoreLostPartitionIfPossible(cctx, part);
-
-                                part.release();
-
-                                continue;
-                            }
-
+                        if (!part.reserve()) {
                             return String.format("Failed to reserve partitions for query " +
-                                    "(partition of PARTITIONED cache is not in OWNING state after reservation) [" +
-                                    "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, cacheName=%s, " +
-                                    "part=%s, partState=%s]",
+                                    "(partition of PARTITIONED cache cannot be reserved) [" +
+                                    "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
+                                    "cacheName=%s, part=%s, partFound=%s, partState=%s]",
                                 ctx.localNodeId(),
                                 nodeId,
                                 reqId,
@@ -452,6 +439,7 @@ public class GridMapQueryExecutor {
                                 cacheIds.get(i),
                                 cctx.name(),
                                 partId,
+                                true,
                                 partState
                             );
                         }
@@ -459,6 +447,29 @@ public class GridMapQueryExecutor {
                         reserved.add(part);
 
                         reservedCnt++;
+
+                        // Double check that we are still in owning state and partition contents are not cleared.
+                        partState = part.state();
+
+                        if (partState != OWNING) {
+                            if (partState == LOST)
+                                ignoreLostPartitionIfPossible(cctx, part);
+                            else {
+                                return String.format("Failed to reserve partitions for query " +
+                                    "(partition of PARTITIONED cache is not in OWNING state after reservation) [" +
+                                    "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
+                                    "cacheName=%s, part=%s, partState=%s]",
+                                    ctx.localNodeId(),
+                                    nodeId,
+                                    reqId,
+                                    topVer,
+                                    cacheIds.get(i),
+                                    cctx.name(),
+                                    partId,
+                                    partState
+                                );
+                            }
+                        }
                     }
 
                     if (explicitParts == null && reservedCnt > 0) {
@@ -1087,22 +1098,22 @@ public class GridMapQueryExecutor {
 
         List<GridReservable> reserved = new ArrayList<>();
 
-        String err = reservePartitions(cacheIds, topVer, parts, reserved, node.id(), reqId);
-
-        if (!F.isEmpty(err)) {
-            U.error(log, "Failed to reserve partitions for DML request. [localNodeId=" + ctx.localNodeId() +
-                ", nodeId=" + node.id() + ", reqId=" + req.requestId() + ", cacheIds=" + cacheIds +
-                ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');
-
-            sendUpdateResponse(node, reqId, null,
-                "Failed to reserve partitions for DML request. " + err);
-
-            return;
-        }
-
         MapNodeResults nodeResults = resultsForNode(node.id());
 
         try {
+            String err = reservePartitions(cacheIds, topVer, parts, reserved, node.id(), reqId);
+
+            if (!F.isEmpty(err)) {
+                U.error(log, "Failed to reserve partitions for DML request. [localNodeId=" + ctx.localNodeId() +
+                    ", nodeId=" + node.id() + ", reqId=" + req.requestId() + ", cacheIds=" + cacheIds +
+                    ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');
+
+                sendUpdateResponse(node, reqId, null,
+                    "Failed to reserve partitions for DML request. " + err);
+
+                return;
+            }
+
             IndexingQueryFilter filter = h2.backupFilter(topVer, parts);
 
             GridQueryCancel cancel = nodeResults.putUpdate(reqId);
