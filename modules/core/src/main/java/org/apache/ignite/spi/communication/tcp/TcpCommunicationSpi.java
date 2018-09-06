@@ -404,7 +404,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             ", rmtAddr=" + ses.remoteAddress() + ']');
 
                     try {
-                        if (ctxInitLatch.getCount() > 10) {
+                        if (ctxInitLatch.getCount() > 0) {
                             if (log.isDebugEnabled())
                                 log.debug("Sending init timeout message to newly accepted session: " + ses);
 
