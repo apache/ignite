@@ -555,6 +555,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     @Override public void suspendLogging() throws IgniteCheckedException {
         onDeActivate(cctx.kernalContext());
 
+        start0();
+
         U.log(log, "Suspended logging to WAL");
     }
 
