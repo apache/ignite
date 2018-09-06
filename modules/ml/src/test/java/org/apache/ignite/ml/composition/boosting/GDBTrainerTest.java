@@ -55,7 +55,7 @@ public class GDBTrainerTest {
         }
 
         DatasetTrainer<ModelsComposition, Double> trainer
-            = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0).withUseIndex(true);
+            = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0).withUsingIdx(true);
 
         Model<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
@@ -123,7 +123,8 @@ public class GDBTrainerTest {
             learningSample.put(i, new double[] {xs[i], ys[i]});
 
         GDBBinaryClassifierOnTreesTrainer trainer
-            = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0).withUseIndex(true);
+            = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0)
+            .withUsingIdx(true);
 
         Model<Vector, Double> mdl = fitter.apply(trainer, learningSample);
 
@@ -132,7 +133,7 @@ public class GDBTrainerTest {
             double x = xs[j];
             double y = ys[j];
             double p = mdl.apply(VectorUtils.of(x));
-            if(p != y)
+            if (p != y)
                 errorsCnt++;
         }
 
