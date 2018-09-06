@@ -119,10 +119,8 @@ public class MedianOfMedianConvergenceChecker<K, V> extends ConvergenceChecker<K
             return left;
 
         double[] res = new double[left.length + right.length];
-        for (int i = 0; i < left.length; i++)
-            res[i] = left[i];
-        for (int i = 0; i < right.length; i++)
-            res[left.length + i] = right[i];
+        System.arraycopy(left, 0, res, 0, left.length);
+        System.arraycopy(right, 0, res, left.length, right.length);
         return res;
     }
 }
