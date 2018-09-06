@@ -76,12 +76,13 @@ class ObjectArrayObject:
         return final_class, buffer
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         result = []
         for i in range(ctype_object.length):
             result.append(
                 AnyDataObject.to_python(
-                    getattr(ctype_object, 'element_{}'.format(i))
+                    getattr(ctype_object, 'element_{}'.format(i)),
+                    *args, **kwargs
                 )
             )
         return getattr(ctype_object, cls.type_or_id_name), result
@@ -157,7 +158,7 @@ class WrappedDataObject:
         return final_class, buffer
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         return bytes(ctype_object.payload), ctype_object.offset
 
     @classmethod
@@ -242,7 +243,7 @@ class Map:
         return final_class, buffer
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         from .internal import AnyDataObject
 
         map_type = getattr(ctype_object, 'type', cls.HASH_MAP)
@@ -250,10 +251,12 @@ class Map:
 
         for i in range(0, ctype_object.length << 1, 2):
             k = AnyDataObject.to_python(
-                    getattr(ctype_object, 'element_{}'.format(i))
+                    getattr(ctype_object, 'element_{}'.format(i)),
+                    *args, **kwargs
                 )
             v = AnyDataObject.to_python(
-                    getattr(ctype_object, 'element_{}'.format(i + 1))
+                    getattr(ctype_object, 'element_{}'.format(i + 1)),
+                    *args, **kwargs
                 )
             result[k] = v
         return result
@@ -315,8 +318,10 @@ class MapObject(Map):
         )
 
     @classmethod
-    def to_python(cls, ctype_object):
-        return ctype_object.type, super().to_python(ctype_object)
+    def to_python(cls, ctype_object, *args, **kwargs):
+        return ctype_object.type, super().to_python(
+            ctype_object, *args, **kwargs
+        )
 
     @classmethod
     def from_python(cls, value):
@@ -380,7 +385,8 @@ class BinaryObject:
         buffer = client.recv(ctypes.sizeof(header_class))
         header = header_class.from_buffer_copy(buffer)
 
-        # TODO: valid only on compact schema approach
+        # ignore full schema, always retrieve fields' types and order
+        # from complex types registry
         data_class = cls.get_dataclass(client, header)
         fields = data_class.schema.items()
         object_fields_struct = Struct(fields)
@@ -401,13 +407,17 @@ class BinaryObject:
                 '_fields_': final_class_fields,
             }
         )
-        # forward the client reference
-        setattr(final_class, 'client', client)
         return final_class, buffer
 
     @classmethod
-    def to_python(cls, ctype_object):
-        data_class = ctype_object.client.query_binary_type(
+    def to_python(cls, ctype_object, client: 'Client'=None, *args, **kwargs):
+
+        if not client:
+            raise ParseError(
+                'Can not query binary type {}'.format(ctype_object.type_id)
+            )
+
+        data_class = client.query_binary_type(
             ctype_object.type_id,
             ctype_object.schema_id
         )
@@ -417,7 +427,8 @@ class BinaryObject:
         for field_name, field_type in data_class.schema.items():
             setattr(
                 result, field_name, field_type.to_python(
-                    getattr(ctype_object.object_fields, field_name)
+                    getattr(ctype_object.object_fields, field_name),
+                    client, *args, **kwargs
                 )
             )
         return result
@@ -438,19 +449,21 @@ class BinaryObject:
                     frame = rec[0]
                     code = frame.f_code
                     for varname in code.co_varnames:
-                        if varname in ['client', 'connection', 'self']:
-                            suspect = frame.f_locals[varname]
-                            if isinstance(suspect, Client):
-                                return suspect
+                        suspect = frame.f_locals[varname]
+                        if isinstance(suspect, Client):
+                            return suspect
             finally:
                 del frame
 
         client = find_client()
         if client:
-            # if no client will be found (which is hardly imaginable, but
-            # still possible), the class of the `value` will be discarded
-            # and the new dataclass will be automatically registered
+            # if no client can be found, the class of the `value` is discarded
+            # and the new dataclass is automatically registered later on
             client.register_binary_type(value.__class__)
+        else:
+            raise Warning(
+                'Can not register binary type {}'.format(value.type_name)
+            )
 
         # prepare header
         header_class = cls.build_header()

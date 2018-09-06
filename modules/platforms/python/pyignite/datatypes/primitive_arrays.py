@@ -69,7 +69,7 @@ class PrimitiveArray:
         return final_class, buffer
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         result = []
         for i in range(ctype_object.length):
             result.append(ctype_object.data[i])
@@ -190,8 +190,8 @@ class CharArrayObject(PrimitiveArrayObject):
     type_code = TC_CHAR_ARRAY
 
     @classmethod
-    def to_python(cls, ctype_object):
-        values = super().to_python(ctype_object)
+    def to_python(cls, ctype_object, *args, **kwargs):
+        values = super().to_python(ctype_object, *args, **kwargs)
         return [
             v.to_bytes(
                 ctypes.sizeof(cls.primitive_type.c_type),

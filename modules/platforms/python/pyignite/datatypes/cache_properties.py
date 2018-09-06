@@ -109,8 +109,10 @@ class PropBase:
         return prop_class, header_buffer + data_buffer
 
     @classmethod
-    def to_python(cls, ctype_object):
-        return cls.prop_data_class.to_python(ctype_object.data)
+    def to_python(cls, ctype_object, *args, **kwargs):
+        return cls.prop_data_class.to_python(
+            ctype_object.data, *args, **kwargs
+        )
 
     @classmethod
     def from_python(cls, value):
@@ -280,6 +282,6 @@ class AnyProperty(PropBase):
         )
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         prop_data_class = prop_map(ctype_object.prop_code)
-        return prop_data_class.to_python(ctype_object.data)
+        return prop_data_class.to_python(ctype_object.data, *args, **kwargs)

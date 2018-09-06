@@ -166,11 +166,14 @@ class Response:
         )
         return response_class, buffer
 
-    def to_python(self, ctype_object):
+    def to_python(self, ctype_object, *args, **kwargs):
         result = OrderedDict()
 
         for name, c_type in self.following:
-            result[name] = c_type.to_python(getattr(ctype_object, name))
+            result[name] = c_type.to_python(
+                getattr(ctype_object, name),
+                *args, **kwargs
+            )
 
         return result if result else None
 
@@ -278,18 +281,26 @@ class SQLResponse:
         buffer += client.recv(ctypes.sizeof(final_class) - len(buffer))
         return final_class, buffer
 
-    def to_python(self, ctype_object):
+    def to_python(self, ctype_object, *args, **kwargs):
         if ctype_object.status_code == 0:
             result = {
-                'more': Bool.to_python(ctype_object.more),
+                'more': Bool.to_python(
+                    ctype_object.more, *args, **kwargs
+                ),
                 'data': [],
             }
             if hasattr(ctype_object, 'fields'):
-                result['fields'] = StringArray.to_python(ctype_object.fields)
+                result['fields'] = StringArray.to_python(
+                    ctype_object.fields, *args, **kwargs
+                )
             else:
-                result['field_count'] = Int.to_python(ctype_object.field_count)
+                result['field_count'] = Int.to_python(
+                    ctype_object.field_count, *args, **kwargs
+                )
             if hasattr(ctype_object, 'cursor'):
-                result['cursor'] = Long.to_python(ctype_object.cursor)
+                result['cursor'] = Long.to_python(
+                    ctype_object.cursor, *args, **kwargs
+                )
             for row_item in ctype_object.data._fields_:
                 row_name = row_item[0]
                 row_object = getattr(ctype_object.data, row_name)
@@ -297,6 +308,8 @@ class SQLResponse:
                 for col_item in row_object._fields_:
                     col_name = col_item[0]
                     col_object = getattr(row_object, col_name)
-                    row.append(AnyDataObject.to_python(col_object))
+                    row.append(
+                        AnyDataObject.to_python(col_object, *args, **kwargs)
+                    )
                 result['data'].append(row)
             return result

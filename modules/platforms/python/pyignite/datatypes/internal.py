@@ -142,7 +142,7 @@ class StructArray:
 
         return data_class, buffer
 
-    def to_python(self, ctype_object):
+    def to_python(self, ctype_object, *args, **kwargs):
         result = []
         length = getattr(ctype_object, 'length', 0)
         for i in range(length):
@@ -150,7 +150,8 @@ class StructArray:
                 Struct(
                     self.following, dict_type=dict
                 ).to_python(
-                    getattr(ctype_object, 'element_{}'.format(i))
+                    getattr(ctype_object, 'element_{}'.format(i)),
+                    *args, **kwargs
                 )
             )
         return result
@@ -199,10 +200,13 @@ class Struct:
 
         return data_class, buffer
 
-    def to_python(self, ctype_object) -> Any:
+    def to_python(self, ctype_object, *args, **kwargs) -> Any:
         result = self.dict_type()
         for name, c_type in self.fields:
-            result[name] = c_type.to_python(getattr(ctype_object, name))
+            result[name] = c_type.to_python(
+                getattr(ctype_object, name),
+                *args, **kwargs
+            )
         return result
 
     def from_python(self, value) -> bytes:
@@ -267,7 +271,7 @@ class AnyDataObject:
         return data_class.parse(client)
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         type_code = ctype_object.type_code.to_bytes(
             ctypes.sizeof(ctypes.c_byte),
             byteorder=PROTOCOL_BYTE_ORDER
@@ -394,12 +398,13 @@ class AnyDataArray(AnyDataObject):
         return final_class, buffer
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         result = []
         for i in range(ctype_object.length):
             result.append(
                 super().to_python(
-                    getattr(ctype_object, 'element_{}'.format(i))
+                    getattr(ctype_object, 'element_{}'.format(i)),
+                    *args, **kwargs
                 )
             )
         return result

@@ -51,7 +51,7 @@ class Null:
         return data_type, buffer
 
     @staticmethod
-    def to_python(*args):
+    def to_python(*args, **kwargs):
         return None
 
     @staticmethod

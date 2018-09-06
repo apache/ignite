@@ -81,7 +81,10 @@ def unwrap_binary(client: 'Client', wrapped: tuple):
     client_clone = client.clone(prefetch=blob)
     client_clone.pos = offset
     data_class, data_bytes = BinaryObject.parse(client_clone)
-    return BinaryObject.to_python(data_class.from_buffer_copy(data_bytes))
+    return BinaryObject.to_python(
+        data_class.from_buffer_copy(data_bytes),
+        client,
+    )
 
 
 def hashcode(string: Union[str, bytes]) -> int:

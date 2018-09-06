@@ -57,7 +57,7 @@ class DataObject:
         return data_type, buffer
 
     @staticmethod
-    def to_python(ctype_object):
+    def to_python(ctype_object, *args, **kwargs):
         return ctype_object.value
 
     @classmethod
@@ -127,7 +127,7 @@ class CharObject(DataObject):
     default = ' '
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         return ctype_object.value.to_bytes(
             ctypes.sizeof(cls.c_type),
             byteorder=PROTOCOL_BYTE_ORDER

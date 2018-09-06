@@ -96,7 +96,7 @@ class String:
         return data_type, buffer
 
     @staticmethod
-    def to_python(ctype_object):
+    def to_python(ctype_object, *args, **kwargs):
         length = getattr(ctype_object, 'length', None)
         if length is None:
             return None
@@ -174,7 +174,7 @@ class DecimalObject:
         return data_type, buffer
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         if getattr(ctype_object, 'length', None) is None:
             return None
 
@@ -259,7 +259,7 @@ class UUIDObject(StandardObject):
         return bytes(data_object)
 
     @classmethod
-    def to_python(cls, ctypes_object):
+    def to_python(cls, ctypes_object, *args, **kwargs):
         if ctypes_object.type_code == int.from_bytes(
             TC_NULL,
             byteorder=PROTOCOL_BYTE_ORDER
@@ -313,7 +313,7 @@ class TimestampObject(StandardObject):
         return bytes(data_object)
 
     @classmethod
-    def to_python(cls, ctypes_object):
+    def to_python(cls, ctypes_object, *args, **kwargs):
         if ctypes_object.type_code == int.from_bytes(
             TC_NULL,
             byteorder=PROTOCOL_BYTE_ORDER
@@ -366,7 +366,7 @@ class DateObject(StandardObject):
         return bytes(data_object)
 
     @classmethod
-    def to_python(cls, ctypes_object):
+    def to_python(cls, ctypes_object, *args, **kwargs):
         if ctypes_object.type_code == int.from_bytes(
             TC_NULL,
             byteorder=PROTOCOL_BYTE_ORDER
@@ -413,7 +413,7 @@ class TimeObject(StandardObject):
         return bytes(data_object)
 
     @classmethod
-    def to_python(cls, ctypes_object):
+    def to_python(cls, ctypes_object, *args, **kwargs):
         if ctypes_object.type_code == int.from_bytes(
             TC_NULL,
             byteorder=PROTOCOL_BYTE_ORDER
@@ -464,7 +464,7 @@ class EnumObject(StandardObject):
         return bytes(data_object)
 
     @classmethod
-    def to_python(cls, ctypes_object):
+    def to_python(cls, ctypes_object, *args, **kwargs):
         if ctypes_object.type_code == int.from_bytes(
             TC_NULL,
             byteorder=PROTOCOL_BYTE_ORDER
@@ -522,12 +522,13 @@ class StandardArray:
         return final_class, buffer
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         result = []
         for i in range(ctype_object.length):
             result.append(
                 cls.standard_type.to_python(
-                    getattr(ctype_object, 'element_{}'.format(i))
+                    getattr(ctype_object, 'element_{}'.format(i)),
+                    *args, **kwargs
                 )
             )
         return result
@@ -684,9 +685,9 @@ class EnumArrayObject(StandardArrayObject):
         return buffer
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         type_id = ctype_object.type_id
-        return type_id, super().to_python(ctype_object)
+        return type_id, super().to_python(ctype_object, *args, **kwargs)
 
 
 class BinaryEnumArrayObject(EnumArrayObject):

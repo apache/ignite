@@ -45,7 +45,7 @@ class Primitive:
         return cls.c_type, client.recv(ctypes.sizeof(cls.c_type))
 
     @staticmethod
-    def to_python(ctype_object):
+    def to_python(ctype_object, *args, **kwargs):
         return ctype_object
 
     @classmethod
@@ -81,7 +81,7 @@ class Char(Primitive):
     c_type = ctypes.c_short
 
     @classmethod
-    def to_python(cls, ctype_object):
+    def to_python(cls, ctype_object, *args, **kwargs):
         return ctype_object.value.to_bytes(
             ctypes.sizeof(cls.c_type),
             byteorder=PROTOCOL_BYTE_ORDER
