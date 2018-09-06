@@ -56,22 +56,23 @@ public class GridClientJdkMarshaller implements GridClientMarshaller {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
-        try (GridByteArrayOutputStream bOut = new GridByteArrayOutputStream();
-            ObjectOutput out = new ObjectOutputStream(bOut)) {
-            out.writeObject(obj);
+        GridByteArrayOutputStream bOut = new GridByteArrayOutputStream();
 
-            out.flush();
+        ObjectOutput out = new ObjectOutputStream(bOut);
 
-            ByteBuffer buf = ByteBuffer.allocate(off + bOut.size());
+        out.writeObject(obj);
 
-            buf.position(off);
+        out.flush();
 
-            buf.put(bOut.internalArray(), 0, bOut.size());
+        ByteBuffer buf = ByteBuffer.allocate(off + bOut.size());
 
-            buf.flip();
+        buf.position(off);
 
-            return buf;
-        }
+        buf.put(bOut.internalArray(), 0, bOut.size());
+
+        buf.flip();
+
+        return buf;
     }
 
     /** {@inheritDoc} */
