@@ -92,9 +92,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SCAN;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL_SUM;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -865,6 +867,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         ReadMode readMode,
         WriteMode writeMode
     ) throws Exception {
+        if(readMode == SCAN && writeMode == PUT)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7764");
+
         final int RANGE = 20;
 
         final int writers = 4;
@@ -1049,6 +1054,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     )
         throws Exception
     {
+        if(readMode == SCAN && writeMode == PUT)
+            fail("https://issues.apache.org/jira/browse/IGNITE-7764");
+
         final int TOTAL = 20;
 
         assert N <= TOTAL;
@@ -1498,7 +1506,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void verifyOldVersionsCleaned() throws Exception {
+    protected void verifyOldVersionsCleaned() throws Exception {
         runVacuumSync();
 
         // Check versions.
@@ -1528,8 +1536,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 if (!cctx.userCache() || !cctx.group().mvccEnabled())
                     continue;
 
-                for (Object e : cache.withKeepBinary()) {
-                    IgniteBiTuple entry = (IgniteBiTuple)e;
+                for (Iterator it = cache.withKeepBinary().iterator(); it.hasNext(); ) {
+                    IgniteBiTuple entry = (IgniteBiTuple)it.next();
 
                     KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
 
@@ -1538,9 +1546,12 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                     if (vers.size() > 1) {
                         if (failIfNotCleaned)
-                            fail("[key="  + key.value(null, false) + "; vers=" + vers + ']');
-                        else
+                            fail("[key=" + key.value(null, false) + "; vers=" + vers + ']');
+                        else {
+                            U.closeQuiet((AutoCloseable)it);
+
                             return false;
+                        }
                     }
                 }
             }

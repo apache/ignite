@@ -106,10 +106,6 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
                 }
                 catch (ClusterTopologyException e) {
                     info("Expected exception: " + e);
-
-                    assertNotNull(e.retryReadyFuture());
-
-                    e.retryReadyFuture().get();
                 }
                 catch (CacheException e) {
                     info("Expected exception: " + e);
