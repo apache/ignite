@@ -3649,6 +3649,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
                     short msgType = handBuff.get(0);
+                    System.out.println("MY msgType1="+msgType);
 
                     if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
                         return NEED_WAIT;
@@ -3668,6 +3669,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
                         short msgType = handBuff.get(0);
+                        System.out.println("MY msgType2="+msgType);
 
                         if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
                             return NEED_WAIT;
@@ -3687,6 +3689,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (read >= DIRECT_TYPE_SIZE) {
                         short msgType = buf.get(0);
+                        System.out.println("MY msgType3="+msgType);
 
                         if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
                             return NEED_WAIT;
@@ -4683,7 +4686,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
     }
 
-     /**
+    /**
      *
      */
     private class ConnectGateway {
