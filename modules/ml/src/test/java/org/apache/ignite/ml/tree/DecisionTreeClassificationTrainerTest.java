@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 
 /**
@@ -40,12 +41,12 @@ public class DecisionTreeClassificationTrainerTest {
     private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7};
 
     /** Number of partitions. */
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter()
     public int parts;
 
     /** Use index [= 1 if true]. */
     @Parameterized.Parameter(1)
-    public int useIndex;
+    public int useIdx;
 
     /** Test parameters. */
     @Parameterized.Parameters(name = "Data divided on {0} partitions. Use index = {1}.")
@@ -73,7 +74,7 @@ public class DecisionTreeClassificationTrainerTest {
         }
 
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0)
-            .withUseIndex(useIndex == 1);
+            .withUseIndex(useIdx == 1);
 
         DecisionTreeNode tree = trainer.fit(
             data,
@@ -87,6 +88,10 @@ public class DecisionTreeClassificationTrainerTest {
         DecisionTreeConditionalNode node = (DecisionTreeConditionalNode)tree;
 
         assertEquals(0, node.getThreshold(), 1e-3);
+        assertEquals(0, node.getCol());
+        assertNotNull(node.toString());
+        assertNotNull(node.toString(true));
+        assertNotNull(node.toString(false));
 
         assertTrue(node.getThenNode() instanceof DecisionTreeLeafNode);
         assertTrue(node.getElseNode() instanceof DecisionTreeLeafNode);
@@ -96,5 +101,9 @@ public class DecisionTreeClassificationTrainerTest {
 
         assertEquals(1, thenNode.getVal(), 1e-10);
         assertEquals(0, elseNode.getVal(), 1e-10);
+
+        assertNotNull(thenNode.toString());
+        assertNotNull(thenNode.toString(true));
+        assertNotNull(thenNode.toString(false));
     }
 }

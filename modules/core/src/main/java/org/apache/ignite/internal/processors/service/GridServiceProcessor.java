@@ -1759,8 +1759,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         affReadyFut.get();
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to wait for affinity ready future " +
-                            "(the assignment will be recalculated anyway)", e);
+                        U.warn(log, "Failed to wait for affinity ready future " +
+                            "(the assignment will be recalculated anyway):" + e.toString());
                     }
                 }
 

@@ -1060,29 +1060,7 @@ public class CommandHandler {
                     "]");
 
                 for (VisorTxInfo info : entry.getValue().getInfos())
-                    log("    Tx: [xid=" + info.getXid() +
-                        ", label=" + info.getLabel() +
-                        ", state=" + info.getState() +
-                        ", startTime=" + info.getFormattedStartTime() +
-                        ", duration=" + info.getDuration() / 1000 +
-                        ", isolation=" + info.getIsolation() +
-                        ", concurrency=" + info.getConcurrency() +
-                        ", timeout=" + info.getTimeout() +
-                        ", size=" + info.getSize() +
-                        ", dhtNodes=" + (info.getPrimaryNodes() == null ? "N/A" :
-                        F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
-                            @Override public String apply(UUID id) {
-                                return U.id8(id);
-                            }
-                        })) +
-                        ", nearXid=" + info.getNearXid() +
-                        ", parentNodeIds=" + (info.getMasterNodeIds() == null ? "N/A" :
-                        F.transform(info.getMasterNodeIds(), new IgniteClosure<UUID, String>() {
-                            @Override public String apply(UUID id) {
-                                return U.id8(id);
-                            }
-                        })) +
-                        ']');
+                    log(info.toUserString());
             }
         }
         catch (Throwable e) {

@@ -162,8 +162,7 @@ public abstract class GridTcpRouterNioListenerAdapter implements GridNioServerLi
 
                 U.warn(
                     log,
-                    "Message forwarding was interrupted (will ignore last message): " + e.getMessage(),
-                    "Message forwarding was interrupted.");
+                    "Message forwarding was interrupted (will ignore last message): " + e.getMessage());
             }
         }
         else if (msg instanceof GridClientHandshakeRequest) {

@@ -42,10 +42,10 @@ angular
 .module('ignite-console.configuration', [
 
 ])
-.service('IgniteConfigurationGenerator', () => IgniteConfigurationGenerator)
+.service('IgniteConfigurationGenerator', function() { return IgniteConfigurationGenerator;})
 .service('IgnitePlatformGenerator', IgnitePlatformGenerator)
-.service('SpringTransformer', () => IgniteSpringTransformer)
-.service('JavaTransformer', () => IgniteJavaTransformer)
+.service('SpringTransformer', function() { return IgniteSpringTransformer;})
+.service('JavaTransformer', function() { return IgniteJavaTransformer;})
 .service('IgniteSharpTransformer', SharpTransformer)
 .service('IgniteEventGroups', IgniteEventGroups)
 .service('IgniteClusterDefaults', IgniteClusterDefaults)

@@ -988,29 +988,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
             return oldVal;
         }
-
-        /**
-         *
-         */
-        void clear() {
-            if (cnt != 0) {
-                writeLock().lock();
-
-                try {
-                    HashEntry<K, V>[] tab = tbl;
-
-                    for (int i = 0; i < tab.length ; i++)
-                        tab[i] = null;
-
-                    ++modCnt;
-
-                    cnt = 0; // write-volatile
-                }
-                finally {
-                    writeLock().unlock();
-                }
-            }
-        }
     }
 
     /* ---------------- Public operations -------------- */
@@ -1571,8 +1548,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      * Removes all of the mappings from this map.
      */
     @Override public void clear() {
-        for (Segment<K, V> segment : segments)
-            segment.clear();
+        throw new UnsupportedOperationException();
     }
 
     /**

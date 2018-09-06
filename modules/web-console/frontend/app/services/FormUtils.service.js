@@ -16,7 +16,7 @@
  */
 import _ from 'lodash';
 
-export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', ($window, Focus, $rootScope) => {
+export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', function($window, Focus, $rootScope) {
     function ensureActivePanel(ui, pnl, focusId) {
         if (ui && ui.loadPanel) {
             const collapses = $('[bs-collapse-target]');

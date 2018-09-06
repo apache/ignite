@@ -117,7 +117,7 @@ public class TensorFlowUserScriptRunner extends AsyncNativeProcessRunner {
         if (workingDir == null)
             throw new IllegalStateException("Working directory is not created");
 
-        ProcessBuilder procBuilder = new ProcessBuilder();
+        ProcessBuilder procBuilder = new TensorFlowProcessBuilderSupplier(false, null).get();
 
         procBuilder.directory(workingDir);
         procBuilder.command(jobArchive.getCommands());

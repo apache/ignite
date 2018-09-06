@@ -18,6 +18,8 @@
 package org.apache.ignite.ml.tree.impurity;
 
 import java.io.Serializable;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.tree.TreeFilter;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.TreeDataIndex;
@@ -97,5 +99,9 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      */
     protected double getFeatureValue(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
         return useIndex ? idx.featureInSortedOrder(k, featureId) : data.getFeatures()[k][featureId];
+    }
+
+    protected Vector getFeatureValues(DecisionTreeData data, TreeDataIndex idx, int featureId, int k) {
+        return VectorUtils.of(useIndex ? idx.featuresInSortedOrder(k, featureId) : data.getFeatures()[k]);
     }
 }

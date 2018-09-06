@@ -14,8 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin form-field__dropdown({ label, model, name, disabled, required, multiple, placeholder, placeholderEmpty, options, tip })
-    -var errLbl = label.substring(0, label.length - 1)
+mixin form-field__dropdown({ label, model, name, disabled, required, multiple, placeholder, placeholderEmpty, options, optionLabel = 'label', tip, tipOpts })
+    -var errLbl = label ? label.substring(0, label.length - 1) : 'Field';
+
     mixin __form-field__input()
         button.select-toggle(
             type='button'
@@ -27,27 +28,29 @@ mixin form-field__dropdown({ label, model, name, disabled, required, multiple, p
             ng-model=model
             ng-disabled=disabled && `${disabled}`
             ng-required=required && `${required}`
+            expose-ignite-form-field-control='$input'
 
             bs-select
-            bs-options=`item.value as item.label for item in ${options}`
+            bs-options=`item.value as item.${optionLabel} for item in ${options}`
 
             data-multiple=multiple ? '1' : false
 
             tabindex='0'
         )&attributes(attributes.attributes)
 
-    .form-field(id=`{{ ${name} }}Field`)
-        +form-field__label({ label, name, required })
+    .form-field.form-field__dropdown.ignite-form-field(id=`{{ ${name} }}Field`)
+        +form-field__label({ label, name, required, disabled })
             +form-field__tooltip({ title: tip, options: tipOpts })
 
         .form-field__control
             +__form-field__input(attributes=attributes)
 
         .form-field__errors(
-            ng-messages=`(${form}[${name}].$dirty || ${form}[${name}].$touched || ${form}[${name}].$submitted) && ${form}[${name}].$invalid ? ${form}[${name}].$error : {}`
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
             if block
                 block
 
             if required
-                +form-field__error({ name, error: 'required', message: `${errLbl} could not be empty!` })
+                +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })

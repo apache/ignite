@@ -22,12 +22,15 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link BinarizationTrainer}.
@@ -66,8 +69,35 @@ public class BinarizationTrainerTest {
         BinarizationTrainer<Integer, double[]> binarizationTrainer = new BinarizationTrainer<Integer, double[]>()
             .withThreshold(10);
 
+        assertEquals(10., binarizationTrainer.threshold(), 0);
+
         BinarizationPreprocessor<Integer, double[]> preprocessor = binarizationTrainer.fit(
             datasetBuilder,
+            (k, v) -> VectorUtils.of(v)
+        );
+
+        assertEquals(binarizationTrainer.threshold(), preprocessor.threshold(), 0);
+
+        assertArrayEquals(new double[] {0, 0, 1}, preprocessor.apply(5, new double[] {1, 10, 100}).asArray(), 1e-8);
+    }
+
+    /** Tests default implementation of {@code fit()} method. */
+    @Test
+    public void testFitDefault() {
+        Map<Integer, double[]> data = new HashMap<>();
+        data.put(1, new double[] {2, 4, 1});
+        data.put(2, new double[] {1, 8, 22});
+        data.put(3, new double[] {4, 10, 100});
+        data.put(4, new double[] {0, 22, 300});
+
+        BinarizationTrainer<Integer, double[]> binarizationTrainer = new BinarizationTrainer<Integer, double[]>()
+            .withThreshold(10);
+
+        assertEquals(10., binarizationTrainer.threshold(), 0);
+
+        IgniteBiFunction<Integer, double[], Vector> preprocessor = binarizationTrainer.fit(
+            data,
+            parts,
             (k, v) -> VectorUtils.of(v)
         );
 

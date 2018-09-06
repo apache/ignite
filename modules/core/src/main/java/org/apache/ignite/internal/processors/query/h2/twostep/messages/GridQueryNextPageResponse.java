@@ -67,8 +67,14 @@ public class GridQueryNextPageResponse implements Message {
     /** */
     private AffinityTopologyVersion retry;
 
+    /** Retry cause description*/
+    private String retryCause;
+
     /** Last page flag. */
     private boolean last;
+
+    /** Remove mapping flag. */
+    private boolean removeMapping;
 
     /**
      * For {@link Externalizable}.
@@ -230,6 +236,18 @@ public class GridQueryNextPageResponse implements Message {
                     return false;
 
                 writer.incrementState();
+
+            case 9:
+                if (!writer.writeString("retryCause", retryCause))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeBoolean("removeMapping", removeMapping))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -314,6 +332,23 @@ public class GridQueryNextPageResponse implements Message {
                     return false;
 
                 reader.incrementState();
+
+            case 9:
+                retryCause = reader.readString("retryCause");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                removeMapping = reader.readBoolean("removeMapping");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridQueryNextPageResponse.class);
@@ -326,7 +361,7 @@ public class GridQueryNextPageResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 11;
     }
 
     /**
@@ -344,6 +379,20 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
+     * @return Retry Ccause message.
+     */
+    public String retryCause() {
+        return retryCause;
+    }
+
+    /**
+     * @param retryCause Retry Ccause message.
+     */
+    public void retryCause(String retryCause){
+        this.retryCause = retryCause;
+    }
+
+    /**
      * @return Last page flag.
      */
     public boolean last() {
@@ -355,6 +404,20 @@ public class GridQueryNextPageResponse implements Message {
      */
     public void last(boolean last) {
         this.last = last;
+    }
+
+    /**
+     * @param removeMapping Remove mapping flag.
+     */
+    public void removeMapping(boolean removeMapping) {
+        this.removeMapping = removeMapping;
+    }
+
+    /**
+     * @return Remove mapping flag.
+     */
+    public boolean removeMapping() {
+        return removeMapping;
     }
 
     /** {@inheritDoc} */

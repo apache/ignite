@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.Duration;
@@ -30,9 +32,12 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.InvalidEnvironmentException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.InvalidEnvironmentException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -46,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
-import org.apache.ignite.internal.processors.cache.GridCacheIndexUpdateException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -54,7 +58,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsUpdateCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -62,6 +70,7 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -76,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -149,6 +159,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** */
     protected CacheWriteSynchronizationMode syncMode;
 
+    /** */
+    private GridLongList mvccWaitTxs;
+
+    /** Update counters map */
+    private Map<Integer, Map<Integer, Long>> updCntrs;
+
+    /** */
+    private volatile boolean qryEnlisted;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -207,6 +226,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         minVer = xidVer;
 
         txState = implicitSingle ? new IgniteTxImplicitSingleStateImpl() : new IgniteTxStateImpl();
+    }
+
+    public GridLongList mvccWaitTransactions() {
+        return mvccWaitTxs;
     }
 
     /**
@@ -280,10 +303,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         return depEnabled;
     }
 
-    /**
-     * @param depEnabled Flag indicating whether deployment is enabled for caches from this transaction or not.
-     */
-    public void activeCachesDeploymentEnabled(boolean depEnabled) {
+    /** {@inheritDoc} */
+    @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
         this.depEnabled = depEnabled;
     }
 
@@ -350,6 +371,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param ret Result.
      */
     public void implicitSingleResult(GridCacheReturn ret) {
+        assert ret != null;
+
         if (ret.invokeResult())
             implicitRes.mergeEntryProcessResults(ret);
         else
@@ -473,7 +496,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass"})
-    @Override public void userCommit() throws IgniteCheckedException {
+    @Override public final void userCommit() throws IgniteCheckedException {
         TransactionState state = state();
 
         if (state != COMMITTING) {
@@ -489,7 +512,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         Collection<IgniteTxEntry> commitEntries = (near() || cctx.snapshot().needTxReadLogging()) ? allEntries() : writeEntries();
 
-        boolean empty = F.isEmpty(commitEntries);
+        boolean empty = F.isEmpty(commitEntries) && !queryEnlisted();
 
         // Register this transaction as completed prior to write-phase to
         // ensure proper lock ordering for removed entries.
@@ -499,9 +522,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             cctx.tm().addCommittedTx(this);
 
         if (!empty) {
+            assert mvccWaitTxs == null;
+
             batchStoreCommit(writeEntries());
 
             WALPointer ptr = null;
+
+            Exception err = null;
 
             cctx.database().checkpointReadLock();
 
@@ -670,10 +697,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
                                             dhtVer,
-                                            null);
+                                            null,
+                                            mvccSnapshot());
 
-                                        if (updRes.success())
-                                            txEntry.updateCounter(updRes.updatePartitionCounter());
+                                        if (updRes.success()) {
+                                            txEntry.updateCounter(updRes.updateCounter());
+
+                                            GridLongList waitTxs = updRes.mvccWaitTransactions();
+
+                                            updateWaitTxs(waitTxs);
+                                        }
 
                                         if (updRes.loggedPointer() != null)
                                             ptr = updRes.loggedPointer();
@@ -684,27 +717,28 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             final GridCacheVersion dhtVer0 = dhtVer;
 
                                             updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerSet(
-                                                    null,
-                                                    eventNodeId(),
-                                                    nodeId,
-                                                    val0,
-                                                    false,
-                                                    false,
-                                                    txEntry.ttl(),
-                                                    false,
-                                                    metrics0,
-                                                    txEntry.keepBinary(),
-                                                    txEntry.hasOldValue(),
-                                                    txEntry.oldValue(),
-                                                    topVer,
-                                                    CU.empty0(),
-                                                    DR_NONE,
-                                                    txEntry.conflictExpireTime(),
-                                                    null,
-                                                    CU.subjectId(this, cctx),
-                                                    resolveTaskName(),
-                                                    dhtVer0,
-                                                    null)
+                                                null,
+                                                eventNodeId(),
+                                                nodeId,
+                                                val0,
+                                                false,
+                                                false,
+                                                txEntry.ttl(),
+                                                false,
+                                                metrics0,
+                                                txEntry.keepBinary(),
+                                                txEntry.hasOldValue(),
+                                                txEntry.oldValue(),
+                                                topVer,
+                                                CU.empty0(),
+                                                DR_NONE,
+                                                txEntry.conflictExpireTime(),
+                                                null,
+                                                CU.subjectId(this, cctx),
+                                                resolveTaskName(),
+                                                dhtVer0,
+                                                null,
+                                                mvccSnapshot())
                                             );
                                         }
                                     }
@@ -721,15 +755,21 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             txEntry.oldValue(),
                                             topVer,
                                             null,
-                                            cached.detached()  ? DR_NONE : drType,
+                                            cached.detached() ? DR_NONE : drType,
                                             cached.isNear() ? null : explicitVer,
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
                                             dhtVer,
-                                            null);
+                                            null,
+                                            mvccSnapshot());
 
-                                        if (updRes.success())
-                                            txEntry.updateCounter(updRes.updatePartitionCounter());
+                                        if (updRes.success()) {
+                                            txEntry.updateCounter(updRes.updateCounter());
+
+                                            GridLongList waitTxs = updRes.mvccWaitTransactions();
+
+                                            updateWaitTxs(waitTxs);
+                                        }
 
                                         if (updRes.loggedPointer() != null)
                                             ptr = updRes.loggedPointer();
@@ -739,23 +779,24 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             final GridCacheVersion dhtVer0 = dhtVer;
 
                                             updateNearEntrySafely(cacheCtx, txEntry.key(), entry -> entry.innerRemove(
-                                                    null,
-                                                    eventNodeId(),
-                                                    nodeId,
-                                                    false,
-                                                    false,
-                                                    metrics0,
-                                                    txEntry.keepBinary(),
-                                                    txEntry.hasOldValue(),
-                                                    txEntry.oldValue(),
-                                                    topVer,
-                                                    CU.empty0(),
-                                                    DR_NONE,
-                                                    null,
-                                                    CU.subjectId(this, cctx),
-                                                    resolveTaskName(),
-                                                    dhtVer0,
-                                                    null)
+                                                null,
+                                                eventNodeId(),
+                                                nodeId,
+                                                false,
+                                                false,
+                                                metrics0,
+                                                txEntry.keepBinary(),
+                                                txEntry.hasOldValue(),
+                                                txEntry.oldValue(),
+                                                topVer,
+                                                CU.empty0(),
+                                                DR_NONE,
+                                                null,
+                                                CU.subjectId(this, cctx),
+                                                resolveTaskName(),
+                                                dhtVer0,
+                                                null,
+                                                mvccSnapshot())
                                             );
                                         }
                                     }
@@ -795,7 +836,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             log.debug("Ignoring READ entry when committing: " + txEntry);
                                     }
                                     else {
-                                        assert ownsLock(txEntry.cached()):
+                                        assert ownsLock(txEntry.cached()) :
                                             "Transaction does not own lock for group lock entry during  commit [tx=" +
                                                 this + ", txEntry=" + txEntry + ']';
 
@@ -833,39 +874,34 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         // Need to remove version from committed list.
                         cctx.tm().removeCommittedTx(this);
 
-                        if (X.hasCause(ex, GridCacheIndexUpdateException.class) && cacheCtx.cache().isMongoDataCache()) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to update mongo document index (transaction entry will " +
-                                    "be ignored): " + txEntry);
+                        boolean isNodeStopping = X.hasCause(ex, NodeStoppingException.class);
+                        boolean hasInvalidEnvironmentIssue = X.hasCause(ex, InvalidEnvironmentException.class);
 
-                            // Set operation to NOOP.
-                            txEntry.op(NOOP);
+                        IgniteCheckedException err0 = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
+                            "(all transaction entries will be invalidated, however there was a window when " +
+                            "entries for this transaction were visible to others): " + this, ex);
 
-                            errorWhenCommitting();
-
-                            throw ex;
+                        if (isNodeStopping) {
+                            U.warn(log, "Failed to commit transaction, node is stopping [tx=" + this +
+                                ", err=" + ex + ']');
                         }
-                        else {
-                            boolean hasInvalidEnvironmentIssue = X.hasCause(ex, InvalidEnvironmentException.class);
+                        else if (hasInvalidEnvironmentIssue) {
+                            U.warn(log, "Failed to commit transaction, node is in invalid state and will be stopped [tx=" + this +
+                                ", err=" + ex + ']');
+                        }
+                        else
+                            U.error(log, "Commit failed.", err0);
 
-                            IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
-                                "(all transaction entries will be invalidated, however there was a window when " +
-                                "entries for this transaction were visible to others): " + this, ex);
+                        COMMIT_ERR_UPD.compareAndSet(this, null, err0);
 
-                            if (hasInvalidEnvironmentIssue) {
-                                U.warn(log, "Failed to commit transaction, node is stopping " +
-                                    "[tx=" + this + ", err=" + ex + ']');
-                            }
-                            else
-                                U.error(log, "Heuristic transaction failure.", err);
+                        state(UNKNOWN);
 
-                            COMMIT_ERR_UPD.compareAndSet(this, null, err);
-
-                            state(UNKNOWN);
-
+                        if (hasInvalidEnvironmentIssue)
+                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+                        else if (!isNodeStopping) { // Skip fair uncommit in case of node stopping or invalidation.
                             try {
                                 // Courtesy to minimize damage.
-                                uncommit(hasInvalidEnvironmentIssue);
+                                uncommit();
                             }
                             catch (Throwable ex1) {
                                 U.error(log, "Failed to uncommit transaction: " + this, ex1);
@@ -873,24 +909,30 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 if (ex1 instanceof Error)
                                     throw ex1;
                             }
-
-                            if (ex instanceof Error)
-                                throw ex;
-
-                            throw err;
                         }
+
+                        if (ex instanceof Error)
+                            throw ex;
+
+                        throw err0;
                     }
                 }
+
+                updateLocalPartitionCounters();
 
                 if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(ptr, false);
             }
             catch (StorageException e) {
+                err = e;
+
                 throw new IgniteCheckedException("Failed to log transaction record " +
                     "(transaction will be rolled back): " + this, e);
             }
             finally {
                 cctx.database().checkpointReadUnlock();
+
+                notifyDrManager(state() == COMMITTING && err == null);
 
                 cctx.tm().resetContext();
             }
@@ -908,6 +950,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || committedVers != null;
                 assert !needsCompletedVersions || rolledbackVers != null;
             }
+        }
+    }
+
+    /**
+     * @param waitTxs Tx ids to wait for.
+     */
+    private void updateWaitTxs(@Nullable GridLongList waitTxs) {
+        if (waitTxs != null) {
+            if (this.mvccWaitTxs == null)
+                this.mvccWaitTxs = waitTxs;
+            else
+                this.mvccWaitTxs.addAll(waitTxs);
         }
     }
 
@@ -944,6 +998,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
         }
     }
+
 
     /**
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
@@ -1012,6 +1067,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     @Override public void userRollback(boolean clearThreadMap) throws IgniteCheckedException {
         TransactionState state = state();
 
+        notifyDrManager(false);
+
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
             setRollbackOnly();
 
@@ -1079,8 +1136,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param read {@code True} if read.
      * @param accessTtl TTL for read operation.
      * @param filter Filter to check entries.
-     * @throws IgniteCheckedException If error.
      * @param computeInvoke If {@code true} computes return value for invoke operation.
+     * @throws IgniteCheckedException If error.
      */
     @SuppressWarnings("unchecked")
     protected final void postLockWrite(
@@ -1142,7 +1199,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     null,
                                     resolveTaskName(),
                                     null,
-                                    txEntry.keepBinary());
+                                    txEntry.keepBinary(),
+                                    null);  // TODO IGNITE-7371
                             }
                         }
                         else {
@@ -1241,6 +1299,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         Object key0 = null;
         Object val0 = null;
 
+        IgniteThread.onEntryProcessorEntered(true);
+
         try {
             Object res = null;
 
@@ -1252,21 +1312,22 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 res = entryProcessor.process(invokeEntry, t.get2());
 
-                val0 = invokeEntry.value();
+                val0 = invokeEntry.getValue(txEntry.keepBinary());
 
                 key0 = invokeEntry.key();
             }
 
-            val0 = ctx.toCacheObject(val0);
-
-            if (val0 != null)
-                ctx.validateKeyAndValue(txEntry.key(), (CacheObject)val0);
+            if (val0 != null) // no validation for remove case
+                ctx.validateKeyAndValue(txEntry.key(), ctx.toCacheObject(val0));
 
             if (res != null)
                 ret.addEntryProcessResult(ctx, txEntry.key(), key0, res, null, txEntry.keepBinary());
         }
         catch (Exception e) {
             ret.addEntryProcessResult(ctx, txEntry.key(), key0, null, e, txEntry.keepBinary());
+        }
+        finally {
+            IgniteThread.onEntryProcessorLeft();
         }
     }
 
@@ -1279,14 +1340,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         return !txState.init(txSize) || cctx.tm().onStarted(this);
     }
 
-    /**
-     * Adds cache to the list of active caches in transaction.
-     *
-     * @param cacheCtx Cache context to add.
-     * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
-     *      cache (e.g. they have different stores).
-     */
-    protected final void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public final void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
         txState.addActiveCache(cacheCtx, recovery, this);
     }
 
@@ -1347,7 +1402,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param skipStore Skip store flag.
      * @return Transaction entry.
      */
-    protected final IgniteTxEntry addEntry(GridCacheOperation op,
+    public final IgniteTxEntry addEntry(GridCacheOperation op,
         @Nullable CacheObject val,
         @Nullable EntryProcessor entryProcessor,
         Object[] invokeArgs,
@@ -1500,6 +1555,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
     }
 
+    /**
+     * @return Map of affected partitions: cacheId -> partId.
+     */
+    public Map<Integer, Set<Integer>> partsMap() {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxLocalAdapter.class, this, "super", super.toString(),
@@ -1579,6 +1641,110 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         return 0;
+    }
+
+    /**
+     * @return Partition counters map for the given backup node.
+     */
+    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersForNode(ClusterNode node) {
+        if (F.isEmpty(updCntrs))
+            return null;
+
+        Map<Integer, GridDhtPartitionsUpdateCountersMap> res = new HashMap<>();
+
+        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
+            Map<Integer, Long> partsCntrs = entry.getValue();
+
+            assert !F.isEmpty(partsCntrs);
+
+            GridCacheContext ctx0 = cctx.cacheContext(entry.getKey());
+
+            GridDhtPartitionsUpdateCountersMap resBackupCntrs = new GridDhtPartitionsUpdateCountersMap();
+
+            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
+                Long cntr = partsCntrs.get(e.getKey());
+
+                if (ctx0.affinity().backupByPartition(node, e.getKey(), topologyVersionSnapshot())) {
+                    assert cntr != null && cntr > 0 : cntr;
+
+                    resBackupCntrs.updateCounters().put(e.getKey(), cntr);
+                }
+            }
+
+            if (!resBackupCntrs.updateCounters().isEmpty())
+                res.put(entry.getKey(), resBackupCntrs);
+        }
+
+        return res;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param part Partition id.
+     */
+    @SuppressWarnings("Java8MapApi")
+    public void addPartitionCountersMapping(Integer cacheId, Integer part) {
+        if (updCntrs == null)
+            updCntrs = new ConcurrentHashMap<>();
+
+        Map<Integer, Long> partUpdCntrs = updCntrs.get(cacheId);
+
+        if (partUpdCntrs == null)
+            updCntrs.put(cacheId, partUpdCntrs = new ConcurrentHashMap<>());
+
+        partUpdCntrs.put(part, 0L);
+    }
+
+    /**
+     * Merges mvcc update counters to the partition update counters. For mvcc transactions we update partitions
+     * counters only on commit phase.
+     */
+    private void updateLocalPartitionCounters() {
+        if (F.isEmpty(updCntrs))
+            return;
+
+        for (Map.Entry<Integer, Map<Integer, Long>> entry : updCntrs.entrySet()) {
+            Map<Integer, Long> partsCntrs = entry.getValue();
+
+            assert !F.isEmpty(partsCntrs);
+
+            GridCacheContext ctx0 = cctx.cacheContext(entry.getKey());
+
+            for (Map.Entry<Integer, Long> e : partsCntrs.entrySet()) {
+                GridDhtLocalPartition dhtPart = ctx0.topology().localPartition(e.getKey());
+
+                assert dhtPart != null;
+
+                long cntr = dhtPart.mvccUpdateCounter();
+
+                dhtPart.updateCounter(cntr);
+
+                Long prev = partsCntrs.put(e.getKey(), cntr);
+
+                assert prev == 0L : prev;
+            }
+        }
+    }
+
+    /**
+     * @return {@code True} if there are entries, enlisted by query.
+     */
+    public boolean queryEnlisted() {
+        return qryEnlisted;
+    }
+
+    /**
+     * @param ver Mvcc version.
+     */
+    public void markQueryEnlisted(MvccSnapshot ver) {
+        if (!qryEnlisted) {
+            if (mvccSnapshot == null)
+                mvccSnapshot = ver;
+
+            cctx.coordinators().registerLocalTransaction(ver.coordinatorVersion(), ver.counter());
+
+            qryEnlisted = true;
+        }
     }
 
     /**

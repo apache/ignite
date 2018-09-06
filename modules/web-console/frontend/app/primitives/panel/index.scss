@@ -72,6 +72,15 @@
                 }
             }
         }
+
+        & > header.header-with-selector {
+            margin: 0;
+            padding: 14px 20px;
+
+            border-bottom: 1px solid #ddd;
+
+            line-height: 36px;
+        }
     }
 
     &--collapse {

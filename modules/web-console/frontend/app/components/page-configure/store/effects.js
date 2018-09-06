@@ -18,12 +18,23 @@
 import {Observable} from 'rxjs/Observable';
 import 'rxjs/add/operator/ignoreElements';
 import 'rxjs/add/operator/let';
+import 'rxjs/add/operator/exhaustMap';
+import 'rxjs/add/operator/switchMap';
+import 'rxjs/add/operator/map';
+import 'rxjs/add/operator/pluck';
+import 'rxjs/add/operator/withLatestFrom';
+import 'rxjs/add/operator/merge';
+import 'rxjs/add/operator/take';
+import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/zip';
 import {merge} from 'rxjs/observable/merge';
 import {empty} from 'rxjs/observable/empty';
 import {of} from 'rxjs/observable/of';
+import {from} from 'rxjs/observable/from';
 import {fromPromise} from 'rxjs/observable/fromPromise';
 import uniq from 'lodash/uniq';
+import {uniqueName} from 'app/utils/uniqueName';
+import {defaultNames} from '../defaultNames';
 
 import {
     cachesActionTypes,
@@ -230,10 +241,17 @@ export default class ConfigEffects {
 
         this.loadAndEditClusterEffect$ = ConfigureState.actions$
             .let(ofType('LOAD_AND_EDIT_CLUSTER'))
-            .exhaustMap((a) => {
+            .withLatestFrom(this.ConfigureState.state$.let(this.ConfigSelectors.selectShortClustersValue()))
+            .exhaustMap(([a, shortClusters]) => {
                 if (a.clusterID === 'new') {
                     return of(
-                        {type: 'EDIT_CLUSTER', cluster: this.Clusters.getBlankCluster()},
+                        {
+                            type: 'EDIT_CLUSTER',
+                            cluster: {
+                                ...this.Clusters.getBlankCluster(),
+                                name: uniqueName(defaultNames.cluster, shortClusters)
+                            }
+                        },
                         {type: 'LOAD_AND_EDIT_CLUSTER_OK'}
                     );
                 }
@@ -245,18 +263,18 @@ export default class ConfigEffects {
                                 {type: 'LOAD_AND_EDIT_CLUSTER_OK'}
                             );
                         }
-                        return fromPromise(this.Clusters.getCluster(a.clusterID))
-                        .switchMap(({data}) => of(
-                            {type: clustersActionTypes.UPSERT, items: [data]},
-                            {type: 'EDIT_CLUSTER', cluster: data},
-                            {type: 'LOAD_AND_EDIT_CLUSTER_OK'}
-                        ))
-                        .catch((error) => of({
-                            type: 'LOAD_AND_EDIT_CLUSTER_ERR',
-                            error: {
-                                message: `Failed to load cluster: ${error.data}.`
-                            }
-                        }));
+                        return from(this.Clusters.getCluster(a.clusterID))
+                            .switchMap(({data}) => of(
+                                {type: clustersActionTypes.UPSERT, items: [data]},
+                                {type: 'EDIT_CLUSTER', cluster: data},
+                                {type: 'LOAD_AND_EDIT_CLUSTER_OK'}
+                            ))
+                            .catch((error) => of({
+                                type: 'LOAD_AND_EDIT_CLUSTER_ERR',
+                                error: {
+                                    message: `Failed to load cluster: ${error.data}.`
+                                }
+                            }));
                     });
             });
 

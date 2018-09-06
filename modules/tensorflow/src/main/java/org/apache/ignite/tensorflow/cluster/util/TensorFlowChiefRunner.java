@@ -23,9 +23,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.cluster.spec.TensorFlowClusterSpec;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServer;
 import org.apache.ignite.tensorflow.cluster.tfrunning.TensorFlowServerScriptFormatter;
-import org.apache.ignite.tensorflow.core.pythonrunning.PythonProcessBuilderSupplier;
 import org.apache.ignite.tensorflow.core.util.AsyncNativeProcessRunner;
 import org.apache.ignite.tensorflow.core.util.NativeProcessRunner;
+import org.apache.ignite.tensorflow.core.util.PythonProcessBuilderSupplier;
 
 /**
  * Utils class that helps to start and stop chief process.
@@ -66,7 +66,11 @@ public class TensorFlowChiefRunner extends AsyncNativeProcessRunner {
         TensorFlowServer srv = new TensorFlowServer(spec, TensorFlowClusterResolver.CHIEF_JOB_NAME, 0);
 
         return new NativeProcessRunner(
-            new PythonProcessBuilderSupplier(true).get(),
+            new PythonProcessBuilderSupplier(
+                true,
+                "job:" + srv.getJobName(),
+                "task:" + srv.getTaskIdx()
+            ).get(),
             new TensorFlowServerScriptFormatter().format(srv, true, ignite),
             out,
             err

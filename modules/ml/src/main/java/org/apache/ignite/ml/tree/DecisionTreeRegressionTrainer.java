@@ -64,7 +64,7 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
     }
 
     /** {@inheritDoc} */
-    @Override ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(
+    @Override protected ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(
         Dataset<EmptyContext, DecisionTreeData> dataset) {
 
         return new MSEImpurityMeasureCalculator(useIndex);
