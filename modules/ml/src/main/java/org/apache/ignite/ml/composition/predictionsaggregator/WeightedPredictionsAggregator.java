@@ -86,4 +86,14 @@ public class WeightedPredictionsAggregator implements PredictionsAggregator {
         return builder.append(bias > 0 ? " + " : " - ").append(String.format("%.4f", bias))
             .append("]").toString();
     }
+
+    /** */
+    public double[] getWeights() {
+        return weights;
+    }
+
+    /** */
+    public double getBias() {
+        return bias;
+    }
 }
