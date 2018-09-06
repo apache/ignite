@@ -173,8 +173,6 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testClientSetCreateCloseFailover() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9015");
-
         checkClientSetCreateCloseFailover(false);
     }
 
