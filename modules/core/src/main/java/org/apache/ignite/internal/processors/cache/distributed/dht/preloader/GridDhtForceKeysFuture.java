@@ -254,6 +254,10 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 int cnt = F.size(mappedKeys);
 
                 if (cnt > 0) {
+                    log.error("Got forced rebalance", new Exception());
+
+                    System.exit(1);
+
                     ret = true;
 
                     MiniFuture fut = new MiniFuture(n, mappedKeys, curTopVer, exc);
