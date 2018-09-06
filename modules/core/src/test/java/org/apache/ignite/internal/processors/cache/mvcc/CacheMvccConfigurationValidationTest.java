@@ -24,10 +24,14 @@ import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -37,11 +41,13 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
  *
  */
+@SuppressWarnings("unchecked")
 public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -98,6 +104,114 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         }, CacheException.class, null);
 
         node.createCache(new CacheConfiguration("cache2").setGroupName("grp1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccLocalCacheDisabled() throws Exception {
+        final Ignite node = startGrid(0);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                node.createCache(new CacheConfiguration("cache2").setCacheMode(CacheMode.LOCAL)
+                    .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
+
+                return null;
+            }
+        }, CacheException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNodeRestartWithCacheModeChangedTxToMvcc() throws Exception {
+        cleanPersistenceDir();
+
+        //Enable persistence.
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration();
+        regionCfg.setPersistenceEnabled(true);
+        storageCfg.setDefaultDataRegionConfiguration(regionCfg);
+        IgniteConfiguration cfg = getConfiguration("testGrid");
+        cfg.setDataStorageConfiguration(storageCfg);
+        cfg.setConsistentId(cfg.getIgniteInstanceName());
+
+        Ignite node = startGrid(cfg);
+
+        node.cluster().active(true);
+
+        CacheConfiguration ccfg1 = new CacheConfiguration("test1").setAtomicityMode(TRANSACTIONAL);
+
+        IgniteCache cache = node.createCache(ccfg1);
+
+        cache.put(1, 1);
+        cache.put(1, 2);
+        cache.put(2, 2);
+
+        stopGrid(cfg.getIgniteInstanceName());
+
+        CacheConfiguration ccfg2 = new CacheConfiguration().setName(ccfg1.getName())
+            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+
+        IgniteConfiguration cfg2 = getConfiguration("testGrid")
+            .setConsistentId(cfg.getIgniteInstanceName())
+            .setCacheConfiguration(ccfg2)
+            .setDataStorageConfiguration(storageCfg);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(cfg2);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, "Failed to start processor");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNodeRestartWithCacheModeChangedMvccToTx() throws Exception {
+        cleanPersistenceDir();
+
+        //Enable persistence.
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration();
+        regionCfg.setPersistenceEnabled(true);
+        storageCfg.setDefaultDataRegionConfiguration(regionCfg);
+        IgniteConfiguration cfg = getConfiguration("testGrid");
+        cfg.setDataStorageConfiguration(storageCfg);
+        cfg.setConsistentId(cfg.getIgniteInstanceName());
+
+        Ignite node = startGrid(cfg);
+
+        node.cluster().active(true);
+
+        CacheConfiguration ccfg1 = new CacheConfiguration("test1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+
+        IgniteCache cache = node.createCache(ccfg1);
+
+        cache.put(1, 1);
+        cache.put(1, 2);
+        cache.put(2, 2);
+
+        stopGrid(cfg.getIgniteInstanceName());
+
+        CacheConfiguration ccfg2 = new CacheConfiguration().setName(ccfg1.getName())
+            .setAtomicityMode(TRANSACTIONAL);
+
+        IgniteConfiguration cfg2 = getConfiguration("testGrid")
+            .setConsistentId(cfg.getIgniteInstanceName())
+            .setCacheConfiguration(ccfg2)
+            .setDataStorageConfiguration(storageCfg);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(cfg2);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, "Failed to start processor");
     }
 
     /**

@@ -148,9 +148,6 @@ public class IgniteNode implements BenchmarkServer {
 
                 cc.setWriteBehindEnabled(args.isWriteBehind());
 
-                if (args.mvccEnabled())
-                    cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
-
                 BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);
             }
         }

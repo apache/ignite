@@ -269,17 +269,6 @@ public class IgniteBenchmarkArguments {
     private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
 
     /** */
-    @Parameter(names = {"-mvcc", "--mvcc"}, description = "Enable MVCC for cache")
-    private boolean mvcc;
-
-    /**
-     * @return {@code True} if need enable cache mvcc (see {@link CacheConfiguration#isMvccEnabled()}).
-     */
-    public boolean mvccEnabled() {
-        return mvcc;
-    }
-
-    /** */
     @Parameter(names = {"-sqlr", "--sqlRange"}, description = "Result set size")
     @GridToStringInclude
     private int sqlRange = 1;

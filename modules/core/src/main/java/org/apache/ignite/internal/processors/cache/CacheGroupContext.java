@@ -222,16 +222,7 @@ public class CacheGroupContext {
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
-        mvccEnabled = mvccEnabled(ccfg);
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @return {@code True} if mvcc is enabled for given cache.
-     */
-    public static boolean mvccEnabled(CacheConfiguration ccfg) {
-        return ccfg.getCacheMode() != LOCAL &&
-            ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+        mvccEnabled = ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
     }
 
     /**

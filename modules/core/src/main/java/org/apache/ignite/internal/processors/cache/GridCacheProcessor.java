@@ -181,6 +181,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_C
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.validateCacheGroupsAttributesMismatch;
 
 /**
  * Cache processor.
@@ -810,14 +811,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (CU.isPersistenceEnabled(ctx.config()) && ctx.cache().context().pageStore() != null) {
             Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
 
-            if (!F.isEmpty(storedCaches))
+            if (!F.isEmpty(storedCaches)) {
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
                     String cacheName = storedCacheData.config().getName();
 
                     //Ignore stored caches if it already added by static config(static config has higher priority).
                     if (!caches.containsKey(cacheName))
                         addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
+                    else {
+                        validateCacheGroupsAttributesMismatch(log, caches.get(cacheName).cacheData().config(),
+                            storedCacheData.config(), "atomicityMode", "Atomicity mode",
+                            caches.get(cacheName).cacheData().config().getAtomicityMode(),
+                            storedCacheData.config().getAtomicityMode(), true);
+                    }
                 }
+            }
         }
     }
 

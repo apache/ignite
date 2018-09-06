@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -252,8 +253,6 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
             if (!mvccSupported)
                 throw new IgniteException("Cannot start cache with MVCC transactional snapshot when there some nodes " +
                     "in cluster do not support it.");
-
-            mvccEnabled = true;
         }
     }
 
@@ -280,7 +279,9 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
                     "MVCC is enabled.");
             }
 
-            mvccEnabled = true;
+            if (ccfg.getCacheMode() == CacheMode.LOCAL)
+                throw new IgniteCheckedException("Local caches are not supported by MVCC engine. Use " +
+                    "CacheAtomicityMode.TRANSACTIONAL for local caches.");
         }
     }
 
@@ -298,8 +299,10 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
 
     /** {@inheritDoc} */
     @Override public void ensureStarted() throws IgniteCheckedException {
+        mvccEnabled = true;
+
         if (!ctx.clientNode() && txLog == null) {
-            assert mvccEnabled && mvccSupported;
+            assert mvccSupported;
 
             txLog = new TxLog(ctx, ctx.cache().context().database());
 
