@@ -3647,6 +3647,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 ByteBuffer handBuff = sslHnd.applicationBuffer();
 
+                if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
+                    short msgType = handBuff.get(0);
+
+                    if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
+                        return NEED_WAIT;
+                }
+
                 if (handBuff.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
                     buf = ByteBuffer.allocate(1000);
 
@@ -3658,6 +3665,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     buf.flip();
 
                     buf = sslHnd.decode(buf);
+
+                    if (handBuff.remaining() >= DIRECT_TYPE_SIZE) {
+                        short msgType = handBuff.get(0);
+
+                        if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
+                            return NEED_WAIT;
+                    }
                 }
                 else
                     buf = handBuff;
@@ -3675,7 +3689,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         short msgType = buf.get(0);
 
                         if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
-                            return rcvCnt = NEED_WAIT;
+                            return NEED_WAIT;
                     }
 
                     i += read;

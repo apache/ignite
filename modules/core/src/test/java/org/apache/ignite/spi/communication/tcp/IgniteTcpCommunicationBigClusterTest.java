@@ -18,14 +18,15 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -42,7 +43,7 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     private static final long DISCOVERY_MESSAGE_DELAY = 500;
 
     /** */
-    private static final int CLUSTER_SIZE = 10;
+    private static final int CLUSTER_SIZE = 5;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -74,7 +75,7 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    IgniteEx ignite = startGrid(idx.getAndIncrement());
+                    Ignite ignite = startGrid(idx.getAndIncrement());
 
                     while (ignite.cluster().forServers().nodes().size() < CLUSTER_SIZE) {
                         ignite.compute().broadcast(new IgniteRunnable() {
@@ -83,7 +84,7 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
                             }
                         });
 
-                        U.sleep(10);
+                        U.sleep(100);
                     }
                 }
                 catch (Exception e) {
@@ -112,7 +113,7 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
                     U.sleep(DISCOVERY_MESSAGE_DELAY);
                 }
                 catch (IgniteInterruptedCheckedException e) {
-                    e.printStackTrace();
+                    throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
 

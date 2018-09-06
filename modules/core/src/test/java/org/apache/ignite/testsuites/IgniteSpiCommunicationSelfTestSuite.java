@@ -36,6 +36,7 @@ import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiStartStopS
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpFailureDetectionSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpNoDelayOffSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpSelfTest;
+import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationBigClusterSslTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationBigClusterTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAckClosureSelfTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
@@ -90,6 +91,7 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpCommunicationStatisticsTest.class));
 
         suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterTest.class));
+        suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterSslTest.class));
 
         //suite.addTest(new TestSuite(GridCacheDhtLockBackupSelfTest.class));
 
