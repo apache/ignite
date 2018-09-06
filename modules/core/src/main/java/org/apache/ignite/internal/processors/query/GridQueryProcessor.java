@@ -2105,7 +2105,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final boolean failOnMultipleStmts) {
         checkxEnabled();
 
-        validateSqlFieldsQuery(qry);
+        validateSqlFieldsQuery(qry, ctx, cctx);
 
         if (!ctx.state().publicApiActiveState(true)) {
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
@@ -2155,13 +2155,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Validate SQL fields query.
      *
      * @param qry Query.
+     * @param ctx Kernal context.
+     * @param cctx Cache context.
      */
-    private static void validateSqlFieldsQuery(SqlFieldsQuery qry) {
+    private static void validateSqlFieldsQuery(SqlFieldsQuery qry, GridKernalContext ctx,
+        @Nullable GridCacheContext<?, ?> cctx) {
         if (qry.isReplicatedOnly() && qry.getPartitions() != null)
             throw new CacheException("Partitions are not supported in replicated only mode.");
 
         if (qry.isDistributedJoins() && qry.getPartitions() != null)
             throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
+
+        if (qry.isLocal() && ctx.clientNode() && (cctx == null || cctx.config().getCacheMode() != CacheMode.LOCAL))
+            throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
+    }
+
+    /**
+     * Validate SQL query.
+     *
+     * @param qry Query.
+     * @param ctx Kernal context.
+     * @param cctx Cache context.
+     */
+    private static void validateSqlQuery(SqlQuery qry, GridKernalContext ctx, GridCacheContext<?, ?> cctx) {
+        if (qry.isLocal() && ctx.clientNode() && cctx.config().getCacheMode() != CacheMode.LOCAL)
+            throw new CacheException("Execution of local SqlQuery on client node disallowed.");
     }
 
     /**
@@ -2232,6 +2250,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public <K, V> QueryCursor<Cache.Entry<K,V>> querySql(final GridCacheContext<?,?> cctx, final SqlQuery qry,
         boolean keepBinary) {
+        validateSqlQuery(qry, ctx, cctx);
+
         if (qry.isReplicatedOnly() && qry.getPartitions() != null)
             throw new CacheException("Partitions are not supported in replicated only mode.");
 
