@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
 
 /**
@@ -42,6 +43,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 7");
 
         suite.addTestSuite(CheckpointBufferDeadlockTest.class);
+        suite.addTestSuite(IgniteCacheStartWithLoadTest.class);
 
         return suite;
     }
