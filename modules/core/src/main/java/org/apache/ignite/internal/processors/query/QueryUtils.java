@@ -1284,34 +1284,22 @@ public class QueryUtils {
                     continue;
 
                 if (dfltVal.getClass() == BigDecimal.class) {
-                    if (((BigDecimal)dfltVal).precision() > precision.get(fld)) {
+                    BigDecimal dec = (BigDecimal)dfltVal;
+                    if (dec.precision() > precision.get(fld)) {
                         throw new IgniteSQLException("Default decimal value precision '" + dfltVal +
                             "' is longer than maximum decimal value precision " + precision.get(fld));
                     }
-                    else
-                        continue;
+                    else if (!F.isEmpty(scale) &&
+                        scale.containsKey(fld) &&
+                        dec.scale() > scale.get(fld)) {
+                        throw new IgniteSQLException("Default decimal value scale '" + dfltVal +
+                            "' is longer than maximum decimal value scale " + scale.get(fld));
+                    }
                 }
-                else if (dfltVal.toString().length() > precision.get(fld)) {
+                else if (dfltVal.getClass() == String.class &&
+                    dfltVal.toString().length() > precision.get(fld)) {
                     throw new IgniteSQLException("Default value '" + dfltVal +
                         "' is longer than maximum length " + precision.get(fld));
-                }
-            }
-        }
-
-        if (!F.isEmpty(scale)) {
-            for (String fld : scale.keySet()) {
-                if (!dfltVals.containsKey(fld))
-                    continue;
-
-                Object dfltVal = dfltVals.get(fld);
-
-                if (dfltVal == null)
-                    continue;
-
-                if (dfltVal.getClass() == BigDecimal.class &&
-                    ((BigDecimal)dfltVal).scale() > scale.get(fld)) {
-                    throw new IgniteSQLException("Default decimal value scale '" + dfltVal +
-                        "' is longer than maximum decimal value scale " + scale.get(fld));
                 }
             }
         }

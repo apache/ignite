@@ -115,7 +115,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
         execSQL("CREATE TABLE char_table_2(id INT PRIMARY KEY, field INTEGER)");
 
         execSQL("ALTER TABLE char_table_2 ADD COLUMN str CHAR(5) NOT NULL");
-
+        
         execSQL("INSERT INTO char_table_2(id, str) VALUES(?, ?)", 1, "1");
 
         checkSQLThrows("INSERT INTO char_table_2(id, str) VALUES(?, ?)", 2, "123456");

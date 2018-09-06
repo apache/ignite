@@ -583,37 +583,27 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
-            if (propVal == null)
+            if (propVal == null || prop.precision() == -1)
                 continue;
 
-            if (String.class == propVal.getClass()) {
-                String str = (String)propVal;
-
-                if (prop.precision() != -1 &&
-                    str.length() > prop.precision()) {
-                    throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " +
-                        "Maximum length: " + prop.precision() + ", actual length: " + ((CharSequence)propVal).length(),
-                        isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
-                }
-
-                continue;
+            if (String.class == propVal.getClass() &&
+                ((String)propVal).length() > prop.precision()) {
+                throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " + 
+                    "Maximum length: " + prop.precision() + ", actual length: " + ((CharSequence)propVal).length(),
+                    isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
             }
-
-            if (BigDecimal.class == propVal.getClass()) {
+            else if (BigDecimal.class == propVal.getClass()) {
                 BigDecimal dec = (BigDecimal)propVal;
-
-                if (prop.precision() == -1)
-                    continue;
 
                 if (dec.precision() > prop.precision()) {
                     throw new IgniteSQLException("Value for a column '" + prop.name() + "' is out of range. " +
-                        "Maximum precision: " + prop.precision() + ", actual precision: " + ((BigDecimal)propVal).precision(),
+                        "Maximum precision: " + prop.precision() + ", actual precision: " + dec.precision(),
                         isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
                 }
                 else if (prop.scale() != -1 &&
                     dec.scale() > prop.scale()) {
                     throw new IgniteSQLException("Value scale for a column '" + prop.name() + "' is too long. " +
-                        "Maximum value scale : " + prop.scale() + ", actual value scale: " + ((BigDecimal)propVal).scale(),
+                        "Maximum value scale : " + prop.scale() + ", actual value scale: " + dec.scale(),
                         isKey ? KEY_SCALE_OUT_OF_RANGE : VALUE_SCALE_OUT_OF_RANGE);
                 }
             }
