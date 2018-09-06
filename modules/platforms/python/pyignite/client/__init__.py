@@ -72,6 +72,7 @@ class Client(Connection):
     """
 
     _registry = defaultdict(dict)
+    _compact_footer = None
 
     def _transfer_params(self, to: 'Client'):
         super()._transfer_params(to)
@@ -132,6 +133,33 @@ class Client(Connection):
                 convert_schema(field_ids, binary_fields)
             )
         return result
+
+    @property
+    def compact_footer(self) -> bool:
+        """
+        This property remembers Complex object schema encoding approach when
+        decoding any Complex object, to use the same approach on Complex
+        object encoding.
+
+        :return: True if compact schema was used by server or no Complex
+         object decoding has yet taken place, False if full schema was used.
+        """
+        # this is an ordinary object property, but its backing storage
+        # is a class attribute
+
+        # use compact schema by default, but leave initial (falsy) backing
+        # value unchanged
+        return (
+            self.__class__._compact_footer
+            or self.__class__._compact_footer is None
+        )
+
+    @compact_footer.setter
+    def compact_footer(self, value: bool):
+        # normally schema approach should not change
+        if self.__class__._compact_footer not in (value, None):
+            raise Warning('Client schema approach has changed.')
+        self.__class__._compact_footer = value
 
     @status_to_exception(BinaryTypeError)
     def put_binary_type(

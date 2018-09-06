@@ -19,7 +19,7 @@ import inspect
 
 from pyignite.constants import *
 from pyignite.exceptions import ParseError
-from pyignite.utils import hashcode, is_hinted
+from pyignite.utils import entity_id, hashcode, is_hinted
 from .internal import AnyDataObject
 from .type_codes import *
 
@@ -367,6 +367,22 @@ class BinaryObject:
             return ctypes.c_uint16
         return ctypes.c_uint
 
+    @classmethod
+    def schema_type(cls, flags: int):
+        if flags & cls.COMPACT_FOOTER:
+            return cls.offset_c_type(flags)
+        return type(
+            'SchemaElement',
+            (ctypes.LittleEndianStructure,),
+            {
+                '_pack_': 1,
+                '_fields_': [
+                    ('field_id', ctypes.c_int),
+                    ('offset', cls.offset_c_type(flags)),
+                ],
+            },
+        )
+
     @staticmethod
     def get_dataclass(client: 'Client', header) -> OrderedDict:
         # get field names from outer space
@@ -395,7 +411,7 @@ class BinaryObject:
         final_class_fields = [('object_fields', object_fields)]
 
         if header.flags & cls.HAS_SCHEMA:
-            schema = cls.offset_c_type(header.flags) * len(fields)
+            schema = cls.schema_type(header.flags) * len(fields)
             buffer += client.recv(ctypes.sizeof(schema))
             final_class_fields.append(('schema', schema))
 
@@ -407,6 +423,8 @@ class BinaryObject:
                 '_fields_': final_class_fields,
             }
         )
+        # register schema encoding approach
+        client.compact_footer = bool(header.flags & cls.COMPACT_FOOTER)
         return final_class, buffer
 
     @classmethod
@@ -455,11 +473,13 @@ class BinaryObject:
             finally:
                 del frame
 
+        compact_footer = True
         client = find_client()
         if client:
             # if no client can be found, the class of the `value` is discarded
             # and the new dataclass is automatically registered later on
             client.register_binary_type(value.__class__)
+            compact_footer = client.compact_footer
         else:
             raise Warning(
                 'Can not register binary type {}'.format(value.type_name)
@@ -472,8 +492,10 @@ class BinaryObject:
             cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
-        # TODO: compact footer & no raw data is the only supported variant
-        header.flags = cls.USER_TYPE | cls.HAS_SCHEMA | cls.COMPACT_FOOTER
+
+        header.flags = cls.USER_TYPE | cls.HAS_SCHEMA
+        if compact_footer:
+            header.flags |= cls.COMPACT_FOOTER
         header.version = value.version
         header.type_id = value.type_id
         header.schema_id = value.schema_id
@@ -481,7 +503,8 @@ class BinaryObject:
         # create fields and calculate offsets
         field_buffer = b''
         offsets = [ctypes.sizeof(header_class)]
-        for field_name, field_type in value.schema.items():
+        schema_items = list(value.schema.items())
+        for field_name, field_type in schema_items:
             partial_buffer = field_type.from_python(
                 getattr(
                     value, field_name, getattr(field_type, 'default', None)
@@ -497,10 +520,15 @@ class BinaryObject:
             header.flags |= cls.OFFSET_ONE_BYTE
         elif max(offsets) < 65535:
             header.flags |= cls.OFFSET_TWO_BYTES
-        schema_class = cls.offset_c_type(header.flags) * len(offsets)
+        schema_class = cls.schema_type(header.flags) * len(offsets)
         schema = schema_class()
-        for i, offset in enumerate(offsets):
-            schema[i] = offset
+        if compact_footer:
+            for i, offset in enumerate(offsets):
+                schema[i] = offset
+        else:
+            for i, offset in enumerate(offsets):
+                schema[i].field_id = entity_id(schema_items[i][0])
+                schema[i].offset = offset
         # calculate size and hash code
         header.schema_offset = ctypes.sizeof(header_class) + len(field_buffer)
         header.length = header.schema_offset + ctypes.sizeof(schema_class)
