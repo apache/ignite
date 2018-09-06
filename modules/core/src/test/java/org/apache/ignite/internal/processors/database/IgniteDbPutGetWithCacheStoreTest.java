@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -124,7 +123,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
 
             assertEquals(2000, storeMap.size());
 
-            stopAllGrids();
+            stopAllGrids(false);
 
             storeMap.clear();
 
@@ -158,7 +157,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
             for (int i = 0; i < 2000; i++)
                 assertEquals(i, ig.cache(CACHE_NAME).get(i));
 
-            stopAllGrids();
+            stopAllGrids(false);
 
             storeMap.clear();
 

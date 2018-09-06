@@ -65,9 +65,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     /** */
     private transient List<List<ClusterNode>> idealAssignment;
 
-    /** */
-    private final boolean clientEvtChange;
-
     /**
      * Constructs cached affinity calculations item.
      *
@@ -78,7 +75,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         primary = new HashMap<>();
         backup = new HashMap<>();
         mvccCrd = null;
-        clientEvtChange = false;
     }
 
     /**
@@ -101,7 +97,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
         primary = new HashMap<>();
         backup = new HashMap<>();
-        clientEvtChange = false;
 
         initPrimaryBackupMaps();
     }
@@ -118,16 +113,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         primary = aff.primary;
         backup = aff.backup;
         mvccCrd = aff.mvccCrd;
-
-        clientEvtChange = true;
-    }
-
-    /**
-     * @return {@code True} if related discovery event did not not cause affinity assignment change and
-     *    this assignment is just reference to the previous one.
-     */
-    public boolean clientEventChange() {
-        return clientEvtChange;
     }
 
     /**
