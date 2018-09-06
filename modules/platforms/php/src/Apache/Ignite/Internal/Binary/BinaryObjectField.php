@@ -43,9 +43,7 @@ class BinaryObjectField
         if (!$type && $value !== null) {
             $this->type = BinaryUtils::calcObjectType($value);
         }
-        if ($this->type) {
-            $this->typeCode = BinaryUtils::getTypeCode($this->type);
-        }
+        $this->typeCode = $this->type ? BinaryUtils::getTypeCode($this->type) : 0;
     }
     
     public function getId(): int
@@ -53,7 +51,7 @@ class BinaryObjectField
         return $this->id;
     }
     
-    public function getTypeCode(): ?int
+    public function getTypeCode(): int
     {
         return $this->typeCode;
     }

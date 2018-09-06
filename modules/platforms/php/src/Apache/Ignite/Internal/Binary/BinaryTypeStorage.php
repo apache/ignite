@@ -105,6 +105,9 @@ class BinaryTypeStorage
 
     private function putBinaryType(BinaryType $binaryType): void
     {
+        if (!$binaryType->isValid()) {
+            BinaryUtils::serializationError(true, sprintf('type "%d" can not be registered', $binaryType->getId()));
+        }
         $this->communicator->send(
             ClientOperation::PUT_BINARY_TYPE,
             function (MessageBuffer $payload) use ($binaryType)

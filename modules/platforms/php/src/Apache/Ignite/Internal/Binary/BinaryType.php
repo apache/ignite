@@ -145,6 +145,16 @@ class BinaryType
         return $result;
     }
 
+    public function isValid(): bool
+    {
+        foreach ($this->fields as $field) {
+            if (!$field->isValid()) {
+                return false;
+            }
+        }
+        return $this->name !== null;
+    }
+
     public function write(MessageBuffer $buffer): void
     {
         // type id
@@ -194,7 +204,7 @@ class BinaryType
         $fieldsCount = $buffer->readInteger();
         // fields
         for ($i = 0; $i < $fieldsCount; $i++) {
-            $field = new BinaryField(null, null);
+            $field = new BinaryField();
             $field->read($buffer);
             $this->setField($field);
         }

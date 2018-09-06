@@ -24,7 +24,7 @@ class BinaryField
     private $id;
     private $typeCode;
     
-    public function __construct(?string $name, ?int $typeCode)
+    public function __construct(string $name = null, int $typeCode = 0)
     {
         $this->name = $name;
         $this->id = BinaryField::calculateId($name);
@@ -46,9 +46,14 @@ class BinaryField
         return $this->name;
     }
 
-    public function getTypeCode(): ?int
+    public function getTypeCode(): int
     {
         return $this->typeCode;
+    }
+
+    public function isValid(): bool
+    {
+        return $this->name !== null;
     }
 
     public function write(MessageBuffer $buffer): void

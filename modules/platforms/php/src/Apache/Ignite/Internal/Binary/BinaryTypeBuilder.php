@@ -134,7 +134,7 @@ class BinaryTypeBuilder
         return $this->type->getField($fieldId);
     }
 
-    public function setField(string $fieldName, int $fieldTypeCode = null): void
+    public function setField(string $fieldName, int $fieldTypeCode = 0): void
     {
         $fieldId = BinaryField::calculateId($fieldName);
         if (!$this->type->hasField($fieldId) || !$this->schema->hasField($fieldId) ||
