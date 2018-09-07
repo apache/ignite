@@ -221,9 +221,11 @@ class GridDhtPartitionSupplier {
         if (node == null)
             return;
 
-        try {
-            SupplyContext sctx;
+        IgniteRebalanceIterator iter = null;
 
+        SupplyContext sctx = null;
+
+        try {
             synchronized (scMap) {
                 sctx = scMap.remove(contextId);
 
@@ -232,7 +234,7 @@ class GridDhtPartitionSupplier {
                     scMap.put(contextId, sctx);
 
                     if (log.isDebugEnabled())
-                        log.debug("Stale demand message [grp=" + grp.cacheOrGroupName()
+                        log.debug("Stale demand message [cache=" + grp.cacheOrGroupName()
                             + ", actualContext=" + sctx
                             + ", from=" + nodeId
                             + ", demandMsg=" + d + "]");
@@ -244,7 +246,7 @@ class GridDhtPartitionSupplier {
             // Demand request should not contain empty partitions if no supply context is associated with it.
             if (sctx == null && (d.partitions() == null || d.partitions().isEmpty())) {
                 if (log.isDebugEnabled())
-                    log.debug("Empty demand message [grp=" + grp.cacheOrGroupName()
+                    log.debug("Empty demand message [cache=" + grp.cacheOrGroupName()
                         + ", from=" + nodeId
                         + ", topicId=" + topicId
                         + ", demandMsg=" + d + "]");
@@ -274,8 +276,6 @@ class GridDhtPartitionSupplier {
                     grp.groupId(),
                     d.topologyVersion(),
                     grp.deploymentEnabled());
-
-            IgniteRebalanceIterator iter;
 
             Set<Integer> remainingParts;
 
@@ -380,8 +380,8 @@ class GridDhtPartitionSupplier {
                 if (preloadPred == null || preloadPred.apply(info))
                     s.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
                 else {
-                    if (log.isDebugEnabled())
-                        log.debug("Rebalance predicate evaluated to false (will not send " +
+                    if (log.isTraceEnabled())
+                        log.trace("Rebalance predicate evaluated to false (will not send " +
                             "cache entry): " + info);
                 }
 
@@ -430,13 +430,56 @@ class GridDhtPartitionSupplier {
                     ", topology=" + demTop + ", rebalanceId=" + d.rebalanceId() +
                     ", topicId=" + topicId + "]");
         }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send partition supply message to node: " + nodeId, e);
-        }
-        catch (IgniteSpiException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send message to node (current node is stopping?) [node=" + node.id() +
-                    ", msg=" + e.getMessage() + ']');
+        catch (Throwable t) {
+            if (grp.shared().kernalContext().isStopping())
+                return;
+
+            // Sending supply messages with error requires new protocol.
+            boolean sendErrMsg = node.version().compareTo(GridDhtPartitionSupplyMessageV2.AVAILABLE_SINCE) >= 0;
+
+            if (t instanceof IgniteSpiException) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send message to node (current node is stopping?) [node=" + node.id() +
+                        ", msg=" + t.getMessage() + ']');
+
+                sendErrMsg = false;
+            }
+            else
+                U.error(log, "Failed to continue supplying process for " +
+                    "[cache=" + grp.cacheOrGroupName() + ", node=" + nodeId
+                    + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t);
+
+            try {
+                if (sctx != null)
+                    clearContext(sctx, log);
+                else if (iter != null)
+                    iter.close();
+            }
+            catch (Throwable t1) {
+                U.error(log, "Failed to cleanup supplying context " +
+                        "[cache=" + grp.cacheOrGroupName() + ", node=" + nodeId
+                        + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t1);
+            }
+
+            if (!sendErrMsg)
+                return;
+
+            try {
+                GridDhtPartitionSupplyMessageV2 errMsg = new GridDhtPartitionSupplyMessageV2(
+                    d.rebalanceId(),
+                    grp.groupId(),
+                    d.topologyVersion(),
+                    grp.deploymentEnabled(),
+                    t
+                );
+
+                reply(node, d, errMsg, contextId);
+            }
+            catch (Throwable t1) {
+                U.error(log, "Failed to send supply error message for " +
+                    "[cache=" + grp.cacheOrGroupName() + ", node=" + nodeId
+                        + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t1);
+            }
         }
     }
 
