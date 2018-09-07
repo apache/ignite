@@ -2699,9 +2699,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * This implementation doesn't support type reregistration.
      *
      * @param type Type description.
+     * @param isSql {@code true} in case table has been created from SQL.
      * @throws IgniteCheckedException In case of error.
      */
-    @Override public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor type)
+    @Override public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor type, boolean isSql)
         throws IgniteCheckedException {
         validateTypeDescriptor(type);
 
@@ -2709,7 +2710,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2Schema schema = schemas.get(schemaName);
 
-        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cctx);
+        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cctx, isSql);
 
         try {
             Connection conn = connectionForThread(schemaName);

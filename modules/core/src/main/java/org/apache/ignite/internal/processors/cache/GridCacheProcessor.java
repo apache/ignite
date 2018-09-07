@@ -1159,7 +1159,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     boolean rmvIdx = !cache.context().group().persistenceEnabled();
 
                     ctx.query().onCacheStop0(cctx, rmvIdx);
-                    ctx.query().onCacheStart0(cctx, desc.schema());
+                    ctx.query().onCacheStart0(cctx, desc.schema(), desc.sql());
                 }
             }
         }
@@ -1187,10 +1187,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cache Cache to start.
      * @param schema Cache schema.
+     * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed to start cache.
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
-    private void startCache(GridCacheAdapter<?, ?> cache, QuerySchema schema) throws IgniteCheckedException {
+    private void startCache(GridCacheAdapter<?, ?> cache, QuerySchema schema, boolean isSql) throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
         CacheConfiguration cfg = cacheCtx.config();
@@ -1227,7 +1228,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.cache().start();
 
-        ctx.query().onCacheStart(cacheCtx, schema);
+        ctx.query().onCacheStart(cacheCtx, schema, isSql);
 
         cacheCtx.onStarted();
 
@@ -1980,7 +1981,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         caches.put(cacheCtx.name(), cache);
 
-        startCache(cache, desc.schema() != null ? desc.schema() : new QuerySchema());
+        startCache(cache, desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         grp.onCacheStarted(cacheCtx);
 

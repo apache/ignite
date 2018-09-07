@@ -678,10 +678,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Use with {@link #busyLock} where appropriate.
      * @param cctx Cache context.
      * @param schema Initial schema.
+     * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"deprecation", "ThrowableResultOfMethodCallIgnored"})
-    public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema)
+    public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema, boolean isSql)
         throws IgniteCheckedException {
 
         cctx.shared().database().checkpointReadLock();
@@ -802,7 +803,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
 
                 // Ready to register at this point.
-                registerCache0(cacheName, schemaName, cctx, cands);
+                registerCache0(cacheName, schemaName, cctx, cands, isSql);
 
                 // Warn about possible implicit deserialization.
                 if (!mustDeserializeClss.isEmpty()) {
@@ -853,9 +854,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      * @param schema Index states.
+     * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart(GridCacheContext cctx, QuerySchema schema) throws IgniteCheckedException {
+    public void onCacheStart(GridCacheContext cctx, QuerySchema schema, boolean isSql) throws IgniteCheckedException {
         if (idx == null)
             return;
 
@@ -863,7 +865,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            onCacheStart0(cctx, schema);
+            onCacheStart0(cctx, schema, isSql);
         }
         finally {
             busyLock.leaveBusy();
@@ -1587,13 +1589,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schemaName Schema name.
      * @param cctx Cache context.
      * @param cands Candidates.
+     * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed.
      */
     private void registerCache0(
         String cacheName,
         String schemaName,
         GridCacheContext<?, ?> cctx,
-        Collection<QueryTypeCandidate> cands
+        Collection<QueryTypeCandidate> cands,
+        boolean isSql
     ) throws IgniteCheckedException {
         synchronized (stateMux) {
             if (idx != null)
@@ -1628,7 +1632,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
 
                     if (idx != null)
-                        idx.registerType(cctx, desc);
+                        idx.registerType(cctx, desc, isSql);
                 }
 
                 cacheNames.add(CU.mask(cacheName));
@@ -2504,15 +2508,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(
-                    ctx, 
+                    ctx,
                     col.name(),
-                    null, 
-                    Class.forName(col.typeName()), 
-                    false, 
-                    null, 
-                    !col.isNullable(), 
-                    null, 
-                    col.precision(), 
+                    null,
+                    Class.forName(col.typeName()),
+                    false,
+                    null,
+                    !col.isNullable(),
+                    null,
+                    col.precision(),
                     col.scale()));
             }
             catch (ClassNotFoundException e) {
