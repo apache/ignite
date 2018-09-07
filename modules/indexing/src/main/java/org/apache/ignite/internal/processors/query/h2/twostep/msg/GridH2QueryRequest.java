@@ -476,67 +476,69 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
                 if (!writer.writeInt("pageSize", pageSize))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 3:
                 if (!writer.writeByteArray("paramsBytes", paramsBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 4:
                 if (!writer.writeMap("parts", parts, MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
-                if (!writer.writeIntArray("qryParts", qryParts))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
+            case 5:
                 if (!writer.writeCollection("qrys", qrys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 6:
                 if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
-                if (!writer.writeString("schemaName", schemaName))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
+            case 7:
                 if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 8:
                 if (!writer.writeInt("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 9:
                 if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+
+            case 10:
+                if (!writer.writeIntArray("qryParts", qryParts))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
+                if (!writer.writeString("schemaName", schemaName))
+                    return false;
+
+                writer.incrementState();
+
+
+            case 12:
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
@@ -577,14 +579,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 2:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
                 pageSize = reader.readInt("pageSize");
 
                 if (!reader.isLastRead())
@@ -592,7 +586,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 4:
+            case 3:
                 paramsBytes = reader.readByteArray("paramsBytes");
 
                 if (!reader.isLastRead())
@@ -600,7 +594,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 5:
+            case 4:
                 parts = reader.readMap("parts", MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR, false);
 
                 if (!reader.isLastRead())
@@ -608,15 +602,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 6:
-                qryParts = reader.readIntArray("qryParts");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
+            case 5:
                 qrys = reader.readCollection("qrys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -624,7 +610,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 8:
+            case 6:
                 reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
@@ -632,15 +618,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 9:
-                schemaName = reader.readString("schemaName");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
+            case 7:
                 tbls = reader.readCollection("tbls", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -648,7 +626,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 11:
+            case 8:
                 timeout = reader.readInt("timeout");
 
                 if (!reader.isLastRead())
@@ -656,8 +634,34 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-            case 12:
+            case 9:
                 topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+
+            case 10:
+                qryParts = reader.readIntArray("qryParts");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                schemaName = reader.readString("schemaName");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+
+            case 12:
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
                     return false;
