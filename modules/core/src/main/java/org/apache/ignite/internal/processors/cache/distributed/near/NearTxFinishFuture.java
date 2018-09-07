@@ -17,15 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 
 /**
  *
  */
-public interface NearTxFinishFuture extends IgniteInternalFuture<IgniteInternalTx> {
+public interface NearTxFinishFuture extends IgniteInternalFuture<IgniteInternalTx>  {
     /**
      * @return Commit flag.
      */
     boolean commit();
+
+    /**
+     * @return Transaction.
+     */
+    GridNearTxLocal tx();
+
+    /**
+     *
+     * @param commit Commit flag.
+     * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
+     * @param onTimeout If {@code true} called from timeout handler.
+     */
+    public void finish(boolean commit, boolean clearThreadMap, boolean onTimeout);
+
+    /**
+     * @param e Error.
+     */
+    public void onNodeStop(IgniteCheckedException e);
 }

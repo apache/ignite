@@ -55,7 +55,9 @@ import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
 
 /**
  * Shared serialization/deserialization utils.
@@ -232,7 +234,7 @@ final class ClientUtils {
     }
 
     /** Serialize configuration to stream. */
-    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out) {
+    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ClientListenerProtocolVersion ver) {
         try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
             int origPos = out.position();
 
@@ -310,8 +312,11 @@ final class ClientUtils {
                                 w.writeBoolean(qf.isKey());
                                 w.writeBoolean(qf.isNotNull());
                                 w.writeObject(qf.getDefaultValue());
-                                w.writeInt(qf.getPrecision());
-                                w.writeInt(qf.getScale());
+
+                                if (ver.compareTo(VER_1_2_0) >= 0) {
+                                    w.writeInt(qf.getPrecision());
+                                    w.writeInt(qf.getScale());
+                                }
                             }
                         );
                         ClientUtils.collection(
@@ -344,7 +349,8 @@ final class ClientUtils {
     }
 
     /** Deserialize configuration from stream. */
-    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in) throws IOException {
+    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ClientListenerProtocolVersion ver)
+        throws IOException {
         try (BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
             reader.readInt(); // Do not need length to read data. The protocol defines fixed configuration layout.
 
@@ -388,17 +394,27 @@ final class ClientUtils {
                             .setKeyFieldName(reader.readString())
                             .setValueFieldName(reader.readString());
 
+                        boolean isCliVer1_2 = ver.compareTo(VER_1_2_0) >= 0;
+
                         Collection<QueryField> qryFields = ClientUtils.collection(
                             in,
-                            unused2 -> new QueryField(
-                                reader.readString(),
-                                reader.readString(),
-                                reader.readBoolean(),
-                                reader.readBoolean(),
-                                reader.readObject(),
-                                reader.readInt(),
-                                reader.readInt()
-                            )
+                            unused2 -> {
+                                String name = reader.readString();
+                                String typeName = reader.readString();
+                                boolean isKey = reader.readBoolean();
+                                boolean isNotNull = reader.readBoolean(); 
+                                Object dfltVal = reader.readObject();
+                                int precision = isCliVer1_2 ? reader.readInt() : -1;
+                                int scale = isCliVer1_2 ? reader.readInt() : -1; 
+
+                                return new QueryField(name,
+                                    typeName,
+                                    isKey,
+                                    isNotNull,
+                                    dfltVal,
+                                    precision,
+                                    scale);
+                            }
                         );
 
                         return qryEntity
@@ -418,6 +434,14 @@ final class ClientUtils {
                             .setDefaultFieldValues(qryFields.stream()
                                 .filter(f -> f.getDefaultValue() != null)
                                 .collect(Collectors.toMap(QueryField::getName, QueryField::getDefaultValue))
+                            )
+                            .setFieldsPrecision(qryFields.stream()
+                                .filter(f -> f.getPrecision() != -1)
+                                .collect(Collectors.toMap(QueryField::getName, QueryField::getPrecision))
+                            )
+                            .setFieldsScale(qryFields.stream()
+                                .filter(f -> f.getScale() != -1)
+                                .collect(Collectors.toMap(QueryField::getName, QueryField::getScale))
                             )
                             .setAliases(ClientUtils.collection(
                                 in,
@@ -513,16 +537,14 @@ final class ClientUtils {
             Set<String> keys = e.getKeyFields();
             Set<String> notNulls = e.getNotNullFields();
             Map<String, Object> dflts = e.getDefaultFieldValues();
-            Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = e.getDecimalInfo();
+            Map<String, Integer> fldsPrecision = e.getFieldsPrecision();
+            Map<String, Integer> fldsScale = e.getFieldsScale();
 
             isKey = keys != null && keys.contains(name);
             isNotNull = notNulls != null && notNulls.contains(name);
             dfltVal = dflts == null ? null : dflts.get(name);
-
-            IgniteBiTuple<Integer, Integer> precisionAndScale = decimalInfo == null ? null : decimalInfo.get(name);
-
-            precision = precisionAndScale == null? -1 : precisionAndScale.get1();
-            scale = precisionAndScale == null? -1 : precisionAndScale.get2();
+            precision = fldsPrecision == null ? -1 : fldsPrecision.getOrDefault(name, -1);
+            scale = fldsScale == null? -1 : fldsScale.getOrDefault(name, -1);
         }
 
         /** Deserialization constructor. */

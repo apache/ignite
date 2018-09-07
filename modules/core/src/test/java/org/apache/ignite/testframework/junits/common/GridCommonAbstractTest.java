@@ -94,6 +94,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -109,6 +110,7 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -1178,6 +1180,21 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return List of keys.
      */
     protected final List<Integer> movingKeysAfterJoin(Ignite ign, String cacheName, int size) {
+        return movingKeysAfterJoin(ign, cacheName, size, null);
+    }
+
+    /**
+     * Return list of keys that are primary for given node on current topology,
+     * but primary node will change after new node will be added.
+     *
+     * @param ign Ignite.
+     * @param cacheName Cache name.
+     * @param size Number of keys.
+     * @param nodeInitializer Node initializer closure.
+     * @return List of keys.
+     */
+    protected final List<Integer> movingKeysAfterJoin(Ignite ign, String cacheName, int size,
+        @Nullable IgniteInClosure<ClusterNode> nodeInitializer) {
         assertEquals("Expected consistentId is set to node name", ign.name(), ign.cluster().localNode().consistentId());
 
         ArrayList<ClusterNode> nodes = new ArrayList<>(ign.cluster().nodes());
@@ -1185,6 +1202,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         List<List<ClusterNode>> calcAff = calcAffinity(ign.cache(cacheName), nodes);
 
         GridTestNode fakeNode = new GridTestNode(UUID.randomUUID(), null);
+
+        if (nodeInitializer != null)
+            nodeInitializer.apply(fakeNode);
 
         fakeNode.consistentId(getTestIgniteInstanceName(nodes.size()));
 
@@ -1974,5 +1994,28 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             VisorIdleVerifyTaskV2.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
         );
+    }
+
+    /**
+     * Checks if all txs and mvcc futures are finished.
+     */
+    protected void checkFutures() {
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
+
+            for (GridCacheFuture<?> fut : futs)
+                log.info("Waiting for future: " + fut);
+
+            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
+
+            Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions();
+
+            for (IgniteInternalTx tx : txs)
+                log.info("Waiting for tx: " + tx);
+
+            assertTrue("Expecting no active transactions: node=" + ig.localNode().id(), txs.isEmpty());
+        }
     }
 }

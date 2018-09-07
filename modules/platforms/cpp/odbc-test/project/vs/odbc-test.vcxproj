@@ -164,6 +164,7 @@
     <ClCompile Include="..\..\..\odbc\src\diagnostic\diagnostic_record.cpp" />
     <ClCompile Include="..\..\..\odbc\src\diagnostic\diagnostic_record_storage.cpp" />
     <ClCompile Include="..\..\..\odbc\src\log.cpp" />
+    <ClCompile Include="..\..\..\odbc\src\nested_tx_mode.cpp" />
     <ClCompile Include="..\..\..\odbc\src\protocol_version.cpp" />
     <ClCompile Include="..\..\..\odbc\src\result_page.cpp" />
     <ClCompile Include="..\..\..\odbc\src\row.cpp" />
@@ -176,6 +177,7 @@
     <ClCompile Include="..\..\src\column_test.cpp" />
     <ClCompile Include="..\..\src\configuration_test.cpp" />
     <ClCompile Include="..\..\src\connection_info_test.cpp" />
+    <ClCompile Include="..\..\src\connection_test.cpp" />
     <ClCompile Include="..\..\src\cursor_test.cpp" />
     <ClCompile Include="..\..\src\errors_test.cpp" />
     <ClCompile Include="..\..\src\meta_queries_test.cpp" />
@@ -199,6 +201,7 @@
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_messages.cpp" />
     <ClCompile Include="..\..\src\test_utils.cpp" />
+    <ClCompile Include="..\..\src\transaction_test.cpp" />
     <ClCompile Include="..\..\src\types_test.cpp" />
     <ClCompile Include="..\..\src\utility_test.cpp" />
   </ItemGroup>
@@ -232,6 +235,8 @@
     <None Include="..\..\config\queries-ssl.xml" />
     <None Include="..\..\config\queries-test-32.xml" />
     <None Include="..\..\config\queries-test.xml" />
+    <None Include="..\..\config\queries-transaction-32.xml" />
+    <None Include="..\..\config\queries-transaction.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

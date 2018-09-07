@@ -21,7 +21,9 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
 import java.util.Collections;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -58,6 +60,10 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-sm", "--syncMode"}, description = "Synchronization mode")
     private CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
+
+    /** */
+    @Parameter(names = {"--atomic-mode", "--atomicMode"})
+    @Nullable private CacheAtomicityMode atomicMode = null;
 
     /** */
     @Parameter(names = {"-cl", "--client"}, description = "Client flag")
@@ -263,6 +269,17 @@ public class IgniteBenchmarkArguments {
     private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
 
     /** */
+    @Parameter(names = {"-mvcc", "--mvcc"}, description = "Enable MVCC for cache")
+    private boolean mvcc;
+
+    /**
+     * @return {@code True} if need enable cache mvcc (see {@link CacheConfiguration#isMvccEnabled()}).
+     */
+    public boolean mvccEnabled() {
+        return mvcc;
+    }
+
+    /** */
     @Parameter(names = {"-sqlr", "--sqlRange"}, description = "Result set size")
     @GridToStringInclude
     private int sqlRange = 1;
@@ -276,6 +293,15 @@ public class IgniteBenchmarkArguments {
     @ParametersDelegate
     @GridToStringInclude
     public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
+
+    /** */
+    @Parameter(names = {"--mvcc-contention-range", "--mvccContentionRange"},
+        description = "Mvcc benchmark specific: " +
+            "Size of range of table keys that should be used in query. " +
+            "Should be less than 'range'. " +
+            "Useful together with 'sqlRange' to control, how often key contentions of sql operations occur.")
+    @GridToStringInclude
+    public long mvccContentionRange = 10_000;
 
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
@@ -387,6 +413,11 @@ public class IgniteBenchmarkArguments {
      */
     public CacheWriteSynchronizationMode syncMode() {
         return syncMode;
+    }
+
+    /** With what cache atomicity mode to create tables. */
+    @Nullable public CacheAtomicityMode atomicMode(){
+        return atomicMode;
     }
 
     /**
@@ -686,6 +717,13 @@ public class IgniteBenchmarkArguments {
      */
     public int clientNodesAfterId() {
         return clientNodesAfterId;
+    }
+
+    /**
+     * @return Mvcc contention range.
+     */
+    public long mvccContentionRange() {
+        return mvccContentionRange;
     }
 
     /** {@inheritDoc} */

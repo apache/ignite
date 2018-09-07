@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import {Selector, t} from 'testcafe';
+import {FormField} from './FormField';
+import {t} from 'testcafe';
 
 export class ModalInput {
     constructor() {
-        this.valueInput = Selector('#input-fieldInput');
+        this.valueInput = new FormField({ id: 'inputDialogFieldInput' });
     }
 
     async enterValue(value) {
-        await t.typeText(this.valueInput, value);
+        await t.typeText(this.valueInput.control, value);
     }
 
     async confirm() {

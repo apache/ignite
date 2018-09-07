@@ -17,6 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
@@ -340,7 +351,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
         long time = System.currentTimeMillis();
 
-        IndexingQueryFilter qryFilter = threadLocalFilter();
+        IndexingQueryFilter qryFilter = null;
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if (qctx != null)
+            qryFilter = qctx.filter();
 
         IndexingQueryCacheFilter qryCacheFilter = qryFilter != null ? qryFilter.forCache(getTable().cacheName()) : null;
 
