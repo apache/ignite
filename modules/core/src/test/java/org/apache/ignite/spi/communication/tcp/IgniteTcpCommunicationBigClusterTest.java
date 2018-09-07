@@ -45,13 +45,13 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
  */
 public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest {
     /** */
-    private static final long COMMUNICATION_TIMEOUT = 1000;
+    private static final long COMMUNICATION_TIMEOUT = 2000;
 
     /** */
     private static final long DISCOVERY_MESSAGE_DELAY = 300;
 
     /** */
-    private static final int CLUSTER_SIZE = 5;
+    private static final int CLUSTER_SIZE = 8;
 
     static {
         GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
