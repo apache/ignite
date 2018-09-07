@@ -292,9 +292,9 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
             //Check if key is simple type
             if(keyFieldName != null){
-                int keyColumnId = tbl.getColumn(keyFieldName).getColumnId();
+                int keyColId = tbl.getColumn(keyFieldName).getColumnId();
 
-                keyCols.add(tbl.indexColumn(keyColumnId, SortOrder.ASCENDING));
+                keyCols.add(tbl.indexColumn(keyColId, SortOrder.ASCENDING));
             } else {
                 for (String propName : type.fields().keySet()) {
                     GridQueryProperty prop = type.property(propName);
