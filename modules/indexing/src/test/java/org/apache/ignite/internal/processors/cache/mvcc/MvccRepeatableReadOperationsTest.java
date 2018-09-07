@@ -11,7 +11,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
      * @param readMode
      * @return
      */
-    @Override protected Map<Integer, MvccTestAccount> getValues(
+    @Override protected Map<Integer, MvccTestAccount> getEntries(
         TestCache<Integer, MvccTestAccount> cache,
         Set<Integer> keys,
         ReadMode readMode) {
@@ -35,19 +35,19 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
         return null;
     }
 
-    protected void updateValues(
+    protected void updateEntries(
         TestCache<Integer, MvccTestAccount> cache,
-        Map<Integer, MvccTestAccount> vals,
-        WriteMode readMode) {
-        switch (readMode) {
+        Map<Integer, MvccTestAccount> entries,
+        WriteMode writeMode) {
+        switch (writeMode) {
             case PUT: {
-                for (Map.Entry<Integer, MvccTestAccount> e : vals.entrySet())
+                for (Map.Entry<Integer, MvccTestAccount> e : entries.entrySet())
                     cache.cache.put(e.getKey(), e.getValue());
 
                 break;
             }
             case DML: {
-                for (Map.Entry<Integer, MvccTestAccount> e : vals.entrySet()) {
+                for (Map.Entry<Integer, MvccTestAccount> e : entries.entrySet()) {
                     if (e.getValue() == null)
                         removeSql(cache, e.getKey());
                     else
