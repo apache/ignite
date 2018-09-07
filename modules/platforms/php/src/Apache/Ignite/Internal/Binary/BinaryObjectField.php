@@ -97,15 +97,15 @@ class BinaryObjectField
 
     public function writeOffset(MessageBuffer $buffer, int $headerStartPos, int $offsetType): void
     {
-        $buffer->writeNumber($this->offset - $headerStartPos, $offsetType);
+        $buffer->writeNumber($this->offset - $headerStartPos, $offsetType, false);
     }
 
     public function getOffsetType(int $headerStartPos): int
     {
         $offset = $this->offset - $headerStartPos;
-        if ($offset < TypeInfo::getTypeInfo(ObjectType::BYTE)->getMaxValue()) {
+        if ($offset < TypeInfo::getTypeInfo(ObjectType::BYTE)->getMaxUnsignedValue()) {
             return ObjectType::BYTE;
-        } elseif ($offset < TypeInfo::getTypeInfo(ObjectType::SHORT)->getMaxValue()) {
+        } elseif ($offset < TypeInfo::getTypeInfo(ObjectType::SHORT)->getMaxUnsignedValue()) {
             return ObjectType::SHORT;
         }
         return ObjectType::INTEGER;

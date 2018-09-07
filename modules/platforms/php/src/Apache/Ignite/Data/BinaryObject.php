@@ -416,7 +416,7 @@ class BinaryObject
                     $fieldId = $fieldIds[$index];
                     $index++;
                 }
-                array_push($fieldOffsets, [$fieldId, $this->buffer->readNumber($this->offsetType)]);
+                array_push($fieldOffsets, [$fieldId, $this->buffer->readNumber($this->offsetType, false)]);
             }
             usort($fieldOffsets,
                 function (array $val1, array $val2): int

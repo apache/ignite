@@ -26,11 +26,12 @@ class TypeInfo
     const SIZE = 'size';
     const MIN_VALUE = 'min';
     const MAX_VALUE = 'max';
+    const MAX_UNSIGNED_VALUE = 'max_unsigned';
     const NULLABLE = 'nullable';
     const ELEMENT_TYPE_CODE = 'element_type';
     const KEEP_ELEMENT_TYPE = 'keep_element_type';
     const MAX_INT_VALUE = 2147483647;
-    
+
     private $properties;
     
     private static $info;
@@ -44,12 +45,14 @@ class TypeInfo
                 TypeInfo::SIZE => 1,
                 TypeInfo::MIN_VALUE => -128,
                 TypeInfo::MAX_VALUE => 127,
+                TypeInfo::MAX_UNSIGNED_VALUE => 0x100,
             ]),
             ObjectType::SHORT => new TypeInfo([
                 TypeInfo::NAME => 'short',
                 TypeInfo::SIZE => 2,
                 TypeInfo::MIN_VALUE => -32768,
                 TypeInfo::MAX_VALUE => 32767,
+                TypeInfo::MAX_UNSIGNED_VALUE => 0x10000,
             ]),
             ObjectType::INTEGER => new TypeInfo([
                 TypeInfo::NAME => 'integer',
@@ -245,9 +248,9 @@ class TypeInfo
         ];
     }
 
-    public static function getTypeInfo(int $typeCode): TypeInfo
+    public static function getTypeInfo(int $typeCode): ?TypeInfo
     {
-        return TypeInfo::$info[$typeCode];
+        return array_key_exists($typeCode, TypeInfo::$info) ? TypeInfo::$info[$typeCode] : null;
     }
     
     public static function getPrimitiveTypes(): array
@@ -294,7 +297,12 @@ class TypeInfo
     {
         return $this->getProperty(TypeInfo::MAX_VALUE, null);
     }
-    
+
+    public function getMaxUnsignedValue()
+    {
+        return $this->getProperty(TypeInfo::MAX_UNSIGNED_VALUE, null);
+    }
+
     private function getProperty(string $propName, $defaultValue)
     {
         return array_key_exists($propName, $this->properties) ? $this->properties[$propName] : $defaultValue;
