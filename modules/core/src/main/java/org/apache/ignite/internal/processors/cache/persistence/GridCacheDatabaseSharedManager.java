@@ -699,7 +699,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         snapshotMgr = cctx.snapshot();
 
-        if (!cctx.localNode().isClient()) {
+        if (!cctx.kernalContext().clientNode()) {
             initDataBase();
 
             registrateMetricsMBean();
@@ -877,6 +877,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     status.endPtr + ". Can't restore memory - critical part of WAL archive is missing.");
             }
 
+            // Temporary activate manager to be used for writing memory restore record.
+            cctx.wal().onActivate(cctx.kernalContext());
+
             cctx.wal().resumeLogging(restore);
 
             WALPointer ptr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
@@ -887,7 +890,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 nodeStart(ptr);
             }
 
-            cctx.wal().suspendLogging();
+            cctx.wal().onDeActivate(cctx.kernalContext());
 
             return restore;
         }

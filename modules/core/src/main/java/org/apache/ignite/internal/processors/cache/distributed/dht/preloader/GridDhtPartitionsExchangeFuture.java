@@ -827,7 +827,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (cctx.wal() != null)
                 cctx.wal().cleanupWalDirectories();
 
-            // Need to call this to restore node-started.bin file.
+            // Rare case when localNode changes baseline topology.
+            // Need to call binary restore for writing `node-started.bin` file.
             cctx.database().readCheckpointAndRestoreMemory();
         }
 
