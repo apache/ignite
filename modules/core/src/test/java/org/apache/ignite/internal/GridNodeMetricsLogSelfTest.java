@@ -86,7 +86,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
 
         Thread.sleep(10_000);
 
-        //Check that nodes are alie
+        // Check that nodes are alive.
         assertEquals("one", cache1.get(1));
         assertEquals("two", cache2.get(2));
 
@@ -100,25 +100,25 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     /**
      * Check node metrics format.
      *
-     * @param logOutput Log output.
+     * @param fullLog Logging output.
      */
-    protected void checkNodeMetricsFormat(String logOutput) {
+    protected void checkNodeMetricsFormat(String fullLog) {
         String msg = "Metrics are missing in the log or have an unexpected format";
 
         // Don't check the format strictly, but check that all expected metrics are present.
-        assertTrue(msg, logOutput.contains("Metrics for local node (to disable set 'metricsLogFrequency' to 0)"));
-        assertTrue(msg, logOutput.matches("(?s).*Node \\[id=.*, name=.*, uptime=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*H/N/C \\[hosts=.*, nodes=.*, CPUs=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*CPU \\[cur=.*, avg=.*, GC=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*PageMemory \\[pages=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*Off-heap \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*.+ region \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*Outbound messages queue \\[size=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*" + CUSTOM_EXECUTOR_0 + " \\[active=.*, idle=.*, qSize=.*].*"));
-        assertTrue(msg, logOutput.matches("(?s).*" + CUSTOM_EXECUTOR_1 + " \\[active=.*, idle=.*, qSize=.*].*"));
+        assertTrue(msg, fullLog.contains("Metrics for local node (to disable set 'metricsLogFrequency' to 0)"));
+        assertTrue(msg, fullLog.matches("(?s).*Node \\[id=.*, name=.*, uptime=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*H/N/C \\[hosts=.*, nodes=.*, CPUs=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*CPU \\[cur=.*, avg=.*, GC=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*PageMemory \\[pages=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Off-heap \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*.+ region \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Outbound messages queue \\[size=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_0 + " \\[active=.*, idle=.*, qSize=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_1 + " \\[active=.*, idle=.*, qSize=.*].*"));
     }
 
     /**
