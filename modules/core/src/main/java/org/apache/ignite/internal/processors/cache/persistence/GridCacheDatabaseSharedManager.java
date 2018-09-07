@@ -491,7 +491,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             persStoreMetrics.wal(cctx.wal());
 
-            // Read data from MetaStorage for early #onReadyForRead notification.
+            // Here we can get data from metastorage
             readMetastore();
         }
     }
@@ -1897,8 +1897,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             endPtr = readPointer(endFile, buf);
 
         if (log.isInfoEnabled())
-            log.info("Read checkpoint status [startFile=" + startFile + ", lastStartTs=" + lastStartTs +
-                ", endFile=" + endFile + ", lastEndTs=" + lastEndTs + ']');
+            log.info("Read checkpoint status [startMarker=" + startFile + ", endMarker=" + endFile + ']');
 
         return new CheckpointStatus(lastStartTs, startId, startPtr, endId, endPtr);
     }
@@ -4101,8 +4100,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @return {@code True} if need perform binary memory recovery. Records {@link PageDeltaRecord}
-         * and {@link PageSnapshot} will be applyed.
+         * @return {@code True} if need perform binary memory recovery. Only records {@link PageDeltaRecord}
+         * and {@link PageSnapshot} needs to be applyed from {@link #cpStartId}.
          */
         public boolean needRestoreMemory() {
             return !F.eq(cpStartId, cpEndId) && !F.eq(NULL_UUID, cpStartId);
