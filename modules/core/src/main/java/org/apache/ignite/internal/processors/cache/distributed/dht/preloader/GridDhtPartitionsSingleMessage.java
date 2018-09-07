@@ -527,7 +527,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 writer.incrementState();
 
-
             case 14:
                 if (!writer.writeMessage("activeQryTrackers", activeQryTrackers))
                     return false;
@@ -620,7 +619,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     return false;
 
                 reader.incrementState();
-
 
             case 14:
                 activeQryTrackers = reader.readMessage("activeQryTrackers");

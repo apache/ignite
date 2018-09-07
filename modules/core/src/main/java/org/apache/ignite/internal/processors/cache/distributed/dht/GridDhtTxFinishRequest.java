@@ -422,7 +422,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 writer.incrementState();
 
-
             case 27:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
@@ -502,7 +501,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                     return false;
 
                 reader.incrementState();
-
 
             case 27:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");

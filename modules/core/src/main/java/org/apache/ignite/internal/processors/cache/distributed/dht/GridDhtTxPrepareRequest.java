@@ -612,7 +612,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-
             case 33:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");
 

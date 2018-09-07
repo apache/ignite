@@ -523,7 +523,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 writer.incrementState();
 
-
             case 10:
                 if (!writer.writeIntArray("qryParts", qryParts))
                     return false;
@@ -535,7 +534,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 writer.incrementState();
-
 
             case 12:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
@@ -642,7 +640,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
-
             case 10:
                 qryParts = reader.readIntArray("qryParts");
 
@@ -658,7 +655,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 reader.incrementState();
-
 
             case 12:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");

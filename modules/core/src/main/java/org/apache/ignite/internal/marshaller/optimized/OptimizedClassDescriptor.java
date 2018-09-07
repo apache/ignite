@@ -870,7 +870,8 @@ class OptimizedClassDescriptor {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private Fields fields(Class<?> cls, IgniteProductVersion ver) {
-        if (serTransMtd == null && transSerMtd == null)
+        if (ver == null // No context available.
+            || serTransMtd == null && transSerMtd == null)
             return fields;
 
         try {

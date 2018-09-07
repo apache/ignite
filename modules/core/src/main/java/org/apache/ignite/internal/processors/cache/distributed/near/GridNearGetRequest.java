@@ -426,7 +426,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
                 writer.incrementState();
 
-
             case 14:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
@@ -536,7 +535,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
                     return false;
 
                 reader.incrementState();
-
 
             case 14:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");

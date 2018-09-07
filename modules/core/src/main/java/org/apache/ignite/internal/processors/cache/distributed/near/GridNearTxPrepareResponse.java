@@ -436,7 +436,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 writer.incrementState();
 
-
             case 20:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
@@ -538,7 +537,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                     return false;
 
                 reader.incrementState();
-
 
             case 20:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");
