@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
@@ -286,13 +287,34 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         if (isSql) {
             keyCols = new ArrayList<>(type.fields().size() + 1);
-            for (String propName : type.fields().keySet()) {
-                Column col = tbl.getColumn(propName);
-                keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
+
+            String keyFieldName = type.keyFieldName();
+
+            //Check if key is simple type
+            if(keyFieldName != null){
+                int keyColumnId = tbl.getColumn(keyFieldName).getColumnId();
+
+                keyCols.add(tbl.indexColumn(keyColumnId, SortOrder.ASCENDING));
+            } else {
+                for (String propName : type.fields().keySet()) {
+                    GridQueryProperty prop = type.property(propName);
+
+                    if (prop.key()) {
+                        Column col = tbl.getColumn(propName);
+
+                        keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
+                    }
+                }
+                // If key is object but the user has not specified any particular columns,
+                // we have to fall back to whole-key index.
+                if (keyCols.isEmpty())
+                    keyCols.add(keyCol);
             }
+
         }
         else {
             keyCols = new ArrayList<>(2);
+
             keyCols.add(keyCol);
         }
 
