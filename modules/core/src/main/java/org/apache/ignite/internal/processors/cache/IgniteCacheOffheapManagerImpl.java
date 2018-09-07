@@ -101,6 +101,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -1449,36 +1450,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param cacheId Cache ID.
          */
         void incrementSize(int cacheId) {
-            storageSize.incrementAndGet();
-
-            if (grp.sharedGroup()) {
-                AtomicLong size = cacheSizes.get(cacheId);
-
-                if (size == null) {
-                    AtomicLong old = cacheSizes.putIfAbsent(cacheId, size = new AtomicLong());
-
-                    if (old != null)
-                        size = old;
-                }
-
-                size.incrementAndGet();
-            }
+            updateSize(cacheId, 1);
         }
 
         /**
          * @param cacheId Cache ID.
          */
         void decrementSize(int cacheId) {
-            storageSize.decrementAndGet();
-
-            if (grp.sharedGroup()) {
-                AtomicLong size = cacheSizes.get(cacheId);
-
-                if (size == null)
-                    return;
-
-                size.decrementAndGet();
-            }
+            updateSize(cacheId, -1);
         }
 
         /** {@inheritDoc} */
@@ -1513,6 +1492,24 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public long fullSize() {
             return storageSize.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateSize(int cacheId, long delta) {
+            storageSize.addAndGet(delta);
+
+            if (grp.sharedGroup()) {
+                AtomicLong size = cacheSizes.get(cacheId);
+
+                if (size == null) {
+                    AtomicLong old = cacheSizes.putIfAbsent(cacheId, size = new AtomicLong());
+
+                    if (old != null)
+                        size = old;
+                }
+
+                size.addAndGet(delta);
+            }
         }
 
         /** {@inheritDoc} */
@@ -1646,7 +1643,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
+            DataRow dataRow = makeDataRow(key, val, ver, expireTime, cacheId);
 
             if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow))
                 dataRow.link(oldRow.link());
@@ -1665,6 +1662,22 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 dataRow.cacheId(cctx.cacheId());
 
             return dataRow;
+        }
+
+        /**
+         * @param key Cache key.
+         * @param val Cache value.
+         * @param ver Version.
+         * @param expireTime Expired time.
+         * @param cacheId Cache id.
+         * @return Made data row.
+         */
+        @NotNull private DataRow makeDataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expireTime,
+            int cacheId) {
+            if (key.partition() == -1)
+                key.partition(partId);
+
+            return new DataRow(key, val, ver, partId, expireTime, cacheId);
         }
 
         /** {@inheritDoc} */
@@ -1935,8 +1948,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 boolean old = dataTree.putx(updateRow);
 
                 assert !old;
-
-                incrementSize(cctx.cacheId());
 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -2267,11 +2278,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 rowStore.removeRow(row.link());
 
-                decrementSize(cctx.cacheId());
-
                 if (first)
                     first = false;
             }
+
+            // first == true means there were no row versions
+            if (!first)
+                decrementSize(cctx.cacheId());
         }
 
         /** {@inheritDoc} */
@@ -2300,8 +2313,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         clearPendingEntries(cctx, oldRow);
 
                         rowStore.removeRow(cleanupRow.link());
-
-                        decrementSize(cctx.cacheId());
 
                         res++;
                     }
@@ -2342,10 +2353,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert oldRow == null || oldRow.cacheId() == cacheId : oldRow;
 
-                if (key.partition() == -1)
-                    key.partition(partId);
-
-                DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
+                DataRow dataRow = makeDataRow(key, val, ver, expireTime, cacheId);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -2551,7 +2559,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             List<IgniteBiTuple<Object, MvccVersion>> res = new ArrayList<>();
 
-            long crd = MVCC_CRD_COUNTER_NA, cntr = MVCC_COUNTER_NA; int opCntr = MVCC_OP_COUNTER_NA;
+            long crd = MVCC_CRD_COUNTER_NA;
+            long cntr = MVCC_COUNTER_NA;
+            int opCntr = MVCC_OP_COUNTER_NA;
 
             while (cur.next()) {
                 CacheDataRow row = cur.get();
@@ -2561,7 +2571,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 res.add(F.t(row.value(), row.mvccVersion()));
 
-                crd = row.mvccCoordinatorVersion(); cntr = row.mvccCounter(); opCntr = row.mvccOperationCounter();
+                crd = row.mvccCoordinatorVersion();
+                cntr = row.mvccCounter();
+                opCntr = row.mvccOperationCounter();
             }
 
             return res;
@@ -2640,8 +2652,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return cursor(cacheId, null, null);
         }
 
-        /** {@inheritDoc}
-         * @param cacheId*/
+        /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
             MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
             return cursor(cacheId, null, null, null, mvccSnapshot);

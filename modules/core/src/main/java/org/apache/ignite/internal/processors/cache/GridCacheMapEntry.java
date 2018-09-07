@@ -1122,6 +1122,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (tx.local())
                 updateCntr = nextMvccPartitionCounter();
 
+            if (res.resultType() == ResultType.PREV_NULL)
+                tx.txCounters(true).accumulateSizeDelta(cctx.cacheId(), partition(), 1);
+
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
                         cctx.cacheId(),
@@ -1216,6 +1219,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (tx.local())
                 updateCntr = nextMvccPartitionCounter();
+
+            if (res.resultType() == ResultType.PREV_NOT_NULL)
+                tx.txCounters(true).accumulateSizeDelta(cctx.cacheId(), partition(), -1);
 
             if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = logTxUpdate(tx, null, 0, updateCntr);
@@ -2037,6 +2043,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 update(updated, expireTime, ttl, ver, true);
 
+                logUpdate(op, updated, ver, expireTime, 0);
+
                 if (evt) {
                     CacheObject evtOld = null;
 
@@ -2066,6 +2074,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 removeValue();
 
                 update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver, true);
+
+                logUpdate(op, null, ver, CU.EXPIRE_TIME_ETERNAL, 0);
 
                 if (evt) {
                     CacheObject evtOld = null;
@@ -3353,7 +3363,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         null,
                         topVer);
 
-                    cctx.dataStructures().onEntryUpdated(key, false, true);
+                    cctx.dataStructures().onEntryUpdated(key, false, false);
                 }
 
                 onUpdateFinished(updateCntr);
@@ -4990,6 +5000,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (updateCntr != null && updateCntr != 0)
                     updateCntr0 = updateCntr;
 
+                if (res.resultType() == ResultType.PREV_NOT_NULL)
+                    tx.txCounters(true).accumulateSizeDelta(cctx.cacheId(), entry.partition(), -1);
+
                 if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                     logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(
                             cctx.cacheId(),
@@ -5276,6 +5289,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert tx.local() && updateCntr == null || !tx.local() && updateCntr != null && updateCntr > 0;
 
                 updateCntr0 = tx.local() ? entry.nextMvccPartitionCounter() : updateCntr;
+
+                if (res.resultType() == ResultType.PREV_NULL)
+                    tx.txCounters(true).accumulateSizeDelta(cctx.cacheId(), entry.partition(), 1);
 
                 if (cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                     logPtr = cctx.shared().wal().log(new DataRecord(new DataEntry(

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.mesos;
 
-import com.google.protobuf.ByteString;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.mesos.resource.IgniteProvider;
@@ -105,7 +104,7 @@ public class IgniteFramework {
 
             Protos.Credential cred = Protos.Credential.newBuilder()
                 .setPrincipal(System.getenv(DEFAULT_PRINCIPAL))
-                .setSecret(ByteString.copyFrom(System.getenv(DEFAULT_SECRET).getBytes()))
+                .setSecret(System.getenv(DEFAULT_SECRET))
                 .build();
 
             driver = new MesosSchedulerDriver(scheduler, igniteFramework.getFrameworkInfo(), clusterProps.masterUrl(),
