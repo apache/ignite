@@ -100,7 +100,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -322,7 +321,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final GridDhtPartitionsStateValidator validator;
 
     /** Register caches future. Initialized on exchange init. Must be waited on exchange end. */
-    private volatile IgniteInternalFuture<?> registerCachesFuture = new GridFinishedFuture<>();
+    private IgniteInternalFuture<?> registerCachesFuture;
 
     /**
      * @param cctx Cache context.
@@ -726,10 +725,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             firstDiscoEvt.eventNode().id(),
                             topVer);
 
-                        cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
+                        registerCachesFuture = cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
                     }
                     else
-                        initCachesOnLocalJoin();
+                        registerCachesFuture = initCachesOnLocalJoin();
                 }
 
                 initCoordinatorCaches(newCrd);
@@ -824,7 +823,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void initCachesOnLocalJoin() throws IgniteCheckedException {
+    private IgniteInternalFuture<?> initCachesOnLocalJoin() throws IgniteCheckedException {
         if (isLocalNodeNotInBaseline()) {
             cctx.cache().cleanupCachesDirectories();
 
@@ -856,9 +855,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.database().readCheckpointAndRestoreMemory(startDescs);
         }
 
-        cctx.cache().startCachesOnLocalJoin(this, locJoinCtx);
+        IgniteInternalFuture<?> cachesRegistrationFut = cctx.cache().startCachesOnLocalJoin(initialVersion(), locJoinCtx);
 
         ensureClientCachesStarted();
+
+        return cachesRegistrationFut;
     }
 
     /**
@@ -1000,7 +1001,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         cctx.database().readCheckpointAndRestoreMemory(startDescs);
                     }
 
-                    cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+                    assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
+
+                    registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully activated caches [nodeId=" + cctx.localNodeId() +
@@ -1034,7 +1037,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     cctx.kernalContext().service().onDeActivate(cctx.kernalContext());
 
-                    cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+                    assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
+
+                    registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully deactivated data structures, services and caches [" +
@@ -1091,7 +1096,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !exchActions.clientOnlyExchange() : exchActions;
 
         try {
-            cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+            assert registerCachesFuture == null : "No caches registration should be scheduled before new caches have started.";
+
+            registerCachesFuture = cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
         }
         catch (Exception e) {
             if (reconnectOnError(e) || !isRollbackSupported())
@@ -1785,12 +1792,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert res != null || err != null;
 
-        try {
-            registerCachesFuture.get();
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to wait for cache registration", e);
-        }
+        waitUntilNewCachesAreRegistered();
 
         if (err == null &&
             !cctx.kernalContext().clientNode() &&
@@ -1939,6 +1941,31 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return false;
+    }
+
+    /**
+     * Method waits for new caches registration and cache configuration persisting to disk.
+     */
+    private void waitUntilNewCachesAreRegistered() {
+        try {
+            IgniteInternalFuture<?> registerCachesFut = registerCachesFuture;
+
+            if (registerCachesFut != null && !registerCachesFut.isDone()) {
+                final int timeout = 10_000;
+
+                for (;;) {
+                    try {
+                        registerCachesFut.get(timeout, TimeUnit.SECONDS);
+                    }
+                    catch (IgniteFutureTimeoutCheckedException te) {
+                        log.warning("Failed to wait for caches registration and saving within timeout");
+                    }
+                }
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to wait for caches registration and saving", e);
+        }
     }
 
     /**
@@ -3664,8 +3691,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             assert msg.error() != null: msg;
 
                             // Try to revert all the changes that were done during initialization phase
-                            cctx.affinity().forceCloseCaches(GridDhtPartitionsExchangeFuture.this,
-                                crd.isLocal(), msg.exchangeActions());
+                            cctx.affinity().forceCloseCaches(
+                                GridDhtPartitionsExchangeFuture.this,
+                                crd.isLocal(),
+                                msg.exchangeActions()
+                            );
 
                             synchronized (mux) {
                                 finishState = new FinishState(crd.id(), initialVersion(), null);
@@ -4168,13 +4198,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return (e instanceof IgniteNeedReconnectException
             || X.hasCause(e, IOException.class, IgniteClientDisconnectedCheckedException.class))
             && cctx.discovery().reconnectSupported();
-    }
-
-    /**
-     * @param registerCachesFuture Register caches future.
-     */
-    public void registerCachesFuture(IgniteInternalFuture<?> registerCachesFuture) {
-        this.registerCachesFuture = registerCachesFuture;
     }
 
     /** {@inheritDoc} */

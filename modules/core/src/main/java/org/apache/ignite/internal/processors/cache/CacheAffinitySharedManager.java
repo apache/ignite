@@ -185,15 +185,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * Must be called from exchange thread.
      */
-    public void initCachesOnLocalJoin(
-        GridDhtPartitionsExchangeFuture fut,
+    public IgniteInternalFuture<?> initCachesOnLocalJoin(
         Map<Integer, CacheGroupDescriptor> cacheGroupDescriptors,
         Map<String, DynamicCacheDescriptor> cacheDescriptors
     ) {
         // Clean-up in case of client reconnect.
         caches.clear();
 
-        fut.registerCachesFuture(caches.init(cacheGroupDescriptors, cacheDescriptors));
+        return caches.init(cacheGroupDescriptors, cacheDescriptors);
     }
 
     /**
@@ -758,7 +757,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     ) {
         assert exchActions != null && !exchActions.empty() && exchActions.cacheStartRequests().isEmpty(): exchActions;
 
-        fut.registerCachesFuture(caches.updateCachesInfo(exchActions));
+        IgniteInternalFuture<?> res = caches.updateCachesInfo(exchActions);
+
+        assert res.isDone() : "There should be no caches to start: " + exchActions;
 
         processCacheStopRequests(fut, crd, exchActions, true);
 
@@ -773,14 +774,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param exchActions Cache change requests.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheChangeRequest(
+    public IgniteInternalFuture<?> onCacheChangeRequest(
         GridDhtPartitionsExchangeFuture fut,
         boolean crd,
         final ExchangeActions exchActions
     ) throws IgniteCheckedException {
         assert exchActions != null && !exchActions.empty() : exchActions;
 
-        fut.registerCachesFuture(caches.updateCachesInfo(exchActions));
+        IgniteInternalFuture<?> res = caches.updateCachesInfo(exchActions);
 
         // Affinity did not change for existing caches.
         onCustomMessageNoAffinityChange(fut, crd, exchActions);
@@ -825,6 +826,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (msg.empty())
                 clientCacheChanges.remove();
         }
+
+        return res;
     }
 
     /**
@@ -1244,15 +1247,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param descs Cache descriptors.
      * @throws IgniteCheckedException If failed.
      */
-    public void initStartedCaches(
+    public IgniteInternalFuture<?> initStartedCaches(
         boolean crd,
         final GridDhtPartitionsExchangeFuture fut,
         Collection<DynamicCacheDescriptor> descs
     ) throws IgniteCheckedException {
-        fut.registerCachesFuture(caches.initStartedCaches(descs));
+        IgniteInternalFuture<?> res = caches.initStartedCaches(descs);
 
         if (fut.context().mergeExchanges())
-            return;
+            return res;
 
         if (crd) {
             forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
@@ -1272,6 +1275,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             });
         }
+
+        return res;
     }
 
     /**
@@ -2773,7 +2778,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         /**
           * @param descs Cache descriptor.
          */
-        IgniteInternalFuture initStartedCaches(Collection<DynamicCacheDescriptor> descs) {
+        IgniteInternalFuture<?> initStartedCaches(Collection<DynamicCacheDescriptor> descs) {
             for (DynamicCacheDescriptor desc : descs) {
                 CacheGroupDescriptor grpDesc = desc.groupDescriptor();
 
@@ -2787,7 +2792,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         /**
          * @param exchActions Exchange actions.
          */
-        IgniteInternalFuture updateCachesInfo(ExchangeActions exchActions) {
+        IgniteInternalFuture<?> updateCachesInfo(ExchangeActions exchActions) {
             for (ExchangeActions.CacheGroupActionData stopAction : exchActions.cacheGroupsToStop()) {
                 CacheGroupDescriptor rmvd = registeredGrps.remove(stopAction.descriptor().groupId());
 

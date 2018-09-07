@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
@@ -1832,29 +1831,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param fut Current exchange future.
+     * @param exchTopVer Local join exchange future version.
      * @param locJoinCtx Local join cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void startCachesOnLocalJoin(
-        GridDhtPartitionsExchangeFuture fut,
+    public IgniteInternalFuture<?> startCachesOnLocalJoin(
+        AffinityTopologyVersion exchTopVer,
         LocalJoinCachesContext locJoinCtx
     ) throws IgniteCheckedException {
-        if (locJoinCtx != null) {
-            sharedCtx.affinity().initCachesOnLocalJoin(
-                fut, locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
+        if (locJoinCtx == null)
+            return new GridFinishedFuture<>();
 
-            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : locJoinCtx.caches()) {
-                DynamicCacheDescriptor desc = t.get1();
+        IgniteInternalFuture<?> res = sharedCtx.affinity().initCachesOnLocalJoin(
+            locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
 
-                prepareCacheStart(
-                    desc.cacheConfiguration(),
-                    desc,
-                    t.get2(),
-                    fut.initialVersion(),
-                    false);
-            }
+        for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : locJoinCtx.caches()) {
+            DynamicCacheDescriptor desc = t.get1();
+
+            prepareCacheStart(
+                desc.cacheConfiguration(),
+                desc,
+                t.get2(),
+                exchTopVer,
+                false);
         }
+
+        return res;
     }
 
     /**
