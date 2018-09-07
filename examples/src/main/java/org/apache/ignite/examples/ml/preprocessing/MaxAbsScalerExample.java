@@ -29,29 +29,20 @@ import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
+import org.apache.ignite.ml.preprocessing.maxabsscaling.MaxAbsScalerTrainer;
 
 /**
- * Example that shows how to use MinMaxScaler preprocessor to scale the given data.
- * <p>
+ * Example that shows how to use MaxAbsScaler preprocessor to scale the given data.
+ *
  * Machine learning preprocessors are built as a chain. Most often a first preprocessor is a feature extractor as shown
  * in this example. The second preprocessor here is a MinMaxScaler preprocessor which is built on top of the feature
- * extractor and represents a chain of itself and the underlying feature extractor.</p>
- * <p>
- * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
- * <p>
- * After that it defines preprocessors that extract features from an upstream data and normalize their values.</p>
- * <p>
- * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output various
- * statistical metrics of the data.</p>
- * <p>
- * You can change the test data used in this example and re-run it to explore this functionality further.</p>
+ * extractor and represents a chain of itself and the underlying feature extractor.
  */
-public class MinMaxScalerExample {
+public class MaxAbsScalerExample {
     /** Run example. */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> MinMax preprocessing example started.");
+            System.out.println(">>> Max abs example started.");
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
@@ -61,8 +52,8 @@ public class MinMaxScalerExample {
                 v.getSalary()
             );
 
-            // Defines second preprocessor that normalizes features.
-            IgniteBiFunction<Integer, Person, Vector> preprocessor = new MinMaxScalerTrainer<Integer, Person>()
+            // Defines second preprocessor that processes features.
+            IgniteBiFunction<Integer, Person, Vector> preprocessor = new MaxAbsScalerTrainer<Integer, Person>()
                 .fit(ignite, persons, featureExtractor);
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
@@ -70,7 +61,7 @@ public class MinMaxScalerExample {
                 new DatasetHelper(dataset).describe();
             }
 
-            System.out.println(">>> MinMax preprocessing example completed.");
+            System.out.println(">>> Max abs example completed.");
         }
     }
 
