@@ -77,6 +77,20 @@ class Client(Connection):
     def _transfer_params(self, to: 'Client'):
         super()._transfer_params(to)
         to._registry = self._registry
+        to._compact_footer = self._compact_footer
+
+    def __init__(self, compact_footer: bool=None, *args, **kwargs):
+        """
+        Initialize client.
+
+        :param compact_footer: (optional) use compact (True, recommended) or
+         full (False) schema approach when serializing Complex objects.
+         Default is to use the same approach the server is using (None).
+         Apache Ignite binary protocol documentation on this topic:
+         https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-schema
+        """
+        self._compact_footer = compact_footer
+        super().__init__(*args, **kwargs)
 
     @status_to_exception(BinaryTypeError)
     def get_binary_type(self, binary_type: Union[str, int]) -> dict:
@@ -158,8 +172,9 @@ class Client(Connection):
     def compact_footer(self, value: bool):
         # normally schema approach should not change
         if self.__class__._compact_footer not in (value, None):
-            raise Warning('Client schema approach has changed.')
-        self.__class__._compact_footer = value
+            raise Warning('Can not change client schema approach.')
+        else:
+            self.__class__._compact_footer = value
 
     @status_to_exception(BinaryTypeError)
     def put_binary_type(
