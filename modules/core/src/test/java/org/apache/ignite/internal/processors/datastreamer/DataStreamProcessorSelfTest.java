@@ -68,6 +68,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -738,7 +739,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFlush() throws Exception {
-        mode = LOCAL;
+        // Local caches are not allowed with MVCC enabled.
+        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
 
         useCache = true;
 
@@ -790,7 +792,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTryFlush() throws Exception {
-        mode = LOCAL;
+        // Local caches are not allowed with MVCC enabled.
+        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
 
         useCache = true;
 
@@ -825,7 +828,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFlushTimeout() throws Exception {
-        mode = LOCAL;
+        // Local caches are not allowed with MVCC enabled.
+        mode = getCacheAtomicityMode() != TRANSACTIONAL_SNAPSHOT ? LOCAL : PARTITIONED;
 
         useCache = true;
 

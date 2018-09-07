@@ -458,6 +458,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public byte state(MvccVersion ver) throws IgniteCheckedException {
+        assert txLog != null && mvccEnabled;
+
         return txLog.get(ver.coordinatorVersion(), ver.counter());
     }
 
@@ -468,6 +470,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
     /** {@inheritDoc} */
     @Override public void updateState(MvccVersion ver, byte state, boolean primary) throws IgniteCheckedException {
+        assert txLog != null && mvccEnabled;
+
         TxKey key = new TxKey(ver.coordinatorVersion(), ver.counter());
 
         txLog.put(key, state, primary);

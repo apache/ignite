@@ -817,28 +817,36 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     //Ignore stored caches if it already added by static config(static config has higher priority).
                     if (!caches.containsKey(cacheName))
                         addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
-                    else
-                        checkMvccSettings(caches.get(cacheName).cacheData(), storedCacheData);
+                    else {
+                        CacheConfiguration cfg = caches.get(cacheName).cacheData().config();
+                        CacheConfiguration cfgFromStore = storedCacheData.config();
+
+                        validateCacheConfigurationOnRestore(cfg, cfgFromStore);
+                    }
                 }
             }
         }
     }
 
     /**
-     * Checks mvcc settings consistency for static and stored cache configurations.
+     * Validates cache configuration against stored cache configuration when persistence is enabled.
+     *
+     * @param cfg Configured cache configuration.
+     * @param cfgFromStore Stored cache configuration
+     * @throws IgniteCheckedException If validation failed.
      */
-    private void checkMvccSettings(StoredCacheData staticCacheData,
-        StoredCacheData storedCacheData) throws IgniteCheckedException {
-        CacheConfiguration<?, ?> ccfg1 = staticCacheData.config();
-        CacheConfiguration<?, ?> ccfg2 = storedCacheData.config();
+    private void validateCacheConfigurationOnRestore(CacheConfiguration cfg, CacheConfiguration cfgFromStore)
+        throws IgniteCheckedException {
+        assert cfg != null && cfgFromStore != null;
 
-        if (ccfg1.getAtomicityMode() != ccfg2.getAtomicityMode()
-            && ccfg1.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT
-            || ccfg2.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+        if ((cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT ||
+            cfgFromStore.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            && cfg.getAtomicityMode() != cfgFromStore.getAtomicityMode()) {
             throw new IgniteCheckedException("Cannot start cache. Statically configured atomicity mode differs from " +
-                "previously stored configuration. Please check your configuration: [cacheName=" + ccfg1.getName() +
-                ", configuredAtomicityMode=" + ccfg1.getAtomicityMode() +
-                ", storedAtomicityMode=" + ccfg2.getAtomicityMode() + "]");
+                "previously stored configuration. Please check your configuration: [cacheName=" + cfg.getName() +
+                ", configuredAtomicityMode=" + cfg.getAtomicityMode() +
+                ", storedAtomicityMode=" + cfgFromStore.getAtomicityMode() + "]");
+        }
     }
 
     /**

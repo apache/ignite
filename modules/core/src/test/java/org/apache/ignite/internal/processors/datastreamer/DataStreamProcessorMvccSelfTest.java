@@ -71,4 +71,9 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
 
         super.testUpdateStore();
     }
+
+    /** {@inheritDoc} */
+    @Override public void testLocal() throws Exception {
+        // Do not check local caches with MVCC enabled.
+    }
 }
