@@ -379,7 +379,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        final CacheQuery<R> qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
+        final CacheQuery<R> qry = ctx.queries().createScanQuery(
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal());
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -759,9 +760,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
                     "of all Ignite nodes.");
-
-        if (qry.isLocal() && (qry instanceof SqlQuery) && ctx.kernalContext().clientNode())
-            throw new CacheException("Execution of local sql query on client node disallowed.");
     }
 
     /** {@inheritDoc} */

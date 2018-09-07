@@ -880,6 +880,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** Flag indicates that partition belongs to current {@link #next} is finished and no longer needs to rebalance. */
         private boolean reachedPartitionEnd;
 
+        /** Flag indicates that update counters for requested partitions have been reached and done.
+         *  It means that no further iteration is needed. */
+        private boolean doneAllPartitions;
+
         /**
          * @param grp Cache context.
          * @param walIt WAL iterator.
@@ -953,6 +957,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 doneParts.add(next.partitionId());
 
                 reachedPartitionEnd = false;
+
+                if (doneParts.size() == partMap.size())
+                    doneAllPartitions = true;
             }
 
             advance();
@@ -1010,6 +1017,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          */
         private void advance() {
             next = null;
+
+            if (doneAllPartitions)
+                return;
 
             while (true) {
                 if (entryIt != null) {

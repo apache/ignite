@@ -15,8 +15,22 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.composition.boosting.loss;
+
 /**
- * <!-- Package description. -->
- * Snaptree and related classes.
+ * Logistic regression loss function.
  */
-package org.apache.ignite.internal.util.snaptree;
+public class LogLoss implements Loss {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 2251384437214194977L;
+
+    /** {@inheritDoc} */
+    @Override public double error(long sampleSize, double answer, double prediction) {
+        return -(answer * Math.log(prediction) + (1 - answer) * Math.log(1 - prediction));
+    }
+
+    /** {@inheritDoc} */
+    @Override public double gradient(long sampleSize, double answer, double prediction) {
+        return (prediction - answer) / (prediction * (1.0 - prediction));
+    }
+}
