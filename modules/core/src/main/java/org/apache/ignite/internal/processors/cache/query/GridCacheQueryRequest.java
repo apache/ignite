@@ -633,7 +633,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 writer.incrementState();
 
-
             case 23:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
@@ -819,7 +818,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 type = GridCacheQueryType.fromOrdinal(typeOrd);
 
                 reader.incrementState();
-
 
             case 23:
                 mvccSnapshot = reader.readMessage("mvccSnapshot");

@@ -486,8 +486,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 writer.incrementState();
 
-
-                case 33:
+            case 33:
                 if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 

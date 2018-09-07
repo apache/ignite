@@ -58,7 +58,7 @@ public class KMeansTrainerTest {
     @Test
     public void findOneClusters() {
         KMeansTrainer trainer = createAndCheckTrainer();
-        KMeansModel knnMdl = trainer.withK(1).fit(
+        KMeansModel knnMdl = trainer.withAmountOfClusters(1).fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
@@ -76,7 +76,7 @@ public class KMeansTrainerTest {
     @Test
     public void testUpdateMdl() {
         KMeansTrainer trainer = createAndCheckTrainer();
-        KMeansModel originalMdl = trainer.withK(1).fit(
+        KMeansModel originalMdl = trainer.withAmountOfClusters(1).fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
             (k, v) -> v[2]
@@ -106,11 +106,11 @@ public class KMeansTrainerTest {
     @NotNull private KMeansTrainer createAndCheckTrainer() {
         KMeansTrainer trainer = new KMeansTrainer()
             .withDistance(new EuclideanDistance())
-            .withK(10)
+            .withAmountOfClusters(10)
             .withMaxIterations(1)
             .withEpsilon(PRECISION)
             .withSeed(2);
-        assertEquals(10, trainer.getK());
+        assertEquals(10, trainer.getAmountOfClusters());
         assertEquals(2, trainer.getSeed());
         assertTrue(trainer.getDistance() instanceof EuclideanDistance);
         return trainer;
