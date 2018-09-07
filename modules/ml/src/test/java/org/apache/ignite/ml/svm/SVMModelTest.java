@@ -53,7 +53,11 @@ public class SVMModelTest {
         observation = new DenseVector(new double[]{1.0, -2.0});
         TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.apply(observation), PRECISION);
 
-        Assert.assertEquals(true, mdl.isKeepingRawLabels());
+        Assert.assertTrue(mdl.isKeepingRawLabels());
+
+        Assert.assertTrue(mdl.toString().length() > 0);
+        Assert.assertTrue(mdl.toString(true).length() > 0);
+        Assert.assertTrue(mdl.toString(false).length() > 0);
     }
 
 
@@ -67,6 +71,10 @@ public class SVMModelTest {
         mdl.add(1, new SVMLinearBinaryClassificationModel(weights1, 0.0).withRawLabels(true));
         mdl.add(2, new SVMLinearBinaryClassificationModel(weights2, 0.0).withRawLabels(true));
         mdl.add(2, new SVMLinearBinaryClassificationModel(weights3, 0.0).withRawLabels(true));
+
+        Assert.assertTrue(mdl.toString().length() > 0);
+        Assert.assertTrue(mdl.toString(true).length() > 0);
+        Assert.assertTrue(mdl.toString(false).length() > 0);
 
         Vector observation = new DenseVector(new double[]{1.0, 1.0});
         TestUtils.assertEquals( 1.0, mdl.apply(observation), PRECISION);

@@ -153,8 +153,8 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         if (pds) {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setName("default")
                     .setPersistenceEnabled(true)
+                    .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                     .setMetricsEnabled(true)
                 ).setMetricsEnabled(true)
             );

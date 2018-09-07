@@ -33,11 +33,13 @@ public class DelegatingVectorConstructorTest {
     public void basicTest() {
         final Vector parent = new DenseVector(new double[] {0, 1});
 
-        final Vector delegate = new DelegatingVector(parent);
+        final DelegatingVector delegate = new DelegatingVector(parent);
 
         final int size = parent.size();
 
         assertEquals("Delegate size differs from expected.", size, delegate.size());
+
+        assertEquals("Delegate vector differs from expected.", parent, delegate.getVector());
 
         for (int idx = 0; idx < size; idx++)
             assertDelegate(parent, delegate, idx);

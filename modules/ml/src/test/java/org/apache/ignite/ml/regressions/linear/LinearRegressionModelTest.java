@@ -25,6 +25,8 @@ import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionMode
 import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
 import org.junit.Test;
 
+import static org.junit.Assert.assertTrue;
+
 /**
  * Tests for {@link LinearRegressionModel}.
  */
@@ -37,6 +39,10 @@ public class LinearRegressionModelTest {
     public void testPredict() {
         Vector weights = new DenseVector(new double[]{2.0, 3.0});
         LinearRegressionModel mdl = new LinearRegressionModel(weights, 1.0);
+
+        assertTrue(mdl.toString().length() > 0);
+        assertTrue(mdl.toString(true).length() > 0);
+        assertTrue(mdl.toString(false).length() > 0);
 
         Vector observation = new DenseVector(new double[]{1.0, 1.0});
         TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);

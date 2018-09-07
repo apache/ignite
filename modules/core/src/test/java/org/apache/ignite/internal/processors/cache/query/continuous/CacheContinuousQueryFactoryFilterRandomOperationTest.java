@@ -319,7 +319,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
                     updatePartitionCounter(cache, key, partCntr);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 
@@ -334,7 +334,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
                     updatePartitionCounter(cache, key, partCntr);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 
@@ -364,7 +364,7 @@ public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheC
 
                     updatePartitionCounter(cache, key, partCntr);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 

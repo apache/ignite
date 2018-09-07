@@ -114,7 +114,7 @@ public class AgentLauncher {
             Exception ignore = X.cause(e, SSLHandshakeException.class);
 
             if (ignore != null) {
-                log.error("Failed to establish SSL connection to server, due to errors with SSL handshake.");
+                log.error("Failed to establish SSL connection to server, due to errors with SSL handshake:", e);
                 log.error("Add to environment variable JVM_OPTS parameter \"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.");
 
                 System.exit(1);
@@ -123,7 +123,7 @@ public class AgentLauncher {
             ignore = X.cause(e, UnknownHostException.class);
 
             if (ignore != null) {
-                log.error("Failed to establish connection to server, due to errors with DNS or missing proxy settings.");
+                log.error("Failed to establish connection to server, due to errors with DNS or missing proxy settings.", e);
                 log.error("Documentation for proxy configuration can be found here: http://apacheignite.readme.io/docs/web-agent#section-proxy-configuration");
 
                 System.exit(1);
@@ -323,6 +323,8 @@ public class AgentLauncher {
 
         // Workaround for use self-signed certificate
         if (Boolean.getBoolean("trust.all")) {
+            log.info("Trust to all certificates mode is enabled.");
+
             SSLContext ctx = SSLContext.getInstance("TLS");
 
             // Create an SSLContext that uses our TrustManager

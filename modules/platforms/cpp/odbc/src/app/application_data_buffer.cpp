@@ -144,42 +144,42 @@ namespace ignite
 
                     case OdbcNativeType::AI_SIGNED_SHORT:
                     {
-                        return PutNumToNumBuffer<short>(value);
+                        return PutNumToNumBuffer<SQLSMALLINT>(value);
                     }
 
                     case OdbcNativeType::AI_UNSIGNED_SHORT:
                     {
-                        return PutNumToNumBuffer<unsigned short>(value);
+                        return PutNumToNumBuffer<SQLUSMALLINT>(value);
                     }
 
                     case OdbcNativeType::AI_SIGNED_LONG:
                     {
-                        return PutNumToNumBuffer<long>(value);
+                        return PutNumToNumBuffer<SQLINTEGER>(value);
                     }
 
                     case OdbcNativeType::AI_UNSIGNED_LONG:
                     {
-                        return PutNumToNumBuffer<unsigned long>(value);
+                        return PutNumToNumBuffer<SQLUINTEGER>(value);
                     }
 
                     case OdbcNativeType::AI_SIGNED_BIGINT:
                     {
-                        return PutNumToNumBuffer<int64_t>(value);
+                        return PutNumToNumBuffer<SQLBIGINT>(value);
                     }
 
                     case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
-                        return PutNumToNumBuffer<uint64_t>(value);
+                        return PutNumToNumBuffer<SQLUBIGINT>(value);
                     }
 
                     case OdbcNativeType::AI_FLOAT:
                     {
-                        return PutNumToNumBuffer<float>(value);
+                        return PutNumToNumBuffer<SQLREAL>(value);
                     }
 
                     case OdbcNativeType::AI_DOUBLE:
                     {
-                        return PutNumToNumBuffer<double>(value);
+                        return PutNumToNumBuffer<SQLDOUBLE>(value);
                     }
 
                     case OdbcNativeType::AI_CHAR:

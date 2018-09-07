@@ -55,6 +55,12 @@ public class CacheArguments {
     /** Cache view command. */
     private @Nullable VisorViewCacheCmd cacheCmd;
 
+    /** Calculate partition hash and print into standard output. */
+    private boolean dump;
+
+    /** Skip zeros partitions. */
+    private boolean skipZeros;
+
     /**
      * @return Command.
      */
@@ -193,5 +199,33 @@ public class CacheArguments {
      */
     public void checkThrough(int checkThrough) {
         this.checkThrough = checkThrough;
+    }
+
+    /**
+     * @return Calculate partition hash and print into standard output.
+     */
+    public boolean dump() {
+        return dump;
+    }
+
+    /**
+     * @param dump Calculate partition hash and print into standard output.
+     */
+    public void dump(boolean dump) {
+        this.dump = dump;
+    }
+
+    /**
+     * @return Skip zeros partitions(size == 0) in result.
+     */
+    public boolean isSkipZeros() {
+        return skipZeros;
+    }
+
+    /**
+     * @param skipZeros Skip zeros partitions.
+     */
+    public void skipZeros(boolean skipZeros) {
+        this.skipZeros = skipZeros;
     }
 }

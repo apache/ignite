@@ -24,7 +24,9 @@ export default ['bsSelect', [() => {
         const $render = ngModel.$render;
 
         ngModel.$render = () => {
-            if (scope.$destroyed) return;
+            if (scope.$destroyed)
+                return;
+
             scope.$applyAsync(() => {
                 $render();
                 const value = ngModel.$viewValue;

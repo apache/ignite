@@ -53,6 +53,9 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     /** Decision tree leaf builder. */
     private final DecisionTreeLeafBuilder decisionTreeLeafBuilder;
 
+    /** Use index structure instead of using sorting while learning. */
+    protected boolean useIndex = true;
+
     /**
      * Constructs a new distributed decision tree trainer.
      *
@@ -74,13 +77,40 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIndex)
         )) {
-            return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset));
+            return fit(dataset);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Trains new model based on dataset because there is no valid approach to update decision trees.
+     *
+     * @param mdl Learned model.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return New model based on new dataset.
+     */
+    @Override public <K, V> DecisionTreeNode updateModel(DecisionTreeNode mdl, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return fit(datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(DecisionTreeNode mdl) {
+        return true;
+    }
+
+    /** */
+    public <K,V> DecisionTreeNode fit(Dataset<EmptyContext, DecisionTreeData> dataset) {
+        return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset));
     }
 
     /**
@@ -89,7 +119,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @param dataset Dataset.
      * @return Impurity measure calculator.
      */
-    abstract ImpurityMeasureCalculator<T> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset);
+    protected abstract ImpurityMeasureCalculator<T> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset);
 
     /**
      * Splits the node specified by the given dataset and predicate and returns decision tree node.
@@ -105,7 +135,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
         if (deep >= maxDeep)
             return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
 
-        StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, filter, impurityCalc);
+        StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, filter, impurityCalc, deep);
 
         if (criterionFunctions == null)
             return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
@@ -132,14 +162,14 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
      * @return Array of impurity measure functions for all columns.
      */
     private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, DecisionTreeData> dataset,
-        TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc) {
+        TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc, int depth) {
 
         StepFunction<T>[] result = dataset.compute(
             part -> {
                 if (compressor != null)
-                    return compressor.compress(impurityCalc.calculate(part.filter(filter)));
+                    return compressor.compress(impurityCalc.calculate(part, filter, depth));
                 else
-                    return impurityCalc.calculate(part.filter(filter));
+                    return impurityCalc.calculate(part, filter, depth);
             }, this::reduce
         );
 

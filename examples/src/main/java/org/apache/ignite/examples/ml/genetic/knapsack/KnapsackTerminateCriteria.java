@@ -18,62 +18,70 @@
 package org.apache.ignite.examples.ml.genetic.knapsack;
 
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
- * Represents the terminate condition for Knapsack Genetic algorithm
- *
- * Class terminates Genetic algorithm when once GA Grid has performed 30 generations.
+ * Represents the terminate condition for {@link KnapsackGAExample}.
+ * <p>
+ * Class terminates Genetic algorithm when once GA Grid has performed 30 generations.</p>
  */
 public class KnapsackTerminateCriteria implements ITerminateCriteria {
-    /** Ignite instance */
-    private static Ignite ignite = null;
+    /** Ignite instance. */
+    private final Ignite ignite;
 
-    /** Ignite logger */
-    private IgniteLogger igniteLogger = null;
+    /** */
+    private final Consumer<String> logConsumer;
 
     /**
-     * @param ignite Ignite
+     * Create class instance.
+     *
+     * @param ignite Ignite instance.
+     * @param logConsumer Logging consumer.
      */
-    public KnapsackTerminateCriteria(Ignite ignite) {
+    KnapsackTerminateCriteria(Ignite ignite, Consumer<String> logConsumer) {
         this.ignite = ignite;
-        this.igniteLogger = this.ignite.log();
+        this.logConsumer = logConsumer;
     }
 
     /**
-     * @param fittestChromosome Most fit chromosome at for the nth generation
-     * @param averageFitnessScore Average fitness score as of the nth generation
-     * @param currentGeneration Current generation
-     * @return Boolean value
+     * Check whether termination condition is met.
+     *
+     * @param fittestChromosome Most fit chromosome at for the nth generation.
+     * @param averageFitnessScore Average fitness score as of the nth generation.
+     * @param currGeneration Current generation.
+     * @return Status whether condition is met or not.
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
-        int currentGeneration) {
+        int currGeneration) {
         boolean isTerminate = true;
 
-        igniteLogger.info("##########################################################################################");
-        igniteLogger.info("Generation: " + currentGeneration);
-        igniteLogger.info("Fittest is Chromosome Key: " + fittestChromosome);
-        igniteLogger.info("Total value is: " + fittestChromosome.getFitnessScore());
-        igniteLogger.info("Total weight is: " + calculateTotalWeight(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome)));
-        igniteLogger.info("Avg Chromosome Fitness: " + averageFitnessScore);
-        igniteLogger.info("Chromosome: " + fittestChromosome);
-        printItems(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
-        igniteLogger.info("##########################################################################################");
+        logConsumer.accept(
+            "\n##########################################################################################"
+                + "\n Generation: " + currGeneration
+                + "\n Fittest is Chromosome Key: " + fittestChromosome
+                + "\nTotal value is: " + fittestChromosome.getFitnessScore()
+                + "\nTotal weight is: " + calculateTotalWeight(
+                    GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
+                + "\nChromosome: " + fittestChromosome
+                + "\n" + reportItems(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
+                + "\n##########################################################################################");
 
-        if (!(currentGeneration > 29))
+        if (!(currGeneration > 29))
             isTerminate = false;
 
         return isTerminate;
     }
 
     /**
-     * @param genes List of Genes
-     * @return double value
+     * Calculate total weight.
+     *
+     * @param genes List of Genes.
+     * @return Calculated value.
      */
     private double calculateTotalWeight(List<Gene> genes) {
         double totalWeight = 0;
@@ -84,16 +92,21 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     * Helper to print items in knapsack
+     * Helper to print items in knapsack.
      *
-     * @param genes List of Genes
+     * @param genes List of Genes.
+     * @return Items to print.
      */
-    private void printItems(List<Gene> genes) {
+    private String reportItems(List<Gene> genes) {
+        StringBuilder sb = new StringBuilder();
+
         for (Gene gene : genes) {
-            igniteLogger.info("------------------------------------------------------------------------------------------");
-            igniteLogger.info("Name: " + ((Item)gene.getVal()).getName().toString());
-            igniteLogger.info("Weight: " + ((Item)gene.getVal()).getWeight());
-            igniteLogger.info("Value: " + ((Item)gene.getVal()).getValue());
+            sb.append("\n------------------------------------------------------------------------------------------")
+                .append("\nName: ").append(((Item)gene.getVal()).getName())
+                .append("\nWeight: ").append(((Item)gene.getVal()).getWeight())
+                .append("\nValue: ").append(((Item)gene.getVal()).getVal());
         }
+
+        return sb.toString();
     }
 }

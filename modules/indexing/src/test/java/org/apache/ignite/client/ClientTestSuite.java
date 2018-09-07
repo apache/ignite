@@ -33,7 +33,8 @@ import org.junit.runners.Suite;
     ReliabilityTest.class,
     SecurityTest.class,
     FunctionalQueryTest.class,
-    IgniteBinaryQueryTest.class
+    IgniteBinaryQueryTest.class,
+    SslParametersTest.class
 })
 public class ClientTestSuite {
     // No-op.

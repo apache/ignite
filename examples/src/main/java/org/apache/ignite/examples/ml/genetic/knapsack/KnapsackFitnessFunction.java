@@ -23,47 +23,40 @@ import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.IFitnessFunction;
 
 /**
- * This example demonstrates how to create a IFitnessFunction
- *
- * Your IFitnessFunction will vary depending on your particular use case.
- *
- * For this fitness function, we simply want to calculate the weight and value of
- *
- * an individual solution relative to other solutions.
- *
- *
- * To do this, we total the weights and values of all the genes within a chromosome.
+ * This example demonstrates how to create a {@link IFitnessFunction}.
+ * <p>
+ * Your fitness function will vary depending on your particular use case. For this fitness function, we simply want
+ * to calculate the weight and value of an individual solution relative to other solutions.</p>
+ * <p>
+ * To do this, we total the weights and values of all the genes within a chromosome.</p>
  */
 public class KnapsackFitnessFunction implements IFitnessFunction {
-    /** weight capacity of knapsack */
-    private double maximumWeight = 20;
-
     /**
-     * Calculate fitness
+     * Calculate fitness.
      *
-     * @param genes List of Genes
-     * @return Fitness value
+     * @param genes List of Genes.
+     * @return Fitness value.
      */
     public double evaluate(List<Gene> genes) {
-
-        double value = 0;
+        double val = 0;
         double weight = 0;
 
-        List<Long> dups = new ArrayList<Long>();
+        List<Long> duplicates = new ArrayList<>();
         int badSolution = 1;
 
-        for (Gene agene : genes) {
-            weight = weight + ((Item)(agene.getVal())).getWeight();
-            value = value + ((Item)(agene.getVal())).getValue();
+        for (Gene gene : genes) {
+            weight = weight + ((Item)(gene.getVal())).getWeight();
+            val = val + ((Item)(gene.getVal())).getVal();
 
-            if (dups.contains(agene.id()) || (weight > maximumWeight)) {
+            double maximumWeight = 20;
+            if (duplicates.contains(gene.id()) || (weight > maximumWeight)) {
                 badSolution = 0;
                 break;
             }
             else
-                dups.add(agene.id());
+                duplicates.add(gene.id());
         }
 
-        return (value * badSolution);
+        return (val * badSolution);
     }
 }

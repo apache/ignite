@@ -35,7 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 /**
  * Tests queries against entities with JSR-310 Java 8 Date and Time API fields.
  */
-public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQueryJsr310Java8DateTimeApiBaseTest {
+public class CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest extends CacheQueryJsr310Java8DateTimeApiAbstractTest {
     /**
      * Entity containing JSR-310 fields.
      */

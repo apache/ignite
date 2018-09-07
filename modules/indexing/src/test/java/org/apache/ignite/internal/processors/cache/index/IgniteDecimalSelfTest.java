@@ -32,8 +32,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
 import static java.math.RoundingMode.HALF_UP;
@@ -108,11 +106,14 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
         queryEntity.addQueryField("id", Integer.class.getName(), null);
         queryEntity.addQueryField("amount", BigDecimal.class.getName(), null);
 
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+        Map<String, Integer> precision = new HashMap<>();
+        Map<String, Integer> scale = new HashMap<>();
 
-        decimalInfo.put("amount", F.t(PRECISION, SCALE));
+        precision.put("amount",PRECISION);
+        scale.put("amount", SCALE);
 
-        queryEntity.setDecimalInfo(decimalInfo);
+        queryEntity.setFieldsPrecision(precision);
+        queryEntity.setFieldsScale(scale);
 
         ccfg.setQueryEntities(Collections.singletonList(queryEntity));
 
@@ -123,14 +124,14 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception If failed.
      */
     public void testConfiguredFromDdl() throws Exception {
-        checkDecimalInfo(DEC_TAB_NAME, VALUE, PRECISION, SCALE);
+        checkPrecisionAndScale(DEC_TAB_NAME, VALUE, PRECISION, SCALE);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testConfiguredFromQueryEntity() throws Exception {
-        checkDecimalInfo(SALARY_TAB_NAME, "amount", PRECISION, SCALE);
+        checkPrecisionAndScale(SALARY_TAB_NAME, "amount", PRECISION, SCALE);
     }
 
     /**
@@ -145,7 +146,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
 
         IgniteCache<Integer, Salary> cache = grid.createCache(ccfg);
 
-        checkDecimalInfo(tabName, "amount", PRECISION, SCALE);
+        checkPrecisionAndScale(tabName, "amount", PRECISION, SCALE);
     }
 
     /**
@@ -160,7 +161,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
 
         grid.createCache(ccfg);
 
-        checkDecimalInfo(SalaryWithAnnotations.class.getSimpleName().toUpperCase(), "amount", PRECISION, SCALE);
+        checkPrecisionAndScale(SalaryWithAnnotations.class.getSimpleName().toUpperCase(), "amount", PRECISION, SCALE);
     }
 
     /** */
@@ -177,21 +178,22 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** */
-    private void checkDecimalInfo(String tabName, String colName, Integer precision, Integer scale) {
+    private void checkPrecisionAndScale(String tabName, String colName, Integer precision, Integer scale) {
         QueryEntity queryEntity = findTableInfo(tabName);
 
         assertNotNull(queryEntity);
 
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = queryEntity.getDecimalInfo();
+        Map<String, Integer> fieldsPrecision = queryEntity.getFieldsPrecision();
 
-        assertNotNull(decimalInfo);
+        assertNotNull(precision);
 
-        IgniteBiTuple<Integer, Integer> columnInfo = decimalInfo.get(colName);
+        assertEquals(fieldsPrecision.get(colName), precision);
 
-        assertNotNull(columnInfo);
+        Map<String, Integer> fieldsScale = queryEntity.getFieldsScale();
 
-        assertEquals(columnInfo.get1(), precision);
-        assertEquals(columnInfo.get2(), scale);
+        assertEquals(fieldsScale.get(colName), scale);
+
+        assertNotNull(scale);
     }
 
     /**
@@ -202,7 +204,6 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
         IgniteEx ignite = grid(0);
 
         Collection<String> cacheNames = ignite.cacheNames();
-
         for (String cacheName : cacheNames) {
             CacheConfiguration ccfg = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class);
 

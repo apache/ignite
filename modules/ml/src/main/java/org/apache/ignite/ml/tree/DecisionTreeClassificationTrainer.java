@@ -85,17 +85,18 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
     }
 
     /**
-     * Set up the step function compressor of decision tree.
-     * @param compressor The parameter value.
-     * @return Trainer with new compressor parameter value.
+     * Sets useIndex parameter and returns trainer instance.
+     *
+     * @param useIndex Use index.
+     * @return Decision tree trainer.
      */
-    public DecisionTreeClassificationTrainer withCompressor(StepFunctionCompressor compressor){
-        this.compressor = compressor;
+    public DecisionTreeClassificationTrainer withUseIndex(boolean useIndex) {
+        this.useIndex = useIndex;
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
+    @Override protected ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
         Dataset<EmptyContext, DecisionTreeData> dataset) {
         Set<Double> labels = dataset.compute(part -> {
 
@@ -126,6 +127,6 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
         for (Double lb : labels)
             encoder.put(lb, idx++);
 
-        return new GiniImpurityMeasureCalculator(encoder);
+        return new GiniImpurityMeasureCalculator(encoder, useIndex);
     }
 }
