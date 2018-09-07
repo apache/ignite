@@ -576,7 +576,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         Object obj;
 
         try {
-            obj = Ignition.UNSAFE.allocateInstance(cls);
+            obj = Ignition.GRID_UNSAFE.allocateInstance(cls);
         }
         catch (InstantiationException e) {
             throw new IOException(e);
@@ -674,7 +674,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     @SuppressWarnings("unchecked")
     HashSet<?> readHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
-            HashSet<Object> set = (HashSet<Object>) Ignition.UNSAFE.allocateInstance(HashSet.class);
+            HashSet<Object> set = (HashSet<Object>) Ignition.GRID_UNSAFE.allocateInstance(HashSet.class);
 
             handles.assign(set);
 
@@ -746,7 +746,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     @SuppressWarnings("unchecked")
     LinkedHashSet<?> readLinkedHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
-            LinkedHashSet<Object> set = (LinkedHashSet<Object>)Ignition.UNSAFE.allocateInstance(LinkedHashSet.class);
+            LinkedHashSet<Object> set = (LinkedHashSet<Object>)Ignition.GRID_UNSAFE.allocateInstance(LinkedHashSet.class);
 
             handles.assign(set);
 

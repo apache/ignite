@@ -812,7 +812,6 @@ public class DataPageIO extends PageIO {
 
         setLinkByPageId(row, pageId, itemId);
 
-        // Ignition.print("pageId = " + pageId + ", itemId = " + itemId + ", directCnt = " + directCnt + ", indirectCnt = " + indirectCnt + ", row = " + row.toString());
     }
 
     /**

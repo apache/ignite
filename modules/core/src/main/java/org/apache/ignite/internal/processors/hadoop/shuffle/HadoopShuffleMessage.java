@@ -170,11 +170,11 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
     private void add(byte marker, long ptr, int size) {
         buf[off++] = marker;
 
-        Ignition.UNSAFE.putInt(buf, GridUnsafe.BYTE_ARR_OFF + off, size);
+        Ignition.GRID_UNSAFE.putInt(buf, GridUnsafe.BYTE_ARR_OFF + off, size);
 
         off += 4;
 
-        Ignition.UNSAFE.copyOffheapHeap(ptr, buf, GridUnsafe.BYTE_ARR_OFF + off, size);
+        Ignition.GRID_UNSAFE.copyOffheapHeap(ptr, buf, GridUnsafe.BYTE_ARR_OFF + off, size);
 
         off += size;
     }
@@ -186,7 +186,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
         for (int i = 0; i < off;) {
             byte marker = buf[i++];
 
-            int size = Ignition.UNSAFE.getInt(buf, GridUnsafe.BYTE_ARR_OFF + i);
+            int size = Ignition.GRID_UNSAFE.getInt(buf, GridUnsafe.BYTE_ARR_OFF + i);
 
             i += 4;
 

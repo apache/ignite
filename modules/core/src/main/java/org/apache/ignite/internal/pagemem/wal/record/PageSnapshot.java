@@ -57,7 +57,7 @@ public class PageSnapshot extends WALRecord {
 
         pageData = new byte[pageSize];
 
-        Ignition.UNSAFE.copyMemory(null, ptr, pageData, GridUnsafe.BYTE_ARR_OFF, pageSize);
+        Ignition.GRID_UNSAFE.copyMemory(null, ptr, pageData, GridUnsafe.BYTE_ARR_OFF, pageSize);
     }
 
     /** {@inheritDoc} */
@@ -85,7 +85,7 @@ public class PageSnapshot extends WALRecord {
         buf.order(ByteOrder.nativeOrder());
         buf.put(pageData);
 
-        long addr = Ignition.UNSAFE.bufferAddress(buf);
+        long addr = Ignition.GRID_UNSAFE.bufferAddress(buf);
 
         try {
             return "PageSnapshot [fullPageId = " + fullPageId() + ", page = [\n"

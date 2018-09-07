@@ -70,14 +70,14 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        trackingArrPtr = Ignition.UNSAFE.allocateMemory(trackingSize * 8);
+        trackingArrPtr = Ignition.GRID_UNSAFE.allocateMemory(trackingSize * 8);
 
-        Ignition.UNSAFE.setMemory(trackingArrPtr, trackingSize * 8, (byte)0);
+        Ignition.GRID_UNSAFE.setMemory(trackingArrPtr, trackingSize * 8, (byte)0);
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        Ignition.UNSAFE.freeMemory(trackingArrPtr);
+        Ignition.GRID_UNSAFE.freeMemory(trackingArrPtr);
     }
 
     /** {@inheritDoc} */
@@ -93,14 +93,14 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         do {
             int trackingIdx = trackingIdx(pageIdx);
 
-            int firstTs = Ignition.UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
+            int firstTs = Ignition.GRID_UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
 
-            int secondTs = Ignition.UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 8 + 4);
+            int secondTs = Ignition.GRID_UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 8 + 4);
 
             if (firstTs <= secondTs)
-                success = Ignition.UNSAFE.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 8, firstTs, (int)latestTs);
+                success = Ignition.GRID_UNSAFE.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 8, firstTs, (int)latestTs);
             else {
-                success = Ignition.UNSAFE.compareAndSwapInt(
+                success = Ignition.GRID_UNSAFE.compareAndSwapInt(
                     null, trackingArrPtr + trackingIdx * 8 + 4, secondTs, (int)latestTs);
             }
         } while (!success);
@@ -124,9 +124,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int trackingIdx = rnd.nextInt(trackingSize);
 
-                int firstTs = Ignition.UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
+                int firstTs = Ignition.GRID_UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
 
-                int secondTs = Ignition.UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 8 + 4);
+                int secondTs = Ignition.GRID_UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 8 + 4);
 
                 int minTs = Math.min(firstTs, secondTs);
 
@@ -165,7 +165,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected boolean checkTouch(long pageId) {
         int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
 
-        int firstTs = Ignition.UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
+        int firstTs = Ignition.GRID_UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
 
         return firstTs != 0;
     }
@@ -176,6 +176,6 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         int trackingIdx = trackingIdx(pageIdx);
 
-        Ignition.UNSAFE.putLongVolatile(null, trackingArrPtr + trackingIdx * 8, 0L);
+        Ignition.GRID_UNSAFE.putLongVolatile(null, trackingArrPtr + trackingIdx * 8, 0L);
     }
 }

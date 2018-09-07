@@ -72,14 +72,14 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        trackingArrPtr = Ignition.UNSAFE.allocateMemory(trackingSize * 4);
+        trackingArrPtr = Ignition.GRID_UNSAFE.allocateMemory(trackingSize * 4);
 
-        Ignition.UNSAFE.setMemory(trackingArrPtr, trackingSize * 4, (byte)0);
+        Ignition.GRID_UNSAFE.setMemory(trackingArrPtr, trackingSize * 4, (byte)0);
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        Ignition.UNSAFE.freeMemory(trackingArrPtr);
+        Ignition.GRID_UNSAFE.freeMemory(trackingArrPtr);
     }
 
     /** {@inheritDoc} */
@@ -90,7 +90,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         
         assert res >= 0 && res < Integer.MAX_VALUE;
         
-        Ignition.UNSAFE.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, (int)res);
+        Ignition.GRID_UNSAFE.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, (int)res);
     }
 
     /** {@inheritDoc} */
@@ -111,7 +111,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int sampleTrackingIdx = rnd.nextInt(trackingSize);
 
-                int compactTs = Ignition.UNSAFE.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4);
+                int compactTs = Ignition.GRID_UNSAFE.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4);
 
                 if (compactTs != 0) {
                     // We chose data page with at least one touch.
@@ -146,7 +146,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected boolean checkTouch(long pageId) {
         int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
 
-        int ts = Ignition.UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 4);
+        int ts = Ignition.GRID_UNSAFE.getIntVolatile(null, trackingArrPtr + trackingIdx * 4);
 
         return ts != 0;
     }
@@ -155,6 +155,6 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override public void forgetPage(long pageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
-        Ignition.UNSAFE.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, 0);
+        Ignition.GRID_UNSAFE.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, 0);
     }
 }

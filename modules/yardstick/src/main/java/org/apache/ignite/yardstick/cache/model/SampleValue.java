@@ -35,6 +35,8 @@ public class SampleValue implements Externalizable, Binarylizable {
     @QuerySqlField
     private int id;
 
+    private byte[] data;
+
     /** */
     public SampleValue() {
         // No-op.
@@ -45,6 +47,7 @@ public class SampleValue implements Externalizable, Binarylizable {
      */
     public SampleValue(int id) {
         this.id = id;
+        this.data = new byte[512];
     }
 
     /**

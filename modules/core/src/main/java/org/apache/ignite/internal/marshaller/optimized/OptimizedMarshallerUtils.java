@@ -160,12 +160,12 @@ class OptimizedMarshallerUtils {
         long mapOff;
 
         try {
-            mapOff = Ignition.UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
+            mapOff = Ignition.GRID_UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
         }
         catch (NoSuchFieldException ignored) {
             try {
                 // Workaround for legacy IBM JRE.
-                mapOff = Ignition.UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("backingMap"));
+                mapOff = Ignition.GRID_UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("backingMap"));
             }
             catch (NoSuchFieldException e2) {
                 throw new IgniteException("Initialization failure.", e2);
@@ -360,7 +360,7 @@ class OptimizedMarshallerUtils {
      * @return Byte value.
      */
     static byte getByte(Object obj, long off) {
-        return Ignition.UNSAFE.getByteField(obj, off);
+        return Ignition.GRID_UNSAFE.getByteField(obj, off);
     }
 
     /**
@@ -371,7 +371,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setByte(Object obj, long off, byte val) {
-        Ignition.UNSAFE.putByteField(obj, off, val);
+        Ignition.GRID_UNSAFE.putByteField(obj, off, val);
     }
 
     /**
@@ -382,7 +382,7 @@ class OptimizedMarshallerUtils {
      * @return Short value.
      */
     static short getShort(Object obj, long off) {
-        return Ignition.UNSAFE.getShortField(obj, off);
+        return Ignition.GRID_UNSAFE.getShortField(obj, off);
     }
 
     /**
@@ -393,7 +393,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setShort(Object obj, long off, short val) {
-        Ignition.UNSAFE.putShortField(obj, off, val);
+        Ignition.GRID_UNSAFE.putShortField(obj, off, val);
     }
 
     /**
@@ -404,7 +404,7 @@ class OptimizedMarshallerUtils {
      * @return Integer value.
      */
     static int getInt(Object obj, long off) {
-        return Ignition.UNSAFE.getIntField(obj, off);
+        return Ignition.GRID_UNSAFE.getIntField(obj, off);
     }
 
     /**
@@ -415,7 +415,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setInt(Object obj, long off, int val) {
-        Ignition.UNSAFE.putIntField(obj, off, val);
+        Ignition.GRID_UNSAFE.putIntField(obj, off, val);
     }
 
     /**
@@ -426,7 +426,7 @@ class OptimizedMarshallerUtils {
      * @return Long value.
      */
     static long getLong(Object obj, long off) {
-        return Ignition.UNSAFE.getLongField(obj, off);
+        return Ignition.GRID_UNSAFE.getLongField(obj, off);
     }
 
     /**
@@ -437,7 +437,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setLong(Object obj, long off, long val) {
-        Ignition.UNSAFE.putLongField(obj, off, val);
+        Ignition.GRID_UNSAFE.putLongField(obj, off, val);
     }
 
     /**
@@ -448,7 +448,7 @@ class OptimizedMarshallerUtils {
      * @return Float value.
      */
     static float getFloat(Object obj, long off) {
-        return Ignition.UNSAFE.getFloatField(obj, off);
+        return Ignition.GRID_UNSAFE.getFloatField(obj, off);
     }
 
     /**
@@ -459,7 +459,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setFloat(Object obj, long off, float val) {
-        Ignition.UNSAFE.putFloatField(obj, off, val);
+        Ignition.GRID_UNSAFE.putFloatField(obj, off, val);
     }
 
     /**
@@ -470,7 +470,7 @@ class OptimizedMarshallerUtils {
      * @return Double value.
      */
     static double getDouble(Object obj, long off) {
-        return Ignition.UNSAFE.getDoubleField(obj, off);
+        return Ignition.GRID_UNSAFE.getDoubleField(obj, off);
     }
 
     /**
@@ -481,7 +481,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setDouble(Object obj, long off, double val) {
-        Ignition.UNSAFE.putDoubleField(obj, off, val);
+        Ignition.GRID_UNSAFE.putDoubleField(obj, off, val);
     }
 
     /**
@@ -492,7 +492,7 @@ class OptimizedMarshallerUtils {
      * @return Char value.
      */
     static char getChar(Object obj, long off) {
-        return Ignition.UNSAFE.getCharField(obj, off);
+        return Ignition.GRID_UNSAFE.getCharField(obj, off);
     }
 
     /**
@@ -503,7 +503,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setChar(Object obj, long off, char val) {
-        Ignition.UNSAFE.putCharField(obj, off, val);
+        Ignition.GRID_UNSAFE.putCharField(obj, off, val);
     }
 
     /**
@@ -514,7 +514,7 @@ class OptimizedMarshallerUtils {
      * @return Boolean value.
      */
     static boolean getBoolean(Object obj, long off) {
-        return Ignition.UNSAFE.getBooleanField(obj, off);
+        return Ignition.GRID_UNSAFE.getBooleanField(obj, off);
     }
 
     /**
@@ -525,7 +525,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setBoolean(Object obj, long off, boolean val) {
-        Ignition.UNSAFE.putBooleanField(obj, off, val);
+        Ignition.GRID_UNSAFE.putBooleanField(obj, off, val);
     }
 
     /**
@@ -536,7 +536,7 @@ class OptimizedMarshallerUtils {
      * @return Value.
      */
     static Object getObject(Object obj, long off) {
-        return Ignition.UNSAFE.getObjectField(obj, off);
+        return Ignition.GRID_UNSAFE.getObjectField(obj, off);
     }
 
     /**
@@ -547,6 +547,6 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setObject(Object obj, long off, Object val) {
-        Ignition.UNSAFE.putObjectField(obj, off, val);
+        Ignition.GRID_UNSAFE.putObjectField(obj, off, val);
     }
 }

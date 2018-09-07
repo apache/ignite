@@ -40,10 +40,10 @@ public class GridSpinReadWriteLock {
      */
     static {
         try {
-            STATE_OFFS = Ignition.UNSAFE.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("state"));
+            STATE_OFFS = Ignition.GRID_UNSAFE.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("state"));
 
             PENDING_WLOCKS_OFFS =
-                Ignition.UNSAFE.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("pendingWLocks"));
+                Ignition.GRID_UNSAFE.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("pendingWLocks"));
         }
         catch (NoSuchFieldException e) {
             throw new Error(e);
@@ -401,7 +401,7 @@ public class GridSpinReadWriteLock {
      * @return {@code True} on success.
      */
     private boolean compareAndSet(long offs, int expect, int update) {
-        return Ignition.UNSAFE.compareAndSwapInt(this, offs, expect, update);
+        return Ignition.GRID_UNSAFE.compareAndSwapInt(this, offs, expect, update);
     }
 
     /** {@inheritDoc} */

@@ -69,7 +69,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (Long ptr : ptrs)
-            Ignition.UNSAFE.freeMemory(ptr);
+            Ignition.GRID_UNSAFE.freeMemory(ptr);
 
         super.afterTest();
     }
@@ -499,11 +499,11 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
         if (offheap) {
             byte[] arr = obj.array();
 
-            long ptr = Ignition.UNSAFE.allocateMemory(arr.length);
+            long ptr = Ignition.GRID_UNSAFE.allocateMemory(arr.length);
 
             ptrs.add(ptr);
 
-            Ignition.UNSAFE.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
+            Ignition.GRID_UNSAFE.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
 
             obj = new BinaryObjectOffheapImpl(obj.context(), ptr, 0, obj.array().length);
         }

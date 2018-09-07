@@ -93,120 +93,120 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object src, long off, int len) {
-        Ignition.UNSAFE.copyMemory(src, off, data, Ignition.UNSAFE.BYTE_ARR_OFF + pos, len);
+        Ignition.GRID_UNSAFE.copyMemory(src, off, data, Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos, len);
 
         shift(len);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeShortFast(short val) {
-        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
+        long off = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putShortLE(data, off, val);
+            Ignition.GRID_UNSAFE.putShortLE(data, off, val);
         else
-            Ignition.UNSAFE.putShort(data, off, val);
+            Ignition.GRID_UNSAFE.putShort(data, off, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeCharFast(char val) {
-        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
+        long off = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putCharLE(data, off, val);
+            Ignition.GRID_UNSAFE.putCharLE(data, off, val);
         else
-            Ignition.UNSAFE.putChar(data, off, val);
+            Ignition.GRID_UNSAFE.putChar(data, off, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeIntFast(int val) {
-        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
+        long off = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putIntLE(data, off, val);
+            Ignition.GRID_UNSAFE.putIntLE(data, off, val);
         else
-            Ignition.UNSAFE.putInt(data, off, val);
+            Ignition.GRID_UNSAFE.putInt(data, off, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeLongFast(long val) {
-        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
+        long off = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putLongLE(data, off, val);
+            Ignition.GRID_UNSAFE.putLongLE(data, off, val);
         else
-            Ignition.UNSAFE.putLong(data, off, val);
+            Ignition.GRID_UNSAFE.putLong(data, off, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteByte(byte val) {
-        Ignition.UNSAFE.putByte(data, Ignition.UNSAFE.BYTE_ARR_OFF + pos++, val);
+        Ignition.GRID_UNSAFE.putByte(data, Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos++, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteShort(short val) {
-        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
+        long off = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putShortLE(data, off, val);
+            Ignition.GRID_UNSAFE.putShortLE(data, off, val);
         else
-            Ignition.UNSAFE.putShort(data, off, val);
+            Ignition.GRID_UNSAFE.putShort(data, off, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteShort(int pos, short val) {
-        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
+        long off = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putShortLE(data, off, val);
+            Ignition.GRID_UNSAFE.putShortLE(data, off, val);
         else
-            Ignition.UNSAFE.putShort(data, off, val);
+            Ignition.GRID_UNSAFE.putShort(data, off, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteChar(char val) {
-        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
+        long off = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putCharLE(data, off, val);
+            Ignition.GRID_UNSAFE.putCharLE(data, off, val);
         else
-            Ignition.UNSAFE.putChar(data, off, val);
+            Ignition.GRID_UNSAFE.putChar(data, off, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteInt(int val) {
-        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
+        long off = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putIntLE(data, off, val);
+            Ignition.GRID_UNSAFE.putIntLE(data, off, val);
         else
-            Ignition.UNSAFE.putInt(data, off, val);
+            Ignition.GRID_UNSAFE.putInt(data, off, val);
 
         shift(4);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteInt(int pos, int val) {
-        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
+        long off = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putIntLE(data, off, val);
+            Ignition.GRID_UNSAFE.putIntLE(data, off, val);
         else
-            Ignition.UNSAFE.putInt(data, off, val);
+            Ignition.GRID_UNSAFE.putInt(data, off, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteLong(long val) {
-        long off = Ignition.UNSAFE.BYTE_ARR_OFF + pos;
+        long off = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putLongLE(data, off, val);
+            Ignition.GRID_UNSAFE.putLongLE(data, off, val);
         else
-            Ignition.UNSAFE.putLong(data, off, val);
+            Ignition.GRID_UNSAFE.putLong(data, off, val);
 
         shift(8);
     }

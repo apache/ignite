@@ -114,7 +114,7 @@ public class Ignition {
     /**
      *
      */
-    private static boolean aepEnabled = false;
+    private static boolean aepServerEnabled = false;
 
     /**
      *
@@ -126,7 +126,9 @@ public class Ignition {
      */
     private static long aepHeapSize = 2 * 1024 * 1024 * 1024L;
 
-    public static GridUnsafe UNSAFE = new GridUnsafe();
+    public static GridUnsafe GRID_UNSAFE = new GridUnsafe();
+
+    public static GridUnsafe UNSAFE = GRID_UNSAFE;
 
     /**
      * Sets daemon flag.
@@ -599,15 +601,12 @@ public class Ignition {
     public static void setAepStore(String aepName, boolean isClient, long aepHeapSize) {
 
         validatePath(aepName);
+        aepHeap = Heap.getHeap(aepName, aepHeapSize);
 
-        if (!isClient) {
-            Ignition.aepHeapSize = aepHeapSize;
-            aepHeap = Heap.getHeap(aepName, aepHeapSize);
-            aepEnabled = true;
-        } else {
-            aepHeap = Heap.getHeap(aepName + "_client", 8 * 1024 * BinarySchemaRegistry.SCHEMA_REGISTRY_SIZE);
+        if (isClient) 
             aepClientMode = true;
-        }
+        else
+            aepServerEnabled = true;
 
         UNSAFE = new AepUnsafe();
     }
@@ -637,7 +636,7 @@ public class Ignition {
     }
 
     public static boolean isAepEnabled() {
-        return aepEnabled;
+        return aepServerEnabled;
     }
     
     public static boolean isAepClientModeEnabled() {

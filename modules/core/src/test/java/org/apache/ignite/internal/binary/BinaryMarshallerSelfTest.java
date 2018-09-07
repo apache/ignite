@@ -2620,13 +2620,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             assertFalse(offheapObj2.equals(offheapObj));
         }
         finally {
-            Ignition.UNSAFE.freeMemory(ptr);
+            Ignition.GRID_UNSAFE.freeMemory(ptr);
 
             if (ptr1 > 0)
-                Ignition.UNSAFE.freeMemory(ptr1);
+                Ignition.GRID_UNSAFE.freeMemory(ptr1);
 
             if (ptr2 > 0)
-                Ignition.UNSAFE.freeMemory(ptr2);
+                Ignition.GRID_UNSAFE.freeMemory(ptr2);
         }
     }
 
@@ -3156,32 +3156,32 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         }
         finally {
             if (binObjOffheap0 != null) {
-                Ignition.UNSAFE.freeMemory(binObjOffheap0.offheapAddress());
+                Ignition.GRID_UNSAFE.freeMemory(binObjOffheap0.offheapAddress());
                 binObjOffheap0 = null;
             }
 
             if (binObjOffheap1 != null) {
-                Ignition.UNSAFE.freeMemory(binObjOffheap1.offheapAddress());
+                Ignition.GRID_UNSAFE.freeMemory(binObjOffheap1.offheapAddress());
                 binObjOffheap1 = null;
             }
 
             if (binObjWithRawOffheap0 != null) {
-                Ignition.UNSAFE.freeMemory(binObjWithRawOffheap0.offheapAddress());
+                Ignition.GRID_UNSAFE.freeMemory(binObjWithRawOffheap0.offheapAddress());
                 binObjOffheap1 = null;
             }
 
             if (binObjWithRawOffheap1 != null) {
-                Ignition.UNSAFE.freeMemory(binObjWithRawOffheap1.offheapAddress());
+                Ignition.GRID_UNSAFE.freeMemory(binObjWithRawOffheap1.offheapAddress());
                 binObjOffheap1 = null;
             }
 
             if (binObjRawOffheap0 != null) {
-                Ignition.UNSAFE.freeMemory(binObjRawOffheap0.offheapAddress());
+                Ignition.GRID_UNSAFE.freeMemory(binObjRawOffheap0.offheapAddress());
                 binObjOffheap1 = null;
             }
 
             if (binObjRawOffheap1 != null) {
-                Ignition.UNSAFE.freeMemory(binObjRawOffheap1.offheapAddress());
+                Ignition.GRID_UNSAFE.freeMemory(binObjRawOffheap1.offheapAddress());
                 binObjOffheap1 = null;
             }
         }
@@ -3553,9 +3553,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     private long copyOffheap(BinaryObjectImpl obj) {
         byte[] arr = obj.array();
 
-        long ptr = Ignition.UNSAFE.allocateMemory(arr.length);
+        long ptr = Ignition.GRID_UNSAFE.allocateMemory(arr.length);
 
-        Ignition.UNSAFE.copyHeapOffheap(arr, Ignition.UNSAFE.BYTE_ARR_OFF, ptr, arr.length);
+        Ignition.GRID_UNSAFE.copyHeapOffheap(arr, Ignition.GRID_UNSAFE.BYTE_ARR_OFF, ptr, arr.length);
 
         return ptr;
     }

@@ -64,12 +64,12 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public double get(int i) {
-        return Ignition.UNSAFE.getDouble(pointerOffset(i));
+        return Ignition.GRID_UNSAFE.getDouble(pointerOffset(i));
     }
 
     /** {@inheritDoc} */
     @Override public void set(int i, double v) {
-        Ignition.UNSAFE.putDouble(pointerOffset(i), v);
+        Ignition.GRID_UNSAFE.putDouble(pointerOffset(i), v);
     }
 
     /** {@inheritDoc} */
@@ -125,7 +125,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void destroy() {
-        Ignition.UNSAFE.freeMemory(ptr);
+        Ignition.GRID_UNSAFE.freeMemory(ptr);
     }
 
     /** {@inheritDoc} */
@@ -167,7 +167,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** */
     private void allocateMemory(int size) {
-        ptr = Ignition.UNSAFE.allocateMemory(size * Double.BYTES);
+        ptr = Ignition.GRID_UNSAFE.allocateMemory(size * Double.BYTES);
 
         ptrInitHash = Long.hashCode(ptr);
     }

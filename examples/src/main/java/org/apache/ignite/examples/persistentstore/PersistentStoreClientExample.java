@@ -15,17 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.aep;
+package org.apache.ignite.examples.persistentstore;
 
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.datagrid.CacheQueryExample;
 import org.apache.ignite.examples.model.Organization;
@@ -33,7 +28,7 @@ import org.apache.ignite.examples.model.Organization;
 /**
  * This example demonstrates the usage of Apache Ignite Persistent Store.
  * <p>
- * To execute this example you should start an instance of {@link ServerNode}
+ * To execute this example you should start an instance of {@link PersistentStoreExampleNodeStartup}
  * class which will start up an Apache Ignite remote server node with a proper configuration.
  * <p>
  * When {@code UPDATE} parameter of this example is set to {@code true}, the example will populate
@@ -46,7 +41,7 @@ import org.apache.ignite.examples.model.Organization;
  * run the example with {@code UPDATE} set to {@code false} to verify that Apache Ignite can work with the
  * data that is in the persistence only.
  */
-public class CacheApiPersistenceExample {
+public class PersistentStoreClientExample {
     /** Organizations cache name. */
     private static final String ORG_CACHE = CacheQueryExample.class.getSimpleName() + "Organizations";
 
@@ -58,40 +53,31 @@ public class CacheApiPersistenceExample {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        //Ignition.setClientMode(true);
+        Ignition.setClientMode(true);
 
         try (Ignite ignite = Ignition.start("examples/config/persistentstore/example-persistent-store.xml")) {
             // Activate the cluster. Required to do if the persistent store is enabled because you might need
             // to wait while all the nodes, that store a subset of data on disk, join the cluster.
-            //ignite.active(true);
+            ignite.active(true);
 
             CacheConfiguration<Long, Organization> cacheCfg = new CacheConfiguration<>(ORG_CACHE);
-
-            cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-            cacheCfg.setBackups(1);
-            cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-            cacheCfg.setIndexedTypes(Long.class, Organization.class);
 
             IgniteCache<Long, Organization> cache = ignite.getOrCreateCache(cacheCfg);
 
             if (UPDATE) {
                 System.out.println("Populating the cache...");
 
+                try (IgniteDataStreamer<Long, Organization> streamer = ignite.dataStreamer(ORG_CACHE)) {
+                    streamer.allowOverwrite(true);
 
-                for (long i = 0; i < 100_000; i++) {
-                    cache.put(i, new Organization(i, "organization-" + i));
+                    for (long i = 0; i < Long.parseLong(args[0]); i++) {
+                        streamer.addData(i, new Organization(i, "organization-" + i));
 
-                    if (i > 0 && i % 10_000 == 0)
-                        System.out.println("Done: " + i);
+                        if (i > 0 && i % 10_000 == 0)
+                            System.out.println("Done: " + i);
+                    }
                 }
             }
-
-            // Run SQL without explicitly calling to loadCache().
-            QueryCursor<List<?>> cur = cache.query(
-                    new SqlFieldsQuery("select id, name from Organization where name like ?")
-                            .setArgs("organization-54321"));
-
-            System.out.println("SQL Result: " + cur.getAll());
 
             // Run get() without explicitly calling to loadCache().
             Organization org = cache.get(54321l);

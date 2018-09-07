@@ -100,42 +100,42 @@ public class HadoopDirectDataOutput extends OutputStream implements DataOutput {
     @Override public void writeShort(int val) throws IOException {
         int writePos = ensure(2);
 
-        Ignition.UNSAFE.putShort(buf, BYTE_ARR_OFF + writePos, (short)val);
+        Ignition.GRID_UNSAFE.putShort(buf, BYTE_ARR_OFF + writePos, (short)val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(int val) throws IOException {
         int writePos = ensure(2);
 
-        Ignition.UNSAFE.putChar(buf, BYTE_ARR_OFF + writePos, (char)val);
+        Ignition.GRID_UNSAFE.putChar(buf, BYTE_ARR_OFF + writePos, (char)val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(int val) throws IOException {
         int writePos = ensure(4);
 
-        Ignition.UNSAFE.putInt(buf, BYTE_ARR_OFF + writePos, val);
+        Ignition.GRID_UNSAFE.putInt(buf, BYTE_ARR_OFF + writePos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(long val) throws IOException {
         int writePos = ensure(8);
 
-        Ignition.UNSAFE.putLong(buf, BYTE_ARR_OFF + writePos, val);
+        Ignition.GRID_UNSAFE.putLong(buf, BYTE_ARR_OFF + writePos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeFloat(float val) throws IOException {
         int writePos = ensure(4);
 
-        Ignition.UNSAFE.putFloat(buf, BYTE_ARR_OFF + writePos, val);
+        Ignition.GRID_UNSAFE.putFloat(buf, BYTE_ARR_OFF + writePos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDouble(double val) throws IOException {
         int writePos = ensure(8);
 
-        Ignition.UNSAFE.putDouble(buf, BYTE_ARR_OFF + writePos, val);
+        Ignition.GRID_UNSAFE.putDouble(buf, BYTE_ARR_OFF + writePos, val);
     }
 
     /** {@inheritDoc} */

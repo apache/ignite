@@ -51,7 +51,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final OffheapReadWriteLock lock = new OffheapReadWriteLock(16);
 
-        final long ptr = Ignition.UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
+        final long ptr = Ignition.GRID_UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
 
         lock.init(ptr, TAG_0);
 
@@ -143,7 +143,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final OffheapReadWriteLock lock = new OffheapReadWriteLock(16);
 
-        final long ptr = Ignition.UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE * numPairs);
+        final long ptr = Ignition.GRID_UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE * numPairs);
 
         for (int i = 0; i < numPairs; i++) {
             data[i] = new Pair();
@@ -229,7 +229,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final OffheapReadWriteLock lock = new OffheapReadWriteLock(16);
 
-        final long ptr = Ignition.UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE * numPairs);
+        final long ptr = Ignition.GRID_UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE * numPairs);
 
         for (int i = 0; i < numPairs; i++) {
             data[i] = new Pair();
@@ -333,7 +333,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final OffheapReadWriteLock lock = new OffheapReadWriteLock(16);
 
-        final long ptr = Ignition.UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
+        final long ptr = Ignition.GRID_UNSAFE.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
 
         lock.init(ptr, TAG_0);
 

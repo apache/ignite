@@ -343,8 +343,6 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             int newFreeSpace = io.getFreeSpace(pageAddr);
 
-            // Ignition.print("OldFreeSpace = " + oldFreeSpace + ", " + newFreeSpace);
-
             if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
                 int newBucket = bucket(newFreeSpace, false);
 

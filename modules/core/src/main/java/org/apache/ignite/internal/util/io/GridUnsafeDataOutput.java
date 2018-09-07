@@ -193,13 +193,13 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
             long off = BYTE_ARR_OFF + this.off;
 
             for (double val : arr) {
-                Ignition.UNSAFE.putDoubleLE(bytes, off, val);
+                Ignition.GRID_UNSAFE.putDoubleLE(bytes, off, val);
 
                 off += 8;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(arr, DOUBLE_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(arr, DOUBLE_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -225,13 +225,13 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
             long off = BYTE_ARR_OFF + this.off;
 
             for (char val : arr) {
-                Ignition.UNSAFE.putCharLE(bytes, off, val);
+                Ignition.GRID_UNSAFE.putCharLE(bytes, off, val);
 
                 off += 2;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(arr, CHAR_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(arr, CHAR_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -248,13 +248,13 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
             long off = BYTE_ARR_OFF + this.off;
 
             for (long val : arr) {
-                Ignition.UNSAFE.putLongLE(bytes, off, val);
+                Ignition.GRID_UNSAFE.putLongLE(bytes, off, val);
 
                 off += 8;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(arr, LONG_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(arr, LONG_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -271,13 +271,13 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
             long off = BYTE_ARR_OFF + this.off;
 
             for (float val : arr) {
-                Ignition.UNSAFE.putFloatLE(bytes, off, val);
+                Ignition.GRID_UNSAFE.putFloatLE(bytes, off, val);
 
                 off += 4;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(arr, FLOAT_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(arr, FLOAT_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -312,13 +312,13 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
             long off = BYTE_ARR_OFF + this.off;
 
             for (short val : arr) {
-                Ignition.UNSAFE.putShortLE(bytes, off, val);
+                Ignition.GRID_UNSAFE.putShortLE(bytes, off, val);
 
                 off += 2;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(arr, SHORT_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(arr, SHORT_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -335,13 +335,13 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
             long off = BYTE_ARR_OFF + this.off;
 
             for (int val : arr) {
-                Ignition.UNSAFE.putIntLE(bytes, off, val);
+                Ignition.GRID_UNSAFE.putIntLE(bytes, off, val);
 
                 off += 4;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(arr, INT_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(arr, INT_ARR_OFF, bytes, BYTE_ARR_OFF + off, bytesToCp);
 
         onWrite(bytesToCp);
     }
@@ -355,7 +355,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeBoolean(boolean v) throws IOException {
         requestFreeSize(1);
 
-        Ignition.UNSAFE.putBoolean(bytes, BYTE_ARR_OFF + off, v);
+        Ignition.GRID_UNSAFE.putBoolean(bytes, BYTE_ARR_OFF + off, v);
 
         onWrite(1);
     }
@@ -364,7 +364,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void writeByte(int v) throws IOException {
         requestFreeSize(1);
 
-        Ignition.UNSAFE.putByte(bytes, BYTE_ARR_OFF + off, (byte)v);
+        Ignition.GRID_UNSAFE.putByte(bytes, BYTE_ARR_OFF + off, (byte)v);
 
         onWrite(1);
     }
@@ -378,9 +378,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         long off = BYTE_ARR_OFF + this.off;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putShortLE(bytes, off, val);
+            Ignition.GRID_UNSAFE.putShortLE(bytes, off, val);
         else
-            Ignition.UNSAFE.putShort(bytes, off, val);
+            Ignition.GRID_UNSAFE.putShort(bytes, off, val);
 
         onWrite(2);
     }
@@ -394,9 +394,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         long off = BYTE_ARR_OFF + this.off;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putCharLE(bytes, off, val);
+            Ignition.GRID_UNSAFE.putCharLE(bytes, off, val);
         else
-            Ignition.UNSAFE.putChar(bytes, off, val);
+            Ignition.GRID_UNSAFE.putChar(bytes, off, val);
 
         onWrite(2);
     }
@@ -408,9 +408,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         long off = BYTE_ARR_OFF + this.off;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putIntLE(bytes, off, v);
+            Ignition.GRID_UNSAFE.putIntLE(bytes, off, v);
         else
-            Ignition.UNSAFE.putInt(bytes, off, v);
+            Ignition.GRID_UNSAFE.putInt(bytes, off, v);
 
         onWrite(4);
     }
@@ -422,9 +422,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         long off = BYTE_ARR_OFF + this.off;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putLongLE(bytes, off, v);
+            Ignition.GRID_UNSAFE.putLongLE(bytes, off, v);
         else
-            Ignition.UNSAFE.putLong(bytes, off, v);
+            Ignition.GRID_UNSAFE.putLong(bytes, off, v);
 
         onWrite(8);
     }

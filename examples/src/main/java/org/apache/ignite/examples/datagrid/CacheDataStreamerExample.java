@@ -56,7 +56,7 @@ public class CacheDataStreamerExample {
     public static void main(String[] args) throws IgniteException {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+        try (Ignite ignite = Ignition.start("ekxamples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache data streamer example started.");
 

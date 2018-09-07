@@ -31,7 +31,7 @@ public abstract class BinaryPrimitives {
      * @param val Value.
      */
     public static void writeByte(byte[] arr, int off, byte val) {
-        Ignition.UNSAFE.putByte(arr, GridUnsafe.BYTE_ARR_OFF + off, val);
+        Ignition.GRID_UNSAFE.putByte(arr, GridUnsafe.BYTE_ARR_OFF + off, val);
     }
 
     /**
@@ -40,7 +40,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static byte readByte(byte[] arr, int off) {
-        return Ignition.UNSAFE.getByte(arr, GridUnsafe.BYTE_ARR_OFF + off);
+        return Ignition.GRID_UNSAFE.getByte(arr, GridUnsafe.BYTE_ARR_OFF + off);
     }
 
     /**
@@ -49,7 +49,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static byte readByte(long ptr, int off) {
-        return Ignition.UNSAFE.getByte(ptr + off);
+        return Ignition.GRID_UNSAFE.getByte(ptr + off);
     }
 
     /**
@@ -73,7 +73,7 @@ public abstract class BinaryPrimitives {
     public static byte[] readByteArray(long ptr, int off, int len) {
         byte[] arr0 = new byte[len];
 
-        Ignition.UNSAFE.copyOffheapHeap(ptr + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
+        Ignition.GRID_UNSAFE.copyOffheapHeap(ptr + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
 
         return arr0;
     }
@@ -111,12 +111,12 @@ public abstract class BinaryPrimitives {
      * @param val Value.
      */
     public static void writeShort(byte[] arr, int off, short val) {
-        long pos = Ignition.UNSAFE.BYTE_ARR_OFF + off;
+        long pos = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putShortLE(arr, pos, val);
+            Ignition.GRID_UNSAFE.putShortLE(arr, pos, val);
         else
-            Ignition.UNSAFE.putShort(arr, pos, val);
+            Ignition.GRID_UNSAFE.putShort(arr, pos, val);
     }
 
     /**
@@ -126,9 +126,9 @@ public abstract class BinaryPrimitives {
      */
     public static void writeShort(long ptr, int off, short val) {
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putShortLE(ptr + off, val);
+            Ignition.GRID_UNSAFE.putShortLE(ptr + off, val);
         else
-            Ignition.UNSAFE.putShort(ptr + off, val);
+            Ignition.GRID_UNSAFE.putShort(ptr + off, val);
     }
 
     /**
@@ -137,9 +137,9 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static short readShort(byte[] arr, int off) {
-        long pos = Ignition.UNSAFE.BYTE_ARR_OFF + off;
+        long pos = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getShortLE(arr, pos) : Ignition.UNSAFE.getShort(arr, pos);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getShortLE(arr, pos) : Ignition.GRID_UNSAFE.getShort(arr, pos);
     }
 
     /**
@@ -150,7 +150,7 @@ public abstract class BinaryPrimitives {
     public static short readShort(long ptr, int off) {
         long addr = ptr + off;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getShortLE(addr) : Ignition.UNSAFE.getShort(addr);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getShortLE(addr) : Ignition.GRID_UNSAFE.getShort(addr);
     }
 
     /**
@@ -159,12 +159,12 @@ public abstract class BinaryPrimitives {
      * @param val Value.
      */
     public static void writeChar(byte[] arr, int off, char val) {
-        long pos = Ignition.UNSAFE.BYTE_ARR_OFF + off;
+        long pos = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putCharLE(arr, pos, val);
+            Ignition.GRID_UNSAFE.putCharLE(arr, pos, val);
         else
-            Ignition.UNSAFE.putChar(arr, pos, val);
+            Ignition.GRID_UNSAFE.putChar(arr, pos, val);
     }
 
     /**
@@ -173,9 +173,9 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static char readChar(byte[] arr, int off) {
-        long pos = Ignition.UNSAFE.BYTE_ARR_OFF + off;
+        long pos = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getCharLE(arr, pos): Ignition.UNSAFE.getChar(arr, pos);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getCharLE(arr, pos): Ignition.GRID_UNSAFE.getChar(arr, pos);
     }
 
     /**
@@ -186,7 +186,7 @@ public abstract class BinaryPrimitives {
     public static char readChar(long ptr, int off) {
         long addr = ptr + off;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getCharLE(addr) : Ignition.UNSAFE.getChar(addr);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getCharLE(addr) : Ignition.GRID_UNSAFE.getChar(addr);
     }
 
     /**
@@ -197,7 +197,7 @@ public abstract class BinaryPrimitives {
     public static char[] readCharArray(byte[] arr, int off, int len) {
         char[] arr0 = new char[len];
 
-        Ignition.UNSAFE.copyMemory(arr, Ignition.UNSAFE.BYTE_ARR_OFF + off, arr0, Ignition.UNSAFE.CHAR_ARR_OFF, len << 1);
+        Ignition.GRID_UNSAFE.copyMemory(arr, Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off, arr0, Ignition.GRID_UNSAFE.CHAR_ARR_OFF, len << 1);
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < len; i++)
@@ -215,7 +215,7 @@ public abstract class BinaryPrimitives {
     public static char[] readCharArray(long ptr, int off, int len) {
         char[] arr0 = new char[len];
 
-        Ignition.UNSAFE.copyOffheapHeap(ptr + off, arr0, Ignition.UNSAFE.CHAR_ARR_OFF, len << 1);
+        Ignition.GRID_UNSAFE.copyOffheapHeap(ptr + off, arr0, Ignition.GRID_UNSAFE.CHAR_ARR_OFF, len << 1);
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < len; i++)
@@ -231,12 +231,12 @@ public abstract class BinaryPrimitives {
      * @param val Value.
      */
     public static void writeInt(byte[] arr, int off, int val) {
-        long pos = Ignition.UNSAFE.BYTE_ARR_OFF + off;
+        long pos = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putIntLE(arr, pos, val);
+            Ignition.GRID_UNSAFE.putIntLE(arr, pos, val);
         else
-            Ignition.UNSAFE.putInt(arr, pos, val);
+            Ignition.GRID_UNSAFE.putInt(arr, pos, val);
     }
 
     /**
@@ -246,9 +246,9 @@ public abstract class BinaryPrimitives {
      */
     public static void writeInt(long ptr, int off, int val) {
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putIntLE(ptr + off, val);
+            Ignition.GRID_UNSAFE.putIntLE(ptr + off, val);
         else
-            Ignition.UNSAFE.putInt(ptr + off, val);
+            Ignition.GRID_UNSAFE.putInt(ptr + off, val);
     }
 
     /**
@@ -257,9 +257,9 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static int readInt(byte[] arr, int off) {
-        long pos = Ignition.UNSAFE.BYTE_ARR_OFF + off;
+        long pos = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getIntLE(arr, pos) : Ignition.UNSAFE.getInt(arr, pos);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getIntLE(arr, pos) : Ignition.GRID_UNSAFE.getInt(arr, pos);
     }
 
     /**
@@ -270,7 +270,7 @@ public abstract class BinaryPrimitives {
     public static int readInt(long ptr, int off) {
         long addr = ptr + off;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getIntLE(addr) : Ignition.UNSAFE.getInt(addr);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getIntLE(addr) : Ignition.GRID_UNSAFE.getInt(addr);
     }
 
     /**
@@ -279,12 +279,12 @@ public abstract class BinaryPrimitives {
      * @param val Value.
      */
     public static void writeLong(byte[] arr, int off, long val) {
-        long pos = Ignition.UNSAFE.BYTE_ARR_OFF + off;
+        long pos = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putLongLE(arr, pos, val);
+            Ignition.GRID_UNSAFE.putLongLE(arr, pos, val);
         else
-            Ignition.UNSAFE.putLong(arr, pos, val);
+            Ignition.GRID_UNSAFE.putLong(arr, pos, val);
     }
 
     /**
@@ -293,9 +293,9 @@ public abstract class BinaryPrimitives {
      * @return Value.
      */
     public static long readLong(byte[] arr, int off) {
-        long pos = Ignition.UNSAFE.BYTE_ARR_OFF + off;
+        long pos = Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getLongLE(arr, pos) : Ignition.UNSAFE.getLong(arr, pos);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getLongLE(arr, pos) : Ignition.GRID_UNSAFE.getLong(arr, pos);
     }
 
     /**
@@ -306,7 +306,7 @@ public abstract class BinaryPrimitives {
     public static long readLong(long ptr, int off) {
         long addr = ptr + off;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getLongLE(addr) : Ignition.UNSAFE.getLong(addr);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getLongLE(addr) : Ignition.GRID_UNSAFE.getLong(addr);
     }
 
     /**

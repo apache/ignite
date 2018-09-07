@@ -237,13 +237,23 @@ public class IgniteBenchmarkArguments {
     private boolean persistentStoreEnabled;
 
     /** */
-    @Parameter(names = {"-aepPath", "--aepPath"}, description = "AEP path URL")
-    private String aepPath;
+    @Parameter(names = {"-sap", "--serverAepPath"}, description = "AEP path URL for server node")
+    private String serverAepPath;
 
     /** */
-    @Parameter(names = {"-aepHeapSize", "--aepHeapSize"}, description = "AEP Heap Size")
-    private long aepHeapSize;
+    @Parameter(names = {"-sahs", "--serverAepHeapSize"}, description = "AEP Heap Size for server node")
+    private long serverAepHeapSize;
 
+    /** */
+    @Parameter(names = {"-cap", "--clientAepPath"}, description = "AEP path URL for client node")
+    private String clientAepPath;
+
+    /** */
+    @Parameter(names = {"-cahs", "--clientAepHeapSize"}, description = "AEP Heap Size for client node")
+    private long clientAepHeapSize;
+
+    @Parameter(names = {"-sps", "--stripedPoolSize"}, description = "StrippedPoolSize")
+    private int stripedPoolSize;
     /** */
     @Parameter(names = {"-stcp", "--streamerCachesPrefix"}, description = "Cache name prefix for streamer benchmark")
     private String streamerCachesPrefix = "streamer";
@@ -267,12 +277,24 @@ public class IgniteBenchmarkArguments {
         return persistentStoreEnabled;
     }
 
-    public String getAepPath() {
-        return aepPath;
+    public String getServerAepPath() {
+        return serverAepPath;
     }
 
-    public long getAepHeapSize() {
-        return aepHeapSize;
+    public String getClientAepPath() {
+        return clientAepPath;
+    }
+
+    public long getServerAepHeapSize() {
+        return serverAepHeapSize;
+    }
+
+    public long getClientAepHeapSize() {
+        return clientAepHeapSize;
+    }
+
+    public int getStripedPoolSize() {
+        return stripedPoolSize;
     }
     /**
      * @return List of enabled load test operations.

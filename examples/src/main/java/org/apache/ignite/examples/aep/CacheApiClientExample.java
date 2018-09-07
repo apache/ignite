@@ -54,7 +54,7 @@ public class CacheApiClientExample {
     public static void main(String[] args) throws IgniteException {
 
         Ignition.setClientMode(true);
-        Ignition.setAepStore("/mnt/mem/" + CacheApiClientExample.class.getSimpleName(), true);
+        Ignition.setAepStore("/mnt/mem/" + CacheApiClientExample.class.getSimpleName() + "_client", true);
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();

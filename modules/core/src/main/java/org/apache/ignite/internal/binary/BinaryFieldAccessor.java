@@ -198,7 +198,7 @@ public abstract class BinaryFieldAccessor {
         protected AbstractPrimitiveAccessor(Field field, int id, BinaryWriteMode mode) {
             super(field, id, mode);
 
-            offset = Ignition.UNSAFE.objectFieldOffset(field);
+            offset = Ignition.GRID_UNSAFE.objectFieldOffset(field);
         }
     }
 
@@ -219,7 +219,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
-            byte val = Ignition.UNSAFE.getByteField(obj, offset);
+            byte val = Ignition.GRID_UNSAFE.getByteField(obj, offset);
 
             writer.writeByteFieldPrimitive(val);
         }
@@ -228,7 +228,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             byte val = reader.readByte(id);
 
-            Ignition.UNSAFE.putByteField(obj, offset, val);
+            Ignition.GRID_UNSAFE.putByteField(obj, offset, val);
         }
     }
 
@@ -249,7 +249,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
-            boolean val = Ignition.UNSAFE.getBooleanField(obj, offset);
+            boolean val = Ignition.GRID_UNSAFE.getBooleanField(obj, offset);
 
             writer.writeBooleanFieldPrimitive(val);
         }
@@ -258,7 +258,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             boolean val = reader.readBoolean(id);
 
-            Ignition.UNSAFE.putBooleanField(obj, offset, val);
+            Ignition.GRID_UNSAFE.putBooleanField(obj, offset, val);
         }
     }
 
@@ -279,7 +279,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
-            short val = Ignition.UNSAFE.getShortField(obj, offset);
+            short val = Ignition.GRID_UNSAFE.getShortField(obj, offset);
 
             writer.writeShortFieldPrimitive(val);
         }
@@ -288,7 +288,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             short val = reader.readShort(id);
 
-            Ignition.UNSAFE.putShortField(obj, offset, val);
+            Ignition.GRID_UNSAFE.putShortField(obj, offset, val);
         }
     }
 
@@ -309,7 +309,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
-            char val = Ignition.UNSAFE.getCharField(obj, offset);
+            char val = Ignition.GRID_UNSAFE.getCharField(obj, offset);
 
             writer.writeCharFieldPrimitive(val);
         }
@@ -318,7 +318,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             char val = reader.readChar(id);
 
-            Ignition.UNSAFE.putCharField(obj, offset, val);
+            Ignition.GRID_UNSAFE.putCharField(obj, offset, val);
         }
     }
 
@@ -339,7 +339,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
-            int val = Ignition.UNSAFE.getIntField(obj, offset);
+            int val = Ignition.GRID_UNSAFE.getIntField(obj, offset);
 
             writer.writeIntFieldPrimitive(val);
         }
@@ -348,7 +348,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             int val = reader.readInt(id);
 
-            Ignition.UNSAFE.putIntField(obj, offset, val);
+            Ignition.GRID_UNSAFE.putIntField(obj, offset, val);
         }
     }
 
@@ -369,7 +369,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
-            long val = Ignition.UNSAFE.getLongField(obj, offset);
+            long val = Ignition.GRID_UNSAFE.getLongField(obj, offset);
 
             writer.writeLongFieldPrimitive(val);
         }
@@ -378,7 +378,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             long val = reader.readLong(id);
 
-            Ignition.UNSAFE.putLongField(obj, offset, val);
+            Ignition.GRID_UNSAFE.putLongField(obj, offset, val);
         }
     }
 
@@ -399,7 +399,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
-            float val = Ignition.UNSAFE.getFloatField(obj, offset);
+            float val = Ignition.GRID_UNSAFE.getFloatField(obj, offset);
 
             writer.writeFloatFieldPrimitive(val);
         }
@@ -408,7 +408,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             float val = reader.readFloat(id);
 
-            Ignition.UNSAFE.putFloatField(obj, offset, val);
+            Ignition.GRID_UNSAFE.putFloatField(obj, offset, val);
         }
     }
 
@@ -429,7 +429,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
             writer.writeFieldIdNoSchemaUpdate(id);
 
-            double val = Ignition.UNSAFE.getDoubleField(obj, offset);
+            double val = Ignition.GRID_UNSAFE.getDoubleField(obj, offset);
 
             writer.writeDoubleFieldPrimitive(val);
         }
@@ -438,7 +438,7 @@ public abstract class BinaryFieldAccessor {
         @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
             double val = reader.readDouble(id);
 
-            Ignition.UNSAFE.putDoubleField(obj, offset, val);
+            Ignition.GRID_UNSAFE.putDoubleField(obj, offset, val);
         }
     }
 

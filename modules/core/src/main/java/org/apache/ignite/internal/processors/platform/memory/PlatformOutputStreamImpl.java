@@ -52,12 +52,12 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     @Override public void writeByte(byte val) {
         ensureCapacity(pos + 1);
 
-        Ignition.UNSAFE.putByte(data + pos++, val);
+        Ignition.GRID_UNSAFE.putByte(data + pos++, val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeByteArray(byte[] val) {
-        copyAndShift(val, Ignition.UNSAFE.BYTE_ARR_OFF, val.length);
+        copyAndShift(val, Ignition.GRID_UNSAFE.BYTE_ARR_OFF, val.length);
     }
 
     /** {@inheritDoc} */
@@ -67,63 +67,63 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void writeBooleanArray(boolean[] val) {
-        copyAndShift(val, Ignition.UNSAFE.BOOLEAN_ARR_OFF, val.length);
+        copyAndShift(val, Ignition.GRID_UNSAFE.BOOLEAN_ARR_OFF, val.length);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(short val) {
         ensureCapacity(pos + 2);
 
-        Ignition.UNSAFE.putShort(data + pos, val);
+        Ignition.GRID_UNSAFE.putShort(data + pos, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShortArray(short[] val) {
-        copyAndShift(val, Ignition.UNSAFE.SHORT_ARR_OFF, val.length << 1);
+        copyAndShift(val, Ignition.GRID_UNSAFE.SHORT_ARR_OFF, val.length << 1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(char val) {
         ensureCapacity(pos + 2);
 
-        Ignition.UNSAFE.putChar(data + pos, val);
+        Ignition.GRID_UNSAFE.putChar(data + pos, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeCharArray(char[] val) {
-        copyAndShift(val, Ignition.UNSAFE.CHAR_ARR_OFF, val.length << 1);
+        copyAndShift(val, Ignition.GRID_UNSAFE.CHAR_ARR_OFF, val.length << 1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(int val) {
         ensureCapacity(pos + 4);
 
-        Ignition.UNSAFE.putInt(data + pos, val);
+        Ignition.GRID_UNSAFE.putInt(data + pos, val);
 
         shift(4);
     }
 
     /** {@inheritDoc} */
     @Override public void writeIntArray(int[] val) {
-        copyAndShift(val, Ignition.UNSAFE.INT_ARR_OFF, val.length << 2);
+        copyAndShift(val, Ignition.GRID_UNSAFE.INT_ARR_OFF, val.length << 2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(int pos, short val) {
         ensureCapacity(pos + 2);
 
-        Ignition.UNSAFE.putShort(data + pos, val);
+        Ignition.GRID_UNSAFE.putShort(data + pos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(int pos, int val) {
         ensureCapacity(pos + 4);
 
-        Ignition.UNSAFE.putInt(data + pos, val);
+        Ignition.GRID_UNSAFE.putInt(data + pos, val);
     }
 
     /** {@inheritDoc} */
@@ -133,21 +133,21 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void writeFloatArray(float[] val) {
-        copyAndShift(val, Ignition.UNSAFE.FLOAT_ARR_OFF, val.length << 2);
+        copyAndShift(val, Ignition.GRID_UNSAFE.FLOAT_ARR_OFF, val.length << 2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(long val) {
         ensureCapacity(pos + 8);
 
-        Ignition.UNSAFE.putLong(data + pos, val);
+        Ignition.GRID_UNSAFE.putLong(data + pos, val);
 
         shift(8);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLongArray(long[] val) {
-        copyAndShift(val, Ignition.UNSAFE.LONG_ARR_OFF, val.length << 3);
+        copyAndShift(val, Ignition.GRID_UNSAFE.LONG_ARR_OFF, val.length << 3);
     }
 
     /** {@inheritDoc} */
@@ -157,12 +157,12 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void writeDoubleArray(double[] val) {
-        copyAndShift(val, Ignition.UNSAFE.DOUBLE_ARR_OFF, val.length << 3);
+        copyAndShift(val, Ignition.GRID_UNSAFE.DOUBLE_ARR_OFF, val.length << 3);
     }
 
     /** {@inheritDoc} */
     @Override public void write(byte[] arr, int off, int len) {
-        copyAndShift(arr, Ignition.UNSAFE.BYTE_ARR_OFF + off, len);
+        copyAndShift(arr, Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off, len);
     }
 
     /** {@inheritDoc} */
@@ -230,7 +230,7 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteByte(byte val) {
-        Ignition.UNSAFE.putByte(data + pos++, val);
+        Ignition.GRID_UNSAFE.putByte(data + pos++, val);
     }
 
     /** {@inheritDoc} */
@@ -240,38 +240,38 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteShort(short val) {
-        Ignition.UNSAFE.putShort(data + pos, val);
+        Ignition.GRID_UNSAFE.putShort(data + pos, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteShort(int pos, short val) {
-        Ignition.UNSAFE.putShort(data + pos, val);
+        Ignition.GRID_UNSAFE.putShort(data + pos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteChar(char val) {
-        Ignition.UNSAFE.putChar(data + pos, val);
+        Ignition.GRID_UNSAFE.putChar(data + pos, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteInt(int val) {
-        Ignition.UNSAFE.putInt(data + pos, val);
+        Ignition.GRID_UNSAFE.putInt(data + pos, val);
 
         shift(4);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteInt(int pos, int val) {
-        Ignition.UNSAFE.putInt(data + pos, val);
+        Ignition.GRID_UNSAFE.putInt(data + pos, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteLong(long val) {
-        Ignition.UNSAFE.putLong(data + pos, val);
+        Ignition.GRID_UNSAFE.putLong(data + pos, val);
 
         shift(8);
     }
@@ -331,7 +331,7 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     private void copyAndShift(Object src, long off, int len) {
         ensureCapacity(pos + len);
 
-        Ignition.UNSAFE.copyHeapOffheap(src, off, data + pos, len);
+        Ignition.GRID_UNSAFE.copyHeapOffheap(src, off, data + pos, len);
 
         shift(len);
     }

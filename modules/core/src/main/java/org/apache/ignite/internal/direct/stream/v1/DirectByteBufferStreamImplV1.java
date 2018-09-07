@@ -277,7 +277,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             this.buf = buf;
 
             heapArr = buf.isDirect() ? null : buf.array();
-            baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : Ignition.UNSAFE.BYTE_ARR_OFF;
+            baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : Ignition.GRID_UNSAFE.BYTE_ARR_OFF;
         }
     }
 
@@ -298,7 +298,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         if (lastFinished) {
             int pos = buf.position();
 
-            Ignition.UNSAFE.putByte(heapArr, baseOff + pos, val);
+            Ignition.GRID_UNSAFE.putByte(heapArr, baseOff + pos, val);
 
             buf.position(pos + 1);
         }
@@ -311,7 +311,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         if (lastFinished) {
             int pos = buf.position();
 
-            Ignition.UNSAFE.putShort(heapArr, baseOff + pos, val);
+            Ignition.GRID_UNSAFE.putShort(heapArr, baseOff + pos, val);
 
             buf.position(pos + 2);
         }
@@ -324,7 +324,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         if (lastFinished) {
             int pos = buf.position();
 
-            Ignition.UNSAFE.putInt(heapArr, baseOff + pos, val);
+            Ignition.GRID_UNSAFE.putInt(heapArr, baseOff + pos, val);
 
             buf.position(pos + 4);
         }
@@ -337,7 +337,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         if (lastFinished) {
             int pos = buf.position();
 
-            Ignition.UNSAFE.putLong(heapArr, baseOff + pos, val);
+            Ignition.GRID_UNSAFE.putLong(heapArr, baseOff + pos, val);
 
             buf.position(pos + 8);
         }
@@ -352,7 +352,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         if (lastFinished) {
             int pos = buf.position();
 
-            Ignition.UNSAFE.putFloat(heapArr, baseOff + pos, val);
+            Ignition.GRID_UNSAFE.putFloat(heapArr, baseOff + pos, val);
 
             buf.position(pos + 4);
         }
@@ -365,7 +365,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         if (lastFinished) {
             int pos = buf.position();
 
-            Ignition.UNSAFE.putDouble(heapArr, baseOff + pos, val);
+            Ignition.GRID_UNSAFE.putDouble(heapArr, baseOff + pos, val);
 
             buf.position(pos + 8);
         }
@@ -378,7 +378,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         if (lastFinished) {
             int pos = buf.position();
 
-            Ignition.UNSAFE.putChar(heapArr, baseOff + pos, val);
+            Ignition.GRID_UNSAFE.putChar(heapArr, baseOff + pos, val);
 
             buf.position(pos + 2);
         }
@@ -391,7 +391,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         if (lastFinished) {
             int pos = buf.position();
 
-            Ignition.UNSAFE.putBoolean(heapArr, baseOff + pos, val);
+            Ignition.GRID_UNSAFE.putBoolean(heapArr, baseOff + pos, val);
 
             buf.position(pos + 1);
         }
@@ -400,7 +400,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeByteArray(byte[] val) {
         if (val != null)
-            lastFinished = writeArray(val, Ignition.UNSAFE.BYTE_ARR_OFF, val.length, val.length);
+            lastFinished = writeArray(val, Ignition.GRID_UNSAFE.BYTE_ARR_OFF, val.length, val.length);
         else
             writeInt(-1);
     }
@@ -408,7 +408,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeByteArray(byte[] val, long off, int len) {
         if (val != null)
-            lastFinished = writeArray(val, Ignition.UNSAFE.BYTE_ARR_OFF + off, len, len);
+            lastFinished = writeArray(val, Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off, len, len);
         else
             writeInt(-1);
     }
@@ -416,7 +416,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeShortArray(short[] val) {
         if (val != null)
-            lastFinished = writeArray(val, Ignition.UNSAFE.SHORT_ARR_OFF, val.length, val.length << 1);
+            lastFinished = writeArray(val, Ignition.GRID_UNSAFE.SHORT_ARR_OFF, val.length, val.length << 1);
         else
             writeInt(-1);
     }
@@ -424,7 +424,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeIntArray(int[] val) {
         if (val != null)
-            lastFinished = writeArray(val, Ignition.UNSAFE.INT_ARR_OFF, val.length, val.length << 2);
+            lastFinished = writeArray(val, Ignition.GRID_UNSAFE.INT_ARR_OFF, val.length, val.length << 2);
         else
             writeInt(-1);
     }
@@ -432,7 +432,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeLongArray(long[] val) {
         if (val != null)
-            lastFinished = writeArray(val, Ignition.UNSAFE.LONG_ARR_OFF, val.length, val.length << 3);
+            lastFinished = writeArray(val, Ignition.GRID_UNSAFE.LONG_ARR_OFF, val.length, val.length << 3);
         else
             writeInt(-1);
     }
@@ -440,7 +440,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeFloatArray(float[] val) {
         if (val != null)
-            lastFinished = writeArray(val, Ignition.UNSAFE.FLOAT_ARR_OFF, val.length, val.length << 2);
+            lastFinished = writeArray(val, Ignition.GRID_UNSAFE.FLOAT_ARR_OFF, val.length, val.length << 2);
         else
             writeInt(-1);
     }
@@ -448,7 +448,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeDoubleArray(double[] val) {
         if (val != null)
-            lastFinished = writeArray(val, Ignition.UNSAFE.DOUBLE_ARR_OFF, val.length, val.length << 3);
+            lastFinished = writeArray(val, Ignition.GRID_UNSAFE.DOUBLE_ARR_OFF, val.length, val.length << 3);
         else
             writeInt(-1);
     }
@@ -456,7 +456,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeCharArray(char[] val) {
         if (val != null)
-            lastFinished = writeArray(val, Ignition.UNSAFE.CHAR_ARR_OFF, val.length, val.length << 1);
+            lastFinished = writeArray(val, Ignition.GRID_UNSAFE.CHAR_ARR_OFF, val.length, val.length << 1);
         else
             writeInt(-1);
     }
@@ -464,7 +464,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeBooleanArray(boolean[] val) {
         if (val != null)
-            lastFinished = writeArray(val, Ignition.UNSAFE.BOOLEAN_ARR_OFF, val.length, val.length);
+            lastFinished = writeArray(val, Ignition.GRID_UNSAFE.BOOLEAN_ARR_OFF, val.length, val.length);
         else
             writeInt(-1);
     }
@@ -627,7 +627,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 1);
 
-            return Ignition.UNSAFE.getByte(heapArr, baseOff + pos);
+            return Ignition.GRID_UNSAFE.getByte(heapArr, baseOff + pos);
         }
         else
             return 0;
@@ -642,7 +642,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 2);
 
-            return Ignition.UNSAFE.getShort(heapArr, baseOff + pos);
+            return Ignition.GRID_UNSAFE.getShort(heapArr, baseOff + pos);
         }
         else
             return 0;
@@ -657,7 +657,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 4);
 
-            return Ignition.UNSAFE.getInt(heapArr, baseOff + pos);
+            return Ignition.GRID_UNSAFE.getInt(heapArr, baseOff + pos);
         }
         else
             return 0;
@@ -672,7 +672,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 8);
 
-            return Ignition.UNSAFE.getLong(heapArr, baseOff + pos);
+            return Ignition.GRID_UNSAFE.getLong(heapArr, baseOff + pos);
         }
         else
             return 0;
@@ -687,7 +687,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 4);
 
-            return Ignition.UNSAFE.getFloat(heapArr, baseOff + pos);
+            return Ignition.GRID_UNSAFE.getFloat(heapArr, baseOff + pos);
         }
         else
             return 0;
@@ -702,7 +702,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 8);
 
-            return Ignition.UNSAFE.getDouble(heapArr, baseOff + pos);
+            return Ignition.GRID_UNSAFE.getDouble(heapArr, baseOff + pos);
         }
         else
             return 0;
@@ -717,7 +717,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 2);
 
-            return Ignition.UNSAFE.getChar(heapArr, baseOff + pos);
+            return Ignition.GRID_UNSAFE.getChar(heapArr, baseOff + pos);
         }
         else
             return 0;
@@ -732,7 +732,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 1);
 
-            return Ignition.UNSAFE.getBoolean(heapArr, baseOff + pos);
+            return Ignition.GRID_UNSAFE.getBoolean(heapArr, baseOff + pos);
         }
         else
             return false;
@@ -740,42 +740,42 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
     /** {@inheritDoc} */
     @Override public byte[] readByteArray() {
-        return readArray(BYTE_ARR_CREATOR, 0, Ignition.UNSAFE.BYTE_ARR_OFF);
+        return readArray(BYTE_ARR_CREATOR, 0, Ignition.GRID_UNSAFE.BYTE_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public short[] readShortArray() {
-        return readArray(SHORT_ARR_CREATOR, 1, Ignition.UNSAFE.SHORT_ARR_OFF);
+        return readArray(SHORT_ARR_CREATOR, 1, Ignition.GRID_UNSAFE.SHORT_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public int[] readIntArray() {
-        return readArray(INT_ARR_CREATOR, 2, Ignition.UNSAFE.INT_ARR_OFF);
+        return readArray(INT_ARR_CREATOR, 2, Ignition.GRID_UNSAFE.INT_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public long[] readLongArray() {
-        return readArray(LONG_ARR_CREATOR, 3, Ignition.UNSAFE.LONG_ARR_OFF);
+        return readArray(LONG_ARR_CREATOR, 3, Ignition.GRID_UNSAFE.LONG_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public float[] readFloatArray() {
-        return readArray(FLOAT_ARR_CREATOR, 2, Ignition.UNSAFE.FLOAT_ARR_OFF);
+        return readArray(FLOAT_ARR_CREATOR, 2, Ignition.GRID_UNSAFE.FLOAT_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public double[] readDoubleArray() {
-        return readArray(DOUBLE_ARR_CREATOR, 3, Ignition.UNSAFE.DOUBLE_ARR_OFF);
+        return readArray(DOUBLE_ARR_CREATOR, 3, Ignition.GRID_UNSAFE.DOUBLE_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public char[] readCharArray() {
-        return readArray(CHAR_ARR_CREATOR, 1, Ignition.UNSAFE.CHAR_ARR_OFF);
+        return readArray(CHAR_ARR_CREATOR, 1, Ignition.GRID_UNSAFE.CHAR_ARR_OFF);
     }
 
     /** {@inheritDoc} */
     @Override public boolean[] readBooleanArray() {
-        return readArray(BOOLEAN_ARR_CREATOR, 0, Ignition.UNSAFE.BOOLEAN_ARR_OFF);
+        return readArray(BOOLEAN_ARR_CREATOR, 0, Ignition.GRID_UNSAFE.BOOLEAN_ARR_OFF);
     }
 
     /** {@inheritDoc} */
@@ -1011,7 +1011,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         int remaining = buf.remaining();
 
         if (toWrite <= remaining) {
-            Ignition.UNSAFE.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, toWrite);
+            Ignition.GRID_UNSAFE.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, toWrite);
 
             pos += toWrite;
 
@@ -1022,7 +1022,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             return true;
         }
         else {
-            Ignition.UNSAFE.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, remaining);
+            Ignition.GRID_UNSAFE.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, remaining);
 
             pos += remaining;
 
@@ -1077,7 +1077,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         lastFinished = toRead <= remaining;
 
         if (lastFinished) {
-            Ignition.UNSAFE.copyMemory(heapArr, baseOff + pos, tmpArr, off + tmpArrOff, toRead);
+            Ignition.GRID_UNSAFE.copyMemory(heapArr, baseOff + pos, tmpArr, off + tmpArrOff, toRead);
 
             buf.position(pos + toRead);
 
@@ -1090,7 +1090,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             return arr;
         }
         else {
-            Ignition.UNSAFE.copyMemory(heapArr, baseOff + pos, tmpArr, off + tmpArrOff, remaining);
+            Ignition.GRID_UNSAFE.copyMemory(heapArr, baseOff + pos, tmpArr, off + tmpArrOff, remaining);
 
             buf.position(pos + remaining);
 

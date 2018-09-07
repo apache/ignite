@@ -922,7 +922,7 @@ public class BinaryClassDescriptor {
      */
     private Object newInstance() throws BinaryObjectException {
         try {
-            return ctor != null ? ctor.newInstance() : Ignition.UNSAFE.allocateInstance(cls);
+            return ctor != null ? ctor.newInstance() : Ignition.GRID_UNSAFE.allocateInstance(cls);
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);

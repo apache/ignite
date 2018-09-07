@@ -185,7 +185,7 @@ public class TrackingPageIO extends PageIO {
      * @param addr Address.
      */
     long getLastSnapshotTag(long addr) {
-        return Ignition.UNSAFE.getLong(addr + LAST_SNAPSHOT_TAG_OFFSET);
+        return Ignition.GRID_UNSAFE.getLong(addr + LAST_SNAPSHOT_TAG_OFFSET);
     }
 
     /**
@@ -351,18 +351,18 @@ public class TrackingPageIO extends PageIO {
     @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("TrackingPage [\n\tlastSnapshotTag=").a(getLastSnapshotTag(addr))
             .a(",\n\tleftHalf={")
-            .a("\n\t\tsize=").a(Ignition.UNSAFE.getShort(addr + SIZE_FIELD_OFFSET))
+            .a("\n\t\tsize=").a(Ignition.GRID_UNSAFE.getShort(addr + SIZE_FIELD_OFFSET))
             .a("\n\t\tdata={");
 
         for (int i = 0; i < (countOfPageToTrack(pageSize) >> 3); i += 2)
-            sb.appendHex(Ignition.UNSAFE.getShort(addr + BITMAP_OFFSET + i));
+            sb.appendHex(Ignition.GRID_UNSAFE.getShort(addr + BITMAP_OFFSET + i));
 
         sb.a("}\n\t},\n\trightHalf={")
-            .a("\n\t\tsize=").a(Ignition.UNSAFE.getShort(addr + BITMAP_OFFSET + (countOfPageToTrack(pageSize) >> 3)))
+            .a("\n\t\tsize=").a(Ignition.GRID_UNSAFE.getShort(addr + BITMAP_OFFSET + (countOfPageToTrack(pageSize) >> 3)))
             .a("\n\t\tdata={");
 
         for (int i = 0; i < (countOfPageToTrack(pageSize) >> 3); i += 2)
-            sb.appendHex(Ignition.UNSAFE.getShort(addr + BITMAP_OFFSET + (countOfPageToTrack(pageSize) >> 3)
+            sb.appendHex(Ignition.GRID_UNSAFE.getShort(addr + BITMAP_OFFSET + (countOfPageToTrack(pageSize) >> 3)
                  + SIZE_FIELD_SIZE + i));
 
         sb.a("}\n\t}\n]");

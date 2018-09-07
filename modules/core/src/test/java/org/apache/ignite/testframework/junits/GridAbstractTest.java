@@ -237,7 +237,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected <T> T allocateInstance(Class<T> cls) throws Exception {
-        return (T)Ignition.UNSAFE.allocateInstance(cls);
+        return (T)Ignition.GRID_UNSAFE.allocateInstance(cls);
     }
 
     /**
@@ -246,7 +246,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @Nullable protected <T> T allocateInstance0(Class<T> cls) {
         try {
-            return (T) Ignition.UNSAFE.allocateInstance(cls);
+            return (T) Ignition.GRID_UNSAFE.allocateInstance(cls);
         }
         catch (InstantiationException e) {
             e.printStackTrace();

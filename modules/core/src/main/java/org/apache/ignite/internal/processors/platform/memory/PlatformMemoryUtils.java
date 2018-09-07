@@ -66,7 +66,7 @@ public class PlatformMemoryUtils {
      * @return Data pointer.
      */
     public static long data(long memPtr) {
-        return Ignition.UNSAFE.getLong(memPtr);
+        return Ignition.GRID_UNSAFE.getLong(memPtr);
     }
 
     /**
@@ -76,7 +76,7 @@ public class PlatformMemoryUtils {
      * @return Capacity.
      */
     public static int capacity(long memPtr) {
-        return Ignition.UNSAFE.getInt(memPtr + MEM_HDR_OFF_CAP);
+        return Ignition.GRID_UNSAFE.getInt(memPtr + MEM_HDR_OFF_CAP);
     }
 
     /**
@@ -88,7 +88,7 @@ public class PlatformMemoryUtils {
     public static void capacity(long memPtr, int cap) {
         assert !isExternal(memPtr) : "Attempt to update external memory chunk capacity: " + memPtr;
 
-        Ignition.UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap);
+        Ignition.GRID_UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap);
     }
 
     /**
@@ -98,7 +98,7 @@ public class PlatformMemoryUtils {
      * @return Length.
      */
     public static int length(long memPtr) {
-        return Ignition.UNSAFE.getInt(memPtr + MEM_HDR_OFF_LEN);
+        return Ignition.GRID_UNSAFE.getInt(memPtr + MEM_HDR_OFF_LEN);
     }
 
     /**
@@ -108,7 +108,7 @@ public class PlatformMemoryUtils {
      * @param len Length.
      */
     public static void length(long memPtr, int len) {
-        Ignition.UNSAFE.putInt(memPtr + MEM_HDR_OFF_LEN, len);
+        Ignition.GRID_UNSAFE.putInt(memPtr + MEM_HDR_OFF_LEN, len);
     }
 
     /**
@@ -118,7 +118,7 @@ public class PlatformMemoryUtils {
      * @return Flags.
      */
     public static int flags(long memPtr) {
-        return Ignition.UNSAFE.getInt(memPtr + MEM_HDR_OFF_FLAGS);
+        return Ignition.GRID_UNSAFE.getInt(memPtr + MEM_HDR_OFF_FLAGS);
     }
 
     /**
@@ -130,7 +130,7 @@ public class PlatformMemoryUtils {
     public static void flags(long memPtr, int flags) {
         assert !isExternal(memPtr) : "Attempt to update external memory chunk flags: " + memPtr;
 
-        Ignition.UNSAFE.putInt(memPtr + MEM_HDR_OFF_FLAGS, flags);
+        Ignition.GRID_UNSAFE.putInt(memPtr + MEM_HDR_OFF_FLAGS, flags);
     }
 
     /**
@@ -206,13 +206,13 @@ public class PlatformMemoryUtils {
     public static long allocateUnpooled(int cap) {
         assert cap > 0;
 
-        long memPtr = Ignition.UNSAFE.allocateMemory(MEM_HDR_LEN);
-        long dataPtr = Ignition.UNSAFE.allocateMemory(cap);
+        long memPtr = Ignition.GRID_UNSAFE.allocateMemory(MEM_HDR_LEN);
+        long dataPtr = Ignition.GRID_UNSAFE.allocateMemory(cap);
 
-        Ignition.UNSAFE.putLong(memPtr, dataPtr);              // Write address.
-        Ignition.UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap); // Write capacity.
-        Ignition.UNSAFE.putInt(memPtr + MEM_HDR_OFF_LEN, 0);   // Write length.
-        Ignition.UNSAFE.putInt(memPtr + MEM_HDR_OFF_FLAGS, 0); // Write flags.
+        Ignition.GRID_UNSAFE.putLong(memPtr, dataPtr);              // Write address.
+        Ignition.GRID_UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap); // Write capacity.
+        Ignition.GRID_UNSAFE.putInt(memPtr + MEM_HDR_OFF_LEN, 0);   // Write length.
+        Ignition.GRID_UNSAFE.putInt(memPtr + MEM_HDR_OFF_FLAGS, 0); // Write flags.
 
         return memPtr;
     }
@@ -231,12 +231,12 @@ public class PlatformMemoryUtils {
 
         long dataPtr = data(memPtr);
 
-        long newDataPtr = Ignition.UNSAFE.reallocateMemory(dataPtr, cap);
+        long newDataPtr = Ignition.GRID_UNSAFE.reallocateMemory(dataPtr, cap);
 
         if (dataPtr != newDataPtr)
-            Ignition.UNSAFE.putLong(memPtr, newDataPtr); // Write new data address if needed.
+            Ignition.GRID_UNSAFE.putLong(memPtr, newDataPtr); // Write new data address if needed.
 
-        Ignition.UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap); // Write new capacity.
+        Ignition.GRID_UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap); // Write new capacity.
     }
 
     /**
@@ -248,8 +248,8 @@ public class PlatformMemoryUtils {
         assert !isExternal(memPtr) : "Attempt to release external memory chunk directly: " + memPtr;
         assert !isPooled(memPtr) : "Attempt to release pooled memory chunk directly: " + memPtr;
 
-        Ignition.UNSAFE.freeMemory(data(memPtr));
-        Ignition.UNSAFE.freeMemory(memPtr);
+        Ignition.GRID_UNSAFE.freeMemory(data(memPtr));
+        Ignition.GRID_UNSAFE.freeMemory(memPtr);
     }
 
     /** --- POOLED MEMORY MANAGEMENT. --- */
@@ -260,9 +260,9 @@ public class PlatformMemoryUtils {
      * @return Pool pointer.
      */
     public static long allocatePool() {
-        long poolPtr = Ignition.UNSAFE.allocateMemory(POOL_HDR_LEN);
+        long poolPtr = Ignition.GRID_UNSAFE.allocateMemory(POOL_HDR_LEN);
 
-        Ignition.UNSAFE.setMemory(poolPtr, POOL_HDR_LEN, (byte)0);
+        Ignition.GRID_UNSAFE.setMemory(poolPtr, POOL_HDR_LEN, (byte)0);
 
         flags(poolPtr + POOL_HDR_OFF_MEM_1, FLAG_POOLED);
         flags(poolPtr + POOL_HDR_OFF_MEM_2, FLAG_POOLED);
@@ -278,23 +278,23 @@ public class PlatformMemoryUtils {
      */
     public static void releasePool(long poolPtr) {
         // Clean predefined memory chunks.
-        long mem = Ignition.UNSAFE.getLong(poolPtr + POOL_HDR_OFF_MEM_1);
+        long mem = Ignition.GRID_UNSAFE.getLong(poolPtr + POOL_HDR_OFF_MEM_1);
 
         if (mem != 0)
-            Ignition.UNSAFE.freeMemory(mem);
+            Ignition.GRID_UNSAFE.freeMemory(mem);
 
-        mem = Ignition.UNSAFE.getLong(poolPtr + POOL_HDR_OFF_MEM_2);
-
-        if (mem != 0)
-            Ignition.UNSAFE.freeMemory(mem);
-
-        mem = Ignition.UNSAFE.getLong(poolPtr + POOL_HDR_OFF_MEM_3);
+        mem = Ignition.GRID_UNSAFE.getLong(poolPtr + POOL_HDR_OFF_MEM_2);
 
         if (mem != 0)
-            Ignition.UNSAFE.freeMemory(mem);
+            Ignition.GRID_UNSAFE.freeMemory(mem);
+
+        mem = Ignition.GRID_UNSAFE.getLong(poolPtr + POOL_HDR_OFF_MEM_3);
+
+        if (mem != 0)
+            Ignition.GRID_UNSAFE.freeMemory(mem);
 
         // Clean pool chunk.
-        Ignition.UNSAFE.freeMemory(poolPtr);
+        Ignition.GRID_UNSAFE.freeMemory(poolPtr);
     }
 
     /**
@@ -345,24 +345,24 @@ public class PlatformMemoryUtils {
         assert isPooled(memPtr);
         assert !isAcquired(memPtr);
 
-        long data = Ignition.UNSAFE.getLong(memPtr);
+        long data = Ignition.GRID_UNSAFE.getLong(memPtr);
 
         if (data == 0) {
             // First allocation of the chunk.
-            data = Ignition.UNSAFE.allocateMemory(cap);
+            data = Ignition.GRID_UNSAFE.allocateMemory(cap);
 
-            Ignition.UNSAFE.putLong(memPtr, data);
-            Ignition.UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap);
+            Ignition.GRID_UNSAFE.putLong(memPtr, data);
+            Ignition.GRID_UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap);
         }
         else {
             // Ensure that we have enough capacity.
             int curCap = capacity(memPtr);
 
             if (cap > curCap) {
-                data = Ignition.UNSAFE.reallocateMemory(data, cap);
+                data = Ignition.GRID_UNSAFE.reallocateMemory(data, cap);
 
-                Ignition.UNSAFE.putLong(memPtr, data);
-                Ignition.UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap);
+                Ignition.GRID_UNSAFE.putLong(memPtr, data);
+                Ignition.GRID_UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap);
             }
         }
 
@@ -380,17 +380,17 @@ public class PlatformMemoryUtils {
         assert isPooled(memPtr);
         assert isAcquired(memPtr);
 
-        long data = Ignition.UNSAFE.getLong(memPtr);
+        long data = Ignition.GRID_UNSAFE.getLong(memPtr);
 
         assert data != 0;
 
         int curCap = capacity(memPtr);
 
         if (cap > curCap) {
-            data = Ignition.UNSAFE.reallocateMemory(data, cap);
+            data = Ignition.GRID_UNSAFE.reallocateMemory(data, cap);
 
-            Ignition.UNSAFE.putLong(memPtr, data);
-            Ignition.UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap);
+            Ignition.GRID_UNSAFE.putLong(memPtr, data);
+            Ignition.GRID_UNSAFE.putInt(memPtr + MEM_HDR_OFF_CAP, cap);
         }
     }
 

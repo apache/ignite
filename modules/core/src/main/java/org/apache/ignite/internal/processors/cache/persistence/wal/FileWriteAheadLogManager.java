@@ -231,7 +231,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override protected ByteBuffer initialValue() {
             ByteBuffer buf = ByteBuffer.allocateDirect(tlbSize);
 
-            buf.order(Ignition.UNSAFE.NATIVE_BYTE_ORDER);
+            buf.order(Ignition.GRID_UNSAFE.NATIVE_BYTE_ORDER);
 
             return buf;
         }
@@ -2430,7 +2430,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 boolean tmpBuf = false;
 
                 if (expHead.chainSize() > tlbSize) {
-                    buf = Ignition.UNSAFE.allocateBuffer(expHead.chainSize());
+                    buf = Ignition.GRID_UNSAFE.allocateBuffer(expHead.chainSize());
 
                     tmpBuf = true; // We need to manually release this temporary direct buffer.
                 }
@@ -2444,7 +2444,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
                 finally {
                     if (tmpBuf)
-                        Ignition.UNSAFE.freeBuffer(buf);
+                        Ignition.GRID_UNSAFE.freeBuffer(buf);
                 }
 
                 return true;

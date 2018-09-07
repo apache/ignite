@@ -78,7 +78,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
     @Override public byte[] arrayCopy() {
         byte[] res = new byte[pos];
 
-        Ignition.UNSAFE.copyOffheapHeap(ptr, res, Ignition.UNSAFE.BYTE_ARR_OFF, pos);
+        Ignition.GRID_UNSAFE.copyOffheapHeap(ptr, res, Ignition.GRID_UNSAFE.BYTE_ARR_OFF, pos);
 
         return res;
     }
@@ -97,12 +97,12 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override protected void writeByteAndShift(byte val) {
-        Ignition.UNSAFE.putByte(ptr + pos++, val);
+        Ignition.GRID_UNSAFE.putByte(ptr + pos++, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object src, long offset, int len) {
-        Ignition.UNSAFE.copyHeapOffheap(src, offset, ptr + pos, len);
+        Ignition.GRID_UNSAFE.copyHeapOffheap(src, offset, ptr + pos, len);
 
         shift(len);
     }
@@ -112,9 +112,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putShortLE(addr, val);
+            Ignition.GRID_UNSAFE.putShortLE(addr, val);
         else
-            Ignition.UNSAFE.putShort(addr, val);
+            Ignition.GRID_UNSAFE.putShort(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -122,9 +122,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putCharLE(addr, val);
+            Ignition.GRID_UNSAFE.putCharLE(addr, val);
         else
-            Ignition.UNSAFE.putChar(addr, val);
+            Ignition.GRID_UNSAFE.putChar(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -132,9 +132,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putIntLE(addr, val);
+            Ignition.GRID_UNSAFE.putIntLE(addr, val);
         else
-            Ignition.UNSAFE.putInt(addr, val);
+            Ignition.GRID_UNSAFE.putInt(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -142,9 +142,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putLongLE(addr, val);
+            Ignition.GRID_UNSAFE.putLongLE(addr, val);
         else
-            Ignition.UNSAFE.putLong(addr, val);
+            Ignition.GRID_UNSAFE.putLong(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -154,7 +154,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteByte(byte val) {
-        Ignition.UNSAFE.putByte(ptr + pos++, val);
+        Ignition.GRID_UNSAFE.putByte(ptr + pos++, val);
     }
 
     /** {@inheritDoc} */
@@ -162,9 +162,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putShortLE(addr, val);
+            Ignition.GRID_UNSAFE.putShortLE(addr, val);
         else
-            Ignition.UNSAFE.putShort(addr, val);
+            Ignition.GRID_UNSAFE.putShort(addr, val);
 
         shift(2);
     }
@@ -174,9 +174,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putShortLE(addr, val);
+            Ignition.GRID_UNSAFE.putShortLE(addr, val);
         else
-            Ignition.UNSAFE.putShort(addr, val);
+            Ignition.GRID_UNSAFE.putShort(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -184,9 +184,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putCharLE(addr, val);
+            Ignition.GRID_UNSAFE.putCharLE(addr, val);
         else
-            Ignition.UNSAFE.putChar(addr, val);
+            Ignition.GRID_UNSAFE.putChar(addr, val);
 
         shift(2);
     }
@@ -196,9 +196,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putIntLE(addr, val);
+            Ignition.GRID_UNSAFE.putIntLE(addr, val);
         else
-            Ignition.UNSAFE.putInt(addr, val);
+            Ignition.GRID_UNSAFE.putInt(addr, val);
 
         shift(4);
     }
@@ -208,9 +208,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putIntLE(addr, val);
+            Ignition.GRID_UNSAFE.putIntLE(addr, val);
         else
-            Ignition.UNSAFE.putInt(addr, val);
+            Ignition.GRID_UNSAFE.putInt(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -218,9 +218,9 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
         long addr = ptr + pos;
 
         if (BIG_ENDIAN)
-            Ignition.UNSAFE.putLongLE(addr, val);
+            Ignition.GRID_UNSAFE.putLongLE(addr, val);
         else
-            Ignition.UNSAFE.putLong(addr, val);
+            Ignition.GRID_UNSAFE.putLong(addr, val);
 
         shift(8);
     }
@@ -232,7 +232,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
      * @return Pointer.
      */
     protected long allocate(int cap) {
-        return Ignition.UNSAFE.allocateMemory(cap);
+        return Ignition.GRID_UNSAFE.allocateMemory(cap);
     }
 
     /**
@@ -243,7 +243,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
      * @return New pointer.
      */
     protected long reallocate(long ptr, int cap) {
-        return Ignition.UNSAFE.reallocateMemory(ptr, cap);
+        return Ignition.GRID_UNSAFE.reallocateMemory(ptr, cap);
     }
 
     /**
@@ -252,6 +252,6 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
      * @param ptr Pointer.
      */
     protected void release(long ptr) {
-        Ignition.UNSAFE.freeMemory(ptr);
+        Ignition.GRID_UNSAFE.freeMemory(ptr);
     }
 }

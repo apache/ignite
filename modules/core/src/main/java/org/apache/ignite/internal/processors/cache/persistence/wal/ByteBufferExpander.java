@@ -35,7 +35,7 @@ public class ByteBufferExpander implements AutoCloseable {
      * @param order Byte order.
      */
     public ByteBufferExpander(int initSize, ByteOrder order) {
-        ByteBuffer buffer = Ignition.UNSAFE.allocateBuffer(initSize);
+        ByteBuffer buffer = Ignition.GRID_UNSAFE.allocateBuffer(initSize);
         buffer.order(order);
 
         buf = buffer;
@@ -71,6 +71,6 @@ public class ByteBufferExpander implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        Ignition.UNSAFE.freeBuffer(buf);
+        Ignition.GRID_UNSAFE.freeBuffer(buf);
     }
 }

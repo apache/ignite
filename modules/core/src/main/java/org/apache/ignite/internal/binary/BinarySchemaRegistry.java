@@ -133,9 +133,8 @@ public class BinarySchemaRegistry {
             } else {
                 schemaRegistryBucket = heap.allocateMemoryBlock(kind, SCHEMA_REGISTRY_SIZE);
                 schemaRegistryBucket.setMemory((byte) 0, 0, SCHEMA_REGISTRY_SIZE);
-                heap.setRoot(schemaRegistryBucket.address());
             }
-
+            heap.setRoot(schemaRegistryBucket.address());
         }
     }
 

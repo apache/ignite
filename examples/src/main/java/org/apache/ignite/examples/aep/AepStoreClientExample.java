@@ -15,38 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.persistentstore;
+package org.apache.ignite.examples.aep;
 
-import java.util.List;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.datagrid.CacheQueryExample;
 import org.apache.ignite.examples.model.Organization;
 
 /**
- * This example demonstrates the usage of Apache Ignite Persistent Store.
+ * This example demonstrates some of the cache rich API capabilities.
  * <p>
- * To execute this example you should start an instance of {@link PersistentStoreExampleNodeStartup}
- * class which will start up an Apache Ignite remote server node with a proper configuration.
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * When {@code UPDATE} parameter of this example is set to {@code true}, the example will populate
- * the cache with some data and will then run a sample SQL query to fetch some results.
- * <p>
- * When {@code UPDATE} parameter of this example is set to {@code false}, the example will run
- * the SQL query against the cache without the initial data pre-loading from the store.
- * <p>
- * You can populate the cache first with {@code UPDATE} set to {@code true}, then restart the nodes and
- * run the example with {@code UPDATE} set to {@code false} to verify that Apache Ignite can work with the
- * data that is in the persistence only.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
-public class PersistentStoreExample {
+public class AepStoreClientExample {
     /** Organizations cache name. */
     private static final String ORG_CACHE = CacheQueryExample.class.getSimpleName() + "Organizations";
 
@@ -59,19 +46,15 @@ public class PersistentStoreExample {
      */
     public static void main(String[] args) {
         Ignition.setClientMode(true);
+        Ignition.setAepStore(args[0], true);
 
-        try (Ignite ignite = Ignition.start("examples/config/persistentstore/example-persistent-store.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             // Activate the cluster. Required to do if the persistent store is enabled because you might need
             // to wait while all the nodes, that store a subset of data on disk, join the cluster.
             ignite.active(true);
 
             CacheConfiguration<Long, Organization> cacheCfg = new CacheConfiguration<>(ORG_CACHE);
-
-            cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-            cacheCfg.setBackups(1);
-            cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-            cacheCfg.setIndexedTypes(Long.class, Organization.class);
-
+            cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
             IgniteCache<Long, Organization> cache = ignite.getOrCreateCache(cacheCfg);
 
             if (UPDATE) {
@@ -80,7 +63,7 @@ public class PersistentStoreExample {
                 try (IgniteDataStreamer<Long, Organization> streamer = ignite.dataStreamer(ORG_CACHE)) {
                     streamer.allowOverwrite(true);
 
-                    for (long i = 0; i < 100_000; i++) {
+                    for (long i = 0; i < Long.parseLong(args[1]); i++) {
                         streamer.addData(i, new Organization(i, "organization-" + i));
 
                         if (i > 0 && i % 10_000 == 0)
@@ -88,13 +71,6 @@ public class PersistentStoreExample {
                     }
                 }
             }
-
-            // Run SQL without explicitly calling to loadCache().
-            QueryCursor<List<?>> cur = cache.query(
-                new SqlFieldsQuery("select id, name from Organization where name like ?")
-                    .setArgs("organization-54321"));
-
-            System.out.println("SQL Result: " + cur.getAll());
 
             // Run get() without explicitly calling to loadCache().
             Organization org = cache.get(54321l);

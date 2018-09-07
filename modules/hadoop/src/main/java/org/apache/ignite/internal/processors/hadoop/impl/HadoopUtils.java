@@ -355,13 +355,13 @@ public class HadoopUtils {
         int minWords = minLength / Longs.BYTES;
 
         for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
-            long lw = Ignition.UNSAFE.getLong(buf1, GridUnsafe.BYTE_ARR_OFF + i);
-            long rw = Ignition.UNSAFE.getLong(ptr2 + i);
+            long lw = Ignition.GRID_UNSAFE.getLong(buf1, GridUnsafe.BYTE_ARR_OFF + i);
+            long rw = Ignition.GRID_UNSAFE.getLong(ptr2 + i);
 
             long diff = lw ^ rw;
 
             if (diff != 0) {
-                if (Ignition.UNSAFE.BIG_ENDIAN)
+                if (Ignition.GRID_UNSAFE.BIG_ENDIAN)
                     return (lw + Long.MIN_VALUE) < (rw + Long.MIN_VALUE) ? -1 : 1;
 
                 // Use binary search
@@ -393,7 +393,7 @@ public class HadoopUtils {
 
         // The epilogue to cover the last (minLength % 8) elements.
         for (int i = minWords * Longs.BYTES; i < minLength; i++) {
-            int res = UnsignedBytes.compare(buf1[i], Ignition.UNSAFE.getByte(ptr2 + i));
+            int res = UnsignedBytes.compare(buf1[i], Ignition.GRID_UNSAFE.getByte(ptr2 + i));
 
             if (res != 0)
                 return res;

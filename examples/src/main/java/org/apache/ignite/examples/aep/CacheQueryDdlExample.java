@@ -61,7 +61,7 @@ public class CacheQueryDdlExample {
             ) {
 
 
-                    // Create reference City table based on REPLICATED template.
+                // Create reference City table based on REPLICATED template.
                 cache.query(new SqlFieldsQuery(
                         "CREATE TABLE city (id LONG PRIMARY KEY, name VARCHAR) WITH \"template=replicated\"")).getAll();
 

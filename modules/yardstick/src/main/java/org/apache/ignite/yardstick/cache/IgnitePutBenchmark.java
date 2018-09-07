@@ -18,6 +18,8 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
 
@@ -25,13 +27,23 @@ import org.apache.ignite.yardstick.cache.model.SampleValue;
  * Ignite benchmark that performs put operations.
  */
 public class IgnitePutBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+
+    //private AtomicLong count = new AtomicLong();
+    //private AtomicLong elapsed = new AtomicLong();
+
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
         IgniteCache<Integer, Object> cache = cacheForOperation();
 
+        //count.incrementAndGet();
+        //long st = System.nanoTime();
         cache.put(key, new SampleValue(key));
+        //elapsed.addAndGet(System.nanoTime() - st);
+
+        //if (count.longValue() % 1_000 == 0)
+          //  System.out.println("Thread=" + Thread.currentThread().getId() + ", E_COUNT=" + count.longValue() + ", E_TIME=" + elapsed.longValue());
 
         return true;
     }

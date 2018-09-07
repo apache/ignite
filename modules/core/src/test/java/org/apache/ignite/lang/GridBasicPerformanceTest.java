@@ -952,11 +952,11 @@ public class GridBasicPerformanceTest {
         int mem = 1024;
 
         for (int i = 0; i < MAX; i++) {
-            addrs[i] = Ignition.UNSAFE.allocateMemory(mem);
+            addrs[i] = Ignition.GRID_UNSAFE.allocateMemory(mem);
 
-            Ignition.UNSAFE.putByte(addrs[i] + RAND.nextInt(mem), (byte)RAND.nextInt(mem));
+            Ignition.GRID_UNSAFE.putByte(addrs[i] + RAND.nextInt(mem), (byte)RAND.nextInt(mem));
 
-            v = Ignition.UNSAFE.getByte(addrs[i] + RAND.nextInt(mem));
+            v = Ignition.GRID_UNSAFE.getByte(addrs[i] + RAND.nextInt(mem));
         }
 
         X.println("Unsafe [time=" + t.stop() + "ms, v=" + v + ']');
@@ -964,7 +964,7 @@ public class GridBasicPerformanceTest {
         Thread.sleep(5000L);
 
         for (long l : addrs)
-            Ignition.UNSAFE.freeMemory(l);
+            Ignition.GRID_UNSAFE.freeMemory(l);
     }
 
 

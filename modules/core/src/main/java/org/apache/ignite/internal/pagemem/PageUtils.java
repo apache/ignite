@@ -175,7 +175,6 @@ public class PageUtils {
         assert addr > 0 : addr;
         assert off >= 0;
 
-
         Ignition.UNSAFE.putByte(addr + off, v);
     }
 

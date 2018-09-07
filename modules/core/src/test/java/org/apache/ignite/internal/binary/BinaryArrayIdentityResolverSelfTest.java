@@ -62,7 +62,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (Long ptr : ptrs)
-            Ignition.UNSAFE.freeMemory(ptr);
+            Ignition.GRID_UNSAFE.freeMemory(ptr);
 
         super.afterTest();
     }
@@ -253,11 +253,11 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
         if (offheap) {
             byte[] arr = obj0.array();
 
-            long ptr = Ignition.UNSAFE.allocateMemory(arr.length);
+            long ptr = Ignition.GRID_UNSAFE.allocateMemory(arr.length);
 
             ptrs.add(ptr);
 
-            Ignition.UNSAFE.copyMemory(arr, Ignition.UNSAFE.BYTE_ARR_OFF, null, ptr, arr.length);
+            Ignition.GRID_UNSAFE.copyMemory(arr, Ignition.GRID_UNSAFE.BYTE_ARR_OFF, null, ptr, arr.length);
 
             obj0 = new BinaryObjectOffheapImpl(obj0.context(), ptr, 0, obj0.array().length);
         }

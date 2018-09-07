@@ -731,8 +731,8 @@ public abstract class IgniteUtils {
 
                 // We use unsafe operations to update static fields on interface because
                 // they are treated as static final and cannot be updated via standard reflection.
-                Ignition.UNSAFE.putObjectVolatile(Ignition.UNSAFE.staticFieldBase(f1), Ignition.UNSAFE.staticFieldOffset(f1), gridEvents());
-                Ignition.UNSAFE.putObjectVolatile(Ignition.UNSAFE.staticFieldBase(f2), Ignition.UNSAFE.staticFieldOffset(f2), gridEvents(EVT_NODE_METRICS_UPDATED));
+                Ignition.GRID_UNSAFE.putObjectVolatile(Ignition.GRID_UNSAFE.staticFieldBase(f1), Ignition.GRID_UNSAFE.staticFieldOffset(f1), gridEvents());
+                Ignition.GRID_UNSAFE.putObjectVolatile(Ignition.GRID_UNSAFE.staticFieldBase(f2), Ignition.GRID_UNSAFE.staticFieldOffset(f2), gridEvents(EVT_NODE_METRICS_UPDATED));
 
                 assert EVTS_ALL != null;
                 assert EVTS_ALL.length == GRID_EVTS.length;
@@ -7965,7 +7965,7 @@ public abstract class IgniteUtils {
      */
     public static long fieldOffset(Class<?> cls, String fieldName) {
         try {
-            return Ignition.UNSAFE.objectFieldOffset(cls.getDeclaredField(fieldName));
+            return Ignition.GRID_UNSAFE.objectFieldOffset(cls.getDeclaredField(fieldName));
         }
         catch (NoSuchFieldException e) {
             throw new IllegalStateException(e);
@@ -8628,7 +8628,7 @@ public abstract class IgniteUtils {
         assert resBuf.length >= resOff + len;
 
         if (UNSAFE_BYTE_ARR_CP)
-            Ignition.UNSAFE.copyMemory(src, Ignition.UNSAFE.BYTE_ARR_OFF + off, resBuf, Ignition.UNSAFE.BYTE_ARR_OFF + resOff, len);
+            Ignition.GRID_UNSAFE.copyMemory(src, Ignition.GRID_UNSAFE.BYTE_ARR_OFF + off, resBuf, Ignition.GRID_UNSAFE.BYTE_ARR_OFF + resOff, len);
         else
             System.arraycopy(src, off, resBuf, resOff, len);
 
@@ -9268,7 +9268,7 @@ public abstract class IgniteUtils {
     public static byte[] copyMemory(long ptr, int size) {
         byte[] res = new byte[size];
 
-        Ignition.UNSAFE.copyMemory(null, ptr, res, Ignition.UNSAFE.BYTE_ARR_OFF, size);
+        Ignition.GRID_UNSAFE.copyMemory(null, ptr, res, Ignition.GRID_UNSAFE.BYTE_ARR_OFF, size);
 
         return res;
     }

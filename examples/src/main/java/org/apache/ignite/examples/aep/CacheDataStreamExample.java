@@ -71,7 +71,6 @@ public class CacheDataStreamExample {
 
                 }
 
-
                 Iterator<Cache.Entry<Integer, Person>> itr = cache.iterator();
                 while (itr.hasNext())
                     Ignition.print(itr.next().getValue().toString());

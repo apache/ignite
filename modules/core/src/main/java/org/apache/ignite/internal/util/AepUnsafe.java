@@ -47,8 +47,8 @@ public class AepUnsafe extends GridUnsafe {
     /** A persistent singly linked list. */
     private PersistentLinkedListOfLong<Transactional> persistentList;
 
-    /** Holds the base address and size of segments. Key: base address, Value: size. */
-    private ConcurrentSkipListMap<Long, Long> segmentsMap;
+    /** Holds the base address and the memory block. Key: base address, Value: reference to memory block. */
+    private ConcurrentSkipListMap<Long, MemoryBlock<MemoryBlock.Kind>> segmentsMap;
 
     public enum BlockType { SEGMENT, BUCKET }
 
@@ -82,7 +82,7 @@ public class AepUnsafe extends GridUnsafe {
             assert block != null;
 
             if (block.getInt(block.size() - 2 * Integer.BYTES) == BlockType.SEGMENT.ordinal())
-                segmentsMap.put(base, block.size() - 2 * Integer.BYTES);
+                segmentsMap.put(base, block);
         }
     }
 
@@ -90,7 +90,8 @@ public class AepUnsafe extends GridUnsafe {
     private void createBinarySchemaRegion() {
         MemoryBlock<?> block = heap.allocateMemoryBlock(kind, BinarySchemaRegistry.SCHEMA_REGISTRY_SIZE);
         persistentList.add(block.address());
-        heap.setRoot(persistentList.getRoot());
+        if (!Ignition.isAepClientModeEnabled())
+            heap.setRoot(persistentList.getRoot());
     }
 
     /**
@@ -102,7 +103,6 @@ public class AepUnsafe extends GridUnsafe {
     @SuppressWarnings("unchecked")
     @Override
     public long allocateUnsafeMemory(String regionName, int index, long size) {
-
         int id = regionName.hashCode() + index;
 
         // We skip index 0 (the schema registry region).
@@ -126,30 +126,11 @@ public class AepUnsafe extends GridUnsafe {
         persistentList.add(address);
 
         // add list to skipListMap
-        segmentsMap.put(address, size);
+        segmentsMap.put(address, block);
 
         return address;
     }
-
-    /**
-     * Get the AEP memory region that holds the given address.
-     * @param address the address whose memory region we want to determine.
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    private MemoryBlock<MemoryBlock.Kind> getMemoryBlock(long address) {
-        Map.Entry<Long, Long> entry = segmentsMap.floorEntry(address);
-        if (entry == null)
-            return null;
-
-        Long baseAddress = entry.getKey();
-        Long size = entry.getValue();
-        if (address <= baseAddress + size)
-            return heap.memoryBlockFromAddress(kind, baseAddress);
-
-        return null;
-    }
-
+    
     @SuppressWarnings("unchecked")
     @Override
     public MemoryBlock<MemoryBlock.Kind> getSchemaRegistryBlock() {
@@ -164,6 +145,7 @@ public class AepUnsafe extends GridUnsafe {
     public PersistentLinkedList<Transactional, Long> getPersistentList() {
         return persistentList;
     }
+
     /**
      * Sets all bytes in a given block of memory to a copy of another block.
      *
@@ -182,8 +164,11 @@ public class AepUnsafe extends GridUnsafe {
             return;
         }
 
-        MemoryBlock<MemoryBlock.Kind> src = getMemoryBlock(srcOff);
-        MemoryBlock<MemoryBlock.Kind> dst = getMemoryBlock(dstOff);
+        Map.Entry<Long, MemoryBlock<MemoryBlock.Kind>> srcEntry = segmentsMap.floorEntry(srcOff);
+        Map.Entry<Long, MemoryBlock<MemoryBlock.Kind>> dstEntry = segmentsMap.floorEntry(dstOff);
+
+        MemoryBlock<MemoryBlock.Kind> src = srcEntry != null ? srcEntry.getValue() : null;
+        MemoryBlock<MemoryBlock.Kind> dst = dstEntry != null ? dstEntry.getValue() : null;
 
         int mask = ((src == null ? 0 : 1) << 1) | (dst == null ? 0 : 1);
 
@@ -214,8 +199,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public void copyMemory(long srcOff, long dstOff, long len) {
-        MemoryBlock<MemoryBlock.Kind> src = getMemoryBlock(srcOff);
-        MemoryBlock<MemoryBlock.Kind> dst = getMemoryBlock(dstOff);
+        MemoryBlock<MemoryBlock.Kind> src = segmentsMap.floorEntry(srcOff).getValue();
+        MemoryBlock<MemoryBlock.Kind> dst = segmentsMap.floorEntry(dstOff).getValue();
 
         assert src != null && dst != null;
 
@@ -231,7 +216,7 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public void setMemory(long address, long len, byte val) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
         if (r != null)
             r.setMemory(val, address - r.address(), len);
         else
@@ -286,7 +271,7 @@ public class AepUnsafe extends GridUnsafe {
     @Override
     public ByteBuffer wrapPointer(long ptr, int len) {
 
-        MemoryBlock<MemoryBlock.Kind> block = getMemoryBlock(ptr);
+        MemoryBlock<MemoryBlock.Kind> block = segmentsMap.floorEntry(ptr).getValue();
 
         assert block == null;
 
@@ -307,8 +292,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public byte getByte(long address) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
-        return r != null ? r.getByte(address - r.address()) : UNSAFE.getByte(address);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
+        return r.getByte(address - r.address());
     }
 
     /**
@@ -319,11 +304,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public void putByte(long address, byte val) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
-        if (r != null)
-            r.setByte(address - r.address(), val);
-        else
-            UNSAFE.putByte(address, val);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
+        r.setByte(address - r.address(), val);
     }
 
     /**
@@ -334,8 +316,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public char getChar(long address) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
-        return r != null ? (char) r.getShort(address - r.address()) : (char) UNSAFE.getShort(address);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
+        return (char) r.getShort(address - r.address());
     }
 
     /**
@@ -346,11 +328,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public void putChar(long address, char val) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
-        if (r != null)
-            r.setShort(address - r.address(), (short) val);
-        else
-            UNSAFE.putChar(address, val);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
+        r.setShort(address - r.address(), (short) val);
     }
 
     /**
@@ -361,8 +340,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public short getShort(long address) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
-        return r != null ? r.getShort(address - r.address()) : UNSAFE.getShort(address);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
+        return r.getShort(address - r.address());
     }
 
     /**
@@ -373,11 +352,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public void putShort(long address, short val) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
-        if (r != null)
-            r.setShort(address - r.address(), val);
-        else
-            UNSAFE.putShort(address, val);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
+        r.setShort(address - r.address(), val);
     }
 
     /**
@@ -388,8 +364,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public int getInt(long address) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
-        return r != null ? r.getInt(address - r.address()) : UNSAFE.getInt(address);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
+        return r.getInt(address - r.address());
     }
 
     /**
@@ -400,11 +376,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public void putInt(long address, int val) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
-        if (r != null)
-            r.setInt(address - r.address(), val);
-        else
-            UNSAFE.putInt(address, val);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
+        r.setInt(address - r.address(), val);
     }
 
     /**
@@ -415,8 +388,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public long getLong(long address) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
-        return r != null ? r.getLong(address - r.address()) : UNSAFE.getLong(address);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
+        return r.getLong(address - r.address());
     }
 
     /**
@@ -427,11 +400,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public void putLong(long address, long val) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(address);
-        if (r != null)
-            r.setLong(address - r.address(), val);
-        else
-            UNSAFE.putLong(address, val);
+        MemoryBlock<MemoryBlock.Kind> r = segmentsMap.floorEntry(address).getValue();
+        r.setLong(address - r.address(), val);
     }
 
     /**
@@ -489,7 +459,7 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public boolean compareAndSwapInt(Object obj, long address, int exp, int upd) {
-        return obj != null ? UNSAFE.compareAndSwapInt(obj, address, exp, upd) : compareAndSwapInt(address, exp, upd);
+        return compareAndSwapInt(address, exp, upd);
     }
 
     /**
@@ -503,7 +473,7 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public boolean compareAndSwapLong(Object obj, long address, long exp, long upd) {
-        return obj != null ? UNSAFE.compareAndSwapLong(obj, address, exp, upd) : compareAndSwapLong(address, exp, upd);
+        return compareAndSwapLong(address, exp, upd);
     }
 
     /**
@@ -559,11 +529,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public byte getByteVolatile(Object obj, long offset) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(offset);
-        if (obj != null || r == null)
-            return UNSAFE.getByteVolatile(obj, offset);
-
-        return r.getByte(offset - r.address());
+        assert obj == null;
+        return getByte(offset);
     }
 
     /**
@@ -575,11 +542,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public void putByteVolatile(Object obj, long offset, byte val) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(offset);
-        if (obj != null || r == null)
-            UNSAFE.putByteVolatile(obj, offset, val);
-        else
-            r.setByte(offset - r.address(), val);
+        assert obj == null;
+        putByte(offset, val);
     }
 
     /**
@@ -591,11 +555,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public int getIntVolatile(Object obj, long offset) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(offset);
-        if (obj != null || r == null)
-            return UNSAFE.getIntVolatile(obj, offset);
-
-        return r.getInt(offset - r.address());
+        assert obj == null;
+        return getInt(offset);
     }
 
     /**
@@ -607,11 +568,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public void putIntVolatile(Object obj, long offset, int val) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(offset);
-        if (obj != null || r == null)
-            UNSAFE.putIntVolatile(obj, offset, val);
-        else
-            r.setInt(offset - r.address(), val);
+        assert obj == null;
+        putInt(offset, val);
     }
 
     /**
@@ -623,11 +581,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public long getLongVolatile(Object obj, long offset) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(offset);
-        if (obj != null || r == null)
-            return UNSAFE.getLongVolatile(obj, offset);
-
-        return r.getLong(offset - r.address());
+        assert obj == null;
+        return getLong(offset);
     }
 
     /**
@@ -639,11 +594,8 @@ public class AepUnsafe extends GridUnsafe {
      */
     @Override
     public void putLongVolatile(Object obj, long offset, long val) {
-        MemoryBlock<MemoryBlock.Kind> r = getMemoryBlock(offset);
-        if (obj != null || r == null)
-            UNSAFE.putLongVolatile(obj, offset, val);
-        else
-            r.setLong(offset - r.address(), val);
+        assert obj == null;
+        putLong(offset, val);
     }
 
 }

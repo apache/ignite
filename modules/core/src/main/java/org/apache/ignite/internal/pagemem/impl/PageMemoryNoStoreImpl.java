@@ -103,21 +103,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      */
     public static final int PAGE_OVERHEAD = LOCK_OFFSET + OffheapReadWriteLock.LOCK_SIZE;
 
-    /** Number of bits required to store segment index. */
-    private static final int SEG_BITS = 4;
-
-    /** Number of bits required to store segment index. */
-    private static final int SEG_CNT = (1 << SEG_BITS);
-
-    /** Number of bits left to store page index. */
-    private static final int IDX_BITS = PageIdUtils.PAGE_IDX_SIZE - SEG_BITS;
-
-    /** Segment mask. */
-    private static final int SEG_MASK = ~(-1 << SEG_BITS);
-
-    /** Index mask. */
-    private static final int IDX_MASK = ~(-1 << IDX_BITS);
-
     /** Page size. */
     private int sysPageSize;
 
@@ -149,10 +134,25 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private OffheapReadWriteLock rwLock;
 
     /** Concurrency lvl. */
-    private final int lockConcLvl = IgniteSystemProperties.getInteger(
+    private static final int lockConcLvl = IgniteSystemProperties.getInteger(
         IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL,
         IgniteUtils.nearestPow2(Runtime.getRuntime().availableProcessors() * 4)
     );
+
+    /** Number of bits required to store segment index. */
+    private static final int SEG_BITS = (int) Math.round(Math.log10(lockConcLvl) / Math.log10(2));
+
+    /** Number of bits required to store segment index. */
+    private static final int SEG_CNT = lockConcLvl; //(1 << SEG_BITS);
+
+    /** Number of bits left to store page index. */
+    private static final int IDX_BITS = PageIdUtils.PAGE_IDX_SIZE - SEG_BITS;
+
+    /** Segment mask. */
+    private static final int SEG_MASK = ~(-1 << SEG_BITS);
+
+    /** Index mask. */
+    private static final int IDX_MASK = ~(-1 << IDX_BITS);
 
     /** */
     private final int totalPages;
@@ -198,6 +198,33 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
+        long maxSize = dataRegionCfg.getMaxSize();
+
+        long[] chunks = new long[SEG_CNT];
+        long chunkSize = maxSize / lockConcLvl;
+
+        if (chunkSize < 1024 * 1024)
+            chunkSize = 1024 * 1024;
+
+        long total = chunkSize;
+        int i = 0;
+        for (; i < SEG_CNT; i++) {
+            chunks[i] = chunkSize;
+            total += chunkSize;
+            if (total > maxSize)
+                break;
+        }
+
+        if (i != SEG_CNT - 1)
+            chunks = Arrays.copyOf(chunks, i + 1);
+
+        directMemoryProvider.initialize(chunks);
+
+        addSegment(null);
+    }
+
+
+    public void start_() throws IgniteException {
         long startSize = dataRegionCfg.getInitialSize();
         long maxSize = dataRegionCfg.getMaxSize();
 

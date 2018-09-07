@@ -92,7 +92,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
     @Override public byte readByte() throws IOException {
         checkRange(1);
 
-        byte res = Ignition.UNSAFE.getByte(buf, BYTE_ARR_OFF + pos);
+        byte res = Ignition.GRID_UNSAFE.getByte(buf, BYTE_ARR_OFF + pos);
 
         pos += 1;
 
@@ -108,7 +108,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
     @Override public short readShort() throws IOException {
         checkRange(2);
 
-        short res = Ignition.UNSAFE.getShort(buf, BYTE_ARR_OFF + pos);
+        short res = Ignition.GRID_UNSAFE.getShort(buf, BYTE_ARR_OFF + pos);
 
         pos += 2;
 
@@ -124,7 +124,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
     @Override public char readChar() throws IOException {
         checkRange(2);
 
-        char res = Ignition.UNSAFE.getChar(buf, BYTE_ARR_OFF + pos);
+        char res = Ignition.GRID_UNSAFE.getChar(buf, BYTE_ARR_OFF + pos);
 
         pos += 2;
 
@@ -135,7 +135,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
     @Override public int readInt() throws IOException {
         checkRange(4);
 
-        int res = Ignition.UNSAFE.getInt(buf, BYTE_ARR_OFF + pos);
+        int res = Ignition.GRID_UNSAFE.getInt(buf, BYTE_ARR_OFF + pos);
 
         pos += 4;
 
@@ -146,7 +146,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
     @Override public long readLong() throws IOException {
         checkRange(8);
 
-        long res = Ignition.UNSAFE.getLong(buf, BYTE_ARR_OFF + pos);
+        long res = Ignition.GRID_UNSAFE.getLong(buf, BYTE_ARR_OFF + pos);
 
         pos += 8;
 
@@ -157,7 +157,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
     @Override public float readFloat() throws IOException {
         checkRange(4);
 
-        float res = Ignition.UNSAFE.getFloat(buf, BYTE_ARR_OFF + pos);
+        float res = Ignition.GRID_UNSAFE.getFloat(buf, BYTE_ARR_OFF + pos);
 
         pos += 4;
 
@@ -168,7 +168,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
     @Override public double readDouble() throws IOException {
         checkRange(8);
 
-        double res = Ignition.UNSAFE.getDouble(buf, BYTE_ARR_OFF + pos);
+        double res = Ignition.GRID_UNSAFE.getDouble(buf, BYTE_ARR_OFF + pos);
 
         pos += 8;
 

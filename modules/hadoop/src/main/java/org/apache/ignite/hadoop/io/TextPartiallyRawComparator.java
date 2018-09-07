@@ -45,7 +45,7 @@ public class TextPartiallyRawComparator implements PartiallyRawComparator<Text>,
 
     /** {@inheritDoc} */
     @Override public int compare(Text val1, long val2Ptr, int val2Len) {
-        int len2 = WritableUtils.decodeVIntSize(Ignition.UNSAFE.getByte(val2Ptr));
+        int len2 = WritableUtils.decodeVIntSize(Ignition.GRID_UNSAFE.getByte(val2Ptr));
 
         return HadoopUtils.compareBytes(val1.getBytes(), val1.getLength(), val2Ptr + len2, val2Len - len2);
     }

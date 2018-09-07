@@ -282,7 +282,7 @@ class OptimizedClassDescriptor {
                 type = PROPS;
 
                 try {
-                    dfltsFieldOff = Ignition.UNSAFE.objectFieldOffset(Properties.class.getDeclaredField("defaults"));
+                    dfltsFieldOff = Ignition.GRID_UNSAFE.objectFieldOffset(Properties.class.getDeclaredField("defaults"));
                 }
                 catch (NoSuchFieldException e) {
                     throw new IOException(e);
@@ -294,7 +294,7 @@ class OptimizedClassDescriptor {
                 type = HASH_MAP;
 
                 try {
-                    loadFactorFieldOff = Ignition.UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
+                    loadFactorFieldOff = Ignition.GRID_UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
                 }
                 catch (NoSuchFieldException e) {
                     throw new IOException(e);
@@ -304,7 +304,7 @@ class OptimizedClassDescriptor {
                 type = HASH_SET;
 
                 try {
-                    loadFactorFieldOff = Ignition.UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
+                    loadFactorFieldOff = Ignition.GRID_UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
                 }
                 catch (NoSuchFieldException e) {
                     throw new IOException(e);
@@ -317,9 +317,9 @@ class OptimizedClassDescriptor {
 
                 try {
                     loadFactorFieldOff =
-                        Ignition.UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
+                        Ignition.GRID_UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
                     accessOrderFieldOff =
-                        Ignition.UNSAFE.objectFieldOffset(LinkedHashMap.class.getDeclaredField("accessOrder"));
+                        Ignition.GRID_UNSAFE.objectFieldOffset(LinkedHashMap.class.getDeclaredField("accessOrder"));
                 }
                 catch (NoSuchFieldException e) {
                     throw new IOException(e);
@@ -329,7 +329,7 @@ class OptimizedClassDescriptor {
                 type = LINKED_HASH_SET;
 
                 try {
-                    loadFactorFieldOff = Ignition.UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
+                    loadFactorFieldOff = Ignition.GRID_UNSAFE.objectFieldOffset(HashMap.class.getDeclaredField("loadFactor"));
                 }
                 catch (NoSuchFieldException e) {
                     throw new IOException(e);
@@ -509,7 +509,7 @@ class OptimizedClassDescriptor {
 
                                         fieldInfo = new FieldInfo(f,
                                             serField.getName(),
-                                            Ignition.UNSAFE.objectFieldOffset(f),
+                                            Ignition.GRID_UNSAFE.objectFieldOffset(f),
                                             fieldType(serField.getType()));
                                     }
 
@@ -533,7 +533,7 @@ class OptimizedClassDescriptor {
 
                                 if (!isStatic(mod) && !isTransient(mod)) {
                                     FieldInfo fieldInfo = new FieldInfo(f, f.getName(),
-                                        Ignition.UNSAFE.objectFieldOffset(f), fieldType(f.getType()));
+                                        Ignition.GRID_UNSAFE.objectFieldOffset(f), fieldType(f.getType()));
 
                                     clsFields.add(fieldInfo);
                                 }
@@ -866,7 +866,7 @@ class OptimizedClassDescriptor {
                 final Field f = cls.getDeclaredField(fieldName);
 
                 FieldInfo fieldInfo = new FieldInfo(f, f.getName(),
-                    Ignition.UNSAFE.objectFieldOffset(f), fieldType(f.getType()));
+                    Ignition.GRID_UNSAFE.objectFieldOffset(f), fieldType(f.getType()));
 
                 clsFields.add(fieldInfo);
             }

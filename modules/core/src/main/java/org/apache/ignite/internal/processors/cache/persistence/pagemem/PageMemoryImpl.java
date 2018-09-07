@@ -460,13 +460,13 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             long absPtr = seg.absolute(relPtr);
 
-            Ignition.UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+            Ignition.GRID_UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
             PageHeader.fullPageId(absPtr, fullId);
             PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
             rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
 
-            assert Ignition.UNSAFE.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+            assert Ignition.GRID_UNSAFE.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
 
             assert !PageHeader.isAcquired(absPtr) :
                 "Pin counter must be 0 for a new page [relPtr=" + U.hexLong(relPtr) +
@@ -624,7 +624,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     }
                 }
                 else {
-                    Ignition.UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+                    Ignition.GRID_UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
                     // Must init page ID in order to ensure RWLock tag consistency.
                     PageIO.setPageId(pageAddr, pageId);
@@ -641,7 +641,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 long pageAddr = absPtr + PAGE_OVERHEAD;
 
-                Ignition.UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+                Ignition.GRID_UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
                 PageHeader.fullPageId(absPtr, fullId);
                 PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
@@ -681,14 +681,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         long absPtr = seg.absolute(relPtr);
 
-        Ignition.UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+        Ignition.GRID_UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
         PageHeader.dirty(absPtr, false);
 
         long tmpBufPtr = PageHeader.tempBufferPointer(absPtr);
 
         if (tmpBufPtr != INVALID_REL_PTR) {
-            Ignition.UNSAFE.setMemory(checkpointPool.absolute(tmpBufPtr) + PAGE_OVERHEAD, pageSize(), (byte)0);
+            Ignition.GRID_UNSAFE.setMemory(checkpointPool.absolute(tmpBufPtr) + PAGE_OVERHEAD, pageSize(), (byte)0);
 
             PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
 
@@ -731,7 +731,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                                 if (tmpAddr == null) {
                                     assert snapshot.pageData().length <= pageSize() : snapshot.pageData().length;
 
-                                    tmpAddr = Ignition.UNSAFE.allocateMemory(pageSize());
+                                    tmpAddr = Ignition.GRID_UNSAFE.allocateMemory(pageSize());
                                 }
 
                                 if (curPage == null)
@@ -794,7 +794,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
         finally {
             if (tmpAddr != null)
-                Ignition.UNSAFE.freeMemory(tmpAddr);
+                Ignition.GRID_UNSAFE.freeMemory(tmpAddr);
         }
     }
 
@@ -978,7 +978,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 copyInBuffer(tmpAbsPtr, tmpBuf);
 
-                Ignition.UNSAFE.setMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+                Ignition.GRID_UNSAFE.setMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
                 if (tracker != null)
                     tracker.onCowPageWritten();
@@ -1021,10 +1021,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (tmpBuf.isDirect()) {
             long tmpPtr = ((DirectBuffer)tmpBuf).address();
 
-            Ignition.UNSAFE.copyMemory(absPtr + PAGE_OVERHEAD, tmpPtr, pageSize());
+            Ignition.GRID_UNSAFE.copyMemory(absPtr + PAGE_OVERHEAD, tmpPtr, pageSize());
 
-            assert Ignition.UNSAFE.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
-            assert Ignition.UNSAFE.getInt(tmpPtr + 4) == 0; //TODO GG-11480
+            assert Ignition.GRID_UNSAFE.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+            assert Ignition.GRID_UNSAFE.getInt(tmpPtr + 4) == 0; //TODO GG-11480
         }
         else {
             byte[] arr = tmpBuf.array();
@@ -1032,7 +1032,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert arr != null;
             assert arr.length == pageSize();
 
-            Ignition.UNSAFE.copyMemory(null, absPtr + PAGE_OVERHEAD, arr, Ignition.UNSAFE.BYTE_ARR_OFF, pageSize());
+            Ignition.GRID_UNSAFE.copyMemory(null, absPtr + PAGE_OVERHEAD, arr, Ignition.GRID_UNSAFE.BYTE_ARR_OFF, pageSize());
         }
     }
 
@@ -1160,7 +1160,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
 
-        assert Ignition.UNSAFE.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+        assert Ignition.GRID_UNSAFE.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
 
         return absPtr + PAGE_OVERHEAD;
     }
@@ -1236,7 +1236,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
 
-            Ignition.UNSAFE.copyMemory(
+            Ignition.GRID_UNSAFE.copyMemory(
                 null,
                 absPtr + PAGE_OVERHEAD,
                 null,
@@ -1250,11 +1250,11 @@ public class PageMemoryImpl implements PageMemoryEx {
             PageHeader.dirty(absPtr, false);
             PageHeader.tempBufferPointer(absPtr, tmpRelPtr);
 
-            assert Ignition.UNSAFE.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
-            assert Ignition.UNSAFE.getInt(tmpAbsPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+            assert Ignition.GRID_UNSAFE.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+            assert Ignition.GRID_UNSAFE.getInt(tmpAbsPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
         }
 
-        assert Ignition.UNSAFE.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+        assert Ignition.GRID_UNSAFE.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
 
         return absPtr + PAGE_OVERHEAD;
     }
@@ -1278,7 +1278,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !dirty);
 
-        assert Ignition.UNSAFE.getInt(page + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
+        assert Ignition.GRID_UNSAFE.getInt(page + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
 
         if (markDirty)
             setDirty(fullId, page, markDirty, false);
@@ -1301,7 +1301,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             StringBuilder sb = new StringBuilder(sysPageSize * 2);
 
             for (int i = 0; i < systemPageSize(); i += 8)
-                sb.append(U.hexLong(Ignition.UNSAFE.getLong(page + i)));
+                sb.append(U.hexLong(Ignition.GRID_UNSAFE.getLong(page + i)));
 
             U.error(log, "Failed to unlock page [fullPageId=" + fullId + ", binPage=" + sb + ']');
 
@@ -1517,8 +1517,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             // Align page start by
             pagesBase = base;
 
-            Ignition.UNSAFE.putLong(freePageListPtr, INVALID_REL_PTR);
-            Ignition.UNSAFE.putLong(lastAllocatedIdxPtr, 1L);
+            Ignition.GRID_UNSAFE.putLong(freePageListPtr, INVALID_REL_PTR);
+            Ignition.GRID_UNSAFE.putLong(lastAllocatedIdxPtr, 1L);
         }
 
         /**
@@ -1542,19 +1542,19 @@ public class PageMemoryImpl implements PageMemoryEx {
          */
         private long borrowFreePage() {
             while (true) {
-                long freePageRelPtrMasked = Ignition.UNSAFE.getLong(freePageListPtr);
+                long freePageRelPtrMasked = Ignition.GRID_UNSAFE.getLong(freePageListPtr);
 
                 long freePageRelPtr = freePageRelPtrMasked & ADDRESS_MASK;
 
                 if (freePageRelPtr != INVALID_REL_PTR) {
                     long freePageAbsPtr = absolute(freePageRelPtr);
 
-                    long nextFreePageRelPtr = Ignition.UNSAFE.getLong(freePageAbsPtr) & ADDRESS_MASK;
+                    long nextFreePageRelPtr = Ignition.GRID_UNSAFE.getLong(freePageAbsPtr) & ADDRESS_MASK;
 
                     long cnt = ((freePageRelPtrMasked & COUNTER_MASK) + COUNTER_INC) & COUNTER_MASK;
 
-                    if (Ignition.UNSAFE.compareAndSwapLong(null, freePageListPtr, freePageRelPtrMasked, nextFreePageRelPtr | cnt)) {
-                        Ignition.UNSAFE.putLong(freePageAbsPtr, PAGE_MARKER);
+                    if (Ignition.GRID_UNSAFE.compareAndSwapLong(null, freePageListPtr, freePageRelPtrMasked, nextFreePageRelPtr | cnt)) {
+                        Ignition.GRID_UNSAFE.putLong(freePageAbsPtr, PAGE_MARKER);
 
                         return freePageRelPtr;
                     }
@@ -1573,13 +1573,13 @@ public class PageMemoryImpl implements PageMemoryEx {
             long limit = region.address() + region.size();
 
             while (true) {
-                long lastIdx = Ignition.UNSAFE.getLong(lastAllocatedIdxPtr);
+                long lastIdx = Ignition.GRID_UNSAFE.getLong(lastAllocatedIdxPtr);
 
                 // Check if we have enough space to allocate a page.
                 if (pagesBase + (lastIdx + 1) * sysPageSize > limit)
                     return INVALID_REL_PTR;
 
-                if (Ignition.UNSAFE.compareAndSwapLong(null, lastAllocatedIdxPtr, lastIdx, lastIdx + 1)) {
+                if (Ignition.GRID_UNSAFE.compareAndSwapLong(null, lastAllocatedIdxPtr, lastIdx, lastIdx + 1)) {
                     long absPtr = pagesBase + lastIdx * sysPageSize;
 
                     assert (lastIdx & SEGMENT_INDEX_MASK) == 0L;
@@ -1609,13 +1609,13 @@ public class PageMemoryImpl implements PageMemoryEx {
                 pagesCntr.getAndDecrement();
 
             while (true) {
-                long freePageRelPtrMasked = Ignition.UNSAFE.getLong(freePageListPtr);
+                long freePageRelPtrMasked = Ignition.GRID_UNSAFE.getLong(freePageListPtr);
 
                 long freePageRelPtr = freePageRelPtrMasked & RELATIVE_PTR_MASK;
 
-                Ignition.UNSAFE.putLong(absPtr, freePageRelPtr);
+                Ignition.GRID_UNSAFE.putLong(absPtr, freePageRelPtr);
 
-                if (Ignition.UNSAFE.compareAndSwapLong(null, freePageListPtr, freePageRelPtrMasked, relPtr))
+                if (Ignition.GRID_UNSAFE.compareAndSwapLong(null, freePageListPtr, freePageRelPtrMasked, relPtr))
                     return;
             }
         }
@@ -1702,7 +1702,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             acquiredPagesPtr = region.address();
 
-            Ignition.UNSAFE.putIntVolatile(null, acquiredPagesPtr, 0);
+            Ignition.GRID_UNSAFE.putIntVolatile(null, acquiredPagesPtr, 0);
 
             loadedPages = new FullPageIdTable(region.address() + 8, memPerTbl, true);
 
@@ -1777,7 +1777,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @return Total number of acquired pages.
          */
         private int acquiredPages() {
-            return Ignition.UNSAFE.getInt(acquiredPagesPtr);
+            return Ignition.GRID_UNSAFE.getInt(acquiredPagesPtr);
         }
 
         /**
@@ -2129,11 +2129,11 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     private static int updateAtomicInt(long ptr, int delta) {
         while (true) {
-            int old = Ignition.UNSAFE.getInt(ptr);
+            int old = Ignition.GRID_UNSAFE.getInt(ptr);
 
             int updated = old + delta;
 
-            if (Ignition.UNSAFE.compareAndSwapInt(null, ptr, old, updated))
+            if (Ignition.GRID_UNSAFE.compareAndSwapInt(null, ptr, old, updated))
                 return updated;
         }
     }
@@ -2144,11 +2144,11 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     private static long updateAtomicLong(long ptr, long delta) {
         while (true) {
-            long old = Ignition.UNSAFE.getLong(ptr);
+            long old = Ignition.GRID_UNSAFE.getLong(ptr);
 
             long updated = old + delta;
 
-            if (Ignition.UNSAFE.compareAndSwapLong(null, ptr, old, updated))
+            if (Ignition.GRID_UNSAFE.compareAndSwapLong(null, ptr, old, updated))
                 return updated;
         }
     }
@@ -2166,8 +2166,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             tempBufferPointer(absPtr, INVALID_REL_PTR);
 
-            Ignition.UNSAFE.putLong(absPtr, PAGE_MARKER);
-            Ignition.UNSAFE.putInt(absPtr + PAGE_PIN_CNT_OFFSET, 0);
+            Ignition.GRID_UNSAFE.putLong(absPtr, PAGE_MARKER);
+            Ignition.GRID_UNSAFE.putInt(absPtr + PAGE_PIN_CNT_OFFSET, 0);
         }
 
         /**
@@ -2196,7 +2196,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert (flag & 0xFFFFFFFFFFFFFFL) == 0;
             assert Long.bitCount(flag) == 1;
 
-            long relPtrWithFlags = Ignition.UNSAFE.getLong(absPtr + RELATIVE_PTR_OFFSET);
+            long relPtrWithFlags = Ignition.GRID_UNSAFE.getLong(absPtr + RELATIVE_PTR_OFFSET);
 
             return (relPtrWithFlags & flag) != 0;
         }
@@ -2213,7 +2213,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert (flag & 0xFFFFFFFFFFFFFFL) == 0;
             assert Long.bitCount(flag) == 1;
 
-            long relPtrWithFlags = Ignition.UNSAFE.getLong(absPtr + RELATIVE_PTR_OFFSET);
+            long relPtrWithFlags = Ignition.GRID_UNSAFE.getLong(absPtr + RELATIVE_PTR_OFFSET);
 
             boolean was = (relPtrWithFlags & flag) != 0;
 
@@ -2222,7 +2222,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             else
                 relPtrWithFlags &= ~flag;
 
-            Ignition.UNSAFE.putLong(absPtr + RELATIVE_PTR_OFFSET, relPtrWithFlags);
+            Ignition.GRID_UNSAFE.putLong(absPtr + RELATIVE_PTR_OFFSET, relPtrWithFlags);
 
             return was;
         }
@@ -2232,7 +2232,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @return If page is pinned.
          */
         private static boolean isAcquired(long absPtr) {
-            return Ignition.UNSAFE.getInt(absPtr + PAGE_PIN_CNT_OFFSET) > 0;
+            return Ignition.GRID_UNSAFE.getInt(absPtr + PAGE_PIN_CNT_OFFSET) > 0;
         }
 
         /**
@@ -2256,7 +2256,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @return Relative pointer written to the page.
          */
         private static long readRelative(long absPtr) {
-            return Ignition.UNSAFE.getLong(absPtr + RELATIVE_PTR_OFFSET) & RELATIVE_PTR_MASK;
+            return Ignition.GRID_UNSAFE.getLong(absPtr + RELATIVE_PTR_OFFSET) & RELATIVE_PTR_MASK;
         }
 
         /**
@@ -2266,7 +2266,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @param relPtr Relative pointer to write.
          */
         private static void relative(long absPtr, long relPtr) {
-            Ignition.UNSAFE.putLong(absPtr + RELATIVE_PTR_OFFSET, relPtr & RELATIVE_PTR_MASK);
+            Ignition.GRID_UNSAFE.putLong(absPtr + RELATIVE_PTR_OFFSET, relPtr & RELATIVE_PTR_MASK);
         }
 
         /**
@@ -2277,7 +2277,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         private static void writeTimestamp(final long absPtr, long tstamp) {
             tstamp >>= 8;
 
-            Ignition.UNSAFE.putLongVolatile(null, absPtr, (tstamp << 8) | 0x01);
+            Ignition.GRID_UNSAFE.putLongVolatile(null, absPtr, (tstamp << 8) | 0x01);
         }
 
         /**
@@ -2287,7 +2287,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @return Timestamp.
          */
         private static long readTimestamp(final long absPtr) {
-            long markerAndTs = Ignition.UNSAFE.getLong(absPtr);
+            long markerAndTs = Ignition.GRID_UNSAFE.getLong(absPtr);
 
             // Clear last byte as it is occupied by page marker.
             return markerAndTs & ~0xFF;
@@ -2298,7 +2298,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @param tmpRelPtr Temp buffer relative pointer.
          */
         private static void tempBufferPointer(long absPtr, long tmpRelPtr) {
-            Ignition.UNSAFE.putLong(absPtr + PAGE_TMP_BUF_OFFSET, tmpRelPtr);
+            Ignition.GRID_UNSAFE.putLong(absPtr + PAGE_TMP_BUF_OFFSET, tmpRelPtr);
         }
 
         /**
@@ -2306,7 +2306,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @return Temp buffer relative pointer.
          */
         private static long tempBufferPointer(long absPtr) {
-            return Ignition.UNSAFE.getLong(absPtr + PAGE_TMP_BUF_OFFSET);
+            return Ignition.GRID_UNSAFE.getLong(absPtr + PAGE_TMP_BUF_OFFSET);
         }
 
         /**
@@ -2316,7 +2316,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @return Page ID written to the page.
          */
         private static long readPageId(long absPtr) {
-            return Ignition.UNSAFE.getLong(absPtr + PAGE_ID_OFFSET);
+            return Ignition.GRID_UNSAFE.getLong(absPtr + PAGE_ID_OFFSET);
         }
 
         /**
@@ -2326,7 +2326,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @param pageId Page ID to write.
          */
         private static void pageId(long absPtr, long pageId) {
-            Ignition.UNSAFE.putLong(absPtr + PAGE_ID_OFFSET, pageId);
+            Ignition.GRID_UNSAFE.putLong(absPtr + PAGE_ID_OFFSET, pageId);
         }
 
         /**
@@ -2336,7 +2336,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @return Cache ID written to the page.
          */
         private static int readPageCacheId(final long absPtr) {
-            return Ignition.UNSAFE.getInt(absPtr + PAGE_CACHE_ID_OFFSET);
+            return Ignition.GRID_UNSAFE.getInt(absPtr + PAGE_CACHE_ID_OFFSET);
         }
 
         /**
@@ -2346,7 +2346,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @param cacheId Cache ID to write.
          */
         private static void pageCacheId(final long absPtr, final int cacheId) {
-            Ignition.UNSAFE.putInt(absPtr + PAGE_CACHE_ID_OFFSET, cacheId);
+            Ignition.GRID_UNSAFE.putInt(absPtr + PAGE_CACHE_ID_OFFSET, cacheId);
         }
 
         /**
@@ -2448,7 +2448,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                             seg.dirtyPages.remove(fullId);
                         }
 
-                        Ignition.UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, pageSize, (byte)0);
+                        Ignition.GRID_UNSAFE.setMemory(absPtr + PAGE_OVERHEAD, pageSize, (byte)0);
 
                         seg.pool.releaseFreePage(relPtr);
                     }

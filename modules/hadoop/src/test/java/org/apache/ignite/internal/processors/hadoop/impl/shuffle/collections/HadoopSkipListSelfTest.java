@@ -178,7 +178,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
             private void read(long ptr, int size, Writable w) {
                 assert size == 4 : size;
 
-                Ignition.UNSAFE.copyOffheapHeap(ptr, buf, GridUnsafe.BYTE_ARR_OFF, size);
+                Ignition.GRID_UNSAFE.copyOffheapHeap(ptr, buf, GridUnsafe.BYTE_ARR_OFF, size);
 
                 dataInput.bytes(buf, size);
 

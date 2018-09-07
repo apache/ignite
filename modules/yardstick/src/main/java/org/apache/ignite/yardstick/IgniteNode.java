@@ -92,15 +92,25 @@ public class IgniteNode implements BenchmarkServer {
 
         BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
 
-        if (args.getAepPath() != null && args.getAepHeapSize() != 0) {
-            Ignition.setAepStore(args.getAepPath(), driver, args.getAepHeapSize());
+        String aepPath = driver ? args.getClientAepPath() : args.getServerAepPath();
+        long aepHeapSize = driver ? args.getClientAepHeapSize() : args.getServerAepHeapSize();
+
+        if (driver && aepPath != null) {
+            Ignition.print("Setting client mode to true for driver.");
+            Ignition.setClientMode(true);
+            //c.setClientMode(true);
         }
+
+        if (aepPath != null && aepHeapSize != 0)
+            Ignition.setAepStore(aepPath, driver, aepHeapSize);
 
         IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> tup = loadConfiguration(args.configuration());
 
         IgniteConfiguration c = tup.get1();
 
         assert c != null;
+
+        c.setStripedPoolSize(args.getStripedPoolSize());
 
         if (args.cleanWorkDirectory())
             FileUtils.cleanDirectory(U.workDirectory(c.getWorkDirectory(), c.getIgniteHome()));
@@ -188,12 +198,20 @@ public class IgniteNode implements BenchmarkServer {
         if (args.persistentStoreEnabled()) {
             DataStorageConfiguration pcCfg = new DataStorageConfiguration();
 
+            pcCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+            
             c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
             c.setDataStorageConfiguration(pcCfg);
-        }
 
+        }
+        
         ignite = IgniteSpring.start(c, appCtx);
+
+        if (driver && aepPath == null) {
+            Ignition.print("Activating node for persistent store!");
+            ignite.active(true);
+        }
 
         BenchmarkUtils.println("Configured marshaller: " + ignite.cluster().localNode().attribute(ATTR_MARSHALLER));
     }

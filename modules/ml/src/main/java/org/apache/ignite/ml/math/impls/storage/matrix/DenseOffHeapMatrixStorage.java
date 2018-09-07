@@ -81,12 +81,12 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public double get(int x, int y) {
-        return Ignition.UNSAFE.getDouble(pointerOffset(x, y));
+        return Ignition.GRID_UNSAFE.getDouble(pointerOffset(x, y));
     }
 
     /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
-        Ignition.UNSAFE.putDouble(pointerOffset(x, y), v);
+        Ignition.GRID_UNSAFE.putDouble(pointerOffset(x, y), v);
     }
 
     /** {@inheritDoc} */
@@ -166,7 +166,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public void destroy() {
-        Ignition.UNSAFE.freeMemory(ptr);
+        Ignition.GRID_UNSAFE.freeMemory(ptr);
     }
 
     /** */
@@ -212,7 +212,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
     /** */
     private void allocateMemory(int rows, int cols) {
-        ptr = Ignition.UNSAFE.allocateMemory((long)rows * cols * Double.BYTES);
+        ptr = Ignition.GRID_UNSAFE.allocateMemory((long)rows * cols * Double.BYTES);
 
         ptrInitHash = Long.hashCode(ptr);
     }

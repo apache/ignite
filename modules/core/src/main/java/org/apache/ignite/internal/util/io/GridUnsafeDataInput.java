@@ -212,13 +212,13 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < arr.length; i++) {
-                arr[i] = Ignition.UNSAFE.getShortLE(buf, off);
+                arr[i] = Ignition.GRID_UNSAFE.getShortLE(buf, off);
 
                 off += 2;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(buf, off, arr, SHORT_ARR_OFF, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(buf, off, arr, SHORT_ARR_OFF, bytesToCp);
 
         return arr;
     }
@@ -237,13 +237,13 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < arr.length; i++) {
-                arr[i] = Ignition.UNSAFE.getIntLE(buf, off);
+                arr[i] = Ignition.GRID_UNSAFE.getIntLE(buf, off);
 
                 off += 4;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(buf, off, arr, INT_ARR_OFF, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(buf, off, arr, INT_ARR_OFF, bytesToCp);
 
         return arr;
     }
@@ -262,13 +262,13 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < arr.length; i++) {
-                arr[i] = Ignition.UNSAFE.getDoubleLE(buf, off);
+                arr[i] = Ignition.GRID_UNSAFE.getDoubleLE(buf, off);
 
                 off += 8;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(buf, off, arr, DOUBLE_ARR_OFF, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(buf, off, arr, DOUBLE_ARR_OFF, bytesToCp);
 
         return arr;
     }
@@ -299,13 +299,13 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < arr.length; i++) {
-                arr[i] = Ignition.UNSAFE.getCharLE(buf, off);
+                arr[i] = Ignition.GRID_UNSAFE.getCharLE(buf, off);
 
                 off += 2;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(buf, off, arr, CHAR_ARR_OFF, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(buf, off, arr, CHAR_ARR_OFF, bytesToCp);
 
         return arr;
     }
@@ -324,13 +324,13 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < arr.length; i++) {
-                arr[i] = Ignition.UNSAFE.getLongLE(buf, off);
+                arr[i] = Ignition.GRID_UNSAFE.getLongLE(buf, off);
 
                 off += 8;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(buf, off, arr, LONG_ARR_OFF, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(buf, off, arr, LONG_ARR_OFF, bytesToCp);
 
         return arr;
     }
@@ -349,13 +349,13 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < arr.length; i++) {
-                arr[i] = Ignition.UNSAFE.getFloatLE(buf, off);
+                arr[i] = Ignition.GRID_UNSAFE.getFloatLE(buf, off);
 
                 off += 4;
             }
         }
         else
-            Ignition.UNSAFE.copyMemory(buf, off, arr, FLOAT_ARR_OFF, bytesToCp);
+            Ignition.GRID_UNSAFE.copyMemory(buf, off, arr, FLOAT_ARR_OFF, bytesToCp);
 
         return arr;
     }
@@ -390,14 +390,14 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     @Override public boolean readBoolean() throws IOException {
         fromStream(1);
 
-        return Ignition.UNSAFE.getBoolean(buf, BYTE_ARR_OFF + offset(1));
+        return Ignition.GRID_UNSAFE.getBoolean(buf, BYTE_ARR_OFF + offset(1));
     }
 
     /** {@inheritDoc} */
     @Override public byte readByte() throws IOException {
         fromStream(1);
 
-        return Ignition.UNSAFE.getByte(buf, BYTE_ARR_OFF + offset(1));
+        return Ignition.GRID_UNSAFE.getByte(buf, BYTE_ARR_OFF + offset(1));
     }
 
     /** {@inheritDoc} */
@@ -411,7 +411,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         long off = BYTE_ARR_OFF + offset(2);
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getShortLE(buf, off) : Ignition.UNSAFE.getShort(buf, off);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getShortLE(buf, off) : Ignition.GRID_UNSAFE.getShort(buf, off);
     }
 
     /** {@inheritDoc} */
@@ -425,7 +425,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         long off = BYTE_ARR_OFF + this.off;
 
-        char v = BIG_ENDIAN ? Ignition.UNSAFE.getCharLE(buf, off) : Ignition.UNSAFE.getChar(buf, off);
+        char v = BIG_ENDIAN ? Ignition.GRID_UNSAFE.getCharLE(buf, off) : Ignition.GRID_UNSAFE.getChar(buf, off);
 
         offset(2);
 
@@ -438,7 +438,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         long off = BYTE_ARR_OFF + offset(4);
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getIntLE(buf, off) : Ignition.UNSAFE.getInt(buf, off);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getIntLE(buf, off) : Ignition.GRID_UNSAFE.getInt(buf, off);
     }
 
     /** {@inheritDoc} */
@@ -447,7 +447,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         long off = BYTE_ARR_OFF + offset(8);
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getLongLE(buf, off) : Ignition.UNSAFE.getLong(buf, off);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getLongLE(buf, off) : Ignition.GRID_UNSAFE.getLong(buf, off);
     }
 
     /** {@inheritDoc} */

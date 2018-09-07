@@ -46,49 +46,49 @@ public class OffheapRawMemory implements RawMemory {
     @Override public byte get(int idx) {
         ensure(idx, 1);
 
-        return Ignition.UNSAFE.getByte(ptr + idx);
+        return Ignition.GRID_UNSAFE.getByte(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public short getShort(int idx) {
         ensure(idx, 2);
 
-        return Ignition.UNSAFE.getShort(ptr + idx);
+        return Ignition.GRID_UNSAFE.getShort(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public char getChar(int idx) {
         ensure(idx, 2);
 
-        return Ignition.UNSAFE.getChar(ptr + idx);
+        return Ignition.GRID_UNSAFE.getChar(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public int getInt(int idx) {
         ensure(idx, 4);
 
-        return Ignition.UNSAFE.getInt(ptr + idx);
+        return Ignition.GRID_UNSAFE.getInt(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public long getLong(int idx) {
         ensure(idx, 8);
 
-        return Ignition.UNSAFE.getLong(ptr + idx);
+        return Ignition.GRID_UNSAFE.getLong(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public float getFloat(int idx) {
         ensure(idx, 4);
 
-        return Ignition.UNSAFE.getFloat(ptr + idx);
+        return Ignition.GRID_UNSAFE.getFloat(ptr + idx);
     }
 
     /** {@inheritDoc} */
     @Override public double getDouble(int idx) {
         ensure(idx, 8);
 
-        return Ignition.UNSAFE.getDouble(ptr + idx);
+        return Ignition.GRID_UNSAFE.getDouble(ptr + idx);
     }
 
     /** {@inheritDoc} */

@@ -80,7 +80,7 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     @Override public byte[] arrayCopy() {
         byte[] res = new byte[len];
 
-        Ignition.UNSAFE.copyOffheapHeap(ptr, res, Ignition.UNSAFE.BYTE_ARR_OFF, res.length);
+        Ignition.GRID_UNSAFE.copyOffheapHeap(ptr, res, Ignition.GRID_UNSAFE.BYTE_ARR_OFF, res.length);
 
         return res;
     }
@@ -92,12 +92,12 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
 
     /** {@inheritDoc} */
     @Override protected byte readByteAndShift() {
-        return Ignition.UNSAFE.getByte(ptr + pos++);
+        return Ignition.GRID_UNSAFE.getByte(ptr + pos++);
     }
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object target, long off, int len) {
-        Ignition.UNSAFE.copyOffheapHeap(ptr + pos, target, off, len);
+        Ignition.GRID_UNSAFE.copyOffheapHeap(ptr + pos, target, off, len);
 
         shift(len);
     }
@@ -106,47 +106,47 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     @Override protected short readShortFast() {
         long addr = ptr + pos;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getShortLE(addr) : Ignition.UNSAFE.getShort(addr);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getShortLE(addr) : Ignition.GRID_UNSAFE.getShort(addr);
     }
 
     /** {@inheritDoc} */
     @Override protected char readCharFast() {
         long addr = ptr + pos;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getCharLE(addr) : Ignition.UNSAFE.getChar(addr);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getCharLE(addr) : Ignition.GRID_UNSAFE.getChar(addr);
     }
 
     /** {@inheritDoc} */
     @Override protected int readIntFast() {
         long addr = ptr + pos;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getIntLE(addr) : Ignition.UNSAFE.getInt(addr);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getIntLE(addr) : Ignition.GRID_UNSAFE.getInt(addr);
     }
 
     /** {@inheritDoc} */
     @Override protected long readLongFast() {
         long addr = ptr + pos;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getLongLE(addr) : Ignition.UNSAFE.getLong(addr);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getLongLE(addr) : Ignition.GRID_UNSAFE.getLong(addr);
     }
 
     /** {@inheritDoc} */
     @Override protected byte readBytePositioned0(int pos) {
-        return Ignition.UNSAFE.getByte(ptr + pos);
+        return Ignition.GRID_UNSAFE.getByte(ptr + pos);
     }
 
     /** {@inheritDoc} */
     @Override protected short readShortPositioned0(int pos) {
         long addr = ptr + pos;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getShortLE(addr) : Ignition.UNSAFE.getShort(addr);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getShortLE(addr) : Ignition.GRID_UNSAFE.getShort(addr);
     }
 
     /** {@inheritDoc} */
     @Override protected int readIntPositioned0(int pos) {
         long addr = ptr + pos;
 
-        return BIG_ENDIAN ? Ignition.UNSAFE.getIntLE(addr) : Ignition.UNSAFE.getInt(addr);
+        return BIG_ENDIAN ? Ignition.GRID_UNSAFE.getIntLE(addr) : Ignition.GRID_UNSAFE.getInt(addr);
     }
 
     /** {@inheritDoc} */
