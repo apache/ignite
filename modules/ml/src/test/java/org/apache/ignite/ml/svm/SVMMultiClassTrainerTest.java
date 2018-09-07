@@ -20,58 +20,81 @@ package org.apache.ignite.ml.svm;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Test;
 
 /**
  * Tests for {@link SVMLinearBinaryClassificationTrainer}.
  */
-public class SVMMultiClassTrainerTest {
-    /** Fixed size of Dataset. */
-    private static final int AMOUNT_OF_OBSERVATIONS = 1000;
-
-    /** Fixed size of columns in Dataset. */
-    private static final int AMOUNT_OF_FEATURES = 2;
-
-    /** Precision in test checks. */
-    private static final double PRECISION = 1e-2;
-
+public class SVMMultiClassTrainerTest extends TrainerTest {
     /**
-     * Test trainer on classification model y = x.
+     * Test trainer on 4 sets grouped around of square vertices.
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase() {
-        Map<Integer, double[]> data = new HashMap<>();
+        Map<Integer, double[]> cacheMock = new HashMap<>();
 
-        ThreadLocalRandom rndX = ThreadLocalRandom.current();
-        ThreadLocalRandom rndY = ThreadLocalRandom.current();
-
-        for (int i = 0; i < AMOUNT_OF_OBSERVATIONS; i++) {
-            double x = rndX.nextDouble(-1000, 1000);
-            double y = rndY.nextDouble(-1000, 1000);
-            double[] vec = new double[AMOUNT_OF_FEATURES + 1];
-            vec[0] = y - x > 0 ? 1 : -1; // assign label.
-            vec[1] = x;
-            vec[2] = y;
-            data.put(i, vec);
-        }
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
+            cacheMock.put(i, twoLinearlySeparableClasses[i]);
 
         SVMLinearMultiClassClassificationTrainer trainer = new SVMLinearMultiClassClassificationTrainer()
             .withLambda(0.3)
-            .withAmountOfLocIterations(100)
-            .withAmountOfIterations(20);
+            .withAmountOfLocIterations(10)
+            .withAmountOfIterations(20)
+            .withSeed(1234L);
 
         SVMLinearMultiClassClassificationModel mdl = trainer.fit(
-            data,
-            10,
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+        TestUtils.assertEquals(0, mdl.apply(VectorUtils.of(100, 10)), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(10, 100)), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void testUpdate() {
+        Map<Integer, double[]> cacheMock = new HashMap<>();
+
+        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
+            cacheMock.put(i, twoLinearlySeparableClasses[i]);
+
+        SVMLinearMultiClassClassificationTrainer trainer = new SVMLinearMultiClassClassificationTrainer()
+            .withLambda(0.3)
+            .withAmountOfLocIterations(10)
+            .withAmountOfIterations(100)
+            .withSeed(1234L);
+
+        SVMLinearMultiClassClassificationModel originalModel = trainer.fit(
+            cacheMock,
+            parts,
             (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
             (k, v) -> v[0]
         );
 
-        TestUtils.assertEquals(-1, mdl.apply(new DenseVector(new double[]{100, 10})), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(new DenseVector(new double[]{10, 100})), PRECISION);
+        SVMLinearMultiClassClassificationModel updatedOnSameDS = trainer.update(
+            originalModel,
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        SVMLinearMultiClassClassificationModel updatedOnEmptyDS = trainer.update(
+            originalModel,
+            new HashMap<Integer, double[]>(),
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        Vector v = VectorUtils.of(100, 10);
+        TestUtils.assertEquals(originalModel.apply(v), updatedOnSameDS.apply(v), PRECISION);
+        TestUtils.assertEquals(originalModel.apply(v), updatedOnEmptyDS.apply(v), PRECISION);
     }
 }

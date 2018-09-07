@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import './style.scss';
+
 import angular from 'angular';
 
 import queriesNotebooksList from './components/queries-notebooks-list';

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.tensorflow.core.nativerunning;
 
-import java.io.Serializable;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.tensorflow.core.ProcessManager;
 import org.apache.ignite.tensorflow.core.ProcessManagerWrapper;
@@ -30,17 +28,13 @@ import org.apache.ignite.tensorflow.core.nativerunning.task.NativeProcessStartTa
  * Native process manager that allows to start, stop and make other actions with native processes.
  */
 public class NativeProcessManager extends ProcessManagerWrapper<LongRunningProcess, NativeProcess> {
-    /** */
-    private static final long serialVersionUID = 718119807915504045L;
-
     /**
      * Constructs a new native process manager.
      *
-     * @param igniteSupplier Ignite instance supplier.
-     * @param <T> Type of serializable supplier.
+     * @param ignite Ignite instance.
      */
-    public <T extends Supplier<Ignite> & Serializable> NativeProcessManager(T igniteSupplier) {
-        super(new LongRunningProcessManager(igniteSupplier));
+    public NativeProcessManager(Ignite ignite) {
+        super(new LongRunningProcessManager(ignite));
     }
 
     /**

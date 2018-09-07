@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -2015,9 +2016,7 @@ public class ZookeeperDiscoveryImpl {
 
         if (subj == null) {
             U.warn(log, "Authentication failed [nodeId=" + node.id() +
-                    ", addrs=" + U.addressesAsString(node) + ']',
-                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
-                    U.addressesAsString(node) + ']');
+                ", addrs=" + U.addressesAsString(node) + ']');
 
             // Note: exception message test is checked in tests.
             return new ZkNodeValidateResult("Authentication failed");
@@ -2025,10 +2024,7 @@ public class ZookeeperDiscoveryImpl {
 
         if (!(subj instanceof Serializable)) {
             U.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
-                    ", addrs=" + U.addressesAsString(node) + ']',
-                "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
-                    ", addrs=" +
-                    U.addressesAsString(node) + ']');
+                ", addrs=" + U.addressesAsString(node) + ']');
 
             return new ZkNodeValidateResult("Authentication subject is not serializable");
         }
@@ -2268,33 +2264,27 @@ public class ZookeeperDiscoveryImpl {
 
         ZookeeperClient client = rtState.zkClient;
 
-        // TODO ZK: use multi, better batching + max-size safe + NoNodeException safe.
-        List<String> evtChildren = rtState.zkClient.getChildren(zkPaths.evtsPath);
+        List<String> batch = new LinkedList<>();
 
-        for (String evtPath : evtChildren) {
-            String evtDir = zkPaths.evtsPath + "/" + evtPath;
+        List<String> evtChildren = client.getChildrenPaths(zkPaths.evtsPath);
 
-            removeChildren(evtDir);
-        }
+        for (String evtPath : evtChildren)
+            batch.addAll(client.getChildrenPaths(evtPath));
 
-        client.deleteAll(zkPaths.evtsPath, evtChildren, -1);
+        batch.addAll(evtChildren);
 
-        client.deleteAll(zkPaths.customEvtsDir,
-            client.getChildren(zkPaths.customEvtsDir),
-            -1);
+        batch.addAll(client.getChildrenPaths(zkPaths.customEvtsDir));
 
-        rtState.zkClient.deleteAll(zkPaths.customEvtsPartsDir,
-            rtState.zkClient.getChildren(zkPaths.customEvtsPartsDir),
-            -1);
+        batch.addAll(client.getChildrenPaths(zkPaths.customEvtsPartsDir));
 
-        rtState.zkClient.deleteAll(zkPaths.customEvtsAcksDir,
-            rtState.zkClient.getChildren(zkPaths.customEvtsAcksDir),
-            -1);
+        batch.addAll(client.getChildrenPaths(zkPaths.customEvtsAcksDir));
+
+        client.deleteAll(batch, -1);
 
         if (startInternalOrder > 0) {
-            for (String alive : rtState.zkClient.getChildren(zkPaths.aliveNodesDir)) {
+            for (String alive : client.getChildren(zkPaths.aliveNodesDir)) {
                 if (ZkIgnitePaths.aliveInternalId(alive) < startInternalOrder)
-                    rtState.zkClient.deleteIfExists(zkPaths.aliveNodesDir + "/" + alive, -1);
+                    client.deleteIfExists(zkPaths.aliveNodesDir + "/" + alive, -1);
             }
         }
 
@@ -2304,14 +2294,6 @@ public class ZookeeperDiscoveryImpl {
             if (log.isInfoEnabled())
                 log.info("Previous cluster data cleanup time: " + time);
         }
-    }
-
-    /**
-     * @param path Path.
-     * @throws Exception If failed.
-     */
-    private void removeChildren(String path) throws Exception {
-        rtState.zkClient.deleteAll(path, rtState.zkClient.getChildren(path), -1);
     }
 
     /**

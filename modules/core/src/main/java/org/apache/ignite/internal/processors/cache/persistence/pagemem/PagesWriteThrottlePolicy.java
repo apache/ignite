@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import org.apache.ignite.IgniteSystemProperties;
+
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_LOG_THRESHOLD;
 
 /**
  * Throttling policy, encapsulates logic of delaying write operations.
  */
 public interface PagesWriteThrottlePolicy {
     /** Max park time. */
-    public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(10);
+    public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(IgniteSystemProperties.getInteger
+            (IGNITE_THROTTLE_LOG_THRESHOLD, 10));
 
     /**
      * Callback to apply throttling delay.

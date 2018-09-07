@@ -34,7 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 @SuppressWarnings("unchecked")
 public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
     /** */
-    private static final long DURATION = 60_000L;
+    private static final long DURATION = 20_000L;
 
     /** */
     private static final int CACHE_COUNT = 1;

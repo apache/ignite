@@ -17,7 +17,7 @@
 
 import './centered.scss';
 
-export default ['centered', [() => {
+export default ['centered', [function() {
     return {
         restrict: 'E',
         transclude: true,

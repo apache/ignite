@@ -44,4 +44,5 @@ include /app/helpers/jade/mixins
                 .pane-right
                     div.file-preview(ignite-ace='{mode: $ctrl.fileExt, readonly: true}' ng-model='$ctrl.fileText')
             .modal-footer
-                button.btn-ignite.btn-ignite--success(ng-click='$ctrl.onHide()') Close
+                div
+                    button.btn-ignite.btn-ignite--success(ng-click='$ctrl.onHide()') Close

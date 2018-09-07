@@ -4020,6 +4020,22 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Closes given resource suppressing possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     * @param e Suppressor exception
+     */
+    public static void closeWithSuppressingException(@Nullable AutoCloseable rsrc, @NotNull Exception e) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception suppressed) {
+               e.addSuppressed(suppressed);
+            }
+    }
+
+    /**
      * Quietly closes given resource ignoring possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
@@ -4230,7 +4246,7 @@ public abstract class IgniteUtils {
 
         String s = msg.toString();
 
-        warn(log, s, s);
+        warn(log, s, null);
     }
 
     /**
@@ -4286,18 +4302,23 @@ public abstract class IgniteUtils {
      * or in QUIET mode it will add {@code (wrn)} prefix to the message.
      *
      * @param log Optional logger to use when QUIET mode is not enabled.
-     * @param longMsg Message to log using normal logger.
-     * @param shortMsg Message to log using quiet logger.
+     * @param msg Message to log using normal logger.
+     * @param e Optional exception.
      */
-    public static void warn(@Nullable IgniteLogger log, Object longMsg, Object shortMsg) {
-        assert longMsg != null;
-        assert shortMsg != null;
+    public static void warn(@Nullable IgniteLogger log, Object msg, @Nullable Throwable e) {
+        assert msg != null;
 
         if (log != null)
-            log.warning(compact(longMsg.toString()));
-        else
+            log.warning(compact(msg.toString()), e);
+        else {
             X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
-                compact(shortMsg.toString()));
+                    compact(msg.toString()));
+
+            if (e != null)
+                e.printStackTrace(System.err);
+            else
+                X.printerrln();
+        }
     }
 
     /**

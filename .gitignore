@@ -98,3 +98,6 @@ packages
 
 #Files related to ML manual-runnable tests
 /modules/ml/src/test/resources/manualrun/trees/columntrees.manualrun.properties
+
+#NodeJs files
+/modules/platforms/nodejs/node_modules

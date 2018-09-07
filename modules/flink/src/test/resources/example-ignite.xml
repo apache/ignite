@@ -31,7 +31,7 @@
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Enable client mode. -->
-        <property name="clientMode" value="true"/>
+        <property name="clientMode" value="false"/>
 
         <!-- Cache accessed from IgniteSink. -->
         <property name="cacheConfiguration">
@@ -49,6 +49,9 @@
             <list>
                 <!-- Cache events (only EVT_CACHE_OBJECT_PUT for tests). -->
                 <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED"/>
+
             </list>
         </property>
 
@@ -59,7 +62,7 @@
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
-                                <value>127.0.0.1:47500</value>
+                                <value>127.0.0.1:47500..47509</value>
                             </list>
                         </property>
                     </bean>

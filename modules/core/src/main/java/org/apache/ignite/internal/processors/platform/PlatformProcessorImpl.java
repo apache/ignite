@@ -71,6 +71,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.FALSE;
 import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.TRUE;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;
 
 /**
  * GridGain platform processor.
@@ -478,7 +479,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_ADD_CACHE_CONFIGURATION:
-                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader, CURRENT_VER);
 
                 ctx.grid().addCacheConfiguration(cfg);
 
@@ -547,7 +548,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_CREATE_CACHE_FROM_CONFIG: {
-                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader, CURRENT_VER);
 
                 IgniteCacheProxy cache = reader.readBoolean()
                         ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
@@ -557,7 +558,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             }
 
             case OP_GET_OR_CREATE_CACHE_FROM_CONFIG: {
-                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader, CURRENT_VER);
 
                 IgniteCacheProxy cache = reader.readBoolean()
                         ? (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg,
@@ -672,7 +673,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_IGNITE_CONFIGURATION: {
-                PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
+                PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration(), CURRENT_VER);
 
                 return;
             }

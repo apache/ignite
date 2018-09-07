@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.zk;
 import junit.framework.TestSuite;
 import org.apache.curator.test.ByteCodeRewrite;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClientTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslFailedAuthTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslSuccessfulAuthTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
 import org.apache.zookeeper.jmx.MBeanRegistry;
@@ -54,11 +55,13 @@ public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         System.setProperty("zookeeper.forceSync", "false");
+        System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
         suite.addTestSuite(ZookeeperClientTest.class);
         suite.addTestSuite(ZookeeperDiscoverySpiTest.class);
+        //suite.addTestSuite(ZookeeperDiscoverySpiSaslFailedAuthTest.class);
         suite.addTestSuite(ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class);
 
         return suite;

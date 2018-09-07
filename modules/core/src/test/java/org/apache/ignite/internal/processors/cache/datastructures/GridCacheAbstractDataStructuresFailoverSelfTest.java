@@ -119,11 +119,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
 
@@ -1364,7 +1359,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             if (failed.get())
                                 return;
 
-                            int idx = nodeIdx.getAndIncrement();
+                            int idx = nodeIdx.incrementAndGet();
 
                             Thread.currentThread().setName("thread-" + getTestIgniteInstanceName(idx));
 
@@ -1375,8 +1370,15 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                                 cb.apply(g);
                             }
+                            catch (IgniteException e) {
+                                if (!X.hasCause(e, NodeStoppingException.class) &&
+                                    !X.hasCause(e, IllegalStateException.class))
+                                    throw e;
+
+                                // OK for this test.
+                            }
                             finally {
-                                if(circular)
+                                if (circular)
                                     stopGrid(G.allGrids().get(0).configuration().getIgniteInstanceName());
                                 else
                                     stopGrid(idx);

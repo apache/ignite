@@ -40,5 +40,70 @@ public interface RowLinkIO {
      * @param idx Index.
      * @return Cache ID or {@code 0} if cache ID is not defined.
      */
-    public int getCacheId(long pageAddr, int idx);
+    default int getCacheId(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc coordinator version.
+     */
+    default long getMvccCoordinatorVersion(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc operation counter.
+     */
+    default int getMvccOperationCounter(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc counter.
+     */
+    default long getMvccCounter(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc coordinator version.
+     */
+    default long getMvccLockCoordinatorVersion(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc counter.
+     */
+    default long getMvccLockCounter(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @param lockCrd Mvcc lock coordinator version.
+     */
+    default void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @param lockCntr Mvcc lock counter.
+     */
+    default void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
+        throw new UnsupportedOperationException();
+    }
 }

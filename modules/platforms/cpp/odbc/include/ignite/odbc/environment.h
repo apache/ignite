@@ -18,6 +18,8 @@
 #ifndef _IGNITE_ODBC_ENVIRONMENT
 #define _IGNITE_ODBC_ENVIRONMENT
 
+#include <set>
+
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 namespace ignite
@@ -32,6 +34,9 @@ namespace ignite
         class Environment : public diagnostic::DiagnosableAdapter
         {
         public:
+            /** Connection set type. */
+            typedef std::set<Connection*> ConnectionSet;
+
             /**
              * Constructor.
              */
@@ -48,6 +53,13 @@ namespace ignite
              * @return Pointer to valid instance on success or NULL on failure.
              */
             Connection* CreateConnection();
+
+            /**
+             * Deregister connection.
+             *
+             * @param conn Connection to deregister.
+             */
+            void DeregisterConnection(Connection* conn);
 
             /**
              * Perform transaction commit on all the associated connections.
@@ -124,6 +136,9 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type InternalGetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer);
+
+            /** Assotiated connections. */
+            ConnectionSet connections;
 
             /** ODBC version. */
             int32_t odbcVersion;

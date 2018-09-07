@@ -113,7 +113,11 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 .setCheckpointFrequency(500)
                 .setWalMode(WALMode.LOG_ONLY)
                 .setAlwaysWriteFullPages(true)
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                )
         );
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.sql.Connection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
@@ -25,7 +24,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -145,7 +143,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
         boolean notLeak = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (int i = 0; i < NODE_CNT; i++) {
-                    Map<Thread, Connection> conns = perThreadConnections(i);
+                    Map<Thread, ?> conns = perThreadConnections(i);
 
                     for(Thread t : conns.keySet()) {
                         if (!t.isAlive())
@@ -159,7 +157,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
 
         if (!notLeak) {
             for (int i = 0; i < NODE_CNT; i++) {
-                Map<Thread, Connection> conns = perThreadConnections(i);
+                Map<Thread, ?> conns = perThreadConnections(i);
 
                 for(Thread t : conns.keySet())
                     log.error("+++ Connection is not closed for thread: " + t.getName());
@@ -173,7 +171,7 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
      * @param nodeIdx Node index.
      * @return Per-thread connections.
      */
-    private Map<Thread, Connection> perThreadConnections(int nodeIdx) {
+    private Map<Thread, ?> perThreadConnections(int nodeIdx) {
         return ((IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing()).perThreadConnections();
     }
 }
