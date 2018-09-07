@@ -888,6 +888,12 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 break;
 
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
+                perm = SecurityPermission.ADMIN_OPS;
+
+                break;
+
             case CACHE_METRICS:
             case CACHE_SIZE:
             case CACHE_METADATA:
@@ -901,8 +907,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case NAME:
             case LOG:
             case CLUSTER_CURRENT_STATE:
-            case CLUSTER_ACTIVE:
-            case CLUSTER_INACTIVE:
             case AUTHENTICATE:
             case ADD_USER:
             case REMOVE_USER:
