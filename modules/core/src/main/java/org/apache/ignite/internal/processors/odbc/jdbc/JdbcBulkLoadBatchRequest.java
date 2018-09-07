@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
@@ -143,8 +144,9 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.writeBinary(writer, ver);
 
         writer.writeLong(qryId);
         writer.writeInt(batchIdx);
@@ -153,8 +155,9 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.readBinary(reader, ver);
 
         qryId = reader.readLong();
         batchIdx = reader.readInt();

@@ -142,7 +142,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
-        if (ver.compareTo(VER_2_5_0) >= 0) {
+        if (ver.compareTo(VER_2_7_0) >= 0) {
             String nestedTxModeName = reader.readString();
 
             if (!F.isEmpty(nestedTxModeName)) {
@@ -153,7 +153,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                     throw new IgniteCheckedException("Invalid nested transactions handling mode: " + nestedTxModeName);
                 }
             }
+        }
 
+        if (ver.compareTo(VER_2_5_0) >= 0) {
             String user = null;
             String passwd = null;
 
@@ -170,7 +172,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             actx = authenticate(user, passwd);
         }
 
-        parser = new JdbcMessageParser(ctx);
+        parser = new JdbcMessageParser(ctx, ver);
 
         JdbcResponseSender sender = new JdbcResponseSender() {
             @Override public void send(ClientListenerResponse resp) {

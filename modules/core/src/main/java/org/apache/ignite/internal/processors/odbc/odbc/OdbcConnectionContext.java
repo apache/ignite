@@ -47,7 +47,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.3.2: added multiple statements support. */
     public static final ClientListenerProtocolVersion VER_2_3_2 = ClientListenerProtocolVersion.create(2, 3, 2);
 
-    /** Version 2.5.0: added authentication and transactions. */
+    /** Version 2.5.0: added authentication. */
     public static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
     /** Version 2.7.0: added precision and scale. */
