@@ -45,6 +45,9 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
         if (igniteInstanceName.endsWith("2"))
             cfg.setFailureHandler(new TestFailureHandler());
 
+        // Disable recovery
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setConnectionRecoveryTimeout(0);
+
         return cfg;
     }
 

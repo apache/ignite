@@ -175,7 +175,12 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
      * @return Created cache.
      */
     @SuppressWarnings("unchecked")
-    private IgniteCache createCache(CacheMode cacheMode, CacheWriteSynchronizationMode syncMode, boolean near) {
+    private IgniteCache createCache(CacheMode cacheMode, CacheWriteSynchronizationMode syncMode, boolean near)
+        throws IgniteInterruptedCheckedException, InterruptedException {
+        awaitPartitionMapExchange();
+
+        int minorTopVer = grid(0).context().discovery().topologyVersionEx().minorTopologyVersion();
+
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
@@ -195,6 +200,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                 client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
             }
         }
+
+        waitForLateAffinityAssignment(minorTopVer);
 
         return cache;
     }
@@ -471,14 +478,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                     if (TX_IDS.contains(txId) && TX_IDS.size() < TX_CNT) {
                         GridTestUtils.runAsync(new Callable<Void>() {
                             @Override public Void call() throws Exception {
-                                while (TX_IDS.size() < TX_CNT) {
-                                    try {
-                                        U.sleep(50);
-                                    }
-                                    catch (IgniteInterruptedCheckedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
+                                while (TX_IDS.size() < TX_CNT)
+                                    U.sleep(50);
 
                                 TestCommunicationSpi.super.sendMessage(node, msg, ackC);
 

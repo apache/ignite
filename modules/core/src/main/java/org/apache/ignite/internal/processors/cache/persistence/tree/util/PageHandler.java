@@ -23,6 +23,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 
@@ -149,16 +151,18 @@ public abstract class PageHandler<X, R> {
         int intArg,
         R lockFailed
     ) throws IgniteCheckedException {
-        long pageAddr = readLock(pageMem, cacheId, pageId, page, lsnr);
+        long pageAddr = 0L;
 
-        if (pageAddr == 0L)
-            return lockFailed;
         try {
+            if ((pageAddr = readLock(pageMem, cacheId, pageId, page, lsnr)) == 0L)
+                return lockFailed;
+
             PageIO io = PageIO.getPageIO(pageAddr);
             return h.run(cacheId, pageId, page, pageAddr, io, null, arg, intArg);
         }
         finally {
-            readUnlock(pageMem, cacheId, pageId, page, pageAddr, lsnr);
+            if (pageAddr != 0L)
+                readUnlock(pageMem, cacheId, pageId, page, pageAddr, lsnr);
         }
     }
 

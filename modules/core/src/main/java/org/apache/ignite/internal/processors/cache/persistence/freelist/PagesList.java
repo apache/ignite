@@ -471,8 +471,12 @@ public abstract class PagesList extends DataStructure {
                 else
                     newTails = null; // Drop the bucket completely.
 
-                if (casBucket(bucket, tails, newTails))
+                if (casBucket(bucket, tails, newTails)) {
+                    // Reset tailId for invalidation of locking when stripe was taken concurrently.
+                    tails[idx].tailId = 0L;
+
                     return true;
+                }
             }
             else {
                 // It is safe to assign new tail since we do it only when write lock on tail is held.
@@ -624,6 +628,11 @@ public abstract class PagesList extends DataStructure {
                 return;
 
             final long tailId = stripe.tailId;
+
+            // Stripe was removed from bucket concurrently.
+            if (tailId == 0L)
+                continue;
+
             final long tailPage = acquirePage(tailId);
 
             try {
@@ -1039,6 +1048,11 @@ public abstract class PagesList extends DataStructure {
                 return 0L;
 
             final long tailId = stripe.tailId;
+
+            // Stripe was removed from bucket concurrently.
+            if (tailId == 0L)
+                continue;
+
             final long tailPage = acquirePage(tailId);
 
             try {

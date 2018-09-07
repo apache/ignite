@@ -60,6 +60,17 @@ public interface FileIO extends AutoCloseable {
     public int read(ByteBuffer destBuf) throws IOException;
 
     /**
+     * Reads a sequence of bytes from this file into the {@code destinationBuffer}.
+     *
+     * @param destBuf Destination byte buffer.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int readFully(ByteBuffer destBuf) throws IOException;
+
+    /**
      * Reads a sequence of bytes from this file into the {@code destinationBuffer}
      * starting from specified file {@code position}.
      *
@@ -73,6 +84,19 @@ public interface FileIO extends AutoCloseable {
      * @throws IOException If some I/O error occurs.
      */
     public int read(ByteBuffer destBuf, long position) throws IOException;
+
+    /**
+     * Reads a sequence of bytes from this file into the {@code destinationBuffer}
+     * starting from specified file {@code position}.
+     *
+     * @param destBuf Destination byte buffer.
+     * @param position Starting position of file.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int readFully(ByteBuffer destBuf, long position) throws IOException;
 
     /**
      * Reads a up to {@code length} bytes from this file into the {@code buffer}.
@@ -89,6 +113,20 @@ public interface FileIO extends AutoCloseable {
     public int read(byte[] buf, int off, int len) throws IOException;
 
     /**
+     * Reads a up to {@code length} bytes from this file into the {@code buffer}.
+     *
+     * @param buf Destination byte array.
+     * @param off The start offset in array {@code b}
+     *               at which the data is written.
+     * @param len Number of bytes read.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int readFully(byte[] buf, int off, int len) throws IOException;
+
+    /**
      * Writes a sequence of bytes to this file from the {@code sourceBuffer}.
      *
      * @param srcBuf Source buffer.
@@ -98,6 +136,17 @@ public interface FileIO extends AutoCloseable {
      * @throws IOException If some I/O error occurs.
      */
     public int write(ByteBuffer srcBuf) throws IOException;
+
+    /**
+     * Writes a sequence of bytes to this file from the {@code sourceBuffer}.
+     *
+     * @param srcBuf Source buffer.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int writeFully(ByteBuffer srcBuf) throws IOException;
 
     /**
      * Writes a sequence of bytes to this file from the {@code sourceBuffer}
@@ -113,6 +162,19 @@ public interface FileIO extends AutoCloseable {
     public int write(ByteBuffer srcBuf, long position) throws IOException;
 
     /**
+     * Writes a sequence of bytes to this file from the {@code sourceBuffer}
+     * starting from specified file {@code position}
+     *
+     * @param srcBuf Source buffer.
+     * @param position Starting file position.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int writeFully(ByteBuffer srcBuf, long position) throws IOException;
+
+    /**
      * Writes {@code length} bytes from the {@code buffer}
      * starting at offset {@code off} to this file.
      *
@@ -125,6 +187,20 @@ public interface FileIO extends AutoCloseable {
      * @throws IOException If some I/O error occurs.
      */
     public int write(byte[] buf, int off, int len) throws IOException;
+
+    /**
+     * Writes {@code length} bytes from the {@code buffer}
+     * starting at offset {@code off} to this file.
+     *
+     * @param buf Source byte array.
+     * @param off Start offset in the {@code buffer}.
+     * @param len Number of bytes to write.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int writeFully(byte[] buf, int off, int len) throws IOException;
 
     /**
      * Allocates memory mapped buffer for this file with given size.

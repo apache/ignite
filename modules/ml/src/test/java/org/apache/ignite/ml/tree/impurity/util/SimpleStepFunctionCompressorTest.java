@@ -27,6 +27,39 @@ import static org.junit.Assert.assertArrayEquals;
 public class SimpleStepFunctionCompressorTest {
     /** */
     @Test
+    @SuppressWarnings("unchecked")
+    public void testDefaultCompress() {
+        StepFunction<TestImpurityMeasure> function = new StepFunction<>(
+            new double[]{1, 2, 3, 4},
+            TestImpurityMeasure.asTestImpurityMeasures(1, 2, 3, 4)
+        );
+
+        SimpleStepFunctionCompressor<TestImpurityMeasure> compressor = new SimpleStepFunctionCompressor<>();
+
+        StepFunction<TestImpurityMeasure> resFunction = compressor.compress(new StepFunction [] {function})[0];
+
+        assertArrayEquals(new double[]{1, 2, 3, 4}, resFunction.getX(), 1e-10);
+        assertArrayEquals(TestImpurityMeasure.asTestImpurityMeasures(1, 2, 3, 4), resFunction.getY());
+    }
+
+    /** */
+    @Test
+    public void testDefaults() {
+        StepFunction<TestImpurityMeasure> function = new StepFunction<>(
+            new double[]{1, 2, 3, 4},
+            TestImpurityMeasure.asTestImpurityMeasures(1, 2, 3, 4)
+        );
+
+        SimpleStepFunctionCompressor<TestImpurityMeasure> compressor = new SimpleStepFunctionCompressor<>();
+
+        StepFunction<TestImpurityMeasure> resFunction = compressor.compress(function);
+
+        assertArrayEquals(new double[]{1, 2, 3, 4}, resFunction.getX(), 1e-10);
+        assertArrayEquals(TestImpurityMeasure.asTestImpurityMeasures(1, 2, 3, 4), resFunction.getY());
+    }
+
+    /** */
+    @Test
     public void testCompressSmallFunction() {
         StepFunction<TestImpurityMeasure> function = new StepFunction<>(
             new double[]{1, 2, 3, 4},

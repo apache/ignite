@@ -166,6 +166,9 @@
     <ClCompile Include="..\..\src\config\config_tools.cpp">
       <Filter>Code\config</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\nested_tx_mode.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -327,6 +330,9 @@
       <Filter>Code\config</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\end_point.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\nested_tx_mode.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

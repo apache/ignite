@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Closeable;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -2011,6 +2012,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         dataStructuresMgr = null;
         cacheObjCtx = null;
 
+        if (expiryPlc instanceof Closeable)
+            U.closeQuiet((Closeable)expiryPlc);
+
         mgrs.clear();
     }
 
@@ -2107,6 +2111,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
         return !config().isOnheapCacheEnabled() && !readers && expiryPlc == null;
+    }
+
+    /**
+     * @return {@code True} if mvcc is enabled for cache.
+     */
+    public boolean mvccEnabled() {
+        return grp.mvccEnabled();
     }
 
     /**

@@ -125,6 +125,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -239,6 +240,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -258,6 +260,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
@@ -991,6 +994,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // be able to start receiving messages once discovery completes.
             try {
                 startProcessor(new PdsConsistentIdProcessor(ctx));
+                startProcessor(MvccUtils.createProcessor(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -1108,9 +1112,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     catch (IgniteNeedReconnectException e) {
                         ClusterNode locNode = ctx.discovery().localNode();
 
-                        assert CU.clientNode(locNode);
+                        assert locNode.isClient();
 
-                        if (!locNode.isClient())
+                        if (!ctx.discovery().reconnectSupported())
                             throw new IgniteCheckedException("Client node in forceServerMode " +
                                 "is not allowed to reconnect to the cluster and will be stopped.");
 
@@ -1523,6 +1527,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
     private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
+        ctx.addNodeAttribute(ATTR_REBALANCE_POOL_SIZE, configuration().getRebalanceThreadPoolSize());
         ctx.addNodeAttribute(ATTR_DATA_STREAMER_POOL_SIZE, configuration().getDataStreamerThreadPoolSize());
 
         final String[] incProps = cfg.getIncludeProperties();
@@ -1585,8 +1590,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Warn about loopback.
         if (ips.isEmpty() && macs.isEmpty())
             U.warn(log, "Ignite is starting on loopback address... Only nodes on the same physical " +
-                    "computer can participate in topology.",
-                "Ignite is starting on loopback address...");
+                "computer can participate in topology.");
 
         // Stick in network context into attributes.
         add(ATTR_IPS, (ips.isEmpty() ? "" : ips));
@@ -1671,6 +1675,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getConnectorConfiguration() != null)
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
+
+        // Whether rollback of dynamic cache start is supported or not.
+        // This property is added because of backward compatibility.
+        add(ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED, Boolean.TRUE);
 
         // Save data storage configuration.
         addDataStorageConfigurationAttributes();
@@ -2451,7 +2459,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         U.log(log, "System cache's DataRegion size is configured to " +
             (memCfg.getSystemRegionInitialSize() / (1024 * 1024)) + " MB. " +
-            "Use DataStorageConfiguration.systemCacheMemorySize property to change the setting.");
+            "Use DataStorageConfiguration.systemRegionInitialSize property to change the setting.");
     }
 
     /**
@@ -2508,9 +2516,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.warn(
                 log,
                 "Peer class loading is enabled (disable it in production for performance and " +
-                    "deployment consistency reasons)",
-                "Peer class loading is enabled (disable it for better performance)"
-            );
+                    "deployment consistency reasons)");
     }
 
     /**
@@ -2757,7 +2763,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
         A.notNull(cacheCfg, "cacheCfg");
-        CU.validateCacheName(cacheCfg.getName());
+        CU.validateNewCacheName(cacheCfg.getName());
 
         guard();
 
@@ -2813,7 +2819,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
-        CU.validateCacheName(cacheName);
+        CU.validateNewCacheName(cacheName);
 
         guard();
 
@@ -2842,7 +2848,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
         CacheConfiguration<K, V> cacheCfg, boolean sql) {
         A.notNull(cacheCfg, "cacheCfg");
-        CU.validateCacheName(cacheCfg.getName());
+        CU.validateNewCacheName(cacheCfg.getName());
 
         guard();
 
@@ -2908,7 +2914,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         NearCacheConfiguration<K, V> nearCfg
     ) {
         A.notNull(cacheCfg, "cacheCfg");
-        CU.validateCacheName(cacheCfg.getName());
+        CU.validateNewCacheName(cacheCfg.getName());
         A.notNull(nearCfg, "nearCfg");
 
         guard();
@@ -2937,7 +2943,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg) {
         A.notNull(cacheCfg, "cacheCfg");
-        CU.validateCacheName(cacheCfg.getName());
+        CU.validateNewCacheName(cacheCfg.getName());
         A.notNull(nearCfg, "nearCfg");
 
         guard();
@@ -2978,7 +2984,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
-        CU.validateCacheName(cacheName);
+        CU.validateNewCacheName(cacheName);
         A.notNull(nearCfg, "nearCfg");
 
         guard();
@@ -3010,7 +3016,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(String cacheName,
         NearCacheConfiguration<K, V> nearCfg) {
-        CU.validateCacheName(cacheName);
+        CU.validateNewCacheName(cacheName);
         A.notNull(nearCfg, "nearCfg");
 
         guard();
@@ -3139,7 +3145,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) {
-        CU.validateCacheName(cacheName);
+        CU.validateNewCacheName(cacheName);
 
         guard();
 
@@ -3168,7 +3174,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName, String templateName,
         CacheConfigurationOverride cfgOverride, boolean checkThreadTx) {
-        CU.validateCacheName(cacheName);
+        CU.validateNewCacheName(cacheName);
 
         guard();
 
@@ -3188,7 +3194,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg) {
         A.notNull(cacheCfg, "cacheCfg");
-        CU.validateCacheName(cacheCfg.getName());
+        CU.validateNewCacheName(cacheCfg.getName());
 
         guard();
 
@@ -3864,7 +3870,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     }
                     catch (IgniteCheckedException e) {
                         if (!X.hasCause(e, IgniteNeedReconnectException.class,
-                            IgniteClientDisconnectedCheckedException.class)) {
+                            IgniteClientDisconnectedCheckedException.class,
+                            IgniteInterruptedCheckedException.class)) {
                             U.error(log, "Failed to reconnect, will stop node.", e);
 
                             reconnectState.firstReconnectFut.onDone(e);
@@ -3897,7 +3904,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (err != null) {
             U.error(log, "Failed to reconnect, will stop node", err);
 
-            close();
+            if (!X.hasCause(err, NodeStoppingException.class))
+                close();
         }
     }
 
@@ -4097,7 +4105,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     // No-op.
                 }
             }
+        }
 
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ReconnectState.class, this);
         }
     }
 

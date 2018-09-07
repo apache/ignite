@@ -18,6 +18,19 @@
         ]
     },
     {
+        "title": "Quick cluster configuration",
+        "message": [
+            "<div class='col-xs-7'>",
+            " <img src='/images/cluster-quick.png' width='100%' />",
+            "</div>",
+            "<div class='col-xs-5'>",
+            " <ul>",
+            "  <li>Quick configuration of cluster and it's caches</li>",
+            " </ul>",
+            "</div>"
+        ]
+    },
+    {
         "title": "Clusters",
         "message": [
             "<div class='col-xs-7'>",
@@ -26,7 +39,6 @@
             "<div class='col-xs-5'>",
             " <ul>",
             "  <li>Configure cluster properties</li>",
-            "  <li>Associate cluster with caches</li>",
             " </ul>",
             "</div>"
         ]
@@ -54,7 +66,6 @@
             "<div class='col-xs-5'>",
             " <ul>",
             "  <li>Configure memory settings</li>",
-            "  <li>Configure persistence</li>",
             " </ul>",
             "</div>"
         ]
@@ -68,7 +79,20 @@
             "<div class='col-xs-5'>",
             " <ul>",
             "  <li>Configure IGFS properties</li>",
-            "  <li>Associate IGFS with clusters</li>",
+            " </ul>",
+            "</div>"
+        ]
+    },
+    {
+        "title": "Preview configuration result",
+        "message": [
+            "<div class='col-xs-7'>",
+            " <img src='/images/preview.png' width='100%' />",
+            "</div>",
+            "<div class='col-xs-5'>",
+            " <ul>",
+            "  <li>Preview configured project files</li>",
+            "  <li>Download configured project files</li>",
             " </ul>",
             "</div>"
         ]

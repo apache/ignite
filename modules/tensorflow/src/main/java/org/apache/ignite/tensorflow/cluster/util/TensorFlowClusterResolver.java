@@ -17,9 +17,7 @@
 
 package org.apache.ignite.tensorflow.cluster.util;
 
-import java.io.Serializable;
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
@@ -29,32 +27,32 @@ import org.apache.ignite.tensorflow.cluster.spec.TensorFlowServerAddressSpec;
 /**
  * TensorFlow cluster resolver based on Ignite Cache affinity.
  */
-public class TensorFlowClusterResolver implements Serializable {
-    /** */
-    private static final long serialVersionUID = 631456775167710173L;
+public class TensorFlowClusterResolver {
+    /** TensorFlow worker job name. */
+    public static final String WORKER_JOB_NAME = "worker";
+
+    /** TensorFlow chief job name. */
+    public static final String CHIEF_JOB_NAME = "chief";
+
+    /** Ignite instance. */
+    private final Ignite ignite;
 
     /** Cluster port manager. */
     private final ClusterPortManager portMgr;
 
-    /** Ignite instance supplier. */
-    private final Supplier<Ignite> igniteSupplier;
-
     /**
      * Constructs a new instance of TensorFlow cluster resolver.
      *
-     * @param igniteSupplier Ignite instance supplier.
-     * @param <T> Type of serializable supplier.
+     * @param ignite Ignite instance.
      */
-    public <T extends Supplier<Ignite> & Serializable> TensorFlowClusterResolver(T igniteSupplier) {
-        assert igniteSupplier != null : "Ignite supplier should not be null";
+    public TensorFlowClusterResolver(Ignite ignite, String portPoolName, int portFrom, int portCnt) {
+        assert ignite != null : "Ignite instance should not be null";
+        assert portPoolName != null : "Port pool name should not be null";
+        assert portFrom >= 0 : "Port count should not be negative";
+        assert portCnt >= 0 && portCnt + portFrom <= 0xFFFF : "Port range should be between 0 and 65535";
 
-        this.igniteSupplier = igniteSupplier;
-        this.portMgr = new ClusterPortManager("TF_POOL", 10000, 100, igniteSupplier);
-    }
-
-    /** Initializes TensorFlow cluster resolver. */
-    public void init() {
-        portMgr.init();
+        this.ignite = ignite;
+        this.portMgr = new ClusterPortManager(ignite, portPoolName, portFrom, portCnt);
     }
 
     /**
@@ -64,12 +62,39 @@ public class TensorFlowClusterResolver implements Serializable {
      * @return TensorFlow cluster specification.
      */
     public TensorFlowClusterSpec resolveAndAcquirePorts(String upstreamCacheName) {
-        Ignite ignite = igniteSupplier.get();
-        Affinity<?> affinity = ignite.affinity(upstreamCacheName);
-
-        int parts = affinity.partitions();
-
         TensorFlowClusterSpec spec = new TensorFlowClusterSpec();
+
+        resolveAndAcquirePortsForWorkers(spec, upstreamCacheName);
+        resolveAndAcquirePortsForChief(spec);
+
+        return spec;
+    }
+
+    /**
+     * Releases ports acquired for the given cluster specification.
+     *
+     * @param spec TensorFlow cluster specification.
+     */
+    public void releasePorts(TensorFlowClusterSpec spec) {
+        for (String jobName : spec.getJobs().keySet())
+            for (TensorFlowServerAddressSpec address : spec.getJobs().get(jobName))
+                portMgr.releasePort(address.getNodeId(), address.getPort());
+    }
+
+    /** Destroys TensorFlow cluster resolver. */
+    public void destroy() {
+        portMgr.destroy();
+    }
+
+    /**
+     * Resolves TensorFlow cluster worker jobs and acquires ports.
+     *
+     * @param spec TensorFlow cluster specification.
+     * @param upstreamCacheName Upstream cache name.
+     */
+    private void resolveAndAcquirePortsForWorkers(TensorFlowClusterSpec spec, String upstreamCacheName) {
+        Affinity<?> affinity = ignite.affinity(upstreamCacheName);
+        int parts = affinity.partitions();
 
         for (int part = 0; part < parts; part++) {
             ClusterNode node = affinity.mapPartitionToNode(part);
@@ -77,25 +102,20 @@ public class TensorFlowClusterResolver implements Serializable {
 
             int port = portMgr.acquirePort(nodeId);
 
-            spec.addTask("WORKER", nodeId, port);
+            spec.addTask(WORKER_JOB_NAME, nodeId, port);
         }
-
-        return spec;
     }
 
     /**
-     * Frees ports acquired for the given cluster specification.
+     * Resolves TensorFlow cluster chief job and acquires ports.
      *
      * @param spec TensorFlow cluster specification.
      */
-    public void freePorts(TensorFlowClusterSpec spec) {
-        for (String jobName : spec.getJobs().keySet())
-            for (TensorFlowServerAddressSpec address : spec.getJobs().get(jobName))
-                portMgr.freePort(address.getNodeId(), address.getPort());
-    }
+    private void resolveAndAcquirePortsForChief(TensorFlowClusterSpec spec) {
+        ClusterNode chiefNode = ignite.cluster().localNode();
+        UUID chiefNodeId = chiefNode.id();
+        int chiefPort = portMgr.acquirePort(chiefNodeId);
 
-    /** Destroys TensorFlow cluster resolver. */
-    public void destroy() {
-        portMgr.destroy();
+        spec.addTask(CHIEF_JOB_NAME, chiefNodeId, chiefPort);
     }
 }

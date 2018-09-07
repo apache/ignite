@@ -18,27 +18,38 @@
 package org.apache.ignite.examples.ml.tutorial;
 
 import java.io.FileNotFoundException;
-import java.util.Arrays;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
+import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Add yet two numerical features "age", "fare" to improve our model.
+ * Add yet two numerical features "age", "fare" to improve our model over {@link Step_3_Categorial}.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
+ * <p>
+ * After that it defines preprocessors that extract features from an upstream data and encode string values (categories)
+ * to double values in specified range.</p>
+ * <p>
+ * Then, it trains the model based on the processed data using decision tree classification.</p>
+ * <p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_4_Add_age_fare {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
+        System.out.println();
+        System.out.println(">>> Tutorial step 4 (add age and fare) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 Step_4_Add_age_fare.class.getSimpleName(), () -> {
@@ -46,20 +57,22 @@ public class Step_4_Add_age_fare {
                     IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
 
                     // Defines first preprocessor that extracts features from an upstream data.
-                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
+                    // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
                     IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
                         = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
 
+                    IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
 
-                    IgniteBiFunction<Integer, Object[], double[]> strEncoderPreprocessor = new StringEncoderTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                        .withEncoderType(EncoderType.STRING_ENCODER)
                         .encodeFeature(1)
-                        .encodeFeature(6) // <--- Changed index here
+                        .encodeFeature(6) // <--- Changed index here.
                         .fit(ignite,
                             dataCache,
                             featureExtractor
                     );
 
-                    IgniteBiFunction<Integer, Object[], double[]> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                    IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
                         .fit(ignite,
                             dataCache,
                             strEncoderPreprocessor
@@ -72,51 +85,23 @@ public class Step_4_Add_age_fare {
                         ignite,
                         dataCache,
                         imputingPreprocessor,
-                        (k, v) -> (double)v[1]
+                        lbExtractor
                     );
 
+                    System.out.println("\n>>> Trained model: " + mdl);
 
-                    System.out.println(">>> ----------------------------------------------------------------");
-                    System.out.println(">>> | Prediction\t| Ground Truth\t| Name\t|");
-                    System.out.println(">>> ----------------------------------------------------------------");
+                    double accuracy = Evaluator.evaluate(
+                        dataCache,
+                        mdl,
+                        imputingPreprocessor,
+                        lbExtractor,
+                        new Accuracy<>()
+                    );
 
-                    int amountOfErrors = 0;
-                    int totalAmount = 0;
+                    System.out.println("\n>>> Accuracy " + accuracy);
+                    System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                    // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-                    int[][] confusionMtx = {{0, 0}, {0, 0}};
-
-                    try (QueryCursor<Cache.Entry<Integer, Object[]>> observations = dataCache.query(new ScanQuery<>())) {
-                        for (Cache.Entry<Integer, Object[]> observation : observations) {
-
-                            Object[] val = observation.getValue();
-                            double groundTruth = (double)val[1];
-                            String name = (String)val[2];
-
-                            double prediction = mdl.apply(new DenseLocalOnHeapVector(imputingPreprocessor.apply(observation.getKey(), val)));
-
-                            totalAmount++;
-                            if (groundTruth != prediction)
-                                amountOfErrors++;
-
-                            int idx1 = (int)prediction;
-                            int idx2 = (int)groundTruth;
-
-                            confusionMtx[idx1][idx2]++;
-
-                            System.out.printf(">>>| %.4f\t\t| %.4f\t\t\t\t\t\t| %s\t\t\t\t\t\t\t\t\t\t|\n", prediction, groundTruth, name);
-                        }
-
-                        System.out.println(">>> ---------------------------------");
-
-                        System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                        double accuracy = 1 - amountOfErrors / (double)totalAmount;
-                        System.out.println("\n>>> Accuracy " + accuracy);
-                        System.out.println("\n>>> Test Error " + (1 - accuracy));
-
-                        System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
-                        System.out.println(">>> ---------------------------------");
-                    }
+                    System.out.println(">>> Tutorial step 4 (add age and fare) example completed.");
                 }
                 catch (FileNotFoundException e) {
                     e.printStackTrace();

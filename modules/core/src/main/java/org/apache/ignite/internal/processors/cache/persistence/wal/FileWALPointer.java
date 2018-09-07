@@ -28,6 +28,9 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** Pointer serialized size. */
+    public static final int POINTER_SIZE = 16;
+
     /** Absolute WAL segment file index (incrementing counter) */
     private final long idx;
 

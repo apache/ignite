@@ -19,7 +19,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Apache Ignite C++ Examples], [2.6.0.29110], [dev@ignite.apache.org], [ignite-examples], [ignite.apache.org])
+AC_INIT([Apache Ignite C++ Examples], [2.7.0.30114], [dev@ignite.apache.org], [ignite-examples], [ignite.apache.org])
 
 AC_CANONICAL_HOST
 AC_CONFIG_MACRO_DIR([m4])

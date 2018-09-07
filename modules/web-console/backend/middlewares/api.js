@@ -39,11 +39,16 @@ module.exports.factory = () => {
 
                 res.status(err.httpCode || err.code || 500).send(err.message);
             },
+
             ok(data) {
                 if (_.isNil(data))
                     return res.sendStatus(404);
 
                 res.status(200).json(data);
+            },
+
+            done() {
+                res.sendStatus(200);
             }
         };
 

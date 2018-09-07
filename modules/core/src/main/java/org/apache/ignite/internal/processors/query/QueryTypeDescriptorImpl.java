@@ -26,13 +26,22 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_VALUE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
 /**
  * Descriptor of type.
@@ -110,13 +119,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private List<GridQueryProperty> propsWithDefaultValue;
 
+    /** */
+    @Nullable private CacheObjectContext coCtx;
+
     /**
      * Constructor.
      *
      * @param cacheName Cache name.
+     * @param coCtx Cache object context.
      */
-    public QueryTypeDescriptorImpl(String cacheName) {
+    public QueryTypeDescriptorImpl(String cacheName, @Nullable CacheObjectContext coCtx) {
         this.cacheName = cacheName;
+        this.coCtx = coCtx;
     }
 
     /**
@@ -368,6 +382,19 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @throws IgniteCheckedException In case of error.
      */
     public void addProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
+        addProperty(prop, failOnDuplicate, true);
+    }
+
+    /**
+     * Adds property to the type descriptor.
+     *
+     * @param prop Property.
+     * @param failOnDuplicate Fail on duplicate flag.
+     * @param isField {@code True} if {@code prop} if field, {@code False} if prop is "_KEY" or "_VAL".
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void addProperty(GridQueryProperty prop, boolean failOnDuplicate, boolean isField)
+        throws IgniteCheckedException {
         String name = prop.name();
 
         if (props.put(name, prop) != null && failOnDuplicate)
@@ -382,6 +409,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             validateProps.add(prop);
         }
+        else if (prop.precision() != -1) {
+            if (validateProps == null)
+                validateProps = new ArrayList<>();
+
+            validateProps.add(prop);
+        }
 
         if (prop.defaultValue() != null) {
             if (propsWithDefaultValue == null)
@@ -390,7 +423,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             propsWithDefaultValue.add(prop);
         }
 
-        fields.put(name, prop.type());
+        if (isField)
+            fields.put(name, prop.type());
     }
 
     /**
@@ -525,26 +559,35 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             Object propVal;
 
-            int errCode;
+            boolean isKey = false;
 
-            if (F.eq(prop.name(), keyFieldName)) {
-                propVal = key;
+            if (F.eq(prop.name(), keyFieldName) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
+                propVal = key instanceof KeyCacheObject && coCtx != null ?
+                    ((KeyCacheObject)key).value(coCtx, true) : key;
 
-                errCode = IgniteQueryErrorCode.NULL_KEY;
+                isKey = true;
             }
-            else if (F.eq(prop.name(), valFieldName)) {
-                propVal = val;
-
-                errCode = IgniteQueryErrorCode.NULL_VALUE;
+            else if (F.eq(prop.name(), valFieldName) || (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME))) {
+                propVal = val instanceof CacheObject && coCtx != null ?
+                    ((CacheObject)val).value(coCtx, true) : val;
             }
             else {
                 propVal = prop.value(key, val);
-
-                errCode = IgniteQueryErrorCode.NULL_VALUE;
             }
 
-            if (propVal == null)
-                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'", errCode);
+            if (propVal == null && prop.notNull()) {
+                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'",
+                    isKey ? NULL_KEY : NULL_VALUE);
+            }
+
+            if (prop.precision() != -1 &&
+                propVal != null &&
+                String.class == propVal.getClass() && 
+                ((String)propVal).length() > prop.precision()) {
+                throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " + 
+                    "Maximum length: " + prop.precision() + ", actual length: " + ((CharSequence)propVal).length(),
+                    isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
+            }
         }
     }
 

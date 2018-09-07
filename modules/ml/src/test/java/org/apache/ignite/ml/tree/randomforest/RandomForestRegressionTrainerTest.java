@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
-import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
+import org.apache.ignite.ml.dataset.feature.FeatureMeta;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -31,6 +33,9 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests for {@link RandomForestRegressionTrainer}.
+ */
 @RunWith(Parameterized.class)
 public class RandomForestRegressionTrainerTest {
     /**
@@ -54,7 +59,8 @@ public class RandomForestRegressionTrainerTest {
     }
 
     /** */
-    @Test public void testFit() {
+    @Test
+    public void testFit() {
         int sampleSize = 1000;
         Map<Double, double[]> sample = new HashMap<>();
         for (int i = 0; i < sampleSize; i++) {
@@ -66,15 +72,45 @@ public class RandomForestRegressionTrainerTest {
             sample.put(x1 * x2 + x3 * x4, new double[] {x1, x2, x3, x4});
         }
 
-        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(4, 3, 5, 0.3, 4, 0.1);
-        ModelsComposition model = trainer.fit(sample, parts, (k, v) -> v, (k, v) -> k);
+        ArrayList<FeatureMeta> meta = new ArrayList<>();
+        for(int i = 0; i < 4; i++)
+            meta.add(new FeatureMeta("", i, false));
+        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(meta)
+            .withCountOfTrees(5)
+            .withFeaturesCountSelectionStrgy(x -> 2);
 
-        assertTrue(model.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
-        assertEquals(5, model.getModels().size());
+        ModelsComposition mdl = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(v), (k, v) -> k);
+        assertTrue(mdl.getPredictionsAggregator() instanceof MeanValuePredictionsAggregator);
+        assertEquals(5, mdl.getModels().size());
+    }
 
-        for (ModelsComposition.ModelOnFeaturesSubspace tree : model.getModels()) {
-            assertTrue(tree.getMdl() instanceof DecisionTreeConditionalNode);
-            assertEquals(3, tree.getFeaturesMapping().size());
+    /** */
+    @Test
+    public void testUpdate() {
+        int sampleSize = 1000;
+        Map<double[], Double> sample = new HashMap<>();
+        for (int i = 0; i < sampleSize; i++) {
+            double x1 = i;
+            double x2 = x1 / 10.0;
+            double x3 = x2 / 10.0;
+            double x4 = x3 / 10.0;
+
+            sample.put(new double[] {x1, x2, x3, x4}, (double)(i % 2));
         }
+
+        ArrayList<FeatureMeta> meta = new ArrayList<>();
+        for (int i = 0; i < 4; i++)
+            meta.add(new FeatureMeta("", i, false));
+        RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(meta)
+            .withCountOfTrees(100)
+            .withFeaturesCountSelectionStrgy(x -> 2);
+
+        ModelsComposition originalModel = trainer.fit(sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+        ModelsComposition updatedOnSameDS = trainer.update(originalModel, sample, parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+        ModelsComposition updatedOnEmptyDS = trainer.update(originalModel, new HashMap<double[], Double>(), parts, (k, v) -> VectorUtils.of(k), (k, v) -> v);
+
+        Vector v = VectorUtils.of(5, 0.5, 0.05, 0.005);
+        assertEquals(originalModel.apply(v), updatedOnSameDS.apply(v), 0.1);
+        assertEquals(originalModel.apply(v), updatedOnEmptyDS.apply(v), 0.1);
     }
 }

@@ -27,5 +27,5 @@ public interface IgniteDifferentiableDoubleToDoubleFunction extends IgniteDouble
      * @param pnt Point to calculate differential at.
      * @return Function differential at a given point.
      */
-    double differential(double pnt);
+    public double differential(double pnt);
 }

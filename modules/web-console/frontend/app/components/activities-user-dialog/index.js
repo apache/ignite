@@ -18,17 +18,19 @@
 import controller from './activities-user-dialog.controller';
 import templateUrl from './activities-user-dialog.tpl.pug';
 
-export default ['$modal', ($modal) => ({ show = true, user }) => {
-    const ActivitiesUserDialog = $modal({
-        templateUrl,
-        show,
-        resolve: {
-            user: () => user
-        },
-        controller,
-        controllerAs: 'ctrl'
-    });
+export default ['$modal', function($modal) {
+    return ({ show = true, user }) => {
+        const ActivitiesUserDialog = $modal({
+            templateUrl,
+            show,
+            resolve: {
+                user: () => user
+            },
+            controller,
+            controllerAs: 'ctrl'
+        });
 
-    return ActivitiesUserDialog.$promise
-         .then(() => ActivitiesUserDialog);
+        return ActivitiesUserDialog.$promise
+             .then(() => ActivitiesUserDialog);
+    };
 }];

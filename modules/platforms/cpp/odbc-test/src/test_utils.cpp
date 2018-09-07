@@ -121,4 +121,21 @@ namespace ignite_test
 
         return Ignition::Start(cfg, name);
     }
+
+    std::string AppendPath(const std::string& base, const std::string& toAdd)
+    {
+        std::stringstream stream;
+
+        stream << base << ignite::common::Fs << toAdd;
+
+        return stream.str();
+    }
+
+    void ClearLfs()
+    {
+        std::string home = ignite::jni::ResolveIgniteHome();
+        std::string workDir = AppendPath(home, "work");
+
+        ignite::common::DeletePath(workDir);
+    }
 }

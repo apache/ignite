@@ -179,7 +179,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         assert globalState != null;
 
-        if (globalState.transition() && globalState.activeStateChanging()) {
+        if (globalState.transition() && globalState.active()) {
             Boolean transitionRes = globalState.transitionResult();
 
             if (transitionRes != null)
@@ -947,8 +947,24 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             }
         }
 
+        if (globalState.transition() && globalState.previousBaselineTopology() == null) {
+            //case when cluster is activating for the first time and other node with existing baseline topology
+            //tries to join
+
+            String msg = "Node with set up BaselineTopology is not allowed " +
+                "to join cluster in the process of first activation: " + node.consistentId();
+
+            return new IgniteNodeValidationResult(node.id(), msg, msg);
+        }
+
+        BaselineTopology clusterBlt;
+
+        if (globalState.transition())
+            clusterBlt = globalState.previousBaselineTopology();
+        else
+            clusterBlt = globalState.baselineTopology();
+
         BaselineTopology joiningNodeBlt = joiningNodeState.baselineTopology();
-        BaselineTopology clusterBlt = globalState.baselineTopology();
 
         String recommendation = " Consider cleaning persistent storage of the node and adding it to the cluster again.";
 
@@ -968,7 +984,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (!clusterBlt.isCompatibleWith(joiningNodeBlt)) {
                 String msg = "BaselineTopology of joining node ("
                     + node.consistentId()
-                    + " ) is not compatible with BaselineTopology in the cluster."
+                    + ") is not compatible with BaselineTopology in the cluster."
                     + " Branching history of cluster BlT (" + clusterBlt.branchingHistory()
                     + ") doesn't contain branching point hash of joining node BlT ("
                     + joiningNodeBlt.branchingPointHash()
@@ -1174,9 +1190,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public void onBaselineTopologyChanged(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
+    @Override public void onBaselineTopologyChanged
+    (
+        BaselineTopology blt,
+        BaselineTopologyHistoryItem prevBltHistItem
+    ) throws IgniteCheckedException {
         if (compatibilityMode) {
-            if (log.isDebugEnabled())
+            if (log.isInfoEnabled())
                 log.info("BaselineTopology won't be stored as this node is running in compatibility mode");
 
             return;
