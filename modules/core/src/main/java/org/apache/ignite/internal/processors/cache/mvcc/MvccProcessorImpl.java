@@ -135,7 +135,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.CacheDataR
  * MVCC processor.
  */
 @SuppressWarnings("serial")
-class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, DatabaseLifecycleListener {
+public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, DatabaseLifecycleListener {
     /** */
     private static final IgniteProductVersion MVCC_SUPPORTED_SINCE = IgniteProductVersion.fromString("2.7.0");
 
@@ -840,21 +840,25 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
                     }
                 }
 
-                crd = crdNode != null ? new MvccCoordinator(
-                    crdNode.id(),
-                    crdNode.order() + ctx.discovery().gridStartTime(),
+                crd = crdNode != null ? new MvccCoordinator(crdNode.id(), coordinatorVersion(crdNode),
                     new AffinityTopologyVersion(topVer, 0)) : null;
 
-                if (crd != null) {
-                    if (log.isInfoEnabled())
-                        log.info("Assigned mvcc coordinator [crd=" + crd + ", crdNode=" + crdNode + ']');
-                }
-                else
+                if (log.isInfoEnabled() && crd != null)
+                    log.info("Assigned mvcc coordinator [crd=" + crd + ", crdNode=" + crdNode + ']');
+                else if (crd == null)
                     U.warn(log, "New mvcc coordinator was not assigned [topVer=" + topVer + ']');
             }
         }
 
         assignedCrd = crd;
+    }
+
+    /**
+     * @param crdNode Assigned coordinator node.
+     * @return Coordinator version.
+     */
+    private long coordinatorVersion(ClusterNode crdNode) {
+        return crdNode.order() + ctx.discovery().gridStartTime();
     }
 
     /** */

@@ -102,14 +102,6 @@ public class MvccUtils {
     }
 
     /**
-     * @param ctx Kernal context.
-     * @return Newly created Mvcc processor.
-     */
-    public static MvccProcessor createProcessor(GridKernalContext ctx) {
-        return new MvccProcessorImpl(ctx);
-    }
-
-    /**
      * @param cctx Cache context.
      * @param mvccCrd Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
@@ -720,7 +712,7 @@ public class MvccUtils {
 
     /**
      * @param ctx Grid kernal context.
-     * @return Whether MVCC is enabled or not on {@link IgniteConfiguration}.
+     * @return Whether MVCC is enabled or not.
      */
     public static boolean mvccEnabled(GridKernalContext ctx) {
         return ctx.coordinators().mvccEnabled();

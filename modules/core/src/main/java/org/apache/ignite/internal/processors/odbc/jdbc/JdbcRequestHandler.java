@@ -191,10 +191,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         log = ctx.log(getClass());
 
-        if (MvccUtils.mvccEnabled(ctx)) // TODO IGNITE-9484
-            worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
-        else
-            worker = null;
+        // TODO IGNITE-9484
+        worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
     }
 
     /** {@inheritDoc} */
@@ -205,7 +203,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         JdbcRequest req = (JdbcRequest)req0;
 
-        if (worker == null)
+        if (!MvccUtils.mvccEnabled(ctx))
             return doHandle(req);
         else {
             GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);

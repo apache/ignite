@@ -181,7 +181,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_C
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.validateCacheGroupsAttributesMismatch;
 
 /**
  * Cache processor.
@@ -818,15 +817,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     //Ignore stored caches if it already added by static config(static config has higher priority).
                     if (!caches.containsKey(cacheName))
                         addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
-                    else {
-                        validateCacheGroupsAttributesMismatch(log, caches.get(cacheName).cacheData().config(),
-                            storedCacheData.config(), "atomicityMode", "Atomicity mode",
-                            caches.get(cacheName).cacheData().config().getAtomicityMode(),
-                            storedCacheData.config().getAtomicityMode(), true);
-                    }
+                    else
+                        checkMvccSettings(caches.get(cacheName).cacheData(), storedCacheData);
                 }
             }
         }
+    }
+
+    /**
+     * Checks mvcc settings consistency for static and stored cache configurations.
+     */
+    private void checkMvccSettings(StoredCacheData staticCacheData,
+        StoredCacheData storedCacheData) throws IgniteCheckedException {
+        CacheConfiguration<?, ?> ccfg1 = staticCacheData.config();
+        CacheConfiguration<?, ?> ccfg2 = storedCacheData.config();
+
+        if (ccfg1.getAtomicityMode() != ccfg2.getAtomicityMode()
+            && ccfg1.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT
+            || ccfg2.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
+            throw new IgniteCheckedException("Cannot start cache. Statically configured atomicity mode differs from " +
+                "previously stored configuration. Please check your configuration: [cacheName=" + ccfg1.getName() +
+                ", configuredAtomicityMode=" + ccfg1.getAtomicityMode() +
+                ", storedAtomicityMode=" + ccfg2.getAtomicityMode() + "]");
     }
 
     /**

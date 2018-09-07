@@ -149,10 +149,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         log = ctx.log(getClass());
 
-        if (MvccUtils.mvccEnabled(ctx)) // TODO IGNITE-9484
-            worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
-        else
-            worker = null;
+        // TODO IGNITE-9484
+        worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
     }
 
     /** {@inheritDoc} */
@@ -163,7 +161,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         OdbcRequest req = (OdbcRequest)req0;
 
-        if (worker == null)
+        if (!MvccUtils.mvccEnabled(ctx))
             return doHandle(req);
         else {
             GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
