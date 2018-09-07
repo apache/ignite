@@ -299,6 +299,9 @@ public class CheckpointMetricsTracker {
      * @param stat Stat.
      */
     public void addMetaStat(DbCheckpointListener.SaveMetadataStat stat) {
+        if (stat == null)
+            new Exception().printStackTrace();
+
         stats.add(stat);
     }
 
