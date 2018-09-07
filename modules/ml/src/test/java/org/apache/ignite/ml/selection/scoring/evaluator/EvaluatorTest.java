@@ -91,76 +91,24 @@ public class EvaluatorTest extends GridCommonAbstractTest {
 
         IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
             EvaluatorTest.class.getSimpleName(), () -> {
-            CacheConfiguration<Integer, Object[]> cacheConfiguration = new CacheConfiguration<>();
-            cacheConfiguration.setName(UUID.randomUUID().toString());
-            cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-            IgniteCache<Integer, Object[]> dataCache = ignite.createCache(cacheConfiguration);
-
-            readPassengers(dataCache);
-
-            // Defines first preprocessor that extracts features from an upstream data.
-            // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
-            IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                = (k, v) -> new Object[] {v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
-
-            IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
-
-            TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
-                .split(0.75);
-
-            IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
-                .withEncoderType(EncoderType.STRING_ENCODER)
-                .encodeFeature(1)
-                .encodeFeature(6) // <--- Changed index here
-                .fit(ignite,
-                    dataCache,
-                    featureExtractor
-                );
-
-            IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
-                .fit(ignite,
-                    dataCache,
-                    strEncoderPreprocessor
-                );
-
-            IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
-                .fit(
-                    ignite,
-                    dataCache,
-                    imputingPreprocessor
-                );
-
-            IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
-                .withP(2)
-                .fit(
-                    ignite,
-                    dataCache,
-                    minMaxScalerPreprocessor
-                );
-
-            // Tune hyperparams with K-fold Cross-Validation on the split training set.
-
-            DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
-
-            CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
-                = new CrossValidation<>();
+            CVContext ctx = new CVContext(ignite);
 
             ParamGrid paramGrid = new ParamGrid()
                 .addHyperParam("maxDeep", new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 10.0})
                 .addHyperParam("minImpurityDecrease", new Double[] {0.0, 0.25, 0.5});
 
-            CrossValidationResult crossValidationRes = scoreCalculator.score(
-                trainerCV,
-                new Accuracy<>(),
-                ignite,
-                dataCache,
-                split.getTrainFilter(),
-                normalizationPreprocessor,
-                lbExtractor,
-                3,
-                paramGrid
-            );
+            CrossValidationResult crossValidationRes =
+                new CrossValidation<DecisionTreeNode, Double, Integer, Object[]>().score(
+                    new DecisionTreeClassificationTrainer(),
+                    new Accuracy<>(),
+                    ctx.ignite,
+                    ctx.cache,
+                    ctx.split.getTrainFilter(),
+                    ctx.preprocessor,
+                    ctx.lbExtractor,
+                    3,
+                    paramGrid
+                );
 
             res.set(crossValidationRes);
 
@@ -170,32 +118,7 @@ public class EvaluatorTest extends GridCommonAbstractTest {
 
             crossValidationRes.getScoringBoard().forEach((hyperParams, score) -> actualScores.add(score));
 
-            // Train decision tree model.
-            DecisionTreeNode bestMdl = trainer.fit(
-                ignite,
-                dataCache,
-                split.getTrainFilter(),
-                normalizationPreprocessor,
-                lbExtractor
-            );
-
-            double accuracy = Evaluator.evaluate(
-                dataCache,
-                split.getTestFilter(),
-                bestMdl,
-                normalizationPreprocessor,
-                lbExtractor,
-                new Accuracy<>()
-            );
-
-            actualAccuracy.set(accuracy);
-            actualAccuracy2.set(Evaluator.evaluate(
-                dataCache,
-                bestMdl,
-                normalizationPreprocessor,
-                lbExtractor,
-                new Accuracy<>()
-            ));
+            ctx.evaluate(trainer, actualAccuracy, actualAccuracy2);
         });
 
         igniteThread.start();
@@ -203,6 +126,71 @@ public class EvaluatorTest extends GridCommonAbstractTest {
         igniteThread.join();
 
         assertResults(res.get(), actualScores, actualAccuracy.get(), actualAccuracy2.get());
+    }
+
+    /** */
+    public void testBasic2() throws InterruptedException {
+        AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
+        AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
+        AtomicReference<double[]> res = new AtomicReference<>(null);
+
+        IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
+            EvaluatorTest.class.getSimpleName(), () -> {
+            CVContext ctx = new CVContext(ignite);
+
+            res.set(new CrossValidation<DecisionTreeNode, Double, Integer, Object[]>().score(
+                new DecisionTreeClassificationTrainer(),
+                new Accuracy<>(),
+                ctx.ignite,
+                ctx.cache,
+                ctx.split.getTrainFilter(),
+                ctx.preprocessor,
+                ctx.lbExtractor,
+                3
+            ));
+
+            DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer();
+
+            ctx.evaluate(trainer, actualAccuracy, actualAccuracy2);
+        });
+
+        igniteThread.start();
+
+        igniteThread.join();
+
+        assertResults2(res.get(), actualAccuracy.get(), actualAccuracy2.get());
+    }
+
+    /** */
+    public void testBasic3() throws InterruptedException {
+        AtomicReference<Double> actualAccuracy = new AtomicReference<>(null);
+        AtomicReference<Double> actualAccuracy2 = new AtomicReference<>(null);
+        AtomicReference<double[]> res = new AtomicReference<>(null);
+
+        IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
+            EvaluatorTest.class.getSimpleName(), () -> {
+            CVContext ctx = new CVContext(ignite);
+
+            res.set(new CrossValidation<DecisionTreeNode, Double, Integer, Object[]>().score(
+                new DecisionTreeClassificationTrainer(),
+                new Accuracy<>(),
+                ctx.ignite,
+                ctx.cache,
+                ctx.preprocessor,
+                ctx.lbExtractor,
+                3
+            ));
+
+            DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer();
+
+            ctx.evaluate(trainer, actualAccuracy, actualAccuracy2);
+        });
+
+        igniteThread.start();
+
+        igniteThread.join();
+
+        assertResults2(res.get(), actualAccuracy.get(), actualAccuracy2.get());
     }
 
     /** */
@@ -224,69 +212,186 @@ public class EvaluatorTest extends GridCommonAbstractTest {
         assertTrue("Accuracy without filter", accuracy2 > 0.);
     }
 
-    /**
-     * Read passengers data.
-     *
-     * @param cache The ignite cache.
-     */
-    private void readPassengers(IgniteCache<Integer, Object[]> cache) {
-        // IMPL NOTE: pclass;survived;name;sex;age;sibsp;parch;ticket;fare;cabin;embarked;boat;body;homedest
-        List<String[]> passengers = Arrays.asList(
-            new String[] {
-                "1", "1", "Allen, Miss. Elisabeth Walton", "",
-                "29", "", "", "24160", "211,3375", "B5", "", "2", "", "St Louis, MO"},
-            new String[] {
-                "1", "1", "Allison, Master. Hudson Trevor", "male",
-                "0,9167", "1", "2", "113781", "151,55", "C22 C26", "S", "11", "", "Montreal, PQ / Chesterville, ON"},
-            new String[] {
-                "1", "0", "Allison, Miss. Helen Loraine", "female",
-                "2", "1", "2", "113781", "151,55", "C22 C26", "S", "", "", "Montreal, PQ / Chesterville, ON"},
-            new String[] {
-                "1", "0", "Allison, Mr. Hudson Joshua Creighton",
-                "male", "30", "1", "2", "113781", "151,55", "C22 C26", "S", "", "135", "Montreal, PQ / Chesterville, ON"},
-            new String[] {
-                "1", "0", "Allison, Mrs. Hudson J C (Bessie Waldo Daniels)", "female",
-                "25", "1", "2", "113781", "151,55", "C22 C26", "S", "", "", "Montreal, PQ / Chesterville, ON"},
-            new String[] {
-                "1", "1", "Anderson, Mr. Harry", "male",
-                "48", "0", "0", "19952", "26,55", "E12", "S", "3", "", "New York, NY"},
-            new String[] {
-                "1", "1", "Andrews, Miss. Kornelia Theodosia", "female",
-                "63", "1", "0", "13502", "77,9583", "D7", "S", "10", "", "Hudson, NY"},
-            new String[] {
-                "1", "0", "Andrews, Mr. Thomas Jr", "male",
-                "39", "0", "0", "112050", "0", "A36", "S", "", "", "Belfast, NI"},
-            new String[] {
-                "1", "1", "Appleton, Mrs. Edward Dale (Charlotte Lamson)", "female",
-                "53", "2", "0", "11769", "51,4792", "C101", "S", "D", "", "Bayside, Queens, NY"},
-            new String[] {
-                "1", "0", "Artagaveytia, Mr. Ramon", "male",
-                "71", "0", "0", "PC 17609", "49,5042", "", "C", "", "22", "Montevideo, Uruguay"});
+    /** */
+    private void assertResults2(double[] scores, double accuracy, double accuracy2) {
+        assertEquals("Scores array length", 3, scores.length);
 
-        int cnt = 1;
-        for (String[] details : passengers) {
-            Object[] data = new Object[details.length];
-
-            for (int i = 0; i < details.length; i++)
-                data[i] = doubleOrString(details[i]);
-
-            cache.put(cnt++, data);
-        }
+        assertEquals("Accuracy", 1.0, accuracy);
+        assertTrue("Accuracy without filter", accuracy2 > 0.);
     }
 
     /** */
-    private Object doubleOrString(String data) {
-        NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
-        try {
-            return data.equals("") ? Double.NaN : Double.valueOf(data);
-        }
-        catch (java.lang.NumberFormatException e) {
+    private static class CVContext {
+        /** */
+        private final Ignite ignite;
+        /** */
+        private final IgniteCache<Integer, Object[]> cache;
+        /** */
+        private final TrainTestSplit<Integer, Object[]> split;
+        /** */
+        private final IgniteBiFunction<Integer, Object[], Double> lbExtractor;
+        /** */
+        private final IgniteBiFunction<Integer, Object[], Vector> preprocessor;
 
-            try {
-                return format.parse(data).doubleValue();
+        /** */
+        CVContext(Ignite ignite) {
+            this.ignite = ignite;
+
+            cache = dataToCache();
+
+            split = new TrainTestDatasetSplitter<Integer, Object[]>().split(0.75);
+
+            lbExtractor = (k, v) -> (double)v[1];
+
+            // Tune hyperparams with K-fold Cross-Validation on the split training set.
+            preprocessor = setupProcessors();
+        }
+
+        /** */
+        void evaluate(DecisionTreeClassificationTrainer trainer,
+            AtomicReference<Double> actualAccuracy, AtomicReference<Double> actualAccuracy2) {
+            // Train decision tree model.
+            DecisionTreeNode  bestMdl = trainer.fit(
+                ignite,
+                cache,
+                split.getTrainFilter(),
+                preprocessor,
+                lbExtractor
+            );
+
+            actualAccuracy.set(Evaluator.evaluate(
+                cache,
+                split.getTestFilter(),
+                bestMdl,
+                preprocessor,
+                lbExtractor,
+                new Accuracy<>()
+            ));
+
+            actualAccuracy2.set(Evaluator.evaluate(
+                cache,
+                bestMdl,
+                preprocessor,
+                lbExtractor,
+                new Accuracy<>()
+            ));
+        }
+
+        /** */
+        private IgniteBiFunction<Integer, Object[], Vector> setupProcessors() {
+            // Defines first preprocessor that extracts features from an upstream data.
+            // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare"
+            IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
+                = (k, v) -> new Object[] {v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+
+            IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                .withEncoderType(EncoderType.STRING_ENCODER)
+                .encodeFeature(1)
+                .encodeFeature(6) // <--- Changed index here
+                .fit(ignite,
+                    cache,
+                    featureExtractor
+                );
+
+            IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                .fit(ignite,
+                    cache,
+                    strEncoderPreprocessor
+                );
+
+            IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                .fit(
+                    ignite,
+                    cache,
+                    imputingPreprocessor
+                );
+
+            return new NormalizationTrainer<Integer, Object[]>()
+                .withP(2)
+                .fit(
+                    ignite,
+                    cache,
+                    minMaxScalerPreprocessor
+                );
+        }
+
+        /** */
+        private IgniteCache<Integer, Object[]> dataToCache() {
+            CacheConfiguration<Integer, Object[]> cacheConfiguration = new CacheConfiguration<>();
+            cacheConfiguration.setName(UUID.randomUUID().toString());
+            cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
+
+            IgniteCache<Integer, Object[]> dataCache = ignite.createCache(cacheConfiguration);
+
+            readPassengers(dataCache);
+
+            return dataCache;
+        }
+
+        /**
+         * Read passengers data.
+         *
+         * @param cache The ignite cache.
+         */
+        private void readPassengers(IgniteCache<Integer, Object[]> cache) {
+            // IMPL NOTE: pclass;survived;name;sex;age;sibsp;parch;ticket;fare;cabin;embarked;boat;body;homedest
+            List<String[]> passengers = Arrays.asList(
+                new String[] {
+                    "1", "1", "Allen, Miss. Elisabeth Walton", "",
+                    "29", "", "", "24160", "211,3375", "B5", "", "2", "", "St Louis, MO"},
+                new String[] {
+                    "1", "1", "Allison, Master. Hudson Trevor", "male",
+                    "0,9167", "1", "2", "113781", "151,55", "C22 C26", "S", "11", "", "Montreal, PQ / Chesterville, ON"},
+                new String[] {
+                    "1", "0", "Allison, Miss. Helen Loraine", "female",
+                    "2", "1", "2", "113781", "151,55", "C22 C26", "S", "", "", "Montreal, PQ / Chesterville, ON"},
+                new String[] {
+                    "1", "0", "Allison, Mr. Hudson Joshua Creighton",
+                    "male", "30", "1", "2", "113781", "151,55", "C22 C26", "S", "", "135", "Montreal, PQ / Chesterville, ON"},
+                new String[] {
+                    "1", "0", "Allison, Mrs. Hudson J C (Bessie Waldo Daniels)", "female",
+                    "25", "1", "2", "113781", "151,55", "C22 C26", "S", "", "", "Montreal, PQ / Chesterville, ON"},
+                new String[] {
+                    "1", "1", "Anderson, Mr. Harry", "male",
+                    "48", "0", "0", "19952", "26,55", "E12", "S", "3", "", "New York, NY"},
+                new String[] {
+                    "1", "1", "Andrews, Miss. Kornelia Theodosia", "female",
+                    "63", "1", "0", "13502", "77,9583", "D7", "S", "10", "", "Hudson, NY"},
+                new String[] {
+                    "1", "0", "Andrews, Mr. Thomas Jr", "male",
+                    "39", "0", "0", "112050", "0", "A36", "S", "", "", "Belfast, NI"},
+                new String[] {
+                    "1", "1", "Appleton, Mrs. Edward Dale (Charlotte Lamson)", "female",
+                    "53", "2", "0", "11769", "51,4792", "C101", "S", "D", "", "Bayside, Queens, NY"},
+                new String[] {
+                    "1", "0", "Artagaveytia, Mr. Ramon", "male",
+                    "71", "0", "0", "PC 17609", "49,5042", "", "C", "", "22", "Montevideo, Uruguay"});
+
+            int cnt = 1;
+            for (String[] details : passengers) {
+                Object[] data = new Object[details.length];
+
+                for (int i = 0; i < details.length; i++)
+                    data[i] = doubleOrString(details[i]);
+
+                cache.put(cnt++, data);
             }
-            catch (ParseException e1) {
-                return data;
+        }
+
+        /** */
+        private Object doubleOrString(String data) {
+            NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
+            try {
+                return data.equals("") ? Double.NaN : Double.valueOf(data);
+            }
+            catch (java.lang.NumberFormatException e) {
+
+                try {
+                    return format.parse(data).doubleValue();
+                }
+                catch (ParseException e1) {
+                    return data;
+                }
             }
         }
     }

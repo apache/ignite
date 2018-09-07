@@ -410,8 +410,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            if (groupEvictionContext.shouldStop())
+            if (groupEvictionContext.shouldStop()) {
+                finishFut.onDone();
+
                 return;
+            }
 
             try {
                 boolean success = part.tryClear(groupEvictionContext);

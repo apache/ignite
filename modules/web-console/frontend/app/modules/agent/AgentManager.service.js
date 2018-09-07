@@ -20,6 +20,8 @@ import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/first';
+import 'rxjs/add/operator/partition';
+import 'rxjs/add/operator/takeUntil';
 
 import AgentModal from './AgentModal.service';
 // @ts-ignore

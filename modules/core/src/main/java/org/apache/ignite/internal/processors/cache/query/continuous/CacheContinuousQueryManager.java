@@ -496,6 +496,11 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         final boolean keepBinary,
         final boolean includeExpired) throws IgniteCheckedException
     {
+        //TODO IGNITE-7953
+        if (!cctx.atomic() && cctx.kernalContext().config().isMvccEnabled())
+            throw new UnsupportedOperationException("Continuous queries are not supported for transactional caches " +
+                "when MVCC is enabled.");
+
         IgniteOutClosure<CacheContinuousQueryHandler> clsr;
 
         if (rmtTransFactory != null) {
@@ -756,7 +761,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             final Iterator<CacheDataRow> it = cctx.offheap().cacheIterator(cctx.cacheId(),
                 true,
                 true,
-                AffinityTopologyVersion.NONE);
+                AffinityTopologyVersion.NONE,
+                null);
 
             locLsnr.onUpdated(new Iterable<CacheEntryEvent>() {
                 @Override public Iterator<CacheEntryEvent> iterator() {

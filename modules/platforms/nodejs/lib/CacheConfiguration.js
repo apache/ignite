@@ -20,8 +20,7 @@
 const ComplexObjectType = require('./ObjectType').ComplexObjectType;
 const ObjectArrayType = require('./ObjectType').ObjectArrayType;
 const BinaryUtils = require('./internal/BinaryUtils');
-const BinaryReader = require('./internal/BinaryReader');
-const BinaryWriter = require('./internal/BinaryWriter');
+const BinaryCommunicator = require('./internal/BinaryCommunicator');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 const Errors = require('./Errors');
 
@@ -94,17 +93,17 @@ class CacheKeyConfiguration {
     /**
      * @ignore
      */
-    async _write(buffer) {
-        await BinaryWriter.writeString(buffer, this._typeName);
-        await BinaryWriter.writeString(buffer, this._affinityKeyFieldName);
+    async _write(communicator, buffer) {
+        BinaryCommunicator.writeString(buffer, this._typeName);
+        BinaryCommunicator.writeString(buffer, this._affinityKeyFieldName);
     }
 
     /**
      * @ignore
      */
-    async _read(buffer) {
-        this._typeName = await BinaryReader.readObject(buffer);
-        this._affinityKeyFieldName = await BinaryReader.readObject(buffer);
+    async _read(communicator, buffer) {
+        this._typeName = BinaryCommunicator.readString(buffer);
+        this._affinityKeyFieldName = BinaryCommunicator.readString(buffer);
     }
 }
 
@@ -306,27 +305,27 @@ class QueryEntity {
     /**
      * @ignore
      */
-    async _write(buffer) {
-        await BinaryWriter.writeString(buffer, this._keyTypeName);
-        await BinaryWriter.writeString(buffer, this._valueTypeName);
-        await BinaryWriter.writeString(buffer, this._tableName);
-        await BinaryWriter.writeString(buffer, this._keyFieldName);
-        await BinaryWriter.writeString(buffer, this._valueFieldName);
-        await this._writeSubEntities(buffer, this._fields);
-        await this._writeAliases(buffer);
-        await this._writeSubEntities(buffer, this._indexes);
+    async _write(communicator, buffer) {
+        BinaryCommunicator.writeString(buffer, this._keyTypeName);
+        BinaryCommunicator.writeString(buffer, this._valueTypeName);
+        BinaryCommunicator.writeString(buffer, this._tableName);
+        BinaryCommunicator.writeString(buffer, this._keyFieldName);
+        BinaryCommunicator.writeString(buffer, this._valueFieldName);
+        await this._writeSubEntities(communicator, buffer, this._fields);
+        await this._writeAliases(communicator, buffer);
+        await this._writeSubEntities(communicator, buffer, this._indexes);
     }
 
     /**
      * @ignore
      */
-    async _writeAliases(buffer) {
+    async _writeAliases(communicator, buffer) {
         const length = this._aliases ? this._aliases.size : 0;
         buffer.writeInteger(length);
         if (length > 0) {
             for (let [key, value] of this._aliases.entries()) {
-                await BinaryWriter.writeString(buffer, key);
-                await BinaryWriter.writeString(buffer, value);
+                BinaryCommunicator.writeString(buffer, key);
+                BinaryCommunicator.writeString(buffer, value);
             }
         }
     }
@@ -334,12 +333,12 @@ class QueryEntity {
     /**
      * @ignore
      */
-    async _writeSubEntities(buffer, entities) {
+    async _writeSubEntities(communicator, buffer, entities) {
         const length = entities ? entities.length : 0;
         buffer.writeInteger(length);
         if (length > 0) {
             for (let entity of entities) {
-                await entity._write(buffer);
+                await entity._write(communicator, buffer);
             }
         }
     }
@@ -347,28 +346,28 @@ class QueryEntity {
     /**
      * @ignore
      */
-    async _read(buffer) {
-        this._keyTypeName = await BinaryReader.readObject(buffer);
-        this._valueTypeName = await BinaryReader.readObject(buffer);
-        this._tableName = await BinaryReader.readObject(buffer);
-        this._keyFieldName = await BinaryReader.readObject(buffer);
-        this._valueFieldName = await BinaryReader.readObject(buffer);
-        this._fields = await this._readSubEntities(buffer, QueryField);
-        await this._readAliases(buffer);
-        this._indexes = await this._readSubEntities(buffer, QueryIndex);
+    async _read(communicator, buffer) {
+        this._keyTypeName = await communicator.readObject(buffer);
+        this._valueTypeName = await communicator.readObject(buffer);
+        this._tableName = await communicator.readObject(buffer);
+        this._keyFieldName = await communicator.readObject(buffer);
+        this._valueFieldName = await communicator.readObject(buffer);
+        this._fields = await this._readSubEntities(communicator, buffer, QueryField);
+        await this._readAliases(communicator, buffer);
+        this._indexes = await this._readSubEntities(communicator, buffer, QueryIndex);
     }
 
     /**
      * @ignore
      */
-    async _readSubEntities(buffer, objectConstructor) {
+    async _readSubEntities(communicator, buffer, objectConstructor) {
         const length = buffer.readInteger(buffer);
         const result = new Array(length);
         if (length > 0) {
             let res;
             for (let i = 0; i < length; i++) {
                 res = new objectConstructor();
-                await res._read(buffer);
+                await res._read(communicator, buffer);
                 result[i] = res;
             }
         }
@@ -378,13 +377,13 @@ class QueryEntity {
     /**
      * @ignore
      */
-    async _readAliases(buffer) {
+    async _readAliases(communicator, buffer) {
         const length = buffer.readInteger(buffer);
         this._aliases = new Map();
         if (length > 0) {
             let res;
             for (let i = 0; i < length; i++) {
-                this._aliases.set(await BinaryReader.readObject(buffer), await BinaryReader.readObject(buffer));
+                this._aliases.set(await communicator.readObject(buffer), await communicator.readObject(buffer));
             }
         }
     }
@@ -416,6 +415,7 @@ class QueryField {
         this._precision = -1;
         this._scale = -1;
         this._valueType = null;
+        this._communicator = null;
         this._buffer = null;
         this._index = null;
     }
@@ -538,7 +538,7 @@ class QueryField {
             if (this._buffer) {
                 const position = this._buffer.position;
                 this._buffer.position = this._index;
-                const result = await BinaryReader.readObject(this._buffer, valueType);
+                const result = await this._communicator.readObject(this._buffer, valueType);
                 this._buffer.position = position;
                 return result;
             }
@@ -600,12 +600,12 @@ class QueryField {
     /**
      * @ignore
      */
-    async _write(buffer) {
-        await BinaryWriter.writeString(buffer, this._name);
-        await BinaryWriter.writeString(buffer, this._typeName);
+    async _write(communicator, buffer) {
+        BinaryCommunicator.writeString(buffer, this._name);
+        BinaryCommunicator.writeString(buffer, this._typeName);
         buffer.writeBoolean(this._isKeyField);
         buffer.writeBoolean(this._isNotNull);
-        await BinaryWriter.writeObject(buffer, this._defaultValue ? this._defaultValue : null, this._valueType);
+        await communicator.writeObject(buffer, this._defaultValue ? this._defaultValue : null, this._valueType);
         buffer.writeInteger(this._precision);
         buffer.writeInteger(this._scale);
     }
@@ -613,15 +613,16 @@ class QueryField {
     /**
      * @ignore
      */
-    async _read(buffer) {
-        this._name = await BinaryReader.readObject(buffer);
-        this._typeName = await BinaryReader.readObject(buffer);
+    async _read(communicator, buffer) {
+        this._name = await communicator.readObject(buffer);
+        this._typeName = await communicator.readObject(buffer);
         this._isKeyField = buffer.readBoolean();
         this._isNotNull = buffer.readBoolean();
         this._defaultValue = undefined;
+        this._communicator = communicator;
         this._buffer = buffer;
         this._index = buffer.position;
-        await BinaryReader.readObject(buffer);
+        await communicator.readObject(buffer);
         this._precision = buffer.readInteger();
         this._scale = buffer.readInteger();
     }
@@ -732,7 +733,7 @@ class QueryIndex {
      *
      * @return {number}
      */
-     getInlineSize() {
+    getInlineSize() {
         return this._inlineSize;
     }
 
@@ -762,8 +763,8 @@ class QueryIndex {
     /**
      * @ignore
      */
-    async _write(buffer) {
-        await BinaryWriter.writeString(buffer, this._name);
+    async _write(communicator, buffer) {
+        BinaryCommunicator.writeString(buffer, this._name);
         buffer.writeByte(this._type);
         buffer.writeInteger(this._inlineSize);
         // write fields
@@ -771,7 +772,7 @@ class QueryIndex {
         buffer.writeInteger(length);
         if (length > 0) {
             for (let [key, value] of this._fields.entries()) {
-                await BinaryWriter.writeString(buffer, key);
+                BinaryCommunicator.writeString(buffer, key);
                 buffer.writeBoolean(value);
             }
         }
@@ -780,8 +781,8 @@ class QueryIndex {
     /**
      * @ignore
      */
-    async _read(buffer) {
-        this._name = await BinaryReader.readObject(buffer);
+    async _read(communicator, buffer) {
+        this._name = await communicator.readObject(buffer);
         this._type = buffer.readByte();
         this._inlineSize = buffer.readInteger();
         // read fields
@@ -790,7 +791,7 @@ class QueryIndex {
         if (length > 0) {
             let res;
             for (let i = 0; i < length; i++) {
-                this._fields.set(await BinaryReader.readObject(buffer), buffer.readBoolean());
+                this._fields.set(await communicator.readObject(buffer), buffer.readBoolean());
             }
         }
     }
@@ -1610,7 +1611,7 @@ class CacheConfiguration {
     /**
      * @ignore
      */
-    async _write(buffer, name) {
+    async _write(communicator, buffer, name) {
         this._properties.set(PROP_NAME, name);
 
         const startPos = buffer.position;
@@ -1619,7 +1620,7 @@ class CacheConfiguration {
             BinaryUtils.getSize(BinaryUtils.TYPE_CODE.SHORT);
 
         for (let [propertyCode, property] of this._properties) {
-            await this._writeProperty(buffer, propertyCode, property);
+            await this._writeProperty(communicator, buffer, propertyCode, property);
         }
 
         const length = buffer.position - startPos;
@@ -1632,23 +1633,23 @@ class CacheConfiguration {
     /**
      * @ignore
      */
-    async _writeProperty(buffer, propertyCode, property) {
+    async _writeProperty(communicator, buffer, propertyCode, property) {
         buffer.writeShort(propertyCode);
         const propertyType = PROP_TYPES[propertyCode];
         switch (BinaryUtils.getTypeCode(propertyType)) {
             case BinaryUtils.TYPE_CODE.INTEGER:
             case BinaryUtils.TYPE_CODE.LONG:
             case BinaryUtils.TYPE_CODE.BOOLEAN:
-                await BinaryWriter.writeObject(buffer, property, propertyType, false);
+                await communicator.writeObject(buffer, property, propertyType, false);
                 return;
             case BinaryUtils.TYPE_CODE.STRING:
-                await BinaryWriter.writeObject(buffer, property, propertyType);
+                await communicator.writeObject(buffer, property, propertyType);
                 return;
             case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
                 const length = property ? property.length : 0;
                 buffer.writeInteger(length);
                 for (let prop of property) {
-                    await prop._write(buffer);
+                    await prop._write(communicator, buffer);
                 }
                 return;
             default:
@@ -1659,54 +1660,54 @@ class CacheConfiguration {
     /**
      * @ignore
      */
-    async _read(buffer) {
+    async _read(communicator, buffer) {
         // length
         buffer.readInteger();
-        await this._readProperty(buffer, PROP_ATOMICITY_MODE);
-        await this._readProperty(buffer, PROP_BACKUPS);
-        await this._readProperty(buffer, PROP_CACHE_MODE);
-        await this._readProperty(buffer, PROP_COPY_ON_READ);
-        await this._readProperty(buffer, PROP_DATA_REGION_NAME);
-        await this._readProperty(buffer, PROP_EAGER_TTL);
-        await this._readProperty(buffer, PROP_STATISTICS_ENABLED);
-        await this._readProperty(buffer, PROP_GROUP_NAME);
-        await this._readProperty(buffer, PROP_DEFAULT_LOCK_TIMEOUT);
-        await this._readProperty(buffer, PROP_MAX_CONCURRENT_ASYNC_OPS);
-        await this._readProperty(buffer, PROP_MAX_QUERY_ITERATORS);
-        await this._readProperty(buffer, PROP_NAME);
-        await this._readProperty(buffer, PROP_IS_ONHEAP_CACHE_ENABLED);
-        await this._readProperty(buffer, PROP_PARTITION_LOSS_POLICY);
-        await this._readProperty(buffer, PROP_QUERY_DETAIL_METRICS_SIZE);
-        await this._readProperty(buffer, PROP_QUERY_PARALLELISM);
-        await this._readProperty(buffer, PROP_READ_FROM_BACKUP);
-        await this._readProperty(buffer, PROP_REBALANCE_BATCH_SIZE);
-        await this._readProperty(buffer, PROP_REBALANCE_BATCHES_PREFETCH_COUNT);
-        await this._readProperty(buffer, PROP_REBALANCE_DELAY);
-        await this._readProperty(buffer, PROP_REBALANCE_MODE);
-        await this._readProperty(buffer, PROP_REBALANCE_ORDER);
-        await this._readProperty(buffer, PROP_REBALANCE_THROTTLE);
-        await this._readProperty(buffer, PROP_REBALANCE_TIMEOUT);
-        await this._readProperty(buffer, PROP_SQL_ESCAPE_ALL);
-        await this._readProperty(buffer, PROP_SQL_INDEX_INLINE_MAX_SIZE);
-        await this._readProperty(buffer, PROP_SQL_SCHEMA);
-        await this._readProperty(buffer, PROP_WRITE_SYNCHRONIZATION_MODE);
-        await this._readProperty(buffer, PROP_CACHE_KEY_CONFIGURATION);
-        await this._readProperty(buffer, PROP_QUERY_ENTITY);
+        await this._readProperty(communicator, buffer, PROP_ATOMICITY_MODE);
+        await this._readProperty(communicator, buffer, PROP_BACKUPS);
+        await this._readProperty(communicator, buffer, PROP_CACHE_MODE);
+        await this._readProperty(communicator, buffer, PROP_COPY_ON_READ);
+        await this._readProperty(communicator, buffer, PROP_DATA_REGION_NAME);
+        await this._readProperty(communicator, buffer, PROP_EAGER_TTL);
+        await this._readProperty(communicator, buffer, PROP_STATISTICS_ENABLED);
+        await this._readProperty(communicator, buffer, PROP_GROUP_NAME);
+        await this._readProperty(communicator, buffer, PROP_DEFAULT_LOCK_TIMEOUT);
+        await this._readProperty(communicator, buffer, PROP_MAX_CONCURRENT_ASYNC_OPS);
+        await this._readProperty(communicator, buffer, PROP_MAX_QUERY_ITERATORS);
+        await this._readProperty(communicator, buffer, PROP_NAME);
+        await this._readProperty(communicator, buffer, PROP_IS_ONHEAP_CACHE_ENABLED);
+        await this._readProperty(communicator, buffer, PROP_PARTITION_LOSS_POLICY);
+        await this._readProperty(communicator, buffer, PROP_QUERY_DETAIL_METRICS_SIZE);
+        await this._readProperty(communicator, buffer, PROP_QUERY_PARALLELISM);
+        await this._readProperty(communicator, buffer, PROP_READ_FROM_BACKUP);
+        await this._readProperty(communicator, buffer, PROP_REBALANCE_BATCH_SIZE);
+        await this._readProperty(communicator, buffer, PROP_REBALANCE_BATCHES_PREFETCH_COUNT);
+        await this._readProperty(communicator, buffer, PROP_REBALANCE_DELAY);
+        await this._readProperty(communicator, buffer, PROP_REBALANCE_MODE);
+        await this._readProperty(communicator, buffer, PROP_REBALANCE_ORDER);
+        await this._readProperty(communicator, buffer, PROP_REBALANCE_THROTTLE);
+        await this._readProperty(communicator, buffer, PROP_REBALANCE_TIMEOUT);
+        await this._readProperty(communicator, buffer, PROP_SQL_ESCAPE_ALL);
+        await this._readProperty(communicator, buffer, PROP_SQL_INDEX_INLINE_MAX_SIZE);
+        await this._readProperty(communicator, buffer, PROP_SQL_SCHEMA);
+        await this._readProperty(communicator, buffer, PROP_WRITE_SYNCHRONIZATION_MODE);
+        await this._readProperty(communicator, buffer, PROP_CACHE_KEY_CONFIGURATION);
+        await this._readProperty(communicator, buffer, PROP_QUERY_ENTITY);
     }
 
     /**
      * @ignore
      */
-    async _readProperty(buffer, propertyCode) {
+    async _readProperty(communicator, buffer, propertyCode) {
         const propertyType = PROP_TYPES[propertyCode];
         switch (BinaryUtils.getTypeCode(propertyType)) {
             case BinaryUtils.TYPE_CODE.INTEGER:
             case BinaryUtils.TYPE_CODE.LONG:
             case BinaryUtils.TYPE_CODE.BOOLEAN:
-                this._properties.set(propertyCode, await BinaryReader._readTypedObject(buffer, propertyType));
+                this._properties.set(propertyCode, await communicator._readTypedObject(buffer, propertyType));
                 return;
             case BinaryUtils.TYPE_CODE.STRING:
-                this._properties.set(propertyCode, await BinaryReader.readObject(buffer, propertyType));
+                this._properties.set(propertyCode, await communicator.readObject(buffer, propertyType));
                 return;
             case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
                 const length = buffer.readInteger();
@@ -1714,7 +1715,7 @@ class CacheConfiguration {
                     const properties = new Array(length);
                     for (let i = 0; i < length; i++) {
                         const property = new propertyType._elementType._objectConstructor();
-                        await property._read(buffer);
+                        await property._read(communicator, buffer);
                         properties[i] = property;
                     }
                     this._properties.set(propertyCode, properties);

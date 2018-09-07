@@ -59,33 +59,6 @@ page-configure-basic {
         line-height: 19px;
     }
 
-    .pcb-memory-size {
-        .input-tip {
-            display: flex;
-            flex-direction: row;
-
-            .form-control {
-                border-top-right-radius: 0;
-                border-bottom-right-radius: 0;
-            }
-
-            .btn-ignite {
-                border-top-left-radius: 0;
-                border-bottom-left-radius: 0;
-                padding-top: 0;
-                padding-bottom: 0;
-                flex: 0 0 auto;
-                width: 60px !important;
-            }
-        }
-    }
-
-    .pcb-form-field-size {
-        .form-field-feedback {
-            left: -63px;
-        }
-    }
-
     .pcb-form-main-buttons {
         display: flex;
         flex-direction: row;
@@ -101,7 +74,7 @@ page-configure-basic {
         box-shadow: 0px -2px 4px -1px rgba(0, 0, 0, 0.2);
     }
 
-    .form-field-checkbox {
+    .form-field__checkbox {
         margin-top: auto;
         margin-bottom: 8px;
     }

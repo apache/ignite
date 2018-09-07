@@ -2843,7 +2843,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             IgnitePredicate<ClusterNode> filter = cacheDesc.cacheConfiguration().getNodeFilter();
 
             for (ClusterNode n : allNodes) {
-                if (!CU.clientNode(n) && (filter == null || filter.apply(n)))
+                if (!n.isClient() && (filter == null || filter.apply(n)))
                     affNodes.add(n);
             }
 

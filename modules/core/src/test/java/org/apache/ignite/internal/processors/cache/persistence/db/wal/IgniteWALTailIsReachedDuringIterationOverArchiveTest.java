@@ -38,8 +38,8 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -185,7 +185,8 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
             }
         }
         catch (IgniteCheckedException e) {
-            if (e.getMessage().contains("WAL tail reached in archive directory, WAL segment file is corrupted."))
+            if (e.getMessage().contains("WAL tail reached in archive directory, WAL segment file is corrupted")
+                || e.getMessage().contains("WAL tail reached not in the last available segment"))
                 exception = true;
         }
 

@@ -18,7 +18,7 @@
 import template from './ui-ace-spring.pug';
 import IgniteUiAceSpring from './ui-ace-spring.controller';
 
-export default () => {
+export default function() {
     return {
         priority: 1,
         restrict: 'E',
@@ -41,4 +41,4 @@ export default () => {
             ngModelCtrl: '?ngModel'
         }
     };
-};
+}
