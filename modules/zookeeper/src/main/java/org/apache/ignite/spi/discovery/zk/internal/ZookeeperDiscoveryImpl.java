@@ -538,14 +538,19 @@ public class ZookeeperDiscoveryImpl {
         List<ClusterNode> nodes = rtState.top.topologySnapshot();
 
         if (nodes.isEmpty())
-            nodes = Collections.singletonList((ClusterNode)locNode);
+            nodes = Collections.singletonList(locNode);
 
-        lsnr.onDiscovery(EVT_NODE_SEGMENTED,
-            rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
-            locNode,
-            nodes,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+        try {
+            lsnr.onDiscovery(EVT_NODE_SEGMENTED,
+                rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
+                locNode,
+                nodes,
+                Collections.<Long, Collection<ClusterNode>>emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to notify about node segmentation", e);
+        }
     }
 
     /**
@@ -2250,7 +2255,7 @@ public class ZookeeperDiscoveryImpl {
             locNode,
             topSnapshot,
             Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+            null).get();
 
         // Reset events (this is also notification for clients left from previous cluster).
         rtState.zkClient.setData(zkPaths.evtsPath, marshalZip(rtState.evtsData), -1);
@@ -3423,7 +3428,7 @@ public class ZookeeperDiscoveryImpl {
      * @param joiningData Joining node data.
      */
     @SuppressWarnings("unchecked")
-    private void notifyNodeJoin(ZkJoinedNodeEvtData joinedEvtData, ZkJoiningNodeData joiningData) {
+    private void notifyNodeJoin(ZkJoinedNodeEvtData joinedEvtData, ZkJoiningNodeData joiningData) throws IgniteCheckedException {
         final ZookeeperClusterNode joinedNode = joiningData.node();
 
         joinedNode.order(joinedEvtData.topVer);
@@ -3438,13 +3443,13 @@ public class ZookeeperDiscoveryImpl {
             joinedNode,
             topSnapshot,
             Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+            null).get();
     }
 
     /**
      * @param evtData Event data.
      */
-    private void notifyNodeFail(final ZkDiscoveryNodeFailEventData evtData) {
+    private void notifyNodeFail(final ZkDiscoveryNodeFailEventData evtData) throws IgniteCheckedException {
         notifyNodeFail(evtData.failedNodeInternalId(), evtData.topologyVersion());
     }
 
@@ -3452,7 +3457,7 @@ public class ZookeeperDiscoveryImpl {
      * @param nodeInternalOrder Node order.
      * @param topVer Topology version.
      */
-    private void notifyNodeFail(long nodeInternalOrder, long topVer) {
+    private void notifyNodeFail(long nodeInternalOrder, long topVer) throws IgniteCheckedException {
         final ZookeeperClusterNode failedNode = rtState.top.removeNode(nodeInternalOrder);
 
         assert failedNode != null && !failedNode.isLocal() : failedNode;
@@ -3469,7 +3474,7 @@ public class ZookeeperDiscoveryImpl {
             failedNode,
             topSnapshot,
             Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null);
+            null).get();
 
         stats.onNodeFailed();
     }
@@ -3479,7 +3484,7 @@ public class ZookeeperDiscoveryImpl {
      * @param clientReconnect {@code True} if allow client reconnect.
      * @return Exception to be thrown.
      */
-    private ZookeeperClientFailedException localNodeFail(String msg, boolean clientReconnect) {
+    private ZookeeperClientFailedException localNodeFail(String msg, boolean clientReconnect) throws IgniteCheckedException {
         U.warn(log, msg);
 
 //        if (locNode.isClient() && rtState.zkClient.connected()) {
