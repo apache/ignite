@@ -45,7 +45,6 @@ the whole repository:
 ::
 
 $ git clone git@github.com:apache/ignite.git
-$ git checkout ignite-7782
 $ cd ignite/modules/platforms/python
 $ pip install -e .
 
