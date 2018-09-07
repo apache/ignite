@@ -899,8 +899,11 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param internal Internal flag.
      * @return Whether listener was actually registered.
      */
-    GridContinuousHandler.RegisterStatus registerListener(UUID lsnrId, CacheContinuousQueryListener lsnr,
-            boolean internal) {
+    GridContinuousHandler.RegisterStatus registerListener(
+        UUID lsnrId,
+        CacheContinuousQueryListener lsnr,
+        boolean internal
+    ) {
         boolean added;
 
         if (internal) {
@@ -908,8 +911,10 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             if (added)
                 intLsnrCnt.incrementAndGet();
-        } else {
+        }
+        else {
             listenerLock.writeLock().lock();
+
             try {
                 if (lsnrCnt.get() == 0) {
                     if (cctx.group().sharedGroup() && !cctx.isLocal())
@@ -920,7 +925,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
                 if (added)
                     lsnrCnt.incrementAndGet();
-            } finally {
+            }
+            finally {
                 listenerLock.writeLock().unlock();
             }
 
@@ -929,7 +935,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
 
         return added ? GridContinuousHandler.RegisterStatus.REGISTERED
-                : GridContinuousHandler.RegisterStatus.NOT_REGISTERED;
+            : GridContinuousHandler.RegisterStatus.NOT_REGISTERED;
     }
 
     /**
@@ -945,8 +951,10 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
                 lsnr.onUnregister();
             }
-        } else {
+        }
+        else {
             listenerLock.writeLock().lock();
+
             try {
                 if ((lsnr = lsnrs.remove(id)) != null) {
                     int cnt = lsnrCnt.decrementAndGet();
@@ -954,7 +962,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     if (cctx.group().sharedGroup() && cnt == 0 && !cctx.isLocal())
                         cctx.group().removeCacheWithContinuousQuery(cctx);
                 }
-            } finally {
+            }
+            finally {
                 listenerLock.writeLock().unlock();
             }
 
