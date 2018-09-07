@@ -196,7 +196,7 @@ public class LocalModelsTest {
         data.put(1, new double[] {1.0, 1960, 373200});
 
         KMeansTrainer trainer = new KMeansTrainer()
-            .withK(1);
+            .withAmountOfClusters(1);
 
         return trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
