@@ -62,7 +62,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     private PartitionLossPolicy partLossPlc;
 
     /** */
-    private static final String CACHE_NAME = "partitioned";
+    protected static final String CACHE_NAME = "partitioned";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -72,6 +72,15 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         cfg.setClientMode(client);
 
+        cfg.setCacheConfiguration(cacheConfiguration());
+
+        return cfg;
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration<Integer, Integer> cacheConfiguration() {
         CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>(CACHE_NAME);
 
         cacheCfg.setCacheMode(PARTITIONED);
@@ -80,9 +89,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         cacheCfg.setPartitionLossPolicy(partLossPlc);
         cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        cfg.setCacheConfiguration(cacheCfg);
-
-        return cfg;
+        return cacheCfg;
     }
 
     /** {@inheritDoc} */
@@ -194,6 +201,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             // Check that writing in recover mode does not clear partition state.
             verifyCacheOps(canWrite, safe, part, ig);
+
+            // Validate queries.
+            validateQuery(safe, part, ig);
         }
 
         // Check that partition state does not change after we start a new node.
@@ -352,5 +362,16 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             assertTrue("Failed to wait for partition LOST event", latch.await(10, TimeUnit.SECONDS));
 
         return part;
+    }
+
+    /**
+     * Validate query execution on a node.
+     *
+     * @param safe Safe flag.
+     * @param part Partition.
+     * @param node Node.
+     */
+    protected void validateQuery(boolean safe, int part, Ignite node) {
+        // No-op.
     }
 }
