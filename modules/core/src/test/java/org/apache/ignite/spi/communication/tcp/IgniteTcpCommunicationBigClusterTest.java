@@ -18,7 +18,9 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -86,6 +88,8 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testHandshakeNoHangOnNodeJoining() throws Exception {
+        clearExceptionRegistry();
+
         AtomicInteger idx = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
@@ -112,13 +116,28 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
 
         fut.get();
 
-        final IgniteExceptionRegistry exReg = IgniteExceptionRegistry.get();
+        IgniteExceptionRegistry exReg = IgniteExceptionRegistry.get();
 
         for (IgniteExceptionRegistry.ExceptionInfo info : exReg.getErrors(0L)) {
             if (info.error() instanceof IgniteCheckedException
                 && "HandshakeTimeoutException".equals(info.error().getClass().getSimpleName()))
                 throw new IgniteCheckedException("Test failed because handshake hangs.", info.error());
         }
+    }
+
+    /**
+     * Clears exception registry.
+     */
+    private void clearExceptionRegistry() {
+        IgniteExceptionRegistry exReg = IgniteExceptionRegistry.get();
+
+        ConcurrentLinkedDeque<Object> q = U.field(exReg, "q");
+
+        q.clear();
+
+        AtomicLong cnt = U.field(exReg, "errCnt");
+
+        cnt.set(0);
     }
 
     /** */
