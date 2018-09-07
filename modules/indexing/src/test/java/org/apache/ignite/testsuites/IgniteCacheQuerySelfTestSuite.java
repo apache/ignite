@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCheckClusterStateBefore
 import org.apache.ignite.internal.processors.cache.IgniteCrossCachesJoinsQueryTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicSqlRestoreTest;
 import org.apache.ignite.internal.processors.cache.IncorrectQueryEntityTest;
+import org.apache.ignite.internal.processors.cache.IndexingCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityCaseMismatchTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.authentication.SqlUserCommandSelfTest;
@@ -468,6 +469,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(ThreadLocalObjectPoolSelfTest.class);
         suite.addTestSuite(H2StatementCacheSelfTest.class);
         suite.addTestSuite(PreparedStatementExSelfTest.class);
+
+        // Partition loss.
+        suite.addTestSuite(IndexingCachePartitionLossPolicySelfTest.class);
 
         return suite;
     }

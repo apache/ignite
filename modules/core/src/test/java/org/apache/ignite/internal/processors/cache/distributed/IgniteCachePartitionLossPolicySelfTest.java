@@ -72,7 +72,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     private PartitionLossPolicy partLossPlc;
 
     /** */
-    private static final String CACHE_NAME = "partitioned";
+    protected static final String CACHE_NAME = "partitioned";
 
     /** */
     private int backups = 0;
@@ -101,6 +101,15 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         cfg.setClientMode(client);
 
+        cfg.setCacheConfiguration(cacheConfiguration());
+
+        return cfg;
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration<Integer, Integer> cacheConfiguration() {
         CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>(CACHE_NAME);
 
         cacheCfg.setCacheMode(PARTITIONED);
@@ -109,9 +118,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         cacheCfg.setPartitionLossPolicy(partLossPlc);
         cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        cfg.setCacheConfiguration(cacheCfg);
-
-        return cfg;
+        return cacheCfg;
     }
 
     /** {@inheritDoc} */
@@ -294,6 +301,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             // Check that writing in recover mode does not clear partition state.
             verifyCacheOps(canWrite, safe, part, ig);
+
+            // Validate queries.
+            validateQuery(safe, part, ig);
         }
 
         // Check that partition state does not change after we start a new node.
@@ -408,6 +418,17 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         }
 
         return parts;
+    }
+
+    /**
+     * Validate query execution on a node.
+     *
+     * @param safe Safe flag.
+     * @param part Partition.
+     * @param node Node.
+     */
+    protected void validateQuery(boolean safe, int part, Ignite node) {
+        // No-op.
     }
 
     /** */
