@@ -131,7 +131,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     private <K, V> List<Vector> getCentroids(IgniteBiFunction<K, V, Vector> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor, DatasetBuilder<K, V> datasetBuilder) {
         KMeansTrainer trainer = new KMeansTrainer()
-            .withK(k)
+            .withAmountOfClusters(k)
             .withMaxIterations(maxIterations)
             .withSeed(seed)
             .withDistance(distance)
@@ -143,7 +143,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             lbExtractor
         );
 
-        return Arrays.asList(mdl.centers());
+        return Arrays.asList(mdl.getCenters());
     }
 
     /** */
