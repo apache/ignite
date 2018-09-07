@@ -117,11 +117,6 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
         for (IgniteExceptionRegistry.ExceptionInfo info : exReg.getErrors(0L)) {
             if (info.error() instanceof IgniteCheckedException
                 && "HandshakeTimeoutException".equals(info.error().getClass().getSimpleName()))
-                info.error().printStackTrace();
-        }
-        for (IgniteExceptionRegistry.ExceptionInfo info : exReg.getErrors(0L)) {
-            if (info.error() instanceof IgniteCheckedException
-                && "HandshakeTimeoutException".equals(info.error().getClass().getSimpleName()))
                 throw new IgniteCheckedException("Test failed because handshake hangs.", info.error());
         }
     }
