@@ -63,9 +63,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
             new CacheConfiguration(CACHE_NAME)
                 .setAffinity(new RendezvousAffinityFunction().setPartitions(8))
                 .setQueryEntities(Arrays.asList(new QueryEntity(Key.class, Value.class))))
-            .setCacheKeyConfiguration(new CacheKeyConfiguration()
-                .setTypeName(Key.class.getName())
-                .setAffinityKeyFieldName("grp"));
+            .setCacheKeyConfiguration(new CacheKeyConfiguration(Key.class));
 
         return cfg;
     }
