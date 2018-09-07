@@ -73,9 +73,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** */
     private MvccSnapshot mvccSnapshot;
 
-    /** Map of update counters made by this tx. Mapping: cacheId -> partId -> updCntr. */
-    @GridDirectMap(keyType = Integer.class, valueType = GridDhtPartitionsUpdateCountersMap.class)
-    private Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs;
+    /** */
+    @GridDirectMap(keyType = Integer.class, valueType = PartitionUpdateCounters.class)
+    private Map<Integer, PartitionUpdateCounters> updCntrs;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -220,7 +221,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean retVal,
         boolean waitRemoteTxs,
         MvccSnapshot mvccSnapshot,
-        Map<Integer, GridDhtPartitionsUpdateCountersMap> updCntrs
+        Map<Integer, PartitionUpdateCounters> updCntrs
     ) {
         this(nearNodeId,
             futId,
@@ -362,10 +363,11 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     public void needReturnValue(boolean retVal) {
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
     }
+
     /**
-     * @return Partition update counters map.
+     * @return Partition counters update deferred until transaction commit.
      */
-    public Map<Integer, GridDhtPartitionsUpdateCountersMap> updateCountersMap() {
+    public Map<Integer, PartitionUpdateCounters> updateCounters() {
         return updCntrs;
     }
 

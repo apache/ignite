@@ -1450,36 +1450,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param cacheId Cache ID.
          */
         void incrementSize(int cacheId) {
-            storageSize.incrementAndGet();
-
-            if (grp.sharedGroup()) {
-                AtomicLong size = cacheSizes.get(cacheId);
-
-                if (size == null) {
-                    AtomicLong old = cacheSizes.putIfAbsent(cacheId, size = new AtomicLong());
-
-                    if (old != null)
-                        size = old;
-                }
-
-                size.incrementAndGet();
-            }
+            updateSize(cacheId, 1);
         }
 
         /**
          * @param cacheId Cache ID.
          */
         void decrementSize(int cacheId) {
-            storageSize.decrementAndGet();
-
-            if (grp.sharedGroup()) {
-                AtomicLong size = cacheSizes.get(cacheId);
-
-                if (size == null)
-                    return;
-
-                size.decrementAndGet();
-            }
+            updateSize(cacheId, -1);
         }
 
         /** {@inheritDoc} */
@@ -1514,6 +1492,24 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public long fullSize() {
             return storageSize.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateSize(int cacheId, long delta) {
+            storageSize.addAndGet(delta);
+
+            if (grp.sharedGroup()) {
+                AtomicLong size = cacheSizes.get(cacheId);
+
+                if (size == null) {
+                    AtomicLong old = cacheSizes.putIfAbsent(cacheId, size = new AtomicLong());
+
+                    if (old != null)
+                        size = old;
+                }
+
+                size.addAndGet(delta);
+            }
         }
 
         /** {@inheritDoc} */
@@ -1953,8 +1949,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert !old;
 
-                incrementSize(cctx.cacheId());
-
                 GridCacheQueryManager qryMgr = cctx.queries();
 
                 if (qryMgr.enabled())
@@ -2284,11 +2278,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 rowStore.removeRow(row.link());
 
-                decrementSize(cctx.cacheId());
-
                 if (first)
                     first = false;
             }
+
+            // first == true means there were no row versions
+            if (!first)
+                decrementSize(cctx.cacheId());
         }
 
         /** {@inheritDoc} */
@@ -2317,8 +2313,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         clearPendingEntries(cctx, oldRow);
 
                         rowStore.removeRow(cleanupRow.link());
-
-                        decrementSize(cctx.cacheId());
 
                         res++;
                     }

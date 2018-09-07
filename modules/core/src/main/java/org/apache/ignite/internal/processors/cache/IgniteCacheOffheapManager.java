@@ -620,6 +620,14 @@ public interface IgniteCacheOffheapManager {
         long fullSize();
 
         /**
+         * Updates size metric for particular cache.
+         *
+         * @param cacheId Cache ID.
+         * @param delta Size delta.
+         */
+        void updateSize(int cacheId, long delta);
+
+        /**
          * @return Update counter.
          */
         long updateCounter();

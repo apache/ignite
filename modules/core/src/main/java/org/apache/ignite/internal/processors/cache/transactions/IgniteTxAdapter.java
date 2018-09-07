@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
@@ -62,10 +63,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -135,6 +138,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Finalizing status updater. */
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, FinalizationStatus> FINALIZING_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, FinalizationStatus.class, "finalizing");
+
+    /** */
+    private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, TxCounters> TX_COUNTERS_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -274,6 +281,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Rollback finish future. */
     @GridToStringExclude
     private volatile IgniteInternalFuture rollbackFut;
+
+    /** */
+    private volatile TxCounters txCounters = new TxCounters();
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -2015,6 +2025,46 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
+    @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+        if (createIfAbsent && txCounters == null)
+            TX_COUNTERS_UPD.compareAndSet(this, null, new TxCounters());
+
+        return txCounters;
+    }
+
+    /**
+     * Make counters accumulated during transaction visible outside of transaciton.
+     */
+    protected void applyTxCounters() {
+        TxCounters txCntrs = txCounters(false);
+
+        if (txCntrs == null)
+            return;
+
+        Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas = txCntrs.sizeDeltas();
+
+        for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
+            Integer cacheId = entry.getKey();
+            Map<Integer, AtomicLong> partDeltas = entry.getValue();
+
+            assert !F.isEmpty(partDeltas);
+
+            GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
+
+            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
+                Integer p = e.getKey();
+                long delta = e.getValue().get();
+
+                GridDhtLocalPartition dhtPart = top.localPartition(p);
+
+                assert dhtPart != null;
+
+                dhtPart.dataStore().updateSize(cacheId, delta);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxAdapter.class, this,
             "duration", (U.currentTimeMillis() - startTime) + "ms",
@@ -2284,6 +2334,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public UUID originatingNodeId() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+            return null;
         }
 
         /** {@inheritDoc} */
