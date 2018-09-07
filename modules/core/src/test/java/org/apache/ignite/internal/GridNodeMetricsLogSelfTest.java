@@ -113,7 +113,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         assertTrue(msg, fullLog.matches("(?s).*PageMemory \\[pages=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Off-heap \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*.+ region \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).* region \\[used=.*, free=.*, comm=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Outbound messages queue \\[size=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
@@ -132,7 +132,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         Set<String> regions = new HashSet<>();
 
         Matcher matcher = Pattern.compile("(?m).{2,}( {3}(?<name>.+) region|Off-heap) " +
-                "\\[used=(?<used>[-.\\d]*).*, free=(?<free>[-.\\d]*).*, comm=(?<comm>[-.\\d]*).*].*")
+                "\\[used=(?<used>[-.\\d]*).*, free=(?<free>[-.\\d]*).*, comm=(?<comm>[-.\\d]*).*]")
             .matcher(logOutput);
 
         while (matcher.find()) {
@@ -160,13 +160,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
 
         assertTrue("Off-heap metrics have unexpected format.", summaryFmtMatches);
 
-        Set<String> expRegions = grid(0)
-            .context()
-            .cache()
-            .context()
-            .database()
-            .dataRegions()
-            .stream()
+        Set<String> expRegions = grid(0).context().cache().context().database().dataRegions().stream()
             .map(v -> v.config().getName().trim())
             .collect(Collectors.toSet());
 

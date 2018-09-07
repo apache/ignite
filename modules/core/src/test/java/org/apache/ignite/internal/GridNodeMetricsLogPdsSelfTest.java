@@ -85,7 +85,7 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
         Set<String> regions = new HashSet<>();
 
         Pattern ptrn = Pattern.compile("(?m).{2,}( {3}(?<name>.+) region|Ignite persistence) " +
-            "\\[used=(?<used>([-.\\d]|" + UNKNOWN_SIZE + ")*).*].*");
+            "\\[used=(?<used>([-.\\d]|" + UNKNOWN_SIZE + ")).*]");
 
         Matcher matcher = ptrn.matcher(logOutput);
 
@@ -97,7 +97,7 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
             String usedSize = matcher.group("used");
 
             // TODO https://issues.apache.org/jira/browse/IGNITE-9455
-            // TODO The actual value of the mtric should be printed when this issue is solved.
+            // TODO The actual value of the metric should be printed when this issue is solved.
             int used = UNKNOWN_SIZE.equals(usedSize) ? 0 : Integer.parseInt(usedSize);
 
             assertTrue(used + " should be non negative: " + subj, used >= 0);
@@ -112,13 +112,7 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
 
         assertTrue("Persistence metrics have unexpected format.", summaryFmtMatches);
 
-        Set<String> expRegions = grid(0)
-            .context()
-            .cache()
-            .context()
-            .database()
-            .dataRegions()
-            .stream()
+        Set<String> expRegions = grid(0).context().cache().context().database().dataRegions().stream()
             .filter(v -> v.config().isPersistenceEnabled())
             .map(v -> v.config().getName().trim())
             .collect(Collectors.toSet());
