@@ -3605,7 +3605,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
 
                 if (printCheckpointStats)
-                    if (log.isInfoEnabled())
+                    if (log.isInfoEnabled()) {
+                        List<DbCheckpointListener.SaveMetadataStat> stats = tracker.getStats();
+
+                        int totalDirtyPages = 0;
+                        long totalDuration = 0L;
+
+                        for (DbCheckpointListener.SaveMetadataStat stat : stats) {
+                            if (stat == null) {
+                                log.error("Unexpected zero stat");
+
+                                continue;
+                            }
+
+                            totalDirtyPages += stat.getPages();
+                            totalDuration += stat.getDuration();
+                        }
+
                         log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
                                     "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s', " +
                                     "checkpointLockGetDuration=%dms" +
@@ -3616,7 +3632,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     ", checkpointEntryLoggedDuration=%dms" +
                                     ", totalMetasProcessed=%d" +
                                     ", totalDirtyMetaPages=%d" +
-                                    ", totalMetasDuration=%dms" +
+                                    ", totalMetasDuration=%fms" +
                                     ']',
                                 cpRec.checkpointId(),
                                 cpPtr,
@@ -3631,17 +3647,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 tracker.cacheGroupStatesDuration(),
                                 tracker.drtyPagesCollectedDuration(),
                                 tracker.checkpointEntryLoggedDuration(),
-                                tracker.getStats().size(),
-                                tracker.getStats().stream().collect(Collectors.summarizingLong(new ToLongFunction<DbCheckpointListener.SaveMetadataStat>() {
-                                    @Override public long applyAsLong(DbCheckpointListener.SaveMetadataStat val) {
-                                        return val.getPages();
-                                    }
-                                })).getSum(),
-                                (long)tracker.getStats().stream().collect(Collectors.summarizingDouble(new ToDoubleFunction<DbCheckpointListener.SaveMetadataStat>() {
-                                    @Override public double applyAsDouble(DbCheckpointListener.SaveMetadataStat val) {
-                                        return val.getDuration();
-                                    }
-                                })).getSum() / 1000 / 1000
+                                stats.size(),
+                                totalDirtyPages,
+                                totalDuration / 1000 / 1000.
 //                                tracker.getStats().entrySet().stream().sorted((o1,
 //                                    o2) -> Long.compare(o2.getKey(), o1.getKey())).
 //                                    map(new Function<Map.Entry<Long, DbCheckpointListener.SaveMetadataStat>, String>() {
@@ -3656,6 +3664,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 //                                    }).collect(Collectors.toList()).toString()
                             )
                         );
+                    }
 
                 return new Checkpoint(cp, cpPages, curr);
             }
