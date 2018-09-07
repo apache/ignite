@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheConfigurationFileConsistencyCheckTest;
@@ -75,6 +76,10 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         // Metrics
         suite.addTestSuite(FillFactorMetricTest.class);
+
+        // Binary meta tests.
+        suite.addTestSuite(IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest.class);
+
 
         return suite;
     }
