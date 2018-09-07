@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.boosting;
-
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
-
 /**
- * Contains implementations of per-prediction loss functions for gradient boosting algorithm.
+ * <!-- Package description. -->
+ * Contains implementation of convergence checking computer by mean of absolute value of errors in dataset.
  */
-public class LossGradientPerPredictionFunctions {
-    /** Mean squared error loss for regression. */
-    public static IgniteTriFunction<Long, Double, Double, Double> MSE =
-        (sampleSize, answer, prediction) -> (2.0 / sampleSize) * (prediction - answer);
-
-    /** Logarithmic loss for binary classification. */
-    public static IgniteTriFunction<Long, Double, Double, Double> LOG_LOSS =
-        (sampleSize, answer, prediction) -> (prediction - answer) / (prediction * (1.0 - prediction));
-}
+package org.apache.ignite.ml.composition.boosting.convergence.mean;
