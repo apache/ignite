@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -61,7 +62,10 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(
             new CacheConfiguration(CACHE_NAME)
                 .setAffinity(new RendezvousAffinityFunction().setPartitions(8))
-                .setQueryEntities(Arrays.asList(new QueryEntity(Key.class, Value.class))));
+                .setQueryEntities(Arrays.asList(new QueryEntity(Key.class, Value.class))))
+            .setCacheKeyConfiguration(new CacheKeyConfiguration()
+                .setTypeName(Key.class.getName())
+                .setAffinityKeyFieldName("grp"));
 
         return cfg;
     }
