@@ -244,7 +244,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * from all nodes that pass this filter. First node passed to this filter is a node being tested,
      * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
-     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.= 
      *
      * @return Optional backup filter.
      */
@@ -257,7 +257,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * nodes that pass this filter. First node being passed to this filter is a node being tested,
      * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
-     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.     
+     * <p>
+     * For an example filter, see {@link ClusterNodeAttributeAffinityBackupFilter }.  
      *
      * @param affinityBackupFilter Optional backup filter.
      * @return {@code this} for chaining.

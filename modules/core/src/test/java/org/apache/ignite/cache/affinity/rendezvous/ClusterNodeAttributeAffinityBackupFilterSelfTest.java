@@ -17,13 +17,17 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionBackupFilterAbstractSelfTest;
 
 /**
  * Partitioned affinity test.
  */
-public class RendezvousAffinityFunctionBackupFilterSelfTest extends AffinityFunctionBackupFilterAbstractSelfTest {
+public class ClusterNodeAttributeAffinityBackupFilterSelfTest extends AffinityFunctionBackupFilterAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunction() {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false);
@@ -36,9 +40,24 @@ public class RendezvousAffinityFunctionBackupFilterSelfTest extends AffinityFunc
     /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunctionWithAffinityBackupFilter(String attributeName) {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false);
-
-        aff.setAffinityBackupFilter(affinityBackupFilter);
+        
+        String[] stringArray = new String[1];
+       
+        stringArray[0] = attributeName;
+        
+        aff.setAffinityBackupFilter(new ClusterNodeAttributeAffinityBackupFilter(stringArray));
 
         return aff;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+   protected Map<String, Integer>   checkPartitionsWithAffinityBackupFilterExpectedPerGroup() {
+       Map<String, Integer> map = new HashMap<String,Integer>();
+       
+       map.put(FIRST_NODE_GROUP, 1);
+       map.put("B", 1);
+       map.put("C", 1);
+       return map;
     }
 }

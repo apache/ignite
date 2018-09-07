@@ -25,13 +25,54 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
- * This class can be used as a {@link RendezvousAffinityFunction#affinityBackupFilter }.
- * It is constructed with a array of node attribute names, and a candidate node will be rejected if *any* of the 
- * already selected nodes have the identical values for *all* of those attributes on the candidate node.
+ * This class can be used as a {@link RendezvousAffinityFunction#affinityBackupFilter } to create 
+ * cache templates in Spring that force each partition's primary and backup to different hardware which 
+ * is not expected to fail simultaneously, e.g., in AWS, to different "availability zones".  This
+ * is a per-partition selection, and different partitions may choose different primaries.
  * 
- * For example, in AWS, you could configure each node with "availability_zone" attribute, and use this class, constructed 
- * with [ "availability_zone" ] as the {@link RendezvousAffinityFunction#affinityBackupFilter }.   This would only 
- * allow backup copies of a partition to be placed on nodes in different availability zones than the primary or other backups.
+ * This implementation will discard backups rather than place multiple on the same set of nodes. This avoids
+ * trying to cram more data onto remaining nodes  when some have failed.
+ * 
+ * A list of node attributes to compare is provided on construction.  Note: "All cluster nodes, 
+ * on startup, automatically register all the environment and system properties as node attributes."
+ *  
+ * This class is constructed with a array of node attribute names, and a candidate node will be rejected if *any* of the 
+ * previously selected nodes for a partition have the identical values for *all* of those attributes on the candidate node.  
+ * 
+ * </pre>
+ * <h2 class="header">Spring Example</h2>
+ * Create a partitioned cache template plate with 1 backup, where the backup will not be placed in the same availability zone
+ * as the primary.   Note: This example requires that the environment variable "AVAILABILTY_ZONE" be set appropriately on 
+ * each node via some means external to Ignite.  On AWS, some nodes might have AVAILABILTY_ZONE=us-east-1a and others 
+ * AVAILABILTY_ZONE=us-east-1b. 
+ * <pre name="code" class="xml">
+ * 
+ * &lt;property name="cacheConfiguration"&gt; 
+ *     &lt;list&gt; 
+ *         &lt;bean id="cache-template-bean" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration"&gt; 
+ *             &lt;property name="name" value="JobcaseDefaultCacheConfig*"/&gt; 
+ *             &lt;property name="cacheMode" value="PARTITIONED" /&gt; 
+ *             &lt;property name="backups" value="1" /&gt; 
+ *             &lt;property name="affinity"&gt;
+ *                 &lt;bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction"&gt;
+ *                     &lt;property name="affinityBackupFilter"&gt;
+ *                         &lt;bean class="org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilter"&gt;
+ *                            &lt;constructor-arg&gt;
+ *                                &lt;array value-type="java.lang.String"&gt;
+ *                                     &lt;!-- Backups must go to different AZs --&gt;
+ *                                     &lt;value&gt;AVAILABILITY_ZONE&lt;/value&gt;
+ *                                &lt;/array&gt;
+ *                            &lt;/constructor-arg&gt;                                   
+ *                         &lt;/bean&gt;
+ *                     &lt;/property&gt;
+ *                &lt;/bean&gt;
+ *             &lt;/property&gt;
+ *        &lt;/bean&gt; 
+ *    &lt;/list&gt; 
+ *  &lt;/property&gt; 
+ * </pre>
+ * 
+ * With more backups, multiple properties, e.g., SITE, ZONE,  could be used to force backups to different subgroups. 
  */
 public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, List<ClusterNode>>, Serializable {
    /**
@@ -54,17 +95,18 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
 
    /**
     * Defines a predicate which returns {@code true} if a node is acceptable for a backup
-    * or {@code false} otherwise. An acceptable node is one where its set of attributes' values
+    * or {@code false} otherwise. An acceptable node is one where its set of attribute values
     * is not exact match with any of the previously selected nodes.  If an attribute does not
     * exist on  either or both nodes, then the attribute does not match.
     *
     * @param candidate A node that is a candidate for becoming a backup node for a partition.
-    * @param selected A list of primary/backup nodes already selected.  The primary is first.
+    * @param previouslySelected A list of primary/backup nodes already chosen for a partition.  
+    * The primary is first.
     */
    @Override
-   public boolean apply(ClusterNode candidate, List<ClusterNode> selected) {
+   public boolean apply(ClusterNode candidate, List<ClusterNode> previouslySelected) {
 
-      for (ClusterNode node : selected) {
+      for (ClusterNode node : previouslySelected) {
          boolean match = true;
          
          for (String attribute : attributeNames) {
