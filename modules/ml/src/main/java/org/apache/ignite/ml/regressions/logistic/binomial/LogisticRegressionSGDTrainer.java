@@ -41,19 +41,19 @@ import org.jetbrains.annotations.NotNull;
  */
 public class LogisticRegressionSGDTrainer<P extends Serializable> extends SingleLabelDatasetTrainer<LogisticRegressionModel> {
     /** Update strategy. */
-    private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
+    private UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
     /** Max number of iteration. */
-    private final int maxIterations;
+    private int maxIterations;
 
     /** Batch size. */
-    private final int batchSize;
+    private int batchSize;
 
     /** Number of local iterations. */
-    private final int locIterations;
+    private int locIterations;
 
     /** Seed for random generator. */
-    private final long seed;
+    private long seed;
 
     /**
      * Constructs a new instance of linear regression SGD trainer.
@@ -116,10 +116,11 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
 
         IgniteBiFunction<K, V, double[]> lbExtractorWrapper = (k, v) -> new double[] {lbExtractor.apply(k, v)};
         MultilayerPerceptron mlp;
-        if(mdl != null) {
+        if (mdl != null) {
             mlp = restoreMLPState(mdl);
             mlp = trainer.update(mlp, datasetBuilder, featureExtractor, lbExtractorWrapper);
-        } else
+        }
+        else
             mlp = trainer.fit(datasetBuilder, featureExtractor, lbExtractorWrapper);
 
         double[] params = mlp.parameters().getStorage().data();
@@ -136,8 +137,10 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
     @NotNull private MultilayerPerceptron restoreMLPState(LogisticRegressionModel mdl) {
         Vector weights = mdl.weights();
         double intercept = mdl.intercept();
+
         MLPArchitecture architecture1 = new MLPArchitecture(weights.size());
         architecture1 = architecture1.withAddedLayer(1, true, Activators.SIGMOID);
+
         MLPArchitecture architecture = architecture1;
         MultilayerPerceptron perceptron = new MultilayerPerceptron(architecture);
 
@@ -145,11 +148,101 @@ public class LogisticRegressionSGDTrainer<P extends Serializable> extends Single
         weights.nonZeroes().forEach(ith -> mlpState.set(ith.index(), ith.get()));
         mlpState.set(mlpState.size() - 1, intercept);
         perceptron.setParameters(mlpState);
+
         return perceptron;
     }
 
     /** {@inheritDoc} */
     @Override protected boolean checkState(LogisticRegressionModel mdl) {
         return true;
+    }
+
+    /**
+     * Set up the max amount of iterations before convergence.
+     *
+     * @param maxIterations The parameter value.
+     * @return Model with new max number of iterations before convergence parameter value.
+     */
+    public LogisticRegressionSGDTrainer<P> withMaxIterations(int maxIterations) {
+        this.maxIterations = maxIterations;
+        return this;
+    }
+
+    /**
+     * Set up the batchSize parameter.
+     *
+     * @param batchSize The size of learning batch.
+     * @return Trainer with new batch size parameter value.
+     */
+    public LogisticRegressionSGDTrainer<P> withBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+        return this;
+    }
+
+    /**
+     * Set up the amount of local iterations of SGD algorithm.
+     *
+     * @param amountOfLocIterations The parameter value.
+     * @return Trainer with new locIterations parameter value.
+     */
+    public LogisticRegressionSGDTrainer<P> withLocIterations(int amountOfLocIterations) {
+        this.locIterations = amountOfLocIterations;
+        return this;
+    }
+
+    /**
+     * Set up the random seed parameter.
+     *
+     * @param seed Seed for random generator.
+     * @return Trainer with new seed parameter value.
+     */
+    public LogisticRegressionSGDTrainer<P> withSeed(long seed) {
+        this.seed = seed;
+        return this;
+    }
+
+    /**
+     * Get the update strategy.
+     *
+     * @return The property value.
+     */
+    public UpdatesStrategy<? super MultilayerPerceptron, P> getUpdatesStgy() {
+        return updatesStgy;
+    }
+
+    /**
+     * Get the max amount of iterations.
+     *
+     * @return The property value.
+     */
+    public int getMaxIterations() {
+        return maxIterations;
+    }
+
+    /**
+     * Get the batch size.
+     *
+     * @return The property value.
+     */
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    /**
+     * Get the amount of local iterations.
+     *
+     * @return The property value.
+     */
+    public int getLocIterations() {
+        return locIterations;
+    }
+
+    /**
+     * Get the seed for random generator.
+     *
+     * @return The property value.
+     */
+    public long getSeed() {
+        return seed;
     }
 }

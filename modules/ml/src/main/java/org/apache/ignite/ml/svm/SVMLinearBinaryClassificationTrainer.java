@@ -214,7 +214,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
             double qii = v.dot(v);
             double newAlpha = calcNewAlpha(alpha, gradient, qii);
 
-            Vector deltaWeights = v.times(lb * (newAlpha - alpha) / (this.lambda() * amountOfObservation));
+            Vector deltaWeights = v.times(lb * (newAlpha - alpha) / (this.getLambda() * amountOfObservation));
 
             return new Deltas(newAlpha - alpha, deltaWeights);
         }
@@ -233,7 +233,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     /** */
     private double calcGradient(double lb, Vector v, Vector weights, int amountOfObservation) {
         double dotProduct = v.dot(weights);
-        return (lb * dotProduct - 1.0) * (this.lambda() * amountOfObservation);
+        return (lb * dotProduct - 1.0) * (this.getLambda() * amountOfObservation);
     }
 
     /** */
@@ -261,18 +261,18 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /**
-     * Gets the regularization lambda.
+     * Get the regularization lambda.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
-    public double lambda() {
+    public double getLambda() {
         return lambda;
     }
 
     /**
-     * Gets the amount of outer iterations of SCDA algorithm.
+     * Get the amount of outer iterations of SCDA algorithm.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
     public int getAmountOfIterations() {
         return amountOfIterations;
@@ -290,9 +290,9 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /**
-     * Gets the amount of local iterations of SCDA algorithm.
+     * Get the amount of local iterations of SCDA algorithm.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
     public int getAmountOfLocIterations() {
         return amountOfLocIterations;
@@ -310,9 +310,9 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /**
-     * Gets the seed number.
+     * Get the seed number.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
     public long getSeed() {
         return seed;
