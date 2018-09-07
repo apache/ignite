@@ -424,30 +424,44 @@ Failover
 File: `failover.py`_.
 
 When connection to the server is broken or timed out,
-:class:`~pyignite.client.Client` object raises an appropriate
-exception, but keeps its constructor's parameters intact and tries
-to reconnect on the next data operation.
+:class:`~pyignite.client.Client` object propagates an original exception
+(`OSError` or `SocketError`), but keeps its constructor's parameters intact
+and tries to reconnect transparently.
+
+When there's no way for :class:`~pyignite.client.Client` to reconnect, it
+raises a special :class:`~pyignite.exceptions.ReconnectError` exception.
 
 The following example features a simple node list traversal failover mechanism.
-Launch 3 Ignite nodes on `localhost` and run:
+Gather 3 Ignite nodes on `localhost` into one cluster and run:
 
 .. literalinclude:: ../examples/failover.py
   :language: python
-  :lines: 16-38
+  :lines: 16-49
 
 Then try shutting down and restarting nodes, and see what happens.
 
 .. literalinclude:: ../examples/failover.py
   :language: python
-  :lines: 40-49
+  :lines: 51-61
 
-In this example, the automatic reconnection happens after the second
-`client.get_or_create_cache()` call.
+Client reconnection do not require an explicit user action, like calling
+a special method or resetting a parameter. Note, however, that reconnection
+is lazy: it happens only if (and when) it is needed. In this example,
+the automatic reconnection happens, when the script checks upon the last
+saved value:
 
-:py:meth:`~pyignite.client.Client.connect` methon can accept any iterable
-instead of list. It means that you can implement any reconnection policy
-(round-robin, nodes prioritization, pause on reconnect or graceful backoff)
-with a generator.
+.. literalinclude:: ../examples/failover.py
+  :language: python
+  :lines: 48
+
+It means that instead of checking the connection status it is better for
+`pyignite` user to just try the supposed data operations and catch
+the resulting exception.
+
+:py:meth:`~pyignite.connection.Connection.connect` method accepts any
+iterable, not just list. It means that you can implement any reconnection
+policy (round-robin, nodes prioritization, pause on reconnect or graceful
+backoff) with a generator.
 
 `pyignite` comes with a sample
 :class:`~pyignite.connection.generators.RoundRobin` generator. In the above
@@ -455,7 +469,7 @@ example try to replace
 
 .. literalinclude:: ../examples/failover.py
   :language: python
-  :lines: 27
+  :lines: 29
 
 with
 
