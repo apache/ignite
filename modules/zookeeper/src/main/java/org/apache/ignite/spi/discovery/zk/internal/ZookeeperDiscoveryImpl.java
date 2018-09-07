@@ -1321,8 +1321,6 @@ public class ZookeeperDiscoveryImpl {
         Long srvInternalOrder = null;
 
         long locInternalOrder = rtState.internalOrder;
-        log().info("ClientNode [path = " + rtState.locNodeZkPath +
-            "; contains in alive nodes = " + aliveNodes.contains(rtState.locNodeZkPath));
 
         for (String aliveNodePath : aliveNodes) {
             Long internalId = ZkIgnitePaths.aliveInternalId(aliveNodePath);
@@ -1339,19 +1337,11 @@ public class ZookeeperDiscoveryImpl {
             }
         }
 
-        assert !aliveClients.isEmpty();
+        assert aliveClients.containsKey(locInternalOrder) : "aliveNodes should contains current node";
 
         Map.Entry<Long, String> oldest = aliveClients.firstEntry();
 
-        aliveClients.forEach((k,v) -> {
-            log().info("Active client [internalId = " + k + "; path = " + v);
-        });
-        log().info("Oldest internalId = " + oldest.getKey());
-        log().info("Current internalId = " + locInternalOrder);
         boolean oldestClient = locInternalOrder == oldest.getKey();
-        if(!oldestClient)
-            log().info("This node is not oldest client. Contains in aliveClients: " +
-                aliveClients.containsKey(locInternalOrder));
 
         if (srvPath == null) {
             if (oldestClient) {
