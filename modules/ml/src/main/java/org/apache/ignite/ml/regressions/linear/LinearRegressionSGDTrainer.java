@@ -44,17 +44,17 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     /** Update strategy. */
     private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
-    /** Max number of iteration. */
+    /** Max amount of iterations. */
     private int maxIterations = 1000;
 
     /** Batch size. */
     private int batchSize = 10;
 
-    /** Number of local iterations. */
+    /** Amount of local iterations. */
     private int locIterations = 100;
 
     /** Seed for random generator. */
-    private long seed = System.currentTimeMillis();
+    private long seed = 1234L;
 
     /**
      * Constructs a new instance of linear regression SGD trainer.
@@ -89,8 +89,11 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl, DatasetBuilder<K, V> datasetBuilder,
+    @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
+        DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        assert updatesStgy != null;
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
 
@@ -162,7 +165,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /**
-     * Set up the max number of iterations before convergence.
+     * Set up the max amount of iterations before convergence.
      *
      * @param maxIterations The parameter value.
      * @return Model with new max number of iterations before convergence parameter value.
@@ -203,5 +206,50 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     public LinearRegressionSGDTrainer<P> withSeed(long seed) {
         this.seed = seed;
         return this;
+    }
+
+    /**
+     * Get the update strategy.
+     *
+     * @return The property value.
+     */
+    public UpdatesStrategy<? super MultilayerPerceptron, P> getUpdatesStgy() {
+        return updatesStgy;
+    }
+
+    /**
+     * Get the max amount of iterations.
+     *
+     * @return The property value.
+     */
+    public int getMaxIterations() {
+        return maxIterations;
+    }
+
+    /**
+     * Get the batch size.
+     *
+     * @return The property value.
+     */
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    /**
+     * Get the amount of local iterations.
+     *
+     * @return The property value.
+     */
+    public int getLocIterations() {
+        return locIterations;
+    }
+
+    /**
+     * Get the seed for random generator.
+     *
+     * @return The property value.
+     */
+    public long getSeed() {
+        return seed;
     }
 }

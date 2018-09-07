@@ -70,8 +70,8 @@ public class KMeansClusterizationExample {
                 );
 
                 System.out.println(">>> KMeans centroids");
-                Tracer.showAscii(mdl.centers()[0]);
-                Tracer.showAscii(mdl.centers()[1]);
+                Tracer.showAscii(mdl.getCenters()[0]);
+                Tracer.showAscii(mdl.getCenters()[1]);
                 System.out.println(">>>");
 
                 System.out.println(">>> -----------------------------------");

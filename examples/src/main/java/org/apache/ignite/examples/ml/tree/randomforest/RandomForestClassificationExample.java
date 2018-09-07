@@ -74,7 +74,7 @@ public class RandomForestClassificationExample {
                     .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
                     .withMaxDepth(4)
                     .withMinImpurityDelta(0.)
-                    .withSubsampleSize(0.3)
+                    .withSubSampleSize(0.3)
                     .withSeed(0);
 
                 System.out.println(">>> Configured trainer: " + classifier.getClass().getSimpleName());

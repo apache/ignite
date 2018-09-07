@@ -57,7 +57,7 @@ public class GDBTrainerTest {
         }
 
         GDBTrainer trainer = new GDBRegressionOnTreesTrainer(1.0, 2000, 3, 0.0)
-            .withUseIndex(true);
+            .withUsingIdx(true);
 
         Model<Vector, Double> mdl = trainer.fit(
             learningSample, 1,
@@ -131,7 +131,7 @@ public class GDBTrainerTest {
             learningSample.put(i, new double[] {xs[i], ys[i]});
 
         GDBTrainer trainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0)
-            .withUseIndex(true)
+            .withUsingIdx(true)
             .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
 
         Model<Vector, Double> mdl = fitter.apply(trainer, learningSample);
@@ -177,10 +177,10 @@ public class GDBTrainerTest {
         IgniteBiFunction<Integer, double[], Double> lExtr = (k, v) -> v[1];
 
         GDBTrainer classifTrainer = new GDBBinaryClassifierOnTreesTrainer(0.3, 500, 3, 0.0)
-            .withUseIndex(true)
+            .withUsingIdx(true)
             .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
         GDBTrainer regressTrainer = new GDBRegressionOnTreesTrainer(0.3, 500, 3, 0.0)
-            .withUseIndex(true)
+            .withUsingIdx(true)
             .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.3));
 
         testUpdate(learningSample, fExtr, lExtr, classifTrainer);

@@ -91,7 +91,7 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
      * @return Decision tree trainer.
      */
     public DecisionTreeClassificationTrainer withUseIndex(boolean useIndex) {
-        this.useIndex = useIndex;
+        this.usingIdx = useIndex;
         return this;
     }
 
@@ -127,6 +127,6 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
         for (Double lb : labels)
             encoder.put(lb, idx++);
 
-        return new GiniImpurityMeasureCalculator(encoder, useIndex);
+        return new GiniImpurityMeasureCalculator(encoder, usingIdx);
     }
 }

@@ -76,7 +76,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     private int cntOfTrees = 1;
 
     /** Subsample size. */
-    private double subsampleSize = 1.0;
+    private double subSampleSize = 1.0;
 
     /** Max depth. */
     private int maxDepth = 5;
@@ -88,10 +88,10 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     private List<FeatureMeta> meta;
 
     /** Features per tree. */
-    private int featuresPerTree;
+    private int featuresPerTree = 5;
 
     /** Seed. */
-    private long seed = System.currentTimeMillis();
+    private long seed = 1234L;
 
     /** Random generator. */
     private Random random = new Random(seed);
@@ -115,7 +115,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, cntOfTrees, subsampleSize))) {
+            new BootstrappedDatasetBuilder<>(featureExtractor, lbExtractor, cntOfTrees, subSampleSize))) {
 
             if(!init(dataset))
                 return buildComposition(Collections.emptyList());
@@ -144,11 +144,11 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /**
-     * @param subsampleSize Subsample size.
+     * @param subSampleSize Subsample size.
      * @return an instance of current object with valid type in according to inheritance.
      */
-    public T withSubsampleSize(double subsampleSize) {
-        this.subsampleSize = subsampleSize;
+    public T withSubSampleSize(double subSampleSize) {
+        this.subSampleSize = subSampleSize;
         return instance();
     }
 
