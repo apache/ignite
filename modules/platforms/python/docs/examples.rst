@@ -3,7 +3,7 @@
 =================
 Examples of usage
 =================
-*(file: 'examples/get_and_put.py')*
+File: `get_and_put.py`_.
 
 Key-value
 ---------
@@ -47,7 +47,7 @@ Get multiple values from cache
 
 Type hints usage
 ================
-*(file: 'examples/type_hints.py')*
+File: `type_hints.py`_
 
 .. literalinclude:: ../examples/type_hints.py
   :language: python
@@ -67,7 +67,7 @@ of parser/constructor classes you can use as type hints.
 
 Scan
 ====
-*(file: 'examples/scans.py')*
+File: `scans.py`_.
 
 Cache's :py:meth:`~pyignite.cache.Cache.scan` method queries allows you
 to get the whole contents of the cache, element by element.
@@ -108,7 +108,7 @@ Destroy created cache and close connection.
 
 SQL
 ---
-*(file: 'examples/sql.py')*
+File: `sql.py`_.
 
 These examples are similar to the ones given in the Apache Ignite SQL
 Documentation: `Getting Started`_.
@@ -182,7 +182,7 @@ Finally, delete the tables used in this example with the following queries:
 
 Complex objects
 ---------------
-*(file: 'examples/binary_basics.py')*
+File: `binary_basics.py`_.
 
 `Complex object`_ (that is often called ‘Binary object’) is an Ignite data
 type, that is designed to represent a Java class. It have the following
@@ -263,7 +263,7 @@ Objects, let us move on to more elaborate examples.
 
 Read
 ====
-*(file: 'examples/read_binary.py')*
+File: `read_binary.py`_.
 
 Ignite SQL uses Complex objects internally to represent keys and rows
 in SQL tables. Normally SQL data is accessed via queries (see `SQL`_),
@@ -308,7 +308,7 @@ fields correspond to the SQL query.
 
 Create
 ======
-*(file: 'examples/create_binary.py')*
+File: `create_binary.py`_.
 
 Now, that we aware of the internal structure of the Ignite SQL storage,
 we can create a table and put data in it using only key-value functions.
@@ -366,7 +366,7 @@ It should be deleted as any other key-value cache.
 
 Migrate
 =======
-*(file: 'examples/migrate_binary.py')*
+File: `migrate_binary.py`_.
 
 Suppose we have an accounting app that stores its data in key-value format.
 Our task would be to introduce the following changes to the original expense
@@ -421,7 +421,7 @@ As an alternative, you can rename the field or create a new Complex object.
 
 Failover
 --------
-*(file: 'examples/failover.py')*
+File: `failover.py`_.
 
 When connection to the server is broken or timed out,
 :class:`~pyignite.client.Client` object raises an appropriate
@@ -573,6 +573,15 @@ with the following message:
 
     # pyignite.exceptions.HandshakeError: Handshake error: Unauthenticated sessions are prohibited. Expected protocol version: 0.0.0.
 
+.. _get_and_put.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/get_and_put.py
+.. _type_hints.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/type_hints.py
+.. _failover.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/failover.py
+.. _scans.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/scans.py
+.. _sql.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/sql.py
+.. _binary_basics.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/binary_basics.py
+.. _read_binary.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/read_binary.py
+.. _create_binary.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/create_binary.py
+.. _migrate_binary.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/migrate_binary.py
 .. _Getting Started: https://apacheignite-sql.readme.io/docs/getting-started
 .. _Ignite GitHub repository: https://github.com/apache/ignite/blob/master/examples/sql/world.sql
 .. _Complex object: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-complex-object

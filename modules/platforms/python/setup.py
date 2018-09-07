@@ -74,8 +74,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url=(
-        'https://github.com/nobitlost'
-        '/ignite/tree/ignite-7782/modules/platforms/python'
+        'https://github.com/apache/ignite/tree/master'
+        '/modules/platforms/python'
     ),
     packages=setuptools.find_packages(),
     install_requires=requirements['install'],
