@@ -563,6 +563,8 @@ public abstract class GridAbstractTest extends TestCase {
      *
      */
     protected void cleanPersistenceDir() throws Exception {
+        assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
+
         info("Clean persistence directories. [workDir=" + U.defaultWorkDirectory() + ']');
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));

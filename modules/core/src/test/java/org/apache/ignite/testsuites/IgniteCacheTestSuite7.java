@@ -70,14 +70,14 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(CheckpointBufferDeadlockTest.class);
         suite.addTestSuite(IgniteCacheStartWithLoadTest.class);
 
-        suite.addTestSuite(Authentication1kUsersNodeRestartTest.class);
         suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
-        suite.addTestSuite(AuthenticationProcessorPersistenceOnSelfTest.class);
-        suite.addTestSuite(AuthenticationProcessorPersistenceOffSelfTest.class);
         suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
         suite.addTestSuite(AuthenticationProcessorNPEOnStartTest.class);
+        suite.addTestSuite(AuthenticationProcessorPersistenceOnSelfTest.class);
+        suite.addTestSuite(AuthenticationProcessorPersistenceOffSelfTest.class);
         suite.addTestSuite(AuthenticationProcessorNodeRestartPersistenceOnTest.class);
         suite.addTestSuite(AuthenticationProcessorNodeRestartPersistenceOffTest.class);
+        suite.addTestSuite(Authentication1kUsersNodeRestartTest.class);
 
         suite.addTestSuite(CacheDataRegionConfigurationTest.class);
 
