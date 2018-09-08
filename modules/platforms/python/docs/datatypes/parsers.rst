@@ -121,40 +121,40 @@ with your data, in to some API function as a *type conversion hint*.
 |0x1b       |`Wrapped data`_     |tuple                          |:class:`~pyignite.datatypes.complex.WrappedDataObject`           |
 +-----------+--------------------+-------------------------------+-----------------------------------------------------------------+
 
-.. _Byte: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-byte
-.. _Short: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-short
-.. _Int: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-int
-.. _Long: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-long
-.. _Float: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-float
-.. _Double: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-double
-.. _Char: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-char
-.. _Bool: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-bool
-.. _Null: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-null
-.. _String: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-string
-.. _UUID: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-uuid-guid-
-.. _Timestamp: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-timestamp
-.. _Date: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-date
-.. _Time: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-time
-.. _Decimal: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-decimal
-.. _Enum: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-enum
-.. _Byte array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-byte-array
-.. _Short array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-short-array
-.. _Int array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-int-array
-.. _Long array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-long-array
-.. _Float array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-float-array
-.. _Double array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-double-array
-.. _Char array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-char-array
-.. _Bool array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-bool-array
-.. _String array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-string-array
-.. _UUID array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-uuid-guid-array
-.. _Timestamp array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-timestamp-array
-.. _Date array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-date-array
-.. _Time array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-time-array
-.. _Decimal array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-decimal-array
-.. _Object array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-object-collections
-.. _Collection: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-collection
-.. _Map: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-map
-.. _Enum array: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-enum-array
-.. _Binary enum: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-binary-enum
-.. _Wrapped data: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-wrapped-data
-.. _Complex object: https://apacheignite.readme.io/v2.5/docs/binary-client-protocol-data-format#section-complex-object
+.. _Byte: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-byte
+.. _Short: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-short
+.. _Int: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-int
+.. _Long: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-long
+.. _Float: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-float
+.. _Double: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-double
+.. _Char: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-char
+.. _Bool: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-bool
+.. _Null: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-null
+.. _String: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-string
+.. _UUID: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-uuid-guid-
+.. _Timestamp: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-timestamp
+.. _Date: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-date
+.. _Time: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-time
+.. _Decimal: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-decimal
+.. _Enum: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-enum
+.. _Byte array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-byte-array
+.. _Short array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-short-array
+.. _Int array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-int-array
+.. _Long array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-long-array
+.. _Float array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-float-array
+.. _Double array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-double-array
+.. _Char array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-char-array
+.. _Bool array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-bool-array
+.. _String array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-string-array
+.. _UUID array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-uuid-guid-array
+.. _Timestamp array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-timestamp-array
+.. _Date array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-date-array
+.. _Time array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-time-array
+.. _Decimal array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-decimal-array
+.. _Object array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-object-collections
+.. _Collection: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-collection
+.. _Map: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-map
+.. _Enum array: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-enum-array
+.. _Binary enum: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-binary-enum
+.. _Wrapped data: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-wrapped-data
+.. _Complex object: https://apacheignite.readme.io/docs/binary-client-protocol-data-format#section-complex-object

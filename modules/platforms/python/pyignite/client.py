@@ -43,16 +43,16 @@ the local (class-wise) registry for Ignite Complex objects.
 from collections import defaultdict, OrderedDict
 from typing import Iterable, Type, Union
 
-from pyignite.api.binary import get_binary_type, put_binary_type
-from pyignite.api.cache_config import cache_get_names
-from pyignite.api.sql import sql_fields, sql_fields_cursor_get_page
-from pyignite.cache import Cache
-from pyignite.connection import Connection
-from pyignite.constants import *
-from pyignite.datatypes import BinaryObject
-from pyignite.datatypes.internal import tc_map
-from pyignite.exceptions import BinaryTypeError, CacheError, SQLError
-from pyignite.utils import entity_id, schema_id, status_to_exception
+from .api.binary import get_binary_type, put_binary_type
+from .api.cache_config import cache_get_names
+from .api.sql import sql_fields, sql_fields_cursor_get_page
+from .cache import Cache
+from .connection import Connection
+from .constants import *
+from .datatypes import BinaryObject
+from .datatypes.internal import tc_map
+from .exceptions import BinaryTypeError, CacheError, SQLError
+from .utils import entity_id, schema_id, status_to_exception
 from .binary import GenericObjectMeta
 
 

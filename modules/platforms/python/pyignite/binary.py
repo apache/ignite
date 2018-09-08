@@ -13,14 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+:class:`~pyignite.binary.GenericObjectMeta` is a metaclass used to create
+classes, which objects serve as a native Python values for Ignite Complex
+object data type. You can use this metaclass with your existing classes
+to save and restore their selected attributes and properties to/from
+Ignite caches. It is also used internally by `pyignite` to create simple
+data classes “on the fly” when retrieving arbitrary Complex objects.
+
+You can get the examples of using Complex objects in the
+:ref:`complex_object_usage` section of `pyignite` documentation.
+"""
+
 from collections import OrderedDict
 from typing import Any
 
 import attr
 
-from pyignite.datatypes import *
-from pyignite.exceptions import ParseError
-from pyignite.utils import entity_id, schema_id
+from .datatypes import *
+from .exceptions import ParseError
+from .utils import entity_id, schema_id
 
 
 ALLOWED_FIELD_TYPES = [

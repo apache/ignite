@@ -16,7 +16,7 @@
 from functools import wraps
 from typing import Any, Type, Union
 
-from pyignite.constants import *
+from .constants import *
 
 
 def is_iterable(value):

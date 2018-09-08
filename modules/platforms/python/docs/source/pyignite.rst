@@ -12,7 +12,6 @@ Subpackages
 .. toctree::
 
     pyignite.api
-    pyignite.client
     pyignite.connection
     pyignite.datatypes
     pyignite.queries
@@ -22,7 +21,9 @@ Submodules
 
 .. toctree::
 
+   pyignite.binary
    pyignite.cache
+   pyignite.client
    pyignite.constants
    pyignite.exceptions
    pyignite.utils

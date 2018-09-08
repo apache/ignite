@@ -31,9 +31,8 @@ class HandshakeRequest:
     def __init__(
         self, username: Optional[str]=None, password: Optional[str]=None
     ):
-        from pyignite.datatypes.standard import String
+        from pyignite.datatypes import Byte, Int, Short, String
         from pyignite.datatypes.internal import Struct
-        from pyignite.datatypes.primitive import Byte, Int, Short
 
         fields = [
             ('length', Int),
@@ -75,9 +74,8 @@ class HandshakeRequest:
 
 
 def read_response(client):
-    from pyignite.datatypes.standard import String
+    from pyignite.datatypes import Byte, Int, Short, String
     from pyignite.datatypes.internal import Struct
-    from pyignite.datatypes.primitive import Byte, Int, Short
 
     response_start = Struct([
         ('length', Int),

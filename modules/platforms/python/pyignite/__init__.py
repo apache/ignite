@@ -14,4 +14,4 @@
 # limitations under the License.
 
 from pyignite.client import Client
-from pyignite.client.binary import GenericObjectMeta
+from pyignite.binary import GenericObjectMeta

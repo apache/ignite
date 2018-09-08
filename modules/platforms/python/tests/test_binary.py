@@ -16,7 +16,7 @@
 from collections import OrderedDict
 from decimal import Decimal
 
-from pyignite.client.binary import GenericObjectMeta
+from pyignite import GenericObjectMeta
 from pyignite.datatypes import (
     BinaryObject, BoolObject, IntObject, DecimalObject, LongObject, String,
 )
