@@ -816,6 +816,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.pageStore().initializeForMetastorage();
 
+            CheckpointStatus status = readCheckpointStatus();
+
+            // Memory should be recovered at startup.
+            assert !status.needRestoreMemory() : status;
+
             // Memory restored at startup, just resume logging from last seen WAL pointer.
             cctx.wal().resumeLogging();
 
