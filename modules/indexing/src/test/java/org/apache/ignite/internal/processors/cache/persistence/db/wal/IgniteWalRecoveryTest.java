@@ -465,6 +465,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /**
      * Check binary recover completes successfully when node stopped at the midde of checkpoint.
+     * Destroyed cache on cluster should be successfully handled on joined node.
+     * Created cache on cluster should be successfully created on joined node.
      *
      * @throws Exception if failed.
      */
@@ -476,9 +478,13 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         ig2.cluster().active(true);
 
         IgniteCache<Object, Object> cache = ig2.cache(CACHE_NAME);
+        IgniteCache<Object, Object> destroyMe = ig2.getOrCreateCache("destroyMe");
 
-        for (int i = 1; i <= 4_000; i++)
+        for (int i = 1; i <= 4_000; i++) {
             cache.put(i, new BigObject(i));
+
+            destroyMe.put(i, new BigObject(i));
+        }
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig2
             .context().cache().context().database();
@@ -506,7 +512,17 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        startGrids(2);
+        Ignite ig0 = startGrids(2);
+
+        // Destroy old cache and create the new one while node is offline.
+        ig0.destroyCache("destoryMe");
+        IgniteCache<Object, Object> newCache = ig0.getOrCreateCache("newCache");
+
+        BigObject cacheObj = new BigObject(1);
+
+        newCache.put(1, cacheObj);
+
+        awaitPartitionMapExchange();
 
         // Preprare Ignite instance configuration with additional Discovery checks.
         final String ig2Name = getTestIgniteInstanceName(2);
@@ -540,6 +556,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         startGrid(ig2Name, onJoinCfg);
 
         awaitPartitionMapExchange();
+
+        assertEquals(cacheObj, ig2.cache("newCache").get(1));
     }
 
     /**
