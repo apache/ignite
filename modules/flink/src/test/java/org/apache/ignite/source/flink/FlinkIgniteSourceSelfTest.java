@@ -20,16 +20,22 @@ package org.apache.ignite.source.flink;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.mockito.Mockito.mock;
@@ -114,17 +120,12 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     }
 
     public void testIgniteSourceRun() throws Exception {
+        long endTime = System.currentTimeMillis() + 2000;
 
-        Thread t = new Thread(new Runnable() {
+        IgniteInternalFuture f = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
                     igniteSrc.start(null, EventType.EVT_CACHE_OBJECT_PUT);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-                
-                try {
                     igniteSrc.run(context);
                 }
                 catch (Exception e) {
@@ -134,8 +135,20 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        t.start();
-        Thread.sleep(3000);
-        igniteSrc.stopped = true;
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                while (!igniteSrc.stopped.get() && System.currentTimeMillis() < endTime){
+                    try {
+                        U.sleep(500);
+                    }
+                    catch (IgniteCheckedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                igniteSrc.stopped = new AtomicBoolean(true);
+                return true;
+            }
+        }, 3000);
     }
 }

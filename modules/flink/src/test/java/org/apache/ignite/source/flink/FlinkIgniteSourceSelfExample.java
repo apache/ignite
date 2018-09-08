@@ -59,6 +59,7 @@ public class FlinkIgniteSourceSelfExample {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.getConfig().disableSysoutLogging();
+
         env.getConfig().registerTypeWithKryoSerializer(CacheEvent.class, CacheEventSerializer.class);
 
         DataStream<CacheEvent> stream = env.addSource(igniteSrc);

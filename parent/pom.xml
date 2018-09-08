@@ -460,8 +460,12 @@
                                 <packages>org.apache.ignite.osgi*</packages>
                             </group>
                             <group>
-                                <title>Flink integration</title>
+                                <title>Flink Sink Integration</title>
                                 <packages>org.apache.ignite.sink.flink*</packages>
+                            </group>
+                            <group>
+                                <title>Flink Source Integration</title>
+                                <packages>org.apache.ignite.source.flink*</packages>
                             </group>
                             <group>
                                 <title>SpringData integration</title>

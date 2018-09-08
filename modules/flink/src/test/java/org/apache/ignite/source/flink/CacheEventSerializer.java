@@ -26,19 +26,32 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import java.io.Serializable;
 
 /**
  * Serializer based on {@link JdkMarshaller}.
  */
-public class CacheEventSerializer extends Serializer<CacheEvent> {
+public class CacheEventSerializer extends Serializer<CacheEvent> implements Serializable {
+
+    private static final long serialVersionUID = 0L;
     /** Marshaller. */
-    private final Marshaller marsh = new JdkMarshaller();
+    private Marshaller marsh;
 
     /**
      * If true, the type this serializer will be used for is considered immutable.
      * This causes {@link #copy(Kryo, Object)} to return the original object.
      * */
     public CacheEventSerializer(){
+        setImmutable(true);
+    }
+
+    /**
+     * If true, the type this serializer will be used for is considered immutable.
+     * This causes {@link #copy(Kryo, Object)} to return the original object. This will
+     * initialize the marshaller from Ignite instance context.
+     * */
+    public CacheEventSerializer(Marshaller marsh){
+        this.marsh = marsh;
         setImmutable(true);
     }
 
