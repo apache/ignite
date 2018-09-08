@@ -25,27 +25,27 @@ public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportab
         exporter.save(this, path);
     }
 
-    /** returns a vector of probabilities belongins to each class */
+    /** returns a vector of  belonging probabilities to each class */
     @Override public Integer apply(Vector vector) {
         int k = classProbabilities.size();
-        int n = vector.size();
-        Double[] probabilites = new Double[k];
+        double[] probabilites = new double[k];
 
-        double evidience = 0;
         for (int i = 0; i < k; i++) {
             double p = classProbabilities.get(i);
-            for (int j = 0; j < n; j++) {
-                double x = vector.get(i);
+            for (int j = 0; j < vector.size(); j++) {
+                double x = vector.get(j);
                 double g = gauss(x, means[i][j], variances[i][j]);
-                p = p * g;
+                p *= g;
             }
             probabilites[i] = p;
-            evidience += p;
         }
+
+        int max = 0;
         for (int i = 0; i < k; i++) {
-            probabilites[i] /= evidience;
+            if (probabilites[i] > probabilites[max])
+                max = i;
         }
-        return 1;
+        return max;
     }
 
     private double gauss(double x, double mean, double variance) {
