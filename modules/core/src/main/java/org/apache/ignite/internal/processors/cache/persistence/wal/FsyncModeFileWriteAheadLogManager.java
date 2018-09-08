@@ -542,6 +542,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
         assert currentHnd == null;
         assert lastPtr == null || lastPtr instanceof FileWALPointer;
+        assert (isArchiverEnabled() && archiver != null) || (!isArchiverEnabled() && archiver == null) :
+            "Trying to restore FileWriteHandle on deactivated write ahead log manager";
 
         FileWALPointer filePtr = (FileWALPointer)lastPtr;
 
