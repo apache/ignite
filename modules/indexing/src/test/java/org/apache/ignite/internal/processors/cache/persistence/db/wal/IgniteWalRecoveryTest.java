@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsi
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -535,18 +536,23 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 @Override public void beforeJoin(ClusterNode locNode, IgniteLogger log) {
                     String nodeName = locNode.attribute(ATTR_IGNITE_INSTANCE_NAME);
 
-                    IgniteEx locIg = (IgniteEx)ignite(getTestIgniteInstanceIndex(nodeName));
+                    GridCacheSharedContext sharedCtx = ((IgniteEx)ignite(getTestIgniteInstanceIndex(nodeName)))
+                        .context()
+                        .cache()
+                        .context();
 
                     if (nodeName.equals(ig2Name)) {
                         GridCacheDatabaseSharedManager dbMgr =
-                            (GridCacheDatabaseSharedManager)locIg
-                                .context()
-                                .cache()
-                                .context()
-                                .database();
+                            (GridCacheDatabaseSharedManager)sharedCtx.database();
+
+                        // Memory restored to the last pointer.
+                        assertNotNull(GridTestUtils.getFieldValue(sharedCtx.wal(),
+                            FileWriteAheadLogManager.class,
+                            "walTail"));
 
                         // Checkpoint history initialized on node start.
-                        assertFalse(dbMgr.checkpointHistory().checkpoints().isEmpty());
+                        assertFalse(((GridCacheDatabaseSharedManager)sharedCtx.database())
+                            .checkpointHistory().checkpoints().isEmpty());
                     }
 
                     super.beforeJoin(locNode, log);
