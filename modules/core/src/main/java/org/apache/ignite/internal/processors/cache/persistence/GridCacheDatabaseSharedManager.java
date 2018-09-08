@@ -651,11 +651,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
             finally {
                 checkpointReadUnlock();
-
-                metaStorage = null;
-
-                storePageMem.stop();
             }
+
+            metaStorage = null;
+
+            storePageMem.stop();
         }
         catch (StorageException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -4359,9 +4359,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public MetaStorage metaStorage() {
-        if (metaStorage == null)
-            throw new IgniteException("MetaStorage not initialized");
-
         return metaStorage;
     }
 
