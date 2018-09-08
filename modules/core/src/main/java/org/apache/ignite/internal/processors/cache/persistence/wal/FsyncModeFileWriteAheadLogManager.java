@@ -535,7 +535,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     @Override public void resumeLogging() throws IgniteCheckedException {
         assert walTail != null;
 
-        resumeLogging(walTail.next());
+        resumeLogging(walTail);
     }
 
     /** {@inheritDoc} */
