@@ -680,11 +680,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<BigDecimal, DecOrganization> key1 = new T2<>(BigDecimal.valueOf(12.34), org1);
+        T2<BigDecimal, DecOrganization> val1 = new T2<>(BigDecimal.valueOf(12.34), org1);
 
-        T2<BigDecimal, DecOrganization> key2 = new T2<>(BigDecimal.valueOf(12.37), org2);
+        T2<BigDecimal, DecOrganization> val2 = new T2<>(BigDecimal.valueOf(12.37), org2);
 
-        checkCachePutSuccess(cacheName, key1, key2);
+        checkCachePutSuccess(cacheName, val1, val2);
     }
 
 

@@ -67,6 +67,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
 
 /**
  * Utility methods for queries.
@@ -1285,7 +1287,7 @@ public class QueryUtils {
 
                 if (dfltVal.getClass() == String.class && dfltVal.toString().length() > precision.get(fld)) {
                     throw new IgniteSQLException("Default value '" + dfltVal +
-                        "' is longer than maximum length " + precision.get(fld));
+                        "' is longer than maximum length " + precision.get(fld), TOO_LONG_VALUE);
                 }
                 else if (dfltVal.getClass() == BigDecimal.class) {
                     BigDecimal dec = (BigDecimal)dfltVal;
@@ -1294,13 +1296,13 @@ public class QueryUtils {
                         throw new IgniteSQLException("Default value: '" + dfltVal +
                             "' for a column " + fld +
                             " is out of range. Maximum precision: " + precision.get(fld) +
-                            ", actual precision: " + dec.precision());
+                            ", actual precision: " + dec.precision(), TOO_LONG_VALUE);
                     }
                     else if (!F.isEmpty(scale) && scale.containsKey(fld) && dec.scale() > scale.get(fld)) {
                         throw new IgniteSQLException("Scale of default value: '" + dfltVal +
                             "' for a column " + fld +
                             " is too long. Maximum scale: " + scale.get(fld) +
-                            ", actual scale: " + dec.scale());
+                            ", actual scale: " + dec.scale(), VALUE_SCALE_OUT_OF_RANGE);
                     }
                 }
             }
