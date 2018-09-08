@@ -827,7 +827,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (cctx.wal() != null)
                 cctx.wal().cleanupWalDirectories();
 
-            // Rare case when localNode changes baseline topology.
+            // Rare case when localNode joined to baseline topology with different consistentId.
             // Need to call binary restore for writing `node-started.bin` file.
             cctx.database().readCheckpointAndRestoreMemory();
         }

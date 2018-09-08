@@ -816,10 +816,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.pageStore().initializeForMetastorage();
 
-            WALPointer lastPtr = restoreLastWalPointer();
-
-            // Memory restored at startup, just resume logging from last WAL pointer.
-            cctx.wal().resumeLogging(lastPtr);
+            // Memory restored at startup, just resume logging from last seen WAL pointer.
+            cctx.wal().resumeLogging();
 
             final MetaStorage storage = new MetaStorage(
                 cctx,
@@ -1939,31 +1937,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         WALPointer restoredPtr = readCheckpointAndRestoreMemory();
 
-        U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restoredPtr + ']');
-    }
-
-    /**
-     * @return The next pointer after {@link RestoreStateContext#lastReadRecordPointer()}.
-     * @throws IgniteCheckedException If fails.
-     */
-    private WALPointer restoreLastWalPointer() throws IgniteCheckedException {
-        CheckpointStatus status = readCheckpointStatus();
-
-        // Checkpoint END marked shoudl be flushed on deactivation. If not, node should be restarted.
-        assert !status.needRestoreMemory() : status;
-
-        U.log(log, "Restore last WAL pointer [status=" + status + ']');
-
-        RestoreWALState state = new RestoreWALState(cctx.wal().lastArchivedSegment(), log);
-
-        try (WALIterator it = cctx.wal().replay(status.endPtr)) {
-            while (it.hasNextX())
-                state.next(it); // Can ignore return value.
-        }
-
-        WALPointer lastReadPtr = state.lastReadRecordPointer();
-
-        return lastReadPtr == null ? null : lastReadPtr.next();
+        if (restoredPtr != null)
+            U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restoredPtr + ']');
     }
 
     /**
@@ -4689,19 +4664,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param log Ignite logger.
          */
         public RestoreLogicalState(long lastArchivedSegment, IgniteLogger log) {
-            super(lastArchivedSegment, log);
-        }
-    }
-
-    /**
-     * Restore last read wal pointer state.
-     */
-    private static class RestoreWALState extends RestoreStateContext {
-        /**
-         * @param lastArchivedSegment Last archived segment index.
-         * @param log Ignite logger.
-         */
-        public RestoreWALState(long lastArchivedSegment, IgniteLogger log) {
             super(lastArchivedSegment, log);
         }
     }

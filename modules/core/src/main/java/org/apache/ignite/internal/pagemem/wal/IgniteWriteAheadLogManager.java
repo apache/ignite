@@ -44,11 +44,19 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public int serializerVersion();
 
     /**
+     * Resume logging after deactivation from the last seen WAL pointer.
+     *
+     * @throws IgniteCheckedException If fails.
+     */
+    public void resumeLogging() throws IgniteCheckedException;
+
+    /**
      * Resumes logging after start. When WAL manager is started, it will skip logging any updates until this
      * method is called to avoid logging changes induced by the state restore procedure.
      *
      * @param lastWrittenPtr Tail WAL pointer to resume at. If {@code null} then initiate new handler
-     *  with writing current serialize version to the newly handler.
+     *  with writing configured serialize version.
+     * @throws IgniteCheckedException If fails.
      */
     public void resumeLogging(WALPointer lastWrittenPtr) throws IgniteCheckedException;
 

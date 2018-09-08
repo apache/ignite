@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import com.google.common.base.Strings;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;

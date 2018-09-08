@@ -179,7 +179,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             grid = startGrid(0);
             grid.cluster().active(true);
         }
-        catch (IgniteException e) {
+        catch (IgniteCheckedException e) {
             log.warning("Activation test exception", e);
 
             activationFailed = true;

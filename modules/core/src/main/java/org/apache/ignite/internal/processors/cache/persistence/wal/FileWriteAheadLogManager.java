@@ -336,6 +336,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Decompressor. */
     private volatile FileDecompressor decompressor;
 
+    /**
+     * Position of the last seen WAL pointer can be stored in-memory only and should survive
+     * activate\deactivate node events. Used for resumming logging from the last WAL pointer.
+     * Can be assigned only by {@link FileWriteHandle#position()}.
+     */
+    private volatile  WALPointer walTail;
+
     /** */
     private final ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
 
@@ -639,6 +646,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         stop0(true);
 
+        walTail = currHnd.position();
+
         currHnd = null;
     }
 
@@ -650,6 +659,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public boolean isFullSync() {
         return mode == WALMode.FSYNC;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resumeLogging() throws IgniteCheckedException {
+        assert walTail != null;
+
+        resumeLogging(walTail);
     }
 
     /** {@inheritDoc} */
