@@ -233,7 +233,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<String, String> val2 = new T2<>("3", "123456");
 
-        checkCachePutAndReplaceFail(STR_CACHE_NAME, val1, val2 , "1");
+        checkCachePutAndReplace(shouldFail, STR_CACHE_NAME, "1", val2, val1);
     }
 
     /**
@@ -244,7 +244,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<String, String> val2 = new T2<>("123456", "2");
 
-        checkCachePutFail(STR_CACHE_NAME, val1, val2);
+        checkCachePut(shouldFail, STR_CACHE_NAME, val2, val1);
     }
 
     /**
@@ -255,7 +255,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<Organization, Address> val2 = new T2<>(new Organization("3"), new Address("123456"));
 
-        checkCachePutAndReplaceFail(OBJ_CACHE_NAME, val1, val2 , new Address("1"));
+        checkCachePutAndReplace(shouldFail, OBJ_CACHE_NAME, new Address("1"), val2, val1);
     }
 
     /**
@@ -266,7 +266,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<Organization, Address> val2 = new T2<>(new Organization("123456"), new Address("2"));
 
-        checkCachePutFail(OBJ_CACHE_NAME, val1, val2);
+        checkCachePut(shouldFail, OBJ_CACHE_NAME, val2, val1);
     }
 
     /**
@@ -291,7 +291,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<String, Organization> val2 = new T2<>("123456", new Organization("1"));
 
-        checkCachePutFail(cacheName, val1, val2);
+        checkCachePut(shouldFail, cacheName, val2, val1);
     }
 
     /**
@@ -302,7 +302,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<String, String> val2 = new T2<>("3", "12345");
 
-        checkCachePutSuccess(STR_CACHE_NAME, val1, val2);
+        checkCachePut(shouldSucceed, STR_CACHE_NAME, val2, val1);
     }
 
     /**
@@ -313,7 +313,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<String, String> val2 = new T2<>("12345", "2");
 
-        checkCachePutSuccess(STR_CACHE_NAME, val1, val2);
+        checkCachePut(shouldSucceed, STR_CACHE_NAME, val2, val1);
     }
 
     /**
@@ -324,7 +324,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<Organization, Address> val2 = new T2<>(new Organization("3"), new Address("12345"));
 
-        checkCachePutSuccess(OBJ_CACHE_NAME, val1, val2);
+        checkCachePut(shouldSucceed, OBJ_CACHE_NAME, val2, val1);
     }
 
     /**
@@ -335,7 +335,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<Organization, Address> val2 = new T2<>(new Organization("12345"), new Address("2"));
 
-        checkCachePutSuccess(OBJ_CACHE_NAME, val1, val2);
+        checkCachePut(shouldSucceed, OBJ_CACHE_NAME, val2, val1);
     }
 
     /**
@@ -356,11 +356,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
      * @throws Exception If failed.
      */
     private void doCheckPutLongStringKey2(String cacheName) {
-        T2<String, Organization> key1 = new T2<>("1", new Organization("1"));
+        T2<String, Organization> val1 = new T2<>("1", new Organization("1"));
 
-        T2<String, Organization> key2 = new T2<>("12345", new Organization("1"));
+        T2<String, Organization> val2 = new T2<>("12345", new Organization("1"));
 
-        checkCachePutSuccess(cacheName, key1, key2);
+        checkCachePut(shouldSucceed, cacheName, val2, val1);
     }
 
     /**
@@ -371,7 +371,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<BigDecimal, BigDecimal> val2 = new T2<>(BigDecimal.valueOf(12.36), BigDecimal.valueOf(123.45));
 
-        checkCachePutAndReplaceFail(DEC_CACHE_NAME_FOR_PREC, val1, val2, BigDecimal.valueOf(12.34));
+        checkCachePutAndReplace(shouldFail, DEC_CACHE_NAME_FOR_PREC, BigDecimal.valueOf(12.34), val2, val1);
     }
 
     /**
@@ -382,7 +382,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<BigDecimal, BigDecimal> val2 = new T2<>(BigDecimal.valueOf(123.45), BigDecimal.valueOf(12.35));
 
-        checkCachePutFail(DEC_CACHE_NAME_FOR_PREC, val1, val2);
+        checkCachePut(shouldFail, DEC_CACHE_NAME_FOR_PREC, val2, val1);
     }
 
     /**
@@ -393,11 +393,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<DecOrganization, Employee> val1 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val1 = new T2<>(org1, new Employee(BigDecimal.valueOf(123.45)));
 
-        T2<DecOrganization, Employee> val2 = new T2<>(org1, new Employee(BigDecimal.valueOf(123.45)));
+        T2<DecOrganization, Employee> val2 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
 
-        checkCachePutAndReplaceFail(OBJ_CACHE_NAME_FOR_PREC, val1, val2, new Employee(BigDecimal.valueOf(12.34)));
+        checkCachePutAndReplace(shouldFail, OBJ_CACHE_NAME_FOR_PREC, new Employee(BigDecimal.valueOf(12.34)), val1, val2);
     }
 
     /**
@@ -408,11 +408,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<DecOrganization, Employee> val1 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val1 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.35)));
 
-        T2<DecOrganization, Employee> val2 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.35)));
+        T2<DecOrganization, Employee> val2 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
 
-        checkCachePutFail(OBJ_CACHE_NAME_FOR_PREC, val1, val2);
+        checkCachePut(shouldFail, OBJ_CACHE_NAME_FOR_PREC, val1, val2);
     }
 
     /**
@@ -437,11 +437,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<BigDecimal, DecOrganization> val1 = new T2<>(BigDecimal.valueOf(12.34), org2);
+        T2<BigDecimal, DecOrganization> val1 = new T2<>(BigDecimal.valueOf(123.45), org1);
 
-        T2<BigDecimal, DecOrganization> val2 = new T2<>(BigDecimal.valueOf(123.45), org1);
+        T2<BigDecimal, DecOrganization> val2 = new T2<>(BigDecimal.valueOf(12.34), org2);
 
-        checkCachePutFail(cacheName, val1, val2);
+        checkCachePut(shouldFail, cacheName, val1, val2);
     }
 
     /**
@@ -452,7 +452,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<BigDecimal, BigDecimal> val2 = new T2<>(BigDecimal.valueOf(12.36), BigDecimal.valueOf(12.37));
 
-        checkCachePutSuccess(DEC_CACHE_NAME_FOR_PREC, val1, val2);
+        checkCachePut(shouldSucceed, DEC_CACHE_NAME_FOR_PREC, val2, val1);
     }
 
     /**
@@ -463,7 +463,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<BigDecimal, BigDecimal> val2 = new T2<>(BigDecimal.valueOf(12.34), BigDecimal.valueOf(12.34));
 
-        checkCachePutSuccess(DEC_CACHE_NAME_FOR_PREC, val1, val2);
+        checkCachePut(shouldSucceed, DEC_CACHE_NAME_FOR_PREC, val2, val1);
     }
 
     /**
@@ -474,11 +474,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<DecOrganization, Employee> val1 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val1 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.37)));
 
-        T2<DecOrganization, Employee> val2 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.37)));
+        T2<DecOrganization, Employee> val2 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
 
-        checkCachePutSuccess(OBJ_CACHE_NAME_FOR_PREC, val1, val2);
+        checkCachePut(shouldSucceed, OBJ_CACHE_NAME_FOR_PREC, val1, val2);
     }
 
     /**
@@ -489,11 +489,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<DecOrganization, Employee> val1 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val1 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.35)));
 
-        T2<DecOrganization, Employee> val2 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.35)));
+        T2<DecOrganization, Employee> val2 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
 
-        checkCachePutSuccess(OBJ_CACHE_NAME_FOR_PREC, val1, val2);
+        checkCachePut(shouldSucceed, OBJ_CACHE_NAME_FOR_PREC, val1, val2);
     }
 
     /**
@@ -518,11 +518,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<BigDecimal, DecOrganization> key1 = new T2<>(BigDecimal.valueOf(12.34), org2);
+        T2<BigDecimal, DecOrganization> val1 = new T2<>(BigDecimal.valueOf(12.37), org1);
 
-        T2<BigDecimal, DecOrganization> key2 = new T2<>(BigDecimal.valueOf(12.37), org1);
+        T2<BigDecimal, DecOrganization> val2 = new T2<>(BigDecimal.valueOf(12.34), org2);
 
-        checkCachePutSuccess(cacheName, key1, key2);
+        checkCachePut(shouldSucceed, cacheName, val1, val2);
     }
 
     /**
@@ -533,7 +533,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<BigDecimal, BigDecimal> val2 = new T2<>(BigDecimal.valueOf(12.36), BigDecimal.valueOf(3.456));
 
-        checkCachePutAndReplaceFail(DEC_CACHE_NAME_FOR_SCALE, val1, val2, BigDecimal.valueOf(12.34));
+        checkCachePutAndReplace(shouldFail, DEC_CACHE_NAME_FOR_SCALE, BigDecimal.valueOf(12.34), val2, val1);
     }
 
     /**
@@ -544,7 +544,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<BigDecimal, BigDecimal> val2 = new T2<>(BigDecimal.valueOf(3.456), BigDecimal.valueOf(12.35));
 
-        checkCachePutFail(DEC_CACHE_NAME_FOR_SCALE, val1, val2);
+        checkCachePut(shouldFail, DEC_CACHE_NAME_FOR_SCALE, val2, val1);
     }
 
     /**
@@ -555,11 +555,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<DecOrganization, Employee> val1 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val1 = new T2<>(org1, new Employee(BigDecimal.valueOf(3.456)));
 
-        T2<DecOrganization, Employee> val2 = new T2<>(org1, new Employee(BigDecimal.valueOf(3.456)));
+        T2<DecOrganization, Employee> val2 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
 
-        checkCachePutAndReplaceFail(OBJ_CACHE_NAME_FOR_SCALE, val1, val2, new Employee(BigDecimal.valueOf(12.34)));
+        checkCachePutAndReplace(shouldFail, OBJ_CACHE_NAME_FOR_SCALE, new Employee(BigDecimal.valueOf(12.34)), val1, val2);
     }
 
     /**
@@ -570,11 +570,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<DecOrganization, Employee> val1 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val1 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.35)));
 
-        T2<DecOrganization, Employee> val2 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.35)));
+        T2<DecOrganization, Employee> val2 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
 
-        checkCachePutFail(OBJ_CACHE_NAME_FOR_SCALE, val1, val2);
+        checkCachePut(shouldFail, OBJ_CACHE_NAME_FOR_SCALE, val1, val2);
     }
 
     /**
@@ -599,11 +599,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<BigDecimal, DecOrganization> val1 = new T2<>(BigDecimal.valueOf(12.34), org2);
+        T2<BigDecimal, DecOrganization> val1 = new T2<>(BigDecimal.valueOf(3.456), org1);
 
-        T2<BigDecimal, DecOrganization> val2 = new T2<>(BigDecimal.valueOf(3.456), org1);
+        T2<BigDecimal, DecOrganization> val2 = new T2<>(BigDecimal.valueOf(12.34), org2);
 
-        checkCachePutFail(cacheName, val1, val2);
+        checkCachePut(shouldFail, cacheName, val1, val2);
     }
 
     /**
@@ -614,7 +614,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<BigDecimal, BigDecimal> val2 = new T2<>(BigDecimal.valueOf(12.36), BigDecimal.valueOf(12.37));
 
-        checkCachePutSuccess(DEC_CACHE_NAME_FOR_SCALE, val1, val2);
+        checkCachePut(shouldSucceed, DEC_CACHE_NAME_FOR_SCALE, val2, val1);
     }
 
     /**
@@ -625,7 +625,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<BigDecimal, BigDecimal> val2 = new T2<>(BigDecimal.valueOf(12.37), BigDecimal.valueOf(12.35));
 
-        checkCachePutSuccess(DEC_CACHE_NAME_FOR_SCALE, val1, val2);
+        checkCachePut(shouldSucceed, DEC_CACHE_NAME_FOR_SCALE, val2, val1);
     }
 
     /**
@@ -636,11 +636,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<DecOrganization, Employee> val1 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val1 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.34)));
 
-        T2<DecOrganization, Employee> val2 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.37)));
+        T2<DecOrganization, Employee> val2 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.37)));
 
-        checkCachePutSuccess(OBJ_CACHE_NAME_FOR_SCALE, val1, val2);
+        checkCachePut(shouldSucceed, OBJ_CACHE_NAME_FOR_SCALE, val1, val2);
     }
 
     /**
@@ -651,11 +651,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<DecOrganization, Employee> val1 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
+        T2<DecOrganization, Employee> val1 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.34)));
 
-        T2<DecOrganization, Employee> val2 = new T2<>(org1, new Employee(BigDecimal.valueOf(12.35)));
+        T2<DecOrganization, Employee> val2 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.35)));
 
-        checkCachePutSuccess(OBJ_CACHE_NAME_FOR_SCALE, val1, val2);
+        checkCachePut(shouldSucceed, OBJ_CACHE_NAME_FOR_SCALE, val1, val2);
     }
 
     /**
@@ -680,11 +680,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         DecOrganization org2 = new DecOrganization(BigDecimal.valueOf(12.34));
 
-        T2<BigDecimal, DecOrganization> val1 = new T2<>(BigDecimal.valueOf(12.34), org1);
+        T2<BigDecimal, DecOrganization> val1 = new T2<>(BigDecimal.valueOf(12.37), org1);
 
-        T2<BigDecimal, DecOrganization> val2 = new T2<>(BigDecimal.valueOf(12.37), org2);
+        T2<BigDecimal, DecOrganization> val2 = new T2<>(BigDecimal.valueOf(12.34), org2);
 
-        checkCachePutSuccess(cacheName, val1, val2);
+        checkCachePut(shouldSucceed, cacheName, val1, val2);
     }
 
 
@@ -784,32 +784,27 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     }
 
     /** */
-    private <K, V> void checkCachePutAndReplaceFail(String cacheName, T2<K, V> validEntry, T2<K, V> invalidEntry, V okVal) {
+    private <K, V> void checkCachePutAndReplace(Consumer<Runnable> checker, String cacheName,
+        V okVal, T2<K, V>... entries) {
         IgniteCache<K, V> cache = jcache(0, cacheName);
 
-        checkPutAll(shouldFail, cache, validEntry, invalidEntry);
+        checkPutAll(checker, cache, entries);
 
-        checkPutOps(shouldFail, cache, invalidEntry);
+        if (entries.length != 0) {
+            checkPutOps(checker, cache, entries[0]);
 
-        checkReplaceOps(shouldFail, cache, invalidEntry, okVal);
+            checkReplaceOps(checker, cache, entries[0], okVal);
+        }
     }
 
     /** */
-    private <K, V> void checkCachePutSuccess(String cacheName, T2<K, V> validEntry, T2<K, V> invalidEntry) {
+    private <K, V> void checkCachePut(Consumer<Runnable> checker , String cacheName, T2<K, V>... entries) {
         IgniteCache<K, V> cache = jcache(0, cacheName);
 
-        checkPutAll(shouldSucceed, cache, validEntry, invalidEntry);
+        checkPutAll(checker, cache, entries);
 
-        checkPutOps(shouldSucceed, cache, invalidEntry);
-    }
-
-    /** */
-    private <K, V> void checkCachePutFail(String cacheName, T2<K, V>validEntry, T2<K, V> invalidEntry) {
-        IgniteCache<K, V> cache = jcache(0, cacheName);
-
-        checkPutAll(shouldFail, cache, validEntry, invalidEntry);
-
-        checkPutOps(shouldFail, cache, invalidEntry);
+        if (entries.length != 0)
+            checkPutOps(checker, cache, entries[0]);
     }
 
     /** */
