@@ -17,9 +17,13 @@
 
 package org.apache.ignite.ml.knn.ann;
 
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
@@ -39,8 +43,8 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * ANN algorithm trainer to solve multi-class classification task.
- * This trainer is based on ACD strategy and KMeans clustering algorithm to find centroids.
+ * ANN algorithm trainer to solve multi-class classification task. This trainer is based on ACD strategy and KMeans
+ * clustering algorithm to find centroids.
  */
 public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClassificationModel> {
     /** Amount of clusters. */
@@ -61,29 +65,55 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     /**
      * Trains model based on the specified data.
      *
-     * @param datasetBuilder   Dataset builder.
+     * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
+     * @param lbExtractor Label extractor.
      * @return Model.
      */
-    @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        final Vector[] centers = getCentroids(featureExtractor, lbExtractor, datasetBuilder);
+    @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
-        final CentroidStat centroidStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        List<Vector> centers;
+        CentroidStat centroidStat;
+        if (mdl != null) {
+            centers = Arrays.stream(mdl.getCandidates().data()).map(x -> x.features()).collect(Collectors.toList());
+            CentroidStat newStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
+            if(newStat == null)
+                return mdl;
+            CentroidStat oldStat = mdl.getCentroindsStat();
+            centroidStat = newStat.merge(oldStat);
+        } else {
+            centers = getCentroids(featureExtractor, lbExtractor, datasetBuilder);
+            centroidStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
+        }
 
         final LabeledVectorSet<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
 
-        return new ANNClassificationModel(dataset);
+        return new ANNClassificationModel(dataset, centroidStat);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(ANNClassificationModel mdl) {
+        return mdl.getDistanceMeasure().equals(distance) && mdl.getCandidates().rowSize() == k;
     }
 
     /** */
-    @NotNull private LabeledVectorSet<ProbableLabel, LabeledVector> buildLabelsForCandidates(Vector[] centers, CentroidStat centroidStat) {
+    @NotNull private LabeledVectorSet<ProbableLabel, LabeledVector> buildLabelsForCandidates(List<Vector> centers,
+        CentroidStat centroidStat) {
         // init
-        final LabeledVector<Vector, ProbableLabel>[] arr = new LabeledVector[centers.length];
+        final LabeledVector<Vector, ProbableLabel>[] arr = new LabeledVector[centers.size()];
 
         // fill label for each centroid
-        for (int i = 0; i < centers.length; i++)
-            arr[i] = new LabeledVector<>(centers[i], fillProbableLabel(i, centroidStat));
+        for (int i = 0; i < centers.size(); i++)
+            arr[i] = new LabeledVector<>(centers.get(i), fillProbableLabel(i, centroidStat));
 
         return new LabeledVectorSet<>(arr);
     }
@@ -92,15 +122,16 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * Perform KMeans clusterization algorithm to find centroids.
      *
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
-     * @param datasetBuilder   The dataset builder.
-     * @param <K>              Type of a key in {@code upstream} data.
-     * @param <V>              Type of a value in {@code upstream} data.
+     * @param lbExtractor Label extractor.
+     * @param datasetBuilder The dataset builder.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
      * @return The arrays of vectors.
      */
-    private <K, V> Vector[] getCentroids(IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, DatasetBuilder<K, V> datasetBuilder) {
+    private <K, V> List<Vector> getCentroids(IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor, DatasetBuilder<K, V> datasetBuilder) {
         KMeansTrainer trainer = new KMeansTrainer()
-            .withK(k)
+            .withAmountOfClusters(k)
             .withMaxIterations(maxIterations)
             .withSeed(seed)
             .withDistance(distance)
@@ -112,7 +143,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             lbExtractor
         );
 
-        return mdl.centers();
+        return Arrays.asList(mdl.getCenters());
     }
 
     /** */
@@ -125,21 +156,24 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         ConcurrentHashMap<Double, Integer> centroidLbDistribution
             = centroidStat.centroidStat().get(centroidIdx);
 
-        if(centroidStat.counts.containsKey(centroidIdx)){
+        if (centroidStat.counts.containsKey(centroidIdx)) {
 
             int clusterSize = centroidStat
                 .counts
                 .get(centroidIdx);
 
             clsLbls.keySet().forEach(
-                (label) -> clsLbls.put(label, centroidLbDistribution.containsKey(label) ? ((double) (centroidLbDistribution.get(label)) / clusterSize) : 0.0)
+                (label) -> clsLbls.put(label, centroidLbDistribution.containsKey(label) ? ((double)(centroidLbDistribution.get(label)) / clusterSize) : 0.0)
             );
         }
         return new ProbableLabel(clsLbls);
     }
 
     /** */
-    private <K, V> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, Vector[] centers) {
+    private <K, V> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor, List<Vector> centers) {
+
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
             featureExtractor,
             lbExtractor
@@ -174,7 +208,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                     }
 
                     res.counts.merge(centroidIdx, 1,
-                        (IgniteBiFunction<Integer, Integer, Integer>) (i1, i2) -> i1 + i2);
+                        (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
                 }
                 return res;
             }, (a, b) -> {
@@ -194,15 +228,15 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * Find the closest cluster center index and distance to it from a given point.
      *
      * @param centers Centers to look in.
-     * @param pnt     Point.
+     * @param pnt Point.
      */
-    private IgniteBiTuple<Integer, Double> findClosestCentroid(Vector[] centers, LabeledVector pnt) {
+    private IgniteBiTuple<Integer, Double> findClosestCentroid(List<Vector> centers, LabeledVector pnt) {
         double bestDistance = Double.POSITIVE_INFINITY;
         int bestInd = 0;
 
-        for (int i = 0; i < centers.length; i++) {
-            if (centers[i] != null) {
-                double dist = distance.compute(centers[i], pnt.features());
+        for (int i = 0; i < centers.size(); i++) {
+            if (centers.get(i) != null) {
+                double dist = distance.compute(centers.get(i), pnt.features());
                 if (dist < bestDistance) {
                     bestDistance = dist;
                     bestInd = i;
@@ -211,7 +245,6 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
         }
         return new IgniteBiTuple<>(bestInd, bestDistance);
     }
-
 
     /**
      * Gets the amount of clusters.
@@ -314,7 +347,9 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** Service class used for statistics. */
-    public static class CentroidStat {
+    public static class CentroidStat implements Serializable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 7624883170532045144L;
 
         /** Count of points closest to the center with a given index. */
         ConcurrentHashMap<Integer, ConcurrentHashMap<Double, Integer>> centroidStat = new ConcurrentHashMap<>();
