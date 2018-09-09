@@ -209,4 +209,14 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
 
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccEnabled(GridCacheSharedContext cctx) {
+        for (IgniteTxEntry e : writeMap.values()) {
+            if (e.context().mvccEnabled())
+                return true;
+        }
+
+        return false;
+    }
 }

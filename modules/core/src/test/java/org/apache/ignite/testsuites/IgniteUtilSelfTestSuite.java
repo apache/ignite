@@ -45,7 +45,6 @@ import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.GridThreadTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
 import org.apache.ignite.util.GridConcurrentLinkedDequeMultiThreadedTest;
-import org.apache.ignite.util.GridIndexFillTest;
 import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLogThrottleTest;
 import org.apache.ignite.util.GridLongListSelfTest;
@@ -106,7 +105,6 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridMessageCollectionTest.class);
         suite.addTestSuite(WorkersControlMXBeanTest.class);
         suite.addTestSuite(GridConcurrentLinkedDequeMultiThreadedTest.class);
-        suite.addTestSuite(GridIndexFillTest.class);
         suite.addTestSuite(GridLogThrottleTest.class);
         suite.addTestSuite(GridRandomSelfTest.class);
         suite.addTestSuite(GridSnapshotLockSelfTest.class);

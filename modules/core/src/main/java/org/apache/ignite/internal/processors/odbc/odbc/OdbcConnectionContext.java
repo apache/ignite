@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -27,7 +25,11 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnecti
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * ODBC Connection Context.
@@ -111,6 +113,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean enforceJoinOrder = reader.readBoolean();
         boolean replicatedOnly = reader.readBoolean();
         boolean collocated = reader.readBoolean();
+
         boolean lazy = false;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
@@ -124,17 +127,25 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         String user = null;
         String passwd = null;
 
+        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
+
         if (ver.compareTo(VER_2_5_0) >= 0) {
             user = reader.readString();
             passwd = reader.readString();
+
+            byte nestedTxModeVal = reader.readByte();
+
+            nestedTxMode = NestedTxMode.fromByte(nestedTxModeVal);
         }
 
         AuthorizationContext actx = authenticate(user, passwd);
 
-        handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate, actx, ver);
+        handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
+            replicatedOnly, collocated, lazy, skipReducerOnUpdate, actx, nestedTxMode, ver);
 
         parser = new OdbcMessageParser(ctx, ver);
+
+        handler.start();
     }
 
     /** {@inheritDoc} */

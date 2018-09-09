@@ -529,7 +529,7 @@ namespace Apache.Ignite.Core
 
             // SSL Context factory.
             SslFactorySerializer.Write(writer, SslContextFactory);
-            
+
             // Failure handler.
             if (FailureHandler == null)
             {
@@ -538,7 +538,7 @@ namespace Apache.Ignite.Core
             else
             {
                 writer.WriteBoolean(true);
-                
+
                 if (FailureHandler is NoOpFailureHandler)
                 {
                     writer.WriteByte(0);
@@ -547,7 +547,7 @@ namespace Apache.Ignite.Core
                 {
                     writer.WriteByte(1);
                 }
-                else 
+                else
                 {
                     var failHnd = FailureHandler as StopNodeOrHaltFailureHandler;
 
@@ -565,7 +565,7 @@ namespace Apache.Ignite.Core
                     failHnd.Write(writer);
                 }
             }
-           
+
             // Plugins (should be last).
             if (PluginConfigurations != null)
             {
@@ -806,7 +806,7 @@ namespace Apache.Ignite.Core
 
             // SSL context factory.
             SslContextFactory = SslFactorySerializer.Read(r);
-            
+
             //Failure handler.
             if (r.ReadBoolean())
             {
@@ -814,22 +814,22 @@ namespace Apache.Ignite.Core
                 {
                     case 0:
                         FailureHandler = new NoOpFailureHandler();
-                        
+
                         break;
 
                     case 1:
                         FailureHandler = new StopNodeFailureHandler();
-                        
+
                         break;
 
                     case 2:
                         FailureHandler = StopNodeOrHaltFailureHandler.Read(r);
-                        
+
                         break;
-                    
+
                     default:
                         FailureHandler = null;
-                        
+
                         break;
                 }
             }
@@ -960,7 +960,7 @@ namespace Apache.Ignite.Core
         /// Null property values do not override Spring values.
         /// Value-typed properties are tracked internally: if setter was not called, Spring value won't be overwritten.
         /// <para />
-        /// This merging happens on the top level only; e. g. if there are cache configurations defined in Spring 
+        /// This merging happens on the top level only; e. g. if there are cache configurations defined in Spring
         /// and in .NET, .NET caches will overwrite Spring caches.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
@@ -991,7 +991,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// List of additional .Net assemblies to load on Ignite start. Each item can be either
-        /// fully qualified assembly name, path to assembly to DLL or path to a directory when 
+        /// fully qualified assembly name, path to assembly to DLL or path to a directory when
         /// assemblies reside.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
@@ -1047,7 +1047,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets or sets a set of event types (<see cref="EventType" />) to be recorded by Ignite. 
+        /// Gets or sets a set of event types (<see cref="EventType" />) to be recorded by Ignite.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<int> IncludedEventTypes { get; set; }
@@ -1187,11 +1187,11 @@ namespace Apache.Ignite.Core
         public string WorkDirectory { get; set; }
 
         /// <summary>
-        /// Gets or sets system-wide local address or host for all Ignite components to bind to. 
+        /// Gets or sets system-wide local address or host for all Ignite components to bind to.
         /// If provided it will override all default local bind settings within Ignite.
         /// <para />
-        /// If <c>null</c> then Ignite tries to use local wildcard address.That means that all services 
-        /// will be available on all network interfaces of the host machine. 
+        /// If <c>null</c> then Ignite tries to use local wildcard address.That means that all services
+        /// will be available on all network interfaces of the host machine.
         /// <para />
         /// It is strongly recommended to set this parameter for all production environments.
         /// </summary>
@@ -1200,11 +1200,11 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets a value indicating whether this node should be a daemon node.
         /// <para />
-        /// Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs, 
+        /// Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs,
         /// i.e. they are not part of any cluster groups.
         /// <para />
-        /// Daemon nodes are used primarily for management and monitoring functionality that is built on Ignite 
-        /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology, 
+        /// Daemon nodes are used primarily for management and monitoring functionality that is built on Ignite
+        /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology,
         /// so that it won't participate in the task execution or in-memory data grid storage.
         /// </summary>
         public bool IsDaemon
@@ -1241,14 +1241,14 @@ namespace Apache.Ignite.Core
         /// affinity assignment mode is disabled then new affinity mapping is applied immediately.
         /// <para />
         /// With late affinity assignment mode, if primary node was changed for some partition, but data for this
-        /// partition is not rebalanced yet on this node, then current primary is not changed and new primary 
-        /// is temporary assigned as backup. This nodes becomes primary only when rebalancing for all assigned primary 
-        /// partitions is finished. This mode can show better performance for cache operations, since when cache 
-        /// primary node executes some operation and data is not rebalanced yet, then it sends additional message 
+        /// partition is not rebalanced yet on this node, then current primary is not changed and new primary
+        /// is temporary assigned as backup. This nodes becomes primary only when rebalancing for all assigned primary
+        /// partitions is finished. This mode can show better performance for cache operations, since when cache
+        /// primary node executes some operation and data is not rebalanced yet, then it sends additional message
         /// to force rebalancing from other nodes.
         /// <para />
         /// Note, that <see cref="ICacheAffinity"/> interface provides assignment information taking late assignment
-        /// into account, so while rebalancing for new primary nodes is not finished it can return assignment 
+        /// into account, so while rebalancing for new primary nodes is not finished it can return assignment
         /// which differs from assignment calculated by AffinityFunction.
         /// <para />
         /// This property should have the same value for all nodes in cluster.
@@ -1313,7 +1313,7 @@ namespace Apache.Ignite.Core
         public ILogger Logger { get; set; }
 
         /// <summary>
-        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/> 
+        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/>
         /// and <see cref="TcpCommunicationSpi"/>.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:10")]
@@ -1540,7 +1540,7 @@ namespace Apache.Ignite.Core
         public bool RedirectJavaConsoleOutput { get; set; }
 
         /// <summary>
-        /// Gets or sets whether user authentication is enabled for the cluster. Default is <c>false</c>. 
+        /// Gets or sets whether user authentication is enabled for the cluster. Default is <c>false</c>.
         /// </summary>
         [DefaultValue(DefaultAuthenticationEnabled)]
         public bool AuthenticationEnabled
@@ -1557,7 +1557,7 @@ namespace Apache.Ignite.Core
         /// <para><see cref="StopNodeOrHaltFailureHandler"/> -- try to stop node if tryStop value is true.
         /// If node can't be stopped during provided timeout or tryStop value is false then JVM process will be terminated forcibly.</para>
         /// <para/>
-        /// Only these implementations are supported: 
+        /// Only these implementations are supported:
         /// <see cref="NoOpFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>, <see cref="StopNodeFailureHandler"/>.
         /// </summary>
         public IFailureHandler FailureHandler { get; set; }
@@ -1568,6 +1568,6 @@ namespace Apache.Ignite.Core
         /// <para/>
         /// By default schema names are case-insensitive. Use quotes to enforce case sensitivity.
         /// </summary>
-        public ICollection<String> SqlSchemas { get; set; }
+        public ICollection<string> SqlSchemas { get; set; }
     }
 }
