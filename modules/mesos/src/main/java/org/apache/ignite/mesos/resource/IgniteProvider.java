@@ -101,7 +101,8 @@ public class IgniteProvider {
                 url = new URL(String.format(findMirror() + IGNITE_PATH, ver, ver));
             }
             catch (Exception e) {
-                throw new RuntimeException("Failed to find URL for " + ClusterProperties.DEFAULT_IGNITE_VERSION, e);
+                // fallback to archive.
+                url = new URL(String.format(DOWNLOAD_URL_PATTERN, ver, ver));
             }
         }
         else {
