@@ -24,7 +24,7 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Simple naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [1..K]} as {@code
+ * Simple naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as {@code
  * p(C_k,y) = p(C_k)*p(y_1,C_k) *...*p(y_n,C_k) / p(y)}. Return the number of the most possible class.
  */
 public class GaussianNaiveBayesModel implements Model<Vector, Integer>, Exportable<GaussianNaiveBayesModel>, Serializable {
