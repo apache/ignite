@@ -41,15 +41,17 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
@@ -58,8 +60,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
- * WAL reader iterator, for creation in standalone WAL reader tool
- * Operates over one directory, does not provide start and end boundaries
+ * WAL reader iterator, for creation in standalone WAL reader tool Operates over one directory, does not provide start
+ * and end boundaries
  */
 class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** Record buffer size */
@@ -88,12 +90,13 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /**
      * Creates iterator in file-by-file iteration mode. Directory
+     *
      * @param log Logger.
      * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is
      * required.
      * @param ioFactory File I/O factory.
-     * @param keepBinary Keep binary. This flag disables converting of non primitive types
-     * (BinaryObjects will be used instead)
+     * @param keepBinary Keep binary. This flag disables converting of non primitive types (BinaryObjects will be used
+     * instead)
      * @param walFiles Wal files.
      */
     StandaloneWalRecordsIterator(
@@ -128,8 +131,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /**
-     * For directory mode sets oldest file as initial segment,
-     * for file by file mode, converts all files to descriptors and gets oldest as initial.
+     * For directory mode sets oldest file as initial segment, for file by file mode, converts all files to descriptors
+     * and gets oldest as initial.
      *
      * @param walFiles files for file-by-file iteration mode
      */
@@ -232,7 +235,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /**
-     *
      * @param ptr WAL pointer.
      * @return {@code True} If pointer between low and high bounds. {@code False} if not.
      */
@@ -243,7 +245,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /**
-     *
      * @param idx WAL segment index.
      * @return {@code True} If pointer between low and high bounds. {@code False} if not.
      */
@@ -258,17 +259,20 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     ) throws IgniteCheckedException, FileNotFoundException {
 
         AbstractFileDescriptor fd = desc;
-
+        FileIO fileIO = null;
+        SegmentHeader segmentHeader;
         while (true) {
             try {
-                FileIO fileIO = fd.isCompressed() ? new UnzipFileIO(fd.file()) : ioFactory.create(fd.file());
+                fileIO = fd.isCompressed() ? new UnzipFileIO(fd.file()) : ioFactory.create(fd.file());
 
-                readSegmentHeader(fileIO, curWalSegmIdx);
+                segmentHeader = readSegmentHeader(fileIO, curWalSegmIdx);
 
                 break;
             }
             catch (IOException | IgniteCheckedException e) {
                 log.error("Failed to init segment curWalSegmIdx=" + curWalSegmIdx + ", curIdx=" + curIdx, e);
+
+                U.closeQuiet(fileIO);
 
                 curIdx++;
 
@@ -279,13 +283,13 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             }
         }
 
-        return super.initReadHandle(fd, start);
+        return initReadHandle(fd, start, fileIO, segmentHeader);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
-         GridKernalContext kernalCtx = sharedCtx.kernalContext();
-         IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
+        GridKernalContext kernalCtx = sharedCtx.kernalContext();
+        IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
 
         if (processor != null && rec.type() == RecordType.DATA_RECORD) {
             try {
@@ -335,6 +339,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /**
      * Converts entry or lazy data entry into unwrapped entry
+     *
      * @param processor cache object processor for de-serializing objects.
      * @param fakeCacheObjCtx cache object context for de-serializing binary and unwrapping objects.
      * @param dataEntry entry to process

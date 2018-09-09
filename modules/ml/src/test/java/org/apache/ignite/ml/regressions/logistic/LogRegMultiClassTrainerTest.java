@@ -19,9 +19,11 @@ package org.apache.ignite.ml.regressions.logistic;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.SmoothParametrized;
@@ -59,11 +61,11 @@ public class LogRegMultiClassTrainerTest extends TrainerTest {
             .withBatchSize(100)
             .withSeed(123L);
 
-        Assert.assertEquals(trainer.amountOfIterations(), 1000);
-        Assert.assertEquals(trainer.amountOfLocIterations(), 10);
-        Assert.assertEquals(trainer.batchSize(), 100, PRECISION);
+        Assert.assertEquals(trainer.getAmountOfIterations(), 1000);
+        Assert.assertEquals(trainer.getAmountOfLocIterations(), 10);
+        Assert.assertEquals(trainer.getBatchSize(), 100, PRECISION);
         Assert.assertEquals(trainer.seed(), 123L);
-        Assert.assertEquals(trainer.updatesStgy(), stgy);
+        Assert.assertEquals(trainer.getUpdatesStgy(), stgy);
 
         LogRegressionMultiClassModel mdl = trainer.fit(
             cacheMock,
@@ -80,5 +82,61 @@ public class LogRegMultiClassTrainerTest extends TrainerTest {
         TestUtils.assertEquals(1, mdl.apply(VectorUtils.of(-10, 10)), PRECISION);
         TestUtils.assertEquals(2, mdl.apply(VectorUtils.of(-10, -10)), PRECISION);
         TestUtils.assertEquals(3, mdl.apply(VectorUtils.of(10, -10)), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void testUpdate() {
+        Map<Integer, double[]> cacheMock = new HashMap<>();
+
+        for (int i = 0; i < fourSetsInSquareVertices.length; i++)
+            cacheMock.put(i, fourSetsInSquareVertices[i]);
+
+        LogRegressionMultiClassTrainer<?> trainer = new LogRegressionMultiClassTrainer<>()
+            .withUpdatesStgy(new UpdatesStrategy<>(
+                new SimpleGDUpdateCalculator(0.2),
+                SimpleGDParameterUpdate::sumLocal,
+                SimpleGDParameterUpdate::avg
+            ))
+            .withAmountOfIterations(1000)
+            .withAmountOfLocIterations(10)
+            .withBatchSize(100)
+            .withSeed(123L);
+
+        LogRegressionMultiClassModel originalModel = trainer.fit(
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        LogRegressionMultiClassModel updatedOnSameDS = trainer.update(
+            originalModel,
+            cacheMock,
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        LogRegressionMultiClassModel updatedOnEmptyDS = trainer.update(
+            originalModel,
+            new HashMap<Integer, double[]>(),
+            parts,
+            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
+            (k, v) -> v[0]
+        );
+
+        List<Vector> vectors = Arrays.asList(
+            VectorUtils.of(10, 10),
+            VectorUtils.of(-10, 10),
+            VectorUtils.of(-10, -10),
+            VectorUtils.of(10, -10)
+        );
+
+
+        for (Vector vec : vectors) {
+            TestUtils.assertEquals(originalModel.apply(vec), updatedOnSameDS.apply(vec), PRECISION);
+            TestUtils.assertEquals(originalModel.apply(vec), updatedOnEmptyDS.apply(vec), PRECISION);
+        }
     }
 }

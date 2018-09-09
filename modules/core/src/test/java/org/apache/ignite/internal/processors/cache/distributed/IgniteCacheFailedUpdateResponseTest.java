@@ -104,8 +104,6 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testInvokeAtomic() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9326");
-
         testInvoke(atomicCache);
         testInvokeAll(atomicCache);
     }
