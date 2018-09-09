@@ -37,7 +37,7 @@ public enum CacheAtomicityMode {
      * {@link Transaction} for more information about transactions.
      * <p>
      * <b>Note:</b> this mode guaranties transactional behavior <b>only for key-value API</b> operations.
-     * For ACID SQL transactions use {@link TRANSACTIONAL_SNAPSHOT} mode.
+     * For ACID SQL transactions use {@code CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode.
      * </p>
      */
     TRANSACTIONAL,
@@ -106,7 +106,7 @@ public enum CacheAtomicityMode {
      * <p>
      * There is one node in cluster is elected as MVCC coordinator. This node tracks all in-flight transactions and
      * queries in the cluster.
-     * Each transaction or query over the cache with {@link TRANSACTIONAL_SNAPSHOT} mode obtains current
+     * Each transaction or query over the cache with {@code TRANSACTIONAL_SNAPSHOT} mode obtains current
      * database snapshot from the coordinator. This snapshot allows transactions and queries to skip invisible
      * updates made by concurrent transactions to always observe the same consistent database state.
      * </p>

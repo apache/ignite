@@ -97,7 +97,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection c = c(true, NestedTxMode.ERROR)) {
             try (Statement s = c.createStatement()) {
                 s.execute("CREATE TABLE INTS (k int primary key, v int) WITH \"cache_name=ints,wrap_value=false," +
-                    "atomicity=transactional\"");
+                    "atomicity=transactional_snapshot\"");
             }
         }
     }

@@ -255,16 +255,9 @@ public interface MvccProcessor extends GridProcessor {
 
     /**
      * @return {@code True} if at least one cache with
-     * {@link CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is registered.
+     * {@code CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT} mode is registered.
      */
     boolean mvccEnabled();
-
-    /**
-     * Pre-processes cache configuration before start.
-     *
-     * @param ccfg Cache configuration to pre-process.
-     */
-    void preProcessCacheConfiguration(CacheConfiguration ccfg);
 
     /**
      * Validates cache configuration before start.

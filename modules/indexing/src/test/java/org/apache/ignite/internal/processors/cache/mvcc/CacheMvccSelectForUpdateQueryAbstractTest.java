@@ -330,7 +330,7 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
                             throw e;
                         }
                     }
-                }, CacheException.class, "IgniteTxTimeoutCheckedException");
+                }, CacheException.class, "Failed to acquire lock within provided timeout for transaction");
             }
         }
     }
