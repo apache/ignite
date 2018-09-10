@@ -2,64 +2,132 @@ package org.apache.ignite.ml.pipeline;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
-public class Pipeline<K, V> {
+/**
+ * A simple pipeline, which acts as a global trainer which produce a Pipeline Model.
+ * A Pipeline consists of a sequence of stages, each of which is either a Preprocessing Stage or a Trainer.
+ * When {@code fit()} method is called, the stages are executed in order.
+ *
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
+ * @param <R> Type of a result in {@code upstream} feature extractor.
+ */
+public class Pipeline<K, V, R> {
+    /** Feature extractor. */
+    private IgniteBiFunction<K, V, R> finalFeatureExtractor;
 
-    private IgniteBiFunction<K, V, Object[]> finalFeatureExtractor;
-
+    /** Label extractor. */
     private IgniteBiFunction<K, V, Double> lbExtractor;
 
+    /** Prerpocessor stages. */
     private List<PreprocessingTrainer> preprocessors = new ArrayList<>();
 
+    /** Final trainer stage. */
     private DatasetTrainer finalStage;
 
-    public Pipeline<K, V> addFeatureExtractor(IgniteBiFunction<K, V, Object[]> featureExtractor) {
+    /**
+     * Adds feature extractor as a zero stage.
+     *
+     * @param featureExtractor The parameter value.
+     * @return The updated Pipeline.
+     */
+    public Pipeline<K, V, R> addFeatureExtractor(IgniteBiFunction<K, V, R> featureExtractor) {
         this.finalFeatureExtractor = featureExtractor;
         return this;
     }
 
-    public Pipeline<K, V> addLabelExtractor(IgniteBiFunction<K, V, Double> lbExtractor) {
+    /**
+     * Adds a label extractor for the produced model.
+     *
+     * @param lbExtractor The parameter value.
+     * @return The updated Pipeline.
+     */
+    public Pipeline<K, V, R> addLabelExtractor(IgniteBiFunction<K, V, Double> lbExtractor) {
         this.lbExtractor = lbExtractor;
         return this;
     }
 
-    public Pipeline<K, V> addStage(PreprocessingTrainer trainer) {
-        preprocessors.add(trainer);
+    /**
+     * Adds a preprocessor.
+     *
+     * @param preprocessor The parameter value.
+     * @return The updated Pipeline.
+     */
+    public Pipeline<K, V, R> addPreprocessor(PreprocessingTrainer preprocessor) {
+        preprocessors.add(preprocessor);
         return this;
     }
 
-    public Pipeline<K, V> addFinalStage(DatasetTrainer trainer) {
+    /**
+     * Adds a trainer.
+     *
+     * @param trainer The parameter value.
+     * @return The updated Pipeline.
+     */
+    public Pipeline<K, V, R> addTrainer(DatasetTrainer trainer) {
         this.finalStage = trainer;
         return this;
     }
 
-    public PipelineMdl fit(Ignite ignite, IgniteCache<K, V> cache) {
+    /**
+     * Fits the pipeline to the input cache.
+     *
+     * @param ignite Ignite instance.
+     * @param cache Ignite cache with {@code upstream} data.
+     * @return The fitted model based on chain of preprocessors and final trainer.
+     */
+    public PipelineMdl<K, V> fit(Ignite ignite, IgniteCache<K, V> cache) {
+        DatasetBuilder datasetBuilder = new CacheBasedDatasetBuilder<>(ignite, cache);
+        return fit(datasetBuilder);
+    }
+
+    /**
+     * Fits the pipeline to the input mock data.
+     *
+     * @param data Data.
+     * @param parts Number of partitions.
+     * @return The fitted model based on chain of preprocessors and final trainer.
+     */
+    public PipelineMdl<K, V> fit(Map<K, V> data, int parts) {
+        DatasetBuilder datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        return fit(datasetBuilder);
+    }
+
+    /** Fits the pipeline to the input dataset builder. */
+    private PipelineMdl<K, V> fit(DatasetBuilder datasetBuilder) {
         assert lbExtractor != null;
         assert finalFeatureExtractor != null;
 
+        if (finalStage == null)
+            throw new IllegalStateException("The Pipeline should be finished with the Training Stage.");
+
         preprocessors.forEach(e -> {
-            finalFeatureExtractor = e.fit(ignite,
-                cache,
+
+            finalFeatureExtractor = e.fit(
+                datasetBuilder,
                 finalFeatureExtractor
             );
         });
 
-
-        Model internalMdl = finalStage
+        Model<Vector, Double> internalMdl = finalStage
             .fit(
-                ignite,
-                cache,
+                datasetBuilder,
                 finalFeatureExtractor,
                 lbExtractor
             );
-        return new PipelineMdl()
+
+        return new PipelineMdl<K, V>()
             .withFeatureExtractor(finalFeatureExtractor)
             .withLabelExtractor(lbExtractor)
             .withInternalMdl(internalMdl);
