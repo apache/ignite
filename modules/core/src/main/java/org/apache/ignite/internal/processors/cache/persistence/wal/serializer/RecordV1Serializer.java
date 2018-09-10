@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
@@ -364,14 +366,37 @@ public class RecordV1Serializer implements RecordSerializer {
     ) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        try (FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
-            startPos = in0.position();
+        try {
+            WALRecord res;
 
-            WALRecord res = reader.readWithHeaders(in, expPtr);
+            FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc);
 
-            assert res != null;
+            try {
+                startPos = in0.position();
 
-            res.size((int)(in0.position() - startPos + CRC_SIZE)); // Account for CRC which will be read afterwards.
+                res = reader.readWithHeaders(in, expPtr);
+
+                assert res != null;
+
+                res.size((int)(in0.position() - startPos + CRC_SIZE)); // Account for CRC which will be read afterwards.
+            }
+            catch (Exception e) {
+                try {
+                    in.close();
+                }
+                catch (Exception e2) {
+                    e.addSuppressed(e2);
+                }
+
+                throw e;
+            }
+
+            try {
+                in.close();
+            }
+            catch (IgniteDataIntegrityViolationException e) {
+                throw new IgniteCrcReadingException(e, res);
+            }
 
             return res;
         }
@@ -389,6 +414,20 @@ public class RecordV1Serializer implements RecordSerializer {
             }
 
             throw new IgniteCheckedException("Failed to read WAL record at position: " + startPos + " size: " + size, e);
+        }
+    }
+
+    //TODO add JavaDoc and move to another place
+    public static class IgniteCrcReadingException extends IgniteException {
+        private WALRecord walRecord;
+
+        public IgniteCrcReadingException(Throwable cause, WALRecord record) {
+            super(cause);
+            walRecord = record;
+        }
+
+        public WALRecord getWalRecord() {
+            return walRecord;
         }
     }
 

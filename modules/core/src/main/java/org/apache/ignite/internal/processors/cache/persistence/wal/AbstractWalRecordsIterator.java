@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.IgniteCrcReadingException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.P2;
@@ -235,13 +236,10 @@ public abstract class AbstractWalRecordsIterator
 
         FileWALPointer actualFilePtr = new FileWALPointer(hnd.idx(), (int)hnd.in().position(), 0);
 
+        WALRecord rec = null;
+
         try {
-            WALRecord rec = hnd.ser().readRecord(hnd.in(), actualFilePtr);
-
-            actualFilePtr.length(rec.size());
-
-            // cast using diamond operator here can break compile for 7
-            return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
+            rec = hnd.ser().readRecord(hnd.in(), actualFilePtr);
         }
         catch (IOException | IgniteCheckedException e) {
             if (e instanceof WalSegmentTailReachedException) {
@@ -251,14 +249,23 @@ public abstract class AbstractWalRecordsIterator
             }
 
             if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
-                IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
+                IgniteCheckedException e0 = handleRecordException(e, actualFilePtr, currWalSegment);
 
                 if (e0 != null)
                     throw e0;
-            }
 
-            return null;
+                if (e instanceof IgniteCrcReadingException)
+                    rec = ((IgniteCrcReadingException)e).getWalRecord();
+            }
         }
+
+        if (rec == null)
+            return null;
+
+        actualFilePtr.length(rec.size());
+
+        // cast using diamond operator here can break compile for 7
+        return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
     }
 
     /**
@@ -277,11 +284,14 @@ public abstract class AbstractWalRecordsIterator
      *
      * @param e problem from records reading
      * @param ptr file pointer was accessed
+     * @param currWalSegment current segment
      * @return {@code null} if the error was handled and we can go ahead, {@code IgniteCheckedException} if the error
      * was not handled, and we should stop the iteration.
      */
     protected IgniteCheckedException handleRecordException(@NotNull final Exception e,
-        @Nullable final FileWALPointer ptr) {
+        @Nullable final FileWALPointer ptr,
+        @NotNull AbstractReadFileHandle currWalSegment
+    ) {
         if (log.isInfoEnabled())
             log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
 

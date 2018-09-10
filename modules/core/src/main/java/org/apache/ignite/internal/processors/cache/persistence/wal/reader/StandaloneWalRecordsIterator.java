@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -301,6 +302,24 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }
 
         return super.postProcessRecord(rec);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteCheckedException handleRecordException(
+        @NotNull Exception e,
+        @Nullable FileWALPointer ptr,
+        AbstractReadFileHandle currWalSegment) {
+
+        if (e instanceof IgniteCheckedException) {
+            IgniteCheckedException ice = (IgniteCheckedException)e;
+
+            if (ice.hasCause(RecordV1Serializer.IgniteCrcReadingException.class))
+                // curIdx is an index in walFileDescriptors list
+                if (curIdx == walFileDescriptors.size() - 1)
+                    return null;
+        }
+
+        return super.handleRecordException(e, ptr, currWalSegment);
     }
 
     /**

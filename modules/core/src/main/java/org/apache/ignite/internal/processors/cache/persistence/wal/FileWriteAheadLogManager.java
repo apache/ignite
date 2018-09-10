@@ -3202,6 +3202,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return nextHandle;
         }
 
+        /** {@inheritDoc} */
+        @Override protected IgniteCheckedException handleRecordException(
+            @NotNull Exception e,
+            @Nullable FileWALPointer ptr,
+            @NotNull AbstractReadFileHandle currWalSegment) {
+
+            return super.handleRecordException(e, ptr, currWalSegment);
+        }
+
         /**
          * @param absIdx Absolute index to check.
          * @return <ul><li> {@code True} if we can safely read the archive,  </li> <li>{@code false} if the segment has
