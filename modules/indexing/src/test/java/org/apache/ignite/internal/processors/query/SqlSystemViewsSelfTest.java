@@ -27,6 +27,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -497,6 +499,70 @@ public class SqlSystemViewsSelfTest extends GridCommonAbstractTest {
         assertEquals(1, res.size());
 
         assertEquals("node2", res.get(0).get(0));
+    }
+
+    /**
+     * Test caches system views.
+     */
+    public void testCachesViews() throws Exception {
+        Ignite ignite = startGrid(getConfiguration().setDataStorageConfiguration(
+            new DataStorageConfiguration().setDataRegionConfigurations(
+                new DataRegionConfiguration().setName("dr1"), new DataRegionConfiguration().setName("dr2"))));
+
+        ignite.getOrCreateCache(new CacheConfiguration<>()
+            .setName("cache_atomic_part")
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setGroupName("part_grp")
+        );
+
+        ignite.getOrCreateCache(new CacheConfiguration<>()
+            .setName("cache_atomic_repl")
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setDataRegionName("dr1")
+        );
+
+        ignite.getOrCreateCache(new CacheConfiguration<>()
+            .setName("cache_tx_part")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setGroupName("part_grp")
+        );
+
+        ignite.getOrCreateCache(new CacheConfiguration<>()
+            .setName("cache_tx_repl")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setDataRegionName("dr2")
+        );
+
+        List<List<?>> resAll = execSql("SELECT NAME, IS_USER, GROUP_ID, GROUP_NAME, CACHE_MODE, ATOMICITY_MODE, " +
+            "DATA_REGION_NAME FROM IGNITE.CACHES");
+
+        assertColumnTypes(resAll.get(0), String.class, Boolean.class, Integer.class, String.class, String.class,
+            String.class, String.class);
+
+        assertEquals("cache_tx_part", execSql("SELECT NAME FROM IGNITE.CACHES WHERE CACHE_MODE = 'PARTITIONED' " +
+                "AND ATOMICITY_MODE = 'TRANSACTIONAL' AND NAME like 'cache%'").get(0).get(0));
+
+        assertEquals("cache_atomic_repl", execSql("SELECT NAME FROM IGNITE.CACHES WHERE CACHE_MODE = 'REPLICATED' " +
+            "AND ATOMICITY_MODE = 'ATOMIC' AND NAME like 'cache%'").get(0).get(0));
+
+        assertEquals(2L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE GROUP_NAME = 'part_grp'").get(0).get(0));
+
+        assertEquals("cache_atomic_repl", execSql("SELECT NAME FROM IGNITE.CACHES WHERE DATA_REGION_NAME = 'dr1'")
+            .get(0).get(0));
+
+        assertEquals("cache_tx_repl", execSql("SELECT NAME FROM IGNITE.CACHES WHERE DATA_REGION_NAME = 'dr2'")
+            .get(0).get(0));
+
+        assertEquals("PARTITIONED", execSql("SELECT CACHE_MODE FROM IGNITE.CACHES WHERE NAME = 'cache_atomic_part'")
+            .get(0).get(0));
+
+        assertEquals(0L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME = 'no_such_cache'").get(0).get(0));
+
+        assertEquals(0L, execSql("SELECT COUNT(*) FROM IGNITE.CACHES WHERE NAME = 1").get(0).get(0));
     }
 
     /**
