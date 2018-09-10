@@ -18,10 +18,7 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -29,7 +26,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -38,6 +34,7 @@ import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -55,6 +52,9 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     /** */
     private static final int CLUSTER_SIZE = 8;
 
+    /** */
+    private GridStringLogger strLog;
+
     static {
         GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
             @Override public Message apply() {
@@ -66,6 +66,9 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (strLog != null)
+            cfg.setGridLogger(strLog);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -88,7 +91,9 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testHandshakeNoHangOnNodeJoining() throws Exception {
-        clearExceptionRegistry();
+        strLog = new GridStringLogger();
+
+        strLog.logLength(10 * 1024 * 1024);
 
         AtomicInteger idx = new AtomicInteger();
 
@@ -116,28 +121,9 @@ public class IgniteTcpCommunicationBigClusterTest extends GridCommonAbstractTest
 
         fut.get();
 
-        IgniteExceptionRegistry exReg = IgniteExceptionRegistry.get();
+        String logStr = strLog.toString();
 
-        for (IgniteExceptionRegistry.ExceptionInfo info : exReg.getErrors(0L)) {
-            if (info.error() instanceof IgniteCheckedException
-                && "HandshakeTimeoutException".equals(info.error().getClass().getSimpleName()))
-                throw new IgniteCheckedException("Test failed because handshake hangs.", info.error());
-        }
-    }
-
-    /**
-     * Clears exception registry.
-     */
-    private void clearExceptionRegistry() {
-        IgniteExceptionRegistry exReg = IgniteExceptionRegistry.get();
-
-        ConcurrentLinkedDeque<Object> q = U.field(exReg, "q");
-
-        q.clear();
-
-        AtomicLong cnt = U.field(exReg, "errCnt");
-
-        cnt.set(0);
+        assertFalse("Handshake timeout has happened.", logStr.contains("Handshake timedout"));
     }
 
     /** */
