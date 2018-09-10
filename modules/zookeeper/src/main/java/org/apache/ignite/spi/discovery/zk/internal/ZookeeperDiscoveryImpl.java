@@ -42,7 +42,6 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-import org.apache.curator.utils.ZKPaths;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -1325,11 +1324,9 @@ public class ZookeeperDiscoveryImpl {
         for (String aliveNodePath : aliveNodes) {
             Long internalId = ZkIgnitePaths.aliveInternalId(aliveNodePath);
 
-            if (ZkIgnitePaths.aliveNodeClientFlag(aliveNodePath)) {
-                log().info("Alive client node = " + aliveNodePath);
+            if (ZkIgnitePaths.aliveNodeClientFlag(aliveNodePath))
                 aliveClients.put(internalId, aliveNodePath);
-            } else {
-                log().info("Alive server node = " + aliveNodePath);
+            else {
                 if (srvInternalOrder == null || internalId < srvInternalOrder) {
                     srvPath = aliveNodePath;
                     srvInternalOrder = internalId;
@@ -1337,6 +1334,7 @@ public class ZookeeperDiscoveryImpl {
             }
         }
 
+        //This situation may appear while reconnection and this callback can be skipped
         if(!aliveClients.containsKey(locInternalOrder))
             return;
 
@@ -3024,13 +3022,10 @@ public class ZookeeperDiscoveryImpl {
                 ", nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : evtData.sndNodeId) + ']');
         }
 
-        if (node.isLocal()) {
-            log().info(String.format("processForceNodeFailMessage for LOCAL node with id = %s", node.id().toString()));
+        if (node.isLocal())
             throw localNodeFail("Received force EVT_NODE_FAILED event for local node.", true);
-        } else {
-            log().info(String.format("processForceNodeFailMessage for REMOTE node with id = %s", node.id().toString()));
+        else
             notifyNodeFail(node.internalId(), evtData.topologyVersion());
-        }
     }
 
     /**
@@ -3879,8 +3874,7 @@ public class ZookeeperDiscoveryImpl {
             return;
 
         U.error(log, "Fatal error in ZookeeperDiscovery. " +
-            "Stopping the node " + ignite.name() +
-            "in order to prevent cluster wide instability.", err);
+            "Stopping the node in order to prevent cluster wide instability.", err);
 
         stop0(err);
 
