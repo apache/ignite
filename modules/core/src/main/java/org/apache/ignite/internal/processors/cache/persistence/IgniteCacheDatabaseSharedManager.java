@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
@@ -172,30 +174,71 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      */
     protected void initPageMemoryDataStructures(DataStorageConfiguration dbCfg) throws IgniteCheckedException {
-        freeListMap = U.newHashMap(dataRegionMap.size());
+        final LinkedBlockingQueue<DataRegion> regions = new LinkedBlockingQueue<>(dataRegionMap.values());
 
-        String dfltMemPlcName = dbCfg.getDefaultDataRegionConfiguration().getName();
+        int num = Math.min(regions.size(), Runtime.getRuntime().availableProcessors());
 
-        for (DataRegion memPlc : dataRegionMap.values()) {
-            DataRegionConfiguration memPlcCfg = memPlc.config();
+        ArrayList<IgniteBiTuple<Thread, IgniteCheckedException>> workers = new ArrayList<>(num);
 
-            DataRegionMetricsImpl memMetrics = (DataRegionMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
+        final ConcurrentHashMap<String, CacheFreeListImpl> res = new ConcurrentHashMap<>();
 
-            boolean persistenceEnabled = memPlcCfg.isPersistenceEnabled();
+        for (int i = 0; i < num; i++) {
+            final IgniteBiTuple<Thread, IgniteCheckedException> info = new IgniteBiTuple<Thread, IgniteCheckedException>(null, null);
+            Thread thread = new Thread() {
+                @Override public void run() {
+                    try {
+                        DataRegion region;
 
-            CacheFreeListImpl freeList = new CacheFreeListImpl(0,
-                    cctx.igniteInstanceName(),
-                    memMetrics,
-                    memPlc,
-                    null,
-                    persistenceEnabled ? cctx.wal() : null,
-                    0L,
-                    true);
+                        while ((region = regions.poll()) != null) {
+                            DataRegionConfiguration memPlcCfg = region.config();
 
-            freeListMap.put(memPlcCfg.getName(), freeList);
+                            DataRegionMetricsImpl memMetrics = (DataRegionMetricsImpl)memMetricsMap.get(memPlcCfg.getName());
+
+                            boolean persistenceEnabled = memPlcCfg.isPersistenceEnabled();
+
+                            CacheFreeListImpl freeList = new CacheFreeListImpl(0,
+                                cctx.igniteInstanceName(),
+                                memMetrics,
+                                region,
+                                null,
+                                persistenceEnabled ? cctx.wal() : null,
+                                0L,
+                                true);
+
+                            res.put(memPlcCfg.getName(), freeList);
+                        }
+                    }
+                    catch (IgniteCheckedException ice) {
+                        info.set2(ice);
+                    }
+                }
+            };
+
+            thread.start();
+
+            info.set1(thread);
+
+            workers.add(info);
         }
 
-        dfltFreeList = freeListMap.get(dfltMemPlcName);
+        for (IgniteBiTuple<Thread, IgniteCheckedException> worker : workers) {
+            try {
+                worker.get1().join();
+
+                if (worker.get2() != null)
+                    throw worker.get2();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteCheckedException("Can't init page memory", e);
+            }
+        }
+
+        freeListMap = U.newHashMap(dataRegionMap.size());
+
+        freeListMap.putAll(res);
+
+        dfltFreeList = freeListMap.get(dbCfg.getDefaultDataRegionConfiguration().getName());
+
     }
 
     /**
