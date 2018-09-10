@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -42,6 +43,7 @@ import org.h2.value.ValueDate;
 import org.h2.value.ValueDouble;
 import org.h2.value.ValueFloat;
 import org.h2.value.ValueInt;
+import org.h2.value.ValueJavaObject;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueShort;
@@ -49,6 +51,7 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.springframework.util.SerializationUtils;
 
 /**
  * Simple tests for {@link InlineIndexHelper}.
@@ -271,6 +274,31 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         assertTrue(getResBytes(ha, null, null));
     }
 
+    /** Test on Bytes values compare */
+    public void testRelyOnCompareJavaObject() {
+        InlineIndexHelper ha = new InlineIndexHelper(Value.JAVA_OBJECT, 0, SortOrder.ASCENDING,
+            CompareMode.getInstance(null, 0));
+
+        // different types
+        assertTrue(getResJavaObjects(ha, new String("1234"), new Integer(10)));
+
+        // the same types, but different values
+        assertTrue(getResJavaObjects(ha, new String("1234"), new String("123")));
+
+        // the same types and values
+        assertFalse(getResJavaObjects(ha, new String("1234"), new String("1234")));
+
+        // the same object
+        String key = "1";
+        assertFalse(getResJavaObjects(ha, key, key));
+
+        // one is null
+        assertTrue(getResJavaObjects(ha, key, null));
+        assertTrue(getResJavaObjects(ha, null, key));
+        assertTrue(getResJavaObjects(ha, null, null));
+    }
+
+
     /** */
     public void testStringTruncate() throws Exception {
         DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
@@ -350,17 +378,86 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             InlineIndexHelper ih = new InlineIndexHelper(Value.BYTES, 1, 0,
                 CompareMode.getInstance(null, 0));
 
-            ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), 3 + 3);
+            int maxSize = 3+3;
+            int savedBytesCnt = ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), maxSize);
+
+            assertTrue(savedBytesCnt>0);
+
+            assertTrue(savedBytesCnt<=maxSize);
 
             assertFalse(ih.isValueFull(pageAddr, off));
 
-            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, ih.get(pageAddr, off, 3 + 5).getBytes()));
+            maxSize = 3+5;
 
-            ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), 3 + 5);
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, ih.get(pageAddr, off, maxSize).getBytes()));
+
+            savedBytesCnt = ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), maxSize);
+
+            assertTrue(savedBytesCnt>0);
+
+            assertTrue(savedBytesCnt<=maxSize);
 
             assertTrue(ih.isValueFull(pageAddr, off));
 
-            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, ih.get(pageAddr, off, 3 + 5).getBytes()));
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, ih.get(pageAddr, off, maxSize).getBytes()));
+        }
+        finally {
+            if (page != 0L)
+                pageMem.releasePage(CACHE_ID, pageId, page);
+            pageMem.stop();
+        }
+    }
+
+    /** */
+    public void testJavaObject() throws Exception {
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
+            .setMaxSize(1024 * MB);
+
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log(),
+            new UnsafeMemoryProvider(log()),
+            null,
+            PAGE_SIZE,
+            plcCfg,
+            new DataRegionMetricsImpl(plcCfg),
+            false);
+
+        pageMem.start();
+
+        long pageId = 0L;
+        long page = 0L;
+
+        try {
+            pageId = pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA);
+            page = pageMem.acquirePage(CACHE_ID, pageId);
+            long pageAddr = pageMem.readLock(CACHE_ID, pageId, page);
+
+            int off = 0;
+
+            InlineIndexHelper ih = new InlineIndexHelper(Value.JAVA_OBJECT, 1, 0,
+                CompareMode.getInstance(null, 0));
+
+            int maxSize = 3+3;
+            int savedBytesCnt = ih.put(pageAddr, off, ValueJavaObject.getNoCopy(null, new byte[] {1, 2, 3, 4, 5}, null), maxSize);
+
+            assertTrue(savedBytesCnt>0);
+
+            assertTrue(savedBytesCnt<=maxSize);
+
+            assertFalse(ih.isValueFull(pageAddr, off));
+
+            maxSize = 3+5;
+
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, ih.get(pageAddr, off, maxSize).getBytes()));
+
+            savedBytesCnt = ih.put(pageAddr, off, ValueJavaObject.getNoCopy(null, new byte[] {1, 2, 3, 4, 5}, null), maxSize);
+
+            assertTrue(savedBytesCnt>0);
+
+            assertTrue(savedBytesCnt<=maxSize);
+
+            assertTrue(ih.isValueFull(pageAddr, off));
+
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, ih.get(pageAddr, off, maxSize).getBytes()));
         }
         finally {
             if (page != 0L)
@@ -504,6 +601,16 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     private boolean getResBytes(InlineIndexHelper ha, byte[] b1, byte[] b2) {
         Value v1 = b1 == null ? ValueNull.INSTANCE : ValueBytes.get(b1);
         Value v2 = b2 == null ? ValueNull.INSTANCE : ValueBytes.get(b2);
+
+        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(null, 0));
+
+        return ha.canRelyOnCompare(c, v1, v2);
+    }
+
+    /** */
+    private boolean getResJavaObjects(InlineIndexHelper ha, Object o1, Object o2) {
+        Value v1 = o1 == null ? ValueNull.INSTANCE : ValueJavaObject.getNoCopy(null, SerializationUtils.serialize(o1), null);
+        Value v2 = o2 == null ? ValueNull.INSTANCE : ValueJavaObject.getNoCopy(null, SerializationUtils.serialize(o2), null);
 
         int c = v1.compareTypeSafe(v2, CompareMode.getInstance(null, 0));
 
