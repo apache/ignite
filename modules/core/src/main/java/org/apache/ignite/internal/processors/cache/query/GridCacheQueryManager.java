@@ -753,17 +753,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         GridCacheQueryAdapter<?> qry) throws IgniteCheckedException {
         final GridSetQueryPredicate filter = (GridSetQueryPredicate)qry.scanFilter();
 
-        filter.init(cctx);
-
         IgniteUuid id = filter.setId();
 
         GridCacheQueryAdapter<CacheEntry<K, ?>> qry0 = new GridCacheQueryAdapter<>(cctx,
             SCAN,
             new IgniteBiPredicate<Object, Object>() {
                 @Override public boolean apply(Object k, Object v) {
-                    return k instanceof SetItemKey &&
-                        id.equals(((SetItemKey)k).setId()) &&
-                        filter.apply(k, null);
+                    return k instanceof SetItemKey && id.equals(((SetItemKey)k).setId());
                 }
             },
             new IgniteClosure<Map.Entry, Object>() {
