@@ -559,7 +559,9 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         T2<DecOrganization, Employee> val2 = new T2<>(org2, new Employee(BigDecimal.valueOf(12.34)));
 
-        checkCachePutAndReplace(shouldFail, OBJ_CACHE_NAME_FOR_SCALE, new Employee(BigDecimal.valueOf(12.34)), val1, val2);
+        Employee okVal = new Employee(BigDecimal.valueOf(12.34));
+
+        checkCachePutAndReplace(shouldFail, OBJ_CACHE_NAME_FOR_SCALE, okVal, val1, val2);
     }
 
     /**

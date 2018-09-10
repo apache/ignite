@@ -51,67 +51,66 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateTableWithTooLongCharDefault() throws Exception {
-        checkSQLThrows("CREATE TABLE too_long_default(id INT PRIMARY KEY, str CHAR(5) DEFAULT '123456')",
-            CONSTRAINT_VIOLATION);
+        checkSQLThrows("CREATE TABLE too_long_default(id INT PRIMARY KEY, str CHAR(5) DEFAULT '123456')");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCreateTableWithTooLongScaleDecimalDefault() throws Exception {
-        checkSQLThrows("CREATE TABLE too_long_decimal_default_scale" +
-                "(id INT PRIMARY KEY, val DECIMAL(4,2) DEFAULT 1.345)",
-            CONSTRAINT_VIOLATION);
+        String sql = "CREATE TABLE too_long_decimal_default_scale(id INT PRIMARY KEY, val DECIMAL(4,2) DEFAULT 1.345)";
+
+        checkSQLThrows(sql);
     }
 
     public void testCreateTableWithTooLongDecimalDefault() throws Exception {
-        checkSQLThrows("CREATE TABLE too_long_decimal_default" +
-                "(id INT PRIMARY KEY, val DECIMAL(4,2) NOT NULL DEFAULT 123.45)",
-            CONSTRAINT_VIOLATION);
+        String sql = "CREATE TABLE too_long_decimal_default(id INT PRIMARY KEY, val DECIMAL(4,2) DEFAULT 123.45)";
+
+        checkSQLThrows(sql);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInsertTooLongDecimal() throws Exception {
-        checkSQLThrows("INSERT INTO decimal_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, 123.45);
+        checkSQLThrows("INSERT INTO decimal_table VALUES(?, ?)", 2, 123.45);
 
-        checkSQLThrows("UPDATE decimal_table SET val = ? WHERE id = ?", CONSTRAINT_VIOLATION, 123.45, 1);
+        checkSQLThrows("UPDATE decimal_table SET val = ? WHERE id = ?", 123.45, 1);
 
-        checkSQLThrows("MERGE INTO decimal_table(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, 123.45);
+        checkSQLThrows("MERGE INTO decimal_table(id, val) VALUES(?, ?)", 1, 123.45);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInsertTooLongScaleDecimal() throws Exception {
-        checkSQLThrows("INSERT INTO decimal_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 3, 1.234);
+        checkSQLThrows("INSERT INTO decimal_table VALUES(?, ?)", 3, 1.234);
 
-        checkSQLThrows("UPDATE decimal_table SET val = ? WHERE id = ?", CONSTRAINT_VIOLATION, 1.234, 1);
+        checkSQLThrows("UPDATE decimal_table SET val = ? WHERE id = ?", 1.234, 1);
 
-        checkSQLThrows("MERGE INTO decimal_table(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, 1.234);
+        checkSQLThrows("MERGE INTO decimal_table(id, val) VALUES(?, ?)", 1, 1.234);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInsertTooLongVarchar() throws Exception {
-        checkSQLThrows("INSERT INTO varchar_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
+        checkSQLThrows("INSERT INTO varchar_table VALUES(?, ?)", 2, "123456");
 
-        checkSQLThrows("UPDATE varchar_table SET str = ? WHERE id = ?", CONSTRAINT_VIOLATION, "123456", 1);
+        checkSQLThrows("UPDATE varchar_table SET str = ? WHERE id = ?", "123456", 1);
 
-        checkSQLThrows("MERGE INTO varchar_table(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
+        checkSQLThrows("MERGE INTO varchar_table(id, str) VALUES(?, ?)", 1, "123456");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInsertTooLongChar() throws Exception {
-        checkSQLThrows("INSERT INTO char_table VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
+        checkSQLThrows("INSERT INTO char_table VALUES(?, ?)", 2, "123456");
 
-        checkSQLThrows("UPDATE char_table SET str = ? WHERE id = ?", CONSTRAINT_VIOLATION, "123456", 1);
+        checkSQLThrows("UPDATE char_table SET str = ? WHERE id = ?", "123456", 1);
 
-        checkSQLThrows("MERGE INTO char_table(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
+        checkSQLThrows("MERGE INTO char_table(id, str) VALUES(?, ?)", 1, "123456");
     }
 
     /**
@@ -124,11 +123,11 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
         
         execSQL("INSERT INTO char_table_2(id, str) VALUES(?, ?)", 1, "1");
 
-        checkSQLThrows("INSERT INTO char_table_2(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
+        checkSQLThrows("INSERT INTO char_table_2(id, str) VALUES(?, ?)", 2, "123456");
 
-        checkSQLThrows("UPDATE char_table_2 SET str = ? WHERE id = ?", CONSTRAINT_VIOLATION,"123456", 1);
+        checkSQLThrows("UPDATE char_table_2 SET str = ? WHERE id = ?","123456", 1);
 
-        checkSQLThrows("MERGE INTO char_table_2(id, str) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
+        checkSQLThrows("MERGE INTO char_table_2(id, str) VALUES(?, ?)", 1, "123456");
     }
 
     /**
@@ -141,17 +140,17 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSQL("INSERT INTO decimal_table_2(id, val) VALUES(?, ?)", 1, 12.34);
 
-        checkSQLThrows("INSERT INTO decimal_table_2(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, 1234.56);
+        checkSQLThrows("INSERT INTO decimal_table_2(id, val) VALUES(?, ?)", 2, 1234.56);
 
-        checkSQLThrows("UPDATE decimal_table_2 SET val = ? WHERE id = ?", CONSTRAINT_VIOLATION, 1234.56, 1);
+        checkSQLThrows("UPDATE decimal_table_2 SET val = ? WHERE id = ?", 1234.56, 1);
 
-        checkSQLThrows("MERGE INTO decimal_table_2(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, 12345.6);
+        checkSQLThrows("MERGE INTO decimal_table_2(id, val) VALUES(?, ?)", 1, 12345.6);
 
-        checkSQLThrows("INSERT INTO decimal_table_2(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 3, 1.234);
+        checkSQLThrows("INSERT INTO decimal_table_2(id, val) VALUES(?, ?)", 3, 1.234);
 
-        checkSQLThrows("UPDATE decimal_table_2 SET val = ? WHERE id = ?", CONSTRAINT_VIOLATION, 1.234, 1);
+        checkSQLThrows("UPDATE decimal_table_2 SET val = ? WHERE id = ?", 1.234, 1);
 
-        checkSQLThrows("MERGE INTO decimal_table_2(id, val) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, 1.234);
+        checkSQLThrows("MERGE INTO decimal_table_2(id, val) VALUES(?, ?)", 1, 1.234);
     }
 
     /**
@@ -162,8 +161,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSQL("INSERT INTO char_table_3(id, field, field2) VALUES(?, ?, ?)", 1, "12345", 1);
 
-        checkSQLThrows("INSERT INTO char_table_3(id, field, field2) VALUES(?, ?, ?)", CONSTRAINT_VIOLATION,
-            2, "123456", 1);
+        checkSQLThrows("INSERT INTO char_table_3(id, field, field2) VALUES(?, ?, ?)", 2, "123456", 1);
 
         execSQL("ALTER TABLE char_table_3 DROP COLUMN field");
 
@@ -178,8 +176,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSQL("INSERT INTO decimal_table_3(id, field, field2) VALUES(?, ?, ?)", 1, 12.34, 1);
 
-        checkSQLThrows("INSERT INTO decimal_table_3(id, field, field2) VALUES(?, ?, ?)", CONSTRAINT_VIOLATION,
-            2, 12.3456, 1);
+        checkSQLThrows("INSERT INTO decimal_table_3(id, field, field2) VALUES(?, ?, ?)", 2, 12.3456, 1);
 
         execSQL("ALTER TABLE decimal_table_3 DROP COLUMN field");
 
@@ -192,13 +189,13 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     public void testCharSqlState() throws Exception {
         execSQL("CREATE TABLE char_table_4(id INT PRIMARY KEY, field CHAR(5))");
 
-        checkSQLThrows("INSERT INTO char_table_4(id, field) VALUES(?, ?)", CONSTRAINT_VIOLATION, 1, "123456");
+        checkSQLThrows("INSERT INTO char_table_4(id, field) VALUES(?, ?)", 1, "123456");
 
         execSQL("INSERT INTO char_table_4(id, field) VALUES(?, ?)", 2, "12345");
 
-        checkSQLThrows("UPDATE char_table_4 SET field = ? WHERE id = ?", CONSTRAINT_VIOLATION, "123456", 2);
+        checkSQLThrows("UPDATE char_table_4 SET field = ? WHERE id = ?", "123456", 2);
 
-        checkSQLThrows("MERGE INTO char_table_4(id, field) VALUES(?, ?)", CONSTRAINT_VIOLATION, 2, "123456");
+        checkSQLThrows("MERGE INTO char_table_4(id, field) VALUES(?, ?)", 2, "123456");
     }
 
     /**
@@ -207,37 +204,30 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     public void testDecimalSqlState() throws Exception {
         execSQL("CREATE TABLE decimal_table_4(id INT PRIMARY KEY, field DECIMAL(4, 2))");
 
-        checkSQLThrows("INSERT INTO decimal_table_4 VALUES(?, ?)", CONSTRAINT_VIOLATION,
-            1, BigDecimal.valueOf(1234.56));
+        checkSQLThrows("INSERT INTO decimal_table_4 VALUES(?, ?)", 1, BigDecimal.valueOf(1234.56));
 
-        checkSQLThrows("INSERT INTO decimal_table_4 VALUES(?, ?)", CONSTRAINT_VIOLATION,
-            1, BigDecimal.valueOf(1.345));
+        checkSQLThrows("INSERT INTO decimal_table_4 VALUES(?, ?)", 1, BigDecimal.valueOf(1.345));
 
         execSQL("INSERT INTO decimal_table_4 (id, field) VALUES(?, ?)", 2, 12.34);
 
-        checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?"
-            , CONSTRAINT_VIOLATION, BigDecimal.valueOf(1234.56), 2);
+        checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?",BigDecimal.valueOf(1234.56), 2);
 
-        checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)", CONSTRAINT_VIOLATION,
-            2, BigDecimal.valueOf(1234.56));
+        checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)",2, BigDecimal.valueOf(1234.56));
 
-        checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?"
-            , CONSTRAINT_VIOLATION, BigDecimal.valueOf(1.345), 2);
+        checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?",BigDecimal.valueOf(1.345), 2);
 
-        checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)", CONSTRAINT_VIOLATION,
-            2, BigDecimal.valueOf(1.345));
+        checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)", 2, BigDecimal.valueOf(1.345));
     }
 
-
     /** */
-    private void checkSQLThrows(String sql, String sqlStateCode, Object... args) {
+    private void checkSQLThrows(String sql, Object... args) {
         IgniteSQLException err = (IgniteSQLException)GridTestUtils.assertThrowsWithCause(() -> {
             execSQL(sql, args);
 
             return 0;
         }, IgniteSQLException.class);
 
-        assertEquals(err.sqlState(), sqlStateCode);
+        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
     }
 
     /** */
