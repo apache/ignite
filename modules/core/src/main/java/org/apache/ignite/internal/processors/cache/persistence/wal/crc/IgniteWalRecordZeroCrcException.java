@@ -24,6 +24,9 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
  * Will be thrown for WAL records with zero CRC where CRC check is the only reading error.
  */
 public class IgniteWalRecordZeroCrcException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** WAL record */
     private final WALRecord walRecord;
 
