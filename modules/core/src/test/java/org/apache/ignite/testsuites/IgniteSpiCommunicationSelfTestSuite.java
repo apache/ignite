@@ -56,7 +56,7 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Communication SPI Test Suite");
 
-       /* suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoveryAckSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoveryAckSelfTest.class));
         suite.addTest(new TestSuite(IgniteTcpCommunicationRecoveryAckClosureSelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoverySelfTest.class));
         suite.addTest(new TestSuite(GridTcpCommunicationSpiRecoveryNoPairedConnectionsTest.class));
@@ -88,13 +88,10 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpCommunicationSpiDropNodesTest.class));
         suite.addTest(new TestSuite(TcpCommunicationSpiHalfOpenedConnectionTest.class));
 
-        suite.addTest(new TestSuite(TcpCommunicationStatisticsTest.class));*/
+        suite.addTest(new TestSuite(TcpCommunicationStatisticsTest.class));
 
-        for (int i = 0; i < 50; i++)
-            suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterTest.class));
-
-        for (int i = 0; i < 50; i++)
-            suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterSslTest.class));
+        suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterTest.class));
+        suite.addTest(new TestSuite(IgniteTcpCommunicationBigClusterSslTest.class));
 
         //suite.addTest(new TestSuite(GridCacheDhtLockBackupSelfTest.class));
 
