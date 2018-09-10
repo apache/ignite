@@ -30,11 +30,10 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalcula
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
 import org.junit.Test;
 
 /**
- * Tests for {@link SVMLinearBinaryClassificationTrainer}.
+ * Tests for {@link Pipeline}.
  */
 public class PipelineTest extends TrainerTest {
     /**
