@@ -342,6 +342,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE:
                 msg = new HandshakeWaitMessage();
+
                 break;
 
             case 0:

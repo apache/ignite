@@ -403,20 +403,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         log.info("Accepted incoming communication connection [locAddr=" + ses.localAddress() +
                             ", rmtAddr=" + ses.remoteAddress() + ']');
 
-                    boolean initialized = ctxInitLatch.getCount() == 0;
-
-                    if (!initialized && getConnectTimeout() > 1) {
-                        try {
-                            U.await(ctxInitLatch, getConnectTimeout() / 2, TimeUnit.MILLISECONDS);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            log.warning("Thread has been interrupted while " +
-                                "waiting for SPI context initialization.", e);
-                        }
-                    }
-
                     try {
-                        if (initialized) {
+                        if (ctxInitLatch.getCount() == 0) {
                             if (log.isDebugEnabled())
                                 log.debug("Sending local node ID to newly accepted session: " + ses);
 
