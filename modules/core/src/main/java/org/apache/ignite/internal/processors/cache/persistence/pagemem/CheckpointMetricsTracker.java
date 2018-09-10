@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
@@ -293,24 +291,17 @@ public class CheckpointMetricsTracker {
     }
 
     /** */
-    private List<DbCheckpointListener.SaveMetadataStat> stats = new ArrayList<>();
+    private Queue<DbCheckpointListener.SaveMetadataStat> stats = new ConcurrentLinkedQueue<>();
 
     /**
      * @param stat Stat.
      */
     public void addMetaStat(DbCheckpointListener.SaveMetadataStat stat) {
-        if (stat == null) {
-            System.err.println("Added NULL stat");
-
-            new Exception().printStackTrace();
-        }
-
-
         stats.add(stat);
     }
 
     /** */
-    public List<DbCheckpointListener.SaveMetadataStat> getStats() {
+    public Queue<DbCheckpointListener.SaveMetadataStat> getStats() {
         return stats;
     }
 }
