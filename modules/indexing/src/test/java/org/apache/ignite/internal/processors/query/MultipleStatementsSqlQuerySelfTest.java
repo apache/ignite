@@ -47,8 +47,6 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Test query without caches.
-     *
-     * @throws Exception If failed.
      */
     public void testQuery() {
         GridQueryProcessor qryProc = node.context().query();
@@ -92,10 +90,8 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Test query without caches.
-     *
-     * @throws Exception If failed.
      */
-    public void testQueryWithParameters() throws Exception {
+    public void testQueryWithParameters() {
         GridQueryProcessor qryProc = node.context().query();
 
         SqlFieldsQuery qry = new SqlFieldsQuery(
@@ -137,7 +133,6 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      */
     public void testQueryMultipleStatementsFailed() {
         final SqlFieldsQuery qry = new SqlFieldsQuery("select 1; select 1;").setSchema("PUBLIC");
@@ -153,7 +148,7 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Check cached two-steps query.
      */
     public void testCachedTwoSteps() {
         List<FieldsQueryCursor<List<?>>> curs = sql("SELECT 1; SELECT 2");
