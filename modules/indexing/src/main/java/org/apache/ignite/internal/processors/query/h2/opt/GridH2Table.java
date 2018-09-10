@@ -99,9 +99,6 @@ public class GridH2Table extends TableBase {
     /** */
     private final AtomicInteger readLockCnt = new AtomicInteger();
 
-    /** Read lock was detached. */
-    private ThreadLocal<Boolean> readLockWasAttached = new ThreadLocal<>();
-
     /** */
     private boolean destroyed;
 
@@ -286,12 +283,6 @@ public class GridH2Table extends TableBase {
         if (qctx != null)
            qctx.lockedTables().add(this);
 
-        if (!exclusive) {
-            readLockCnt.incrementAndGet();
-
-            readLockWasAttached.set(false);
-        }
-
         return false;
     }
 
@@ -364,6 +355,9 @@ public class GridH2Table extends TableBase {
     private void detachReadLockFromCurrentThread(Session ses) {
         assert sessions.containsKey(ses) : "Detached session have not locked the table: " + getName();
 
+        if (!sessions.get(ses))
+            readLockCnt.incrementAndGet();
+
         unlock(false);
     }
 
@@ -374,8 +368,6 @@ public class GridH2Table extends TableBase {
         assert sessions.containsKey(ses) : "Attached session have not locked the table: " + getName();
 
         lock(false);
-
-        readLockWasAttached.set(true);
 
         readLockCnt.decrementAndGet();
     }
@@ -494,21 +486,12 @@ public class GridH2Table extends TableBase {
         if (exclusive == null)
             return;
 
-        try {
-            unlock(exclusive);
-        }
-        finally {
-            GridH2QueryContext qctx = GridH2QueryContext.get();
+        GridH2QueryContext qctx = GridH2QueryContext.get();
 
-            if (qctx != null)
-                qctx.lockedTables().remove(this);
+        if (qctx != null)
+            qctx.lockedTables().remove(this);
 
-            if (!exclusive && readLockWasAttached.get() != null && !readLockWasAttached.get()) {
-                readLockWasAttached.set(null);
-
-                readLockCnt.decrementAndGet();
-            }
-        }
+        unlock(exclusive);
     }
 
     /**
