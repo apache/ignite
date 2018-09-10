@@ -1337,7 +1337,8 @@ public class ZookeeperDiscoveryImpl {
             }
         }
 
-        assert aliveClients.containsKey(locInternalOrder) : "aliveNodes should contains current node";
+        if(!aliveClients.containsKey(locInternalOrder))
+            return;
 
         Map.Entry<Long, String> oldest = aliveClients.firstEntry();
 
