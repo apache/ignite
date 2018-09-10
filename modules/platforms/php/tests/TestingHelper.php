@@ -49,8 +49,8 @@ class TestingHelper
     public static function init(): void
     {
         TestingHelper::$client = new Client();
-        TestingHelper::$client->connect(new ClientConfiguration(...TestConfig::$endpoints));
         TestingHelper::$client->setDebug(TestConfig::$debug);
+        TestingHelper::$client->connect(new ClientConfiguration(...TestConfig::$endpoints));
         TestingHelper::initValues();
     }
     

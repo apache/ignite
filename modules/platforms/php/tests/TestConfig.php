@@ -30,9 +30,7 @@ class TestConfig
             TestConfig::$endpoints = explode(',', $endpoints);
         }
         $debug = getenv('APACHE_IGNITE_CLIENT_DEBUG');
-        if ($debug) {
-            TestConfig::$debug = true;
-        }
+        TestConfig::$debug = ($debug === 'true' || $debug === '1');
     }
 }
 
