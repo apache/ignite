@@ -479,13 +479,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         ig2.cluster().active(true);
 
         IgniteCache<Object, Object> cache = ig2.cache(CACHE_NAME);
-        IgniteCache<Object, Object> destroyMe = ig2.getOrCreateCache("destroyMe");
 
-        for (int i = 1; i <= 4_000; i++) {
+        for (int i = 1; i <= 4_000; i++)
             cache.put(i, new BigObject(i));
-
-            destroyMe.put(i, new BigObject(i));
-        }
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig2
             .context().cache().context().database();
@@ -514,14 +510,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         Ignite ig0 = startGrids(2);
-
-        // Destroy old cache and create the new one while node is offline.
-        ig0.destroyCache("destoryMe");
-        IgniteCache<Object, Object> newCache = ig0.getOrCreateCache("newCache");
-
-        BigObject cacheObj = new BigObject(1);
-
-        newCache.put(1, cacheObj);
 
         awaitPartitionMapExchange();
 
@@ -562,8 +550,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         startGrid(ig2Name, onJoinCfg);
 
         awaitPartitionMapExchange();
-
-        assertEquals(cacheObj, ig2.cache("newCache").get(1));
     }
 
     /**
