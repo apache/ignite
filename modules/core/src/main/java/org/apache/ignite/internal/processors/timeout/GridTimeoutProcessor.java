@@ -209,7 +209,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
             long lastOnIdleTs = U.currentTimeMillis();
 
-            long waitTimeout = HEARTBEAT_TIMEOUT / 2;
+            long waitTimeout = ctx.config().getFailureDetectionTimeout() / 2;
 
             try {
                 while (!isCancelled()) {
@@ -271,26 +271,26 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                                 long waitTime = first.endTime() - U.currentTimeMillis();
 
                                 if (waitTime > 0) {
-                                    heartbeatTs(Long.MAX_VALUE);
+                                    blockingSectionBegin();
 
                                     try {
                                         mux.wait(waitTime);
                                     }
                                     finally {
-                                        updateHeartbeat();
+                                        blockingSectionEnd();
                                     }
                                 }
                                 else
                                     break;
                             }
                             else {
-                                heartbeatTs(Long.MAX_VALUE);
+                                blockingSectionBegin();
 
                                 try {
                                     mux.wait(waitTimeout);
                                 }
                                 finally {
-                                    updateHeartbeat();
+                                    blockingSectionEnd();
                                 }
                             }
                         }

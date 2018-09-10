@@ -2794,16 +2794,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
                 DiscoveryCustomMessage> evt;
 
-            heartbeatTs(Long.MAX_VALUE);
+            blockingSectionBegin();
 
             try {
                 evt = evts.take();
             }
             finally {
-                updateHeartbeat();
+                blockingSectionEnd();
             }
 
-            if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+            if (U.currentTimeMillis() - lastOnIdleTs > ctx.config().getFailureDetectionTimeout() / 2) {
                 onIdle();
 
                 lastOnIdleTs = U.currentTimeMillis();

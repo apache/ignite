@@ -2410,6 +2410,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     IgniteEx igniteEx = (IgniteEx)ignite;
 
                     builder.workerListener(igniteEx.context().workersRegistry());
+                    builder.idlenessInterval(igniteEx.context().config().getFailureDetectionTimeout() / 2);
                 }
 
                 GridNioServer<Message> srvr = builder.build();
@@ -4279,17 +4280,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             try {
                 while (!isCancelled()) {
-                    heartbeatTs(Long.MAX_VALUE);
+                    blockingSectionBegin();
 
                     DisconnectedSessionInfo disconnectData;
                     try {
                         disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
                     }
                     finally {
-                        updateHeartbeat();
+                        blockingSectionEnd();
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                    if (U.currentTimeMillis() - lastOnIdleTs >
+                        ignite.configuration().getFailureDetectionTimeout() / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();

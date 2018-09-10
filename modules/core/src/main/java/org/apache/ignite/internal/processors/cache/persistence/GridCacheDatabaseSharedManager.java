@@ -167,7 +167,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 
 /**
@@ -3194,7 +3193,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     return;
                                 }
 
-                                updStoreEntry.getKey().sync();
+                                blockingSectionBegin();
+
+                                try {
+                                    updStoreEntry.getKey().sync();
+                                }
+                                finally {
+                                    blockingSectionEnd();
+                                }
 
                                 updateHeartbeat();
 
@@ -3418,19 +3424,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 long now = U.currentTimeMillis();
 
-                long waitTimeoutMs = HEARTBEAT_TIMEOUT / 2;
+                long waitTimeoutMs = cctx.gridConfig().getClientFailureDetectionTimeout() / 2;
 
                 synchronized (this) {
                     long remaining;
 
                     while ((remaining = scheduledCp.nextCpTs - now) > 0 && !isCancelled()) {
-                        heartbeatTs(Long.MAX_VALUE);
+                        blockingSectionBegin();
 
                         try {
                             wait(remaining);
                         }
                         finally {
-                            updateHeartbeat();
+                            blockingSectionEnd();
                         }
 
                         now = U.currentTimeMillis();

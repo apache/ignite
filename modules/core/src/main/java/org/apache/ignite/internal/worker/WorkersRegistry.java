@@ -31,9 +31,8 @@ import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
-import static org.apache.ignite.internal.util.worker.GridWorker.HEARTBEAT_TIMEOUT;
 
 /**
  * Workers registry. Maintains a set of workers currently running.
@@ -61,9 +60,18 @@ public class WorkersRegistry implements GridWorkerListener {
     /** */
     private final IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd;
 
-    /** */
-    public WorkersRegistry(@NotNull IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd) {
+    /** Worker heartbeat timeout in milliseconds, when exceeded, worker is considered as blocked. */
+    private final long heartbeatTimeout;
+
+    /**
+     * @param workerFailedHnd Closure to invoke on worker failure.
+     * @param heartbeatTimeout Maximum allowed worker heartbeat interval in milliseconds, should be positive.
+     */
+    public WorkersRegistry(
+        @NotNull IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd,
+        long heartbeatTimeout) {
         this.workerFailedHnd = workerFailedHnd;
+        this.heartbeatTimeout = heartbeatTimeout;
     }
 
     /**
@@ -143,7 +151,7 @@ public class WorkersRegistry implements GridWorkerListener {
         try {
             lastCheckTs = U.currentTimeMillis();
 
-            long workersToCheck = registeredWorkers.size() * CHECK_INTERVAL / HEARTBEAT_TIMEOUT;
+            long workersToCheck = registeredWorkers.size() * CHECK_INTERVAL / heartbeatTimeout;
 
             int workersChecked = 0;
 
@@ -175,11 +183,11 @@ public class WorkersRegistry implements GridWorkerListener {
                             workerFailedHnd.apply(worker, SYSTEM_WORKER_TERMINATION);
                     }
 
-                    if (U.currentTimeMillis() - worker.heartbeatTs() > HEARTBEAT_TIMEOUT) {
+                    if (U.currentTimeMillis() - worker.heartbeatTs() > heartbeatTimeout) {
                         GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
                         if (worker0 != null && worker0 == worker)
-                            workerFailedHnd.apply(worker, CRITICAL_ERROR);
+                            workerFailedHnd.apply(worker, SYSTEM_WORKER_BLOCKED);
 
                         // Iterator should not be reset:
                         // otherwise we'll never iterate beyond the blocked worker,

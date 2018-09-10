@@ -1655,16 +1655,17 @@ class ClientImpl extends TcpDiscoveryImpl {
                 while (true) {
                     Object msg;
 
-                    heartbeatTs(Long.MAX_VALUE);
+                    blockingSectionBegin();
 
                     try {
                         msg = queue.take();
                     }
                     finally {
-                        updateHeartbeat();
+                        blockingSectionEnd();
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                    if (U.currentTimeMillis() - lastOnIdleTs >
+                        spi.ignite().configuration().getFailureDetectionTimeout() / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();
@@ -1960,12 +1961,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                 joinRes = joinTopology(null, spi.joinTimeout,
                     new Runnable() {
                         @Override public void run() {
-                            heartbeatTs(Long.MAX_VALUE);
+                            blockingSectionBegin();
                         }
                     },
                     new Runnable() {
                         @Override public void run() {
-                            updateHeartbeat();
+                            blockingSectionEnd();
                         }
                     });
             }

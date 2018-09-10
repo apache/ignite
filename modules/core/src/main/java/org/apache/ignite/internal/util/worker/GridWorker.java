@@ -21,24 +21,17 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.CRITICAL_WORKER_HEARTBEAT_TIMEOUT;
-
 /**
  * Extension to standard {@link Runnable} interface. Adds proper details to be used
  * with {@link Executor} implementations. Only for internal use.
  */
 public abstract class GridWorker implements Runnable {
-    /** Heartbeat timeout in milliseconds, when exceeded, worker is considered as blocked. */
-    public static final long HEARTBEAT_TIMEOUT =
-        IgniteSystemProperties.getLong(CRITICAL_WORKER_HEARTBEAT_TIMEOUT, 30_000);
-
     /** Ignite logger. */
     protected final IgniteLogger log;
 
@@ -272,15 +265,6 @@ public abstract class GridWorker implements Runnable {
         return finished;
     }
 
-    /**
-     * Sets heartbeatTs timestamp to absolute value.
-     *
-     * @param ts Timestamp in terms of {@code U.currentTimeMillis()}.
-     */
-    public void heartbeatTs(long ts) {
-        heartbeatTs = ts;
-    }
-
     /** */
     public long heartbeatTs() {
         return heartbeatTs;
@@ -291,7 +275,22 @@ public abstract class GridWorker implements Runnable {
         heartbeatTs = U.currentTimeMillis();
     }
 
-    /** */
+    /**
+     * Protects the worker from timeout penalties if subsequent instructions in the calling thread does not update
+     * heartbeat timestamp timely, e.g. due to blocking operations, up to the nearest {@link #blockingSectionEnd()}
+     * call. Nested calls are not supported.
+     */
+    public void blockingSectionBegin() {
+        heartbeatTs = Long.MAX_VALUE;
+    }
+
+    /**
+     * Closes the protection section previously opened by {@link #blockingSectionBegin()}.
+     */
+    public void blockingSectionEnd() {
+        updateHeartbeat();
+    }
+
     public void onIdle() {
         if (lsnr != null)
             lsnr.onIdle(this);

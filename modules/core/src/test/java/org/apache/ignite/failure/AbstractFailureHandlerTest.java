@@ -41,7 +41,7 @@ public class AbstractFailureHandlerTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected static class DummyFailureHandler implements FailureHandler {
+    protected static class DummyFailureHandler extends AbstractFailureHandler {
         /** Failure. */
         private volatile boolean failure;
 

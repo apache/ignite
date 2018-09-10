@@ -17,20 +17,26 @@
 
 package org.apache.ignite.failure;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Just ignores any failure. It's useful for tests and debugging.
+ * Abstract superclass for {@link FailureHandler} implementations.
+ * Maintains a set of ignorable failure types.
  */
-public class NoOpFailureHandler extends AbstractFailureHandler {
+public abstract class AbstractFailureHandler implements FailureHandler {
+    /** */
+    private volatile Set<FailureType> ignoredFailureTypes = Collections.emptySet();
+
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-        return false;
+    @Override public void setIgnoredFailureTypes(Set<FailureType> failureTypes) {
+        ignoredFailureTypes = Collections.unmodifiableSet(failureTypes);
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(NoOpFailureHandler.class, this);
+    @Override public Set<FailureType> getIgnoredFailureTypes() {
+        return ignoredFailureTypes;
     }
 }

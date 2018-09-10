@@ -1554,13 +1554,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             try {
                 synchronized (this) {
                     while (curAbsWalIdx == -1 && !stopped) {
-                        heartbeatTs(Long.MAX_VALUE);
+                        blockingSectionBegin();
 
                         try {
                             wait();
                         }
                         finally {
-                            updateHeartbeat();
+                            blockingSectionEnd();
                         }
                     }
 
@@ -1581,20 +1581,20 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             ", current=" + curAbsWalIdx;
 
                         while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
-                            heartbeatTs(Long.MAX_VALUE);
+                            blockingSectionBegin();
 
                             try {
                                 wait();
                             }
                             finally {
-                                updateHeartbeat();
+                                blockingSectionEnd();
                             }
                         }
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                    if (U.currentTimeMillis() - lastOnIdleTs > cctx.gridConfig().getFailureDetectionTimeout() / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();
@@ -1607,13 +1607,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                     synchronized (this) {
                         while (locked.containsKey(toArchive) && !stopped) {
-                            heartbeatTs(Long.MAX_VALUE);
+                            blockingSectionBegin();
 
                             try {
                                 wait();
                             }
                             finally {
-                                updateHeartbeat();
+                                blockingSectionEnd();
                             }
                         }
 

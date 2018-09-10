@@ -2662,7 +2662,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             setBeforeEachPollAction(() -> {
                 updateHeartbeat();
 
-                if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                if (U.currentTimeMillis() - lastOnIdleTs >
+                    spi.ignite().configuration().getFailureDetectionTimeout() / 2) {
                     onIdle();
 
                     lastOnIdleTs = U.currentTimeMillis();
@@ -5832,14 +5833,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                 long lastOnIdleTs = U.currentTimeMillis();
 
                 while (!isCancelled()) {
-                    heartbeatTs(Long.MAX_VALUE);
+                    blockingSectionBegin();
 
                     Socket sock;
                     try {
                         sock = srvrSock.accept();
                     }
                     finally {
-                        updateHeartbeat();
+                        blockingSectionEnd();
                     }
 
                     long tstamp = U.currentTimeMillis();
@@ -5862,7 +5863,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     spi.stats.onServerSocketInitialized(U.currentTimeMillis() - tstamp);
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                    if (U.currentTimeMillis() - lastOnIdleTs >
+                        spi.ignite().configuration().getFailureDetectionTimeout() / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();

@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * If node can't be stopped during provided {@code timeout} or {@code tryStop} value is {@code false}
  * then JVM process will be terminated forcibly using {@code Runtime.getRuntime().halt()}.
  */
-public class StopNodeOrHaltFailureHandler implements FailureHandler {
+public class StopNodeOrHaltFailureHandler extends AbstractFailureHandler {
     /** Try stop. */
     private final boolean tryStop;
 

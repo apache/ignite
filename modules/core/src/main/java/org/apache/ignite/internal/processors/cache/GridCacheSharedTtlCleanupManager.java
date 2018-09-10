@@ -150,7 +150,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                     if (!expiredRemains)
                         U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                    if (U.currentTimeMillis() - lastOnIdleTs > cctx.gridConfig().getFailureDetectionTimeout() / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();

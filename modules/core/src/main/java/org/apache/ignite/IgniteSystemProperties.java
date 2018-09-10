@@ -947,14 +947,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
-    /**
-     * Heartbeat timeout in milliseconds, when exceeded, {@link GridWorker} is considered as blocked.
-     *
-     * Default is {@code 30_000}.
-     */
-    public static final String CRITICAL_WORKER_HEARTBEAT_TIMEOUT = "CRITICAL_WORKER_HEARTBEAT_TIMEOUT";
-
-    /**
+   /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
      *
      * Default is 500 ms.

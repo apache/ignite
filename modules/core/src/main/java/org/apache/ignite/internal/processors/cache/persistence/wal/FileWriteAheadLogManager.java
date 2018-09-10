@@ -1718,13 +1718,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 synchronized (this) {
                     while (curAbsWalIdx == -1 && !stopped) {
-                        heartbeatTs(Long.MAX_VALUE);
+                        blockingSectionBegin();
 
                         try {
                             wait();
                         }
                         finally {
-                            updateHeartbeat();
+                            blockingSectionEnd();
                         }
                     }
 
@@ -1743,20 +1743,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             ", current=" + curAbsWalIdx;
 
                         while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
-                            heartbeatTs(Long.MAX_VALUE);
+                            blockingSectionBegin();
 
                             try {
                                 wait();
                             }
                             finally {
-                                updateHeartbeat();
+                                blockingSectionEnd();
                             }
                         }
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                    if (U.currentTimeMillis() - lastOnIdleTs > cctx.gridConfig().getFailureDetectionTimeout() / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();
@@ -1769,13 +1769,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     synchronized (this) {
                         while (locked.containsKey(toArchive) && !stopped) {
-                            heartbeatTs(Long.MAX_VALUE);
+                            blockingSectionBegin();
 
                             try {
                                 wait();
                             }
                             finally {
-                                updateHeartbeat();
+                                blockingSectionEnd();
                             }
                         }
 
@@ -3316,13 +3316,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 while (!isCancelled()) {
                     while (waiters.isEmpty()) {
                         if (!isCancelled()) {
-                            heartbeatTs(Long.MAX_VALUE);
+                            blockingSectionBegin();
 
                             try {
                                 LockSupport.park();
                             }
                             finally {
-                                updateHeartbeat();
+                                blockingSectionEnd();
                             }
                         }
                         else {
@@ -3332,7 +3332,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > HEARTBEAT_TIMEOUT / 2) {
+                    if (U.currentTimeMillis() - lastOnIdleTs > cctx.gridConfig().getFailureDetectionTimeout() / 2) {
                         onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();
