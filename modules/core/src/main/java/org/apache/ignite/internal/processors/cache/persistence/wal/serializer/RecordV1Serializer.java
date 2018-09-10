@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointe
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteWalRecordZeroCrcException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
@@ -395,7 +395,10 @@ public class RecordV1Serializer implements RecordSerializer {
                 in.close();
             }
             catch (IgniteDataIntegrityViolationException e) {
-                throw new IgniteCrcReadingException(e, res);
+                if (e.getMessage().contains("writtenCrc: 0"))
+                    throw new IgniteWalRecordZeroCrcException(e, res);
+
+                throw e;
             }
 
             return res;
@@ -414,20 +417,6 @@ public class RecordV1Serializer implements RecordSerializer {
             }
 
             throw new IgniteCheckedException("Failed to read WAL record at position: " + startPos + " size: " + size, e);
-        }
-    }
-
-    //TODO add JavaDoc and move to another place
-    public static class IgniteCrcReadingException extends IgniteException {
-        private WALRecord walRecord;
-
-        public IgniteCrcReadingException(Throwable cause, WALRecord record) {
-            super(cause);
-            walRecord = record;
-        }
-
-        public WALRecord getWalRecord() {
-            return walRecord;
         }
     }
 

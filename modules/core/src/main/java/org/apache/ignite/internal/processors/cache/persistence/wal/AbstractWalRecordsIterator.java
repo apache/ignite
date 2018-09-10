@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.IgniteCrcReadingException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteWalRecordZeroCrcException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.P2;
@@ -249,13 +249,13 @@ public abstract class AbstractWalRecordsIterator
             }
 
             if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
-                IgniteCheckedException e0 = handleRecordException(e, actualFilePtr, currWalSegment);
+                IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
 
                 if (e0 != null)
                     throw e0;
 
-                if (e instanceof IgniteCrcReadingException)
-                    rec = ((IgniteCrcReadingException)e).getWalRecord();
+                if (e instanceof IgniteWalRecordZeroCrcException)
+                    rec = ((IgniteWalRecordZeroCrcException)e).getWalRecord();
             }
         }
 
@@ -284,13 +284,12 @@ public abstract class AbstractWalRecordsIterator
      *
      * @param e problem from records reading
      * @param ptr file pointer was accessed
-     * @param currWalSegment current segment
      * @return {@code null} if the error was handled and we can go ahead, {@code IgniteCheckedException} if the error
      * was not handled, and we should stop the iteration.
      */
-    protected IgniteCheckedException handleRecordException(@NotNull final Exception e,
-        @Nullable final FileWALPointer ptr,
-        @NotNull AbstractReadFileHandle currWalSegment
+    protected IgniteCheckedException handleRecordException(
+        @NotNull final Exception e,
+        @Nullable final FileWALPointer ptr
     ) {
         if (log.isInfoEnabled())
             log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);

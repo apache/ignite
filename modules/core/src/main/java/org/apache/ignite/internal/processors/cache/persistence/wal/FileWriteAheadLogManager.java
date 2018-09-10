@@ -95,6 +95,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteWalRecordZeroCrcException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -3205,10 +3206,38 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** {@inheritDoc} */
         @Override protected IgniteCheckedException handleRecordException(
             @NotNull Exception e,
-            @Nullable FileWALPointer ptr,
-            @NotNull AbstractReadFileHandle currWalSegment) {
+            @Nullable FileWALPointer ptr) {
 
-            return super.handleRecordException(e, ptr, currWalSegment);
+            if (e instanceof IgniteCheckedException) {
+                IgniteCheckedException ice = (IgniteCheckedException)e;
+
+                if (ice.hasCause(IgniteWalRecordZeroCrcException.class)) {
+                    if (end == null) {
+                        long nextWalSegmentIdx = curWalSegmIdx + 1;
+
+                        if (archiver != null && !canReadArchiveOrReserveWork(nextWalSegmentIdx)) {
+                            long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
+
+                            FileDescriptor fd = new FileDescriptor(
+                                new File(walWorkDir, FileDescriptor.fileName(workIdx)),
+                                nextWalSegmentIdx
+                            );
+
+                            try {
+                                ReadFileHandle nextHandle = initReadHandle(fd, null);
+
+                                if (nextHandle == null)
+                                    return null;
+                            }
+                            catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
+                                e.addSuppressed(initReadHandleException);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return super.handleRecordException(e, ptr);
         }
 
         /**

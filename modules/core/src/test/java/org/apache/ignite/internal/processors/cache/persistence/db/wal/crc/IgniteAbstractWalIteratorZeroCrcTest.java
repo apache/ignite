@@ -176,7 +176,6 @@ public abstract class IgniteAbstractWalIteratorZeroCrcTest extends GridCommonAbs
     ) throws IOException, IgniteCheckedException {
         IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
 
-
         IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
         File walArchiveDir = U.field(walMgr, "walArchiveDir");

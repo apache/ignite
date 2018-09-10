@@ -46,9 +46,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteWalRecordZeroCrcException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -307,19 +307,18 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /** {@inheritDoc} */
     @Override protected IgniteCheckedException handleRecordException(
         @NotNull Exception e,
-        @Nullable FileWALPointer ptr,
-        AbstractReadFileHandle currWalSegment) {
-
+        @Nullable FileWALPointer ptr
+    ) {
         if (e instanceof IgniteCheckedException) {
             IgniteCheckedException ice = (IgniteCheckedException)e;
 
-            if (ice.hasCause(RecordV1Serializer.IgniteCrcReadingException.class))
+            if (ice.hasCause(IgniteWalRecordZeroCrcException.class))
                 // curIdx is an index in walFileDescriptors list
                 if (curIdx == walFileDescriptors.size() - 1)
                     return null;
         }
 
-        return super.handleRecordException(e, ptr, currWalSegment);
+        return super.handleRecordException(e, ptr);
     }
 
     /**
