@@ -128,8 +128,9 @@ class ReduceQueryRun {
         if (!this.state.compareAndSet(null, state))
             return;
 
-        while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
-            latch.countDown();
+        if (latch != null)
+            while ( latch.getCount() != 0) // We don't need to wait for all nodes to reply.
+                latch.countDown();
 
         for (GridMergeIndex idx : idxs) // Fail all merge indexes.
             idx.fail(state.nodeId, state.ex);
