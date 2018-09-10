@@ -29,9 +29,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Cache lock future.
+ * Cache query lock future.
  */
-public final class GridDhtTxQueryEnlistFuture extends GridDhtTxAbstractEnlistFuture {
+public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture {
     /** Involved cache ids. */
     private final int[] cacheIds;
 

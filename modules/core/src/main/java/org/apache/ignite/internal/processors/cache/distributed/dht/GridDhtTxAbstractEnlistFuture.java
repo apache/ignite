@@ -75,11 +75,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Abstract future processing transaction enlisting and locking
- * of entries produced with DML and SELECT FOR UPDATE queries.
+ * Abstract future processing transaction enlisting and locking.
  */
-public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapter<Long>
-    implements DhtLockFuture<Long> {
+public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAdapter<T>
+    implements DhtLockFuture<T> {
     /** Done field updater. */
     private static final AtomicIntegerFieldUpdater<GridDhtTxAbstractEnlistFuture> DONE_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridDhtTxAbstractEnlistFuture.class, "done");
@@ -131,9 +130,6 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
 
     /** */
     protected final MvccSnapshot mvccSnapshot;
-
-    /** Processed entries count. */
-    protected long cnt;
 
     /** Near node ID. */
     protected final UUID nearNodeId;
@@ -236,10 +232,25 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     }
 
     /**
+     * Gets source to be updated iterator.
+     *
      * @return iterator.
      * @throws IgniteCheckedException If failed.
      */
     protected abstract UpdateSourceIterator<?> createIterator() throws IgniteCheckedException;
+
+    /**
+     * Gets query result.
+     *
+     * @return Query result.
+     */
+    protected abstract T result0();
+
+
+    /**
+     * Entry processed callback.
+     */
+    protected abstract void onEntryProcessed();
 
     /**
      *
@@ -308,7 +319,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
             if (!it.hasNext()) {
                 U.close(it, log);
 
-                onDone(0L);
+                onDone(result0());
 
                 return;
             }
@@ -493,7 +504,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
                     }
 
                     if (noPendingRequests()) {
-                        onDone(cnt);
+                        onDone(result0());
 
                         return;
                     }
@@ -572,7 +583,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
         if (!updRes.success())
             return;
 
-        cnt++;
+        onEntryProcessed();
 
         if (op != EnlistOperation.LOCK)
             addToBatch(entry.key(), val, updRes.mvccHistory(), updRes.updateCounter(), entry.context().cacheId());
@@ -975,7 +986,7 @@ public abstract class GridDhtTxAbstractEnlistFuture extends GridCacheFutureAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable T res, @Nullable Throwable err) {
         assert res != null || err != null;
 
         if (!DONE_UPD.compareAndSet(this, 0, 1))

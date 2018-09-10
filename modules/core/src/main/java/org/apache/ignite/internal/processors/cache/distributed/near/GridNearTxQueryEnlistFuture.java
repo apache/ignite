@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.NearTx
  * Cache lock future.
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
-public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture {
+public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFuture {
     /** */
     private static final long serialVersionUID = -2155104765461405820L;
     /** Involved cache ids. */

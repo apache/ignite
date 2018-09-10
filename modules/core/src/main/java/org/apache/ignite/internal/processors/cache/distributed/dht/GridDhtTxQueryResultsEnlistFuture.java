@@ -34,9 +34,10 @@ import org.apache.ignite.lang.IgniteUuid;
  * Future processing transaction enlisting and locking of entries
  * produces by complex DML queries with reduce step.
  */
-public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEnlistFuture implements UpdateSourceIterator<Object> {
+public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture implements UpdateSourceIterator<Object> {
     /** */
     private static final long serialVersionUID = -4933550335145438798L;
+
     /** */
     private EnlistOperation op;
 

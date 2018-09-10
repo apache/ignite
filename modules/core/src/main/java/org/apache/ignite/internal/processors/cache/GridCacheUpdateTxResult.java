@@ -40,7 +40,7 @@ public class GridCacheUpdateTxResult {
     private GridLongList mvccWaitTxs;
 
     /** */
-    private  GridFutureAdapter<GridCacheUpdateTxResult> fut;
+    private GridFutureAdapter<GridCacheUpdateTxResult> fut;
 
     /** */
     private WALPointer logPtr;

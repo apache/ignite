@@ -783,7 +783,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     throw new NullPointerException("Null value.");
                 }
 
-                /*TODO: IGNITE-7371: fix invoke.
+                /*TODO: IGNITE-9464: fix invoke.
 
                 final GridCacheOperation op = //rmv ? DELETE :
                     entryProcessor != null ? TRANSFORM : old != null ? UPDATE : CREATE;
@@ -793,12 +793,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     */
 
                 KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
-                CacheObject cacheVal = cacheCtx.toCacheObject(val); //TODO: IGNITE-7371: fix for collocated entry.
+                CacheObject cacheVal = cacheCtx.toCacheObject(val); //TODO: IGNITE-9464: fix for collocated entry.
 
                 enlisted.put(cacheKey, cacheVal);
             }
 
-            /*TODO: IGNITE-7371: all data is known and can be resorted b\w per-node-batches before sending.
+            /*TODO: IGNITE-9464: all data is known and can be resorted b\w per-node-batches before sending.
                 Let's use trivial implementation just for now and review updateAsunc call. */
             return updateAsync(cacheCtx, new UpdateSourceIterator<IgniteBiTuple<KeyCacheObject, CacheObject>>() {
 
@@ -851,7 +851,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval
     ) {
-        //TODO: IGNITE-7371: Review if putAllAsync0 body can be reused (may be partly).
+        //TODO: IGNITE-9464: Review if putAllAsync0 body can be reused (may be partly).
         if (cacheCtx.mvccEnabled() && !implicit)
             return mvccPutAllAsync0(cacheCtx, map, invokeMap, invokeArgs, retval);
 
@@ -1964,7 +1964,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param sequential Sequential locking flag.
      * @return Operation future.
      */
-    // TODO: IGNITE-7371: generify result type.
     public IgniteInternalFuture<Long> updateAsync(GridCacheContext cacheCtx,
         UpdateSourceIterator<?> it, int pageSize, long timeout, boolean sequential) {
         try {
@@ -1997,10 +1996,29 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             beforePut(cacheCtx, retval, true);
 
-            IgniteInternalFuture<GridCacheReturn> fut = updateAsync(new GridNearTxQueryResultsEnlistFuture(cacheCtx, this,
-                timeout, it, 0, sequential), ret);
+            //TODO: IGNITE-9464: Use proper future here.
+            GridNearTxEnlistFuture fut = new GridNearTxEnlistFuture(cacheCtx, this,
+                timeout, it, 0, sequential);
 
-            return fut;
+            fut.init();
+
+            return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<GridCacheReturn>, Boolean>() {
+                @Override public Boolean applyx(IgniteInternalFuture<GridCacheReturn> fut0) throws IgniteCheckedException {
+                    return fut0.get() != null;
+                }
+            }), new PLC1<GridCacheReturn>(ret) {
+                @Override protected GridCacheReturn postLock(GridCacheReturn val) throws IgniteCheckedException {
+                    GridCacheReturn res = fut.get();
+
+                    assert mvccSnapshot != null;
+                    assert res != null;
+
+                    if (res.success())
+                        mvccSnapshot.incrementOperationCounter();
+
+                    return ret;
+                }
+            }));
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -2014,36 +2032,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /**
      * @param fut Enlist future.
-     * @param ret Cache operation result.
      * @return Operation future.
      */
-    public IgniteInternalFuture<GridCacheReturn> updateAsync(GridNearTxAbstractEnlistFuture fut, GridCacheReturn ret) {
-        fut.init();
-
-        return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<Long>, Boolean>() {
-            @Override public Boolean applyx(IgniteInternalFuture<Long> fut0) throws IgniteCheckedException {
-                return fut0.get() != null;
-            }
-        }), new PLC1<GridCacheReturn>(ret) {
-            @Override protected GridCacheReturn postLock(GridCacheReturn val) throws IgniteCheckedException {
-                Long res = fut.get();
-
-                assert mvccSnapshot != null;
-                assert res != null;
-
-                if (res > 0)
-                    mvccSnapshot.incrementOperationCounter();
-
-                return ret;
-            }
-        }));
-    }
-
-    /**
-     * @param fut Enlist future.
-     * @return Operation future.
-     */
-    public IgniteInternalFuture<Long> updateAsync(GridNearTxAbstractEnlistFuture fut) {
+    public IgniteInternalFuture<Long> updateAsync(GridNearTxQueryAbstractEnlistFuture fut) {
         fut.init();
 
         return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<Long>, Boolean>() {
