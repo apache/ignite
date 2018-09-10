@@ -404,6 +404,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     @Override protected AbstractReadFileHandle createReadFileHandle(
         SegmentIO fileIO, RecordSerializer ser, FileInput in
     ) {
-        return new ReadFileHandle(fileIO, ser, in);
+        return new ReadFileHandle(fileIO, ser, in, null);
     }
 }

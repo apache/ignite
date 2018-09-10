@@ -3186,15 +3186,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             curWalSegmIdx = Integer.MAX_VALUE;
         }
 
-        /** {@inheritDoc} */
-        @Override protected IgniteCheckedException validateTailReachedException(
-            WalSegmentTailReachedException tailReachedException,
-            AbstractReadFileHandle currWalSegment) {
-            return !currWalSegment.workDir() ? new IgniteCheckedException(
-                "WAL tail reached in archive directory, " +
-                    "WAL segment file is corrupted.", tailReachedException) : null;
-        }
-
         /**
          * @throws IgniteCheckedException If failed to initialize first file handle.
          */

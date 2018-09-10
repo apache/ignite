@@ -123,17 +123,10 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCheckedException validateTailReachedException(
-        WalSegmentTailReachedException tailReachedException,
-        AbstractReadFileHandle currWalSegment) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override protected AbstractReadFileHandle createReadFileHandle(
         SegmentIO fileIO,
         RecordSerializer ser, FileInput in) {
-        return new FileWriteAheadLogManager.ReadFileHandle(fileIO, ser, in);
+        return new FileWriteAheadLogManager.ReadFileHandle(fileIO, ser, in, null);
     }
 
     /**

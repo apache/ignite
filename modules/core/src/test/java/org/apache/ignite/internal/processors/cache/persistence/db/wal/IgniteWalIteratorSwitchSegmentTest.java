@@ -372,7 +372,8 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                     Object handle = getFieldValueHierarchy(it,  "currWalSegment");
 
                     FileInput in = getFieldValueHierarchy(handle, "in");
-                    Channel ch = getFieldValueHierarchy(in.io(), "ch");
+                    Object delegate = getFieldValueHierarchy(in.io(), "delegate");
+                    Channel ch = getFieldValueHierarchy(delegate, "ch");
                     String path = getFieldValueHierarchy(ch, "path");
 
                     startedSegmentPath.set(path);
@@ -391,7 +392,8 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                     }
 
                     in = getFieldValueHierarchy(handle, "in");
-                    ch = getFieldValueHierarchy(in.io(), "ch");
+                    delegate = getFieldValueHierarchy(in.io(), "delegate");
+                    ch = getFieldValueHierarchy(delegate, "ch");
                     path = getFieldValueHierarchy(ch, "path");
 
                     finishedSegmentPath.set(path);

@@ -2330,20 +2330,25 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         FileInput in;
 
+        /** Holder of actual information of latest manipulation on WAL segments. */
+        private final SegmentAware segmentAware;
+
         /**
          * @param fileIO I/O interface for read/write operations of FileHandle.
          * @param ser Entry serializer.
          * @param in File input.
+         * @param aware Segment aware.
          */
         public ReadFileHandle(
             SegmentIO fileIO,
             RecordSerializer ser,
-            FileInput in
-        ) {
+            FileInput in,
+            SegmentAware aware) {
             super(fileIO);
 
             this.ser = ser;
             this.in = in;
+            segmentAware = aware;
         }
 
         /**
@@ -2377,7 +2382,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override public boolean workDir() {
-            throw new UnsupportedOperationException("workDir method nou supported");
+            return segmentAware != null && segmentAware.lastArchivedAbsoluteIndex() < getSegmentId();
         }
     }
 
@@ -2940,16 +2945,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             curWalSegmIdx = Integer.MAX_VALUE;
         }
 
-        /** {@inheritDoc} */
-        @Override protected IgniteCheckedException validateTailReachedException(
-            WalSegmentTailReachedException tailReachedException,
-            AbstractReadFileHandle currWalSegment) {
-            return curWalSegmIdx < (segmentAware.curAbsWalIdx() - 1)
-                ? new IgniteCheckedException("WAL tail reached in archive directory, " +
-                "WAL segment file is corrupted.", tailReachedException)
-                : null;
-        }
-
         /**
          * @throws IgniteCheckedException If failed to initialize first file handle.
          */
@@ -3056,7 +3051,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** {@inheritDoc} */
         @Override protected AbstractReadFileHandle createReadFileHandle(SegmentIO fileIO,
             RecordSerializer ser, FileInput in) {
-            return new ReadFileHandle(fileIO, ser, in);
+            return new ReadFileHandle(fileIO, ser, in, segmentAware);
         }
     }
 
