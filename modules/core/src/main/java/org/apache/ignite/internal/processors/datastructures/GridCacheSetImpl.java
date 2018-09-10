@@ -158,7 +158,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 return cache.sizeAsync(new CachePeekMode[] {}).get() - 1;
             }
 
-            if (ctx.isLocal() || ctx.isReplicated()) {
+            if (ctx.isLocal() || (ctx.isReplicated() && ctx.affinityNode())) {
                 GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
 
                 return set != null ? set.size() : 0;
@@ -525,7 +525,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     @SuppressWarnings("unchecked")
     private Collection<ClusterNode> dataNodes(AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        if (ctx.isLocal() || (ctx.isReplicated() && !ctx.localNode().isClient()))
+        if (ctx.isLocal() || (ctx.isReplicated() && ctx.affinityNode()))
             return Collections.singleton(ctx.localNode());
 
         Collection<ClusterNode> nodes;
