@@ -466,8 +466,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /**
      * Check binary recover completes successfully when node stopped at the midde of checkpoint.
-     * Destroyed cache on cluster should be successfully handled on joined node.
-     * Created cache on cluster should be successfully created on joined node.
      *
      * @throws Exception if failed.
      */

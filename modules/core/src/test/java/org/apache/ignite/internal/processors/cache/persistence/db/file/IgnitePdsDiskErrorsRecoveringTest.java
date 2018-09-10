@@ -182,7 +182,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             boolean interrupted = Thread.interrupted();
 
             if (interrupted)
-                log.warning("Ignore channel interrupted excpetion [" +
+                log.warning("Ignore interrupted excpetion [" +
                     "thread=" + Thread.currentThread().getName() + ']', e);
 
             activationFailed = true;
