@@ -184,7 +184,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             activationFailed = true;
         }
 
-        Assert.assertTrue("Activation must be failed", activationFailed);
+        Assert.assertTrue("Ignite instance startup must be failed", activationFailed);
 
         // Grid should be automatically stopped after checkpoint fail.
         awaitStop(grid);
