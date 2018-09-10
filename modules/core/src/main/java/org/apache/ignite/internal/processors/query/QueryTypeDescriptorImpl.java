@@ -602,7 +602,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 }
                 else if (prop.scale() != -1 &&
                     dec.scale() > prop.scale()) {
-                    throw new IgniteSQLException("Scale for a column '" + prop.name() + "' is too long. " +
+                    throw new IgniteSQLException("Value for a column '" + prop.name() + "' is out of range. " +
                         "Maximum scale : " + prop.scale() + ", actual scale: " + dec.scale(),
                         isKey ? KEY_SCALE_OUT_OF_RANGE : VALUE_SCALE_OUT_OF_RANGE);
                 }

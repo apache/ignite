@@ -1293,15 +1293,13 @@ public class QueryUtils {
                     BigDecimal dec = (BigDecimal)dfltVal;
 
                     if (dec.precision() > precision.get(fld)) {
-                        throw new IgniteSQLException("Default value: '" + dfltVal +
-                            "' for a column " + fld +
+                        throw new IgniteSQLException("Default value: '" + dfltVal + "' for a column " + fld +
                             " is out of range. Maximum precision: " + precision.get(fld) +
                             ", actual precision: " + dec.precision(), TOO_LONG_VALUE);
                     }
                     else if (!F.isEmpty(scale) && scale.containsKey(fld) && dec.scale() > scale.get(fld)) {
-                        throw new IgniteSQLException("Scale of default value: '" + dfltVal +
-                            "' for a column " + fld +
-                            " is too long. Maximum scale: " + scale.get(fld) +
+                        throw new IgniteSQLException("Default value:: '" + dfltVal + "' for a column " + fld +
+                            " is out of range. Maximum scale: " + scale.get(fld) +
                             ", actual scale: " + dec.scale(), VALUE_SCALE_OUT_OF_RANGE);
                     }
                 }

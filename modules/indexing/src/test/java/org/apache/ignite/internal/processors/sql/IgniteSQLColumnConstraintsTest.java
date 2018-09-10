@@ -58,15 +58,13 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateTableWithTooLongScaleDecimalDefault() throws Exception {
-        String sql = "CREATE TABLE too_long_decimal_default_scale(id INT PRIMARY KEY, val DECIMAL(4,2) DEFAULT 1.345)";
-
-        checkSQLThrows(sql);
+        checkSQLThrows("CREATE TABLE too_long_decimal_default_scale(id INT PRIMARY KEY, val DECIMAL(4, 2)" +
+            " DEFAULT 1.345)");
     }
 
     public void testCreateTableWithTooLongDecimalDefault() throws Exception {
-        String sql = "CREATE TABLE too_long_decimal_default(id INT PRIMARY KEY, val DECIMAL(4,2) DEFAULT 123.45)";
-
-        checkSQLThrows(sql);
+        checkSQLThrows("CREATE TABLE too_long_decimal_default(id INT PRIMARY KEY, val DECIMAL(4, 2)" +
+            " DEFAULT 123.45)");
     }
 
     /**
@@ -212,22 +210,27 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?",BigDecimal.valueOf(1234.56), 2);
 
-        checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)",2, BigDecimal.valueOf(1234.56));
+        checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)", 2, BigDecimal.valueOf(1234.56));
 
-        checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?",BigDecimal.valueOf(1.345), 2);
+        checkSQLThrows("UPDATE decimal_table_4 SET field = ? WHERE id = ?", BigDecimal.valueOf(1.345), 2);
 
         checkSQLThrows("MERGE INTO decimal_table_4(id, field) VALUES(?, ?)", 2, BigDecimal.valueOf(1.345));
     }
 
     /** */
     private void checkSQLThrows(String sql, Object... args) {
-        IgniteSQLException err = (IgniteSQLException)GridTestUtils.assertThrowsWithCause(() -> {
+        Throwable err = GridTestUtils.assertThrowsWithCause(() -> {
             execSQL(sql, args);
 
             return 0;
         }, IgniteSQLException.class);
 
-        assertEquals(err.sqlState(), CONSTRAINT_VIOLATION);
+        while (err.getCause() != null)
+            err = err.getCause();
+
+        assert(err instanceof IgniteSQLException);
+
+        assertEquals(((IgniteSQLException)err).sqlState(), CONSTRAINT_VIOLATION);
     }
 
     /** */
