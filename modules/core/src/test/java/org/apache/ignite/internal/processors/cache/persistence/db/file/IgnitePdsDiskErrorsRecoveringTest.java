@@ -179,7 +179,11 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             grid = startGrid(0);
         }
         catch (IgniteCheckedException e) {
-            log.warning("Expected ignite instance startup exception", e);
+            boolean interrupted = Thread.interrupted();
+
+            if (interrupted)
+                log.warning("Ignore channel interrupted excpetion [" +
+                    "thread=" + Thread.currentThread().getName() + ']', e);
 
             activationFailed = true;
         }

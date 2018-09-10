@@ -4250,12 +4250,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 String content = null;
 
-                boolean interrupted = Thread.interrupted();
-
-                if (interrupted)
-                    log.warning("Ignore channel interrupted excpetion [nodeId=" + ctx.localNodeId() +
-                        ", thread=" + Thread.currentThread().getName() + ']');
-
                 // Try to get lock, if not available wait 1 sec and re-try.
                 for (int i = 0; i < lockWaitTimeMillis; i += 1000) {
                     try {
