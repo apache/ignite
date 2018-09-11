@@ -42,7 +42,7 @@ You may also want to consult the `setuptools` manual about using `setup.py`.
 is available at *RTD* for your convenience.
 
 If you want to build the documentation from source, do the developer
-installation as described abothe, then run the following commands:
+installation as described above, then run the following commands:
 ```
 $ cd ignite/modules/platforms/python
 $ pip install -r requirements/docs.txt
