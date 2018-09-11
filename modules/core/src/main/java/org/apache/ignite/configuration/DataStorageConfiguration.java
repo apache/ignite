@@ -114,6 +114,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default number of checkpoints to be kept in WAL after checkpoint is finished */
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
 
+    /** Default max size of WAL archive files, in bytes */
+    public static final long DFLT_WAL_ARCHIVE_MAX_SIZE = 1024 * 1024 * 1024;
+
     /** */
     public static final int DFLT_WAL_SEGMENTS = 10;
 
@@ -189,6 +192,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Number of checkpoints to keep */
     private int walHistSize = DFLT_WAL_HISTORY_SIZE;
+
+    /** Maximum size of wal archive folder, in bytes */
+    private long maxWalArchiveSize = DFLT_WAL_ARCHIVE_MAX_SIZE;
 
     /** Number of work WAL segments. */
     private int walSegments = DFLT_WAL_SEGMENTS;
@@ -487,7 +493,10 @@ public class DataStorageConfiguration implements Serializable {
      * Gets a total number of checkpoints to keep in the WAL history.
      *
      * @return Number of checkpoints to keep in WAL after a checkpoint is finished.
+     * @deprecated Instead of walHistorySize use maxWalArchiveSize for manage of archive size.
+     * @see DataStorageConfiguration#getMaxWalArchiveSize()
      */
+    @Deprecated
     public int getWalHistorySize() {
         return walHistSize <= 0 ? DFLT_WAL_HISTORY_SIZE : walHistSize;
     }
@@ -497,9 +506,42 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param walHistSize Number of checkpoints to keep after a checkpoint is finished.
      * @return {@code this} for chaining.
+     * @deprecated Instead of walHistorySize use maxWalArchiveSize for manage of archive size.
+     * @see DataStorageConfiguration#setMaxWalArchiveSize(long)
      */
+    @Deprecated
     public DataStorageConfiguration setWalHistorySize(int walHistSize) {
         this.walHistSize = walHistSize;
+
+        return this;
+    }
+
+    /**
+     * If WalHistorySize was set by user will use this parameter for compatibility.
+     *
+     * @return {@code true} if use WalHistorySize for compatibility.
+     */
+    public boolean isWalHistorySizeParameterUsed() {
+        return getWalHistorySize() != DFLT_WAL_HISTORY_SIZE && getWalHistorySize() != Integer.MAX_VALUE;
+    }
+
+    /**
+     * Gets a max allowed size of WAL archives. In bytes.
+     *
+     * @return max size of WAL archive directory.
+     */
+    public long getMaxWalArchiveSize() {
+        return maxWalArchiveSize <= 0 ? DFLT_WAL_ARCHIVE_MAX_SIZE : maxWalArchiveSize;
+    }
+
+    /**
+     * Sets a max allowed size of WAL archives. In bytes
+     *
+     * @param walArchiveMaxSize max size of WAL archive directory.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setMaxWalArchiveSize(long walArchiveMaxSize) {
+        this.maxWalArchiveSize = walArchiveMaxSize;
 
         return this;
     }

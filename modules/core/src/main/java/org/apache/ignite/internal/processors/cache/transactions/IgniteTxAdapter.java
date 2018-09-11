@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -61,8 +63,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -71,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -84,6 +91,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -130,6 +138,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Finalizing status updater. */
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, FinalizationStatus> FINALIZING_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, FinalizationStatus.class, "finalizing");
+
+    /** */
+    private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, TxCounters> TX_COUNTERS_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -263,6 +275,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** UUID to consistent id mapper. */
     protected ConsistentIdMapper consistentIdMapper;
 
+    /** Mvcc tx update snapshot. */
+    protected volatile MvccSnapshot mvccSnapshot;
+
+    /** Rollback finish future. */
+    @GridToStringExclude
+    private volatile IgniteInternalFuture rollbackFut;
+
+    /** */
+    private volatile TxCounters txCounters = new TxCounters();
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -379,6 +401,18 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+    }
+
+    /**
+     * @return Mvcc info.
+     */
+    @Override @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        this.mvccSnapshot = mvccSnapshot;
     }
 
     /**
@@ -684,6 +718,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public void needReturnValue(boolean needRetVal) {
         this.needRetVal = needRetVal;
+    }
+
+    /**
+     * @return Rollback future.
+     */
+    public IgniteInternalFuture rollbackFuture() {
+        return rollbackFut;
+    }
+
+    /**
+     * @param fut Rollback future.
+     */
+    public void rollbackFuture(IgniteInternalFuture fut) {
+        rollbackFut = fut;
     }
 
     /**
@@ -1109,9 +1157,62 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state != ACTIVE && state != SUSPENDED)
                     seal();
 
-                if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
+                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
+                    if (mvccSnapshot != null) {
+                        byte txState;
+
+                        switch (state) {
+                            case PREPARED:
+                                txState = TxState.PREPARED;
+                                break;
+                            case ROLLED_BACK:
+                                txState = TxState.ABORTED;
+                                break;
+                            case COMMITTED:
+                                txState = TxState.COMMITTED;
+                                break;
+                            default:
+                                throw new IllegalStateException("Illegal state: " + state);
+                        }
+
+                        try {
+                            if (!cctx.localNode().isClient()) {
+                                if (dht() && remote())
+                                    cctx.coordinators().updateState(mvccSnapshot, txState, false);
+                                else if (local()) {
+                                    IgniteInternalFuture<?> rollbackFut = rollbackFuture();
+
+                                    boolean syncUpdate = txState == TxState.PREPARED || txState == TxState.COMMITTED ||
+                                        rollbackFut == null || rollbackFut.isDone();
+
+                                    if (syncUpdate)
+                                        cctx.coordinators().updateState(mvccSnapshot, txState);
+                                    else {
+                                        // If tx was aborted, we need to wait tx log is updated on all backups.
+                                        rollbackFut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                                            @Override public void apply(IgniteInternalFuture fut) {
+                                                try {
+                                                    cctx.coordinators().updateState(mvccSnapshot, txState);
+                                                }
+                                                catch (IgniteCheckedException e) {
+                                                    U.error(log, "Failed to log TxState: " + txState, e);
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to log TxState: " + txState, e);
+
+                            throw new IgniteException("Failed to log TxState: " + txState, e);
+                        }
+                    }
+
                     // Log tx state change to WAL.
-                    if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
+                    if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
+
                         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
                         Map<Short, Collection<Short>> participatingNodes = consistentIdMapper
@@ -1569,7 +1670,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
-                    keepBinary);
+                    keepBinary,
+                    null); // TODO IGNITE-7371
             }
 
             boolean modified = false;
@@ -1757,6 +1859,32 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
+     * Notify Dr on tx finished.
+     *
+     * @param commit {@code True} if commited, {@code False} otherwise.
+     */
+    protected void notifyDrManager(boolean commit) {
+        if (system() || internal())
+            return;
+
+        IgniteTxState txState = txState();
+
+        if (mvccSnapshot == null || txState.cacheIds().isEmpty())
+            return;
+
+        GridIntIterator iter = txState.cacheIds().iterator();
+
+        while (iter.hasNext()) {
+            int cacheId = iter.next();
+
+            GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+            if (ctx0.isDrEnabled())
+                ctx0.dr().onTxFinished(mvccSnapshot, commit, topologyVersionSnapshot());
+        }
+    }
+
+    /**
      * @param e Transaction entry.
      * @param primaryOnly Flag to include backups into check or not.
      * @return {@code True} if entry is locally mapped as a primary or back up node.
@@ -1886,6 +2014,56 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return xidVer.hashCode();
     }
 
+    /**
+     * Adds cache to the list of active caches in transaction.
+     *
+     * @param cacheCtx Cache context to add.
+     * @param recovery Recovery flag. See {@link CacheOperationContext#setRecovery(boolean)}.
+     * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
+     *      cache (e.g. they have different stores).
+     */
+    public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
+
+    /** {@inheritDoc} */
+    @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+        if (createIfAbsent && txCounters == null)
+            TX_COUNTERS_UPD.compareAndSet(this, null, new TxCounters());
+
+        return txCounters;
+    }
+
+    /**
+     * Make counters accumulated during transaction visible outside of transaciton.
+     */
+    protected void applyTxCounters() {
+        TxCounters txCntrs = txCounters(false);
+
+        if (txCntrs == null)
+            return;
+
+        Map<Integer, ? extends Map<Integer, AtomicLong>> sizeDeltas = txCntrs.sizeDeltas();
+
+        for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
+            Integer cacheId = entry.getKey();
+            Map<Integer, AtomicLong> partDeltas = entry.getValue();
+
+            assert !F.isEmpty(partDeltas);
+
+            GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
+
+            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
+                Integer p = e.getKey();
+                long delta = e.getValue().get();
+
+                GridDhtLocalPartition dhtPart = top.localPartition(p);
+
+                assert dhtPart != null;
+
+                dhtPart.dataStore().updateSize(cacheId, delta);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxAdapter.class, this,
@@ -1957,6 +2135,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             this.timeout = timeout;
             this.state = state;
             this.rollbackOnly = rollbackOnly;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public MvccSnapshot mvccSnapshot() {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -2037,6 +2225,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public boolean activeCachesDeploymentEnabled() {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
@@ -2141,6 +2334,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public UUID originatingNodeId() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+            return null;
         }
 
         /** {@inheritDoc} */
