@@ -141,11 +141,8 @@ public abstract class AbstractWalRecordsIterator
     }
 
     /**
-     * Switches records iterator to the next record.
-     * <ul>
-     * <li>{@link #curRec} will be updated.</li>
-     * <li> If end of segment reached, switch to new segment is called. {@link #currWalSegment} will be updated.</li>
-     * </ul>
+     * Switches records iterator to the next record. <ul> <li>{@link #curRec} will be updated.</li> <li> If end of
+     * segment reached, switch to new segment is called. {@link #currWalSegment} will be updated.</li> </ul>
      *
      * {@code advance()} runs a step ahead {@link #next()}
      *
@@ -308,21 +305,16 @@ public abstract class AbstractWalRecordsIterator
     protected AbstractReadFileHandle initReadHandle(
         @NotNull final AbstractFileDescriptor desc,
         @Nullable final FileWALPointer start,
-        @NotNull final FileIO fileIO,
+        @NotNull final SegmentIO fileIO,
         @NotNull final SegmentHeader segmentHeader
     ) throws IgniteCheckedException {
         try {
-            SegmentIO fileIO = desc.toIO(ioFactory);
-
-            try {
-                SegmentHeader segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
-
-                boolean isCompacted = segmentHeader.isCompacted();
+            boolean isCompacted = segmentHeader.isCompacted();
 
             if (isCompacted)
                 serializerFactory.skipPositionCheck(true);
 
-                FileInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
+            FileInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
 
             if (start != null && desc.idx() == start.index()) {
                 if (isCompacted) {
@@ -339,15 +331,15 @@ public abstract class AbstractWalRecordsIterator
 
             int serVer = segmentHeader.getSerializerVersion();
 
-                return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
+            return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
+        }
+        catch (SegmentEofException | EOFException ignore) {
+            try {
+                fileIO.close();
             }
-            catch (SegmentEofException | EOFException ignore) {
-                try {
-                    fileIO.close();
-                }
-                catch (IOException ce) {
-                    throw new IgniteCheckedException(ce);
-                }
+            catch (IOException ce) {
+                throw new IgniteCheckedException(ce);
+            }
 
             return null;
         }
@@ -378,15 +370,15 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final AbstractFileDescriptor desc,
         @Nullable final FileWALPointer start
     ) throws IgniteCheckedException, FileNotFoundException {
-        FileIO fileIO = null;
+        SegmentIO fileIO = null;
 
         try {
-            fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file()) : ioFactory.create(desc.file());
+            fileIO = desc.toIO(ioFactory);
 
             SegmentHeader segmentHeader;
 
             try {
-                segmentHeader = readSegmentHeader(fileIO, curWalSegmIdx);
+                segmentHeader = readSegmentHeader(fileIO, segmentFileInputFactory);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {
@@ -470,9 +462,8 @@ public abstract class AbstractWalRecordsIterator
         RecordSerializer ser();
 
         /**
-         * @deprecated Handle can not be sure about work directory because it required last archived index.
+         *
          */
-        @Deprecated
         boolean workDir();
     }
 
