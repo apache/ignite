@@ -1203,7 +1203,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                 ClusterGroup grp = client.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
-                assertEquals(CLIENTS + srvNodes, grp.nodes().size());
+                assertEquals(expNodes, grp.nodes().size());
 
                 grp = client.cluster().forClientNodes(DEFAULT_CACHE_NAME);
 
