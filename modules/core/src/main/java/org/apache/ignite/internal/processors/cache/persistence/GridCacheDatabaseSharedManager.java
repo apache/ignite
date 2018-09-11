@@ -74,6 +74,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -1464,8 +1465,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (checkpointLock.writeLock().isHeldByCurrentThread())
             return;
 
+        long timeout = cctx.gridConfig().getFailureDetectionTimeout();
+
+        long start = U.currentTimeMillis();
+        long passed;
+
         for (; ; ) {
-            checkpointLock.readLock().lock();
+            if ((passed = U.currentTimeMillis() - start) >= timeout)
+                failCheckpointReadLock();
+
+            try {
+                if (!checkpointLock.readLock().tryLock(timeout - passed, TimeUnit.MILLISECONDS))
+                    failCheckpointReadLock();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                continue;
+            }
 
             if (stopping) {
                 checkpointLock.readLock().unlock();
@@ -1478,8 +1495,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             else {
                 checkpointLock.readLock().unlock();
 
+                if ((passed = U.currentTimeMillis() - start) >= timeout)
+                    failCheckpointReadLock();
+
                 try {
-                    checkpointer.wakeupForCheckpoint(0, "too many dirty pages").cpBeginFut.getUninterruptibly();
+                    checkpointer.wakeupForCheckpoint(0, "too many dirty pages").cpBeginFut
+                        .getUninterruptibly(timeout - passed);
+                }
+                catch (IgniteFutureTimeoutCheckedException e) {
+                    failCheckpointReadLock();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException("Failed to wait for checkpoint begin.", e);
@@ -1489,6 +1513,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (ASSERTION_ENABLED)
             CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() + 1);
+    }
+
+    /** */
+    private void failCheckpointReadLock() throws IgniteException {
+        IgniteException e = new IgniteException("Checkpoint read lock acquisition has been timed out.");
+
+        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
+
+        throw e;
     }
 
     /** {@inheritDoc} */
