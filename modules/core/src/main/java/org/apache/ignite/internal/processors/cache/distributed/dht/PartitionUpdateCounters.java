@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -27,21 +26,26 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Partitions update counters message.
+ * Partition update counters message.
  */
-public class GridDhtPartitionsUpdateCountersMap implements Message {
+public class PartitionUpdateCounters implements Message {
     /** */
-    private static final long serialVersionUID = -4599730112233297219L;
+    private static final long serialVersionUID = 193442457510062844L;
 
     /** Map of update counters made by this tx. Mapping: partId -> updCntr. */
     @GridDirectMap(keyType = Integer.class, valueType = Long.class)
-    private  Map<Integer, Long> updCntrs;
+    private Map<Integer, Long> updCntrs;
+
+    /** */
+    public PartitionUpdateCounters() {
+        // No-op.
+    }
 
     /**
-     *
+     * @param updCntrs Update counters map.
      */
-    public GridDhtPartitionsUpdateCountersMap() {
-        updCntrs = new HashMap<>();
+    public PartitionUpdateCounters(Map<Integer, Long> updCntrs) {
+        this.updCntrs = updCntrs;
     }
 
     /**
@@ -99,7 +103,7 @@ public class GridDhtPartitionsUpdateCountersMap implements Message {
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionsUpdateCountersMap.class);
+        return reader.afterMessageRead(PartitionUpdateCounters.class);
     }
 
     /** {@inheritDoc} */
