@@ -91,6 +91,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
+
+
     /** */
     private boolean inMemoryMode;
 
