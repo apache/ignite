@@ -36,7 +36,6 @@ import effects from './store/effects';
 import projectStructurePreview from './components/modal-preview-project';
 import itemsTable from './components/pc-items-table';
 import pcUiGridFilters from './components/pc-ui-grid-filters';
-import pcFormFieldSize from './components/pc-form-field-size';
 import isInCollection from './components/pcIsInCollection';
 import pcValidation from './components/pcValidation';
 import fakeUiCanExit from './components/fakeUICanExit';
@@ -99,7 +98,6 @@ export default angular
         'ui.router',
         'asyncFilter',
         uiValidate,
-        pcFormFieldSize.name,
         pcUiGridFilters.name,
         projectStructurePreview.name,
         itemsTable.name,

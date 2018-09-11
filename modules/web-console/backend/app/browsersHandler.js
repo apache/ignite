@@ -207,10 +207,10 @@ module.exports = {
             nodeListeners(sock) {
                 // Return command result from grid to browser.
                 sock.on('node:rest', ({clusterId, params, credentials} = {}, cb) => {
-                    if (_.isNil(clusterId) || _.isNil(params))
-                        return cb('Invalid format of message: "node:rest"');
-
                     const demo = sock.request._query.IgniteDemoMode === 'true';
+
+                    if ((_.isNil(clusterId) && !demo) || _.isNil(params))
+                        return cb('Invalid format of message: "node:rest"');
 
                     const agent = this._agentHnd.agent(sock.request.user, demo, clusterId);
 
@@ -238,10 +238,10 @@ module.exports = {
 
                 // Return command result from grid to browser.
                 sock.on('node:visor', ({clusterId, params, credentials} = {}, cb) => {
-                    if (_.isNil(clusterId) || _.isNil(params))
-                        return cb('Invalid format of message: "node:visor"');
-
                     const demo = sock.request._query.IgniteDemoMode === 'true';
+
+                    if ((_.isNil(clusterId) && !demo) || _.isNil(params))
+                        return cb('Invalid format of message: "node:visor"');
 
                     const {taskId, nids, args = []} = params;
 

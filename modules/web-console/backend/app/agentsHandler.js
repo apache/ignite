@@ -330,6 +330,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
 
                         sock.on('agent:auth', ({ver, bt, tokens, disableDemo} = {}, cb) => {
                             console.log(`Received authentication request [socketId=${sockId}, tokens=${tokens}, ver=${ver}].`);
+
                             if (_.isEmpty(tokens))
                                 return cb('Tokens not set. Please reload agent archive or check settings');
 

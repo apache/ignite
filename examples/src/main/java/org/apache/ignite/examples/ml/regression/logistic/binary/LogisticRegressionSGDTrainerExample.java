@@ -35,8 +35,8 @@ import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDT
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run logistic regression model based on stochastic gradient descent algorithm ({@link LogisticRegressionSGDTrainer})
- * over distributed cache.
+ * Run logistic regression model based on <a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">
+ * stochastic gradient descent</a> algorithm ({@link LogisticRegressionSGDTrainer}) over distributed cache.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points (based on the
  * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
@@ -75,7 +75,7 @@ public class LogisticRegressionSGDTrainerExample {
                     dataCache,
                     (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
                     (k, v) -> v[0]
-                ).withRawLabels(true);
+                );
 
                 System.out.println(">>> Logistic regression model: " + mdl);
 
