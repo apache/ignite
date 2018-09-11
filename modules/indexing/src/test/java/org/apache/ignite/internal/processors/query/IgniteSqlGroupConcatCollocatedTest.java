@@ -44,6 +44,9 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
     private static final int CLIENT = 7;
 
     /** */
+    private static final int KEY_BASE_FOR_DUPLICATES = 100;
+
+    /** */
     private static final String CACHE_NAME = "cache";
 
     /** */
@@ -91,6 +94,17 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
                 k++;
             }
         }
+
+        // Add duplicates
+        k = 0;
+        for (int grp = 1; grp < 7; ++grp) {
+            for (int i = 0; i < grp; ++i) {
+                c.put(new Key(k + KEY_BASE_FOR_DUPLICATES, grp),
+                    new Value(k + KEY_BASE_FOR_DUPLICATES, Character.toString((char)('A' + k))));
+
+                k++;
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -105,8 +119,8 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
         IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
 
         List<List<Object>> res = c.query(
-            new SqlFieldsQuery("select grp, GROUP_CONCAT(str0) from Value group by grp")
-                .setCollocated(true)).getAll();
+            new SqlFieldsQuery("select grp, GROUP_CONCAT(str0) from Value WHERE id < ? group by grp ")
+                .setCollocated(true).setArgs(KEY_BASE_FOR_DUPLICATES)).getAll();
 
         for (List<Object> row : res) {
             int grp = (int)row.get(0);
@@ -139,8 +153,8 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
 
         List<List<Object>> res = c.query(
             new SqlFieldsQuery("select grp, GROUP_CONCAT(strId || '=' || str0 ORDER BY id SEPARATOR '; ')" +
-                " from Value group by grp")
-                .setCollocated(true)).getAll();
+                " from Value WHERE id < ? group by grp")
+                .setCollocated(true).setArgs(KEY_BASE_FOR_DUPLICATES)).getAll();
 
         HashMap<Integer, String> resMap = resultMap(res);
 
@@ -150,8 +164,25 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testGroupConcatWithCountDistinct() {
+    public void testGroupConcatWithDistinct() {
+        IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
 
+        HashMap<Integer, String> exp = new HashMap<>();
+
+        exp.put(1, "A");
+        exp.put(2, "B,C");
+        exp.put(3, "D,E,F");
+        exp.put(4, "G,H,I,J");
+        exp.put(5, "K,L,M,N,O");
+        exp.put(6, "P,Q,R,S,T,U");
+
+        List<List<Object>> res = c.query(
+            new SqlFieldsQuery("select grp, GROUP_CONCAT(DISTINCT str0 ORDER BY str0) from Value group by grp")
+                .setCollocated(true)).getAll();
+
+        HashMap<Integer, String> resMap = resultMap(res);
+
+        assertEquals(exp, resMap);
     }
 
     /**
