@@ -92,11 +92,13 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
 
     /**
      * Tests that {@link DataRegionMetrics#getPagesFillFactor()} doesn't return NaN for empty cache.
+     *
      * @throws Exception if failed.
      */
     public void testEmptyCachePagesFillFactor() throws Exception {
         startGrids(1);
 
+        // cache is created in wrong region so MY_DATA_REGION will have "empty" metrics
         CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>().setName(MY_CACHE);
         grid(0).getOrCreateCache(cacheCfg);
 
