@@ -1829,7 +1829,8 @@ public class IgnitionEx {
                                 new IgniteException(S.toString(GridWorker.class, deadWorker))));
                     }
                 },
-                cfg.getFailureDetectionTimeout());
+                cfg.getFailureDetectionTimeout(),
+                log);
 
             stripedExecSvc = new StripedExecutor(
                 cfg.getStripedPoolSize(),

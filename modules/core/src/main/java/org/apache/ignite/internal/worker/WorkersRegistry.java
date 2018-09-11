@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -63,15 +64,20 @@ public class WorkersRegistry implements GridWorkerListener {
     /** Worker heartbeat timeout in milliseconds, when exceeded, worker is considered as blocked. */
     private final long heartbeatTimeout;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * @param workerFailedHnd Closure to invoke on worker failure.
      * @param heartbeatTimeout Maximum allowed worker heartbeat interval in milliseconds, should be positive.
      */
     public WorkersRegistry(
         @NotNull IgniteBiInClosure<GridWorker, FailureType> workerFailedHnd,
-        long heartbeatTimeout) {
+        long heartbeatTimeout,
+        IgniteLogger log) {
         this.workerFailedHnd = workerFailedHnd;
         this.heartbeatTimeout = heartbeatTimeout;
+        this.log = log;
     }
 
     /**
@@ -183,11 +189,20 @@ public class WorkersRegistry implements GridWorkerListener {
                             workerFailedHnd.apply(worker, SYSTEM_WORKER_TERMINATION);
                     }
 
-                    if (U.currentTimeMillis() - worker.heartbeatTs() > heartbeatTimeout) {
+                    long heartbeatDelay = U.currentTimeMillis() - worker.heartbeatTs();
+
+                    if (heartbeatDelay > heartbeatTimeout) {
                         GridWorker worker0 = registeredWorkers.get(worker.runner().getName());
 
-                        if (worker0 != null && worker0 == worker)
+                        if (worker0 != null && worker0 == worker) {
+                            log.error("Blocked system-critical thread has been detected. " +
+                                "This can lead to cluster-wide undefined behaviour " +
+                                "[threadName=" + worker.name() + ", blockedFor=" + heartbeatDelay / 1000 + "s]");
+
+                            U.dumpThread(worker.runner(), log);
+
                             workerFailedHnd.apply(worker, SYSTEM_WORKER_BLOCKED);
+                        }
 
                         // Iterator should not be reset:
                         // otherwise we'll never iterate beyond the blocked worker,
