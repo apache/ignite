@@ -73,7 +73,7 @@ public class DecisionTreeRegressionTrainerTest {
         }
 
         DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(1, 0)
-            .withUseIndex(useIndex == 1);
+            .withUsingIdx(useIndex == 1);
 
         DecisionTreeNode tree = trainer.fit(
             data,
