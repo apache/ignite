@@ -868,11 +868,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 120:
-                msg = new GridDhtPartitionSupplyMessageV2();
-
-                break;
-
+            // [120..123] - DR
             case 124:
                 msg = new GridMessageCollection<>();
 
@@ -930,6 +926,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 135:
                 msg = new LatchAckMessage();
+
+                break;
+
+            case 158:
+                msg = new GridDhtPartitionSupplyMessageV2();
 
                 break;
 
