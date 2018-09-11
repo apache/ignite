@@ -277,7 +277,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         CU.initializeConfigDefaults(log, cfg, cacheObjCtx);
 
-        ctx.coordinators().validateCacheConfiguration(cfg);
+        ctx.coordinators().preProcessCacheConfiguration(cfg);
         ctx.igfsHelper().preProcessCacheConfiguration(cfg);
     }
 

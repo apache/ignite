@@ -259,6 +259,13 @@ public interface MvccProcessor extends GridProcessor {
     boolean mvccEnabled();
 
     /**
+     * Pre-processes cache configuration before start.
+     *
+     * @param ccfg Cache configuration to pre-process.
+     */
+    void preProcessCacheConfiguration(CacheConfiguration ccfg);
+
+    /**
      * Validates cache configuration before start.
      *
      * @param ccfg Cache configuration to validate.

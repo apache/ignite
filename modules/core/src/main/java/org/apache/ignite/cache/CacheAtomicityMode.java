@@ -110,6 +110,11 @@ public enum CacheAtomicityMode {
      * database snapshot from the coordinator. This snapshot allows transactions and queries to skip invisible
      * updates made by concurrent transactions to always observe the same consistent database state.
      * </p>
+     * <p>
+     * <b>Note!</b> This atomicity mode is not interoperable with the other atomicity modes in the same transaction.
+     * Caches participated in transaction should either be all {@code TRANSACTIONAL} or all
+     * {@code TRANSACTIONAL_SNAPSHOT}, but not the mixed ones.
+     * </p>
      * See {@link Transaction} for more information about transactions.
      */
     TRANSACTIONAL_SNAPSHOT;

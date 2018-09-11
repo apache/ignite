@@ -1573,8 +1573,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             if (!node.configuration().isClientMode()) {
                 MvccProcessorImpl crd = mvccProcessor(node);
 
-                if (!crd.mvccEnabled())
+                if (!crd.mvccEnabled() || GridTestUtils.getFieldValue(crd, "vacuumWorkers") == null)
                     continue;
+
+                assert GridTestUtils.getFieldValue(crd, "txLog") != null;
 
                 Throwable vacuumError = crd.vacuumError();
 
