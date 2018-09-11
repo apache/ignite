@@ -168,12 +168,25 @@ class Connection:
         hs_response = self.read_response()
         if hs_response['op_code'] == 0:
             self.close()
-            raise HandshakeError(
-                (
-                    'Handshake error: {message} Expected protocol version: '
-                    '{version_major}.{version_minor}.{version_patch}.'
-                ).format(**hs_response)
-            )
+            error_text = 'Handshake error: {}'.format(hs_response['message'])
+            # if handshake fails for any reason other than protocol mismatch
+            # (i.e. authentication error), server version is 0.0.0
+            if any([
+                hs_response['version_major'],
+                hs_response['version_minor'],
+                hs_response['version_patch'],
+            ]):
+                error_text += (
+                    ' Server expects binary protocol version '
+                    '{version_major}.{version_minor}.{version_patch}. Client '
+                    'provides {client_major}.{client_minor}.{client_patch}.'
+                ).format(
+                    client_major=PROTOCOL_VERSION_MAJOR,
+                    client_minor=PROTOCOL_VERSION_MINOR,
+                    client_patch=PROTOCOL_VERSION_PATCH,
+                    **hs_response
+                )
+            raise HandshakeError(error_text)
         self.host, self.port = host, port
 
     def connect(self, *args):

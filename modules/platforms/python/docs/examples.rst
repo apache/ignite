@@ -587,7 +587,7 @@ with the following message:
 
 .. code-block:: python3
 
-    # pyignite.exceptions.HandshakeError: Handshake error: Unauthenticated sessions are prohibited. Expected protocol version: 0.0.0.
+    # pyignite.exceptions.HandshakeError: Handshake error: Unauthenticated sessions are prohibited.
 
 .. _get_and_put.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/get_and_put.py
 .. _type_hints.py: https://github.com/apache/ignite/tree/master/modules/platforms/python/examples/type_hints.py
