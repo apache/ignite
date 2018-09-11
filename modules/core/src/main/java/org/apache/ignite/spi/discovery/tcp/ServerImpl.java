@@ -1132,7 +1132,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
-            else if (!spi.ipFinder.isShared() && !ipFinderHasLocAddr) {
+            else if (!ipFinderHasLocAddr) {
                 IgniteCheckedException e = null;
 
                 if (!errs.isEmpty()) {
