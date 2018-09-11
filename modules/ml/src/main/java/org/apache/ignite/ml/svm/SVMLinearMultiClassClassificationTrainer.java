@@ -57,23 +57,34 @@ public class SVMLinearMultiClassClassificationTrainer
     /**
      * Trains model based on the specified data.
      *
-     * @param datasetBuilder   Dataset builder.
+     * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
+     * @param lbExtractor Label extractor.
      * @return Model.
      */
     @Override public <K, V> SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-                                                                IgniteBiFunction<K, V, Vector> featureExtractor,
-                                                                IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> SVMLinearMultiClassClassificationModel updateModel(
+        SVMLinearMultiClassClassificationModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
+        if (classes.isEmpty())
+            return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
         SVMLinearMultiClassClassificationModel multiClsMdl = new SVMLinearMultiClassClassificationModel();
 
         classes.forEach(clsLb -> {
             SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
-                .withAmountOfIterations(this.amountOfIterations())
-                .withAmountOfLocIterations(this.amountOfLocIterations())
-                .withLambda(this.lambda())
+                .withAmountOfIterations(this.getAmountOfIterations())
+                .withAmountOfLocIterations(this.getAmountOfLocIterations())
+                .withLambda(this.getLambda())
                 .withSeed(this.seed);
 
             IgniteBiFunction<K, V, Double> lbTransformer = (k, v) -> {
@@ -84,14 +95,60 @@ public class SVMLinearMultiClassClassificationTrainer
                 else
                     return -1.0;
             };
-            multiClsMdl.add(clsLb, trainer.fit(datasetBuilder, featureExtractor, lbTransformer));
+
+            SVMLinearBinaryClassificationModel model;
+            if (mdl == null)
+                model = learnNewModel(trainer, datasetBuilder, featureExtractor, lbTransformer);
+            else
+                model = updateModel(mdl, clsLb, trainer, datasetBuilder, featureExtractor, lbTransformer);
+            multiClsMdl.add(clsLb, model);
         });
 
         return multiClsMdl;
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(SVMLinearMultiClassClassificationModel mdl) {
+        return true;
+    }
+
+    /**
+     * Trains model based on the specified data.
+     *
+     * @param svmTrainer Prepared SVM trainer.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     */
+    private <K, V> SVMLinearBinaryClassificationModel learnNewModel(SVMLinearBinaryClassificationTrainer svmTrainer,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return svmTrainer.fit(datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /**
+     * Updates already learned model or fit new model if there is no model for current class label.
+     *
+     * @param multiClsMdl Learning multi-class model.
+     * @param clsLb Current class label.
+     * @param svmTrainer Prepared SVM trainer.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     */
+    private <K, V> SVMLinearBinaryClassificationModel updateModel(SVMLinearMultiClassClassificationModel multiClsMdl,
+        Double clsLb, SVMLinearBinaryClassificationTrainer svmTrainer, DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+
+        return multiClsMdl.getModelForClass(clsLb)
+            .map(learnedModel -> svmTrainer.update(learnedModel, datasetBuilder, featureExtractor, lbExtractor))
+            .orElseGet(() -> svmTrainer.fit(datasetBuilder, featureExtractor, lbExtractor));
+    }
+
     /** Iterates among dataset and collects class labels. */
-    private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Double> lbExtractor) {
+    private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabelPartitionDataOnHeap> partDataBuilder = new LabelPartitionDataBuilderOnHeap<>(lbExtractor);
@@ -107,7 +164,8 @@ public class SVMLinearMultiClassClassificationTrainer
 
                 final double[] lbs = data.getY();
 
-                for (double lb : lbs) locClsLabels.add(lb);
+                for (double lb : lbs)
+                    locClsLabels.add(lb);
 
                 return locClsLabels;
             }, (a, b) -> {
@@ -118,8 +176,8 @@ public class SVMLinearMultiClassClassificationTrainer
                 return Stream.of(a, b).flatMap(Collection::stream).collect(Collectors.toSet());
             });
 
-            res.addAll(clsLabels);
-
+            if (clsLabels != null)
+                res.addAll(clsLabels);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -132,27 +190,27 @@ public class SVMLinearMultiClassClassificationTrainer
      * @param lambda The regularization parameter. Should be more than 0.0.
      * @return Trainer with new lambda parameter value.
      */
-    public SVMLinearMultiClassClassificationTrainer  withLambda(double lambda) {
+    public SVMLinearMultiClassClassificationTrainer withLambda(double lambda) {
         assert lambda > 0.0;
         this.lambda = lambda;
         return this;
     }
 
     /**
-     * Gets the regularization lambda.
+     * Get the regularization lambda.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
-    public double lambda() {
+    public double getLambda() {
         return lambda;
     }
 
     /**
      * Gets the amount of outer iterations of SCDA algorithm.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
-    public int amountOfIterations() {
+    public int getAmountOfIterations() {
         return amountOfIterations;
     }
 
@@ -162,7 +220,7 @@ public class SVMLinearMultiClassClassificationTrainer
      * @param amountOfIterations The parameter value.
      * @return Trainer with new amountOfIterations parameter value.
      */
-    public SVMLinearMultiClassClassificationTrainer  withAmountOfIterations(int amountOfIterations) {
+    public SVMLinearMultiClassClassificationTrainer withAmountOfIterations(int amountOfIterations) {
         this.amountOfIterations = amountOfIterations;
         return this;
     }
@@ -170,9 +228,9 @@ public class SVMLinearMultiClassClassificationTrainer
     /**
      * Gets the amount of local iterations of SCDA algorithm.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
-    public int amountOfLocIterations() {
+    public int getAmountOfLocIterations() {
         return amountOfLocIterations;
     }
 
@@ -182,7 +240,7 @@ public class SVMLinearMultiClassClassificationTrainer
      * @param amountOfLocIterations The parameter value.
      * @return Trainer with new amountOfLocIterations parameter value.
      */
-    public SVMLinearMultiClassClassificationTrainer  withAmountOfLocIterations(int amountOfLocIterations) {
+    public SVMLinearMultiClassClassificationTrainer withAmountOfLocIterations(int amountOfLocIterations) {
         this.amountOfLocIterations = amountOfLocIterations;
         return this;
     }
@@ -190,7 +248,7 @@ public class SVMLinearMultiClassClassificationTrainer
     /**
      * Gets the seed number.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
     public long getSeed() {
         return seed;

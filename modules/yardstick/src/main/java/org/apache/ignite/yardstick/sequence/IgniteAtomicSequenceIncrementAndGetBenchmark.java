@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.yardstick.sequence;
+
+import java.util.Map;
+import org.apache.ignite.IgniteAtomicSequence;
+
 /**
- * <!-- Package description. -->
- * Snaptree and related classes.
+ * {@link IgniteAtomicSequence#incrementAndGet()} benchmark.
  */
-package org.apache.ignite.internal.util.snaptree;
+public class IgniteAtomicSequenceIncrementAndGetBenchmark extends IgniteAtomicSequenceAbstractBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        seq.incrementAndGet();
+
+        return true;
+    }
+}
