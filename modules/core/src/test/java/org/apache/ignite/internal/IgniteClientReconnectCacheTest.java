@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -103,6 +102,9 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
     /** */
     private static final int CACHE_PUTS_CNT = 3;
+
+    /** */
+    public static final String NEAR_CACHE_NAME = "nearCache";
 
     /** */
     private UUID nodeId;
@@ -177,7 +179,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setName("nearCache");
+        ccfg.setName(NEAR_CACHE_NAME);
 
         final IgniteCache<Object, Object> nearCache = client.getOrCreateCache(ccfg, new NearCacheConfiguration<>())
             .withAllowAtomicOpsInTx();
@@ -270,7 +272,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, true, false);
 
-        checkCacheDiscoveryData(srv, client, "nearCache", true, true, true);
+        checkCacheDiscoveryData(srv, client, NEAR_CACHE_NAME, true, true, true);
 
         checkCacheDiscoveryData(srv, client, STATIC_CACHE, true, true, false);
 
@@ -308,7 +310,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         checkCacheDiscoveryData(srv2, client, DEFAULT_CACHE_NAME, true, true, false);
 
-        checkCacheDiscoveryData(srv2, client, "nearCache", true, true, true);
+        checkCacheDiscoveryData(srv2, client, NEAR_CACHE_NAME, true, true, true);
 
         checkCacheDiscoveryData(srv2, client, STATIC_CACHE, true, true, false);
 
@@ -316,9 +318,15 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertEquals(20, staticCache.get(20));
 
-        srv.cache(nearCache.getName()).put(20, 22);
-
+        assertEquals(NEAR_CACHE_NAME, nearCache.getName());
+        client.cache(NEAR_CACHE_NAME).put(20, 22);
         assertEquals(22, nearCache.localPeek(20));
+
+        srv2.cache(NEAR_CACHE_NAME).put(20, 23);
+        assertEquals(23, nearCache.localPeek(20));
+
+        srv.cache(nearCache.getName()).put(20, 24);
+        assertEquals(24, nearCache.localPeek(20));
     }
 
     /**
