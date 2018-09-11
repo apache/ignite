@@ -1461,7 +1461,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids()) {
             final MvccProcessorImpl crd = mvccProcessor(node);
 
-            if (crd == null)
+            if (!crd.mvccEnabled())
                 continue;
 
             crd.stopVacuumWorkers(); // to prevent new futures creation.
@@ -1573,10 +1573,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             if (!node.configuration().isClientMode()) {
                 MvccProcessorImpl crd = mvccProcessor(node);
 
-                if (crd == null || GridTestUtils.getFieldValue(crd, "txLog") == null)
+                if (!crd.mvccEnabled())
                     continue;
-
-                assert crd.mvccEnabled();
 
                 Throwable vacuumError = crd.vacuumError();
 

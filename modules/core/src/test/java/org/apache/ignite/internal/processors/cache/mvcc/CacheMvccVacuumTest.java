@@ -174,7 +174,6 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
     private void ensureNoVacuum(Ignite node) {
         MvccProcessorImpl crd = mvccProcessor(node);
 
-        if (crd != null)
-            assertNull(GridTestUtils.<List<GridWorker>>getFieldValue(crd, "vacuumWorkers"));
+        assertNull(GridTestUtils.<List<GridWorker>>getFieldValue(crd, "vacuumWorkers"));
     }
 }
