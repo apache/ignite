@@ -143,7 +143,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 120;
+        return 158;
     }
 
     /** {@inheritDoc} */

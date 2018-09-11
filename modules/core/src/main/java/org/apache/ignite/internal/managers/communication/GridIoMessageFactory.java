@@ -891,11 +891,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 120:
-                msg = new GridDhtPartitionSupplyMessageV2();
-
-                break;
-
+            // [120..123] - DR
             case 124:
                 msg = new GridMessageCollection<>();
 
@@ -1063,6 +1059,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 157:
                 msg = new PartitionUpdateCounters();
+
+                break;
+
+            case 158:
+                msg = new GridDhtPartitionSupplyMessageV2();
 
                 break;
 
