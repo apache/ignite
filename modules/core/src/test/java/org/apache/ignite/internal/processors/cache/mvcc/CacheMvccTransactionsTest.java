@@ -2278,6 +2278,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testRebalanceSimple() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
+
         Ignite srv0 = startGrid(0);
 
         IgniteCache<Integer, Integer> cache =  (IgniteCache)srv0.createCache(
@@ -3136,6 +3138,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testSize() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
+
         Ignite node = startGrid(0);
 
         IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 1));
