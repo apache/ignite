@@ -172,7 +172,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             int i1 = rnd.nextInt(strings.length);
             int i2 = rnd.nextInt(strings.length);
 
-            assertEquals(Integer.compare(i1,i2), putAndCompare(strings[i1], strings[i2], inlineSize));
+            assertEquals(Integer.compare(i1, i2), putAndCompare(strings[i1], strings[i2], inlineSize));
         }
     }
 
@@ -188,12 +188,12 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
-                new UnsafeMemoryProvider(log),
-                null,
-                PAGE_SIZE,
-                plcCfg,
-                new DataRegionMetricsImpl(plcCfg),
-                false);
+            new UnsafeMemoryProvider(log),
+            null,
+            PAGE_SIZE,
+            plcCfg,
+            new DataRegionMetricsImpl(plcCfg),
+            false);
 
         pageMem.start();
 
@@ -212,7 +212,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
             ih.put(pageAddr, off, v1 == null ? ValueNull.INSTANCE : ValueString.get(v1), maxSize);
 
-            return ih.compare(pageAddr, off, maxSize,  v2 == null ? ValueNull.INSTANCE : ValueString.get(v2), ALWAYS_FAILS_COMPARATOR);
+            return ih.compare(pageAddr, off, maxSize, v2 == null ? ValueNull.INSTANCE : ValueString.get(v2), ALWAYS_FAILS_COMPARATOR);
         }
         finally {
             if (page != 0L)
@@ -298,7 +298,6 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
         assertTrue(getResJavaObjects(ha, null, null));
     }
 
-
     /** */
     public void testStringTruncate() throws Exception {
         DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
@@ -378,24 +377,24 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             InlineIndexHelper ih = new InlineIndexHelper(Value.BYTES, 1, 0,
                 CompareMode.getInstance(null, 0));
 
-            int maxSize = 3+3;
+            int maxSize = 3 + 3;
             int savedBytesCnt = ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), maxSize);
 
-            assertTrue(savedBytesCnt>0);
+            assertTrue(savedBytesCnt > 0);
 
-            assertTrue(savedBytesCnt<=maxSize);
+            assertTrue(savedBytesCnt <= maxSize);
 
             assertFalse(ih.isValueFull(pageAddr, off));
 
-            maxSize = 3+5;
+            maxSize = 3 + 5;
 
             assertTrue(Arrays.equals(new byte[] {1, 2, 3}, ih.get(pageAddr, off, maxSize).getBytes()));
 
             savedBytesCnt = ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), maxSize);
 
-            assertTrue(savedBytesCnt>0);
+            assertTrue(savedBytesCnt > 0);
 
-            assertTrue(savedBytesCnt<=maxSize);
+            assertTrue(savedBytesCnt <= maxSize);
 
             assertTrue(ih.isValueFull(pageAddr, off));
 
@@ -436,24 +435,24 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             InlineIndexHelper ih = new InlineIndexHelper(Value.JAVA_OBJECT, 1, 0,
                 CompareMode.getInstance(null, 0));
 
-            int maxSize = 3+3;
+            int maxSize = 3 + 3;
             int savedBytesCnt = ih.put(pageAddr, off, ValueJavaObject.getNoCopy(null, new byte[] {1, 2, 3, 4, 5}, null), maxSize);
 
-            assertTrue(savedBytesCnt>0);
+            assertTrue(savedBytesCnt > 0);
 
-            assertTrue(savedBytesCnt<=maxSize);
+            assertTrue(savedBytesCnt <= maxSize);
 
             assertFalse(ih.isValueFull(pageAddr, off));
 
-            maxSize = 3+5;
+            maxSize = 3 + 5;
 
             assertTrue(Arrays.equals(new byte[] {1, 2, 3}, ih.get(pageAddr, off, maxSize).getBytes()));
 
             savedBytesCnt = ih.put(pageAddr, off, ValueJavaObject.getNoCopy(null, new byte[] {1, 2, 3, 4, 5}, null), maxSize);
 
-            assertTrue(savedBytesCnt>0);
+            assertTrue(savedBytesCnt > 0);
 
-            assertTrue(savedBytesCnt<=maxSize);
+            assertTrue(savedBytesCnt <= maxSize);
 
             assertTrue(ih.isValueFull(pageAddr, off));
 
@@ -630,31 +629,31 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             char ch;
 
             if (rnd.nextInt(100) > 3)
-                ch = (char) (rnd.nextInt(95) + 32); // regular symbols
+                ch = (char)(rnd.nextInt(95) + 32); // regular symbols
             else
-                ch = (char) (rnd.nextInt(65407) + 127); // others symbols
+                ch = (char)(rnd.nextInt(65407) + 127); // others symbols
 
-            if(ch >= 56320 && ch <= 57343) {
-                if(cnt == 0)
+            if (ch >= 56320 && ch <= 57343) {
+                if (cnt == 0)
                     cnt++;
                 else {
                     // low surrogate, insert high surrogate after putting it in
                     buffer[cnt] = ch;
                     cnt--;
-                    buffer[cnt] = (char) (55296 + rnd.nextInt(128));
+                    buffer[cnt] = (char)(55296 + rnd.nextInt(128));
                 }
             }
-            else if(ch >= 55296 && ch <= 56191) {
-                if(cnt == 0)
+            else if (ch >= 55296 && ch <= 56191) {
+                if (cnt == 0)
                     cnt++;
                 else {
                     // high surrogate, insert low surrogate before putting it in
-                    buffer[cnt] = (char) (56320 + rnd.nextInt(128));
+                    buffer[cnt] = (char)(56320 + rnd.nextInt(128));
                     cnt--;
                     buffer[cnt] = ch;
                 }
             }
-            else if(ch >= 56192 && ch <= 56319)
+            else if (ch >= 56192 && ch <= 56319)
                 // private high surrogate, no effing clue, so skip it
                 cnt++;
             else
