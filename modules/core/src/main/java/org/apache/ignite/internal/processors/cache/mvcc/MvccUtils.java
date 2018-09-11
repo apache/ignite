@@ -758,12 +758,7 @@ public class MvccUtils {
         if (tx == null)
             tracker = new MvccQueryTrackerImpl(cctx);
         else if ((tracker = tx.mvccQueryTracker()) == null)
-            tracker = new StaticMvccQueryTracker(cctx, requestSnapshot(cctx, tx)) {
-                @Override public void onDone() {
-                    // TODO IGNITE-8841
-                    checkActive(tx);
-                }
-            };
+            tracker = new StaticMvccQueryTracker(cctx, requestSnapshot(cctx, tx));
 
         if (tracker.snapshot() == null)
             // TODO IGNITE-7388
@@ -780,7 +775,9 @@ public class MvccUtils {
      */
     public static MvccSnapshot requestSnapshot(GridCacheContext cctx,
         GridNearTxLocal tx) throws IgniteCheckedException {
-        MvccSnapshot snapshot; tx = checkActive(tx);
+        MvccSnapshot snapshot;
+
+        tx = checkActive(tx);
 
         if ((snapshot = tx.mvccSnapshot()) == null) {
             MvccProcessor prc = cctx.shared().coordinators();

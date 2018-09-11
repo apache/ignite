@@ -60,7 +60,7 @@ public class RandomForestTest {
         .withFeaturesCountSelectionStrgy(x -> 4)
         .withMaxDepth(maxDepth)
         .withMinImpurityDelta(minImpDelta)
-        .withSubsampleSize(0.1);
+        .withSubSampleSize(0.1);
 
     /** */
     @Test
