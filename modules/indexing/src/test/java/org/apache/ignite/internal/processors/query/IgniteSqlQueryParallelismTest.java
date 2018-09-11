@@ -35,7 +35,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests for correct distributed partitioned queries.
+ * A test against setting different values of query parallelism in cache configurations of the same cache.
  */
 @SuppressWarnings("unchecked")
 public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
