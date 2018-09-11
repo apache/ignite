@@ -179,7 +179,8 @@ namespace Apache.Ignite.Examples.Datagrid
                 "from Person, Company " +
                 "where Person.CompanyId = Company.Id and Company.Name = ?", orgName)
             {
-                EnableDistributedJoins = true
+                EnableDistributedJoins = true,
+                Timeout = new TimeSpan(0, 1, 0)
             });
 
             Console.WriteLine();
