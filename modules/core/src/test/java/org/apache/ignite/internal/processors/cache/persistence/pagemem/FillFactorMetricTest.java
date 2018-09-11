@@ -98,7 +98,7 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
     public void testEmptyCachePagesFillFactor() throws Exception {
         startGrids(1);
 
-        // cache is created in wrong region so MY_DATA_REGION will have "empty" metrics
+        // Cache is created in default region so MY_DATA_REGION will have "empty" metrics.
         CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>().setName(MY_CACHE);
         grid(0).getOrCreateCache(cacheCfg);
 
