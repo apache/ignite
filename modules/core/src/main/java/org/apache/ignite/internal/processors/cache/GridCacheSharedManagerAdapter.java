@@ -48,7 +48,7 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     /** {@inheritDoc} */
     @Override public final void start(GridCacheSharedContext<K, V> cctx) throws IgniteCheckedException {
         if (!starting.compareAndSet(false, true))
-            assert false : "Method start is called more than once for manager: " + this;
+            assert false : "Method start is called more than once for manager : " + this;
 
         assert cctx != null;
 
