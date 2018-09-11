@@ -37,12 +37,11 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * Tests DML allow/disallow operation inside transaction.
  */
 public class DmlInsideTransactionTest extends GridCommonAbstractTest {
-
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";
 
-    /** Set of DML queries for tests */
-    private final static String[] DML_QUERIES = {
+    /** Set of DML queries for tests. */
+    private static final String[] DML_QUERIES = {
         "MERGE INTO TEST.Person(id, name, orgId) VALUES(111,'NAME',111)",
         "INSERT INTO TEST.Person(id, name, orgId) VALUES(222,'NAME',111)",
         "UPDATE TEST.Person SET name='new name'",
@@ -139,8 +138,8 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Run DML query as SqlFieldsQuery and check that DML is not allowed or not inside transaction. Also checked that using DML will not
-     * lead to rollback
+     * Run DML query as SqlFieldsQuery and check that DML is not allowed or not inside transaction. Also checked that
+     * using DML will not lead to rollback.
      *
      * @param dmlQry Dml query which should be executed in transaction.
      * @param isLocal Is local query.
@@ -153,7 +152,7 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
 
     /**
      * Run DML query and check that DML is not allowed or not inside transaction. Also checked that using DML will not
-     * lead to rollback
+     * lead to rollback.
      *
      * @param query Query with DML operation to be run.
      * @param isAllowed true in case DML should work inside transaction, false otherwise.
@@ -183,7 +182,7 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
             tx.commit();
         }
 
-        assertTrue(cache.query(new SqlFieldsQuery("SELECT * FROM TEST.Person")).getAll().size() > 0);
+        assertTrue(!cache.query(new SqlFieldsQuery("SELECT * FROM TEST.Person")).getAll().isEmpty());
     }
 
     /**
@@ -230,7 +229,7 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
          * Constructor.
          *
          * @param name Name.
-         * @param orgId Orgainzation ID.
+         * @param orgId Organization ID.
          */
         public Person(String name, long orgId) {
             this.name = name;
@@ -238,7 +237,9 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Adds system property on initialization and removes it when closed. */
+    /**
+     * Adds system property on initialization and removes it when closed.
+     */
     private static final class SystemProperty implements AutoCloseable {
         /** Name. */
         private final String name;
