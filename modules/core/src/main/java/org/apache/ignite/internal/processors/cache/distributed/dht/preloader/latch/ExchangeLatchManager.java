@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.la
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
@@ -87,6 +87,9 @@ public class ExchangeLatchManager {
     /** Client latches collection. */
     @GridToStringInclude
     private final ConcurrentMap<CompletableLatchUid, ClientLatch> clientLatches = new ConcurrentHashMap<>();
+
+    /** Map (topology version -> joined node on this version). This map is needed to exclude joined nodes from latch participants. */
+    private final ConcurrentMap<AffinityTopologyVersion, ClusterNode> joinedNodes = new ConcurrentHashMap<>();
 
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
@@ -247,10 +250,17 @@ public class ExchangeLatchManager {
     private Collection<ClusterNode> getLatchParticipants(AffinityTopologyVersion topVer) {
         Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
-        return aliveNodes
+        List<ClusterNode> participantNodes = aliveNodes
                 .stream()
                 .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
                 .collect(Collectors.toList());
+
+        ClusterNode joinedNode = joinedNodes.get(topVer);
+
+        if (joinedNode != null)
+            participantNodes.remove(joinedNode);
+
+        return participantNodes;
     }
 
     /**
