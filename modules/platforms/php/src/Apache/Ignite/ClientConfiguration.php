@@ -41,6 +41,8 @@ class ClientConfiguration
     private $receiveChunkSize;
     private $tcpNoDelay;
 
+    const ENDPOINT_PORT_DEFAULT = 10800;
+
     /**
      * Creates an instance of Ignite client configuration
      * with the provided mandatory settings and default optional settings.
@@ -55,7 +57,7 @@ class ClientConfiguration
     public function __construct(string ...$endpoints)
     {
         ArgumentChecker::notEmpty($endpoints, 'endpoints');
-        $this->endpoints = $endpoints;
+        $this->endpoints = array_map(array($this, 'parseEndpoint'), $endpoints);
         $this->userName = null;
         $this->password = null;
         $this->tlsOptions = null;
@@ -250,5 +252,43 @@ class ClientConfiguration
     public function getTcpNoDelay(): bool
     {
         return $this->tcpNoDelay;
+    }
+
+    private function parseEndpoint(string $endpoint): string
+    {
+        $endpoint = trim($endpoint);
+        $host = $endpoint;
+        $port = null;
+        $parsed = explode(':', $endpoint);
+        if (count($parsed) > 2) {
+            // IPv6 address
+            $index = strrpos($endpoint, ']:');
+            if ($index !== false) {
+                $host = substr($endpoint, 0, $index + 1);
+                $port = substr($endpoint, $index + 2);
+            }
+            $first = $host[0];
+            $last = $host[strlen($host) - 1];
+            if ($first === '[' || $last === ']') {
+                if (!($first === '[' && $last === ']')) {
+                    ArgumentChecker::illegalArgument('Incorrect endpoint format: ' . $endpoint);
+                }
+            } else {
+                $host = sprintf('[%s]', $host);
+            }
+        }
+        else {
+            // IPv4 address
+            $host = $parsed[0];
+            if (count($parsed) === 2) {
+                $port = $parsed[1];
+            }
+        }
+        if ($port === null) {
+            $port = self::ENDPOINT_PORT_DEFAULT;
+        } elseif (!ctype_digit($port)) {
+            ArgumentChecker::illegalArgument('Incorrect endpoint format: ' . $endpoint);
+        }
+        return sprintf('%s:%s', $host, $port);
     }
 }

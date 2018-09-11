@@ -30,6 +30,11 @@ use Apache\Ignite\Internal\Binary\ClientOperation;
 use Apache\Ignite\Internal\Cache;
 
 /**
+ * @mainpage Public API specification
+ * See <Classes> for the details. Start from the Client class.
+ */
+
+/**
  * Class representing Ignite client.
  */
 class Client
