@@ -857,7 +857,7 @@ public class GridReduceQueryExecutor {
                 if (send(nodes, req, spec, false)) {
                     awaitAllReplies(r, nodes, cancel);
 
-                    retry = analyseCurrentRun(r);
+                    retry = analyseCurrentRun(r, sfuFut);
                 }
                 else // Send failed.
                     retry = true;
@@ -988,25 +988,30 @@ public class GridReduceQueryExecutor {
     /**
      * Analyse reduce query run to decide if retry is required
      * @param r reduce query run to be analysed
+     * @param sfuFut
      * @return true if retry is required, false otherwise
      * @throws IgniteCheckedException in case of reduce query run contains exception record
      */
-    private boolean analyseCurrentRun(ReduceQueryRun r) throws IgniteCheckedException {
-        if (r.hasError()) {
-            if (r.cacheException() != null) {
-                CacheException err = r.cacheException();
+    private boolean analyseCurrentRun(ReduceQueryRun r, GridNearTxSelectForUpdateFuture sfuFut)
+        throws IgniteCheckedException {
+        if (r.hasErrorOrRetry()) {
+            if (r.exception() != null) {
+                CacheException err = r.exception();
 
                 if (err.getCause() instanceof IgniteClientDisconnectedException)
                     throw err;
 
                 Exception cause = wasCancelled(err) || X.hasCause(err, QueryCancelledException.class)
-                    ? new QueryCancelledException(r.rootCause())
+                    ? new QueryCancelledException(r.retryCause())
                     : err;
 
                 throw new CacheException("Failed to run map query remotely." + cause.getMessage(), cause);
             } else {
+                // On-the-fly topology change must not be possible in FOR UPDATE case.
+                assert sfuFut == null;
+
                 // If remote node asks us to retry then we have outdated full partition map.
-                h2.awaitForReadyTopologyVersion(r.topVersion());
+                h2.awaitForReadyTopologyVersion(r.retryTopologyVersion());
 
                 return true;
             }
