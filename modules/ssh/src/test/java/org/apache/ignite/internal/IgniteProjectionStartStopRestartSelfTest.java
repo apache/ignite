@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,20 +63,24 @@ import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.UNA
  * Tests for {@code startNodes(..)}, {@code stopNodes(..)}
  * and {@code restartNodes(..)} methods.
  * <p>
- * {@code tests.properties} file must specify username ({@code ssh.username} property)
- * and one (and only one) of password ({@code ssh.password} property) or
- * private key path ({@code ssh.key} property).
+ * Environment (obtained via {@link System#getenv(String)}) or, alternatively, {@code tests.properties} file must
+ * specify either username and password or private key path in the environment properties (@code test.ssh.username},
+ * {@code test.ssh.password}, {@code ssh.key} or in test file entries {@code ssh.username} {@code ssh.password},
+ * {@code ssh.key}respectively.</p>
+ * <p>
+ * Configured target host must run ssh server and accept ssh connections at configured port from user with specified
+ * credentials.</p>
  */
 @SuppressWarnings("ConstantConditions")
 public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final String SSH_UNAME = System.getenv("test.ssh.username");
+    private static final String SSH_UNAME = getProperty("test.ssh.username", "ssh.username");
 
     /** */
-    private static final String SSH_PWD = System.getenv("test.ssh.password");
+    private static final String SSH_PWD = getProperty("test.ssh.password", "ssh.password");
 
     /** */
-    private static final String SSH_KEY = System.getenv("ssh.key");
+    private static final String SSH_KEY = getProperty("ssh.key", "ssh.key");
 
     /** */
     private static final String CUSTOM_SCRIPT_WIN = "modules/core/src/test/bin/start-nodes-custom.bat";
@@ -905,5 +910,15 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         int timeout,
         int maxConn) {
         return cluster.startNodesAsync(hosts, null, restart, timeout, maxConn).get(WAIT_TIMEOUT);
+    }
+
+    /** */
+    private static String getProperty(String envName, String gridTestName) {
+        String candidate = System.getenv(envName);
+
+        if (candidate != null)
+            return candidate;
+
+        return GridTestProperties.getProperty(gridTestName);
     }
 }
