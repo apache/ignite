@@ -300,7 +300,7 @@ public class GridReduceQueryExecutor {
      * @param node Node.
      * @param msg Message.
      */
-    private void onNextPage(final ClusterNode node, GridQueryNextPageResponse msg) {
+    private void onNextPage(final ClusterNode node, final GridQueryNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
         final int seg = msg.segmentId();
@@ -623,7 +623,7 @@ public class GridReduceQueryExecutor {
             if (qry.forUpdate()) {
                 // Indexing should have started TX at this point for FOR UPDATE query.
                 assert mvccEnabled && curTx != null;
-
+              
                 try {
                     TxTopologyVersionFuture topFut = new TxTopologyVersionFuture(curTx, mvccTracker.context());
 

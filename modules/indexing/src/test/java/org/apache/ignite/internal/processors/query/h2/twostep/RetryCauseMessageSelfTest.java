@@ -56,14 +56,19 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 2;
+
     /** */
     private static final String ORG_SQL = "select * from Organization";
+
     /** */
     private static final String ORG = "org";
+
     /** */
     private IgniteCache<String, Person> personCache;
+
     /** */
     private IgniteCache<String, Organization> orgCache;
+
     /** */
     private IgniteH2Indexing h2Idx;
 
@@ -245,7 +250,8 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
             personCache.query(qry).getAll();
         }
         catch (CacheException e) {
-            assertTrue(e.getMessage().contains("Failed to reserve partitions for query (partition of PARTITIONED cache cannot be reserved) ["));
+            assertTrue(e.getMessage().contains("Failed to reserve partitions for query (partition of PARTITIONED " +
+                "cache is not found or not in OWNING state) "));
 
             return;
         }
