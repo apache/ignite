@@ -55,7 +55,7 @@ export default class PageConfigure {
                 .take(1)
                 .do(() => this.ConfigureState.dispatchAction({type: 'LOAD_COMPLETE_CONFIGURATION', clusterID, isDemo}))
                 .ignoreElements(),
-            this.ConfigureState.actions$.let(ofType('LOAD_COMPLETE_CONFIGURATION_ERR')).take(1).map((e) => {throw e;}),
+            this.ConfigureState.actions$.let(ofType('LOAD_COMPLETE_CONFIGURATION_ERR')).take(1).pluck('error').map((e) => Promise.reject(e)),
             this.ConfigureState.state$
                 .let(this.ConfigSelectors.selectCompleteClusterConfiguration({clusterID, isDemo}))
                 .filter((c) => c.__isComplete)
