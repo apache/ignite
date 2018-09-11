@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -62,7 +61,7 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTes
         cfg.setCacheConfiguration(
             new CacheConfiguration(CACHE_NAME)
                 .setAffinity(new RendezvousAffinityFunction().setPartitions(8))
-                .setQueryEntities(Arrays.asList(new QueryEntity(Key.class, Value.class))));
+                .setQueryEntities(Collections.singletonList(new QueryEntity(Key.class, Value.class))));
 
         return cfg;
     }
@@ -112,7 +111,7 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTes
             String str = (String)row.get(1);
 
             for (int i = 0; i < grp; ++i) {
-                String s = "" + (char)('A' + i + (grp == 1 ? 0 : (grp - 1) * grp / 2));
+                String s = "" + (char)('A' + i + (grp - 1) * grp / 2);
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
                     "[str=" + str + ", val=" + s , str.contains(s));
@@ -135,7 +134,7 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTes
             String str = (String)row.get(1);
 
             for (int i = 0; i < cnt; ++i) {
-                String s = "" + (char)('A' + i + (cnt == 1 ? 0 : (cnt - 1) * cnt / 2));
+                String s = "" + (char)('A' + i + (cnt - 1) * cnt / 2);
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
                     "[str=" + str + ", val=" + s , str.contains(s));

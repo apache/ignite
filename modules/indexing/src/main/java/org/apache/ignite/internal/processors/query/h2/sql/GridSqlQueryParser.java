@@ -2185,17 +2185,17 @@ public class GridSqlQueryParser {
      */
     private void parseGroupConcatOrder(GridSqlAggregateFunction f, ArrayList<SelectOrderBy> orders,
         boolean calcTypes) {
-        GridSqlElement[] groupConcatOrderExpression = new GridSqlElement[orders.size()];
-        boolean[] groupConcatOrderDesc = new boolean[orders.size()];
+        GridSqlElement[] grpConcatOrderExpression = new GridSqlElement[orders.size()];
+        boolean[] grpConcatOrderDesc = new boolean[orders.size()];
 
-        for(int i =0; i < orders.size(); ++i) {
+        for (int i = 0; i < orders.size(); ++i) {
             SelectOrderBy o = orders.get(i);
 
-            groupConcatOrderExpression[i] = parseExpression(o.expression, calcTypes);
-            groupConcatOrderDesc[i] = o.descending;
+            grpConcatOrderExpression[i] = parseExpression(o.expression, calcTypes);
+            grpConcatOrderDesc[i] = o.descending;
         }
 
-        f.setGroupConcatOrder(groupConcatOrderExpression, groupConcatOrderDesc);
+        f.setGroupConcatOrder(grpConcatOrderExpression, grpConcatOrderDesc);
     }
 
     /**
