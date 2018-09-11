@@ -1589,7 +1589,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         fut.markInitialized();
 
         // Wait vacuum finished.
-        fut.get();
+        fut.get(getTestTimeout());
     }
 
     /**
