@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -1987,5 +1988,41 @@ public final class GridTestUtils {
     public static void mergeExchangeWaitVersion(Ignite node, long topVer, List mergedEvts) {
         ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
             new AffinityTopologyVersion(topVer, 0), mergedEvts);
+    }
+
+    /** Adds system property on initialization and removes it when closed. */
+    public static final class SystemProperty implements AutoCloseable {
+        /** Name of property. */
+        private final String name;
+
+        /** Original value of property. */
+        private final String originalValue;
+
+        /**
+         * Constructor.
+         *
+         * @param name Name.
+         * @param val Value.
+         */
+        public SystemProperty(String name, String val) {
+            this.name = name;
+
+            Properties props = System.getProperties();
+
+            originalValue = (String)props.put(name, val);
+
+            System.setProperties(props);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            Properties props = System.getProperties();
+            if (originalValue != null)
+                props.put(name, originalValue);
+            else
+                props.remove(name);
+
+            System.setProperties(props);
+        }
     }
 }

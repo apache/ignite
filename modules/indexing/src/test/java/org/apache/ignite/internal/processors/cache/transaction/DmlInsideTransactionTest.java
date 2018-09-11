@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transaction;
 
-import java.util.Properties;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
@@ -28,6 +27,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils.SystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
@@ -139,8 +139,8 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Run DML query as SqlFieldsQuery and check that DML is not allowed or not inside transaction. Also checked that using DML will not
-     * lead to rollback
+     * Run DML query as SqlFieldsQuery and check that DML is not allowed or not inside transaction. Also checked that
+     * using DML will not lead to rollback
      *
      * @param dmlQry Dml query which should be executed in transaction.
      * @param isLocal Is local query.
@@ -235,35 +235,6 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
         public Person(String name, long orgId) {
             this.name = name;
             this.orgId = orgId;
-        }
-    }
-
-    /** Adds system property on initialization and removes it when closed. */
-    private static final class SystemProperty implements AutoCloseable {
-        /** Name. */
-        private final String name;
-
-        /**
-         * Constructor.
-         *
-         * @param name Name.
-         * @param val Value.
-         */
-        SystemProperty(String name, String val) {
-            this.name = name;
-
-            Properties props = System.getProperties();
-            props.put(name, val);
-
-            System.setProperties(props);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            Properties props = System.getProperties();
-            props.remove(name);
-
-            System.setProperties(props);
         }
     }
 }
