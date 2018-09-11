@@ -302,7 +302,7 @@ public class InlineIndexHelper {
                 return ValueBytes.get(readBytes(pageAddr, off));
 
             case Value.JAVA_OBJECT:
-                return ValueJavaObject.get(readBytes(pageAddr, off));
+                return ValueJavaObject.getNoCopy(null, readBytes(pageAddr, off), null);
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
