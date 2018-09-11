@@ -3211,30 +3211,28 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (e instanceof IgniteCheckedException) {
                 IgniteCheckedException ice = (IgniteCheckedException)e;
 
-                IgniteDataIntegrityViolationException cause = ice.getCause(IgniteDataIntegrityViolationException.class);
+                if (ice.hasCause(IgniteDataIntegrityViolationException.class))
+                    if (end == null) {
+                        long nextWalSegmentIdx = curWalSegmIdx + 1;
 
-                if (cause != null && cause.getMessage() != null)
-                    if (cause.getMessage().contains("writtenCrc: 0")) {
-                        if (end == null) {
-                            long nextWalSegmentIdx = curWalSegmIdx + 1;
+                        // Check that we should not look this segment up in archive directory.
+                        // Basically the same check as in "advanceSegment" method.
+                        if (archiver != null && !canReadArchiveOrReserveWork(nextWalSegmentIdx)) {
+                            long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
 
-                            if (archiver != null && !canReadArchiveOrReserveWork(nextWalSegmentIdx)) {
-                                long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
+                            FileDescriptor fd = new FileDescriptor(
+                                new File(walWorkDir, FileDescriptor.fileName(workIdx)),
+                                nextWalSegmentIdx
+                            );
 
-                                FileDescriptor fd = new FileDescriptor(
-                                    new File(walWorkDir, FileDescriptor.fileName(workIdx)),
-                                    nextWalSegmentIdx
-                                );
+                            try {
+                                ReadFileHandle nextHandle = initReadHandle(fd, null);
 
-                                try {
-                                    ReadFileHandle nextHandle = initReadHandle(fd, null);
-
-                                    if (nextHandle == null)
-                                        return null;
-                                }
-                                catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
-                                    e.addSuppressed(initReadHandleException);
-                                }
+                                if (nextHandle == null)
+                                    return null;
+                            }
+                            catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
+                                e.addSuppressed(initReadHandleException);
                             }
                         }
                     }

@@ -74,7 +74,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
@@ -85,10 +84,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -3285,6 +3286,44 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             curRec = null;
 
             return nextHandle;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteCheckedException handleRecordException(
+            @NotNull Exception e,
+            @Nullable FileWALPointer ptr) {
+
+            if (e instanceof IgniteCheckedException) {
+                IgniteCheckedException ice = (IgniteCheckedException)e;
+
+                if (ice.hasCause(IgniteDataIntegrityViolationException.class))
+                    if (end == null) {
+                        long nextWalSegmentIdx = curWalSegmIdx + 1;
+
+                        // Check that we should not look this segment up in archive directory.
+                        // Basically the same check as in "advanceSegment" method.
+                        if (archiver != null && !canReadArchiveOrReserveWork(nextWalSegmentIdx)) {
+                            long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
+
+                            FileDescriptor fd = new FileDescriptor(
+                                new File(walWorkDir, FileDescriptor.fileName(workIdx)),
+                                nextWalSegmentIdx
+                            );
+
+                            try {
+                                ReadFileHandle nextHandle = initReadHandle(fd, null);
+
+                                if (nextHandle == null)
+                                    return null;
+                            }
+                            catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
+                                e.addSuppressed(initReadHandleException);
+                            }
+                        }
+                    }
+            }
+
+            return super.handleRecordException(e, ptr);
         }
 
         /**

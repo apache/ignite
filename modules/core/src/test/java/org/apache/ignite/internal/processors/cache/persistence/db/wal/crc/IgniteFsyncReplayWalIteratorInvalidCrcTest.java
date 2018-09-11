@@ -17,32 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.configuration.WALMode;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public class IgniteReplayWalIteratorZeroCrcTest extends IgniteAbstractWalIteratorZeroCrcTest {
+public class IgniteFsyncReplayWalIteratorInvalidCrcTest extends IgniteReplayWalIteratorInvalidCrcTest {
 
     /** {@inheritDoc} */
-    @Override protected WALIterator getWalIterator(
-        IgniteWriteAheadLogManager walMgr,
-        boolean ignoreArchiveDir
-    ) throws IgniteCheckedException {
-        if (ignoreArchiveDir)
-            throw new UnsupportedOperationException(
-                "Cannot invoke \"getWalIterator\" with true \"ignoreArchiveDir\" parameter value."
-            );
-        else
-            return walMgr.replay(null);
-    }
-
-    /**
-     * {@inheritDoc}
-     * Case is not relevant to the replay iterator.
-     */
-    @Override public void testNotTailCorruptedPtr() {
+    @NotNull @Override protected WALMode getWalMode() {
+        return WALMode.FSYNC;
     }
 }

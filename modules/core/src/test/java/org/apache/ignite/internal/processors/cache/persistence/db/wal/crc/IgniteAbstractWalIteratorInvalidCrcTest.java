@@ -50,6 +50,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -58,7 +59,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 /**
  *
  */
-public abstract class IgniteAbstractWalIteratorZeroCrcTest extends GridCommonAbstractTest {
+public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommonAbstractTest {
+    /** IP finder. */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Size of inserting dummy value. */
     private static final int VALUE_SIZE = 4 * 1024;
 
@@ -78,12 +82,12 @@ public abstract class IgniteAbstractWalIteratorZeroCrcTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true)));
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalSegmentSize(WAL_SEGMENT_SIZE)
-                .setWalMode(WALMode.LOG_ONLY)
+                .setWalMode(getWalMode())
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
@@ -121,7 +125,14 @@ public abstract class IgniteAbstractWalIteratorZeroCrcTest extends GridCommonAbs
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopGrid();
+
+        cleanPersistenceDir();
     }
+
+    /**
+     * @return WAL mode that will be used in {@link IgniteConfiguration}.
+     */
+    @NotNull protected abstract WALMode getWalMode();
 
     /**
      * Instantiate WAL iterator according to the iterator type of specific implementation.
@@ -130,13 +141,13 @@ public abstract class IgniteAbstractWalIteratorZeroCrcTest extends GridCommonAbs
      * @return WAL iterator instance.
      * @throws IgniteCheckedException If iterator creation failed for some reason.
      */
-    protected abstract WALIterator getWalIterator(
+    @NotNull protected abstract WALIterator getWalIterator(
         IgniteWriteAheadLogManager walMgr,
         boolean ignoreArchiveDir
     ) throws IgniteCheckedException;
 
     /**
-     * Test that iteration fails if one of archive segments contains record with zero CRC.
+     * Test that iteration fails if one of archive segments contains record with invalid CRC.
      * @throws Exception If failed.
      */
     public void testArchiveCorruptedPtr() throws Exception {
@@ -144,7 +155,7 @@ public abstract class IgniteAbstractWalIteratorZeroCrcTest extends GridCommonAbs
     }
 
     /**
-     * Test that iteration fails if one of segments in working directory contains record with zero CRC
+     * Test that iteration fails if one of segments in working directory contains record with invalid CRC
      * and it is not the tail segment.
      * @throws Exception If failed.
      */
@@ -154,7 +165,7 @@ public abstract class IgniteAbstractWalIteratorZeroCrcTest extends GridCommonAbs
 
 
     /**
-     * Test that iteration does not fail if tail segment in working directory contains record with zero CRC.
+     * Test that iteration does not fail if tail segment in working directory contains record with invalid CRC.
      * @throws Exception If failed.
      */
     public void testTailCorruptedPtr() throws Exception {
@@ -247,14 +258,14 @@ public abstract class IgniteAbstractWalIteratorZeroCrcTest extends GridCommonAbs
             }
         }
 
-        // should have a previous record to return and another value before that to ensure that "lastReadPtr"
-        // in "doTest" will always exist
+        // Should have a previous record to return and another value before that to ensure that "lastReadPtr"
+        // in "doTest" will always exist.
         int idxCorrupted = 2 + random.nextInt(pointers.size() - 2);
 
         FileWALPointer pointer = pointers.get(idxCorrupted);
         int crc32Off = pointer.fileOffset() + pointer.length() - CRC_SIZE;
 
-        ByteBuffer zeroCrc32 = allocate(CRC_SIZE); // has 0 value by default
+        ByteBuffer zeroCrc32 = allocate(CRC_SIZE); // Has 0 value by default.
 
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
         try (FileIO io = ioFactory.create(desc.file(), WRITE)) {

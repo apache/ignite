@@ -312,14 +312,10 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (e instanceof IgniteCheckedException) {
             IgniteCheckedException ice = (IgniteCheckedException)e;
 
-            IgniteDataIntegrityViolationException cause = ice.getCause(IgniteDataIntegrityViolationException.class);
-
-            if (cause != null && cause.getMessage() != null)
-                if (cause.getMessage().contains("writtenCrc: 0")) {
-                    // "curIdx" is an index in walFileDescriptors list.
-                    if (curIdx == walFileDescriptors.size() - 1)
-                        return null;
-                }
+            if (ice.hasCause(IgniteDataIntegrityViolationException.class))
+                // "curIdx" is an index in walFileDescriptors list.
+                if (curIdx == walFileDescriptors.size() - 1)
+                    return null;
         }
 
         return super.handleRecordException(e, ptr);

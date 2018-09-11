@@ -17,28 +17,39 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
-import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public class IgniteStandaloneWalIteratorZeroCrcTest extends IgniteAbstractWalIteratorZeroCrcTest {
+public class IgniteReplayWalIteratorInvalidCrcTest extends IgniteAbstractWalIteratorInvalidCrcTest {
+
+    /** {@inheritDoc} */
+    @NotNull @Override protected WALMode getWalMode() {
+        return WALMode.LOG_ONLY;
+    }
 
     /** {@inheritDoc} */
     @Override protected WALIterator getWalIterator(
         IgniteWriteAheadLogManager walMgr,
         boolean ignoreArchiveDir
     ) throws IgniteCheckedException {
-        File walArchiveDir = U.field(walMgr, "walArchiveDir");
-        File walDir = U.field(walMgr, "walWorkDir");
+        if (ignoreArchiveDir)
+            throw new UnsupportedOperationException(
+                "Cannot invoke \"getWalIterator\" with true \"ignoreArchiveDir\" parameter value."
+            );
+        else
+            return walMgr.replay(null);
+    }
 
-        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
-
-        return ignoreArchiveDir ? iterFactory.iterator(walDir) : iterFactory.iterator(walArchiveDir, walDir);
+    /**
+     * {@inheritDoc}
+     * Case is not relevant to the replay iterator.
+     */
+    @Override public void testNotTailCorruptedPtr() {
     }
 }
