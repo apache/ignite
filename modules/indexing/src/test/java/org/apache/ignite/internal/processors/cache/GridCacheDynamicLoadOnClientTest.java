@@ -211,15 +211,6 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test from client node to get cache elements through cache query API with flag local
-     */
-    public void testClientSqlFieldsLocalQuery() {
-        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME).setLocal(true);
-
-        Assert.assertEquals(0, clientNode.cache(PERSON_CACHE).query(qry).getAll().size());
-    }
-
-    /**
      * Test from client node to get cache elements through cache API.
      */
     public void testClientSqlQuery() {

@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 public class GridCacheContextInfo<K, V> {
 
     /** Full cache context. Can be {@code null} in case lazy cache configuration. */
-    @Nullable private GridCacheContext gridCacheContext;
+    @Nullable private volatile GridCacheContext gridCacheContext;
 
     /** Kernal context. */
     private final GridKernalContext ctx;

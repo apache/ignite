@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -102,7 +103,19 @@ public final class UpdatePlanBuilder {
 
         GridSqlStatement stmt = parser.parse(prepared);
 
-        boolean mvccEnabled = isMvccEnabledAndStartLazyCaches(parser);
+        List<GridH2Table> tbls = extractTablesParticipateAtQuery(parser);
+
+        GridCacheContext cctx = null;
+        boolean mvccEnabled = false;
+
+        for (GridH2Table h2tbl : tbls) {
+            H2CacheUtils.checkAndInitLazyCache(h2tbl);
+
+            if (cctx == null)
+                mvccEnabled = (cctx = h2tbl.cache()).mvccEnabled();
+            else if (h2tbl.cache().mvccEnabled() != mvccEnabled)
+                throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
+        }
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt, loc, idx, mvccEnabled, conn, fieldsQry);
@@ -114,16 +127,18 @@ public final class UpdatePlanBuilder {
     }
 
     /**
-     * Check caches for given parser. Start lazy caches.
+     * Extract all tables participate at query
      *
-     * @param {@code true} in case MVCC enabled for
+     * @param parser Parser related to the query.
+     * @return List of tables participate at query.
+     * @throws IgniteSQLException in case query contains virtual tables.
      */
-    private static boolean isMvccEnabledAndStartLazyCaches(GridSqlQueryParser parser) {
-        boolean mvccEnabled = false;
-        GridCacheContext cctx = null;
+    private static List<GridH2Table> extractTablesParticipateAtQuery(GridSqlQueryParser parser) throws IgniteSQLException {
+        Collection<?> parserObjects = parser.objectsMap().values();
+        List<GridH2Table> tbls = new ArrayList<>(parserObjects.size());
 
         // check all involved caches
-        for (Object o : parser.objectsMap().values()) {
+        for (Object o : parserObjects) {
             if (o instanceof GridSqlMerge)
                 o = ((GridSqlMerge)o).into();
             else if (o instanceof GridSqlInsert)
@@ -138,20 +153,17 @@ public final class UpdatePlanBuilder {
 
             if (o instanceof GridSqlTable) {
                 GridH2Table h2tbl = ((GridSqlTable)o).dataTable();
+
                 if (h2tbl == null) { // Check for virtual tables.
                     throw new IgniteSQLException("Operation not supported for table '" +
                         ((GridSqlTable)o).tableName() + "'", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
 
-                H2CacheUtils.checkAndInitLazyCache(h2tbl);
-
-                if (cctx == null)
-                    mvccEnabled = (cctx = h2tbl.cache()).mvccEnabled();
-                else if (h2tbl.cache().mvccEnabled() != mvccEnabled)
-                    throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
+                tbls.add(h2tbl);
             }
         }
-        return mvccEnabled;
+
+        return tbls;
     }
 
     /**
