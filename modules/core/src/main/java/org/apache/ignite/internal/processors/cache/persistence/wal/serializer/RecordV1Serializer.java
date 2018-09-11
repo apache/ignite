@@ -37,8 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteWalRecordZeroCrcException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
@@ -366,40 +364,14 @@ public class RecordV1Serializer implements RecordSerializer {
     ) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        try {
-            WALRecord res;
+        try (FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
+            startPos = in0.position();
 
-            FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc);
+            WALRecord res = reader.readWithHeaders(in, expPtr);
 
-            try {
-                startPos = in0.position();
+            assert res != null;
 
-                res = reader.readWithHeaders(in, expPtr);
-
-                assert res != null;
-
-                res.size((int)(in0.position() - startPos + CRC_SIZE)); // Account for CRC which will be read afterwards.
-            }
-            catch (Exception e) {
-                try {
-                    in.close();
-                }
-                catch (Exception e2) {
-                    e.addSuppressed(e2);
-                }
-
-                throw e;
-            }
-
-            try {
-                in.close();
-            }
-            catch (IgniteDataIntegrityViolationException e) {
-                if (e.getMessage().contains("writtenCrc: 0"))
-                    throw new IgniteWalRecordZeroCrcException(e, res);
-
-                throw e;
-            }
+            res.size((int)(in0.position() - startPos + CRC_SIZE)); // Account for CRC which will be read afterwards.
 
             return res;
         }

@@ -95,7 +95,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteWalRecordZeroCrcException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -3211,30 +3211,33 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (e instanceof IgniteCheckedException) {
                 IgniteCheckedException ice = (IgniteCheckedException)e;
 
-                if (ice.hasCause(IgniteWalRecordZeroCrcException.class)) {
-                    if (end == null) {
-                        long nextWalSegmentIdx = curWalSegmIdx + 1;
+                IgniteDataIntegrityViolationException cause = ice.getCause(IgniteDataIntegrityViolationException.class);
 
-                        if (archiver != null && !canReadArchiveOrReserveWork(nextWalSegmentIdx)) {
-                            long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
+                if (cause != null && cause.getMessage() != null)
+                    if (cause.getMessage().contains("writtenCrc: 0")) {
+                        if (end == null) {
+                            long nextWalSegmentIdx = curWalSegmIdx + 1;
 
-                            FileDescriptor fd = new FileDescriptor(
-                                new File(walWorkDir, FileDescriptor.fileName(workIdx)),
-                                nextWalSegmentIdx
-                            );
+                            if (archiver != null && !canReadArchiveOrReserveWork(nextWalSegmentIdx)) {
+                                long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
 
-                            try {
-                                ReadFileHandle nextHandle = initReadHandle(fd, null);
+                                FileDescriptor fd = new FileDescriptor(
+                                    new File(walWorkDir, FileDescriptor.fileName(workIdx)),
+                                    nextWalSegmentIdx
+                                );
 
-                                if (nextHandle == null)
-                                    return null;
-                            }
-                            catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
-                                e.addSuppressed(initReadHandleException);
+                                try {
+                                    ReadFileHandle nextHandle = initReadHandle(fd, null);
+
+                                    if (nextHandle == null)
+                                        return null;
+                                }
+                                catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
+                                    e.addSuppressed(initReadHandleException);
+                                }
                             }
                         }
                     }
-                }
             }
 
             return super.handleRecordException(e, ptr);

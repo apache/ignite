@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteWalRecordZeroCrcException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
@@ -312,10 +312,14 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (e instanceof IgniteCheckedException) {
             IgniteCheckedException ice = (IgniteCheckedException)e;
 
-            if (ice.hasCause(IgniteWalRecordZeroCrcException.class))
-                // curIdx is an index in walFileDescriptors list
-                if (curIdx == walFileDescriptors.size() - 1)
-                    return null;
+            IgniteDataIntegrityViolationException cause = ice.getCause(IgniteDataIntegrityViolationException.class);
+
+            if (cause != null && cause.getMessage() != null)
+                if (cause.getMessage().contains("writtenCrc: 0")) {
+                    // "curIdx" is an index in walFileDescriptors list.
+                    if (curIdx == walFileDescriptors.size() - 1)
+                        return null;
+                }
         }
 
         return super.handleRecordException(e, ptr);

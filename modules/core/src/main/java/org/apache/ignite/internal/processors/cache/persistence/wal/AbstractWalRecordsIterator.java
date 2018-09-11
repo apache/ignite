@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteWalRecordZeroCrcException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.P2;
@@ -236,10 +235,13 @@ public abstract class AbstractWalRecordsIterator
 
         FileWALPointer actualFilePtr = new FileWALPointer(hnd.idx(), (int)hnd.in().position(), 0);
 
-        WALRecord rec = null;
-
         try {
-            rec = hnd.ser().readRecord(hnd.in(), actualFilePtr);
+            WALRecord rec = hnd.ser().readRecord(hnd.in(), actualFilePtr);
+
+            actualFilePtr.length(rec.size());
+
+            // cast using diamond operator here can break compile for 7
+            return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
             if (e instanceof WalSegmentTailReachedException) {
@@ -253,19 +255,10 @@ public abstract class AbstractWalRecordsIterator
 
                 if (e0 != null)
                     throw e0;
-
-                if (e instanceof IgniteWalRecordZeroCrcException)
-                    rec = ((IgniteWalRecordZeroCrcException)e).getWalRecord();
             }
-        }
 
-        if (rec == null)
             return null;
-
-        actualFilePtr.length(rec.size());
-
-        // cast using diamond operator here can break compile for 7
-        return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
+        }
     }
 
     /**
