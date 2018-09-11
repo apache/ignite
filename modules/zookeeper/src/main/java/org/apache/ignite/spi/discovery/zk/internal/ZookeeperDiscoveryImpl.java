@@ -1334,7 +1334,7 @@ public class ZookeeperDiscoveryImpl {
             }
         }
 
-        //This situation may appear while reconnection and this callback can be skipped
+        // This situation may appear while reconnection and this callback can be skipped.
         if(!aliveClients.containsKey(locInternalOrder))
             return;
 
