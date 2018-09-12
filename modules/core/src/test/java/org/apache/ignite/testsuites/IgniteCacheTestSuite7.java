@@ -64,7 +64,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("IgniteCache With Persistence Test Suite");
 
-        suite.addTestSuite(CheckpointBufferDeadlockTest.class);
+        /*suite.addTestSuite(CheckpointBufferDeadlockTest.class);
 
         suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
         suite.addTestSuite(AuthenticationProcessorSelfTest.class);
@@ -86,9 +86,10 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
         suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
 
-        suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
+        suite.addTestSuite(CacheGroupMetricsMBeanTest.class);*/
+        for (int i = 0; i < 100; i++)
         suite.addTestSuite(CacheMetricsManageTest.class);
-        suite.addTestSuite(PageEvictionMultinodeMixedRegionsTest.class);
+        /*suite.addTestSuite(PageEvictionMultinodeMixedRegionsTest.class);
 
         suite.addTestSuite(IgniteDynamicCacheStartFailWithPersistenceTest.class);
 
@@ -97,7 +98,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(CacheRentingStateRepairTest.class);
 
         suite.addTestSuite(TransactionIntegrityWithPrimaryIndexCorruptionTest.class);
-        suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
+        suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);*/
 
         return suite;
     }

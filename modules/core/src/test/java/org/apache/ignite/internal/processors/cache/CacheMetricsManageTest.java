@@ -79,21 +79,21 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testJmxNoPdsStatisticsEnable() throws Exception {
+    public void t1estJmxNoPdsStatisticsEnable() throws Exception {
         testJmxStatisticsEnable(false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testJmxPdsStatisticsEnable() throws Exception {
+    public void t1estJmxPdsStatisticsEnable() throws Exception {
         testJmxStatisticsEnable(true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testCacheManagerStatisticsEnable() throws Exception {
+    public void t1estCacheManagerStatisticsEnable() throws Exception {
         final CacheManager mgr1 = Caching.getCachingProvider().getCacheManager();
         final CacheManager mgr2 = Caching.getCachingProvider().getCacheManager();
 
@@ -132,7 +132,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testPublicApiStatisticsEnable() throws Exception {
+    public void t1estPublicApiStatisticsEnable() throws Exception {
         Ignite ig1 = startGrid(1);
         startGrid(2);
 
