@@ -156,7 +156,7 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
      */
     private class TestFailureHandler extends AbstractFailureHandler {
         /** {@inheritDoc} */
-        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
             hndLatch.countDown();
 
             return false;

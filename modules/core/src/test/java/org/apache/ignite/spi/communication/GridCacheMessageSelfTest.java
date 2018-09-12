@@ -840,7 +840,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
      */
     private static class TestFailureHandler extends AbstractFailureHandler {
         /** {@inheritDoc} */
-        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
             failureLatch.countDown();
 
             return false;

@@ -51,7 +51,7 @@ public class TestFailureHandler extends AbstractFailureHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+    @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
         this.failureCtx = failureCtx;
 
         if (latch != null)

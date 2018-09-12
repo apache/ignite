@@ -42,9 +42,4 @@ public interface FailureHandler {
      * Sets failure types to ignore.
      */
     public void setIgnoredFailureTypes(Set<FailureType> failureTypes);
-
-    /**
-     * Gets immutable set of failure types to ignore.
-     */
-    public Set<FailureType> getIgnoredFailureTypes();
 }

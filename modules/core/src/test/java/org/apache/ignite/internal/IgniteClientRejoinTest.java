@@ -218,7 +218,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
                     IgniteConfiguration cfg = getConfiguration(nodeName)
                         .setFailureHandler(new AbstractFailureHandler() {
-                            @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+                            @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
                                 // This should _not_ fire when exchange-worker terminates before reconnect.
                                 Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
 

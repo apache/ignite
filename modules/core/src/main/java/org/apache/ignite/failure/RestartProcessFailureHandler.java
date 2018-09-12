@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class RestartProcessFailureHandler extends AbstractFailureHandler {
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+    @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
         new Thread(
             new Runnable() {
                 @Override public void run() {
@@ -42,10 +42,5 @@ public class RestartProcessFailureHandler extends AbstractFailureHandler {
         ).start();
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(RestartProcessFailureHandler.class, this);
     }
 }

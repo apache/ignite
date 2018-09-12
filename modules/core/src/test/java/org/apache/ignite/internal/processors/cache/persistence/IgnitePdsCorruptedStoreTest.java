@@ -440,7 +440,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
             failure = true;
             error = failureCtx.error();
 

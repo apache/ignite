@@ -41,7 +41,7 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setFailureHandler(new AbstractFailureHandler() {
-            @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+            @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
                 hndLatch.countDown();
 
                 return false;

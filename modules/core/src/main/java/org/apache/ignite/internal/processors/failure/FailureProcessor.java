@@ -121,10 +121,7 @@ public class FailureProcessor extends GridProcessorAdapter {
             return;
 
         U.error(ignite.log(), "Critical system error detected. Will be handled accordingly to configured handler " +
-            "[hnd=" + hnd.getClass() + ", failureCtx=" + failureCtx + ']', failureCtx.error());
-
-        if (hnd.getIgnoredFailureTypes().contains(failureCtx.type()))
-            return;
+            "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
 
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;

@@ -25,12 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class NoOpFailureHandler extends AbstractFailureHandler {
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+    @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(NoOpFailureHandler.class, this);
     }
 }

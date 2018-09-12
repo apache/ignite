@@ -19,12 +19,12 @@ package org.apache.ignite.failure;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 
 /**
  * Abstract superclass for {@link FailureHandler} implementations.
- * Maintains a set of ignorable failure types.
+ * Maintains a set of ignored failure types.
  */
 public abstract class AbstractFailureHandler implements FailureHandler {
     /** */
@@ -35,8 +35,29 @@ public abstract class AbstractFailureHandler implements FailureHandler {
         ignoredFailureTypes = Collections.unmodifiableSet(failureTypes);
     }
 
-    /** {@inheritDoc} */
-    @Override public Set<FailureType> getIgnoredFailureTypes() {
+    /**
+     * Returns unmodifiable set of ignored failure types.
+     */
+    protected Set<FailureType> getIgnoredFailureTypes() {
         return ignoredFailureTypes;
+    }
+
+    /** {@inheritDoc} */
+    public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        return !ignoredFailureTypes.contains(failureCtx.type()) && handle(ignite, failureCtx);
+    }
+
+    /**
+     * Actual failure handling. This method is not called for ignored failure types.
+     *
+     * @see #setIgnoredFailureTypes(Set).
+     * @see FailureHandler#onFailure(Ignite, FailureContext).
+     */
+    public abstract boolean handle(Ignite ignite, FailureContext failureCtx);
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return getClass().getName() + " [ignoredFailureTypes=(" +
+            ignoredFailureTypes.stream().map(Enum::toString).collect(Collectors.joining(",")) + ")]";
     }
 }

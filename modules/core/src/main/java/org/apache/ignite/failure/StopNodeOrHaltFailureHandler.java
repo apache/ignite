@@ -19,11 +19,11 @@ package org.apache.ignite.failure;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -55,7 +55,7 @@ public class StopNodeOrHaltFailureHandler extends AbstractFailureHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+    @Override public boolean handle(Ignite ignite, FailureContext failureCtx) {
         IgniteLogger log = ignite.log();
 
         if (tryStop) {
@@ -121,6 +121,7 @@ public class StopNodeOrHaltFailureHandler extends AbstractFailureHandler {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(StopNodeOrHaltFailureHandler.class, this);
+        return getClass().getName() + " [tryStop=" + tryStop + ", timeout=" + timeout + ", ignoredFailureTypes=(" +
+            getIgnoredFailureTypes().stream().map(Enum::toString).collect(Collectors.joining(",")) + ")]";
     }
 }
