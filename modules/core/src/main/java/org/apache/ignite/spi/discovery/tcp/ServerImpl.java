@@ -5616,26 +5616,40 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
                 TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
 
-                if (node != null) {
+                if (node == null)
+                    return;
+
+                DiscoverySpiCustomMessage msgObj;
+
+                try {
+                    msgObj = msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+                }
+                catch (Throwable t) {
+                    throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
+                }
+
+                IgniteInternalFuture fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                    msg.topologyVersion(),
+                    node,
+                    snapshot,
+                    hist,
+                    msgObj);
+
+                if (waitForNotification || msgObj.isMutable()) {
                     try {
-                        DiscoverySpiCustomMessage msgObj = msg.message(spi.marshaller(),
-                            U.resolveClassLoader(spi.ignite().configuration()));
-
-                        IgniteInternalFuture fut = lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                            msg.topologyVersion(),
-                            node,
-                            snapshot,
-                            hist,
-                            msgObj);
-
-                        if (waitForNotification || (msgObj != null && msgObj.isMutable()))
-                            fut.get();
-
-                        if (msgObj.isMutable())
-                            msg.message(msgObj, U.marshal(spi.marshaller(), msgObj));
+                        fut.get();
                     }
-                    catch (Throwable e) {
-                        U.error(log, "Failed to unmarshal discovery custom message.", e);
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException("Failed to wait for discovery listener notification", e);
+                    }
+                }
+
+                if (msgObj.isMutable()) {
+                    try {
+                        msg.message(msgObj, U.marshal(spi.marshaller(), msgObj));
+                    }
+                    catch (Throwable t) {
+                        throw new IgniteException("Failed to marshal mutable discovery message: " + msgObj, t);
                     }
                 }
             }
