@@ -654,6 +654,12 @@ public interface IgniteInternalTx {
     public MvccSnapshot mvccSnapshot();
 
     /**
+     * @return Transaction counters.
+     * @param createIfAbsent {@code True} if non-null instance is needed.
+     */
+    @Nullable public TxCounters txCounters(boolean createIfAbsent);
+
+    /**
      * Creates savepoint.
      *
      * @param name Savepoint ID.

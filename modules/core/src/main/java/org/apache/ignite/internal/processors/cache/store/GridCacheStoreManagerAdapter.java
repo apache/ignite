@@ -1340,7 +1340,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             if (!S.INCLUDE_SENSITIVE)
                 return "[size=" + size() + "]";
 

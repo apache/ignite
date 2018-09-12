@@ -353,7 +353,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                     }
 
                     GridTestUtils.runMultiThreaded(new CI1Exc<Integer>() {
-                        public void applyx(Integer idx) throws Exception {
+                        @Override public void applyx(Integer idx) throws Exception {
                             Transaction tx = clientTxs.get(idx);
 
                             assertEquals(SUSPENDED, tx.state());

@@ -276,14 +276,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Whether this cache is IGFS data cache. */
     private boolean igfsDataCache;
 
-    /** Whether this cache is Mongo data cache. */
-    @SuppressWarnings("UnusedDeclaration")
-    private boolean mongoDataCache;
-
-    /** Whether this cache is Mongo meta cache. */
-    @SuppressWarnings("UnusedDeclaration")
-    private boolean mongoMetaCache;
-
     /** Current IGFS data cache size. */
     private LongAdder igfsDataCacheSize;
 
@@ -798,7 +790,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return it;
             }
 
-            public String toString() {
+            @Override public String toString() {
                 return "CacheLocalEntries []";
             }
         };
@@ -4582,16 +4574,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return igfsDataCacheSize.longValue();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        return mongoDataCache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        return mongoMetaCache;
-    }
-
     /**
      * Callback invoked when data is added to IGFS cache.
      *
@@ -5495,14 +5477,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /**
          * @return Whether to clear server cache.
          */
-        protected boolean clearServerCache() {
+        @Override protected boolean clearServerCache() {
             return false;
         }
 
         /**
          * @return Whether to clear near cache.
          */
-        protected boolean clearNearCache() {
+        @Override protected boolean clearNearCache() {
             return true;
         }
     }
@@ -5548,7 +5530,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(PartitionSizeLongJob.class, this);
         }
     }
@@ -5588,7 +5570,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(SizeJob.class, this);
         }
     }
@@ -5628,7 +5610,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(SizeLongJob.class, this);
         }
     }
@@ -5685,7 +5667,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(LoadCacheJob.class, this);
         }
     }
@@ -5728,7 +5710,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(LoadCacheJobV2.class, this);
         }
     }
