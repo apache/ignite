@@ -1060,7 +1060,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
             assertTrue(dumpWithConflicts.contains("found 2 conflict partitions: [counterConflicts=1, hashConflicts=1]"));
-        }else
+        }
+        else
             fail("Should be found dump with conflicts");
     }
 
@@ -1252,6 +1253,84 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(testOut.toString().contains("prim=32"));
         assertTrue(testOut.toString().contains("mapped=32"));
         assertTrue(testOut.toString().contains("affCls=RendezvousAffinityFunction"));
+    }
+
+    /**
+     *
+     */
+    public void testCacheDistribution() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        injectTestSystemOut();
+
+        // Run distribution for all node and all cache
+        assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null"));
+
+        String log = testOut.toString();
+
+        // Result include info by cache "default"
+        assertTrue(log.contains("[next group: id=1544803905, name=default]"));
+
+        // Result include info by cache "ignite-sys-cache"
+        assertTrue(log.contains("[next group: id=-2100569601, name=ignite-sys-cache]"));
+
+        // Run distribution for all node and all cache and include additional user attribute
+        assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "--user-attributes", "ZONE,CELL,DC"));
+
+        log = testOut.toString();
+
+        // Find last row
+        int lastRowIndex = log.lastIndexOf('\n');
+
+        assertTrue(lastRowIndex > 0);
+
+        // Last row is empty, but the previous line contains data
+        lastRowIndex = log.lastIndexOf('\n', lastRowIndex-1);
+
+        assertTrue(lastRowIndex > 0);
+
+        String lastRow = log.substring(lastRowIndex);
+
+        // Since 3 user attributes have been added, the total number of columns in response should be 12 (separators 11)
+        assertEquals(11, lastRow.split(",").length);
+    }
+
+    /**
+     *
+     */
+    public void testCacheResetLostPartitions() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "reset_lost_partitions", "ignite-sys-cache,default"));
+
+        final String log = testOut.toString();
+
+        assertTrue(log.contains("Reset LOST-partitions performed successfully. Cache group (name = 'ignite-sys-cache'"));
+
+        assertTrue(log.contains("Reset LOST-partitions performed successfully. Cache group (name = 'default'"));
+
     }
 
     /**
