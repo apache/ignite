@@ -646,7 +646,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /**
      * @param t Error.
      */
-    public void onError(Throwable t) {
+    @Override public void onError(Throwable t) {
         synchronized (this) {
             if (err != null)
                 return;
