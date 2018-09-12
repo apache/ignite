@@ -142,3 +142,35 @@ queries-notebook {
         overflow-y: auto;
     }
 }
+
+.popover.settings.refresh-rate {
+    width: 244px;
+
+    [ignite-icon] {
+        height: 12px;
+    }
+
+    .popover-title {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .actions {
+        width: 100%;
+        text-align: right;
+
+        button {
+            margin-top: 20px;
+            margin-right: 0;
+        }
+    }
+
+    .ignite-form-field {
+        display: flex;
+        padding: 5px;
+
+        input {
+            margin-right: 10px;
+        }
+    }
+}

@@ -22,7 +22,7 @@ include /app/helpers/jade/mixins
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Memory
     panel-description
-        | Cache memory settings. 
+        | Cache memory settings.
         a.link-success(
             href="https://apacheignite.readme.io/v1.9/docs/off-heap-memory"
             target="_blank"
@@ -37,17 +37,31 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             //- Since ignite 2.0
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
-                +checkbox('Onheap cache enabled', model + '.onheapCacheEnabled', '"OnheapCacheEnabled"', 'Checks if the on-heap cache is enabled for the off-heap based page memory')
-
+                +form-field__checkbox({
+                    label: 'Onheap cache enabled',
+                    model: model + '.onheapCacheEnabled',
+                    name: '"OnheapCacheEnabled"',
+                    tip: 'Checks if the on-heap cache is enabled for the off-heap based page memory'
+                })
             //- Since ignite 2.0 deprecated in ignite 2.3
             .pc-form-grid-col-60(ng-if='$ctrl.available(["2.0.0", "2.3.0"])')
-                +text('Memory policy name:', model + '.memoryPolicyName', '"MemoryPolicyName"', 'false', 'default',
-                    'Name of memory policy configuration for this cache')
+                +form-field__text({
+                    label: 'Memory policy name:',
+                    model: `${model}.memoryPolicyName`,
+                    name: '"MemoryPolicyName"',
+                    placeholder: 'default',
+                    tip: 'Name of memory policy configuration for this cache'
+                })
 
             //- Since ignite 2.3
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.3.0")')
-                +text('Data region name:', model + '.dataRegionName', '"DataRegionName"', 'false', 'default',
-                    'Name of data region configuration for this cache')
+                +form-field__text({
+                    label: 'Data region name:',
+                    model: `${model}.dataRegionName`,
+                    name: '"DataRegionName"',
+                    placeholder: 'default',
+                    tip: 'Name of data region configuration for this cache'
+                })
 
             //- Removed in ignite 2.0
             .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
@@ -127,32 +141,53 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     size-type='bytes'
                     required='true'
                 )
-            +evictionPolicy(`${model}.evictionPolicy`, '"evictionPolicy"', 'true',
-                `$ctrl.Caches.evictionPolicy.required(${model})`,
-                'Optional cache eviction policy<br/>\
-                Must be set for entries to be evicted from on-heap to off-heap or swap\
-                <ul>\
-                    <li>Least Recently Used(LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\
-                    <li>First In First Out (FIFO) - Eviction policy based on FIFO algorithm and supports batch eviction</li>\
-                    <li>SORTED - Eviction policy which will select the minimum cache entry for eviction</li>\
-                </ul>')
+
+            +form-field__eviction-policy({
+                model: `${model}.evictionPolicy`,
+                name: '"evictionPolicy"',
+                enabled: 'true',
+                required: `$ctrl.Caches.evictionPolicy.required(${model})`,
+                tip: 'Optional cache eviction policy<br/>\
+                      Must be set for entries to be evicted from on-heap to off-heap or swap\
+                      <ul>\
+                          <li>Least Recently Used(LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\
+                          <li>First In First Out (FIFO) - Eviction policy based on FIFO algorithm and supports batch eviction</li>\
+                          <li>SORTED - Eviction policy which will select the minimum cache entry for eviction</li>\
+                      </ul>'
+            })
 
             //- Since ignite 2.0
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
-                +java-class('Eviction filter:', model + '.evictionFilter', '"EvictionFilter"', 'true', 'false', 'Eviction filter to specify which entries should not be evicted')
+                +form-field__java-class({
+                    label: 'Eviction filter:',
+                    model: `${model}.evictionFilter`,
+                    name: '"EvictionFilter"',
+                    tip: 'Eviction filter to specify which entries should not be evicted'
+                })
 
             //- Removed in ignite 2.0
             .pc-form-grid-col-60(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
-                +number('Start size:', `${model}.startSize`, '"startSize"', 'true', '1500000', '0',
-                    'In terms of size and capacity, Ignite internal cache map acts exactly like a normal Java HashMap: it has some initial capacity\
-                    (which is pretty small by default), which doubles as data arrives. The process of internal cache map resizing is CPU-intensive\
-                    and time-consuming, and if you load a huge dataset into cache (which is a normal use case), the map will have to resize a lot of times.\
-                    To avoid that, you can specify the initial cache map capacity, comparable to the expected size of your dataset.\
-                    This will save a lot of CPU resources during the load time, because the map would not have to resize.\
-                    For example, if you expect to load 10 million entries into cache, you can set this property to 10 000 000.\
-                    This will save you from cache internal map resizes.')
+                +form-field__number({
+                    label: 'Start size:',
+                    model: `${model}.startSize`,
+                    name: '"startSize"',
+                    placeholder: '1500000',
+                    min: '0',
+                    tip: 'In terms of size and capacity, Ignite internal cache map acts exactly like a normal Java HashMap: it has some initial capacity\
+                          (which is pretty small by default), which doubles as data arrives. The process of internal cache map resizing is CPU-intensive\
+                          and time-consuming, and if you load a huge dataset into cache (which is a normal use case), the map will have to resize a lot of times.\
+                          To avoid that, you can specify the initial cache map capacity, comparable to the expected size of your dataset.\
+                          This will save a lot of CPU resources during the load time, because the map would not have to resize.\
+                          For example, if you expect to load 10 million entries into cache, you can set this property to 10 000 000.\
+                          This will save you from cache internal map resizes.'
+                })
             .pc-form-grid-col-60(ng-if-end)
-                +checkbox('Swap enabled', `${model}.swapEnabled`, '"swapEnabled"', 'Flag indicating whether swap storage is enabled or not for this cache')
+                +form-field__checkbox({
+                    label: 'Swap enabled',
+                    model: `${model}.swapEnabled`,
+                    name: '"swapEnabled"',
+                    tip: 'Flag indicating whether swap storage is enabled or not for this cache'
+                })
 
         .pca-form-column-6
             +preview-xml-java(model, 'cacheMemory')

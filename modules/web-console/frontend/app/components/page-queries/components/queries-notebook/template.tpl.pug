@@ -320,7 +320,13 @@ mixin paragraph-scan
     .panel-collapse(role='tabpanel' bs-collapse-target)
         .col-sm-12.sql-controls
             .col-sm-3
-                +dropdown-required('Cache:', 'paragraph.cacheName', '"cache"', 'true', 'false', 'Choose cache', 'caches')
+                +form-field__dropdown({
+                    label: 'Cache:',
+                    model: 'paragraph.cacheName',
+                    name: '"cache"',
+                    placeholder: 'Choose cache',
+                    options: 'caches'
+                })
             .col-sm-3
                 +form-field__sensitive({
                     label: 'Filter:',

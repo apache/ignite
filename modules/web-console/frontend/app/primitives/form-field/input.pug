@@ -24,6 +24,6 @@ mixin form-field__input({ name, model, disabled, required, placeholder, namePost
 
         ng-required=required && `${required}`
         ng-disabled=disabled && `${disabled}`
-        expose-ignite-form-field-control='$input'
-
+        ng-ref='$input'
+        ng-ref-read='ngModel'
     )&attributes(attributes ? attributes.attributes ? attributes.attributes : attributes : {})
