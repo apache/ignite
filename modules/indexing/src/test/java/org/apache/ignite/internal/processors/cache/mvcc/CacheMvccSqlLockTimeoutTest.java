@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -30,6 +32,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -189,7 +192,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
         }
 
         /** */
-        void ensureTimeIsOut(String sql, int key, TimeoutMode timeoutMode, TxStartMode txStartMode) {
+        void ensureTimeIsOut(String sql, int key, TimeoutMode timeoutMode, TxStartMode txStartMode) throws Exception {
             assert txStartMode == TxStartMode.EXPLICIT || timeoutMode != TimeoutMode.TX;
 
             IgniteCache<?, ?> cache = ignite.cache(cacheName);
@@ -214,13 +217,13 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                             if (tx2 != null)
                                 tx2.commit();
                         }
-                    }).join();
+                    }).get();
 
                     fail("Timeout exception should be thrown");
                 }
-                catch (Exception e) {
-                    if (!X.hasCause(e, IgniteTxTimeoutCheckedException.class)
-                        && !e.getMessage().contains(IgniteTxTimeoutCheckedException.class.getSimpleName())) {
+                catch (ExecutionException ee) {
+                    Throwable e = ee.getCause();
+                    if (!(e instanceof CacheException && e.getCause() instanceof TransactionTimeoutException)) {
                         e.printStackTrace();
 
                         fail("Timeout exception should be thrown");

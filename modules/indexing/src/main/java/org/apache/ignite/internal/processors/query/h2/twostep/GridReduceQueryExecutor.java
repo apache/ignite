@@ -101,6 +101,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Index;
@@ -290,6 +291,8 @@ public class GridReduceQueryExecutor {
 
             if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR)
                 e.addSuppressed(new QueryCancelledException());
+            else if (failCode == GridQueryFailResponse.TX_TIMEOUT)
+                e.addSuppressed(new TransactionTimeoutException(null));
 
             r.setStateOnException(nodeId, e);
         }
@@ -881,8 +884,11 @@ public class GridReduceQueryExecutor {
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
 
-                            if (wasCancelled(err))
+                            if (X.hasSuppressed(err, QueryCancelledException.class))
                                 throw new QueryCancelledException(); // Throw correct exception.
+
+                            if (X.hasSuppressed(err, TransactionTimeoutException.class))
+                                throw new TransactionTimeoutException(err.getMessage());
 
                             throw err;
                         }
