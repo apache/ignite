@@ -1662,7 +1662,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     throw (ClusterTopologyCheckedException)e.getCause();
 
                 if (!ctx.discovery().alive(node))
-                    throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id());
+                    throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id(), e);
 
                 throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
                     "TCP connection cannot be established due to firewall issues) " +
