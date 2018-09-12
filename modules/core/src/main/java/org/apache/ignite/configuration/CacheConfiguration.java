@@ -52,7 +52,7 @@ import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
+import org.apache.ignite.spi.encryption.jks.KeystoreEncryptionSpi;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -380,7 +380,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * If {@code true} data on the disk will be encrypted.
      *
      * @see EncryptionSpi
-     * @see AESEncryptionSpi
+     * @see KeystoreEncryptionSpi
      */
     private boolean encryptionEnabled;
 

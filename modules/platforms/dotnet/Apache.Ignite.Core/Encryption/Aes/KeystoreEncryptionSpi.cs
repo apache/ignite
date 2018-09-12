@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Encryption.Aes
     /// <summary>
     /// IEncryptionSPI implementation base on JDK provided cipher algorithm implementations.
     /// </summary>
-    public class AesEncryptionSpi : IEncryptionSpi
+    public class KeystoreEncryptionSpi : IEncryptionSpi
     {
         /// <summary>
         /// Default master key name.
@@ -60,17 +60,17 @@ namespace Apache.Ignite.Core.Encryption.Aes
         /// <summary>
         /// Empty constructor.
         /// </summary>
-        public AesEncryptionSpi()
+        public KeystoreEncryptionSpi()
         {
             MasterKeyName = DefaultMasterKeyName;
             KeySize = DefaultKeySize;
         }
         
         /// <summary>
-        /// Initializes a new instance of the <see cref="AesEncryptionSpi"/> class.
+        /// Initializes a new instance of the <see cref="KeystoreEncryptionSpi"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public AesEncryptionSpi(IBinaryRawReader reader)
+        public KeystoreEncryptionSpi(IBinaryRawReader reader)
         {
             MasterKeyName = reader.ReadString();
             KeySize = reader.ReadInt();

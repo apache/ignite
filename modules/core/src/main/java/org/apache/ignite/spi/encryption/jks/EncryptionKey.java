@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.encryption.aes;
+package org.apache.ignite.spi.encryption.jks;
 
 import java.io.Serializable;
 import java.security.Key;
@@ -27,9 +27,9 @@ import org.jetbrains.annotations.Nullable;
  * {@code EncryptionKey} implementation based on java security.
  *
  * @see Key
- * @see AESEncryptionSpi
+ * @see KeystoreEncryptionSpi
  */
-public final class AESEncryptionKey implements Serializable {
+public final class EncryptionKey implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,7 +47,7 @@ public final class AESEncryptionKey implements Serializable {
      * @param k Encryption key.
      * @param digest Message digest.
      */
-    AESEncryptionKey(Key k, @Nullable byte[] digest) {
+    EncryptionKey(Key k, @Nullable byte[] digest) {
         this.k = k;
         this.digest = digest;
     }
@@ -67,7 +67,7 @@ public final class AESEncryptionKey implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        AESEncryptionKey key = (AESEncryptionKey)o;
+        EncryptionKey key = (EncryptionKey)o;
 
         return Objects.equals(k, key.k) &&
             Arrays.equals(digest, key.digest);

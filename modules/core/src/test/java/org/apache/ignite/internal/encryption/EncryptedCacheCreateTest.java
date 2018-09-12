@@ -31,7 +31,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
+import org.apache.ignite.spi.encryption.jks.EncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /** */
@@ -87,8 +87,8 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         assertNotNull(enc);
 
-        AESEncryptionKey key =
-            (AESEncryptionKey)grid.context().encryption().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
+        EncryptionKey key =
+            (EncryptionKey)grid.context().encryption().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
 
         assertNotNull(key);
         assertNotNull(key.key());

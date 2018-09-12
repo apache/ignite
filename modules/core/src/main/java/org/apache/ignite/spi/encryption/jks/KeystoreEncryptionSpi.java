@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.encryption.aes;
+package org.apache.ignite.spi.encryption.jks;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -60,9 +60,9 @@ import static javax.crypto.Cipher.ENCRYPT_MODE;
  * EncryptionSPI implementation base on JDK provided cipher algorithm implementations.
  *
  * @see EncryptionSpi
- * @see AESEncryptionKey
+ * @see EncryptionKey
  */
-public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi {
+public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi {
     /**
      * Default key store entry name to store Encryption master key.
      */
@@ -121,7 +121,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
     /**
      * Master key.
      */
-    private AESEncryptionKey masterKey;
+    private EncryptionKey masterKey;
 
     /** Logger. */
     @LoggerResource
@@ -147,7 +147,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
             if (log != null)
                 log.info("Successfully load keyStore [path=" + keyStorePath + "]");
 
-            masterKey = new AESEncryptionKey(ks.getKey(masterKeyName, keyStorePwd), null);
+            masterKey = new EncryptionKey(ks.getKey(masterKeyName, keyStorePwd), null);
         }
         catch (GeneralSecurityException | IOException e) {
             throw new IgniteSpiException(e);
@@ -169,7 +169,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
     }
 
     /** {@inheritDoc} */
-    @Override public AESEncryptionKey create() throws IgniteException {
+    @Override public EncryptionKey create() throws IgniteException {
         ensureStarted();
 
         try {
@@ -179,7 +179,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
             SecretKey key = gen.generateKey();
 
-            return new AESEncryptionKey(key, makeDigest(key.getEncoded()));
+            return new EncryptionKey(key, makeDigest(key.getEncoded()));
         }
         catch (NoSuchAlgorithmException e) {
             throw new IgniteException(e);
@@ -198,12 +198,12 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
     /** {@inheritDoc} */
     @Override public byte[] decrypt(byte[] data, Serializable key) {
-        assert key instanceof AESEncryptionKey;
+        assert key instanceof EncryptionKey;
 
         ensureStarted();
 
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(((AESEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
+            SecretKeySpec keySpec = new SecretKeySpec(((EncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
 
             Cipher cipher = Cipher.getInstance(AES_WITH_PADDING);
 
@@ -219,12 +219,12 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
     /** {@inheritDoc} */
     @Override public void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
-        assert key instanceof AESEncryptionKey;
+        assert key instanceof EncryptionKey;
 
         ensureStarted();
 
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(((AESEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
+            SecretKeySpec keySpec = new SecretKeySpec(((EncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
 
             Cipher cipher = Cipher.getInstance(AES_WITHOUT_PADDING);
 
@@ -249,13 +249,13 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
      * @return Encrypted data.
      */
     private void doEncryption(ByteBuffer data, String algo, Serializable key, ByteBuffer res) {
-        assert key instanceof AESEncryptionKey;
+        assert key instanceof EncryptionKey;
         //assert start >= 0 && length + start <= data.length;
 
         ensureStarted();
 
         try {
-            SecretKeySpec keySpec = new SecretKeySpec(((AESEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
+            SecretKeySpec keySpec = new SecretKeySpec(((EncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
 
             Cipher cipher = Cipher.getInstance(algo);
 
@@ -275,7 +275,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
 
     /** {@inheritDoc} */
     @Override public byte[] encryptKey(Serializable key) {
-        assert key instanceof AESEncryptionKey;
+        assert key instanceof EncryptionKey;
 
         byte[] serKey = U.toBytes(key);
 
@@ -287,10 +287,10 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
     }
 
     /** {@inheritDoc} */
-    @Override public AESEncryptionKey decryptKey(byte[] data) {
+    @Override public EncryptionKey decryptKey(byte[] data) {
         byte[] serKey = decrypt(data, masterKey);
 
-        AESEncryptionKey key = U.fromBytes(serKey);
+        EncryptionKey key = U.fromBytes(serKey);
 
         byte[] digest = makeDigest(key.key().getEncoded());
 
@@ -381,7 +381,7 @@ public class AESEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi 
         if (abs.exists())
             return new FileInputStream(abs);
 
-        URL clsPthRes = AESEncryptionSpi.class.getClassLoader().getResource(keyStorePath);
+        URL clsPthRes = KeystoreEncryptionSpi.class.getClassLoader().getResource(keyStorePath);
 
         if (clsPthRes != null)
             return clsPthRes.openStream();

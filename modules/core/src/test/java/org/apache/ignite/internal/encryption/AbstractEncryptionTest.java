@@ -36,8 +36,8 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
-import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
+import org.apache.ignite.spi.encryption.jks.EncryptionKey;
+import org.apache.ignite.spi.encryption.jks.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -45,8 +45,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.FSYNC;
-import static org.apache.ignite.spi.encryption.aes.AESEncryptionSpi.CIPHER_ALGO;
-import static org.apache.ignite.spi.encryption.aes.AESEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
+import static org.apache.ignite.spi.encryption.jks.KeystoreEncryptionSpi.CIPHER_ALGO;
+import static org.apache.ignite.spi.encryption.jks.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 
 /**
  */
@@ -71,7 +71,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
-        AESEncryptionSpi encSpi = new AESEncryptionSpi();
+        KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
 
         encSpi.setKeyStorePath(keystorePath());
         encSpi.setKeyStorePassword(keystorePassword());
@@ -125,13 +125,13 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             assertTrue(encrypted1.configuration().isEncryptionEnabled());
 
-            AESEncryptionKey encKey0 = (AESEncryptionKey)grid0.context().encryption().groupKey(grpId);
+            EncryptionKey encKey0 = (EncryptionKey)grid0.context().encryption().groupKey(grpId);
 
             assertNotNull(encKey0);
             assertNotNull(encKey0.key());
 
             if (!grid1.configuration().isClientMode()) {
-                AESEncryptionKey encKey1 = (AESEncryptionKey)grid1.context().encryption().groupKey(grpId);
+                EncryptionKey encKey1 = (EncryptionKey)grid1.context().encryption().groupKey(grpId);
 
                 assertNotNull(encKey1);
                 assertNotNull(encKey1.key());
@@ -222,7 +222,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         KeyGenerator gen = KeyGenerator.getInstance(CIPHER_ALGO);
 
-        gen.init(AESEncryptionSpi.DEFAULT_KEY_SIZE);
+        gen.init(KeystoreEncryptionSpi.DEFAULT_KEY_SIZE);
 
         SecretKey key = gen.generateKey();
 

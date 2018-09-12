@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new IgniteConfiguration());
             CheckDefaultValueAttributes(new BinaryConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoverySpi());
-            CheckDefaultValueAttributes(new AesEncryptionSpi());
+            CheckDefaultValueAttributes(new KeystoreEncryptionSpi());
             CheckDefaultValueAttributes(new CacheConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
             CheckDefaultValueAttributes(new TcpCommunicationSpi());
@@ -134,8 +134,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(disco.ThreadPriority, resDisco.ThreadPriority);
                 Assert.AreEqual(disco.TopologyHistorySize, resDisco.TopologyHistorySize);
 
-                var enc = (AesEncryptionSpi) cfg.EncryptionSpi;
-                var resEnc = (AesEncryptionSpi) resCfg.EncryptionSpi;
+                var enc = (KeystoreEncryptionSpi) cfg.EncryptionSpi;
+                var resEnc = (KeystoreEncryptionSpi) resCfg.EncryptionSpi;
                 
                 Assert.AreEqual(enc.MasterKeyName, resEnc.MasterKeyName);
                 Assert.AreEqual(enc.KeySize, resEnc.KeySize);
@@ -689,12 +689,12 @@ namespace Apache.Ignite.Core.Tests
                     ThreadPriority = 6,
                     TopologyHistorySize = 1234567
                 },
-                EncryptionSpi = new AesEncryptionSpi()
+                EncryptionSpi = new KeystoreEncryptionSpi()
                 {
                     KeySize = 192,
                     KeyStorePassword = "love_sex_god".ToCharArray(),
                     KeyStorePath = "tde.jks",
-                    MasterKeyName = AesEncryptionSpi.DefaultMasterKeyName
+                    MasterKeyName = KeystoreEncryptionSpi.DefaultMasterKeyName
                 },
                 IgniteInstanceName = "gridName1",
                 IgniteHome = IgniteHome.Resolve(null),

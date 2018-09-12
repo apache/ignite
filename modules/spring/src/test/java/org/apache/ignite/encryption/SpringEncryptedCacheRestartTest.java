@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
+import org.apache.ignite.spi.encryption.jks.EncryptionKey;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -79,9 +79,9 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
             int grpId = CU.cacheGroupId(enc.name(), enc.configuration().getGroupName());
 
-            AESEncryptionKey key0 = (AESEncryptionKey)g.get1().context().encryption().groupKey(grpId);
-            AESEncryptionKey key1 = (AESEncryptionKey)g.get2().context().encryption().groupKey(grpId);
-            AESEncryptionKey key2 = (AESEncryptionKey)g2.context().encryption().groupKey(grpId);
+            EncryptionKey key0 = (EncryptionKey)g.get1().context().encryption().groupKey(grpId);
+            EncryptionKey key1 = (EncryptionKey)g.get2().context().encryption().groupKey(grpId);
+            EncryptionKey key2 = (EncryptionKey)g2.context().encryption().groupKey(grpId);
 
             assertNotNull(cacheName, key0);
             assertNotNull(cacheName, key1);
@@ -118,13 +118,13 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
 
         assertNotNull(encrypted2);
 
-        AESEncryptionKey key = (AESEncryptionKey)g0.context().encryption().groupKey(
+        EncryptionKey key = (EncryptionKey)g0.context().encryption().groupKey(
             CU.cacheGroupId(encrypted.name(), encrypted.configuration().getGroupName()));
 
         assertNotNull(key);
         assertNotNull(key.key());
 
-        AESEncryptionKey key2 = (AESEncryptionKey)g0.context().encryption().groupKey(
+        EncryptionKey key2 = (EncryptionKey)g0.context().encryption().groupKey(
             CU.cacheGroupId(encrypted2.name(), encrypted2.configuration().getGroupName()));
 
         assertNotNull(key2);

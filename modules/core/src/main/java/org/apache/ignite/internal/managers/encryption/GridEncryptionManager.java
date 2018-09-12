@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,13 +34,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.encryption.EncryptionSpi;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -54,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -113,10 +112,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private static final IgniteProductVersion CACHE_ENCRYPTION_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Synchronization mutex. */
-    private final Object mux = new Object();
+    private final Object metaStorageMux = new Object();
 
     /** */
     private final Object genEcnKeyMux = new Object();
+
+    /** Disconnected flag. */
+    private volatile boolean disconnected;
+
+    /** Stopped flag. */
+    private volatile boolean stopped;
 
     /** Flag to enable/disable write to metastore on cluster state change. */
     private volatile boolean writeToMetaStoreEnabled;
@@ -137,8 +142,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Metastorage. */
     private volatile ReadWriteMetastorage metaStorage;
 
+    /** I/O message listener. */
+    private GridMessageListener ioLsnr;
+
+    /** System discovery message listener. */
+    private DiscoveryEventListener discoLsnr;
+
     /**
-     * @param ctx Kernal context.
+     * @param ctx Kernel context.
      */
     public GridEncryptionManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getEncryptionSpi());
@@ -186,38 +197,43 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
-        ctx.event().addDiscoveryEventListener(new DiscoveryEventListener() {
-            @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
-                UUID leftNodeId = evt.eventNode().id();
+        ctx.event().addDiscoveryEventListener(discoLsnr = (evt, discoCache) -> {
+            UUID leftNodeId = evt.eventNode().id();
 
-                synchronized (genEcnKeyMux) {
-                    for (Map.Entry<IgniteUuid, GenerateEncryptionKeyFuture> futEntry : genEncKeyFuts.entrySet()) {
-                        GenerateEncryptionKeyFuture fut = futEntry.getValue();
+            synchronized (genEcnKeyMux) {
+                Iterator<Map.Entry<IgniteUuid, GenerateEncryptionKeyFuture>> futsIter =
+                    genEncKeyFuts.entrySet().iterator();
 
-                        if (!F.eq(leftNodeId, fut.nodeId()))
-                            continue;
+                while (futsIter.hasNext()) {
+                    GenerateEncryptionKeyFuture fut = futsIter.next().getValue();
 
-                        try {
-                            sendGenerateEncryptionKeyRequest(fut);
-                        }
-                        catch (IgniteCheckedException e) {
-                            fut.onDone(null, e);
-                        }
+                    if (!F.eq(leftNodeId, fut.nodeId()))
+                        return;
+
+                    try {
+                        futsIter.remove();
+
+                        sendGenerateEncryptionKeyRequest(fut);
+
+                        genEncKeyFuts.put(fut.id(), fut);
+                    }
+                    catch (IgniteCheckedException e) {
+                        fut.onDone(null, e);
                     }
                 }
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        ctx.io().addMessageListener(TOPIC_GEN_ENC_KEY, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+        ctx.io().addMessageListener(TOPIC_GEN_ENC_KEY, ioLsnr = (nodeId, msg, plc) -> {
+            synchronized (genEcnKeyMux) {
                 if (msg instanceof GenerateEncryptionKeyRequest) {
-                    GenerateEncryptionKeyRequest req = (GenerateEncryptionKeyRequest) msg;
+                    GenerateEncryptionKeyRequest req = (GenerateEncryptionKeyRequest)msg;
 
                     assert req.keyCount() != 0;
 
                     List<byte[]> encKeys = new ArrayList<>(req.keyCount());
 
-                    for(int i=0; i<req.keyCount(); i++)
+                    for (int i = 0; i < req.keyCount(); i++)
                         encKeys.add(getSpi().encryptKey(getSpi().create()));
 
                     try {
@@ -229,16 +245,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     }
                 }
                 else {
-                    GenerateEncryptionKeyResponse resp = (GenerateEncryptionKeyResponse) msg;
+                    GenerateEncryptionKeyResponse resp = (GenerateEncryptionKeyResponse)msg;
 
-                    synchronized (genEcnKeyMux) {
-                        GenerateEncryptionKeyFuture fut = genEncKeyFuts.get(resp.requestId());
+                    GenerateEncryptionKeyFuture fut = genEncKeyFuts.get(resp.requestId());
 
-                        if (fut != null)
-                            fut.onDone(resp.encryptionKeys(), null);
-                        else
-                            log.warning("Response received for a unknown request.[reqId=" + resp.requestId() + "]");
-                    }
+                    if (fut != null)
+                        fut.onDone(resp.encryptionKeys(), null);
+                    else
+                        log.warning("Response received for a unknown request.[reqId=" + resp.requestId() + "]");
                 }
             }
         });
@@ -246,16 +260,39 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
-        for (GenerateEncryptionKeyFuture fut : genEncKeyFuts.values())
-            fut.onDone(new IgniteException("Can't complete generate encryption key request. Node disconnected."));
+        synchronized (genEcnKeyMux) {
+            assert !disconnected;
+
+            disconnected = true;
+
+            cancelFutures("Client node was disconnected from topology (operation result is unknown).");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        synchronized (genEcnKeyMux) {
+            assert disconnected;
+
+            disconnected = false;
+
+            return null;
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        super.onKernalStop0(cancel);
+        synchronized (genEcnKeyMux) {
+            stopped = true;
 
-        for (GenerateEncryptionKeyFuture future : genEncKeyFuts.values())
-            future.onDone(new NodeStoppingException("Can't complete generate encryption key request. Node stopping."));
+            if (ioLsnr != null)
+                ctx.io().removeMessageListener(TOPIC_GEN_ENC_KEY, ioLsnr);
+
+            if (discoLsnr != null)
+                ctx.event().removeDiscoveryEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+            cancelFutures("Kernal stopped.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -445,7 +482,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         Serializable encKey = getSpi().decryptKey(encGrpKey);
 
-        synchronized (mux) {
+        synchronized (metaStorageMux) {
             if (log.isDebugEnabled())
                 log.debug("Key added. [grp=" + grpId + "]");
 
@@ -461,7 +498,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param grpId Group id.
      */
     private void removeGroupKey(int grpId) {
-        synchronized (mux) {
+        synchronized (metaStorageMux) {
             ctx.cache().context().database().checkpointReadLock();
 
             try {
@@ -535,7 +572,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metaStorage) throws IgniteCheckedException {
-        synchronized (mux) {
+        synchronized (metaStorageMux) {
             this.metaStorage = metaStorage;
 
             writeToMetaStoreEnabled = true;
@@ -546,7 +583,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        synchronized (mux) {
+        synchronized (metaStorageMux) {
             writeToMetaStoreEnabled = metaStorage != null;
 
             if (writeToMetaStoreEnabled)
@@ -556,7 +593,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        synchronized (mux) {
+        synchronized (metaStorageMux) {
             writeToMetaStoreEnabled = false;
         }
     }
@@ -565,26 +602,29 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param keyCnt Count of keys to generate.
      * @return Future that will contain results of generation.
      */
-    public IgniteInternalFuture<Collection<byte[]>> generateEncryptionKeys(int keyCnt) {
+    public IgniteInternalFuture<Collection<byte[]>> generateKeys(int keyCnt) {
         if (keyCnt == 0 || !ctx.clientNode())
-            return new GridFinishedFuture<>(generateKeys(keyCnt));
-
-        GenerateEncryptionKeyFuture genEncKeyFut = new GenerateEncryptionKeyFuture(keyCnt);
+            return new GridFinishedFuture<>(createKeys(keyCnt));
 
         synchronized (genEcnKeyMux) {
+            if (disconnected || stopped) {
+                return new GridFinishedFuture<>(
+                    new IgniteFutureCancelledException("Node " + (stopped ? "stopped" : "disconnected")));
+            }
+
             try {
+                GenerateEncryptionKeyFuture genEncKeyFut = new GenerateEncryptionKeyFuture(keyCnt);
+
                 sendGenerateEncryptionKeyRequest(genEncKeyFut);
 
-                GenerateEncryptionKeyFuture old = genEncKeyFuts.putIfAbsent(genEncKeyFut.id(), genEncKeyFut);
+                genEncKeyFuts.put(genEncKeyFut.id(), genEncKeyFut);
 
-                assert old == null;
+                return genEncKeyFut;
             }
             catch (IgniteCheckedException e) {
-                genEncKeyFut.onDone(null, e);
+                return new GridFinishedFuture<>(e);
             }
         }
-
-        return genEncKeyFut;
     }
 
     /** */
@@ -702,7 +742,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param keyCnt Keys count.
      * @return Collection with newly generated encryption keys.
      */
-    private Collection<byte[]> generateKeys(int keyCnt) {
+    private Collection<byte[]> createKeys(int keyCnt) {
         if (keyCnt == 0)
             return Collections.EMPTY_LIST;
 
@@ -712,6 +752,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             encKeys.add(getSpi().encryptKey(getSpi().create()));
 
         return encKeys;
+    }
+
+    /**
+     * @param msg Error message.
+     */
+    private void cancelFutures(String msg) {
+        for (GenerateEncryptionKeyFuture fut : genEncKeyFuts.values())
+            fut.onDone(new IgniteFutureCancelledException(msg));
+
+        genEncKeyFuts.clear();
     }
 
     /**

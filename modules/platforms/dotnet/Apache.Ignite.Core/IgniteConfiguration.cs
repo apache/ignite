@@ -363,15 +363,15 @@ namespace Apache.Ignite.Core
             {
                 writer.WriteBoolean(true);
 
-                var aesEnc = enc as AesEncryptionSpi;
+                var keystoreEnc = enc as KeystoreEncryptionSpi;
                 
-                if (aesEnc == null)
+                if (keystoreEnc == null)
                     throw new InvalidOperationException("Unsupported encryption SPI: " + enc.GetType());
 
-                writer.WriteString(aesEnc.MasterKeyName);
-                writer.WriteInt(aesEnc.KeySize);
-                writer.WriteString(aesEnc.KeyStorePath);
-                writer.WriteCharArray(aesEnc.KeyStorePassword);
+                writer.WriteString(keystoreEnc.MasterKeyName);
+                writer.WriteInt(keystoreEnc.KeySize);
+                writer.WriteString(keystoreEnc.KeyStorePath);
+                writer.WriteCharArray(keystoreEnc.KeyStorePassword);
             }
             else
                 writer.WriteBoolean(false);
@@ -729,7 +729,7 @@ namespace Apache.Ignite.Core
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
 
             EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ? 
-                new AesEncryptionSpi(r) : null;
+                new KeystoreEncryptionSpi(r) : null;
 
             // Communication config
             CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;

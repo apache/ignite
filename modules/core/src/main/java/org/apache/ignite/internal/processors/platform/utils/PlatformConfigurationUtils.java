@@ -101,7 +101,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
-import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
+import org.apache.ignite.spi.encryption.jks.KeystoreEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
@@ -957,7 +957,7 @@ public class PlatformConfigurationUtils {
             return;
         }
 
-        AESEncryptionSpi enc = new AESEncryptionSpi();
+        KeystoreEncryptionSpi enc = new KeystoreEncryptionSpi();
 
         enc.setMasterKeyName(in.readString());
         enc.setKeySize(in.readInt());
@@ -1502,14 +1502,14 @@ public class PlatformConfigurationUtils {
             return;
         }
 
-        AESEncryptionSpi aesEnc = (AESEncryptionSpi)enc;
+        KeystoreEncryptionSpi keystoreEnc = (KeystoreEncryptionSpi)enc;
 
         w.writeBoolean(true);
 
-        w.writeString(aesEnc.getMasterKeyName());
-        w.writeInt(aesEnc.getKeySize());
-        w.writeString(aesEnc.getKeyStorePath());
-        w.writeCharArray(aesEnc.getKeyStorePwd());
+        w.writeString(keystoreEnc.getMasterKeyName());
+        w.writeInt(keystoreEnc.getKeySize());
+        w.writeString(keystoreEnc.getKeyStorePath());
+        w.writeCharArray(keystoreEnc.getKeyStorePwd());
     }
 
     /**

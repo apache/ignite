@@ -24,14 +24,14 @@ import org.apache.ignite.encryption.EncryptionSpi;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
-import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
+import org.apache.ignite.spi.encryption.jks.KeystoreEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * No operation {@code EncryptionSPI} implementation.
  *
  * @see EncryptionSpi
- * @see AESEncryptionSpi
+ * @see KeystoreEncryptionSpi
  */
 @IgniteSpiNoop
 public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi {

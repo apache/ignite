@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
+import org.apache.ignite.spi.encryption.jks.KeystoreEncryptionSpi;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -76,7 +76,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
             grid.equals(GRID_3) ||
             grid.equals(GRID_4) ||
             grid.equals(GRID_5)) {
-            AESEncryptionSpi encSpi = new AESEncryptionSpi();
+            KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
 
             encSpi.setKeyStorePath(grid.equals(GRID_2) ? KEYSTORE_PATH_2 : KEYSTORE_PATH);
             encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
