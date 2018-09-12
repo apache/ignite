@@ -15,15 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.managers.encryption;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -38,18 +35,17 @@ public class GenerateEncryptionKeyRequest implements Message {
     private IgniteUuid id = IgniteUuid.randomUuid();
 
     /** */
-    @GridDirectCollection(Integer.class)
-    private Collection<Integer> grpIds;
+    private int keyCnt;
 
     /** */
     public GenerateEncryptionKeyRequest() {
     }
 
     /**
-     * @param grpIds Groups ids.
+     * @param keyCnt Count of encryption key to generate.
      */
-    public GenerateEncryptionKeyRequest(Collection<Integer> grpIds) {
-        this.grpIds = grpIds;
+    public GenerateEncryptionKeyRequest(int keyCnt) {
+        this.keyCnt = keyCnt;
     }
 
     /**
@@ -60,10 +56,10 @@ public class GenerateEncryptionKeyRequest implements Message {
     }
 
     /**
-     * @return Group ids for a key generation.
+     * @return Count of encryption key to generate.
      */
-    public Collection<Integer> groupIds() {
-        return grpIds;
+    public int keyCount() {
+        return keyCnt;
     }
 
     /** {@inheritDoc} */
@@ -79,13 +75,13 @@ public class GenerateEncryptionKeyRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("grpIds", grpIds, MessageCollectionItemType.INT))
+                if (!writer.writeIgniteUuid("id", id))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("id", id))
+                if (!writer.writeInt("keyCnt", keyCnt))
                     return false;
 
                 writer.incrementState();
@@ -104,7 +100,7 @@ public class GenerateEncryptionKeyRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                grpIds = reader.readCollection("grpIds", MessageCollectionItemType.INT);
+                id = reader.readIgniteUuid("id");
 
                 if (!reader.isLastRead())
                     return false;
@@ -112,7 +108,7 @@ public class GenerateEncryptionKeyRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                id = reader.readIgniteUuid("id");
+                keyCnt = reader.readInt("keyCnt");
 
                 if (!reader.isLastRead())
                     return false;

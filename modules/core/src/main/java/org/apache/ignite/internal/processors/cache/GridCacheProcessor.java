@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +25,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -61,7 +61,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.encryption.EncryptionSpi;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -72,11 +71,7 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
-import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -185,14 +180,10 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
-import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 
@@ -242,12 +233,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Template configuration add futures. */
     private ConcurrentMap<String, IgniteInternalFuture> pendingTemplateFuts = new ConcurrentHashMap<>();
-
-    /** Pending generate encryption key futures. */
-    private ConcurrentMap<IgniteUuid, GenerateEncryptionKeyFuture> genEncKeyFuts = new ConcurrentHashMap<>();
-
-    /** */
-    private final Object genEcnKeyMux = new Object();
 
     /** Enable/disable cache statistics futures. */
     private ConcurrentMap<UUID, EnableStatisticsFuture> manageStatisticsFuts = new ConcurrentHashMap<>();
@@ -790,8 +775,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.state().cacheProcessorStarted();
         ctx.authentication().cacheProcessorStarted();
-
-        registerGenerateEncryptionKeyRequestListeners();
     }
 
     /**
@@ -889,7 +872,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
                     else
                         validateStaticConfigAndStoredData(storedCacheData, caches.get(cacheName));
-
                 }
         }
     }
@@ -1137,9 +1119,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (IgniteInternalFuture fut : pendingTemplateFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
-
-        for (GenerateEncryptionKeyFuture fut : genEncKeyFuts.values())
-            fut.onDone(err);
 
         for (EnableStatisticsFuture fut : manageStatisticsFuts.values())
             fut.onDone(err);
@@ -3084,10 +3063,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (checkThreadTx)
             checkEmptyTransactions();
 
-        GridPlainClosure<Map<Integer, byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
-            int grpId = cacheGroupId(cacheName, ccfg);
-
-            assert ccfg == null || !ccfg.isEncryptionEnabled() || grpKeys.containsKey(grpId);
+        GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
+            assert ccfg == null || !ccfg.isEncryptionEnabled() || !grpKeys.isEmpty();
 
             DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                 ccfg,
@@ -3099,7 +3076,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 failIfNotStarted,
                 false,
                 null,
-                grpKeys.get(grpId));
+                ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null);
 
             if (req != null) {
                 if (req.clientStartOnly())
@@ -3115,23 +3092,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (ccfg != null && ccfg.isEncryptionEnabled()) {
                 ctx.encryption().checkEncryptedCacheSupported();
 
-                int grpId = cacheGroupId(cacheName, ccfg);
-
-                if (ctx.clientNode())
-                    return generateEncryptionKeysAndStartCacheAfter(Collections.singleton(grpId), startCacheClsr);
-                else {
-                    EncryptionSpi encSpi = ctx.config().getEncryptionSpi();
-
-                    Serializable grpKey = ctx.encryption().groupKey(grpId);
-
-                    if (grpKey == null)
-                        grpKey = encSpi.create();
-
-                    return startCacheClsr.apply(Collections.singletonMap(grpId, encSpi.encryptKey(grpKey)));
-                }
+                return generateEncryptionKeysAndStartCacheAfter(1, startCacheClsr);
             }
 
-            return startCacheClsr.apply(Collections.EMPTY_MAP);
+            return startCacheClsr.apply(Collections.EMPTY_SET);
         }
         catch (Exception e) {
             return new GridFinishedFuture<>(e);
@@ -3139,52 +3103,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @param ccfg Cache configuration.
-     * @return Group id.
-     */
-    private int cacheGroupId(String cacheName, @Nullable CacheConfiguration ccfg) {
-        if (ccfg != null)
-            return CU.cacheGroupId(cacheName, ccfg.getGroupName());
-
-        DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
-
-        if (desc != null)
-            return desc.groupId();
-
-        return CU.cacheGroupId(cacheName, null);
-    }
-
-    /**
      * Send {@code GenerateEncryptionKeyRequest} and execute {@code after} closure if succeed.
      *
-     * @param grpIds Group ids.
+     * @param keyCnt Count of keys to generate.
      * @param after Closure to execute after encryption keys would be generated.
      */
-    private IgniteInternalFuture<Boolean> generateEncryptionKeysAndStartCacheAfter(Collection<Integer> grpIds,
-        GridPlainClosure<Map<Integer, byte[]>, IgniteInternalFuture<Boolean>> after) {
-
-        GenerateEncryptionKeyFuture genEncKeyFut = new GenerateEncryptionKeyFuture(grpIds);
-
-        synchronized (genEcnKeyMux) {
-            try {
-                sendGenerateEncryptionKeyRequest(genEncKeyFut);
-
-                GenerateEncryptionKeyFuture old = genEncKeyFuts.putIfAbsent(genEncKeyFut.id(), genEncKeyFut);
-
-                assert old == null;
-            }
-            catch (IgniteCheckedException e) {
-                genEncKeyFut.onDone(null, e);
-            }
-        }
+    private IgniteInternalFuture<Boolean> generateEncryptionKeysAndStartCacheAfter(int keyCnt,
+        GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> after) {
+        IgniteInternalFuture<Collection<byte[]>> genEncKeyFut = ctx.encryption().generateEncryptionKeys(keyCnt);
 
         GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
 
-        genEncKeyFut.listen(new IgniteInClosure<IgniteInternalFuture<Map<Integer, byte[]>>>() {
-            @Override public void apply(IgniteInternalFuture<Map<Integer, byte[]>> fut) {
+        genEncKeyFut.listen(new IgniteInClosure<IgniteInternalFuture<Collection<byte[]>>>() {
+            @Override public void apply(IgniteInternalFuture<Collection<byte[]>> fut) {
                 try {
-                    Map<Integer, byte[]> grpKeys = fut.result();
+                    Collection<byte[]> grpKeys = fut.result();
 
                     if (F.isEmpty(grpKeys))
                         res.onDone(false, fut.error());
@@ -3272,14 +3205,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (checkThreadTx)
             checkEmptyTransactions();
 
-        GridPlainClosure<Map<Integer, byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
+        GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
             List<DynamicCacheChangeRequest> srvReqs = null;
             Map<String, DynamicCacheChangeRequest> clientReqs = null;
 
-            for (StoredCacheData ccfg : storedCacheDataList) {
-                int grpId = cacheGroupId(ccfg.config().getName(), ccfg.config());
+            Iterator<byte[]> grpKeysIter = grpKeys.iterator();
 
-                assert !ccfg.config().isEncryptionEnabled() || grpKeys.containsKey(grpId);
+            for (StoredCacheData ccfg : storedCacheDataList) {
+                assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext();
 
                 DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                     ccfg.config(),
@@ -3291,7 +3224,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     true,
                     disabledAfterStart,
                     ccfg.queryEntities(),
-                    grpKeys.get(grpId));
+                    ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null);
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -3331,37 +3264,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return compoundFut;
         };
 
-        try {
-            List<Integer> encGrps = new ArrayList<>();
+        int encGrpCnt = 0;
 
-            for (StoredCacheData ccfg : storedCacheDataList) {
-                if (ccfg.config().isEncryptionEnabled())
-                    encGrps.add(cacheGroupId(ccfg.config().getName(), ccfg.config()));
-            }
-
-            if (encGrps.isEmpty())
-                return startCacheClsr.apply(Collections.EMPTY_MAP);
-
-            if (ctx.clientNode())
-                return generateEncryptionKeysAndStartCacheAfter(encGrps, startCacheClsr);
-            else {
-                Map<Integer, byte[]> encKeys = new HashMap<>(encGrps.size());
-
-                for (Integer grpId : encGrps) {
-                    Serializable encKey = ctx.encryption().groupKey(grpId);
-
-                    if (encKey == null)
-                        encKey = ctx.config().getEncryptionSpi().create();
-
-                    encKeys.put(grpId, ctx.config().getEncryptionSpi().encryptKey(encKey));
-                }
-
-                return startCacheClsr.apply(encKeys);
-            }
+        for (StoredCacheData ccfg : storedCacheDataList) {
+            if (ccfg.config().isEncryptionEnabled())
+                encGrpCnt++;
         }
-        catch (Exception e) {
-            return new GridFinishedFuture<>(e);
-        }
+
+        return generateEncryptionKeysAndStartCacheAfter(encGrpCnt, startCacheClsr);
     }
 
     /** Resolve cache type for input cacheType */
@@ -4359,9 +4269,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (IgniteInternalFuture fut : pendingTemplateFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
 
-        for (GenerateEncryptionKeyFuture future : genEncKeyFuts.values())
-            future.onDone(err);
-
         for (EnableStatisticsFuture fut : manageStatisticsFuts.values())
             fut.onDone(err);
 
@@ -4842,95 +4749,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return res;
     }
 
-    /** */
-    private void registerGenerateEncryptionKeyRequestListeners() {
-        ctx.event().addDiscoveryEventListener(new DiscoveryEventListener() {
-            @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
-                UUID leftNodeId = evt.eventNode().id();
-
-                synchronized (genEcnKeyMux) {
-                    for (Map.Entry<IgniteUuid, GenerateEncryptionKeyFuture> futEntry : genEncKeyFuts.entrySet()) {
-                        GenerateEncryptionKeyFuture fut = futEntry.getValue();
-
-                        if (!F.eq(leftNodeId, fut.nodeId()))
-                            continue;
-
-                        try {
-                            sendGenerateEncryptionKeyRequest(fut);
-                        }
-                        catch (IgniteCheckedException e) {
-                            fut.onDone(null, e);
-                        }
-                    }
-                }
-            }
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
-
-        ctx.io().addMessageListener(TOPIC_GEN_ENC_KEY, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                if (msg instanceof GenerateEncryptionKeyRequest) {
-                    GenerateEncryptionKeyRequest req = (GenerateEncryptionKeyRequest) msg;
-
-                    GridEncryptionManager encMgr = ctx.encryption();
-
-                    EncryptionSpi encSpi = ctx.config().getEncryptionSpi();
-
-                    assert !F.isEmpty(req.groupIds());
-
-                    Map<Integer, byte[]> encGrpKeys = new HashMap<>();
-
-                    for (Integer grpId : req.groupIds()) {
-                        Serializable grpKey = encMgr.groupKey(grpId);
-
-                        if (grpKey == null)
-                            grpKey = encSpi.create();
-
-                        encGrpKeys.put(grpId, encSpi.encryptKey(grpKey));
-                    }
-
-                    try {
-                        ctx.io().sendToGridTopic(nodeId, TOPIC_GEN_ENC_KEY,
-                            new GenerateEncryptionKeyResponse(req.id(), encGrpKeys), SYSTEM_POOL);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-                else {
-                    GenerateEncryptionKeyResponse resp = (GenerateEncryptionKeyResponse) msg;
-
-                    synchronized (genEcnKeyMux) {
-                        GenerateEncryptionKeyFuture fut = genEncKeyFuts.get(resp.requestId());
-
-                        if (fut != null)
-                            fut.onDone(resp.encryptionGroupKeys(), null);
-                        else {
-                            Set<Integer> grps = resp.encryptionGroupKeys().keySet();
-
-                            log.warning("Response received for a unknown request. [grps=" +
-                                grps.stream().map(Object::toString).collect(Collectors.joining(", ")) + "]");
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    /** */
-    private void sendGenerateEncryptionKeyRequest(GenerateEncryptionKeyFuture fut) throws IgniteCheckedException {
-        ClusterNode rndNode = U.randomServerNode(ctx);
-
-        if (rndNode == null)
-            throw new IgniteCheckedException("There is no node to send GenerateEncryptionKeyRequest to");
-
-        GenerateEncryptionKeyRequest req = new GenerateEncryptionKeyRequest(fut.groupIds());
-
-        fut.id(req.id());
-        fut.nodeId(rndNode.id());
-
-        ctx.io().sendToGridTopic(rndNode.id(), TOPIC_GEN_ENC_KEY, req, SYSTEM_POOL);
-    }
-
     /**
      * Sets transaction timeout on partition map exchange.
      *
@@ -5032,64 +4850,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TemplateConfigurationFuture.class, this);
-        }
-    }
-
-    /** */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private class GenerateEncryptionKeyFuture extends GridFutureAdapter<Map<Integer, byte[]>> {
-        /** */
-        private IgniteUuid id;
-
-        /** */
-        private Collection<Integer> grpIds;
-
-        /** */
-        private UUID nodeId;
-
-        /**
-         * @param grpIds Groups to generate encryption keys.
-         */
-        private GenerateEncryptionKeyFuture(Collection<Integer> grpIds) {
-            this.grpIds = grpIds;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Map<Integer, byte[]> res, @Nullable Throwable err) {
-            // Make sure to remove future before completion.
-            genEncKeyFuts.remove(id, this);
-
-            return super.onDone(res, err);
-        }
-
-        /** */
-        public IgniteUuid id() {
-            return id;
-        }
-
-        /** */
-        public void id(IgniteUuid id) {
-            this.id = id;
-        }
-
-        /** */
-        public UUID nodeId() {
-            return nodeId;
-        }
-
-        /** */
-        public void nodeId(UUID nodeId) {
-            this.nodeId = nodeId;
-        }
-
-        /** */
-        public Collection<Integer> groupIds() {
-            return grpIds;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(GenerateEncryptionKeyFuture.class, this);
         }
     }
 

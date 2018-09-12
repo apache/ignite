@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.managers.encryption;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
-import org.apache.ignite.internal.GridDirectMap;
+import java.util.Collection;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -38,8 +38,8 @@ public class GenerateEncryptionKeyResponse implements Message {
     private IgniteUuid id;
 
     /** */
-    @GridDirectMap(keyType = Integer.class, valueType = byte[].class)
-    private Map<Integer, byte[]> encGrpKeys;
+    @GridDirectCollection(byte[].class)
+    private Collection<byte[]> encKeys;
 
     /** */
     public GenerateEncryptionKeyResponse() {
@@ -47,11 +47,11 @@ public class GenerateEncryptionKeyResponse implements Message {
 
     /**
      * @param id Request id.
-     * @param encGrpKeys Encryption keys.
+     * @param encKeys Encryption keys.
      */
-    public GenerateEncryptionKeyResponse(IgniteUuid id, Map<Integer, byte[]> encGrpKeys) {
+    public GenerateEncryptionKeyResponse(IgniteUuid id, Collection<byte[]> encKeys) {
         this.id = id;
-        this.encGrpKeys = encGrpKeys;
+        this.encKeys = encKeys;
     }
 
     /**
@@ -62,10 +62,10 @@ public class GenerateEncryptionKeyResponse implements Message {
     }
 
     /**
-     * @return Encrypted group keys.
+     * @return Encryption keys.
      */
-    public Map<Integer, byte[]> encryptionGroupKeys() {
-        return encGrpKeys;
+    public Collection<byte[]> encryptionKeys() {
+        return encKeys;
     }
 
     /** {@inheritDoc} */
@@ -81,7 +81,7 @@ public class GenerateEncryptionKeyResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("encGrpKeys", encGrpKeys, MessageCollectionItemType.INT, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection("encKeys", encKeys, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -106,7 +106,7 @@ public class GenerateEncryptionKeyResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                encGrpKeys = reader.readMap("encGrpKeys", MessageCollectionItemType.INT, MessageCollectionItemType.BYTE_ARR, false);
+                encKeys = reader.readCollection("encKeys", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
