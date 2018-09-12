@@ -106,6 +106,6 @@ public class CacheMvccSqlConfigurationValidationTest extends CacheMvccAbstractTe
 
                 return null;
             }
-        }, CacheException.class, "Using caches with different mvcc settings in same query is forbidden.");
+        }, CacheException.class, "Transaction or a query spans over caches with the different MVCC settings.");
     }
 }

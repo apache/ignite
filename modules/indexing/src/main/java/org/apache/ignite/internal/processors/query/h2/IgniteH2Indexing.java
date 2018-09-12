@@ -1712,8 +1712,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     mvccCacheId = cctx.cacheId();
                 }
                 else if (mvccEnabled != cctx.mvccEnabled())
-                    throw new IllegalStateException("Using caches with different mvcc settings " +
-                        "in same query is forbidden.");
+                    throw new IgniteException("Transaction or a query spans over caches with the different MVCC" +
+                        " settings. Do not mix TRANSACTIONAL_SNAPSHOT caches with the caches where another atomicity " +
+                        "mode is set within the same transaction or a query.");
             }
         }
 
@@ -2648,8 +2649,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (i == 0)
                 mvccEnabled = cctx.mvccEnabled();
             else if (cctx.mvccEnabled() != mvccEnabled)
-                throw new IllegalStateException("Using caches with different mvcc settings in same query is " +
-                    "forbidden.");
+                throw new IgniteException("Transaction or a query spans over caches with the different MVCC" +
+                    " settings. Do not mix TRANSACTIONAL_SNAPSHOT caches with the caches where another atomicity " +
+                    "mode is set within the same transaction or a query.");
 
             if (!cctx.isPartitioned())
                 continue;
