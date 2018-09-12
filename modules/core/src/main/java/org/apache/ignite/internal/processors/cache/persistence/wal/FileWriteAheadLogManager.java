@@ -1717,13 +1717,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try {
                 synchronized (this) {
-                    while (curAbsWalIdx == -1 && !stopped)
-                        wait();
+                    while (curAbsWalIdx == -1 && !stopped) {
+                        blockingSectionBegin();
+
+                        try {
+                            wait();
+                        }
+                        finally {
+                            blockingSectionEnd();
+                        }
+                    }
 
                     // If the archive directory is empty, we can be sure that there were no WAL segments archived.
                     // This is ensured by the check in truncate() which will leave at least one file there
                     // once it was archived.
                 }
+
+                long lastOnIdleTs = U.currentTimeMillis();
 
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
                     long toArchive;
@@ -1732,10 +1742,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
                             ", current=" + curAbsWalIdx;
 
-                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped)
-                            wait();
+                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
+                            blockingSectionBegin();
+
+                            try {
+                                wait();
+                            }
+                            finally {
+                                blockingSectionEnd();
+                            }
+                        }
 
                         toArchive = lastAbsArchivedIdx + 1;
+                    }
+
+                    if (U.currentTimeMillis() - lastOnIdleTs > cctx.gridConfig().getFailureDetectionTimeout() / 2) {
+                        onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
                     }
 
                     if (stopped)
@@ -1744,8 +1768,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     final SegmentArchiveResult res = archiveSegment(toArchive);
 
                     synchronized (this) {
-                        while (locked.containsKey(toArchive) && !stopped)
-                            wait();
+                        while (locked.containsKey(toArchive) && !stopped) {
+                            blockingSectionBegin();
+
+                            try {
+                                wait();
+                            }
+                            finally {
+                                blockingSectionEnd();
+                            }
+                        }
 
                         // Then increase counter to allow rollover on clean working file
                         changeLastArchivedIndexAndNotifyWaiters(toArchive);
@@ -1967,6 +1999,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 },
                 new CI1<Integer>() {
                     @Override public void apply(Integer idx) {
+                        updateHeartbeat();
+
                         synchronized (FileArchiver.this) {
                             formatted = idx;
 
@@ -3274,16 +3308,34 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
+            Throwable err = null;
+
+            long lastOnIdleTs = U.currentTimeMillis();
+
             try {
                 while (!isCancelled()) {
                     while (waiters.isEmpty()) {
-                        if (!isCancelled())
-                            LockSupport.park();
+                        if (!isCancelled()) {
+                            blockingSectionBegin();
+
+                            try {
+                                LockSupport.park();
+                            }
+                            finally {
+                                blockingSectionEnd();
+                            }
+                        }
                         else {
                             unparkWaiters(Long.MAX_VALUE);
 
                             return;
                         }
+                    }
+
+                    if (U.currentTimeMillis() - lastOnIdleTs > cctx.gridConfig().getFailureDetectionTimeout() / 2) {
+                        onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
                     }
 
                     Long pos = null;
@@ -3326,6 +3378,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
 
                     for (int i = 0; i < segs.size(); i++) {
+                        updateHeartbeat();
+
                         SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
 
                         try {

@@ -2682,6 +2682,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
 
+        /** */
+        private long lastOnIdleTs = U.currentTimeMillis();
+
         /**
          *
          */
@@ -2789,7 +2792,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
             GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
-                DiscoveryCustomMessage> evt = evts.take();
+                DiscoveryCustomMessage> evt;
+
+            blockingSectionBegin();
+
+            try {
+                evt = evts.take();
+            }
+            finally {
+                blockingSectionEnd();
+            }
+
+            if (U.currentTimeMillis() - lastOnIdleTs > ctx.config().getFailureDetectionTimeout() / 2) {
+                onIdle();
+
+                lastOnIdleTs = U.currentTimeMillis();
+            }
 
             int type = evt.get1();
 

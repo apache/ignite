@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.worker;
+package org.apache.ignite.failure;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.Ignite;
 
 /**
- * Convenience adapter for {@link GridWorkerListener}.
+ * Abstract superclass for {@link FailureHandler} implementations.
+ * Maintains a set of ignorable failure types.
  */
-public class GridWorkerListenerAdapter implements GridWorkerListener {
+public abstract class AbstractFailureHandler implements FailureHandler {
+    /** */
+    private volatile Set<FailureType> ignoredFailureTypes = Collections.emptySet();
+
     /** {@inheritDoc} */
-    @Override public void onStarted(GridWorker w) {
-        // No-op.
+    @Override public void setIgnoredFailureTypes(Set<FailureType> failureTypes) {
+        ignoredFailureTypes = Collections.unmodifiableSet(failureTypes);
     }
 
     /** {@inheritDoc} */
-    @Override public void onStopped(GridWorker w) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIdle(GridWorker w) {
-        // No-op.
+    @Override public Set<FailureType> getIgnoredFailureTypes() {
+        return ignoredFailureTypes;
     }
 }

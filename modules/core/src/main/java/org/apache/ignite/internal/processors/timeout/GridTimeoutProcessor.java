@@ -200,17 +200,28 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker",
-                GridTimeoutProcessor.this.log, ctx.workersRegistry());
+            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker", GridTimeoutProcessor.this.log, ctx.workersRegistry());
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             Throwable err = null;
 
+            long lastOnIdleTs = U.currentTimeMillis();
+
+            long waitTimeout = ctx.config().getFailureDetectionTimeout() / 2;
+
             try {
                 while (!isCancelled()) {
+                    updateHeartbeat();
+
                     long now = U.currentTimeMillis();
+
+                    if (now - lastOnIdleTs > waitTimeout) {
+                        onIdle();
+
+                        lastOnIdleTs = now;
+                    }
 
                     for (Iterator<GridTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
                         GridTimeoutObject timeoutObj = iter.next();
@@ -222,8 +233,11 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                                 if (log.isDebugEnabled())
                                     log.debug("Timeout has occurred [obj=" + timeoutObj + ", process=" + rmvd + ']');
 
-                                if (rmvd)
+                                if (rmvd) {
+                                    updateHeartbeat();
+
                                     timeoutObj.onTimeout();
+                                }
                             }
                             catch (Throwable e) {
                                 if (isCancelled() && !(e instanceof Error)) {
@@ -251,16 +265,34 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             // 'addTimeoutObject(..)' method.
                             GridTimeoutObject first = timeoutObjs.firstx();
 
+                            updateHeartbeat();
+
                             if (first != null) {
                                 long waitTime = first.endTime() - U.currentTimeMillis();
 
-                                if (waitTime > 0)
-                                    mux.wait(waitTime);
+                                if (waitTime > 0) {
+                                    blockingSectionBegin();
+
+                                    try {
+                                        mux.wait(waitTime);
+                                    }
+                                    finally {
+                                        blockingSectionEnd();
+                                    }
+                                }
                                 else
                                     break;
                             }
-                            else
-                                mux.wait(5000);
+                            else {
+                                blockingSectionBegin();
+
+                                try {
+                                    mux.wait(waitTimeout);
+                                }
+                                finally {
+                                    blockingSectionEnd();
+                                }
+                            }
                         }
                     }
                 }

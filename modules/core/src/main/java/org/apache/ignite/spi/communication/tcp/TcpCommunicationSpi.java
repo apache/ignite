@@ -106,11 +106,11 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
@@ -2410,6 +2410,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     IgniteEx igniteEx = (IgniteEx)ignite;
 
                     builder.workerListener(igniteEx.context().workersRegistry());
+                    builder.idlenessInterval(igniteEx.context().config().getFailureDetectionTimeout() / 2);
                 }
 
                 GridNioServer<Message> srvr = builder.build();
@@ -4125,6 +4126,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         buf.put((byte)((type >> 8) & 0xFF));
     }
 
+    private static WorkersRegistry getWorkersRegistry(Ignite ignite) {
+        return ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null;
+    }
+
     /**
      *
      */
@@ -4255,16 +4260,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** */
         private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
+        /** */
+        private long lastOnIdleTs = U.currentTimeMillis();
+
         /**
          * @param igniteInstanceName Ignite instance name.
          * @param log Logger.
          */
         private CommunicationWorker(String igniteInstanceName, IgniteLogger log) {
-            super(igniteInstanceName, "tcp-comm-worker", log,
-                ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null);
+            super(igniteInstanceName, "tcp-comm-worker", log, getWorkersRegistry(ignite));
         }
 
-        /** {@inheritDoc} */
+        /** */
         @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
                 log.debug("Tcp communication worker has been started.");
@@ -4273,7 +4280,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             try {
                 while (!isCancelled()) {
-                    DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
+                    blockingSectionBegin();
+
+                    DisconnectedSessionInfo disconnectData;
+                    try {
+                        disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
+
+                    if (U.currentTimeMillis() - lastOnIdleTs >
+                        ignite.configuration().getFailureDetectionTimeout() / 2) {
+                        onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
+                    }
 
                     if (disconnectData != null)
                         processDisconnect(disconnectData);
@@ -4295,7 +4317,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (err instanceof OutOfMemoryError)
                         ((IgniteEx)ignite).context().failure().process(new FailureContext(CRITICAL_ERROR, err));
                     else if (err != null)
-                        ((IgniteEx)ignite).context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                        ((IgniteEx)ignite).context().failure().process(
+                            new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
         }

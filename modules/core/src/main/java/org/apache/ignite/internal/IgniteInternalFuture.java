@@ -81,6 +81,33 @@ public interface IgniteInternalFuture<R> {
     public R getUninterruptibly() throws IgniteCheckedException;
 
     /**
+     * Synchronously waits for completion of the computation and returns computation result ignoring interrupts.
+     *
+     * @param timeout The maximum time to wait in milliseconds.
+     * @return Computation result.
+     * @throws IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if computation
+     *     was cancelled.
+     * @throws IgniteFutureTimeoutCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was
+     *     timed out.
+     * @throws IgniteCheckedException If computation failed.
+     */
+    public R getUninterruptibly(long timeout) throws IgniteCheckedException;
+
+    /**
+     * Synchronously waits for completion of the computation and returns computation result ignoring interrupts.
+     *
+     * @param timeout The maximum time to wait.
+     * @param unit The time unit of the {@code timeout} argument.
+     * @return Computation result.
+     * @throws IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if computation
+     *     was cancelled.
+     * @throws IgniteFutureTimeoutCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was
+     *     timed out.
+     * @throws IgniteCheckedException If computation failed.
+     */
+    public R getUninterruptibly(long timeout, TimeUnit unit) throws IgniteCheckedException;
+
+    /**
      * Cancels this future.
      *
      * @return {@code True} if future was canceled (i.e. was not finished prior to this call).

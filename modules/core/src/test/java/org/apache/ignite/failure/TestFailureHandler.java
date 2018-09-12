@@ -24,7 +24,7 @@ import org.apache.ignite.Ignite;
 /**
  * Test failure handler implementation
  */
-public class TestFailureHandler implements FailureHandler {
+public class TestFailureHandler extends AbstractFailureHandler {
     /** Invalidate. */
     private final boolean invalidate;
 

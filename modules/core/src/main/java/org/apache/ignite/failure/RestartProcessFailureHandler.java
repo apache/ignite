@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * This handler could be used only with ignite.(sh|bat) script.
  * Process will be terminated using {@link Ignition#restart(boolean)} call.
  */
-public class RestartProcessFailureHandler implements FailureHandler {
+public class RestartProcessFailureHandler extends AbstractFailureHandler {
     /** {@inheritDoc} */
     @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
         new Thread(

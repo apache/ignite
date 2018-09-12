@@ -120,6 +120,16 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     }
 
     /** {@inheritDoc} */
+    @Override public T getUninterruptibly(long timeout) throws IgniteCheckedException {
+        return get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public T getUninterruptibly(long timeout, TimeUnit unit) throws IgniteCheckedException {
+        return get();
+    }
+
+    /** {@inheritDoc} */
     @Override public void listen(IgniteInClosure<? super IgniteInternalFuture<T>> lsnr) {
         assert lsnr != null;
 

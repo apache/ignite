@@ -241,8 +241,14 @@ public class GridNioServer<T> {
     /** */
     private final IgniteRunnable balancer;
 
-    /** */
+    /**
+     * Interval in milliseconds between consequtive {@link GridWorkerListener#onIdle(GridWorker)} calls
+     * in server workers.
+     */
     private final boolean readWriteSelectorsAssign;
+
+    /** */
+    private final long idlenessInterval;
 
     /**
      * @param addr Address.
@@ -269,6 +275,8 @@ public class GridNioServer<T> {
      * @param msgQueueLsnr Message queue size listener.
      * @param readWriteSelectorsAssign If {@code true} then in/out connections are assigned to even/odd workers.
      * @param workerLsnr Worker lifecycle listener.
+     * @param idlenessInterval Interval in milliseconds between consequtive {@code workerLsnr.onIdle()} calls in
+     *     server workers.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -295,6 +303,7 @@ public class GridNioServer<T> {
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         boolean readWriteSelectorsAssign,
         @Nullable GridWorkerListener workerLsnr,
+        long idlenessInterval,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         if (port != -1)
@@ -400,6 +409,8 @@ public class GridNioServer<T> {
         }
 
         this.balancer = balancer0;
+
+        this.idlenessInterval = idlenessInterval;
     }
 
     /**
@@ -1781,15 +1792,25 @@ public class GridNioServer<T> {
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             Throwable err = null;
 
+            long lastOnIdleTs = U.currentTimeMillis();
+
             try {
                 boolean reset = false;
 
                 while (!closed) {
+                    updateHeartbeat();
+
                     try {
                         if (reset)
                             createSelector();
 
                         bodyInternal();
+
+                        if (U.currentTimeMillis() - lastOnIdleTs > idlenessInterval) {
+                            onIdle();
+
+                            lastOnIdleTs = U.currentTimeMillis();
+                        }
                     }
                     catch (IgniteCheckedException e) {
                         if (!Thread.currentThread().isInterrupted()) {
@@ -1925,6 +1946,8 @@ public class GridNioServer<T> {
                     SessionChangeRequest req0;
 
                     while ((req0 = changeReqs.poll()) != null) {
+                        updateHeartbeat();
+
                         switch (req0.operation()) {
                             case CONNECT: {
                                 NioOperationFuture fut = (NioOperationFuture)req0;
@@ -2096,6 +2119,8 @@ public class GridNioServer<T> {
                     int res = 0;
 
                     for (long i = 0; i < selectorSpins && res == 0; i++) {
+                        updateHeartbeat();
+
                         res = selector.selectNow();
 
                         if (res > 0) {
@@ -2129,6 +2154,8 @@ public class GridNioServer<T> {
                         if (!changeReqs.isEmpty())
                             continue;
 
+                        updateHeartbeat();
+
                         // Wake up every 2 seconds to check if closed.
                         if (selector.select(2000) > 0) {
                             // Walk through the ready keys collection and process network events.
@@ -2137,6 +2164,8 @@ public class GridNioServer<T> {
                             else
                                 processSelectedKeysOptimized(selectedKeys.flip());
                         }
+                        else
+                            updateHeartbeat();
 
                         // select() call above doesn't throw on interruption; checking it here to propagate timely.
                         if (!closed && !isCancelled && Thread.interrupted())
@@ -2825,6 +2854,9 @@ public class GridNioServer<T> {
         /** Selector for this thread. */
         private Selector selector;
 
+        /** */
+        private long lastOnIdleTs = U.currentTimeMillis();
+
         /**
          * @param igniteInstanceName Ignite instance name.
          * @param name Thread name.
@@ -2891,7 +2923,6 @@ public class GridNioServer<T> {
                     lsnr.onFailure(CRITICAL_ERROR, err);
                 else if (err != null)
                     lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
-
             }
         }
 
@@ -2903,13 +2934,23 @@ public class GridNioServer<T> {
         private void accept() throws IgniteCheckedException {
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
+                    updateHeartbeat();
+
                     // Wake up every 2 seconds to check if closed.
                     if (selector.select(2000) > 0)
                         // Walk through the ready keys collection and process date requests.
                         processSelectedKeys(selector.selectedKeys());
+                    else
+                        updateHeartbeat();
 
                     if (balancer != null)
                         balancer.run();
+
+                    if (U.currentTimeMillis() - lastOnIdleTs > idlenessInterval) {
+                        onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
+                    }
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.
@@ -3636,11 +3677,14 @@ public class GridNioServer<T> {
         /** Worker lifecycle listener to be used by server's worker threads. */
         private GridWorkerListener workerLsnr;
 
+        /** Interval in milliseconds between consequtive {@code workerLsnr.onIdle()} calls in server workers. */
+        private long idlenessInterval = Long.MAX_VALUE;
+
         /**
          * Finishes building the instance.
          *
          * @return Final instance of {@link GridNioServer}.
-         * @throws IgniteCheckedException If NIO client worker creation failed or address is already in use.
+         * @throws IgniteCheckedException Iq NIO client worker creation failed or address is already in use.
          */
         public GridNioServer<T> build() throws IgniteCheckedException {
             GridNioServer<T> ret = new GridNioServer<>(
@@ -3666,6 +3710,7 @@ public class GridNioServer<T> {
                 msgQueueLsnr,
                 readWriteSelectorsAssign,
                 workerLsnr,
+                idlenessInterval,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -3927,6 +3972,17 @@ public class GridNioServer<T> {
          */
         public Builder<T> workerListener(GridWorkerListener workerLsnr) {
             this.workerLsnr = workerLsnr;
+
+            return this;
+        }
+
+        /**
+         * @param idlenessInterval Interval in milliseconds between consequtive {@code workerLsnr.onIdle()} calls in
+         *     server workers.
+         * @return This for chaining.
+         */
+        public Builder<T> idlenessInterval(long idlenessInterval) {
+            this.idlenessInterval = idlenessInterval;
 
             return this;
         }

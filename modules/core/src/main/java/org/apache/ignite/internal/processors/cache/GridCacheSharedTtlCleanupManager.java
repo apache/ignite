@@ -129,11 +129,15 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             Throwable err = null;
 
+            long lastOnIdleTs = U.currentTimeMillis();
+
             try {
                 while (!isCancelled()) {
                     boolean expiredRemains = false;
 
                     for (GridCacheTtlManager mgr : mgrs) {
+                        updateHeartbeat();
+
                         if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
                             expiredRemains = true;
 
@@ -141,8 +145,16 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                             return;
                     }
 
+                    updateHeartbeat();
+
                     if (!expiredRemains)
                         U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
+
+                    if (U.currentTimeMillis() - lastOnIdleTs > cctx.gridConfig().getFailureDetectionTimeout() / 2) {
+                        onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
+                    }
                 }
             }
             catch (Throwable t) {
