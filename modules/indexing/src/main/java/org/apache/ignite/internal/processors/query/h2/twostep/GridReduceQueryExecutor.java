@@ -39,7 +39,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.CacheException;
@@ -114,7 +113,9 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.*;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
@@ -623,7 +624,7 @@ public class GridReduceQueryExecutor {
             if (qry.forUpdate()) {
                 // Indexing should have started TX at this point for FOR UPDATE query.
                 assert mvccEnabled && curTx != null;
-              
+
                 try {
                     TxTopologyVersionFuture topFut = new TxTopologyVersionFuture(curTx, mvccTracker.context());
 
@@ -800,8 +801,6 @@ public class GridReduceQueryExecutor {
                     }
                 });
 
-                boolean retry = false;
-
                 GridH2QueryRequest req = new GridH2QueryRequest()
                     .requestId(qryReqId)
                     .topologyVersion(topVer)
@@ -853,6 +852,8 @@ public class GridReduceQueryExecutor {
                 }
                 else
                     spec = pspec;
+
+                boolean retry;
 
                 if (send(nodes, req, spec, false)) {
                     awaitAllReplies(r, nodes, cancel);
@@ -953,7 +954,7 @@ public class GridReduceQueryExecutor {
                     Throwable disconnectedErr =
                         ((IgniteCheckedException)e).getCause(IgniteClientDisconnectedException.class);
 
-                    if ( QueryCancelledException.class.isAssignableFrom(e.getClass()) )
+                    if (QueryCancelledException.class.isAssignableFrom(e.getClass()))
                         cause = new QueryCancelledException(String.format(
                             "The query was cancelled while executing. [query=%s, localNodeId=%s, reason=%s]",
                             qry.originalSql(),
@@ -986,11 +987,12 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * Analyse reduce query run to decide if retry is required
-     * @param r reduce query run to be analysed
-     * @param sfuFut
-     * @return true if retry is required, false otherwise
-     * @throws IgniteCheckedException in case of reduce query run contains exception record
+     * Analyse reduce query run to decide if retry is required.
+     *
+     * @param r Reduce query run to be analysed.
+     * @param sfuFut Grid near tx select for update future.
+     * @return {@code true} if retry is required, {@code false} otherwise.
+     * @throws IgniteCheckedException In case of reduce query run contains exception record.
      */
     private boolean analyseCurrentRun(ReduceQueryRun r, GridNearTxSelectForUpdateFuture sfuFut)
         throws IgniteCheckedException {
@@ -1006,7 +1008,8 @@ public class GridReduceQueryExecutor {
                     : err;
 
                 throw new CacheException("Failed to run map query remotely." + cause.getMessage(), cause);
-            } else {
+            }
+            else {
                 // On-the-fly topology change must not be possible in FOR UPDATE case.
                 assert sfuFut == null;
 
@@ -1020,11 +1023,12 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * Builds flag out of parameters
-     * @param qry query parameter holder
-     * @param lazy if lazy execution
-     * @param mapQrysSize number of queries
-     * @return flag
+     * Builds flag out of parameters.
+     *
+     * @param qry Query parameter holder.
+     * @param lazy If lazy execution.
+     * @param mapQrysSize Number of queries.
+     * @return flag.
      */
     private int prepareFlags(GridCacheTwoStepQuery qry, boolean lazy, int mapQrysSize) {
         // Always enforce join order on map side to have consistent behavior.

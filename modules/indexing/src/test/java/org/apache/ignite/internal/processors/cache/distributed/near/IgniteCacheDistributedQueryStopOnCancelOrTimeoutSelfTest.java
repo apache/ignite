@@ -27,12 +27,12 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.F;
@@ -196,7 +196,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
     /** */
     private void testQueryCancel(int keyCnt, int valSize, String sql, int timeoutUnits, TimeUnit timeUnit,
-                                 boolean timeout, String cause) throws Exception {
+        boolean timeout, String cause) throws Exception {
         try (Ignite client = startGrid("client")) {
 
             IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
@@ -209,7 +209,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
                 Arrays.fill(tmp, ' ');
                 cache.put(i, new String(tmp));
 
-                if (i/(float)keyCnt >= p/10f) {
+                if (i / (float)keyCnt >= p / 10f) {
                     log().info("Loaded " + i + " of " + keyCnt);
 
                     p++;
@@ -225,7 +225,8 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
                 qry.setTimeout(timeoutUnits, timeUnit);
 
                 cursor = cache.query(qry);
-            } else {
+            }
+            else {
                 cursor = cache.query(qry);
 
                 client.scheduler().runLocal(new Runnable() {
@@ -235,7 +236,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
                 }, timeoutUnits, timeUnit);
             }
 
-            try(QueryCursor<List<?>> ignored = cursor) {
+            try (QueryCursor<List<?>> ignored = cursor) {
                 cursor.iterator();
 
                 if (!F.isEmpty(cause))
@@ -244,13 +245,13 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
             catch (CacheException ex) {
                 log().error("Got exception", ex);
 
-                log().error( "Cause of exception", ex.getCause());
+                log().error("Cause of exception", ex.getCause());
 
                 assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
 
-                assertTrue( "Cause message "+ex.getCause().getMessage(), ex.getCause().getMessage().contains(cause));
-            }finally {
-
+                assertTrue("Cause message " + ex.getCause().getMessage(), ex.getCause().getMessage().contains(cause));
+            }
+            finally {
                 // Give some time to clean up.
                 Thread.sleep(TimeUnit.MILLISECONDS.convert(timeoutUnits, timeUnit) + 3_000);
 

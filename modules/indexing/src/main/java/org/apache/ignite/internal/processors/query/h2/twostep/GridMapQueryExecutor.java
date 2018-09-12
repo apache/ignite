@@ -1053,7 +1053,7 @@ public class GridMapQueryExecutor {
             else {
                 U.error(log, "Failed to execute local query.", e);
 
-                Exception cancelled = X.cause(e,QueryCancelledException.class);
+                Exception cancelled = X.cause(e, QueryCancelledException.class);
 
                 sendError(node, reqId, (cancelled != null) ? cancelled : e);
 
