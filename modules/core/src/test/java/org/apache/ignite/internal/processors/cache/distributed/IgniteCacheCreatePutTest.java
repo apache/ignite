@@ -55,7 +55,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
     private boolean client;
 
     /** {@inheritDoc} */
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);

@@ -33,10 +33,16 @@
 
             background-color: initial;
             font-size: 16px;
-            line-height: 36px;
 
             &:hover {
                 text-decoration: none;
+            }
+
+            h5 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: normal;
+                line-height: 36px;
             }
         }
 
@@ -76,10 +82,13 @@
         & > header.header-with-selector {
             margin: 0;
             padding: 14px 20px;
+            min-height: 65px;
 
             border-bottom: 1px solid #ddd;
 
-            line-height: 36px;
+            sub {
+                bottom: 0;
+            }
         }
     }
 
