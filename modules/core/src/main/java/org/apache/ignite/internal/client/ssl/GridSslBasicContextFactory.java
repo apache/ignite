@@ -419,7 +419,7 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return getClass().getSimpleName() + parameters();
     }
 

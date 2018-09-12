@@ -26,12 +26,41 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             -var enabled = `${model}.fragmentizerEnabled`
 
             .pc-form-grid-col-60
-                +checkbox('Enabled', enabled, '"fragmentizerEnabled"', 'Fragmentizer enabled flag')
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    model: enabled,
+                    name: '"fragmentizerEnabled"',
+                    tip: 'Fragmentizer enabled flag'
+                })
             .pc-form-grid-col-30
-                +number('Concurrent files:', `${model}.fragmentizerConcurrentFiles`, '"fragmentizerConcurrentFiles"', enabled, '0', '0', 'Number of files to process concurrently by fragmentizer')
+                +form-field__number({
+                    label: 'Concurrent files:',
+                    model: `${model}.fragmentizerConcurrentFiles`,
+                    name: '"fragmentizerConcurrentFiles"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Number of files to process concurrently by fragmentizer'
+                })
             .pc-form-grid-col-30
-                +number('Throttling block length:', `${model}.fragmentizerThrottlingBlockLength`, '"fragmentizerThrottlingBlockLength"', enabled, '16777216', '1', 'Length of file chunk to transmit before throttling is delayed')
+                +form-field__number({
+                    label: 'Throttling block length:',
+                    model: `${model}.fragmentizerThrottlingBlockLength`,
+                    name: '"fragmentizerThrottlingBlockLength"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '16777216',
+                    min: '1',
+                    tip: 'Length of file chunk to transmit before throttling is delayed'
+                })
             .pc-form-grid-col-60
-                +number('Throttling delay:', `${model}.fragmentizerThrottlingDelay`, '"fragmentizerThrottlingDelay"', enabled, '200', '0', 'Delay in milliseconds for which fragmentizer is paused')
+                +form-field__number({
+                    label: 'Throttling delay:',
+                    model: `${model}.fragmentizerThrottlingDelay`,
+                    name: '"fragmentizerThrottlingDelay"',
+                    disabled: `!(${enabled})`,
+                    placeholder: '200',
+                    min: '0',
+                    tip: 'Delay in milliseconds for which fragmentizer is paused'
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'igfsFragmentizer')

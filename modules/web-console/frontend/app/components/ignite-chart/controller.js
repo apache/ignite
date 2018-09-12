@@ -82,7 +82,7 @@ export class IgniteChartController {
     /**
      * @param {{chartOptions: ng.IChangesObject<import('chart.js').ChartConfiguration>, chartTitle: ng.IChangesObject<string>, chartDataPoint: ng.IChangesObject<IgniteChartDataPoint>, chartHistory: ng.IChangesObject<Array<IgniteChartDataPoint>>}} changes
      */
-    $onChanges(changes) {
+    async $onChanges(changes) {
         if (this.chart && _.get(changes, 'refreshRate.currentValue'))
             this.onRefreshRateChanged(_.get(changes, 'refreshRate.currentValue'));
 
@@ -94,7 +94,7 @@ export class IgniteChartController {
 
         if (changes.chartHistory && changes.chartHistory.currentValue && changes.chartHistory.currentValue.length !== changes.chartHistory.previousValue.length) {
             if (!this.chart)
-                this.initChart();
+                await this.initChart();
 
             this.clearDatasets();
             this.localHistory = [...changes.chartHistory.currentValue];
@@ -118,7 +118,7 @@ export class IgniteChartController {
     async initChart() {
         /** @type {import('chart.js').ChartConfiguration} */
         this.config = {
-            type: 'line',
+            type: 'LineWithVerticalCursor',
             data: {
                 datasets: []
             },
@@ -187,8 +187,9 @@ export class IgniteChartController {
                 },
                 tooltips: {
                     mode: 'index',
-                    position: 'nearest',
+                    position: 'yCenter',
                     intersect: false,
+                    yAlign: 'center',
                     xPadding: 20,
                     yPadding: 20,
                     bodyFontSize: 13,
@@ -229,6 +230,40 @@ export class IgniteChartController {
         const chartModule = await import('chart.js');
         const Chart = chartModule.default;
 
+        Chart.Tooltip.positioners.yCenter = (elements) => {
+            const chartHeight = elements[0]._chart.height;
+            const tooltipHeight = 60;
+
+            return {x: elements[0].getCenterPoint().x, y: Math.floor(chartHeight / 2) - Math.floor(tooltipHeight / 2) };
+        };
+
+
+        // Drawing vertical cursor
+        Chart.defaults.LineWithVerticalCursor = Chart.defaults.line;
+        Chart.controllers.LineWithVerticalCursor = Chart.controllers.line.extend({
+            draw(ease) {
+                Chart.controllers.line.prototype.draw.call(this, ease);
+
+                if (this.chart.tooltip._active && this.chart.tooltip._active.length) {
+                    const activePoint = this.chart.tooltip._active[0];
+                    const ctx = this.chart.ctx;
+                    const x = activePoint.tooltipPosition().x;
+                    const topY = this.chart.scales['y-axis-0'].top;
+                    const bottomY = this.chart.scales['y-axis-0'].bottom;
+
+                    // draw line
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(x, topY);
+                    ctx.lineTo(x, bottomY);
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeStyle = '#0080ff';
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+        });
+
         await import('chartjs-plugin-streaming');
 
         this.chart = new Chart(this.ctx, this.config);
@@ -261,7 +296,7 @@ export class IgniteChartController {
                     this.config.data.datasets[datasetIndex].data.splice(0, this.config.data.datasets[datasetIndex].length - this.maxPointsNumber);
 
                 this.config.data.datasets[datasetIndex].data.push({x: dataPoint.x, y: dataPoint.y[key]});
-                this.config.data.datasets[datasetIndex].borderColor = this.chartOptions.chartColors[datasetIndex];
+                this.config.data.datasets[datasetIndex].borderColor = this.chartColors[datasetIndex];
                 this.config.data.datasets[datasetIndex].borderWidth = 2;
                 this.config.data.datasets[datasetIndex].fill = false;
             }
@@ -290,7 +325,7 @@ export class IgniteChartController {
         if (this.findDatasetIndex(datasetName) >= 0)
             throw new Error(`Dataset with name ${datasetName} is already in chart`);
         else
-            this.config.data.datasets.push({ label: datasetName, data: [] });
+            this.config.data.datasets.push({ label: datasetName, data: [], hidden: true });
     }
 
     findDatasetIndex(searchedDatasetLabel) {
@@ -298,14 +333,16 @@ export class IgniteChartController {
     }
 
     changeXRange(range) {
-        const deltaInMilliSeconds = range.value * 60 * 1000;
-        this.chart.config.options.plugins.streaming.duration = deltaInMilliSeconds;
+        if (this.chart) {
+            const deltaInMilliSeconds = range.value * 60 * 1000;
+            this.chart.config.options.plugins.streaming.duration = deltaInMilliSeconds;
 
-        this.clearDatasets();
-        this.newPoints.splice(0, this.newPoints.length, ...this.localHistory);
+            this.clearDatasets();
+            this.newPoints.splice(0, this.newPoints.length, ...this.localHistory);
 
-        this.onRefresh();
-        this.rerenderChart();
+            this.onRefresh();
+            this.rerenderChart();
+        }
     }
 
     onRefreshRateChanged(refreshRate) {
