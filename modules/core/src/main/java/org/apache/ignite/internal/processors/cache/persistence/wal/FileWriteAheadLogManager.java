@@ -1765,7 +1765,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (stopped)
                         break;
 
-                    final SegmentArchiveResult res = archiveSegment(toArchive);
+                    SegmentArchiveResult res;
+
+                    blockingSectionBegin();
+
+                    try {
+                        res = archiveSegment(toArchive);
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
                     synchronized (this) {
                         while (locked.containsKey(toArchive) && !stopped) {
