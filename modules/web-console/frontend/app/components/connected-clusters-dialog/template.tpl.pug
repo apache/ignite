@@ -16,7 +16,7 @@
 
 include /app/helpers/jade/mixins
 
-.modal.modal--ignite.theme--ignite.connected-clusters-dialog(tabindex='-1' role='dialog')
+.modal.modal--ignite.connected-clusters-dialog(tabindex='-1' role='dialog')
     .modal-dialog.modal-dialog--adjust-height
         form.modal-content(name='$ctrl.form' novalidate)
             .modal-header
@@ -30,5 +30,6 @@ include /app/helpers/jade/mixins
                     connected-clusters-list(data-options='$ctrl.clusters')
 
             .modal-footer
-                button.btn-ignite.btn-ignite--success(type='button' ng-click='$hide()') Ok
-                
+                div
+                    button.btn-ignite.btn-ignite--success(type='button' ng-click='$hide()') Ok
+

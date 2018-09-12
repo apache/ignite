@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.modal.modal--ignite.theme--ignite.ignite-nodes-dialog(tabindex='-1' role='dialog')
+.modal.modal--ignite.ignite-nodes-dialog(tabindex='-1' role='dialog')
     .modal-dialog.modal-dialog--adjust-height
         form.modal-content
             .modal-header
@@ -34,8 +34,9 @@
                     .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-pinning ui-grid-hovering)
 
             .modal-footer
-                button.pull-left.btn-ignite(disabled)
+                div
                     grid-item-selected(class='pull-left' grid-api='$ctrl.gridApi')
 
-                button.btn-ignite.btn-ignite--link-success(id='confirm-btn-close' ng-click='$cancel()') Cancel
-                button.btn-ignite.btn-ignite--success(id='confirm-btn-confirm' ng-click='$ok($ctrl.selected)' ng-disabled='$ctrl.selected.length === 0') Select node
+                div
+                    button.btn-ignite.btn-ignite--link-success(id='confirm-btn-close' ng-click='$cancel()') Cancel
+                    button.btn-ignite.btn-ignite--success(id='confirm-btn-confirm' ng-click='$ok($ctrl.selected)' ng-disabled='$ctrl.selected.length === 0') Select node

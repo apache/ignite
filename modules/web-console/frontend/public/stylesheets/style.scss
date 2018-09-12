@@ -1752,7 +1752,20 @@ treecontrol.tree-classic {
 }
 
 .getting-started {
+    min-height: 240px;
     margin: 15px 15px 300px;
+
+    ul {
+        line-height: 20px;
+    }
+
+    [class*="col-"] {
+        align-self: flex-start !important;
+    }
+
+    .align-center {
+        justify-content: center !important;
+    }
 }
 
 .getting-started-demo {
