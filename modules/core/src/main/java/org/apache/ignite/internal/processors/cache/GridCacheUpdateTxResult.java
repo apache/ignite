@@ -48,6 +48,9 @@ public class GridCacheUpdateTxResult {
     /** */
     private List<MvccLinkAwareSearchRow> mvccHistory;
 
+    /** */
+    private CacheObject prevVal;
+
     /**
      * Constructor.
      *
@@ -156,6 +159,22 @@ public class GridCacheUpdateTxResult {
      */
     public void mvccHistory(List<MvccLinkAwareSearchRow> mvccHistory) {
         this.mvccHistory = mvccHistory;
+    }
+
+    /**
+     *
+     * @return Previous value.
+     */
+    @Nullable  public CacheObject prevValue() {
+        return prevVal;
+    }
+
+    /**
+     *
+     * @param prevVal Previous value.
+     */
+    public void prevValue( @Nullable  CacheObject prevVal) {
+        this.prevVal = prevVal;
     }
 
     /** {@inheritDoc} */

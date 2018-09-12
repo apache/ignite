@@ -246,11 +246,21 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      */
     protected abstract T result0();
 
+    /**
+     *
+     * @return {@code True} if previous value is required.
+     */
+    public boolean needResult() {
+        return false;
+    }
 
     /**
      * Entry processed callback.
+     * @param key
+     * @param val
      */
-    protected abstract void onEntryProcessed();
+    protected abstract void onEntryProcessed(KeyCacheObject key,
+        CacheObject val);
 
     /**
      *
@@ -401,7 +411,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         topVer,
                                         null,
                                         mvccSnapshot,
-                                        isMoving(key.partition()));
+                                        isMoving(key.partition()),
+                                        needResult());
 
                                     break;
 
@@ -418,7 +429,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         mvccSnapshot,
                                         op.cacheOperation(),
                                         isMoving(key.partition()),
-                                        op.noCreate());
+                                        op.noCreate(),
+                                        needResult());
 
                                     break;
 
@@ -583,7 +595,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         if (!updRes.success())
             return;
 
-        onEntryProcessed();
+        onEntryProcessed(entry.key(), updRes.prevValue());
 
         if (op != EnlistOperation.LOCK)
             addToBatch(entry.key(), val, updRes.mvccHistory(), updRes.updateCounter(), entry.context().cacheId());
@@ -987,8 +999,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable T res, @Nullable Throwable err) {
-        assert res != null || err != null;
-
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
 

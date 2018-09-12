@@ -21,29 +21,36 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Future processing transaction enlisting and locking of entries
- * produces by complex DML queries with reduce step.
+ * Future processing transaction enlisting and locking of entries produces by cache API operations.
  */
-public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstractEnlistFuture implements UpdateSourceIterator<Object> {
-    /** */
-    private static final long serialVersionUID = -4933550335145438798L;
-
+public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<CacheObject> implements UpdateSourceIterator<Object> {
     /** */
     private EnlistOperation op;
 
     /** */
     private Iterator<Object> it;
 
+    /** */
+    private CacheObject res;
+
+    /** */
+    private boolean needRes;
+
     /**
+     * Constructor.
+     *
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
@@ -56,7 +63,7 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
      * @param rows Collection of rows.
      * @param op Operation.
      */
-    public GridDhtTxQueryResultsEnlistFuture(UUID nearNodeId,
+    public GridDhtTxEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
         MvccSnapshot mvccSnapshot,
         long threadId,
@@ -66,7 +73,8 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
         long timeout,
         GridCacheContext<?, ?> cctx,
         Collection<Object> rows,
-        EnlistOperation op) {
+        EnlistOperation op,
+        boolean needRes) {
         super(nearNodeId,
             nearLockVer,
             mvccSnapshot,
@@ -79,6 +87,7 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
             cctx);
 
         this.op = op;
+        this.needRes = needRes;
 
         it = rows.iterator();
 
@@ -91,22 +100,45 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
     }
 
     /** {@inheritDoc} */
+    @Override @Nullable protected CacheObject result0() {
+        return res;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key
+     * @param val
+     */
+    @Override protected void onEntryProcessed(KeyCacheObject key,
+        CacheObject val) {
+        if (needRes)
+            res = val;
+    }
+
+    /** {@inheritDoc} */
+    public boolean needResult() {
+        return needRes;
+    }
+
+    /** {@inheritDoc} */
     @Override public EnlistOperation operation() {
         return op;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNextX() {
+    public boolean hasNextX() {
         return it.hasNext();
     }
 
     /** {@inheritDoc} */
-    @Override public Object nextX() {
+    public Object nextX() {
         return it.next();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtTxQueryResultsEnlistFuture.class, this);
+        return S.toString(GridDhtTxEnlistFuture.class, this);
     }
+
 }

@@ -82,6 +82,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     private static final int FAST_MISMATCH = FAST_UPDATE << 1;
     /** */
     private static final int DELETED = FAST_MISMATCH << 1;
+    /** Force read full entry instead of header.  */
+    private static final int NEED_PREV_VALUE = DELETED << 1;
 
     /** */
     @GridToStringExclude
@@ -140,7 +142,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         boolean primary,
         boolean lockOnly,
         boolean needHistory,
-        boolean fastUpdate) {
+        boolean fastUpdate,
+        boolean needPrevValue) {
         super(key,
             val,
             ver,
@@ -168,6 +171,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
         if (fastUpdate)
             flags |= FAST_UPDATE;
+
+        if(needPrevValue)
+            flags |= NEED_PREV_VALUE;
 
         setFlags(flags);
     }
@@ -225,8 +231,13 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
                 if (removed)
                     setFlags(DELETED);
+                else {
+                    //TODO: IGNITE-7764: Check if condition is necessary and sufficient.
+                    if(res != ResultType.PREV_NULL && isFlagsSet(NEED_PREV_VALUE))
+                        oldRow = tree.getRow(io, pageAddr, idx, RowData.FULL);
                 else
                     oldRow = row;
+                }
 
                 setFlags(LAST_COMMITTED_FOUND);
             }
@@ -277,6 +288,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     else {
                         res = ResultType.PREV_NOT_NULL;
 
+                        if(isFlagsSet(NEED_PREV_VALUE)) //TODO: IGNITE-7371: Check if condition is necessary and sufficient.
+                            oldRow = tree.getRow(io, pageAddr, idx, RowData.FULL);
+                        else
                         oldRow = row;
                     }
 

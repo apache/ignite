@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 

@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.HashSet;
@@ -23,6 +40,9 @@ import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstract
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
 
+/**
+ * Test basic mvcc bulk cache operations.
+ */
 public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -135,16 +155,8 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testOperationConsistency() throws Exception {
-        checkOperationsConsistency(DML, false);
-        checkOperationsConsistency(DML, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOperationConsistency2() throws Exception {
-        checkOperationsConsistency(PUT, false);
-        checkOperationsConsistency(PUT, true);
+        checkOperationsConsistency(false);
+        checkOperationsConsistency(true);
     }
 
     /**
@@ -158,7 +170,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     private void checkOperations(ReadMode readModeBefore, ReadMode readModeAfter,
         WriteMode writeMode, boolean requestFromClient) throws Exception {
         Ignite node1 = grid(requestFromClient ? nodesCount() - 1 : 0);
-        Ignite node2 = grid(requestFromClient ? 0:nodesCount() - 1 );
+        Ignite node2 = grid(requestFromClient ? 0 : nodesCount() - 1);
 
         TestCache<Integer, MvccTestAccount> cache1 = new TestCache<>(node1.cache(DEFAULT_CACHE_NAME));
         TestCache<Integer, MvccTestAccount> cache2 = new TestCache<>(node2.cache(DEFAULT_CACHE_NAME));
@@ -238,10 +250,9 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /**
      * Checks SQL and CacheAPI operation see consistent results before and after update.
      *
-     * @param writeMode write mode for value update.
      * @throws Exception If failed.
      */
-    private void checkOperationsConsistency(WriteMode writeMode, boolean requestFromClient) throws Exception {
+    private void checkOperationsConsistency(boolean requestFromClient) throws Exception {
         Ignite node = grid(requestFromClient ? nodesCount() - 1 : 0);
 
         TestCache<Integer, MvccTestAccount> cache = new TestCache<>(node.cache(DEFAULT_CACHE_NAME));
@@ -254,12 +265,16 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
             keys.add(nearKey(grid(0).cache(DEFAULT_CACHE_NAME)));
         }
 
+        int updCnt = 1;
+
         final Map<Integer, MvccTestAccount> initialVals = keys.stream().collect(
             Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
 
         cache.cache.putAll(initialVals);
 
         IgniteTransactions txs = node.transactions();
+
+        Map<Integer, MvccTestAccount> updatedVals = null;
 
         try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
             Map<Integer, MvccTestAccount> vals1 = getEntries(cache, keys, GET);
@@ -268,34 +283,36 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
             assertEquals(initialVals, vals1);
             assertEquals(initialVals, vals2);
 
-            Map<Integer, MvccTestAccount> updatedVals = keys.stream().collect(Collectors.toMap(Function.identity(),
-                k -> new MvccTestAccount(k, 2)));
+            for (ReadMode readMode : new ReadMode[] {GET, SQL}) {
+                for (WriteMode writeMode : new WriteMode[] {PUT, DML}) {
 
-            updateEntries(cache, updatedVals, writeMode);
+                    int updCnt0 = updCnt++;
 
-            assertEquals(updatedVals, getEntries(cache, keys, GET));
-            assertEquals(updatedVals, getEntries(cache, keys, SQL));
+                    updatedVals = keys.stream().collect(Collectors.toMap(Function.identity(),
+                        k -> new MvccTestAccount(k, updCnt0)));
+
+                    updateEntries(cache, updatedVals, writeMode);
+
+                    //TODO: IGNITE-7764: Add remove operation checks.
+
+                    assertEquals(updatedVals, getEntries(cache, keys, readMode));
+                }
+            }
 
             tx.commit();
         }
 
-        Map<Integer, MvccTestAccount> updatedVals = keys.stream().collect(Collectors.toMap(Function.identity(),
-            k -> new MvccTestAccount(k, 2)));
-
-        try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-            updateEntries(cache, updatedVals, writeMode);
-
-            tx.commit();
-        }
-
         try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
             assertEquals(updatedVals, getEntries(cache, keys, GET));
             assertEquals(updatedVals, getEntries(cache, keys, SQL));
+
+            tx.commit();
         }
     }
 
     /**
      * Gets values with given read mode.
+     *
      * @param cache Cache.
      * @param keys Key to be read.
      * @param readMode Read mode.
@@ -319,8 +336,9 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
 
     /**
      * Updates entries with given write mode.
+     *
      * @param cache Cache.
-     * @param entries Entries update map.
+     * @param entries Entries to be updated.
      * @param writeMode Write mode.
      */
     protected void updateEntries(
@@ -334,13 +352,37 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
                 break;
             }
             case DML: {
-                for (Map.Entry<Integer, MvccTestAccount> e : entries.entrySet()) {
-                    if (e.getValue() == null)
-                        removeSql(cache, e.getKey());
-                    else
-                        mergeSql(cache, e.getKey(), e.getValue().val, e.getValue().updateCnt);
+                for (Map.Entry<Integer, MvccTestAccount> e : entries.entrySet())
+                    mergeSql(cache, e.getKey(), e.getValue().val, e.getValue().updateCnt);
 
-                }
+                break;
+            }
+            default:
+                fail();
+        }
+    }
+
+    /**
+     * Updates entries with given write mode.
+     *
+     * @param cache Cache.
+     * @param keys Key to be deleted.
+     * @param writeMode Write mode.
+     */
+    protected void removeEntries(
+        TestCache<Integer, MvccTestAccount> cache,
+        Set<Integer> keys,
+        WriteMode writeMode) {
+        switch (writeMode) {
+            case PUT: {
+                cache.cache.removeAll(keys);
+
+                break;
+            }
+            case DML: {
+                for (Integer key : keys)
+                    removeSql(cache, key);
+
                 break;
             }
             default:

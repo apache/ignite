@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -74,7 +76,15 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected void onEntryProcessed() {
+    @Override protected void onEntryProcessed(KeyCacheObject key,
+        CacheObject val) {
         cnt++;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
+        assert res != null || err != null;
+
+        return super.onDone(res, err);
     }
 }
