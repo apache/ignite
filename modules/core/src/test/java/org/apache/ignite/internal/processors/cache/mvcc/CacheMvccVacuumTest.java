@@ -115,6 +115,11 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
 
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
+
+        node1.cluster().active(true);
+
+        ensureVacuum(node0);
+        ensureVacuum(node1);
     }
 
     /**
