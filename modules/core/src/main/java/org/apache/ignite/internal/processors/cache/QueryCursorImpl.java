@@ -98,10 +98,9 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
             // Handle race with cancel and make sure the iterator resources are freed correctly.
             closeIter();
 
-            throw new CacheException(new QueryCancelledException(String.format(
-                "The query was cancelled while executing. Client node should provide details [reason=%s]",
-                "Cancelled by client"
-            )));
+            throw new CacheException(new QueryCancelledException("The query was cancelled while executing. " +
+                "Client node should provide details [reason=Cancelled by client]"
+            ));
         }
 
         assert iter != null;

@@ -33,7 +33,10 @@ public class QueryCancelledException extends IgniteCheckedException {
         super("The qry was cancelled while executing");
     }
 
-    /** */
+    /**
+     * Customized constructor receives message
+     * @param msg Message
+     */
     public QueryCancelledException(String msg) {
         super(msg);
     }
