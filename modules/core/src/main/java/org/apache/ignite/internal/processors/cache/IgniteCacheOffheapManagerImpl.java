@@ -201,7 +201,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
+    @Override public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
         initPendingTree(cctx);
     }
 

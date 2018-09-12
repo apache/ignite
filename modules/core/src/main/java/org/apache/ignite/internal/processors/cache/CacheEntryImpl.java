@@ -103,7 +103,7 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return "Entry [key=" + key + ", val=" + val + ']';
     }
 }

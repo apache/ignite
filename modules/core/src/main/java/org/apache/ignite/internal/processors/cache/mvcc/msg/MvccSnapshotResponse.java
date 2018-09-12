@@ -150,7 +150,7 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
     }
 
     /** {@inheritDoc} */
-    public long counter() {
+    @Override public long counter() {
         return cntr;
     }
 

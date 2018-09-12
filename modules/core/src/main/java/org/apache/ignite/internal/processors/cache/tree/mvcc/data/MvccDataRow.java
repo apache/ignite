@@ -188,7 +188,7 @@ public class MvccDataRow extends DataRow {
     }
 
     /** {@inheritDoc} */
-    public byte mvccTxState() {
+    @Override public byte mvccTxState() {
         return mvccTxState;
     }
 

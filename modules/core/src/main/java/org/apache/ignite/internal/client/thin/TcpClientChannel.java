@@ -146,7 +146,7 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    public <T> T receive(ClientOperation op, long reqId, Function<BinaryInputStream, T> payloadReader)
+    @Override public <T> T receive(ClientOperation op, long reqId, Function<BinaryInputStream, T> payloadReader)
         throws ClientConnectionException, ClientAuthorizationException {
 
         final int MIN_RES_SIZE = 8 + 4; // minimal response size: long (8 bytes) ID + int (4 bytes) status
@@ -190,7 +190,7 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    public ProtocolVersion serverVersion() {
+    @Override public ProtocolVersion serverVersion() {
         return ver;
     }
 

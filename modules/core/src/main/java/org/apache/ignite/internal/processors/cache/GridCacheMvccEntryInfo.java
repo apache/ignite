@@ -121,7 +121,7 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
     }
 
     /** {@inheritDoc} */
-    public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf, writer))

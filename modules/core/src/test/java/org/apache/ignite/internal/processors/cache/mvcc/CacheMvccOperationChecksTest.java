@@ -45,7 +45,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     private final static Class[] E = new Class[]{};
 
     /** {@inheritDoc} */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 

@@ -49,7 +49,7 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storable {
     /**
      * @return Key.
      */
-    public String key() {
+    @Override public String key() {
         return key;
     }
 

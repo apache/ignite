@@ -96,7 +96,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxAbstractEnlistFuture 
     /**
      * @param topLocked Topology locked flag.
      */
-    protected void map(final boolean topLocked) {
+    @Override protected void map(final boolean topLocked) {
         MiniFuture mini = null;
 
         try {

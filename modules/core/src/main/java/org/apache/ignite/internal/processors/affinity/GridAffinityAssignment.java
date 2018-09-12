@@ -118,21 +118,21 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     /**
      * @return Affinity assignment computed by affinity function.
      */
-    public List<List<ClusterNode>> idealAssignment() {
+    @Override public List<List<ClusterNode>> idealAssignment() {
         return idealAssignment;
     }
 
     /**
      * @return Affinity assignment.
      */
-    public List<List<ClusterNode>> assignment() {
+    @Override public List<List<ClusterNode>> assignment() {
         return assignment;
     }
 
     /**
      * @return Topology version.
      */
-    public AffinityTopologyVersion topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -225,7 +225,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param nodeId Node ID to get primary partitions for.
      * @return Primary partitions for specified node ID.
      */
-    public Set<Integer> primaryPartitions(UUID nodeId) {
+    @Override public Set<Integer> primaryPartitions(UUID nodeId) {
         Set<Integer> set = primary.get(nodeId);
 
         return set == null ? Collections.<Integer>emptySet() : set;
@@ -237,7 +237,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param nodeId Node ID to get backup partitions for.
      * @return Backup partitions for specified node ID.
      */
-    public Set<Integer> backupPartitions(UUID nodeId) {
+    @Override public Set<Integer> backupPartitions(UUID nodeId) {
         Set<Integer> set = backup.get(nodeId);
 
         return set == null ? Collections.<Integer>emptySet() : set;

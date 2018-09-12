@@ -61,14 +61,14 @@ public class MvccVersionImpl implements MvccVersion, Message {
     /**
      * @return Coordinator version.
      */
-    public long coordinatorVersion() {
+    @Override public long coordinatorVersion() {
         return crdVer;
     }
 
     /**
      * @return Local counter.
      */
-    public long counter() {
+    @Override public long counter() {
         return cntr;
     }
 
