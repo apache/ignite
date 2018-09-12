@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.timeout;
 import java.io.Closeable;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -30,6 +32,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 
@@ -135,6 +139,57 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
      */
     public boolean removeTimeoutObject(GridTimeoutObject timeoutObj) {
         return timeoutObjs.remove(timeoutObj);
+    }
+
+    /**
+     * Wait for a future (listen with timeout).
+     * @param fut Future.
+     * @param timeout Timeout millis. -1 means expired timeout, 0 - no timeout.
+     * @param clo Finish closure. First argument contains error on future or null if no errors,
+     * second is {@code true} if wait timed out.
+     */
+    public void waitAsync(final IgniteInternalFuture<?> fut,
+        long timeout,
+        IgniteBiInClosure<IgniteCheckedException, Boolean> clo) {
+        if (timeout == -1) {
+            clo.apply(null, false);
+
+            return;
+        }
+
+        if (fut == null || fut.isDone())
+            clo.apply(null, false);
+        else {
+            WaitFutureTimeoutObject timeoutObj = null;
+
+            if (timeout > 0) {
+                timeoutObj = new WaitFutureTimeoutObject(fut, timeout, clo);
+
+                addTimeoutObject(timeoutObj);
+            }
+
+            final WaitFutureTimeoutObject finalTimeoutObj = timeoutObj;
+
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    if (finalTimeoutObj != null && !finalTimeoutObj.finishGuard.compareAndSet(false, true))
+                        return;
+
+                    try {
+                        fut.get();
+
+                        clo.apply(null, false);
+                    }
+                    catch (IgniteCheckedException e) {
+                        clo.apply(e, false);
+                    }
+                    finally {
+                        if (finalTimeoutObj != null)
+                            removeTimeoutObject(finalTimeoutObj);
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -307,6 +362,45 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CancelableTask.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class WaitFutureTimeoutObject extends GridTimeoutObjectAdapter {
+        /** */
+        private final IgniteInternalFuture<?> fut;
+
+        /** */
+        private final AtomicBoolean finishGuard = new AtomicBoolean();
+
+        /** */
+        private final IgniteBiInClosure<IgniteCheckedException, Boolean> clo;
+
+        /**
+         * @param fut Future.
+         * @param timeout Timeout.
+         * @param clo Closure to call on timeout.
+         */
+        WaitFutureTimeoutObject(IgniteInternalFuture<?> fut, long timeout,
+            IgniteBiInClosure<IgniteCheckedException, Boolean> clo) {
+            super(timeout);
+
+            this.fut = fut;
+
+            this.clo = clo;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            if (!fut.isDone() && finishGuard.compareAndSet(false, true))
+                clo.apply(null, true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(WaitFutureTimeoutObject.class, this);
         }
     }
 }

@@ -17,13 +17,11 @@
 
 package org.apache.ignite.tensorflow.core.longrunning;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
@@ -67,7 +65,7 @@ public class LongRunningProcessManagerTest {
 
         List<LongRunningProcess> list = Collections.singletonList(new LongRunningProcess(nodeId, () -> {}));
 
-        LongRunningProcessManager mgr = new LongRunningProcessManager((Supplier<Ignite> & Serializable)() -> ignite);
+        LongRunningProcessManager mgr = new LongRunningProcessManager(ignite);
         Map<UUID, List<UUID>> res = mgr.start(list);
 
         assertEquals(1, res.size());
@@ -97,7 +95,7 @@ public class LongRunningProcessManagerTest {
         Map<UUID, List<UUID>> procIds = new HashMap<>();
         procIds.put(nodeId, Collections.singletonList(procId));
 
-        LongRunningProcessManager mgr = new LongRunningProcessManager((Supplier<Ignite> & Serializable)() -> ignite);
+        LongRunningProcessManager mgr = new LongRunningProcessManager(ignite);
         Map<UUID, List<LongRunningProcessStatus>> res = mgr.ping(procIds);
 
         assertEquals(1, res.size());
@@ -127,7 +125,7 @@ public class LongRunningProcessManagerTest {
         Map<UUID, List<UUID>> procIds = new HashMap<>();
         procIds.put(nodeId, Collections.singletonList(procId));
 
-        LongRunningProcessManager mgr = new LongRunningProcessManager((Supplier<Ignite> & Serializable)() -> ignite);
+        LongRunningProcessManager mgr = new LongRunningProcessManager(ignite);
         Map<UUID, List<LongRunningProcessStatus>> res = mgr.stop(procIds, true);
 
         assertEquals(1, res.size());
@@ -157,7 +155,7 @@ public class LongRunningProcessManagerTest {
         Map<UUID, List<UUID>> procIds = new HashMap<>();
         procIds.put(nodeId, Collections.singletonList(procId));
 
-        LongRunningProcessManager mgr = new LongRunningProcessManager((Supplier<Ignite> & Serializable)() -> ignite);
+        LongRunningProcessManager mgr = new LongRunningProcessManager(ignite);
         Map<UUID, List<LongRunningProcessStatus>> res = mgr.clear(procIds);
 
         assertEquals(1, res.size());

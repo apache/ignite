@@ -141,6 +141,8 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
             waitForTopology(SRV_CNT + CLIENTS_CNT);
 
+            awaitPartitionMapExchange();
+
             verifyPartitionToNodeMappings();
 
             verifyAffinityTopologyVersions();

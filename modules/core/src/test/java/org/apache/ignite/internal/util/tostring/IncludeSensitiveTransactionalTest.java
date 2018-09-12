@@ -22,7 +22,7 @@ import org.apache.ignite.transactions.Transaction;
 /**
  *
  */
-public class IncludeSensitiveTransactionalTest extends IncludeSensitiveTest {
+public class IncludeSensitiveTransactionalTest extends IncludeSensitiveAbstractTest {
     /** Active transaction. */
     private Transaction tx;
 

@@ -51,9 +51,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync;
@@ -101,6 +101,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -312,6 +313,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Rollback all active transactions with acquired Mvcc snapshot.
+     */
+    public void rollbackMvccTxOnCoordinatorChange() {
+        for (IgniteInternalTx tx : activeTransactions()) {
+            if (tx.mvccSnapshot() != null)
+                ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
+        }
+    }
+
+    /**
      * @param cacheId Cache ID.
      * @param txMap Transactions map.
      */
@@ -455,6 +466,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout transaction timeout.
+     * @param sql Whether this transaction is being started via SQL API or not, or {@code null} if unknown.
      * @param txSize Expected transaction size.
      * @param lb Label.
      * @return New transaction.
@@ -467,6 +479,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TransactionIsolation isolation,
         long timeout,
         boolean storeEnabled,
+        Boolean sql,
         int txSize,
         @Nullable String lb
     ) {
@@ -486,6 +499,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             isolation,
             timeout,
             storeEnabled,
+            sql,
             txSize,
             subjId,
             taskNameHash,
@@ -532,6 +546,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     else
                         sysThreadMap.put(new TxThreadKey(tx.threadId(), cacheCtx.cacheId()), tx);
                 }
+
+                ((GridNearTxLocal)tx).recordStateChangedEvent(EVT_TX_STARTED);
             }
 
             // Handle mapped versions.
@@ -1092,15 +1108,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void removeTxReturn(GridCacheVersion xidVer) {
         Object prev = completedVersHashMap.get(xidVer);
 
-        if (Boolean.FALSE.equals(prev)) // Tx can be rolled back.
-            return;
-
-        assert prev instanceof GridCacheReturnCompletableWrapper:
-            prev + " instead of GridCacheReturnCompletableWrapper";
-
-        boolean res = completedVersHashMap.replace(xidVer, prev, true);
-
-        assert res;
+        if (prev instanceof GridCacheReturnCompletableWrapper)
+            completedVersHashMap.replace(xidVer, prev, true);
     }
 
     /**

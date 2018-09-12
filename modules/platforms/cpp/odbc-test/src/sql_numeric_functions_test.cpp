@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(TestNumericFunctionAbs)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int32_t>("SELECT {fn ABS(i32Field)} FROM TestType", std::abs(in.i32Field));
+    CheckSingleResult<SQLINTEGER>("SELECT {fn ABS(i32Field)} FROM TestType", std::abs(in.i32Field));
 }
 
 BOOST_AUTO_TEST_CASE(TestNumericFunctionAcos)
@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE(TestNumericFunctionMod)
 
     testCache.Put(1, in);
 
-    CheckSingleResult<int64_t>("SELECT {fn MOD(i64Field, 3)} FROM TestType", in.i64Field % 3);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn MOD(i64Field, 3)} FROM TestType", in.i64Field % 3);
 }
 
 BOOST_AUTO_TEST_CASE(TestNumericFunctionPi)

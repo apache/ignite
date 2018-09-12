@@ -57,6 +57,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -845,6 +847,33 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         for (int i = Integer.MIN_VALUE; i < 0; i++)
             assertEquals(0, U.ceilPow2(i));
+    }
+
+    /**
+     *
+     */
+    public void testIsOldestNodeVersionAtLeast() {
+        IgniteProductVersion v240 = IgniteProductVersion.fromString("2.4.0");
+        IgniteProductVersion v241 = IgniteProductVersion.fromString("2.4.1");
+        IgniteProductVersion v250 = IgniteProductVersion.fromString("2.5.0");
+        IgniteProductVersion v250ts = IgniteProductVersion.fromString("2.5.0-b1-3");
+
+        TcpDiscoveryNode node240 = new TcpDiscoveryNode();
+        node240.version(v240);
+
+        TcpDiscoveryNode node241 = new TcpDiscoveryNode();
+        node241.version(v241);
+
+        TcpDiscoveryNode node250 = new TcpDiscoveryNode();
+        node250.version(v250);
+
+        TcpDiscoveryNode node250ts = new TcpDiscoveryNode();
+        node250ts.version(v250ts);
+
+        assertTrue(U.isOldestNodeVersionAtLeast(v240, Arrays.asList(node240, node241, node250, node250ts)));
+        assertFalse(U.isOldestNodeVersionAtLeast(v241, Arrays.asList(node240, node241, node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v250, Arrays.asList(node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v250ts, Arrays.asList(node250, node250ts)));
     }
 
     /**

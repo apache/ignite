@@ -93,6 +93,6 @@ if [ -z "$JVM_OPTS" ] ; then
     fi
 fi
 
-JVM_OPTS="${JVM_OPTS} -Djava.util.logging.config.file=java.util.logging.properties -Djava.net.useSystemProxies=true"
+JVM_OPTS="${JVM_OPTS} -Djava.net.useSystemProxies=true"
 
 "$JAVA" ${JVM_OPTS} -cp "*" org.apache.ignite.console.agent.AgentLauncher "$@"

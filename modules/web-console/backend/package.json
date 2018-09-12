@@ -1,6 +1,6 @@
 {
   "name": "ignite-web-console",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "Interactive Web console for configuration, executing SQL queries and monitoring of Apache Ignite Cluster",
   "private": true,
   "main": "index.js",
@@ -56,7 +56,7 @@
     "fire-up": "1.0.0",
     "glob": "7.1.2",
     "jszip": "3.1.3",
-    "lodash": "4.17.4",
+    "lodash": "4.17.10",
     "migrate-mongoose": "3.2.2",
     "mongodb-prebuilt": "6.3.3",
     "mongoose": "4.11.4",

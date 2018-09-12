@@ -314,7 +314,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
                 syncEvent(key, null, cache, 1);
 
-                checkEvent(evts.iterator(), key, REMOVED, null, 2);
+                checkEvent(evts.iterator(), key, REMOVED, 2, 2);
 
                 log.info("Check synchronous expire event [key=" + key + ']');
 
@@ -335,7 +335,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                     assertEquals(1, evts.size());
                 }
 
-                checkEvent(evts.iterator(), key, EXPIRED, null, 3);
+                checkEvent(evts.iterator(), key, EXPIRED, 3, 3);
 
                 assertEquals(0, evts.size());
             }
@@ -764,7 +764,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             switch (evt.getEventType()) {
                 case REMOVED:
-                    assertNull(evt.getValue());
+                    assertEquals(evt.getOldValue(), evt.getValue());
 
                     assertEquals(vals.get(evt.getKey()), evt.getOldValue());
 
@@ -797,7 +797,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                     break;
 
                 case EXPIRED:
-                    assertNull(evt.getValue());
+                    assertEquals(evt.getOldValue(), evt.getValue());
 
                     assertEquals(value(-1), evt.getOldValue());
 
@@ -896,7 +896,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         U.sleep(700);
 
         if (!eagerTtl())
-            assertNull(primaryCache(key, cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
+            assertNull(primaryCache(key(key), cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
 
         IgniteCache<Object, Object> cache1 = cache;
 
@@ -917,7 +917,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         U.sleep(200);
 
         if (!eagerTtl())
-            assertNull(primaryCache(key, cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
+            assertNull(primaryCache(key(key), cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
 
         evtsLatch.await(5000, MILLISECONDS);
 
@@ -934,13 +934,13 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         }
 
         if (rmv)
-            checkEvent(iter, key, REMOVED, null, oldVal ? UPDATES : null);
+            checkEvent(iter, key, REMOVED, oldVal ? UPDATES : null, oldVal ? UPDATES : null);
 
         if (create)
             checkEvent(iter, key, CREATED, 10, null);
 
         if (expire)
-            checkEvent(iter, key, EXPIRED, null, oldVal ? 10 : null);
+            checkEvent(iter, key, EXPIRED, oldVal ? 10 : null, oldVal ? 10 : null);
 
         if (create)
             checkEvent(iter, key, CREATED, 1, null);
@@ -949,13 +949,13 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
             checkEvent(iter, key, UPDATED, 2, oldVal ? 1 : null);
 
         if (rmv)
-            checkEvent(iter, key, REMOVED, null, oldVal ? 2 : null);
+            checkEvent(iter, key, REMOVED, oldVal ? 2 : null, oldVal ? 2 : null);
 
         if (create)
             checkEvent(iter, key, CREATED, 20, null);
 
         if (expire)
-            checkEvent(iter, key, EXPIRED, null, oldVal ? 20 : null);
+            checkEvent(iter, key, EXPIRED, oldVal ? 20 : null, oldVal ? 20 : null);
 
         assertEquals(0, evts.size());
 

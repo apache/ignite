@@ -42,13 +42,20 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /** Security context or {@code null} if security is disabled. */
     private SecurityContext secCtx;
 
+    /** Connection ID. */
+    private long connId;
+
+    /** Authorization context. */
+    private AuthorizationContext authCtx;
+
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    protected ClientListenerAbstractConnectionContext(GridKernalContext ctx) {
+    protected ClientListenerAbstractConnectionContext(GridKernalContext ctx, long connId) {
         this.ctx = ctx;
+        this.connId = connId;
     }
 
     /**
@@ -65,6 +72,16 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
         return secCtx;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public AuthorizationContext authorizationContext() {
+        return authCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long connectionId() {
+        return connId;
+    }
+
     /**
      * Perform authentication.
      *
@@ -72,8 +89,6 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      * @throws IgniteCheckedException If failed.
      */
     protected AuthorizationContext authenticate(String user, String pwd) throws IgniteCheckedException {
-        AuthorizationContext authCtx;
-
         if (ctx.security().enabled())
             authCtx = authenticateExternal(user, pwd).authorizationContext();
         else if (ctx.authentication().enabled()) {

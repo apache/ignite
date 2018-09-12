@@ -49,6 +49,7 @@ public class AuthenticationProcessorNPEOnStartTest extends GridCommonAbstractTes
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(200L * 1024 * 1024)
                 .setPersistenceEnabled(true)));
 
         return cfg;

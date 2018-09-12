@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -166,6 +167,8 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
         cfg.setGridLogger(getTestResources().getLogger());
 
         cfg.setIgniteInstanceName(igniteInstanceName);
+
+        cfg.setFailureHandler(new NoOpFailureHandler());
 
         for (CacheConfiguration cCfg : cfg.getCacheConfiguration()) {
             if (cCfg.getCacheMode() == CacheMode.PARTITIONED) {

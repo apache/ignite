@@ -339,7 +339,7 @@ namespace ignite
                 timestampFields[i].hour = timeFields[i].hour;
                 timestampFields[i].minute = timeFields[i].minute;
                 timestampFields[i].second = timeFields[i].second;
-                timestampFields[i].fraction = std::abs(seed * 914873) % 1000000000;
+                timestampFields[i].fraction = static_cast<uint64_t>(std::abs(seed * 914873)) % 1000000000;
 
                 for (int j = 0; j < 42; ++j)
                     i8ArrayFields[i * 42 + j] = seed * 42 + j;

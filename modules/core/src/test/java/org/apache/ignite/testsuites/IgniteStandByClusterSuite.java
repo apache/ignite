@@ -21,12 +21,9 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBaselineTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteBaselineAffinityTopologyActivationTest;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStreamerTest;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStructureTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateFailOverTest;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateServiceTest;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteNoParrallelClusterIsAllowedTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteStandByClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToActiveCluster;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToInActiveCluster;
@@ -65,12 +62,15 @@ public class IgniteStandByClusterSuite extends TestSuite {
         suite.addTestSuite(JoinInActiveNodeToActiveClusterWithPersistence.class);
         suite.addTestSuite(JoinInActiveNodeToInActiveClusterWithPersistence.class);
 
-        suite.addTestSuite(IgniteChangeGlobalStateTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateCacheTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateDataStructureTest.class);
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTestSuite(IgniteChangeGlobalStateTest.class);
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTestSuite(IgniteChangeGlobalStateCacheTest.class);
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTestSuite(IgniteChangeGlobalStateDataStructureTest.class);
+//TODO https://issues.apache.org/jira/browse/IGNITE-9081 suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
+
         suite.addTestSuite(IgniteChangeGlobalStateDataStreamerTest.class);
         suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
+
+        suite.addTestSuite(IgniteNoParrallelClusterIsAllowedTest.class);
 
         suite.addTestSuite(CacheBaselineTopologyTest.class);
         suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);

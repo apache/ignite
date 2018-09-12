@@ -115,6 +115,8 @@ public class AgentClusterDemo {
         throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
+        cfg.setGridLogger(new Slf4jLogger());
+
         cfg.setIgniteInstanceName((client ? CLN_NODE_NAME : SRV_NODE_NAME) + gridIdx);
         cfg.setLocalHost("127.0.0.1");
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
@@ -180,8 +182,7 @@ public class AgentClusterDemo {
 
         cfg.setDataStorageConfiguration(dataStorageCfg);
 
-        if (client)
-            cfg.setClientMode(true);
+        cfg.setClientMode(client);
 
         return cfg;
     }

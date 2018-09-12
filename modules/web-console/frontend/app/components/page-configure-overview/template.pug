@@ -14,10 +14,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-h1.pc-page-header Configuration
-
-.pco-relative-root
-    .pco-table-context-buttons
+header.header-with-selector
+    div
+        h1 Configuration
+        version-picker
+    div
         a.btn-ignite.btn-ignite--primary(
             type='button'
             ui-sref='^.edit({clusterID: "new"})'
@@ -25,6 +26,8 @@ h1.pc-page-header Configuration
             svg.icon-left(ignite-icon='plus')
             | Create Cluster Configuration
         button-import-models(cluster-id='::"new"')
+
+.pco-relative-root
     pc-items-table(
         table-title='::"My Cluster Configurations"'
         column-defs='$ctrl.clustersColumnDefs'
@@ -32,9 +35,10 @@ h1.pc-page-header Configuration
         on-action='$ctrl.onClustersAction($event)'
         max-rows-to-show='10'
         one-way-selection='::false'
+        selected-row-id='$ctrl.selectedRowsIDs$|async:this'
         on-selection-change='$ctrl.selectedRows$.next($event)'
         actions-menu='$ctrl.actions$|async:this'
     )
         footer-slot(ng-hide='($ctrl.shortClusters$|async:this).length' style='font-style: italic')
             | You have no cluster configurations.
-            a.link-success(ui-sref='base.configuration.edit.basic({clusterID: "new"})')  Create one?
+            a.link-success(ui-sref='base.configuration.edit.basic({clusterID: "new"})') Create one?

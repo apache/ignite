@@ -37,8 +37,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
@@ -81,6 +83,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
     private int discoveryPort = 27000;
 
     /** Methods to warmup. */
+    @GridToStringInclude
     private String[] warmupMethods = {"put", "putx", "get", "remove", "removex", "putIfAbsent", "replace"};
 
     /**
@@ -566,5 +569,10 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
         @Override protected void operation(int key) throws Exception {
             cache.replace(key, key, key);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BasicWarmupClosure.class, this);
     }
 }

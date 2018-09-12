@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 
 /**
@@ -37,7 +37,7 @@ public class LabeledDatasetHelper {
      * @param rsrcPath path to dataset.
      * @return null if path is incorrect.
      */
-    public static LabeledDataset loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
+    public static LabeledVectorSet loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
         try {
             Path path = Paths.get(LabeledDatasetHelper.class.getClassLoader().getResource(rsrcPath).toURI());
             try {

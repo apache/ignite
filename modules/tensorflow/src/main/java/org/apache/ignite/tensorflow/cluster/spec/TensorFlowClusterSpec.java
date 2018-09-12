@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.Ignite;
 
 /**
  * TensorFlow cluster specification.
@@ -50,6 +51,44 @@ public class TensorFlowClusterSpec implements Serializable {
         tasks.add(new TensorFlowServerAddressSpec(nodeId, port));
 
         return this;
+    }
+
+    /**
+     * Formats cluster specification so that TensorFlow accepts it.
+     *
+     * @param ignite Ignite instance.
+     * @return Formatted cluster specification.
+     */
+    public String format(Ignite ignite) {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("{\n");
+
+        for (Map.Entry<String, List<TensorFlowServerAddressSpec>> entry : jobs.entrySet()) {
+            builder
+                .append("\t\"")
+                .append(entry.getKey())
+                .append("\" : [ ");
+
+            for (TensorFlowServerAddressSpec address : entry.getValue()) {
+                builder
+                    .append("\n\t\t\"")
+                    .append(address.format(ignite))
+                    .append("\", ");
+            }
+
+            if (!entry.getValue().isEmpty())
+                builder.delete(builder.length() - 2, builder.length());
+
+            builder.append("\n\t],\n");
+        }
+
+        if (!jobs.isEmpty())
+            builder.delete(builder.length() - 2, builder.length() - 1);
+
+        builder.append('}');
+
+        return builder.toString();
     }
 
     /** */

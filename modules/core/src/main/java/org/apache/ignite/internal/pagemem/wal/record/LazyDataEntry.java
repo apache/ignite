@@ -96,6 +96,9 @@ public class LazyDataEntry extends DataEntry {
                 IgniteCacheObjectProcessor co = cctx.kernalContext().cacheObjects();
 
                 key = co.toKeyCacheObject(cacheCtx.cacheObjectContext(), keyType, keyBytes);
+
+                if (key.partition() == -1)
+                    key.partition(partId);
             }
 
             return key;

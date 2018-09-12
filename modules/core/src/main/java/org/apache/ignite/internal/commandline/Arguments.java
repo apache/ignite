@@ -41,7 +41,7 @@ public class Arguments {
     private String pwd;
 
     /** Force option is used for auto confirmation. */
-    private boolean force;
+    private boolean autoConfirmation;
 
     /**
      * Action for baseline command.
@@ -91,11 +91,11 @@ public class Arguments {
      * @param walArgs WAL args.
      * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
-     * @param force Force flag.
+     * @param autoConfirmation Auto confirmation flag.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
                      String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
-                     Long pingTimeout, Long pingInterval, boolean force) {
+                     Long pingTimeout, Long pingInterval, boolean autoConfirmation) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -109,7 +109,7 @@ public class Arguments {
         this.walArgs = walArgs;
         this.pingTimeout = pingTimeout;
         this.pingInterval = pingInterval;
-        this.force = force;
+        this.autoConfirmation = autoConfirmation;
     }
 
     /**
@@ -208,9 +208,9 @@ public class Arguments {
     }
 
     /**
-     * @return Force option.
+     * @return Auto confirmation option.
      */
-    public boolean force() {
-        return force;
+    public boolean autoConfirmation() {
+        return autoConfirmation;
     }
 }

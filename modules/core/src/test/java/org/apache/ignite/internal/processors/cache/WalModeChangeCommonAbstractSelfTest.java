@@ -296,8 +296,8 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @param filter Whether node should be filtered out.
      * @return Node configuration.
      */
-    protected IgniteConfiguration config(String name, boolean cli, boolean filter) {
-        IgniteConfiguration cfg = new IgniteConfiguration();
+    protected IgniteConfiguration config(String name, boolean cli, boolean filter) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(name);
 
         cfg.setIgniteInstanceName(name);
         cfg.setClientMode(cli);
@@ -305,7 +305,9 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
 
         cfg.setDiscoverySpi(new IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi().setIpFinder(IP_FINDER));
 
-        DataRegionConfiguration regionCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
         DataRegionConfiguration volatileRegionCfg = new DataRegionConfiguration().setName(REGION_VOLATILE)
             .setPersistenceEnabled(false);

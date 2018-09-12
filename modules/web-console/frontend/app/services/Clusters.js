@@ -57,7 +57,9 @@ export default class Clusters {
             messageQueueLimit = this.messageQueueLimit.default,
             ackSendThreshold = this.ackSendThreshold.default
         ) => {
-            if (currentValue === this.unacknowledgedMessagesBufferSize.default) return currentValue;
+            if (currentValue === this.unacknowledgedMessagesBufferSize.default)
+                return currentValue;
+
             const {validRatio} = this.unacknowledgedMessagesBufferSize;
             return Math.max(messageQueueLimit * validRatio, ackSendThreshold * validRatio);
         },
@@ -186,7 +188,11 @@ export default class Clusters {
                 tcpNoDelay: true
             },
             clientConnectorConfiguration: {
-                tcpNoDelay: true
+                tcpNoDelay: true,
+                jdbcEnabled: true,
+                odbcEnabled: true,
+                thinClientEnabled: true,
+                useIgniteSslContextFactory: true
             },
             space: void 0,
             discovery: {
@@ -253,7 +259,9 @@ export default class Clusters {
         maxSize: {
             default: '0.2 * totalMemoryAvailable',
             min: (dataRegion) => {
-                if (!dataRegion) return;
+                if (!dataRegion)
+                    return;
+
                 return dataRegion.initialSize || this.dataRegion.initialSize.default;
             }
         },
@@ -267,11 +275,14 @@ export default class Clusters {
             default: 100,
             min: 11,
             max: (cluster, dataRegion) => {
-                if (!cluster || !dataRegion || !dataRegion.maxSize) return;
+                if (!cluster || !dataRegion || !dataRegion.maxSize)
+                    return;
+
                 const perThreadLimit = 10; // Took from Ignite
                 const maxSize = dataRegion.maxSize;
                 const pageSize = cluster.dataStorageConfiguration.pageSize || this.dataStorageConfiguration.pageSize.default;
                 const maxPoolSize = Math.floor(maxSize / pageSize / perThreadLimit);
+
                 return maxPoolSize;
             }
         },
@@ -293,7 +304,10 @@ export default class Clusters {
 
     addDataRegionConfiguration(cluster) {
         const dataRegionConfigurations = get(cluster, 'dataStorageConfiguration.dataRegionConfigurations');
-        if (!dataRegionConfigurations) return;
+
+        if (!dataRegionConfigurations)
+            return;
+
         return dataRegionConfigurations.push(Object.assign(this.makeBlankDataRegionConfiguration(), {
             name: uniqueName('New data region', dataRegionConfigurations.concat(cluster.dataStorageConfiguration.defaultDataRegionConfiguration))
         }));
@@ -318,7 +332,10 @@ export default class Clusters {
             defaultMemoryPolicyExists: (name, items = []) => {
                 const def = this.memoryPolicy.name.default;
                 const normalizedName = (name || def);
-                if (normalizedName === def) return true;
+
+                if (normalizedName === def)
+                    return true;
+
                 return items.some((policy) => (policy.name || def) === normalizedName);
             },
             uniqueMemoryPolicyName: (a, items = []) => {
@@ -330,7 +347,9 @@ export default class Clusters {
             default: 100,
             min: 11,
             max: (cluster, memoryPolicy) => {
-                if (!memoryPolicy || !memoryPolicy.maxSize) return;
+                if (!memoryPolicy || !memoryPolicy.maxSize)
+                    return;
+
                 const perThreadLimit = 10; // Took from Ignite
                 const maxSize = memoryPolicy.maxSize;
                 const pageSize = cluster.memoryConfiguration.pageSize || this.memoryConfiguration.pageSize.default;
@@ -406,7 +425,10 @@ export default class Clusters {
 
     addMemoryPolicy(cluster) {
         const memoryPolicies = get(cluster, 'memoryConfiguration.memoryPolicies');
-        if (!memoryPolicies) return;
+
+        if (!memoryPolicies)
+            return;
+
         return memoryPolicies.push(Object.assign(this.makeBlankMemoryPolicy(), {
             // Blank name for default policy if there are not other policies
             name: memoryPolicies.length ? uniqueName('New memory policy', memoryPolicies) : ''

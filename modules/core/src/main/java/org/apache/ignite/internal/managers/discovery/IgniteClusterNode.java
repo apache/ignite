@@ -59,11 +59,4 @@ public interface IgniteClusterNode extends ClusterNode {
      * @param cacheMetrics Cache metrics.
      */
     public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics);
-
-    /**
-     * Whether this node is cache client (see {@link IgniteConfiguration#isClientMode()}).
-     *
-     * @return {@code True if client}.
-     */
-    public boolean isCacheClient();
 }

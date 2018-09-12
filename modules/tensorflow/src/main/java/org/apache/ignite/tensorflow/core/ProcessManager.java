@@ -17,18 +17,17 @@
 
 package org.apache.ignite.tensorflow.core;
 
-import org.apache.ignite.tensorflow.core.longrunning.task.util.LongRunningProcessStatus;
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.tensorflow.core.longrunning.task.util.LongRunningProcessStatus;
 
 /**
  * Process manager that allows to run and maintain processes in the cluster.
  *
  * @param <R> Type of task to be run.
  */
-public interface ProcessManager<R> extends Serializable {
+public interface ProcessManager<R> {
     /**
      * Starts the processes by the given specifications.
      *

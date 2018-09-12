@@ -28,8 +28,8 @@ export const pageProfile = {
     company: new CustomFormField({id: 'companyInput'}),
     securityToken: {
         panel: new PanelCollapsible('security token'),
-        generateTokenButton: Selector('i').withAttribute('ng-click', '$ctrl.generateToken()'),
-        value: Selector('#current-security-token')
+        generateTokenButton: Selector('a').withText('Generate Random Security Token?'),
+        value: new CustomFormField({id: 'securityTokenInput'})
     },
     password: {
         panel: new PanelCollapsible('password'),

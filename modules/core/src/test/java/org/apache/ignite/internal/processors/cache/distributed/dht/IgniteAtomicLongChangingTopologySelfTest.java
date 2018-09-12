@@ -173,11 +173,29 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testClientSetCreateCloseFailover() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9015");
+
+        checkClientSetCreateCloseFailover(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientCollocatedSetCreateCloseFailover() throws Exception {
+        checkClientSetCreateCloseFailover(true);
+    }
+
+    /**
+     * @param collocated Collocated flag.
+     * @throws Exception If failed.
+     */
+    private void checkClientSetCreateCloseFailover(boolean collocated) throws Exception {
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
                 for (int i = 0; i < 100; i++) {
                     CollectionConfiguration colCfg = new CollectionConfiguration();
 
+                    colCfg.setCollocated(collocated);
                     colCfg.setBackups(1);
                     colCfg.setCacheMode(PARTITIONED);
                     colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);

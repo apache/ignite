@@ -22,23 +22,33 @@ const IMPORT_DM_NEW_CACHE = 1;
 
 export class TablesActionCell {
     static $inject = ['$element'];
+
     constructor($element) {
         Object.assign(this, {$element});
     }
+
     onClick(e) {
         e.stopPropagation();
     }
+
     $postLink() {
         this.$element.on('click', this.onClick);
     }
+
     $onDestroy() {
         this.$element.off('click', this.onClick);
         this.$element = null;
     }
+
     tableActionView(table) {
-        if (!this.caches) return;
+        if (!this.caches)
+            return;
+
         const cache = this.caches.find((c) => c.value === table.cacheOrTemplate);
-        if (!cache) return;
+
+        if (!cache)
+            return;
+
         const cacheName = cache.label;
 
         if (table.action === IMPORT_DM_NEW_CACHE)

@@ -184,6 +184,17 @@ public class ComputeUtils {
     }
 
     /**
+     * Remove data from local cache by Dataset ID.
+     *
+     * @param ignite Ingnite instance.
+     * @param datasetId Dataset ID.
+     */
+    public static void removeData(Ignite ignite, UUID datasetId) {
+        ignite.cluster().nodeLocalMap().remove(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId));
+    }
+
+
+    /**
      * Initializes partition {@code context} by loading it from a partition {@code upstream}.
      *
      * @param ignite Ignite instance.
