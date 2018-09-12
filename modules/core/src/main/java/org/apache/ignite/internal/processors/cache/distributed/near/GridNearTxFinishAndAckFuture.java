@@ -51,7 +51,7 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    @Override @SuppressWarnings("unchecked")
     public void finish(boolean commit, boolean clearThreadMap, boolean onTimeout) {
         finishFut.finish(commit, clearThreadMap, onTimeout);
 
