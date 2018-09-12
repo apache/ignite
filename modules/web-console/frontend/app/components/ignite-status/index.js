@@ -16,8 +16,7 @@
  */
 
 import angular from 'angular';
-import {igniteFormField, exposeIgniteFormFieldControl} from './directives';
+import './style.scss';
 
 export default angular
-.module('expose-ignite-form-field-control', [])
-.directive('exposeIgniteFormFieldControl', exposeIgniteFormFieldControl);
+    .module('ignite-console.ignite-status', []);

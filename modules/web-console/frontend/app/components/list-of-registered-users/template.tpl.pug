@@ -17,15 +17,15 @@
 include /app/helpers/jade/mixins
 
 ul.tabs.tabs--blue
-    li(role='presentation' ng-class='{ active: $ctrl.groupBy === "user" }') 
-        a(ng-click='$ctrl.groupByUser()') 
+    li(role='presentation' ng-class='{ active: $ctrl.groupBy === "user" }')
+        a(ng-click='$ctrl.groupByUser()')
             span Users
             span.badge.badge--blue(ng-hide='$ctrl.groupBy === "user"')
                 | {{ $ctrl.gridOptions.data.length }}
             span.badge.badge--blue(ng-show='$ctrl.groupBy === "user"')
                 | {{ $ctrl.filteredRows.length }}
     li(role='presentation' ng-class='{ active: $ctrl.groupBy === "company" }')
-        a(ng-click='$ctrl.groupByCompany()') 
+        a(ng-click='$ctrl.groupByCompany()')
             span Companies
             span.badge.badge--blue {{ $ctrl.companies.length }}
     li(role='presentation' ng-class='{ active: $ctrl.groupBy === "country" }')
@@ -57,7 +57,7 @@ ul.tabs.tabs--blue
                 +form-field__datepicker({
                     label: 'Period: from',
                     model: '$ctrl.params.startDate',
-                    name: '"startDate"', 
+                    name: '"startDate"',
                     maxdate: '$ctrl.params.endDate'
                 })
             .form-field--inline
@@ -68,13 +68,19 @@ ul.tabs.tabs--blue
                     mindate: '$ctrl.params.startDate'
                 })
 
+            grid-export(file-name='$ctrl.exporterCsvFilename' grid-api='$ctrl.gridApi')
+
             +ignite-form-field-bsdropdown({
                 label: 'Actions',
                 model: '$ctrl.action',
                 name: 'action',
                 disabled: '!$ctrl.selected.length',
-                required: false,
                 options: '$ctrl.actionOptions'
             })
 
-    .grid.ui-grid--ignite.ui-grid-disabled-group-selection(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-grouping ui-grid-hovering)
+    .ignite-grid-table
+        .grid.ui-grid--ignite.ui-grid-disabled-group-selection(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-grouping ui-grid-hovering)
+
+    grid-no-data(grid-api='$ctrl.gridApi')
+        grid-no-data-filtered
+           | Nothing to display. Check your filters.

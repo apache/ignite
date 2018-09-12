@@ -23,6 +23,12 @@ export default class IgniteUiGrid {
     gridApi;
 
     /** @type */
+    gridThin;
+
+    /** @type */
+    gridHeight;
+
+    /** @type */
     items;
 
     /** @type */
@@ -34,44 +40,72 @@ export default class IgniteUiGrid {
     /** @type */
     onSelectionChange;
 
-    static $inject = ['$scope', '$element', 'gridUtil'];
+    /** @type */
+    selectedRows;
+
+    /** @type */
+    selectedRowsId;
+
+    /** @type */
+    _selected;
+
+    static $inject = ['$scope', '$element', '$timeout', 'gridUtil'];
 
     /**
      * @param {ng.IScope} $scope
      */
-    constructor($scope, $element, gridUtil) {
+    constructor($scope, $element, $timeout, gridUtil) {
         this.$scope = $scope;
         this.$element = $element;
+        this.$timeout = $timeout;
         this.gridUtil = gridUtil;
-        this.selectedRows = [];
 
         this.rowIdentityKey = '_id';
+
+        this.rowHeight = 48;
+        this.headerRowHeight = 70;
     }
 
     $onInit() {
         this.SCROLLBAR_WIDTH = this.gridUtil.getScrollbarWidth();
 
+        if (this.gridThin) {
+            this.rowHeight = 36;
+            this.headerRowHeight = 48;
+        }
+
         this.grid = {
             data: this.items,
             columnDefs: this.columnDefs,
             categories: this.categories,
+            rowHeight: this.rowHeight,
+            headerRowHeight: this.headerRowHeight,
             columnVirtualizationThreshold: 30,
-            rowHeight: 48,
-            headerRowHeight: 70,
             enableColumnMenus: false,
             enableFullRowSelection: true,
             enableFiltering: true,
             enableRowHashing: false,
             fastWatch: true,
             showTreeExpandNoChildren: false,
-            multiSelect: true,
-            selectionRowHeaderWidth: 30,
-            exporterCsvFilename: `${_.camelCase([this.tabName, this.tableTitle])}.csv`,
+            modifierKeysToMultiSelect: true,
+            selectionRowHeaderWidth: 52,
+            exporterCsvColumnSeparator: ';',
             onRegisterApi: (api) => {
                 this.gridApi = api;
 
                 api.core.on.rowsVisibleChanged(this.$scope, () => {
                     this.adjustHeight();
+
+                    // Without property existence check non-set selectedRows or selectedRowsId
+                    // binding might cause unwanted behavior,
+                    // like unchecking rows during any items change,
+                    // even if nothing really changed.
+                    if (this._selected && this._selected.length && this.onSelectionChange) {
+                        this.applyIncomingSelectionRows(this._selected);
+
+                        // Change selected rows if filter was changed.
+                        this.onRowsSelectionChange([]);
+                    }
                 });
 
                 if (this.onSelectionChange) {
@@ -83,6 +117,14 @@ export default class IgniteUiGrid {
                         this.onRowsSelectionChange(rows, e);
                     });
                 }
+
+                api.core.on.filterChanged(this.$scope, (column) => {
+                    this.onFilterChange(column);
+                });
+
+                this.$timeout(() => {
+                    if (this.selectedRowsId) this.applyIncomingSelectionRowsId(this.selectedRowsId);
+                });
             }
         };
 
@@ -94,44 +136,82 @@ export default class IgniteUiGrid {
         const hasChanged = (binding) =>
             binding in changes && changes[binding].currentValue !== changes[binding].previousValue;
 
-        if (hasChanged('items') && this.grid) {
+        if (hasChanged('items') && this.grid)
             this.grid.data = changes.items.currentValue;
-            this.gridApi.grid.modifyRows(this.grid.data);
 
+        if (hasChanged('selectedRows') && this.grid && this.grid.data && this.onSelectionChange)
+            this.applyIncomingSelectionRows(changes.selectedRows.currentValue);
+
+        if (hasChanged('selectedRowsId') && this.grid && this.grid.data)
+            this.applyIncomingSelectionRowsId(changes.selectedRowsId.currentValue);
+
+        if (hasChanged('gridHeight') && this.grid)
             this.adjustHeight();
-
-            if (this.onSelectionChange)
-                this.applyIncomingSelection(this.selectedRows);
-        }
     }
 
-    applyIncomingSelection(selected = []) {
+    applyIncomingSelectionRows = (selected = []) => {
         this.gridApi.selection.clearSelectedRows({ ignore: true });
 
-        const rows = this.grid.data.filter((r) =>
-            selected.map((row) =>
-                row[this.rowIdentityKey]).includes(r[this.rowIdentityKey]));
+        const visibleRows = this.gridApi.core.getVisibleRows(this.gridApi.grid)
+            .map(({ entity }) => entity);
+
+        const rows = visibleRows.filter((r) =>
+            selected.map((row) => row[this.rowIdentityKey]).includes(r[this.rowIdentityKey]));
 
         rows.forEach((r) => {
             this.gridApi.selection.selectRow(r, { ignore: true });
         });
-    }
+    };
+
+    applyIncomingSelectionRowsId = (selected = []) => {
+        if (this.onSelectionChange) {
+            this.gridApi.selection.clearSelectedRows({ ignore: true });
+
+            const visibleRows = this.gridApi.core.getVisibleRows(this.gridApi.grid)
+                .map(({ entity }) => entity);
+
+            const rows = visibleRows.filter((r) =>
+                selected.includes(r[this.rowIdentityKey]));
+
+            rows.forEach((r) => {
+                this.gridApi.selection.selectRow(r, { ignore: true });
+            });
+        }
+    };
 
     onRowsSelectionChange = debounce((rows, e = {}) => {
-        if (e.ignore) return;
-        this.selectedRows = this.gridApi.selection.legacyGetSelectedRows();
+        if (e.ignore)
+            return;
+
+        this._selected = this.gridApi.selection.legacyGetSelectedRows();
 
         if (this.onSelectionChange)
-            this.onSelectionChange({ $event: this.selectedRows });
+            this.onSelectionChange({ $event: this._selected });
+    });
+
+    onFilterChange = debounce((column) => {
+        if (!this.gridApi.selection)
+            return;
+
+        if (this.selectedRows && this.onSelectionChange)
+            this.applyIncomingSelectionRows(this.selectedRows);
+
+        if (this.selectedRowsId)
+            this.applyIncomingSelectionRowsId(this.selectedRowsId);
     });
 
     adjustHeight() {
-        const maxRowsToShow = this.maxRowsToShow || 5;
-        const headerBorder = 1;
-        const visibleRows = this.gridApi.core.getVisibleRows().length;
-        const header = this.grid.headerRowHeight + headerBorder;
-        const optionalScroll = (visibleRows ? this.gridUtil.getScrollbarWidth() : 0);
-        const height = Math.min(visibleRows, maxRowsToShow) * this.grid.rowHeight + header + optionalScroll;
+        let height = this.gridHeight;
+
+        if (!height) {
+            const maxRowsToShow = this.maxRowsToShow || 5;
+            const headerBorder = 1;
+            const visibleRows = this.gridApi.core.getVisibleRows().length;
+            const header = this.grid.headerRowHeight + headerBorder;
+            const optionalScroll = (visibleRows ? this.gridUtil.getScrollbarWidth() : 0);
+
+            height = Math.min(visibleRows, maxRowsToShow) * this.grid.rowHeight + header + optionalScroll;
+        }
 
         this.gridApi.grid.element.css('height', height + 'px');
         this.gridApi.core.handleWindowResize();
