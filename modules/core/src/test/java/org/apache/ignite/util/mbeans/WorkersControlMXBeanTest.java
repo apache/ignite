@@ -79,7 +79,7 @@ public class WorkersControlMXBeanTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         Thread t = new Thread(TEST_THREAD_NAME) {
-            public void run() {
+            @Override public void run() {
                 latch.countDown();
 
                 for (;;)
