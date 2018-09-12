@@ -250,8 +250,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     @Override public void preProcessCacheConfiguration(CacheConfiguration ccfg) {
         if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT) {
             if (!mvccSupported)
-                throw new IgniteException("Cannot start cache with MVCC transactional snapshot when there some nodes " +
-                    "in cluster do not support it.");
+                throw new IgniteException("Cannot start MVCC transactional cache. " +
+                    "MVCC is unsupported by the cluster.");
 
             mvccEnabled = true;
         }
@@ -291,7 +291,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         if (mvccEnabled && node.version().compareToIgnoreTimestamp(MVCC_SUPPORTED_SINCE) < 0) {
-            String errMsg = "Failed to add node to topology because MVCC is enabled on the cluster, but " +
+            String errMsg = "Failed to add node to topology. MVCC is enabled on the cluster, but " +
                 "the node doesn't support MVCC [nodeId=" + node.id() + ']';
 
             return new IgniteNodeValidationResult(node.id(), errMsg, errMsg);

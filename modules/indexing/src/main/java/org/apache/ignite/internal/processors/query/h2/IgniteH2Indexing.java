@@ -1653,6 +1653,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private MvccQueryTracker mvccTracker(PreparedStatement stmt, boolean startTx) throws IgniteCheckedException {
         boolean mvccEnabled;
+
         GridCacheContext mvccCacheCtx = null;
 
         try {
@@ -1664,7 +1665,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 mvccEnabled = mvccState != null ? mvccState : checkMvcc(stmt);
 
                 if (mvccEnabled) {
-                    mvccCacheCtx = ctx.cache().context().cacheContext(stmtEx.meta(MVCC_CACHE_ID));
+                    Integer cacheId = stmtEx.meta(MVCC_CACHE_ID);
+
+                    assert cacheId != null;
+
+                    mvccCacheCtx = ctx.cache().context().cacheContext(cacheId);
 
                     assert mvccCacheCtx != null;
                 }
@@ -1673,8 +1678,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 mvccEnabled = checkMvcc(stmt);
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException(e);
+            throw new IgniteSQLException(e);
         }
+
+        assert !mvccEnabled || mvccCacheCtx != null;
 
         return mvccEnabled ? MvccUtils.mvccTracker(mvccCacheCtx, startTx) : null;
     }
