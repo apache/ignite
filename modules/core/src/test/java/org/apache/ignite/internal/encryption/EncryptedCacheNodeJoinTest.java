@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
-import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -149,14 +148,14 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         stopGrid(GRID_3, false);
 
-        createEncCache(grid0, null, cacheName(), null, false);
+        createEncryptedCache(grid0, null, cacheName(), null, false);
 
         stopGrid(GRID_0, false);
         IgniteEx grid3 = startGrid(GRID_3);
 
         grid3.cluster().active(true);
 
-        createEncCache(grid3, null, cacheName(), null, false);
+        createEncryptedCache(grid3, null, cacheName(), null, false);
 
         assertThrowsWithCause(() -> {
             try {
@@ -176,15 +175,15 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         grid3.cluster().active(true);
 
-        createEncCache(grid0, grid3, cacheName(), null);
+        createEncryptedCache(grid0, grid3, cacheName(), null);
 
-        checkEncCaches(grid0, grid3);
+        checkEncryptedCaches(grid0, grid3);
 
         IgniteEx grid4 = startGrid(GRID_4);
 
         awaitPartitionMapExchange();
 
-        checkEncCaches(grid0, grid4);
+        checkEncryptedCaches(grid0, grid4);
     }
 
     /** */
@@ -197,7 +196,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         IgniteEx client = startGrid(CLIENT);
 
-        createEncCache(client, grid0, cacheName(), null);
+        createEncryptedCache(client, grid0, cacheName(), null);
     }
 
     /** */

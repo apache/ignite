@@ -143,10 +143,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (notCoordinator())
                 return;
 
-            HashMap<Integer, byte[]> knownEncKeys = knownEncKeys();
+            HashMap<Integer, byte[]> knownEncKeys = knownEncryptionKeys();
 
             HashMap<Integer, byte[]> newEncKeys =
-                newEncKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
+                newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
 
             if (newEncKeys == null)
                 return;
@@ -235,10 +235,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        HashMap<Integer, byte[]> knownEncKeys = knownEncKeys();
+        HashMap<Integer, byte[]> knownEncKeys = knownEncryptionKeys();
 
         HashMap<Integer, byte[]> newKeys =
-            newEncKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
+            newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
 
         if ((knownEncKeys == null && newKeys == null) || dataBag.isJoiningNodeClient())
             return;
@@ -289,10 +289,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (dataBag.commonDataCollectedFor(ENCRYPTION_MGR.ordinal()))
             return;
 
-        HashMap<Integer, byte[]> knownEncKeys = knownEncKeys();
+        HashMap<Integer, byte[]> knownEncKeys = knownEncryptionKeys();
 
         HashMap<Integer, byte[]> newKeys =
-            newEncKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
+            newEncryptionKeys(knownEncKeys == null ? Collections.EMPTY_SET : knownEncKeys.keySet());
 
         if (knownEncKeys == null)
             knownEncKeys = newKeys;
@@ -524,7 +524,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param knownKeys Saved keys set.
      * @return New keys for local cache groups.
      */
-    @Nullable private HashMap<Integer, byte[]> newEncKeys(Set<Integer> knownKeys) {
+    @Nullable private HashMap<Integer, byte[]> newEncryptionKeys(Set<Integer> knownKeys) {
         Map<Integer, CacheGroupDescriptor> grpDescs = ctx.cache().cacheGroupDescriptors();
 
         HashMap<Integer, byte[]> newKeys = null;
@@ -545,7 +545,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * @return Local encryption keys.
      */
-    @Nullable private HashMap<Integer, byte[]> knownEncKeys() {
+    @Nullable private HashMap<Integer, byte[]> knownEncryptionKeys() {
         if (F.isEmpty(grpEncKeys))
             return null;
 

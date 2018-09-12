@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Encryption.Aes
 {
     using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// IEncryptionSPI implementation base on JDK provided cipher algorithm implementations.
@@ -78,6 +77,5 @@ namespace Apache.Ignite.Core.Encryption.Aes
             KeyStorePath = reader.ReadString();
             KeyStorePassword = reader.ReadCharArray();
         }
-
     }
 }

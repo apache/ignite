@@ -62,7 +62,7 @@ public class GenerateEncryptionKeyRequest implements Message {
     /**
      * @return Group ids for a key generation.
      */
-    public Collection<Integer> grpIds() {
+    public Collection<Integer> groupIds() {
         return grpIds;
     }
 
@@ -126,7 +126,7 @@ public class GenerateEncryptionKeyRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 158;
+        return 159;
     }
 
     /** {@inheritDoc} */

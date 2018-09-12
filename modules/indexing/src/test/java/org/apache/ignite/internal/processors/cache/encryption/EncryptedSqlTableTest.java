@@ -28,10 +28,11 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class EncryptedSqlTableTest extends EncryptedCacheRestartTest {
     /** {@inheritDoc} */
-    @Override protected void createEncCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName, String cacheGroup,
-        boolean putData) {
+    @Override protected void createEncryptedCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName,
+        String cacheGroup, boolean putData) {
 
-        executeSql(grid0, "CREATE TABLE encrypted(ID BIGINT, NAME VARCHAR(10), PRIMARY KEY (ID)) WITH \"ENCRYPTED=true\"");
+        executeSql(grid0, "CREATE TABLE encrypted(ID BIGINT, NAME VARCHAR(10), PRIMARY KEY (ID)) " +
+            "WITH \"ENCRYPTED=true\"");
         executeSql(grid0, "CREATE INDEX enc0 ON encrypted(NAME)");
 
         if (putData) {
@@ -52,7 +53,8 @@ public class EncryptedSqlTableTest extends EncryptedCacheRestartTest {
 
     /** */
     private List<List<?>> executeSql(IgniteEx grid, String qry, Object...args) {
-        return grid.context().query().querySqlFields(new SqlFieldsQuery(qry).setSchema("PUBLIC").setArgs(args), true).getAll();
+        return grid.context().query().querySqlFields(
+            new SqlFieldsQuery(qry).setSchema("PUBLIC").setArgs(args), true).getAll();
     }
 
     /** {@inheritDoc} */

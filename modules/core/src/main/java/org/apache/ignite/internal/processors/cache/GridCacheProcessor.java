@@ -50,7 +50,6 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -3119,7 +3118,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 int grpId = cacheGroupId(cacheName, ccfg);
 
                 if (ctx.clientNode())
-                    return genEncKeysAndStartCacheAfter(Collections.singleton(grpId), startCacheClsr);
+                    return generateEncryptionKeysAndStartCacheAfter(Collections.singleton(grpId), startCacheClsr);
                 else {
                     EncryptionSpi encSpi = ctx.config().getEncryptionSpi();
 
@@ -3162,14 +3161,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param grpIds Group ids.
      * @param after Closure to execute after encryption keys would be generated.
      */
-    private IgniteInternalFuture<Boolean> genEncKeysAndStartCacheAfter(Collection<Integer> grpIds,
+    private IgniteInternalFuture<Boolean> generateEncryptionKeysAndStartCacheAfter(Collection<Integer> grpIds,
         GridPlainClosure<Map<Integer, byte[]>, IgniteInternalFuture<Boolean>> after) {
 
         GenerateEncryptionKeyFuture genEncKeyFut = new GenerateEncryptionKeyFuture(grpIds);
 
         synchronized (genEcnKeyMux) {
             try {
-                sendGenEncReq(genEncKeyFut);
+                sendGenerateEncryptionKeyRequest(genEncKeyFut);
 
                 GenerateEncryptionKeyFuture old = genEncKeyFuts.putIfAbsent(genEncKeyFut.id(), genEncKeyFut);
 
@@ -3344,7 +3343,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return startCacheClsr.apply(Collections.EMPTY_MAP);
 
             if (ctx.clientNode())
-                return genEncKeysAndStartCacheAfter(encGrps, startCacheClsr);
+                return generateEncryptionKeysAndStartCacheAfter(encGrps, startCacheClsr);
             else {
                 Map<Integer, byte[]> encKeys = new HashMap<>(encGrps.size());
 
@@ -4857,7 +4856,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             continue;
 
                         try {
-                            sendGenEncReq(fut);
+                            sendGenerateEncryptionKeyRequest(fut);
                         }
                         catch (IgniteCheckedException e) {
                             fut.onDone(null, e);
@@ -4876,11 +4875,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     EncryptionSpi encSpi = ctx.config().getEncryptionSpi();
 
-                    assert !F.isEmpty(req.grpIds());
+                    assert !F.isEmpty(req.groupIds());
 
                     Map<Integer, byte[]> encGrpKeys = new HashMap<>();
 
-                    for (Integer grpId : req.grpIds()) {
+                    for (Integer grpId : req.groupIds()) {
                         Serializable grpKey = encMgr.groupKey(grpId);
 
                         if (grpKey == null)
@@ -4904,9 +4903,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         GenerateEncryptionKeyFuture fut = genEncKeyFuts.get(resp.requestId());
 
                         if (fut != null)
-                            fut.onDone(resp.encGrpKeys(), null);
+                            fut.onDone(resp.encryptionGroupKeys(), null);
                         else {
-                            Set<Integer> grps = resp.encGrpKeys().keySet();
+                            Set<Integer> grps = resp.encryptionGroupKeys().keySet();
 
                             log.warning("Response received for a unknown request. [grps=" +
                                 grps.stream().map(Object::toString).collect(Collectors.joining(", ")) + "]");
@@ -4918,13 +4917,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** */
-    private void sendGenEncReq(GenerateEncryptionKeyFuture fut) throws IgniteCheckedException {
-        ClusterNode rndNode = U.randomNode(ctx);
+    private void sendGenerateEncryptionKeyRequest(GenerateEncryptionKeyFuture fut) throws IgniteCheckedException {
+        ClusterNode rndNode = U.randomServerNode(ctx);
 
         if (rndNode == null)
             throw new IgniteCheckedException("There is no node to send GenerateEncryptionKeyRequest to");
 
-        GenerateEncryptionKeyRequest req = new GenerateEncryptionKeyRequest(fut.grpIds());
+        GenerateEncryptionKeyRequest req = new GenerateEncryptionKeyRequest(fut.groupIds());
 
         fut.id(req.id());
         fut.nodeId(rndNode.id());
@@ -5084,7 +5083,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** */
-        public Collection<Integer> grpIds() {
+        public Collection<Integer> groupIds() {
             return grpIds;
         }
 

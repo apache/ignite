@@ -10548,7 +10548,11 @@ public abstract class IgniteUtils {
         return sb.toString();
     }
 
-    public static ClusterNode randomNode(GridKernalContext ctx) {
+    /**
+     * @param ctx Kernel context.
+     * @return Random alive server node.
+     */
+    public static ClusterNode randomServerNode(GridKernalContext ctx) {
         Collection<ClusterNode> aliveNodes = ctx.discovery().aliveServerNodes();
 
         int rndIdx = RND.nextInt(aliveNodes.size()) + 1;

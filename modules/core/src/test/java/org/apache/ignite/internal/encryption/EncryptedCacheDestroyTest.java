@@ -42,9 +42,9 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
     public void testEncryptedCacheDestroy() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
-        createEncCache(grids.get1(), grids.get2(), cacheName(), null);
+        createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
 
-        checkEncCaches(grids.get1(), grids.get2());
+        checkEncryptedCaches(grids.get1(), grids.get2());
 
         String encryptedCacheName = cacheName();
 
@@ -69,10 +69,10 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
 
         String grpName = "group1";
 
-        createEncCache(grids.get1(), grids.get2(), encCacheName + "2", grpName);
-        createEncCache(grids.get1(), grids.get2(), encCacheName, grpName);
+        createEncryptedCache(grids.get1(), grids.get2(), encCacheName + "2", grpName);
+        createEncryptedCache(grids.get1(), grids.get2(), encCacheName, grpName);
 
-        checkEncCaches(grids.get1(), grids.get2());
+        checkEncryptedCaches(grids.get1(), grids.get2());
 
         grids.get1().destroyCache(encCacheName);
 

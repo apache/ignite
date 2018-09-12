@@ -20,7 +20,7 @@
 /// <summary>
 /// Encryption API.
 /// </summary>
-namespace Apache.Ignite.Core.Encry
+namespace Apache.Ignite.Core.Encryption
 {
     // No-op.
 }

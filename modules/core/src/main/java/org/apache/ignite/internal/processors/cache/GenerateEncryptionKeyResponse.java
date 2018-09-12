@@ -64,7 +64,7 @@ public class GenerateEncryptionKeyResponse implements Message {
     /**
      * @return Encrypted group keys.
      */
-    public Map<Integer, byte[]> encGrpKeys() {
+    public Map<Integer, byte[]> encryptionGroupKeys() {
         return encGrpKeys;
     }
 
@@ -128,7 +128,7 @@ public class GenerateEncryptionKeyResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 159;
+        return 160;
     }
 
     /** {@inheritDoc} */

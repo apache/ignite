@@ -35,7 +35,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /** */
 public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     /** {@inheritDoc} */
-    @Override protected void createEncCache(IgniteEx grid0, IgniteEx grid1, String cacheName, String cacheGroup) {
+    @Override protected void createEncryptedCache(IgniteEx grid0, IgniteEx grid1, String cacheName, String cacheGroup) {
         IgniteCache<Long, String> cache = grid0.cache(cacheName());
 
         for (long i = 0; i < 100; i++)
@@ -63,7 +63,7 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     }
 
     /** @throws Exception If failed. */
-    public void testEncKeysEqualsOnThirdNodeJoin() throws Exception {
+    public void testEncryptionKeysEqualsOnThirdNodeJoin() throws Exception {
         T2<IgniteEx, IgniteEx> g = startTestGrids(true);
 
         IgniteEx g2 = (IgniteEx)IgnitionEx.start(

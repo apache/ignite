@@ -78,7 +78,7 @@ public class EncryptedCachePreconfiguredRestartTest extends EncryptedCacheRestar
     /**
      * Creates encrypted cache.
      */
-    @Override protected void createEncCache(IgniteEx grid0, IgniteEx grid1, String cacheName, String groupName) {
+    @Override protected void createEncryptedCache(IgniteEx grid0, IgniteEx grid1, String cacheName, String groupName) {
         IgniteCache<Long, String> cache = grid0.cache(cacheName());
 
         for (long i=0; i<100; i++)

@@ -40,9 +40,9 @@ public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
     public void testCreateEncryptedCache() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
-        createEncCache(grids.get1(), grids.get2(), cacheName(), null);
+        createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
 
-        checkEncCaches(grids.get1(), grids.get2());
+        checkEncryptedCaches(grids.get1(), grids.get2());
 
         int grpId = CU.cacheGroupId(cacheName(), null);
 
@@ -52,7 +52,7 @@ public class EncryptedCacheRestartTest extends AbstractEncryptionTest {
 
         grids = startTestGrids(false);
 
-        checkEncCaches(grids.get1(), grids.get2());
+        checkEncryptedCaches(grids.get1(), grids.get2());
 
         AESEncryptionKey keyAfterRestart = (AESEncryptionKey)grids.get1().context().encryption().groupKey(grpId);
 

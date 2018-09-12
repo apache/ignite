@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import sun.security.krb5.EncryptionKey;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -50,9 +49,9 @@ public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
     public void testCreateEncryptedCacheWithBigEntry() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
-        createEncCache(grids.get1(), grids.get2(), cacheName(), null);
+        createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
 
-        checkEncCaches(grids.get1(), grids.get2());
+        checkEncryptedCaches(grids.get1(), grids.get2());
 
         int grpId = CU.cacheGroupId(cacheName(), null);
 
@@ -63,7 +62,7 @@ public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
 
         grids = startTestGrids(false);
 
-        checkEncCaches(grids.get1(), grids.get2());
+        checkEncryptedCaches(grids.get1(), grids.get2());
 
         AESEncryptionKey keyAfterRestart = (AESEncryptionKey)grids.get1().context().encryption().groupKey(grpId);
 
@@ -74,7 +73,7 @@ public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void createEncCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName,
+    @Override protected void createEncryptedCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName,
         String cacheGroup, boolean putData) throws IgniteInterruptedCheckedException {
         CacheConfiguration<Integer, byte[]> ccfg = new CacheConfiguration<Integer, byte[]>(cacheName)
             .setWriteSynchronizationMode(FULL_SYNC)

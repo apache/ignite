@@ -102,7 +102,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    void checkEncCaches(IgniteEx grid0, IgniteEx grid1) {
+    void checkEncryptedCaches(IgniteEx grid0, IgniteEx grid1) {
         Set<String> cacheNames = new HashSet<>(grid0.cacheNames());
 
         cacheNames.addAll(grid1.cacheNames());
@@ -156,13 +156,13 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void createEncCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName, String cacheGroup)
+    protected void createEncryptedCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName, String cacheGroup)
         throws IgniteInterruptedCheckedException {
-        createEncCache(grid0, grid1, cacheName, cacheGroup, true);
+        createEncryptedCache(grid0, grid1, cacheName, cacheGroup, true);
     }
 
     /** */
-    protected void createEncCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName, String cacheGroup,
+    protected void createEncryptedCache(IgniteEx grid0, @Nullable IgniteEx grid1, String cacheName, String cacheGroup,
         boolean putData) throws IgniteInterruptedCheckedException {
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<Long, String>(cacheName)
             .setWriteSynchronizationMode(FULL_SYNC)
@@ -214,6 +214,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
      * Method to create new keystore.
      * Use it whenever you need special keystore for an encryption tests.
      */
+    @SuppressWarnings("unused")
     protected File createKeyStore(String keystorePath) throws Exception {
         KeyStore ks = KeyStore.getInstance("PKCS12");
 

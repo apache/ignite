@@ -310,7 +310,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 AuthenticateFuture fut;
 
                 synchronized (mux) {
-                    ClusterNode rndNode = U.randomNode(ctx);
+                    ClusterNode rndNode = U.randomServerNode(ctx);
 
                     fut = new AuthenticateFuture(rndNode.id());
 

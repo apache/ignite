@@ -184,4 +184,3 @@ public interface GridComponent {
      */
     @Nullable public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException;
 }
-

@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.aes.AESEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
-import sun.security.krb5.EncryptionKey;
 
 /**
  */

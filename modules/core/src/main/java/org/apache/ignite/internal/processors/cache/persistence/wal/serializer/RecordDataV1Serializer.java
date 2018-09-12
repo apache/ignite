@@ -178,7 +178,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         throws IOException, IgniteCheckedException {
         if (type == ENCRYPTED_RECORD) {
             if (encSpi == null) {
-                T2<Integer, RecordType> knownData = skipEncryptedRec(in, true);
+                T2<Integer, RecordType> knownData = skipEncryptedRecord(in, true);
 
                 //This happen on offline WAL iteration(we don't have encryption keys available).
                 return new EncryptedRecord(knownData.get1(), knownData.get2());
@@ -276,7 +276,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param readType If {@code true} plain record type will be read from {@code in}.
      * @return Group id and type of skipped record.
      */
-    private T2<Integer, RecordType> skipEncryptedRec(ByteBufferBackedDataInput in, boolean readType)
+    private T2<Integer, RecordType> skipEncryptedRecord(ByteBufferBackedDataInput in, boolean readType)
         throws IOException, IgniteCheckedException {
         int grpId = in.readInt();
         int encRecSz = in.readInt();
@@ -1815,7 +1815,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         if (needDecryption) {
             if (encSpi == null) {
-                skipEncryptedRec(in, false);
+                skipEncryptedRecord(in, false);
 
                 return new EncryptedDataEntry();
             }
