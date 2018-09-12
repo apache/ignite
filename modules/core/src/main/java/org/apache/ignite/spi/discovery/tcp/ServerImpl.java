@@ -1121,6 +1121,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
 
+            IgniteCheckedException e = null;
+
+            if (!errs.isEmpty()) {
+                e = new IgniteCheckedException("Multiple connection attempts failed.");
+
+                for (Exception err : errs)
+                    e.addSuppressed(err);
+            }
+
             if (retry) {
                 if (log.isDebugEnabled())
                     log.debug("Concurrent discovery SPI start has been detected (local node should wait).");
@@ -1128,35 +1137,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                 try {
                     U.sleep(spi.getReconnectDelay());
                 }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new IgniteSpiException("Thread has been interrupted.", e);
+                catch (IgniteInterruptedCheckedException ex) {
+                    throw new IgniteSpiException("Thread has been interrupted.", ex);
                 }
             }
-            else if (!ipFinderHasLocAddr) {
-                IgniteCheckedException e = null;
-
-                if (!errs.isEmpty()) {
-                    e = new IgniteCheckedException("Multiple connection attempts failed.");
-
-                    for (Exception err : errs)
-                        e.addSuppressed(err);
-                }
-
-                if (e != null && X.hasCause(e, ConnectException.class)) {
+            else if (!spi.ipFinder.isShared() && !ipFinderHasLocAddr) {
+                if (X.hasCause(e, ConnectException.class)) {
                     LT.warn(log, "Failed to connect to any address from IP finder " +
                         "(make sure IP finder addresses are correct and firewalls are disabled on all host machines): " +
                         toOrderedList(addrs), true);
-                }
-
-                if (spi.joinTimeout > 0) {
-                    if (noResStart == 0)
-                        noResStart = U.currentTimeMillis();
-                    else if (U.currentTimeMillis() - noResStart > spi.joinTimeout)
-                        throw new IgniteSpiException(
-                            "Failed to connect to any address from IP finder within join timeout " +
-                                "(make sure IP finder addresses are correct, and operating system firewalls are disabled " +
-                                "on all host machines, or consider increasing 'joinTimeout' configuration property): " +
-                                addrs, e);
                 }
 
                 try {
@@ -1168,6 +1157,17 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             else
                 break;
+
+            if (spi.joinTimeout > 0) {
+                if (noResStart == 0)
+                    noResStart = U.currentTimeMillis();
+                else if (U.currentTimeMillis() - noResStart > spi.joinTimeout)
+                    throw new IgniteSpiException(
+                        "Failed to connect to any address from IP finder within join timeout " +
+                            "(make sure IP finder addresses are correct, and operating system firewalls are disabled " +
+                            "on all host machines, or consider increasing 'joinTimeout' configuration property): " +
+                            addrs, e);
+            }
         }
 
         return false;
