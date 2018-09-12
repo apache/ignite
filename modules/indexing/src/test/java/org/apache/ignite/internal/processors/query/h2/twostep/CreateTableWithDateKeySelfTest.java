@@ -1,12 +1,10 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.util.Date;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
@@ -15,13 +13,48 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
     private static final int NODES_COUNT = 1;
 
     /** */
-    public void testPassTableWithDateKeyCreation() throws Exception {
-        Ignite node = this.startGrid();
-        IgniteCache<Object, Object> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
+    private static Ignite ignite;
 
+    /** */
+    public void testPassTableWithDateKeyCreation(){
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME+"1");
 
         try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery(
-            "CREATE TABLE Tab(id DATE primary key, dateField DATE)"))) {
+            "CREATE TABLE Tab1(id DATE primary key, dateField DATE)"))) {
+
+            assertNotNull(cur);
+
+            List<List<?>> rows = cur.getAll();
+
+            assertEquals(1, rows.size());
+
+            assertEquals(0L, rows.get(0).get(0));
+        }
+    }
+
+    /** */
+    public void testPassTableWithTimeKeyCreation(){
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME+"2");
+
+        try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery(
+            "CREATE TABLE Tab2(id TIME primary key, dateField TIME)"))) {
+
+            assertNotNull(cur);
+
+            List<List<?>> rows = cur.getAll();
+
+            assertEquals(1, rows.size());
+
+            assertEquals(0L, rows.get(0).get(0));
+        }
+    }
+
+    /** */
+    public void testPassTableWithTimeStampKeyCreation(){
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME+"3");
+
+        try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery(
+            "CREATE TABLE Tab3(id TIMESTAMP primary key, dateField TIMESTAMP)"))) {
 
             assertNotNull(cur);
 
@@ -35,42 +68,11 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(NODES_COUNT, false);
+        ignite = startGridsMultiThreaded(NODES_COUNT, false);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
-    }
-
-    /** */
-    public class Tab{
-        /** */
-        @QuerySqlField(index = true)
-        private Date id;
-
-        /** */
-        @QuerySqlField(index = true)
-        private Date dateField;
-
-        /** */
-        public Date getId() {
-            return id;
-        }
-
-        /** */
-        public void setId(Date id) {
-            this.id = id;
-        }
-
-        /** */
-        public Date getDateField() {
-            return dateField;
-        }
-
-        /** */
-        public void setDateField(Date dateField) {
-            this.dateField = dateField;
-        }
     }
 }
