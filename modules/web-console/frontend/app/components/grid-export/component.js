@@ -58,10 +58,13 @@ export default {
 
             const csvContent = this.uiGridExporterService.formatAsCsv(exportColumnHeaders, data, this.CSV.getSeparator());
 
-            this.uiGridExporterService.downloadFile(this.gridApi.grid.options.exporterCsvFilename, csvContent, this.gridApi.grid.options.exporterOlderExcelCompatibility);
+            const csvFileName = this.fileName || 'export.csv';
+
+            this.uiGridExporterService.downloadFile(csvFileName, csvContent, this.gridApi.grid.options.exporterOlderExcelCompatibility);
         }
     },
     bindings: {
-        gridApi: '<'
+        gridApi: '<',
+        fileName: '<'
     }
 };

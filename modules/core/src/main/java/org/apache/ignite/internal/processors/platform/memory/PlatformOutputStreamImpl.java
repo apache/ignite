@@ -336,7 +336,7 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     }
 
     /** {@inheritDoc} */
-    public int capacity() {
+    @Override public int capacity() {
         return cap;
     }
 }

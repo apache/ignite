@@ -24,7 +24,7 @@ public class IgniteOptimisticTxSuspendResumeMultiServerTest extends IgniteOptimi
     /**
      * @return Number of server nodes.
      */
-    protected int serversNumber() {
+    @Override protected int serversNumber() {
         return 4;
     }
 }
