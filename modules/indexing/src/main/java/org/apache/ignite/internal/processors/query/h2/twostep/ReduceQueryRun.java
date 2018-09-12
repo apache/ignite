@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSe
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.h2.jdbc.JdbcConnection;
 import org.jetbrains.annotations.Nullable;
 
@@ -91,7 +92,9 @@ class ReduceQueryRun {
      */
     void state(Object o, @Nullable UUID nodeId) {
         assert o != null;
-        assert o instanceof CacheException || o instanceof AffinityTopologyVersion : o.getClass();
+        assert o instanceof CacheException
+            || o instanceof AffinityTopologyVersion
+            || o instanceof TransactionTimeoutException : o.getClass();
 
         if (!state.compareAndSet(null, o))
             return;

@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlReque
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2SelectForUpdateTxDetails;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -102,6 +103,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Index;
@@ -287,13 +289,25 @@ public class GridReduceQueryExecutor {
      */
     private void fail(ReduceQueryRun r, UUID nodeId, String msg, byte failCode) {
         if (r != null) {
-            CacheException e = new CacheException("Failed to execute map query on the node: " + nodeId + ", " + msg);
+            if (msg.contains(IgniteTxTimeoutCheckedException.class.getSimpleName())) {
+                assert failCode != GridQueryFailResponse.CANCELLED_BY_ORIGINATOR;
 
-            if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR)
-                e.addSuppressed(new QueryCancelledException());
+                r.state(new TransactionTimeoutException(mapFailedOnNodeMsg(nodeId, msg)), nodeId);
+            }
+            else {
+                CacheException e = new CacheException(mapFailedOnNodeMsg(nodeId, msg));
 
-            r.state(e, nodeId);
+                if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR)
+                    e.addSuppressed(new QueryCancelledException());
+
+                r.state(e, nodeId);
+            }
         }
+    }
+
+    /** */
+    private static String mapFailedOnNodeMsg(UUID nodeId, String msg) {
+        return "Failed to execute map query on the node: " + nodeId + ", " + msg;
     }
 
     /**
@@ -889,8 +903,10 @@ public class GridReduceQueryExecutor {
                             if (wasCancelled(err))
                                 throw new QueryCancelledException(); // Throw correct exception.
 
-                            throw new CacheException("Failed to run map query remotely." + err.getMessage(), err);
+                            throw mapFailedRemotelyException(err);
                         }
+                        else if (state instanceof TransactionTimeoutException)
+                            throw mapFailedRemotelyException((TransactionTimeoutException)state);
 
                         if (state instanceof AffinityTopologyVersion) {
                             retry = true;
@@ -1016,6 +1032,11 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
+    }
+
+    /** */
+    private static CacheException mapFailedRemotelyException(Exception e) {
+        return new CacheException("Failed to run map query remotely. " + e.getMessage(), e);
     }
 
     /**
