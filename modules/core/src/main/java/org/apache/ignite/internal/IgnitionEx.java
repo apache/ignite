@@ -112,6 +112,8 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
+import org.apache.ignite.spi.encryption.NoopEncryptionSpi;
+import org.apache.ignite.spi.encryption.aes.AESEncryptionSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
@@ -2430,6 +2432,26 @@ public class IgnitionEx {
 
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());
+
+            if ((cfg.getEncryptionSpi() == null || cfg.getEncryptionSpi() instanceof AESEncryptionSpi) &&
+                CU.isPersistenceEnabled(cfg)) {
+                if (cfg.getEncryptionSpi() == null) {
+                    AESEncryptionSpi encSpi = new AESEncryptionSpi();
+
+                    encSpi.setKeyStorePath("deleteinmaster/tde.jks");
+                    encSpi.setKeyStorePassword("love_sex_god".toCharArray());
+
+                    cfg.setEncryptionSpi(encSpi);
+                }
+
+                CacheConfiguration.encryptionEnabled = true;
+            }
+            else {
+                cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+                CacheConfiguration.encryptionEnabled = false;
+            }
+
         }
 
         /**

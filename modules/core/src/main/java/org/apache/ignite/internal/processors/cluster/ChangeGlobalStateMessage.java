@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -70,6 +72,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      * @param initiatingNodeId Node initiated state change.
      * @param storedCfgs Configurations read from persistent store.
      * @param activate New cluster state.
+     * @param baselineTopology Baseline topology.
+     * @param forceChangeBaselineTopology Force change baseline topology flag.
+     * @param timestamp Timestamp.
      */
     public ChangeGlobalStateMessage(
         UUID reqId,
@@ -78,8 +83,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         boolean activate,
         BaselineTopology baselineTopology,
         boolean forceChangeBaselineTopology,
-        long timestamp
-    ) {
+        long timestamp) {
         assert reqId != null;
         assert initiatingNodeId != null;
 

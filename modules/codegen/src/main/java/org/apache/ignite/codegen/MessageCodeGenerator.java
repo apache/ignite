@@ -237,6 +237,8 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridH2DmlResponse.class);
 //        gen.generateAndWrite(GridNearTxEnlistRequest.class);
 //        gen.generateAndWrite(GridNearTxEnlistResponse.class);
+//        gen.generateAndWrite(GenerateEncryptionKeyRequest.class);
+//        gen.generateAndWrite(GenerateEncryptionKeyResponse.class);
     }
 
     /**

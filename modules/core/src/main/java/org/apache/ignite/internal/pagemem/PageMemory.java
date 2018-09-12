@@ -29,6 +29,12 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator, PageSupport
     public int pageSize();
 
     /**
+     * @param grpId Group id.
+     * @return Page size without encryption overhead.
+     */
+    public int realPageSize(int grpId);
+
+    /**
      * @return Page size with system overhead, in bytes.
      */
     public int systemPageSize();

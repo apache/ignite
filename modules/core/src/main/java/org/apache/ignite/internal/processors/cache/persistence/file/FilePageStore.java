@@ -233,11 +233,8 @@ public class FilePageStore implements PageStore {
         return fileSize;
     }
 
-    /**
-     * @param delete {@code True} to delete file.
-     * @throws StorageException If failed in case of underlying I/O exception.
-     */
-    public void stop(boolean delete) throws StorageException {
+    /** {@inheritDoc} */
+    @Override public void stop(boolean delete) throws StorageException {
         lock.writeLock().lock();
 
         try {
@@ -262,13 +259,8 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     * Truncates and deletes partition file.
-     *
-     * @param tag New partition tag.
-     * @throws StorageException If failed in case of underlying I/O exception.
-     */
-    public void truncate(int tag) throws StorageException {
+    /** {@inheritDoc} */
+    @Override public void truncate(int tag) throws StorageException {
         init();
 
         lock.writeLock().lock();
@@ -296,10 +288,8 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     *
-     */
-    public void beginRecover() {
+    /** {@inheritDoc} */
+    @Override public void beginRecover() {
         lock.writeLock().lock();
 
         try {
@@ -310,10 +300,8 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     * @throws StorageException If failed in case of underlying I/O exception.
-     */
-    public void finishRecover() throws StorageException {
+    /** {@inheritDoc} */
+    @Override public void finishRecover() throws StorageException {
         lock.writeLock().lock();
 
         try {
