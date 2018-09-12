@@ -112,7 +112,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 @SuppressWarnings("unchecked")
 public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 
