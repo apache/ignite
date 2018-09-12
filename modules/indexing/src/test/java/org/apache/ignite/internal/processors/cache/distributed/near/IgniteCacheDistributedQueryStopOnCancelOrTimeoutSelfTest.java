@@ -122,7 +122,8 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * Query possibly could be executed faster than timeout
+     * Query possibly could be executed faster than timeout.
+     *
      * @throws Exception If failed.
      */
     public void testRemoteQueryWithMergeTableTimeout1() throws Exception {
@@ -172,6 +173,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
     /**
      * Query with far less complex sql and expected to be executed faster than timeout
+     *
      * @throws Exception If failed.
      */
     public void testRemoteQueryWithMergeTableCancel1() throws Exception {
@@ -179,7 +181,8 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * Query with far less complex sql and expected to be executed faster than timeout
+     * Query with far less complex sql and expected to be executed faster than timeout.
+     *
      * @throws Exception If failed.
      */
     public void testRemoteQueryWithMergeTableCancel2() throws Exception {
@@ -187,7 +190,8 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * Query with far less complex sql and expected to be executed faster than timeout
+     * Query with far less complex sql and expected to be executed faster than timeout.
+     *
      * @throws Exception If failed.
      */
     public void testRemoteQueryWithMergeTableCancel3() throws Exception {
@@ -195,7 +199,8 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * Query possibly could be executed faster than timeout
+     * Query possibly could be executed faster than timeout.
+     *
      * @throws Exception If failed.
      */
     public void testRemoteQueryWithoutMergeTableCancel0() throws Exception {
@@ -204,7 +209,8 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * Query with far less complex sql and expected to be executed faster than timeout
+     * Query with far less complex sql and expected to be executed faster than timeout.
+     *
      * @throws Exception If failed.
      */
     public void testRemoteQueryWithoutMergeTableCancel1() throws Exception {
@@ -212,7 +218,8 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * Query with far less complex sql and expected to be executed faster than timeout
+     * Query with far less complex sql and expected to be executed faster than timeout.
+     *
      * @throws Exception If failed.
      */
     public void testRemoteQueryWithoutMergeTableCancel2() throws Exception {
@@ -220,7 +227,8 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * Query with far less complex sql and expected to be executed faster than timeout
+     * Query with far less complex sql and expected to be executed faster than timeout.
+     *
      * @throws Exception If failed.
      */
     public void testRemoteQueryWithoutMergeTableCancel3() throws Exception {
@@ -228,7 +236,8 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * Query with far less complex sql and expected to be executed faster than timeout
+     * Query with far less complex sql and expected to be executed faster than timeout.
+     *
      * @throws Exception If failed.
      */
     public void testRemoteQueryAlreadyFinishedStop() throws Exception {
@@ -236,15 +245,16 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     }
 
     /**
-     * Common logic for tests
-     * @param keyCnt Cash size
-     * @param valSize Length of value
-     * @param sql Select query
-     * @param timeoutUnits Timeout
-     * @param timeUnit Measurement units
-     * @param timeout Is timeout set
-     * @param cause Expected cause of exception
-     * @throws Exception Uncaught exception
+     * Common logic for tests.
+     *
+     * @param keyCnt Cash size.
+     * @param valSize Length of value.
+     * @param sql Select query.
+     * @param timeoutUnits Timeout.
+     * @param timeUnit Measurement units.
+     * @param timeout Is timeout set.
+     * @param cause Expected cause of exception.
+     * @throws Exception Uncaught exception.
      */
     private void testQueryCancel(int keyCnt, int valSize, String sql, int timeoutUnits, TimeUnit timeUnit,
         boolean timeout, String cause) throws Exception {

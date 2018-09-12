@@ -20,7 +20,7 @@ package org.apache.ignite.cache.query;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * The exception is thrown if a qry was cancelled or timed out while executing.
+ * The exception is thrown if a query was cancelled or timed out while executing.
  */
 public class QueryCancelledException extends IgniteCheckedException {
     /** */
@@ -30,13 +30,10 @@ public class QueryCancelledException extends IgniteCheckedException {
      * Default constructor.
      */
     public QueryCancelledException() {
-        super("The qry was cancelled while executing");
+        super("The query was cancelled while executing");
     }
 
-    /**
-     * Customized constructor receives message
-     * @param msg Message
-     */
+    /** {@inheritDoc} */
     public QueryCancelledException(String msg) {
         super(msg);
     }
