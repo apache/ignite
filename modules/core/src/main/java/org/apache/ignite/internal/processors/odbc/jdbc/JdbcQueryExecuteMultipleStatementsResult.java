@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -80,14 +81,15 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.writeBinary(writer, ver);
 
         if (results != null && results.size() > 0) {
             writer.writeInt(results.size());
 
             for (JdbcResultInfo r : results)
-                r.writeBinary(writer);
+                r.writeBinary(writer, ver);
 
             if (results.get(0).isQuery()) {
                 writer.writeBoolean(last);
@@ -101,8 +103,9 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
 
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.readBinary(reader, ver);
 
         int cnt = reader.readInt();
 
@@ -114,7 +117,7 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
             for (int i = 0; i < cnt; ++i) {
                 JdbcResultInfo r = new JdbcResultInfo();
 
-                r.readBinary(reader);
+                r.readBinary(reader, ver);
 
                 results.add(r);
             }

@@ -15,33 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
-
-import java.util.Map;
-import org.apache.ignite.IgniteAtomicSequence;
-import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
-
 /**
- * Ignite atomic sequence benchmark.
+ * <!-- Package description. -->
+ * Contains implementation of convergence checking computer by mean of absolute value of errors in dataset.
  */
-public class IgniteAtomicSequenceBenchmark extends IgniteAbstractBenchmark {
-    /** Cache. */
-    private IgniteAtomicSequence seq;
-
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        seq = ignite().atomicSequence("benchSequence", 0, true);
-
-        seq.batchSize(args.batch());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        seq.incrementAndGet();
-
-        return true;
-    }
-}
+package org.apache.ignite.ml.composition.boosting.convergence.mean;

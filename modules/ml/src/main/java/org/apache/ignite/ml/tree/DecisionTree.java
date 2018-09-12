@@ -54,7 +54,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
     private final DecisionTreeLeafBuilder decisionTreeLeafBuilder;
 
     /** Use index structure instead of using sorting while learning. */
-    protected boolean useIndex = true;
+    protected boolean usingIdx = true;
 
     /**
      * Constructs a new distributed decision tree trainer.
@@ -77,7 +77,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends Dataset
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIndex)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, usingIdx)
         )) {
             return fit(dataset);
         }
