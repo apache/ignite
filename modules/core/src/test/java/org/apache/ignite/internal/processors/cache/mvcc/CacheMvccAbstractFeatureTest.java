@@ -61,7 +61,7 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
     private Ignite node;
 
     /** {@inheritDoc} */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 

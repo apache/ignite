@@ -74,7 +74,7 @@ public class JdbcThinTcpIo {
     private static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
 
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_7_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_7_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -326,7 +326,9 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
         writer.writeBoolean(connProps.isLazy());
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
-        writer.writeString(connProps.nestedTxMode());
+
+        if (ver.compareTo(VER_2_7_0) >= 0)
+            writer.writeString(connProps.nestedTxMode());
 
         if (!F.isEmpty(connProps.getUsername())) {
             assert ver.compareTo(VER_2_5_0) >= 0 : "Authentication is supported since 2.5";
@@ -375,15 +377,16 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_4_0.equals(srvProtocolVer)
-                    || VER_2_3_0.equals(srvProtocolVer)
-                    || VER_2_1_5.equals(srvProtocolVer))
-                handshake(srvProtocolVer);
-            else if (VER_2_1_0.equals(srvProtocolVer))
+            if (VER_2_5_0.equals(srvProtoVer0)
+                || VER_2_4_0.equals(srvProtoVer0)
+                || VER_2_3_0.equals(srvProtoVer0)
+                || VER_2_1_5.equals(srvProtoVer0))
+                handshake(srvProtoVer0);
+            else if (VER_2_1_0.equals(srvProtoVer0))
                 handshake_2_1_0();
             else {
                 throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']',
+                    ", remoteNodeProtocolVer=" + srvProtoVer0 + ", err=" + err + ']',
                     SqlStateCode.CONNECTION_REJECTED);
             }
         }
@@ -466,7 +469,7 @@ public class JdbcThinTcpIo {
             BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
                 null, null);
 
-            req.writeBinary(writer);
+            req.writeBinary(writer, srvProtocolVer);
 
             send(writer.array());
         }
@@ -500,7 +503,7 @@ public class JdbcThinTcpIo {
 
             BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
 
-            req.writeBinary(writer);
+            req.writeBinary(writer, srvProtocolVer);
 
             send(writer.array());
 
@@ -523,7 +526,7 @@ public class JdbcThinTcpIo {
 
         JdbcResponse res = new JdbcResponse();
 
-        res.readBinary(reader);
+        res.readBinary(reader, srvProtocolVer);
 
         return res;
     }

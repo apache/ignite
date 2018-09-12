@@ -250,7 +250,8 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
             personCache.query(qry).getAll();
         }
         catch (CacheException e) {
-            assertTrue(e.getMessage().contains("Failed to reserve partitions for query (partition of PARTITIONED cache cannot be reserved) ["));
+            assertTrue(e.getMessage().contains("Failed to reserve partitions for query (partition of PARTITIONED " +
+                "cache is not found or not in OWNING state) "));
 
             return;
         }
