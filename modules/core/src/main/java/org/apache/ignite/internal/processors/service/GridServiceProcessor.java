@@ -69,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
@@ -79,7 +78,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -111,6 +109,7 @@ import org.apache.ignite.thread.OomExceptionHandler;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
+import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
@@ -1633,7 +1632,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 throw ex;
         }
 
-        if (dep != null) {
+        if (e.getEventType() != REMOVED) {
             svcName.set(dep.configuration().getName());
 
             // Ignore other utility cache events.
@@ -1758,8 +1757,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         affReadyFut.get();
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to wait for affinity ready future " +
-                            "(the assignment will be recalculated anyway)", e);
+                        U.warn(log, "Failed to wait for affinity ready future " +
+                            "(the assignment will be recalculated anyway):" + e.toString());
                     }
                 }
 
@@ -1950,7 +1949,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
                         @Override public void onTimeout() {
                             depExe.execute(new Runnable() {
-                                public void run() {
+                                @Override public void run() {
                                     onReassignmentFailed(topVer, retries);
                                 }
                             });
@@ -1980,7 +1979,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 throw ex;
         }
 
-        if (assigns != null) {
+        if (e.getEventType() != REMOVED) {
             svcName.set(assigns.name());
 
             Throwable t = null;
@@ -2126,7 +2125,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /**
      */
     @GridInternal
-    @SerializableTransient(methodName = "serializableTransient")
     private static class ServiceTopologyCallable implements IgniteCallable<Map<UUID, Integer>> {
         /** */
         private static final long serialVersionUID = 0L;

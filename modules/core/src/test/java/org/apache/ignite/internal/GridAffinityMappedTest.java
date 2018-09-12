@@ -59,8 +59,6 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
-
         if (igniteInstanceName.endsWith("1"))
             cfg.setCacheConfiguration(); // Empty cache configuration.
         else {

@@ -683,6 +683,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public void clearStatistics() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
         return this;
     }

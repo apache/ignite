@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -39,6 +40,9 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
     /** Topology version. */
     private final AffinityTopologyVersion topVer;
+
+    /** */
+    private final MvccCoordinator mvccCrd;
 
     /** Collection of calculated affinity nodes. */
     private List<List<ClusterNode>> assignment;
@@ -61,9 +65,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     /** */
     private transient List<List<ClusterNode>> idealAssignment;
 
-    /** */
-    private final boolean clientEvtChange;
-
     /**
      * Constructs cached affinity calculations item.
      *
@@ -73,7 +74,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         this.topVer = topVer;
         primary = new HashMap<>();
         backup = new HashMap<>();
-        clientEvtChange = false;
+        mvccCrd = null;
     }
 
     /**
@@ -83,7 +84,8 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      */
     GridAffinityAssignment(AffinityTopologyVersion topVer,
         List<List<ClusterNode>> assignment,
-        List<List<ClusterNode>> idealAssignment) {
+        List<List<ClusterNode>> idealAssignment,
+        MvccCoordinator mvccCrd) {
         assert topVer != null;
         assert assignment != null;
         assert idealAssignment != null;
@@ -91,10 +93,10 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         this.topVer = topVer;
         this.assignment = assignment;
         this.idealAssignment = idealAssignment.equals(assignment) ? assignment : idealAssignment;
+        this.mvccCrd = mvccCrd;
 
         primary = new HashMap<>();
         backup = new HashMap<>();
-        clientEvtChange = false;
 
         initPrimaryBackupMaps();
     }
@@ -110,36 +112,27 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
-
-        clientEvtChange = true;
-    }
-
-    /**
-     * @return {@code True} if related discovery event did not not cause affinity assignment change and
-     *    this assignment is just reference to the previous one.
-     */
-    public boolean clientEventChange() {
-        return clientEvtChange;
+        mvccCrd = aff.mvccCrd;
     }
 
     /**
      * @return Affinity assignment computed by affinity function.
      */
-    public List<List<ClusterNode>> idealAssignment() {
+    @Override public List<List<ClusterNode>> idealAssignment() {
         return idealAssignment;
     }
 
     /**
      * @return Affinity assignment.
      */
-    public List<List<ClusterNode>> assignment() {
+    @Override public List<List<ClusterNode>> assignment() {
         return assignment;
     }
 
     /**
      * @return Topology version.
      */
-    public AffinityTopologyVersion topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -232,7 +225,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param nodeId Node ID to get primary partitions for.
      * @return Primary partitions for specified node ID.
      */
-    public Set<Integer> primaryPartitions(UUID nodeId) {
+    @Override public Set<Integer> primaryPartitions(UUID nodeId) {
         Set<Integer> set = primary.get(nodeId);
 
         return set == null ? Collections.<Integer>emptySet() : set;
@@ -244,7 +237,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param nodeId Node ID to get backup partitions for.
      * @return Backup partitions for specified node ID.
      */
-    public Set<Integer> backupPartitions(UUID nodeId) {
+    @Override public Set<Integer> backupPartitions(UUID nodeId) {
         Set<Integer> set = backup.get(nodeId);
 
         return set == null ? Collections.<Integer>emptySet() : set;
@@ -280,6 +273,11 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
                 map = backup;
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccCoordinator mvccCoordinator() {
+        return mvccCrd;
     }
 
     /** {@inheritDoc} */

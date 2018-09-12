@@ -16,6 +16,7 @@
  */
 
 import difference from 'lodash/difference';
+import capitalize from 'lodash/capitalize';
 
 export const LOAD_LIST = Symbol('LOAD_LIST');
 export const ADD_CLUSTER = Symbol('ADD_CLUSTER');
@@ -33,6 +34,7 @@ import {
 } from './store/actionTypes';
 
 const defaults = {clusters: new Map(), caches: new Map(), spaces: new Map()};
+
 const mapByID = (items) => {
     return Array.isArray(items) ? new Map(items.map((item) => [item._id, item])) : new Map(items);
 };
@@ -48,21 +50,25 @@ export const reducer = (state = defaults, action) => {
                 plugins: mapByID(action.list.plugins)
             };
         }
+
         case ADD_CLUSTER: {
             return Object.assign({}, state, {
                 clusters: new Map([...state.clusters.entries(), [action.cluster._id, action.cluster]])
             });
         }
+
         case ADD_CLUSTERS: {
             return Object.assign({}, state, {
                 clusters: new Map([...state.clusters.entries(), ...action.clusters.map((c) => [c._id, c])])
             });
         }
+
         case REMOVE_CLUSTERS: {
             return Object.assign({}, state, {
                 clusters: new Map([...state.clusters.entries()].filter(([id, value]) => !action.clusterIDs.includes(id)))
             });
         }
+
         case UPDATE_CLUSTER: {
             const id = action._id || action.cluster._id;
             return Object.assign({}, state, {
@@ -74,31 +80,38 @@ export const reducer = (state = defaults, action) => {
                 }))
             });
         }
+
         case UPSERT_CLUSTERS: {
             return action.clusters.reduce((state, cluster) => reducer(state, {
                 type: state.clusters.has(cluster._id) ? UPDATE_CLUSTER : ADD_CLUSTER,
                 cluster
             }), state);
         }
+
         case ADD_CACHE: {
             return Object.assign({}, state, {
                 caches: new Map([...state.caches.entries(), [action.cache._id, action.cache]])
             });
         }
+
         case UPDATE_CACHE: {
             const id = action.cache._id;
+
             return Object.assign({}, state, {
                 caches: new Map(state.caches).set(id, Object.assign({}, state.caches.get(id), action.cache))
             });
         }
+
         case UPSERT_CACHES: {
             return action.caches.reduce((state, cache) => reducer(state, {
                 type: state.caches.has(cache._id) ? UPDATE_CACHE : ADD_CACHE,
                 cache
             }), state);
         }
+
         case REMOVE_CACHE:
             return state;
+
         default:
             return state;
     }
@@ -119,34 +132,40 @@ export const editReducer = (state = {originalCluster: null}, action) => {
                 ...state,
                 originalCluster: action.cluster
             };
+
         case RECEIVE_CACHE_EDIT: {
             return {
                 ...state,
                 originalCache: action.cache
             };
         }
+
         case RECEIVE_IGFSS_EDIT:
             return {
                 ...state,
                 originalIGFSs: action.igfss
             };
+
         case RECEIVE_IGFS_EDIT: {
             return {
                 ...state,
                 originalIGFS: action.igfs
             };
         }
+
         case RECEIVE_MODELS_EDIT:
             return {
                 ...state,
                 originalModels: action.models
             };
+
         case RECEIVE_MODEL_EDIT: {
             return {
                 ...state,
                 originalModel: action.model
             };
         }
+
         default:
             return state;
     }
@@ -160,8 +179,10 @@ export const loadingReducer = (state = loadingDefaults, action) => {
     switch (action.type) {
         case SHOW_CONFIG_LOADING:
             return {...state, isLoading: true, loadingText: action.loadingText};
+
         case HIDE_CONFIG_LOADING:
             return {...state, isLoading: false};
+
         default:
             return state;
     }
@@ -171,12 +192,16 @@ export const setStoreReducerFactory = (actionTypes) => (state = new Set(), actio
     switch (action.type) {
         case actionTypes.SET:
             return new Set(action.items.map((i) => i._id));
+
         case actionTypes.RESET:
             return new Set();
+
         case actionTypes.UPSERT:
             return action.items.reduce((acc, item) => {acc.add(item._id); return acc;}, new Set(state));
+
         case actionTypes.REMOVE:
             return action.items.reduce((acc, item) => {acc.delete(item); return acc;}, new Set(state));
+
         default:
             return state;
     }
@@ -186,14 +211,22 @@ export const mapStoreReducerFactory = (actionTypes) => (state = new Map(), actio
     switch (action.type) {
         case actionTypes.SET:
             return new Map(action.items.map((i) => [i._id, i]));
+
         case actionTypes.RESET:
             return new Map();
+
         case actionTypes.UPSERT:
-            if (!action.items.length) return state;
+            if (!action.items.length)
+                return state;
+
             return action.items.reduce((acc, item) => {acc.set(item._id, item); return acc;}, new Map(state));
+
         case actionTypes.REMOVE:
-            if (!action.ids.length) return state;
+            if (!action.ids.length)
+                return state;
+
             return action.ids.reduce((acc, id) => {acc.delete(id); return acc;}, new Map(state));
+
         default:
             return state;
     }
@@ -201,6 +234,7 @@ export const mapStoreReducerFactory = (actionTypes) => (state = new Map(), actio
 
 export const mapCacheReducerFactory = (actionTypes) => {
     const mapStoreReducer = mapStoreReducerFactory(actionTypes);
+
     return (state = {value: mapStoreReducer(), pristine: true}, action) => {
         switch (action.type) {
             case actionTypes.SET:
@@ -210,11 +244,13 @@ export const mapCacheReducerFactory = (actionTypes) => {
                     value: mapStoreReducer(state.value, action),
                     pristine: false
                 };
+
             case actionTypes.RESET:
                 return {
                     value: mapStoreReducer(state.value, action),
                     pristine: true
                 };
+
             default:
                 return state;
         }
@@ -248,26 +284,31 @@ export const shortIGFSsActionTypes = mapStoreActionTypesFactory('SHORT_IGFSS');
 export const itemsEditReducerFactory = (actionTypes) => {
     const setStoreReducer = setStoreReducerFactory(actionTypes);
     const mapStoreReducer = mapStoreReducerFactory(actionTypes);
+
     return (state = {ids: setStoreReducer(), changedItems: mapStoreReducer()}, action) => {
         switch (action.type) {
             case actionTypes.SET:
                 return action.state;
+
             case actionTypes.LOAD:
                 return {
                     ...state,
                     ids: setStoreReducer(state.ids, {...action, type: actionTypes.UPSERT})
                 };
+
             case actionTypes.RESET:
             case actionTypes.UPSERT:
                 return {
                     ids: setStoreReducer(state.ids, action),
                     changedItems: mapStoreReducer(state.changedItems, action)
                 };
+
             case actionTypes.REMOVE:
                 return {
                     ids: setStoreReducer(state.ids, {type: action.type, items: action.ids}),
                     changedItems: mapStoreReducer(state.changedItems, action)
                 };
+
             default:
                 return state;
         }
@@ -278,6 +319,7 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
     switch (action.type) {
         case 'SET_EDIT':
             return action.state;
+
         case 'EDIT_CLUSTER': {
             return {
                 ...state,
@@ -293,6 +335,7 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
                 }
             };
         }
+
         case 'RESET_EDIT_CHANGES': {
             return {
                 ...state,
@@ -308,6 +351,7 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
                 }
             };
         }
+
         case 'UPSERT_CLUSTER': {
             return {
                 ...state,
@@ -317,6 +361,7 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
                 }
             };
         }
+
         case 'UPSERT_CLUSTER_ITEM': {
             const {itemType, item} = action;
             return {
@@ -330,8 +375,10 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
                 }
             };
         }
+
         case REMOVE_CLUSTER_ITEMS_CONFIRMED: {
             const {itemType, itemIDs} = action;
+
             return {
                 ...state,
                 changes: {
@@ -343,9 +390,11 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
                 }
             };
         }
+
         default: return state;
     }
 };
+
 editReducer2.getDefaults = () => ({
     changes: ['caches', 'models', 'igfss'].reduce((a, t) => ({...a, [t]: {ids: [], changedItems: []}}), {cluster: null})
 });
@@ -356,15 +405,19 @@ export const refsReducer = (refs) => (state, action) => {
             const newCluster = action.changedItems.cluster;
             const oldCluster = state.clusters.get(newCluster._id) || {};
             const val = Object.keys(refs).reduce((state, ref) => {
-                if (!state || !state[refs[ref].store].size) return state;
+                if (!state || !state[refs[ref].store].size)
+                    return state;
 
                 const addedSources = new Set(difference(newCluster[ref], oldCluster[ref] || []));
                 const removedSources = new Set(difference(oldCluster[ref] || [], newCluster[ref]));
                 const changedSources = new Map(action.changedItems[ref].map((m) => [m._id, m]));
 
                 const targets = new Map();
+
                 const maybeTarget = (id) => {
-                    if (!targets.has(id)) targets.set(id, {[refs[ref].at]: {add: new Set(), remove: new Set()}});
+                    if (!targets.has(id))
+                        targets.set(id, {[refs[ref].at]: {add: new Set(), remove: new Set()}});
+
                     return targets.get(id);
                 };
 
@@ -373,11 +426,13 @@ export const refsReducer = (refs) => (state, action) => {
                     .filter((sourceID) => removedSources.has(sourceID))
                     .forEach((sourceID) => maybeTarget(target._id)[refs[ref].at].remove.add(sourceID));
                 });
+
                 [...addedSources.values()].forEach((sourceID) => {
                     (changedSources.get(sourceID)[refs[ref].store] || []).forEach((targetID) => {
                         maybeTarget(targetID)[refs[ref].at].add.add(sourceID);
                     });
                 });
+
                 action.changedItems[ref].filter((s) => !addedSources.has(s._id)).forEach((source) => {
                     const newSource = source;
                     const oldSource = state[ref].get(source._id);
@@ -412,8 +467,35 @@ export const refsReducer = (refs) => (state, action) => {
                     }
                     : state;
             }, state);
+
             return val;
         }
+
+        default:
+            return state;
+    }
+};
+
+export const shortObjectsReducer = (state, action) => {
+    switch (action.type) {
+        case REMOVE_CLUSTER_ITEMS_CONFIRMED: {
+            const {itemType, itemIDs} = action;
+
+            const target = 'short' + capitalize(itemType);
+
+            const oldItems = state[target];
+
+            const newItems = {
+                value: itemIDs.reduce((acc, id) => {acc.delete(id); return acc;}, oldItems.value),
+                pristine: oldItems.pristine
+            };
+
+            return {
+                ...state,
+                [target]: newItems
+            };
+        }
+
         default:
             return state;
     }

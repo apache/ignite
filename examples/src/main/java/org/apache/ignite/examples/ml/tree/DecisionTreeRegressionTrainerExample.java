@@ -29,6 +29,16 @@ import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Example of using distributed {@link DecisionTreeRegressionTrainer}.
+ * <p>
+ * Code in this example launches Ignite grid and fills the cache with generated test data points ({@code sin(x)}
+ * on interval {@code [0, 10)}).</p>
+ * <p>
+ * After that it creates classification trainer and uses it to train the model on the training set.</p>
+ * <p>
+ * Finally, this example loops over the test data points, applies the trained model, and compares prediction
+ * to expected outcome (ground truth).</p>
+ * <p>
+ * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class DecisionTreeRegressionTrainerExample {
     /**
@@ -92,7 +102,7 @@ public class DecisionTreeRegressionTrainerExample {
     }
 
     /**
-     * Generates {@code sin(x)} on interval [0, 10) and loads into the specified cache.
+     * Generates {@code sin(x)} on interval {@code [0, 10)} and loads into the specified cache.
      */
     private static void generatePoints(IgniteCache<Integer, Point> trainingSet) {
         for (int i = 0; i < 1000; i++) {

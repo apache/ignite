@@ -64,13 +64,13 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
      */
     public void testDistributions() {
         printPageIdDistribution(
-            CU.cacheId("partitioned"), 1024, 30_000, 32, 2.5f);
+            CU.cacheId("partitioned"), 1024, 10_000, 32, 2.5f);
 
         printPageIdDistribution(
-            CU.cacheId("partitioned"), 1024, 30_000, 64, 2.5f);
+            CU.cacheId("partitioned"), 1024, 10_000, 64, 2.5f);
 
         printPageIdDistribution(
-            CU.cacheId(null), 1024, 30_000, 32, 2.5f);
+            CU.cacheId(null), 1024, 10_000, 32, 2.5f);
     }
 
     /**

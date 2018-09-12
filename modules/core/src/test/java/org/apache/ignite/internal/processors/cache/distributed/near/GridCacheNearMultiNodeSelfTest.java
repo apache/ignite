@@ -107,7 +107,6 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         spi.setIpFinder(ipFinder);
 
-        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
         cfg.setDiscoverySpi(spi);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();

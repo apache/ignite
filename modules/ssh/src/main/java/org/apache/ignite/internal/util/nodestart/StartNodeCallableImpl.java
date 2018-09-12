@@ -382,11 +382,11 @@ public class StartNodeCallableImpl implements StartNodeCallable {
     }
 
     /**
-     * Gets the value of the specified environment variable.
+     * Executes command using {@code exec} channel.
      *
      * @param ses SSH session.
-     * @param cmd environment variable name.
-     * @return environment variable value.
+     * @param cmd Command.
+     * @return Output result.
      * @throws JSchException In case of SSH error.
      * @throws IOException If failed.
      */
@@ -395,12 +395,12 @@ public class StartNodeCallableImpl implements StartNodeCallable {
     }
 
     /**
-     * Gets the value of the specified environment variable.
+     * Executes command using {@code exec} channel with setting encoding.
      *
      * @param ses SSH session.
-     * @param cmd environment variable name.
+     * @param cmd Command.
      * @param encoding Process output encoding, {@code null} for default charset encoding.
-     * @return environment variable value.
+     * @return Output result.
      * @throws JSchException In case of SSH error.
      * @throws IOException If failed.
      */

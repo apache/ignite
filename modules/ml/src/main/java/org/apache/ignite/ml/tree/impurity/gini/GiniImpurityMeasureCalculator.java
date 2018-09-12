@@ -19,14 +19,16 @@ package org.apache.ignite.ml.tree.impurity.gini;
 
 import java.util.Arrays;
 import java.util.Map;
+import org.apache.ignite.ml.tree.TreeFilter;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.TreeDataIndex;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 
 /**
  * Gini impurity measure calculator.
  */
-public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<GiniImpurityMeasure> {
+public class GiniImpurityMeasureCalculator extends ImpurityMeasureCalculator<GiniImpurityMeasure> {
     /** */
     private static final long serialVersionUID = -522995134128519679L;
 
@@ -37,51 +39,70 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
      * Constructs a new instance of Gini impurity measure calculator.
      *
      * @param lbEncoder Label encoder which defines integer value for every label class.
+     * @param useIndex Use index while calculate.
      */
-    public GiniImpurityMeasureCalculator(Map<Double, Integer> lbEncoder) {
+    public GiniImpurityMeasureCalculator(Map<Double, Integer> lbEncoder, boolean useIndex) {
+        super(useIndex);
         this.lbEncoder = lbEncoder;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public StepFunction<GiniImpurityMeasure>[] calculate(DecisionTreeData data) {
-        double[][] features = data.getFeatures();
-        double[] labels = data.getLabels();
+    @Override public StepFunction<GiniImpurityMeasure>[] calculate(DecisionTreeData data, TreeFilter filter, int depth) {
+        TreeDataIndex index = null;
+        boolean canCalculate = false;
 
-        if (features.length > 0) {
-            StepFunction<GiniImpurityMeasure>[] res = new StepFunction[features[0].length];
+        if (useIndex) {
+            index = data.createIndexByFilter(depth, filter);
+            canCalculate = index.rowsCount() > 0;
+        }
+        else {
+            data = data.filter(filter);
+            canCalculate = data.getFeatures().length > 0;
+        }
+
+        if (canCalculate) {
+            int rowsCnt = rowsCount(data, index);
+            int colsCnt = columnsCount(data, index);
+
+            StepFunction<GiniImpurityMeasure>[] res = new StepFunction[colsCnt];
+
+            long right[] = new long[lbEncoder.size()];
+            for (int i = 0; i < rowsCnt; i++) {
+                double lb = getLabelValue(data, index, 0, i);
+                right[getLabelCode(lb)]++;
+            }
 
             for (int col = 0; col < res.length; col++) {
-                data.sort(col);
+                if(!useIndex)
+                    data.sort(col);
 
-                double[] x = new double[features.length + 1];
-                GiniImpurityMeasure[] y = new GiniImpurityMeasure[features.length + 1];
-
-                int xPtr = 0, yPtr = 0;
+                double[] x = new double[rowsCnt + 1];
+                GiniImpurityMeasure[] y = new GiniImpurityMeasure[rowsCnt + 1];
 
                 long[] left = new long[lbEncoder.size()];
-                long[] right = new long[lbEncoder.size()];
+                long[] rightCopy = Arrays.copyOf(right, right.length);
 
-                for (int i = 0; i < labels.length; i++)
-                    right[getLabelCode(labels[i])]++;
-
+                int xPtr = 0, yPtr = 0;
                 x[xPtr++] = Double.NEGATIVE_INFINITY;
                 y[yPtr++] = new GiniImpurityMeasure(
                     Arrays.copyOf(left, left.length),
-                    Arrays.copyOf(right, right.length)
+                    Arrays.copyOf(rightCopy, rightCopy.length)
                 );
 
-                for (int i = 0; i < features.length; i++) {
-                    left[getLabelCode(labels[i])]++;
-                    right[getLabelCode(labels[i])]--;
+                for (int i = 0; i < rowsCnt; i++) {
+                    double lb = getLabelValue(data, index, col, i);
+                    left[getLabelCode(lb)]++;
+                    rightCopy[getLabelCode(lb)]--;
 
-                    if (i < (features.length - 1) && features[i + 1][col] == features[i][col])
+                    double featureVal = getFeatureValue(data, index, col, i);
+                    if (i < (rowsCnt - 1) && getFeatureValue(data, index, col, i + 1) == featureVal)
                         continue;
 
-                    x[xPtr++] = features[i][col];
+                    x[xPtr++] = featureVal;
                     y[yPtr++] = new GiniImpurityMeasure(
                         Arrays.copyOf(left, left.length),
-                        Arrays.copyOf(right, right.length)
+                        Arrays.copyOf(rightCopy, rightCopy.length)
                     );
                 }
 

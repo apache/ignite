@@ -16,22 +16,17 @@
  */
 
 .ignite-nodes-dialog {
-    label {
-        font-size: 18px;
-        margin-right: 20px;
-    }
-
     .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-cell:last-child,
     .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-header-cell:last-child,
     .ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
-      //border-right: none;
+      border-right: none;
     }
 
-    .nodes-grid {
-        height: 320px;
+    .modal-dialog {
+        width: 900px;
     }
-    .panel-body_collapse {
-        padding: 0;
-        margin: 0;
+
+    button.pull-left.btn-ignite {
+        background: none;
     }
 }

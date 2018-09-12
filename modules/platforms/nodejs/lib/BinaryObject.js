@@ -25,7 +25,6 @@ const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryType = require('./internal/BinaryType');
 const BinaryField = require('./internal/BinaryType').BinaryField;
 const BinaryTypeBuilder = require('./internal/BinaryType').BinaryTypeBuilder;
-const BinaryWriter = require('./internal/BinaryWriter');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 const Logger = require('./internal/Logger');
 
@@ -283,28 +282,28 @@ class BinaryObject {
     /**
      * @ignore
      */
-    static async _fromBuffer(buffer) {
+    static async _fromBuffer(communicator, buffer) {
         const result = new BinaryObject(new ComplexObjectType({})._typeName);
         result._buffer = buffer;
         result._startPos = buffer.position;
-        await result._read();
+        await result._read(communicator);
         return result;
     }
 
     /**
      * @ignore
      */
-    async _write(buffer) {
+    async _write(communicator, buffer) {
         if (this._buffer && !this._modified) {
             buffer.writeBuffer(this._buffer.buffer, this._startPos, this._startPos + this._length);
         }
         else {
-            await this._typeBuilder.finalize();
+            await this._typeBuilder.finalize(communicator);
             this._startPos = buffer.position;
             buffer.position = this._startPos + HEADER_LENGTH;
             // write fields
             for (let field of this._fields.values()) {
-                await field._writeValue(buffer, this._typeBuilder.getField(field.id).typeCode);
+                await field._writeValue(communicator, buffer, this._typeBuilder.getField(field.id).typeCode);
             }
             this._schemaOffset = buffer.position - this._startPos;
             // write schema
@@ -351,8 +350,8 @@ class BinaryObject {
     /**
      * @ignore
      */
-    async _read() {
-        await this._readHeader();
+    async _read(communicator) {
+        await this._readHeader(communicator);
         this._buffer.position = this._startPos + this._schemaOffset;
         const fieldOffsets = new Array();
         const fieldIds = this._typeBuilder._schema.fieldIds;
@@ -382,7 +381,7 @@ class BinaryObject {
             offset = fieldOffsets[i][1];
             nextOffset = i + 1 < fieldOffsets.length ? fieldOffsets[i + 1][1] : this._schemaOffset;
             field = BinaryObjectField._fromBuffer(
-                this._buffer, this._startPos + offset, nextOffset - offset, fieldId);
+                communicator,this._buffer, this._startPos + offset, nextOffset - offset, fieldId);
             this._fields.set(field.id, field);
         }
         this._buffer.position = this._startPos + this._length;
@@ -391,7 +390,7 @@ class BinaryObject {
     /**
      * @ignore
      */
-    async _readHeader() {
+    async _readHeader(communicator) {
         // type code
         this._buffer.readByte();
         // version
@@ -419,7 +418,7 @@ class BinaryObject {
                 BinaryUtils.TYPE_CODE.SHORT :
                 BinaryUtils.TYPE_CODE.INTEGER;
 
-        if (BinaryObject._isFlagSet(FLAG_HAS_RAW_DATA)) {
+        if (BinaryObject._isFlagSet(flags, FLAG_HAS_RAW_DATA)) {
             throw Errors.IgniteClientError.serializationError(
                 false, 'complex objects with raw data are not supported');
         }
@@ -427,7 +426,7 @@ class BinaryObject {
             throw Errors.IgniteClientError.serializationError(
                 false, 'schema is absent for object with compact footer');
         }
-        this._typeBuilder = await BinaryTypeBuilder.fromTypeId(typeId, schemaId, hasSchema);
+        this._typeBuilder = await BinaryTypeBuilder.fromTypeId(communicator, typeId, schemaId, hasSchema);
     }
 }
 
@@ -460,31 +459,35 @@ class BinaryObjectField {
     async getValue(type = null) {
         if (this._value === undefined || this._buffer && this._type !== type) {
             this._buffer.position = this._offset;
-            const BinaryReader = require('./internal/BinaryReader');
-            this._value = await BinaryReader.readObject(this._buffer, type);
+            this._value = await this._communicator.readObject(this._buffer, type);
             this._type = type;
         }
         return this._value;
     }
 
-    static _fromBuffer(buffer, offset, length, id) {
+    static _fromBuffer(communicator, buffer, offset, length, id) {
         const result = new BinaryObjectField(null);
         result._id = id;
+        result._communicator = communicator;
         result._buffer = buffer;
         result._offset = offset;
         result._length = length;
         return result;
     }
 
-    async _writeValue(buffer, expectedTypeCode) {
+    async _writeValue(communicator, buffer, expectedTypeCode) {
         const offset = buffer.position;
-        if (this._buffer) {
+        if (this._buffer && this._communicator === communicator) {
             buffer.writeBuffer(this._buffer.buffer, this._offset, this._offset + this._length);
         }
         else {
+            if (this._value === undefined) {
+                await this.getValue();
+            }
             BinaryUtils.checkCompatibility(this._value, expectedTypeCode);
-            await BinaryWriter.writeObject(buffer, this._value, this._type);
+            await communicator.writeObject(buffer, this._value, this._type);
         }
+        this._communicator = communicator;
         this._buffer = buffer;
         this._length = buffer.position - offset;
         this._offset = offset;

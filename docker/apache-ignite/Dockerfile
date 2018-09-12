@@ -32,6 +32,15 @@ COPY apache-ignite-fabric* apache-ignite-fabric
 # Copy sh files and set permission
 COPY run.sh $IGNITE_HOME/
 
+# Grant permission to copy optional libs
+RUN chmod 777 ${IGNITE_HOME}/libs
+
+# Grant permission to create work directory
+RUN chmod 777 ${IGNITE_HOME}
+
+# Grant permission to execute entry point
+RUN chmod 555 $IGNITE_HOME/run.sh
+
 # Entry point
 CMD $IGNITE_HOME/run.sh
 

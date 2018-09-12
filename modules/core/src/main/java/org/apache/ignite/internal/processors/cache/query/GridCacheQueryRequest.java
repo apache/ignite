@@ -26,8 +26,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -129,6 +129,9 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     /** */
     private AffinityTopologyVersion topVer;
 
+    /** */
+    private MvccSnapshot mvccSnapshot;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -223,6 +226,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
+     * @param mvccSnapshot Mvcc snapshot.
      * @param addDepInfo Deployment info flag.
      */
     public GridCacheQueryRequest(
@@ -245,6 +249,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         UUID subjId,
         int taskHash,
         AffinityTopologyVersion topVer,
+        MvccSnapshot mvccSnapshot,
         boolean addDepInfo
     ) {
         assert type != null || fields;
@@ -270,7 +275,15 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
+        this.mvccSnapshot = mvccSnapshot;
         this.addDepInfo = addDepInfo;
+    }
+
+    /**
+     * @return Mvcc version.
+     */
+    @Nullable MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /** {@inheritDoc} */
@@ -620,6 +633,12 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 writer.incrementState();
 
+            case 23:
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -800,6 +819,14 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
+            case 23:
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridCacheQueryRequest.class);
@@ -812,7 +839,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 23;
+        return 24;
     }
 
     /** {@inheritDoc} */

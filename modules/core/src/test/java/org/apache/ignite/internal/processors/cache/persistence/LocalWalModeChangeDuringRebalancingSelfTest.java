@@ -81,8 +81,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
-                        .setMaxSize(200 * 1024 * 1024)
-                        .setInitialSize(200 * 1024 * 1024)
+                        .setInitialSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                 )
                 // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
                 .setCheckpointFrequency(999_999_999_999L)
@@ -326,7 +326,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testWithExchangesMerge() throws Exception {
-        final int nodeCnt = 5;
+        final int nodeCnt = 4;
         final int keyCnt = getKeysCount();
 
         Ignite ignite = startGrids(nodeCnt);
@@ -340,14 +340,13 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         stopGrid(2);
         stopGrid(3);
-        stopGrid(4);
 
         // Rewrite data to trigger further rebalance.
         for (int k = 0; k < keyCnt; k++)
             cache.put(k, k * 2);
 
         // Start several grids in parallel to trigger exchanges merge.
-        startGridsMultiThreaded(2, 3);
+        startGridsMultiThreaded(2, 2);
 
         for (int nodeIdx = 2; nodeIdx < nodeCnt; nodeIdx++) {
             CacheGroupContext grpCtx = grid(nodeIdx).cachex(REPL_CACHE).context().group();

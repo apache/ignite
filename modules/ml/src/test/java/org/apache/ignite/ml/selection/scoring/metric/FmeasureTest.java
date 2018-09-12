@@ -31,7 +31,7 @@ public class FmeasureTest {
     /** */
     @Test
     public void testScore() {
-        Metric<Integer> scoreCalculator = new Fmeasure<>(1);
+        Fmeasure<Integer> scoreCalculator = new Fmeasure<>(1);
 
         LabelPairCursor<Integer> cursor = new TestLabelPairCursor<>(
             Arrays.asList(1, 0, 1, 0, 1, 0),

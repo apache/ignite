@@ -72,6 +72,83 @@ public interface CacheMetrics {
     public long getCachePuts();
 
     /**
+     * The total number of cache invocations, caused update.
+     *
+     * @return The number of invocation updates.
+     */
+    public long getEntryProcessorPuts();
+
+    /**
+     * The total number of cache invocations, caused removal.
+     *
+     * @return The number of invocation removals.
+     */
+    public long getEntryProcessorRemovals();
+
+    /**
+     * The total number of cache invocations, caused no updates.
+     *
+     * @return The number of read-only invocations.
+     */
+    public long getEntryProcessorReadOnlyInvocations();
+
+    /**
+     * The total number of cache invocations.
+     *
+     * @return The number of cache invocations.
+     */
+    public long getEntryProcessorInvocations();
+
+    /**
+     * The total number of invocations on keys, which exist in cache.
+     *
+     * @return The number of cache invocation hits.
+     */
+    public long getEntryProcessorHits();
+
+    /**
+     * The percentage of invocations on keys, which exist in cache.
+     *
+     * @return The percentage of successful invocation hits.
+     */
+    public float getEntryProcessorHitPercentage();
+
+    /**
+     * The total number of invocations on keys, which don't exist in cache.
+     *
+     * @return The number of cache invocation misses.
+     */
+    public long getEntryProcessorMisses();
+
+    /**
+     * The percentage of invocations on keys, which don't exist in cache.
+     *
+     * @return The percentage of invocation misses.
+     */
+    public float getEntryProcessorMissPercentage();
+
+    /**
+     * The mean time to execute cache invokes.
+     *
+     * @return The time in µs.
+     */
+    public float getEntryProcessorAverageInvocationTime();
+
+    /**
+     * So far, the minimum time to execute cache invokes.
+     *
+     * @return The time in µs.
+     */
+    public float getEntryProcessorMinInvocationTime();
+
+    /**
+     * So far, the maximum time to execute cache invokes.
+     *
+     * @return The time in µs.
+     */
+    public float getEntryProcessorMaxInvocationTime();
+
+    /**
      * The total number of removals from the cache. This does not include evictions,
      * where the cache itself initiates the removal to make space.
      *

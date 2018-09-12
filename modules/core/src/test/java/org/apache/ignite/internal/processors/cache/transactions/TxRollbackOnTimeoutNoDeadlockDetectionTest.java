@@ -42,8 +42,4 @@ public class TxRollbackOnTimeoutNoDeadlockDetectionTest extends TxRollbackOnTime
         assertEquals("TimeoutException is expected",
             TransactionTimeoutException.class, e.getCause().getClass());
     }
-
-    @Override public void testRandomMixedTxConfigurations() throws Exception {
-        super.testRandomMixedTxConfigurations();
-    }
 }

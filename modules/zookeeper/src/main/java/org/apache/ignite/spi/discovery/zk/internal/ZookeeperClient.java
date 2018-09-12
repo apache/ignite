@@ -504,9 +504,7 @@ public class ZookeeperClient implements Watcher {
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
-    List<String> getChildren(String path)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+    List<String> getChildren(String path) throws ZookeeperClientFailedException, InterruptedException {
         for (;;) {
             long connStartTime = this.connStartTime;
 
@@ -520,29 +518,23 @@ public class ZookeeperClient implements Watcher {
     }
 
     /**
+     * Get children paths.
+     *
      * @param path Path.
-     * @return Children nodes.
-     * @throws KeeperException.NoNodeException If provided path does not exist.
+     * @return Children paths.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
-    List<String> getChildrenIfPathExists(String path) throws
-        KeeperException.NoNodeException, InterruptedException, ZookeeperClientFailedException {
-        for (;;) {
-            long connStartTime = this.connStartTime;
+    List<String> getChildrenPaths(String path) throws ZookeeperClientFailedException, InterruptedException {
+        List<String> children = getChildren(path);
 
-            try {
-                return zk.getChildren(path, false);
-            }
-            catch (KeeperException.NoNodeException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                onZookeeperError(connStartTime, e);
-            }
-        }
+        ArrayList<String> paths = new ArrayList(children.size());
+
+        for (String child : children)
+            paths.add(path + "/" + child);
+
+        return paths;
     }
-
 
     /**
      * @param path Path.
@@ -593,7 +585,7 @@ public class ZookeeperClient implements Watcher {
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
      */
-    void deleteAll(@Nullable String parent, List<String> paths, int ver)
+    void deleteAll(List<String> paths, int ver)
         throws ZookeeperClientFailedException, InterruptedException {
         if (paths.isEmpty())
             return;
@@ -605,10 +597,8 @@ public class ZookeeperClient implements Watcher {
         List<Op> batch = new LinkedList<>();
 
         for (String path : paths) {
-            String path0 = parent != null ? parent + "/" + path : path;
-
             //TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8187
-            int size = requestOverhead(path0) + 17 /* overhead */;
+            int size = requestOverhead(path) + 17 /* overhead */;
 
             assert size <= MAX_REQ_SIZE;
 
@@ -620,7 +610,7 @@ public class ZookeeperClient implements Watcher {
                 batchSize = 0;
             }
 
-            batch.add(Op.delete(path0, ver));
+            batch.add(Op.delete(path, ver));
 
             batchSize += size;
         }

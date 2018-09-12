@@ -16,7 +16,7 @@
  */
 
 // Directive to bind ENTER key press with some user action.
-export default ['igniteOnEnter', ['$timeout', ($timeout) => {
+export default ['igniteOnEnter', ['$timeout', function($timeout) {
     return function(scope, elem, attrs) {
         elem.on('keydown keypress', (event) => {
             if (event.which === 13) {

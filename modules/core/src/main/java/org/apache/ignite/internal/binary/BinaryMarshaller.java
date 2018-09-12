@@ -24,6 +24,8 @@ import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
@@ -34,6 +36,7 @@ import sun.misc.Unsafe;
  */
 public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
     /** */
+    @GridToStringExclude
     private GridBinaryMarshaller impl;
 
     /**
@@ -132,5 +135,10 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
      */
     public GridBinaryMarshaller binaryMarshaller() {
         return impl;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinaryMarshaller.class, this);
     }
 }

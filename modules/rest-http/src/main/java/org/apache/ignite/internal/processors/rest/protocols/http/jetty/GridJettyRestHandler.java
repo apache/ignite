@@ -86,13 +86,13 @@ public class GridJettyRestHandler extends AbstractHandler {
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
     /** */
-    private static final String  USER_PARAM = "user";
+    private static final String USER_PARAM = "user";
 
     /** */
-    private static final String  PWD_PARAM = "password";
+    private static final String PWD_PARAM = "password";
 
     /** */
-    private static final String  CACHE_NAME_PARAM = "cacheName";
+    private static final String CACHE_NAME_PARAM = "cacheName";
 
     /** */
     private static final String BACKUPS_PARAM = "backups";
@@ -113,7 +113,7 @@ public class GridJettyRestHandler extends AbstractHandler {
     private static final String IGNITE_PASSWORD = "ignite.password";
 
     /** */
-    private static final String  TEMPLATE_NAME_PARAM = "templateName";
+    private static final String TEMPLATE_NAME_PARAM = "templateName";
 
     /** */
     private static final NullOutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
