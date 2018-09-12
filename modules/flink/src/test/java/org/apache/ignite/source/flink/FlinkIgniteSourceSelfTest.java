@@ -141,5 +141,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
                 return f.isDone() || igniteSrc.stopped.get() && System.currentTimeMillis() < endTime;
             }
         }, 3000);
+
+        assert f.error() == null;
     }
 }
