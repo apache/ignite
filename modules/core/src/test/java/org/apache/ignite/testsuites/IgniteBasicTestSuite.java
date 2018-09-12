@@ -17,13 +17,13 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
-import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
@@ -89,8 +89,6 @@ import org.apache.ignite.testframework.test.ParametersTest;
 import org.apache.ignite.testframework.test.VariationsIteratorTest;
 import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Set;
 
 /**
  * Basic test suite.
@@ -210,7 +208,6 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(StopNodeFailureHandlerTest.class);
         suite.addTestSuite(StopNodeOrHaltFailureHandlerTest.class);
         suite.addTestSuite(OomFailureHandlerTest.class);
-        suite.addTestSuite(SystemWorkersTerminationTest.class);
         suite.addTestSuite(TransactionIntegrityWithSystemWorkerDeathTest.class);
 
         suite.addTestSuite(CacheRebalanceConfigValidationTest.class);
