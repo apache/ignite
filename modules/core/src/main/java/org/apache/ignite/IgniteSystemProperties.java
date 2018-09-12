@@ -83,6 +83,10 @@ public final class IgniteSystemProperties {
     /** Defines reconnect delay in milliseconds for client node that was failed forcible. */
     public static final String IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY = "IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY";
 
+    /** Defines maximum possible reconnect delay in milliseconds for client node that was disconnected by coordinator
+     * because its join event was preempted from exchange history due to IGNITE_EXCHANGE_HISTORY_SIZE value. */
+    public static final String IGNITE_FORCE_CLIENT_RECONNECT_DELAY = "IGNITE_FORCE_CLIENT_RECONNECT_DELAY";
+
     /**
      * If this system property is set to {@code false} - no checks for new versions will
      * be performed by Ignite. By default, Ignite periodically checks for the new

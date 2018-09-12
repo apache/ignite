@@ -48,6 +48,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -116,6 +117,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -1610,6 +1612,12 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private boolean nodeAdded;
 
+        /** */
+        private long lastReconnectTimestamp = -1;
+
+        /** */
+        private int currentReconnectDelay = -1;
+
         /**
          * @param log Logger.
          */
@@ -1691,6 +1699,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 ", locNode=" + locNode+ ']');
 
                             locNode.onClientDisconnected(newId);
+
+                            waitBeforeForceReconnect();
 
                             tryJoin();
                         }
@@ -1878,6 +1888,26 @@ class ClientImpl extends TcpDiscoveryImpl {
                     reconnector.join();
                 }
             }
+        }
+
+        /**
+         *
+         *
+         * @throws InterruptedException If thread is interrupted.
+         */
+        private void waitBeforeForceReconnect() throws InterruptedException {
+            if (System.currentTimeMillis() - lastReconnectTimestamp > 300_000)
+                currentReconnectDelay = 200;
+            else {
+                int maxDelay = IgniteSystemProperties.getInteger(IGNITE_FORCE_CLIENT_RECONNECT_DELAY, 5_000);
+
+                currentReconnectDelay = Math.min(maxDelay, (int)(currentReconnectDelay * 1.5));
+            }
+
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            Thread.sleep(random.nextInt(currentReconnectDelay / 2, currentReconnectDelay));
+
+            lastReconnectTimestamp = System.currentTimeMillis();
         }
 
         /**
