@@ -312,7 +312,7 @@ public abstract class IgniteUtils {
     private static final String HTTPS_PROTOCOL = "TLS";
 
     /** Correct Mbean cache name pattern. */
-    private static Pattern MBEAN_CACHE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
+    private static Pattern MBEAN_SPECIAL_SYMBOLS_PATTERN = Pattern.compile("[\\\\\"?*:,=]");
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
@@ -4555,9 +4555,14 @@ public abstract class IgniteUtils {
      * @return An escaped string.
      */
     private static String escapeObjectNameValue(String s) {
-        if (MBEAN_CACHE_NAME_PATTERN.matcher(s).matches())
+        /*
+         * An unquoted value is a possibly empty string of characters which may not contain any of the characters comma,
+         * equals, colon, quote, asterisk, question mark or double backslash.
+         */
+        if (!MBEAN_SPECIAL_SYMBOLS_PATTERN.matcher(s).find())
             return s;
 
+        // Escaped values: wildcard characters asterisk or question mark, quote, double backslash.
         return '\"' + s.replaceAll("[\\\\\"?*]", "\\\\$0") + '\"';
     }
 
