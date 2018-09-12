@@ -103,6 +103,11 @@ page-configure {
             margin-left: 10px !important;
         }
     }
+
+    .form-field__label.required:after {
+        content: '*';
+        margin-left: 0.25em;
+    }
 }
 
 .pc-form-group {

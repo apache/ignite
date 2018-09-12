@@ -15,33 +15,45 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
+$color-inactive-primary: #C5C5C5;
+$color-inactive-secondary: #FFFFFF;
+$color-active-primary: #EE2B27;
+$color-active-secondary: #FF8485;
 
-export default class {
-    static $inject = ['$scope', 'uiGridConstants'];
+.spinner-circle {
+  display: inline-block;
 
-    constructor($scope, uiGridConstants) {
-        Object.assign(this, {$scope, uiGridConstants});
+  &:before {
+    content: '';
 
-        this.count = 0;
-    }
+    display: block;
 
-    $onChanges(changes) {
-        if (changes && 'gridApi' in changes && changes.gridApi.currentValue) {
-            this.applyValues();
+    width: 20px;
+    height: 20px;
 
-            this.gridApi.core.on.rowsVisibleChanged(this.$scope, () => {
-                this.applyValues();
-            });
-        }
-    }
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 50%;
+    border-color: $color-inactive-primary;
+    border-left-color: $color-active-primary;
+  }
+}
 
-    applyValues() {
-        if (!this.gridApi.grid.rows.length) {
-            this.count = 0;
-            return;
-        }
+.spinner-circle:before {
+  border-left-width: 2px;
+  border-left-color: $color-active-primary;
 
-        this.count = _.sumBy(this.gridApi.grid.rows, (row) => Number(row.visible));
-    }
+  animation-name: spinner-circle--animation;
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+@keyframes spinner-circle--animation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
