@@ -670,7 +670,7 @@ namespace ignite
                 if (!rsp.GetError().empty())
                     constructor << "Additional info: " << rsp.GetError() << " ";
 
-                constructor << "Current version of the protocol, used by the server node is " 
+                constructor << "Current version of the protocol used by the server node is "
                             << rsp.GetCurrentVer().ToString() << ", "
                             << "driver protocol version introduced in version "
                             << protocolVersion.ToString() << ".";
