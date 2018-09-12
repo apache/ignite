@@ -345,6 +345,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         this.exchActions = exchActions;
         this.affChangeMsg = affChangeMsg;
         this.validator = new GridDhtPartitionsStateValidator(cctx);
+        this.clusterIsActive = exchActions == null || !exchActions.deactivate();
 
         log = cctx.logger(getClass());
         exchLog = cctx.logger(EXCHANGE_LOG);
