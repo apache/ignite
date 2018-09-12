@@ -42,7 +42,6 @@ panel-collapsible(opened=`::true` ng-form=form)
                     label: 'Name:',
                     model: `${model}.name`,
                     name: '"clusterName"',
-                    disabled: 'false',
                     placeholder: 'Input name',
                     required: true,
                     tip: 'Instance name allows to indicate to what grid this particular grid instance belongs to'
@@ -51,28 +50,40 @@ panel-collapsible(opened=`::true` ng-form=form)
                     ignite-unique-property='name'
                     ignite-unique-skip=`["_id", ${model}]`
                 )
-                    +unique-feedback(`${model}.name`, 'Cluster name should be unique.')
+                    +form-field__error({ error: 'igniteUnique', message: 'Cluster name should be unique.' })
 
             .pc-form-grid-col-30
-                +text-ip-address('Local host:', `${model}.localHost`, '"localHost"', 'true', '0.0.0.0',
-                    'System-wide local address or host for all Ignite components to bind to<br/>\
-                    If not defined then Ignite tries to use local wildcard address<br/>\
-                    That means that all services will be available on all network interfaces of the host machine')
+                +form-field__ip-address({
+                    label: 'Local host:',
+                    model: `${model}.localHost`,
+                    name: '"localHost"',
+                    enabled: 'true',
+                    placeholder: '0.0.0.0',
+                    tip: 'System-wide local address or host for all Ignite components to bind to<br/>\
+                          If not defined then Ignite tries to use local wildcard address<br/>\
+                          That means that all services will be available on all network interfaces of the host machine'
+                })
 
             .pc-form-grid-col-60
-                +dropdown('Discovery:', `${model}.discovery.kind`, '"discovery"', 'true', 'Choose discovery', '$ctrl.Clusters.discoveries',
-                'Discovery allows to discover remote nodes in grid\
-                <ul>\
-                    <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
-                    <li>Multicast - Multicast based IP finder</li>\
-                    <li>AWS S3 - AWS S3 based IP finder that automatically discover cluster nodes on Amazon EC2 cloud</li>\
-                    <li>Apache jclouds - Apache jclouds multi cloud toolkit based IP finder for cloud platforms with unstable IP addresses</li>\
-                    <li>Google cloud storage - Google Cloud Storage based IP finder that automatically discover cluster nodes on Google Compute Engine cluster</li>\
-                    <li>JDBC - JDBC based IP finder that use database to store node IP address</li>\
-                    <li>Shared filesystem - Shared filesystem based IP finder that use file to store node IP address</li>\
-                    <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
-                    <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
-                </ul>')
+                +form-field__dropdown({
+                    label: 'Discovery:',
+                    model: `${model}.discovery.kind`,
+                    name: '"discovery"',
+                    placeholder: 'Choose discovery',
+                    options: '$ctrl.Clusters.discoveries',
+                    tip: 'Discovery allows to discover remote nodes in grid\
+                        <ul>\
+                            <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
+                            <li>Multicast - Multicast based IP finder</li>\
+                            <li>AWS S3 - AWS S3 based IP finder that automatically discover cluster nodes on Amazon EC2 cloud</li>\
+                            <li>Apache jclouds - Apache jclouds multi cloud toolkit based IP finder for cloud platforms with unstable IP addresses</li>\
+                            <li>Google cloud storage - Google Cloud Storage based IP finder that automatically discover cluster nodes on Google Compute Engine cluster</li>\
+                            <li>JDBC - JDBC based IP finder that use database to store node IP address</li>\
+                            <li>Shared filesystem - Shared filesystem based IP finder that use file to store node IP address</li>\
+                            <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
+                            <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
+                        </ul>'
+                })
             .pc-form-group
                 +discovery-cloud()(ng-if=`${modelDiscoveryKind} === 'Cloud'`)
                 +discovery-google()(ng-if=`${modelDiscoveryKind} === 'GoogleStorage'`)

@@ -15,15 +15,6 @@
  * limitations under the License.
  */
 
-import './style.scss';
-import controller from './controller.js';
-
-export default {
-    template: `
-        <i ng-pluralize count="$ctrl.count" when="{'one': 'Showing: 1 row', 'other': 'Showing: {} rows'}"></i>
-    `,
-    controller,
-    bindings: {
-        gridApi: '<'
-    }
-};
+form-field-size {
+	display: block;
+}

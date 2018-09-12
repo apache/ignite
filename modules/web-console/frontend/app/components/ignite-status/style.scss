@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-import './style.scss';
-import controller from './controller.js';
+@import "../../../public/stylesheets/variables";
 
-export default {
-    template: `
-        <i ng-pluralize count="$ctrl.count" when="{'one': 'Showing: 1 row', 'other': 'Showing: {} rows'}"></i>
-    `,
-    controller,
-    bindings: {
-        gridApi: '<'
-    }
-};
+// Statuses coloring
+.ignite-status__active {
+  color: $ignite-status-active !important;
+}
+
+.ignite-status__inactive {
+  color: $ignite-status-inactive;
+}
