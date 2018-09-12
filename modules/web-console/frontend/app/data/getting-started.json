@@ -2,11 +2,11 @@
     {
         "title": "With Apache Ignite Web Console You Can",
         "message": [
-            "<div class='col-xs-4'>",
-            " <img src='/images/ignite-puzzle.png' width='80%' class='getting-started-puzzle' />",
+            "<div class='col-40 align-center'>",
+            " <img src='/images/ignite-puzzle.png' width='170px' class='getting-started-puzzle' />",
             "</div>",
-            "<div class='col-xs-8'>",
-            " <ul>",
+            "<div class='col-60'>",
+            " <ul class='align-top'>",
             "  <li>Generate cluster configuration</li>",
             "  <li>Import domain model from database</li>",
             "  <li>Configure all needed caches</li>",
@@ -20,11 +20,11 @@
     {
         "title": "Quick cluster configuration",
         "message": [
-            "<div class='col-xs-7'>",
+            "<div class='col-60'>",
             " <img src='/images/cluster-quick.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5'>",
-            " <ul>",
+            "<div class='col-40'>",
+            " <ul class='align-top'>",
             "  <li>Quick configuration of cluster and it's caches</li>",
             " </ul>",
             "</div>"
@@ -33,11 +33,11 @@
     {
         "title": "Clusters",
         "message": [
-            "<div class='col-xs-7'>",
+            "<div class='col-60'>",
             " <img src='/images/cluster.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5'>",
-            " <ul>",
+            "<div class='col-40'>",
+            " <ul class='align-top'>",
             "  <li>Configure cluster properties</li>",
             " </ul>",
             "</div>"
@@ -46,11 +46,11 @@
     {
         "title": "Domain Model",
         "message": [
-            "<div class='col-xs-7'>",
+            "<div class='col-60'>",
             " <img src='/images/domains.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5'>",
-            " <ul>",
+            "<div class='col-40'>",
+            " <ul class='align-top'>",
             "  <li>Import database schemas</li>",
             "  <li>Try in <span class='getting-started-demo'>Demo</span> mode</li>",
             " </ul>",
@@ -60,11 +60,11 @@
     {
         "title": "Caches",
         "message": [
-            "<div class='col-xs-7'>",
+            "<div class='col-60'>",
             " <img src='/images/cache.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5'>",
-            " <ul>",
+            "<div class='col-40'>",
+            " <ul class='align-top'>",
             "  <li>Configure memory settings</li>",
             " </ul>",
             "</div>"
@@ -73,11 +73,11 @@
     {
         "title": "In-memory File System",
         "message": [
-            "<div class='col-xs-7'>",
+            "<div class='col-60'>",
             " <img src='/images/igfs.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5'>",
-            " <ul>",
+            "<div class='col-40'>",
+            " <ul class='align-top'>",
             "  <li>Configure IGFS properties</li>",
             " </ul>",
             "</div>"
@@ -86,11 +86,11 @@
     {
         "title": "Preview configuration result",
         "message": [
-            "<div class='col-xs-7'>",
+            "<div class='col-60'>",
             " <img src='/images/preview.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5'>",
-            " <ul>",
+            "<div class='col-40'>",
+            " <ul class='align-top'>",
             "  <li>Preview configured project files</li>",
             "  <li>Download configured project files</li>",
             " </ul>",
@@ -100,11 +100,11 @@
     {
         "title": "SQL Queries",
         "message": [
-            "<div class='col-xs-7'>",
+            "<div class='col-60'>",
             " <img src='/images/query-table.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5'>",
-            " <ul>",
+            "<div class='col-40'>",
+            " <ul class='align-top'>",
             "  <li>Execute SQL Queries</li>",
             "  <li>View Execution Paln</li>",
             "  <li>View In-Memory Schema</li>",
@@ -116,11 +116,11 @@
     {
         "title": "Multicluster support",
         "message": [
-            "<div class='col-xs-7'>",
+            "<div class='col-60'>",
             " <img src='/images/multicluster.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5'>",
-            " <ul>",
+            "<div class='col-40'>",
+            " <ul class='align-top'>",
             "  <li>Execute queries on different clusters</li>",
             " </ul>",
             "</div>"

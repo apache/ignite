@@ -22,9 +22,11 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -61,6 +63,14 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     @Override public <K, V> SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
+        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> SVMLinearBinaryClassificationModel updateModel(SVMLinearBinaryClassificationModel mdl,
+        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor) {
+
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
@@ -74,27 +84,55 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
             (upstream, upstreamSize) -> new EmptyContext(),
             partDataBuilder
         )) {
-            final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
-                if (a == null)
-                    return b == null ? 0 : b;
-                if (b == null)
-                    return a;
-                return b;
-            });
+            if (mdl == null) {
+                final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
+                    if (a == null)
+                        return b == null ? 0 : b;
+                    if (b == null)
+                        return a;
+                    return b;
+                });
 
-            final int weightVectorSizeWithIntercept = cols + 1;
-
-            weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
+                final int weightVectorSizeWithIntercept = cols + 1;
+                weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
+            } else {
+                weights = getStateVector(mdl);
+            }
 
             for (int i = 0; i < this.getAmountOfIterations(); i++) {
                 Vector deltaWeights = calculateUpdates(weights, dataset);
+                if (deltaWeights == null)
+                    return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
+
                 weights = weights.plus(deltaWeights); // creates new vector
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
         return new SVMLinearBinaryClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkState(SVMLinearBinaryClassificationModel mdl) {
+        return true;
+    }
+
+    /**
+     * @param mdl Model.
+     * @return vector of model weights with intercept.
+     */
+    private Vector getStateVector(SVMLinearBinaryClassificationModel mdl) {
+        double intercept = mdl.intercept();
+        Vector weights = mdl.weights();
+
+        int stateVectorSize = weights.size() + 1;
+        Vector result = weights.isDense() ?
+            new DenseVector(stateVectorSize) :
+            new SparseVector(stateVectorSize, StorageConstants.RANDOM_ACCESS_MODE);
+
+        result.set(0, intercept);
+        weights.nonZeroes().forEach(ith -> result.set(ith.index(), ith.get()));
+        return result;
     }
 
     /** */
@@ -176,7 +214,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
             double qii = v.dot(v);
             double newAlpha = calcNewAlpha(alpha, gradient, qii);
 
-            Vector deltaWeights = v.times(lb * (newAlpha - alpha) / (this.lambda() * amountOfObservation));
+            Vector deltaWeights = v.times(lb * (newAlpha - alpha) / (this.getLambda() * amountOfObservation));
 
             return new Deltas(newAlpha - alpha, deltaWeights);
         }
@@ -195,7 +233,7 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     /** */
     private double calcGradient(double lb, Vector v, Vector weights, int amountOfObservation) {
         double dotProduct = v.dot(weights);
-        return (lb * dotProduct - 1.0) * (this.lambda() * amountOfObservation);
+        return (lb * dotProduct - 1.0) * (this.getLambda() * amountOfObservation);
     }
 
     /** */
@@ -223,18 +261,18 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /**
-     * Gets the regularization lambda.
+     * Get the regularization lambda.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
-    public double lambda() {
+    public double getLambda() {
         return lambda;
     }
 
     /**
-     * Gets the amount of outer iterations of SCDA algorithm.
+     * Get the amount of outer iterations of SCDA algorithm.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
     public int getAmountOfIterations() {
         return amountOfIterations;
@@ -252,9 +290,9 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /**
-     * Gets the amount of local iterations of SCDA algorithm.
+     * Get the amount of local iterations of SCDA algorithm.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
     public int getAmountOfLocIterations() {
         return amountOfLocIterations;
@@ -272,9 +310,9 @@ public class SVMLinearBinaryClassificationTrainer extends SingleLabelDatasetTrai
     }
 
     /**
-     * Gets the seed number.
+     * Get the seed number.
      *
-     * @return The parameter value.
+     * @return The property value.
      */
     public long getSeed() {
         return seed;

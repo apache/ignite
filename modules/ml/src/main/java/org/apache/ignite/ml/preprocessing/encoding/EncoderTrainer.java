@@ -222,4 +222,15 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
         this.encoderType = type;
         return this;
     }
+
+    /**
+     * Sets the indices of features which should be encoded.
+     *
+     * @param handledIndices Indices of features which should be encoded.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K, V> withEncoderType(Set<Integer> handledIndices) {
+        this.handledIndices = handledIndices;
+        return this;
+    }
 }
