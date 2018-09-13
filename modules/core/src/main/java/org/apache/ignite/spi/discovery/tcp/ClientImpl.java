@@ -1891,12 +1891,15 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         *
+         * Wait random delay before trying to reconnect. Delay will grow exponentially every time client is forced to
+         * reconnect, but only if all these reconnections happened in small period of time (2 minutes). Maximum delay
+         * could be configured with {@link IgniteSystemProperties#IGNITE_FORCE_CLIENT_RECONNECT_DELAY} property,
+         * default value is 5 seconds.
          *
          * @throws InterruptedException If thread is interrupted.
          */
         private void waitBeforeForceReconnect() throws InterruptedException {
-            if (System.currentTimeMillis() - lastReconnectTimestamp > 300_000)
+            if (System.currentTimeMillis() - lastReconnectTimestamp > 2 * 60_000)
                 currentReconnectDelay = 200;
             else {
                 int maxDelay = IgniteSystemProperties.getInteger(IGNITE_FORCE_CLIENT_RECONNECT_DELAY, 5_000);
