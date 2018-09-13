@@ -404,6 +404,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public void finish(final boolean commit, final boolean clearThreadMap, final boolean onTimeout) {
+
+        log.info("MY_DEBUG GridNearTxFinishFuture.finish [fut=" + this +
+            ", commit=" + commit +
+            ", clearThreadMap=" + clearThreadMap +
+            ", onTimeout=" + onTimeout + ']');
+
         if (!cctx.mvcc().addFuture(this, futureId()))
             return;
 
@@ -471,8 +477,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param clearThreadMap Clear thread map.
      */
     private void doFinish(boolean commit, boolean clearThreadMap) {
+        log.info("MY_DEBUG GridNearTxFinishFuture.doFinish [commit=" + commit +
+            ", clearThreadMap=" + clearThreadMap + ']');
         try {
             if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
+
+                log.info("MY_DEBUG GridNearTxFinishFuture.doFinish 1");
+
                 GridLongList waitTxs = tx.mvccWaitTransactions();
 
                 if (waitTxs != null) {
@@ -490,42 +501,56 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                     }
                 }
 
+                log.info("MY_DEBUG GridNearTxFinishFuture.doFinish 2");
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
+
+                    log.info("MY_DEBUG GridNearTxFinishFuture.doFinish 3");
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();
 
+                        log.info("MY_DEBUG GridNearTxFinishFuture.doFinish 4");
                         if (mapping != null) {
                             assert !hasFutures() || waitTxs != null : futures();
-
+                            log.info("MY_DEBUG GridNearTxFinishFuture.doFinish 5");
                             finish(1, mapping, commit, !clearThreadMap);
                         }
                     }
                     else {
                         assert !hasFutures() || waitTxs != null : futures();
-
+                        log.info("MY_DEBUG GridNearTxFinishFuture.doFinish 6");
                         finish(mappings.mappings(), commit, !clearThreadMap);
                     }
                 }
-
+                log.info("MY_DEBUG GridNearTxFinishFuture.doFinish 7");
                 markInitialized();
             }
-            else
+            else {
+                log.info("MY_DEBUG GridNearTxFinishFuture.doFinish 8");
+
                 onDone(new IgniteCheckedException("Failed to " + (commit ? "commit" : "rollback") +
                     " transaction: " + CU.txString(tx)));
+            }
         }
         catch (Error | RuntimeException e) {
+
+            log.info("MY_DEBUG GridNearTxFinishFuture.doFinish catch 1 [err=" + e + ']');
+
             onDone(e);
 
             throw e;
         }
         catch (IgniteCheckedException e) {
+            log.info("MY_DEBUG GridNearTxFinishFuture.doFinish catch 2 [err=" + e + ']');
+
             onDone(e);
         }
         finally {
             if (commit &&
                 tx.onePhaseCommit() &&
-                !tx.writeMap().isEmpty()) // Readonly operations require no ack.
+                !tx.writeMap().isEmpty()) { // Readonly operations require no ack.
+                log.info("MY_DEBUG GridNearTxFinishFuture.doFinish ackBackup.");
                 ackBackup();
+            }
         }
     }
 
@@ -765,6 +790,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param {@code true} If need to add completed version on finish.
      */
     private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit, boolean useCompletedVer) {
+        log.info("MY_DEBUG GridNearTxFinishFuture.finish [mappings=" + mappings + ']');
+
         int miniId = 0;
 
         // Create mini futures.
@@ -779,6 +806,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param useCompletedVer {@code True} if need to add completed version on finish.
      */
     private void finish(int miniId, GridDistributedTxMapping m, boolean commit, boolean useCompletedVer) {
+        log.info("MY_DEBUG GridNearTxFinishFuture.finish START [m=" + m +']');
+
         ClusterNode n = m.primary();
 
         assert !m.empty() || m.queryUpdate() : m + " " + tx.state();
@@ -810,6 +839,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.activeCachesDeploymentEnabled()
         );
 
+        log.info("MY_DEBUG GridNearTxFinishFuture.finish [req=" + req +']');
+
         // If this is the primary node for the keys.
         if (n.isLocal()) {
             req.miniId(miniId);
@@ -833,6 +864,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
 
+                log.info("MY_DEBUG Near finish fut, sent request [" +
+                    "txId=" + tx.nearXidVersion() +
+                    ", node=" + n.id() + ']');
+
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near finish fut, sent request [" +
                         "txId=" + tx.nearXidVersion() +
@@ -846,12 +881,21 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                     fut.onDone();
             }
             catch (ClusterTopologyCheckedException ignored) {
+
+                log.info("MY_DEBUG GridNearTxFinishFuture.finish catch ignore [err=" + ignored + ']');
+
                 // Remove previous mapping.
                 mappings.remove(m.primary().id());
 
                 fut.onNodeLeft(n.id(), false);
             }
             catch (IgniteCheckedException e) {
+
+                log.info("MY_DEBUG Near finish fut, failed to send request [" +
+                    "txId=" + tx.nearXidVersion() +
+                    ", node=" + n.id() +
+                    ", err=" + e + ']');
+
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near finish fut, failed to send request [" +
                         "txId=" + tx.nearXidVersion() +

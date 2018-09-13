@@ -3332,8 +3332,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
     @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Finishing near local tx [tx=" + this + ", commit=" + commit + "]");
+        log.info("MY_DEBUG GridNearTxLocal.localFinish Finishing near local tx [tx=" + this + ", commit=" + commit +
+            ", clearThreadMap=" + clearThreadMap + "]");
 
         if (commit) {
             if (!state(COMMITTING)) {
@@ -3344,8 +3344,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
                             ", tx=" + this + ']');
                 else {
-                    if (log.isDebugEnabled())
-                        log.debug("Invalid transaction state for commit (another thread is committing): " + this);
+                    log.info("MY_DEBUG Invalid transaction state for commit (another thread is committing): " + this);
 
                     return false;
                 }
@@ -3353,8 +3352,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
         else {
             if (!state(ROLLING_BACK)) {
-                if (log.isDebugEnabled())
-                    log.debug("Invalid transaction state for rollback [state=" + state() + ", tx=" + this + ']');
+                log.info("MY_DEBUG Invalid transaction state for rollback [state=" + state() + ", tx=" + this + ']');
 
                 return false;
             }
@@ -3561,8 +3559,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public IgniteInternalFuture<IgniteInternalTx> rollbackNearTxLocalAsync(final boolean clearThreadMap,
         final boolean onTimeout) {
-        if (log.isDebugEnabled())
-            log.debug("Rolling back near tx: " + this);
+        log.info("MY_DEBUG  Rolling back near tx: " + this);
 
         if (!onTimeout && trackTimeout)
             removeTimeoutHandler();
@@ -3604,8 +3601,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             f.get();
                         }
                         catch (IgniteCheckedException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
+                            log.info("MY_DEBUG Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
                         }
 
                         fut.finish(false, clearThreadMap, onTimeout);
@@ -3628,11 +3624,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         NearTxFinishFuture fut = fast ? new GridNearTxFastFinishFuture(this, commit) :
             new GridNearTxFinishFuture<>(cctx, this, commit);
 
+        log.info("MY_DEBUG tx finishFuture [fut=" + fut + "]");
+
         if (mvccQueryTracker() != null || mvccSnapshot != null || txState.mvccEnabled(cctx)) {
             if (commit)
                 fut = new GridNearTxFinishAndAckFuture(fut);
-            else
+            else {
+                log.info("MY_DEBUG tx finishFuture add listener AckCoordinatorOnRollback");
                 fut.listen(new AckCoordinatorOnRollback(this));
+            }
         }
 
         return fut;
@@ -3651,6 +3651,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      */
     private IgniteInternalFuture<IgniteInternalTx> chainFinishFuture(final NearTxFinishFuture fut, final boolean commit,
         final boolean clearThreadMap, final boolean onTimeout) {
+
+        log.info(
+            "MY_DEBUG tx.chainFinishFuture [fut=" + fut + ", commit=" + commit +
+                ", clearThreadMap=" + clearThreadMap + ", onTimeout=" + onTimeout + "]"
+        );
+
         assert fut != null;
 
         if (fut.commit() != commit) {
@@ -3717,9 +3723,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
     private boolean fastFinish() {
-        return writeMap().isEmpty()
+        //return false;
+        boolean res = writeMap().isEmpty()
             && ((optimistic() && !serializable()) || readMap().isEmpty())
             && (mappings.single() || F.view(mappings.mappings(), CU.FILTER_QUERY_MAPPING).isEmpty());
+
+        log.info("MY_DEBUG tx.fastFinish [fastFinish=" + res + "]");
+
+        return res;
     }
 
     /**
@@ -4068,11 +4079,24 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         close(true);
     }
 
+
+    public static void main(String[] arg){
+        System.out.println(
+            //nearXidVer=GridCacheVersion [topVer=148146435, order=1536666432496, nodeOrder=1]
+            //GridCacheVersion(int topVer, int nodeOrderDrId, long order) {
+            new GridCacheVersion(148146435, 1, 1536666432496L).asGridUuid()
+        );
+    }
+
     /**
      * @param clearThreadMap Clear thread map.
      */
     public void close(boolean clearThreadMap) throws IgniteCheckedException {
         TransactionState state = state();
+
+        log.info(
+            "MY_DEBUG tx.close [id=" + xid() + ", state=" + state + ", trackTimeout=" + trackTimeout + "]"
+        );
 
         try {
             if (state == COMMITTED || state == ROLLED_BACK)
@@ -4092,6 +4116,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         wait();
                 }
                 catch (InterruptedException e) {
+
+                    log.info(
+                        "MY_DEBUG tx.close InterruptedException"
+                    );
+
+                    e.printStackTrace();
+
                     Thread.currentThread().interrupt();
 
                     if (!done())

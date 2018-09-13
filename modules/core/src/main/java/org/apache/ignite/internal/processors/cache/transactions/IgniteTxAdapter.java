@@ -137,7 +137,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, FinalizationStatus.class, "finalizing");
 
     /** Logger. */
-    protected static IgniteLogger log;
+    public static IgniteLogger log;
 
     /** Transaction ID. */
     @GridToStringInclude

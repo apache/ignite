@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -82,12 +83,17 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
             }
         }
         finally {
+            IgniteTxAdapter.log.info(
+                "MY_DEBUG GridNearTxFastFinishFuture.onDone [tx=" + tx + "]"
+            );
+
             onDone(tx);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onNodeStop(IgniteCheckedException e) {
+        IgniteTxAdapter.log.info("MY_DEBUG GridNearTxFastFinishFuture.onNodeStop [tx=" + tx + ", err=" + e + "]");
         onDone(tx, e);
     }
 }
