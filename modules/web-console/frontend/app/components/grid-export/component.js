@@ -21,7 +21,7 @@ import {CSV} from 'app/services/CSV';
 export default {
     template,
     controller: class {
-        static $inject = ['$scope', 'uiGridGroupingConstants', 'uiGridExporterService', 'uiGridExporterConstants', CSV.name];
+        static $inject = ['$scope', 'uiGridGroupingConstants', 'uiGridExporterService', 'uiGridExporterConstants', 'CSV'];
 
         /**
          * @param {CSV} CSV
