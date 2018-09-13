@@ -469,8 +469,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             }
         }
 
-        if (done && msgLog.isDebugEnabled()) {
-            msgLog.debug("Collocated lock fut, response for finished future [txId=" + lockVer +
+        if (done) {
+            msgLog.info("MY_DEBUG Collocated lock fut, response for finished future [txId=" + lockVer +
                 ", inTx=" + inTx() +
                 ", node=" + nodeId + ']');
         }
@@ -599,8 +599,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** {@inheritDoc} */
     @Override public boolean onDone(Boolean success, Throwable err) {
-        if (log.isDebugEnabled())
-            log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
+        log.info("MY_DEBUG Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
 
         // Local GridDhtLockFuture
         if (inTx() && this.err instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
@@ -626,10 +625,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @return {@code True} if complete by this operation.
      */
     private boolean onComplete(boolean success, boolean distribute) {
-        if (log.isDebugEnabled()) {
-            log.debug("Received onComplete(..) callback [success=" + success + ", distribute=" + distribute +
+            log.info("MY_DEBUG Received onComplete(..) callback [success=" + success + ", distribute=" + distribute +
                 ", fut=" + this + ']');
-        }
 
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
@@ -645,8 +642,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         }
 
         if (super.onDone(success, err)) {
-            if (log.isDebugEnabled())
-                log.debug("Completing future: " + this);
+            log.info("MY_DEBUG Completing future: " + this);
 
             // Clean up.
             cctx.mvcc().removeVersionedFuture(this);
@@ -1659,6 +1655,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
          * @param res Result callback.
          */
         void onResult(GridNearLockResponse res) {
+
+            log.info("MY_DEBUG GridDhtColocatedLockFuture.MiniFuture.onResult [miniFut=" + this +
+                ", res=" + res + ']');
+
             synchronized (this) {
                 if (rcvRes)
                     return;
@@ -1673,8 +1673,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     cctx.tm().deadlockDetectionEnabled())
                     return;
 
-                if (log.isDebugEnabled())
-                    log.debug("Finishing mini future with an error due to error in response [miniFut=" + this +
+                    log.info("MY_DEBUG Finishing mini future with an error due to error in response [miniFut=" + this +
                         ", res=" + res + ']');
 
                 // Fail.
@@ -1706,6 +1705,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             }
             else {
                 int i = 0;
+
+                log.info("MY_DEBUG GridDhtColocatedLockFuture.MiniFuture.onResult [keys=" + keys + ']');
 
                 for (KeyCacheObject k : keys) {
                     IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(k);

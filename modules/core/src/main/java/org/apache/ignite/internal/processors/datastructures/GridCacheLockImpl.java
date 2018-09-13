@@ -98,6 +98,18 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         ctx = null;
     }
 
+    public String viewCacheName(){
+        return cacheView.name();
+    }
+
+    public GridCacheInternalKey key(){
+        return key;
+    }
+
+    public void setInterruptAll(boolean b){
+        interruptAll = b;
+    }
+
     /**
      * Synchronization implementation for reentrant lock using AbstractQueuedSynchronizer.
      */
@@ -499,6 +511,9 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             return getState() != 0 || cacheView.get(key).get() != 0;
         }
 
+
+
+
         /**
          * This method is used for synchronizing the reentrant lock state across all nodes.
          */
@@ -507,7 +522,15 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             try {
                 return retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
+                            Thread th = Thread.currentThread();
+                            log.info("MY_DEBUG compareAndSetGlobalState call [thread=" + th +
+                                ", isInterrupted=" + Thread.currentThread().isInterrupted()+ "]");
+
+                            String txInfo = null;
                             try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                                txInfo = "xid=" + tx.xid() + ", " + tx.toString();
+
+
                                 GridCacheLockState val = cacheView.get(key);
 
                                 if (val == null)
@@ -552,7 +575,10 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                                 if (interruptAll) {
                                     if (log.isInfoEnabled())
                                         log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
-                                            " aborting transaction.");
+                                            " aborting transaction. compareAndSetGlobalState [txId=" + txInfo +
+                                            ", err=" + e + "]");
+
+                                    e.printStackTrace();
 
                                     // Return immediately, exception will be thrown later.
                                     return true;
@@ -592,7 +618,11 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             try {
                 return retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
+                            String txId = null;
                             try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+
+                                txId = tx.xid().toString();
+
                                 GridCacheLockState val = cacheView.get(key);
 
                                 if (val == null)
@@ -638,7 +668,10 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                             catch (Exception e) {
                                 if (interruptAll) {
                                     log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
-                                        " aborting transaction.");
+                                        " aborting transaction. synchronizeQueue [txId=" + txId +
+                                        ", err=" + e + "]");
+
+                                    new Exception().printStackTrace();
 
                                     // Abort this attempt to synchronize queue and start another one,
                                     // that will return immediately.
@@ -688,7 +721,12 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             try {
                 return retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
+                            String txId = null;
+
                             try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+
+                                txId = tx.xid().toString();
+
                                 GridCacheLockState val = cacheView.get(key);
 
                                 if (val == null)
@@ -790,7 +828,8 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                                 if (interruptAll) {
                                     if (log.isInfoEnabled())
                                         log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
-                                            " aborting transaction.");
+                                                " aborting transaction. setGlobalState [txId=" + txId +
+                                            ", err=" + e + "]");
 
                                     return true;
                                 }
@@ -1483,8 +1522,15 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
+    public String getCurrentOwnerNode(){
+        if(sync != null)
+            return sync.currentOwnerNode != null ? sync.currentOwnerNode.toString() : "none";
+        return "sync is null";
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
+
         return S.toString(GridCacheLockImpl.class, this);
     }
 }
