@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -30,6 +31,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -42,6 +45,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static volatile boolean autoActivationEnabled = false;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -56,7 +62,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setAutoActivationEnabled(false);
+        cfg.setAutoActivationEnabled(autoActivationEnabled);
 
         return cfg;
     }
@@ -71,6 +77,8 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
         super.beforeTest();
 
         cleanPersistenceDir();
+
+        autoActivationEnabled = false;
     }
 
     /** {@inheritDoc} */
@@ -157,6 +165,41 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
         sequence = ignite.atomicSequence("testSequence", 0, false);
 
         assertTrue(sequence.incrementAndGet() > i);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSequenceAfterAutoactivation() throws Exception {
+        final String seqName = "testSequence";
+
+        autoActivationEnabled = true;
+
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        ignite.atomicSequence(seqName, 0, true);
+
+        stopAllGrids(true);
+
+        final Ignite node = startGrids(2);
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                // Should not hang.
+                node.atomicSequence(seqName, 0, false);
+            }
+        });
+
+        try {
+            fut.get(10, TimeUnit.SECONDS);
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
+            fut.cancel();
+
+            fail("Ignite was stuck on getting the atomic sequence after autoactivation.");
+        }
     }
 
     /**

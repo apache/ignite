@@ -251,7 +251,7 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', CSV.name, 'IgniteErrorParser'];
+    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser'];
 
     /**
      * @param {CSV} CSV
@@ -1564,8 +1564,8 @@ export class NotebookCtrl {
             if (!$scope.queryAvailable(paragraph))
                 return;
 
-            Notebook.save($scope.notebook)
-                .catch(Messages.showError);
+            if (!paragraph.partialQuery)
+                Notebook.save($scope.notebook).catch(Messages.showError);
 
             _cancelRefresh(paragraph);
 
@@ -1577,7 +1577,7 @@ export class NotebookCtrl {
                     const args = paragraph.queryArgs = {
                         type: 'EXPLAIN',
                         cacheName: $scope.cacheNameForSql(paragraph),
-                        query: 'EXPLAIN ' + paragraph.query,
+                        query: 'EXPLAIN ' + (paragraph.partialQuery || paragraph.query),
                         pageSize: paragraph.pageSize
                     };
 

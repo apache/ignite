@@ -39,15 +39,16 @@ public class BinarizationTrainer<K, V> implements PreprocessingTrainer<K, V, Vec
     }
 
     /**
-     * Gets the threshold parameter value.
-     * @return The parameter value.
+     * Get the threshold parameter value.
+     *
+     * @return The property value.
      */
-    public double threshold() {
+    public double getThreshold() {
         return threshold;
     }
 
     /**
-     * Sets the threshold parameter value.
+     * Set the threshold parameter value.
      *
      * @param threshold The given value.
      * @return The Binarization trainer.

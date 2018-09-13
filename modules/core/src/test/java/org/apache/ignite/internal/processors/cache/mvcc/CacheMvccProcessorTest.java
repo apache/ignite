@@ -28,7 +28,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 

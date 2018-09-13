@@ -18,7 +18,7 @@
 import {default as ConfigChangesGuard} from '../services/ConfigChangesGuard';
 
 class FormUICanExitGuardController {
-    static $inject = ['$element', ConfigChangesGuard.name];
+    static $inject = ['$element', 'ConfigChangesGuard'];
 
     /**
      * @param {JQLite} $element
