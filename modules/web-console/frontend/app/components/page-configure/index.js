@@ -177,9 +177,9 @@ export default angular
         ConfigEffects.connect();
     }])
     .component('pageConfigure', component)
-    .directive(isInCollection.name, isInCollection)
-    .directive(fakeUiCanExit.name, fakeUiCanExit)
-    .directive(formUICanExitGuard.name, formUICanExitGuard)
+    .directive('pcIsInCollection', isInCollection)
+    .directive('fakeUiCanExit', fakeUiCanExit)
+    .directive('formUiCanExitGuard', formUICanExitGuard)
     .factory('configSelectionManager', ConfigSelectionManager)
     .service('IgniteSummaryZipper', SummaryZipper)
     .service('IgniteConfigurationResource', ConfigurationResource)

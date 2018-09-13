@@ -93,7 +93,8 @@ export class ModalImportModels {
     /** @type {ng.ICompiledExpression} */
     onHide;
 
-    static $inject = ['$uiRouter', ConfigSelectors.name, ConfigEffects.name, ConfigureState.name, '$http', 'IgniteConfirm', IgniteConfirmBatch.name, 'IgniteFocus', SqlTypes.name, JavaTypes.name, 'IgniteMessages', '$scope', '$rootScope', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils'];
+    static $inject = ['$uiRouter', 'ConfigSelectors', 'ConfigEffects', 'ConfigureState', '$http', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteFocus', 'SqlTypes', 'JavaTypes', 'IgniteMessages', '$scope', '$rootScope', 'AgentManager', 'IgniteActivitiesData', 'IgniteLoading', 'IgniteFormUtils', 'IgniteLegacyUtils'];
+
     /**
      * @param {UIRouter} $uiRouter
      * @param {ConfigSelectors} ConfigSelectors

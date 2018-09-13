@@ -52,7 +52,7 @@ export class IgniteObjectDiffer {
 }
 
 export default class ConfigChangesGuard {
-    static $inject = [Confirm.name, '$sce'];
+    static $inject = ['Confirm', '$sce'];
 
     /**
      * @param {Confirm} Confirm.
