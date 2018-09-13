@@ -35,6 +35,6 @@ public class QueryCancelledException extends IgniteCheckedException {
 
     /** {@inheritDoc} */
     public QueryCancelledException(String msg) {
-        super(msg);
+        super(msg, null, false);
     }
 }
