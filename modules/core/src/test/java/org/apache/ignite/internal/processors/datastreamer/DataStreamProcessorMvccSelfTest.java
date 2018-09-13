@@ -42,21 +42,24 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
 
     /** {@inheritDoc} */
     @Override public void testPartitioned() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8149");
+        // test uses batchedSorted StreamReceiver which depends on Cache.putAll, Cache.removeAll
+        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
 
         super.testPartitioned();
     }
 
     /** {@inheritDoc} */
     @Override public void testColocated() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8149");
+        // test uses batchedSorted StreamReceiver which depends on Cache.putAll, Cache.removeAll
+        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
 
         super.testColocated();
     }
 
     /** {@inheritDoc} */
     @Override public void testReplicated() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8149");
+        // test uses batchedSorted StreamReceiver which depends on Cache.putAll, Cache.removeAll
+        fail("https://issues.apache.org/jira/browse/IGNITE-9451");
 
         super.testReplicated();
     }
