@@ -603,6 +603,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             }
 
             try {
+                // Tell the destination not to recurse to any of the nodes we are about to directly search.
                 GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime, nodeListCp);
 
                 if (res == null) {
@@ -761,6 +762,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             
             try {
                 // Request is sent with timeout that is why we can use synchronization here.
+                // Tell the destination not to recurse to any of the nodes we are about to directly search.
                 GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime, nodeListCp);
 
                 if (res == null) {
