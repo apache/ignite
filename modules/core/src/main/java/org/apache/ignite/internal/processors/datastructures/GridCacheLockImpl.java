@@ -106,6 +106,10 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         return key;
     }
 
+    public void setInterruptAll(boolean b){
+        interruptAll = b;
+    }
+
     /**
      * Synchronization implementation for reentrant lock using AbstractQueuedSynchronizer.
      */
@@ -662,10 +666,12 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                                 return false;
                             }
                             catch (Exception e) {
-                                if (interruptAll || true) {
+                                if (interruptAll) {
                                     log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
                                         " aborting transaction. synchronizeQueue [txId=" + txId +
                                         ", err=" + e + "]");
+
+                                    new Exception().printStackTrace();
 
                                     // Abort this attempt to synchronize queue and start another one,
                                     // that will return immediately.

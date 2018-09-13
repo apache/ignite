@@ -15,16 +15,20 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBaseMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.datastructures.GridCacheLockImpl;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -58,6 +62,7 @@ public class TxHungReproducerTest extends IgniteCollectionAbstractTest {
     CountDownLatch txWait = new CountDownLatch(1);
     UUID nearNodeId;
     UUID txNodeId;
+    GridCacheLockImpl nearLockImpl;
 
     public void test() throws Exception {
         IgniteEx ig = grid(0);
@@ -65,7 +70,9 @@ public class TxHungReproducerTest extends IgniteCollectionAbstractTest {
         try (IgniteLock lock = ig.reentrantLock("MY_TEST_LOCK", false, true, true)) {
             GridCacheLockImpl impl = (GridCacheLockImpl)lock;
 
-            log.info("TEST LOG: PRIMARY node Id " + primaryNode(impl).localNode().id());
+            IgniteEx primaryNode = primaryNode(impl);
+
+            log.info("TEST LOG: PRIMARY node Id " + primaryNode.localNode().id());
 
             IgniteEx nearIgn = backupNode(impl);
 
@@ -75,6 +82,7 @@ public class TxHungReproducerTest extends IgniteCollectionAbstractTest {
 
             IgniteLock nearLock = nearIgn.reentrantLock("MY_TEST_LOCK", false, true, false);
 
+            nearLockImpl = (GridCacheLockImpl) nearLock;
             nearLock.lock();
             try {
                 TimeUnit.MILLISECONDS.sleep(500);
@@ -136,9 +144,16 @@ public class TxHungReproducerTest extends IgniteCollectionAbstractTest {
             );
 
             while (!fut.isDone()) {
-                if (nearLock.isBroken())
-                    log.info("TEST LOG: nearLock isBroken");
                 TimeUnit.MILLISECONDS.sleep(500);
+            }
+
+            for(Ignite ignite: G.allGrids()) {
+
+                GridCacheSharedContext cctx = ((IgniteEx)ignite).context().cache().context();
+                log.info("TEST_LOG Pending transactions [node=" + ((IgniteEx)ignite).localNode().id() + "]:");
+
+                for (IgniteInternalTx tx : cctx.tm().activeTransactions())
+                    log.info("TEST_LOG >>> " + tx);
             }
         }
     }
@@ -188,6 +203,7 @@ public class TxHungReproducerTest extends IgniteCollectionAbstractTest {
                     if (lockWait.getCount() == 0 && node.id().equals(nearNodeId)) {
                         Thread th = map.get("lock-thread");
                         log.info("TEST LOG: interrupt thread [thread=" + th + "]");
+                        nearLockImpl.setInterruptAll(true);
                         th.interrupt();
                     }
 
