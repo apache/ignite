@@ -24,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 public class IgniteFsyncReplayWalIteratorInvalidCrcTest extends IgniteReplayWalIteratorInvalidCrcTest {
-
     /** {@inheritDoc} */
     @NotNull @Override protected WALMode getWalMode() {
         return WALMode.FSYNC;

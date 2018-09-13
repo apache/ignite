@@ -315,7 +315,10 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             if (ice.hasCause(IgniteDataIntegrityViolationException.class))
                 // "curIdx" is an index in walFileDescriptors list.
                 if (curIdx == walFileDescriptors.size() - 1)
-                    return null;
+                    // This means that there is no explicit last sengment, so we stop as if we reached the end
+                    // of the WAL.
+                    if (highBound.index() > walFileDescriptors.get(curIdx).idx())
+                            return null;
         }
 
         return super.handleRecordException(e, ptr);

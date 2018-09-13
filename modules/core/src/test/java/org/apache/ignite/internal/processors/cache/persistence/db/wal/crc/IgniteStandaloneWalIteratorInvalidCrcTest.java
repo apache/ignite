@@ -30,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 public class IgniteStandaloneWalIteratorInvalidCrcTest extends IgniteAbstractWalIteratorInvalidCrcTest {
-
     /** {@inheritDoc} */
     @NotNull @Override protected WALMode getWalMode() {
         return WALMode.LOG_ONLY;

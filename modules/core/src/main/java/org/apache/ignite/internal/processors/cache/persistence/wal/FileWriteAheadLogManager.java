@@ -3212,6 +3212,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 IgniteCheckedException ice = (IgniteCheckedException)e;
 
                 if (ice.hasCause(IgniteDataIntegrityViolationException.class))
+                    // This means that there is no explicit last sengment, so we iterate unil the very end.
                     if (end == null) {
                         long nextWalSegmentIdx = curWalSegmIdx + 1;
 
@@ -3228,6 +3229,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             try {
                                 ReadFileHandle nextHandle = initReadHandle(fd, null);
 
+                                // "nextHandle == null" is true only if current segment is the last one in the whole
+                                // history. Only in such case we ignore crc validation error and just stop as if we
+                                // reached the end of the WAL.
                                 if (nextHandle == null)
                                     return null;
                             }
