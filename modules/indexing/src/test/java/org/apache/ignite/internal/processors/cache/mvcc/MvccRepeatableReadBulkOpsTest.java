@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -175,12 +178,25 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
         TestCache<Integer, MvccTestAccount> cache1 = new TestCache<>(node1.cache(DEFAULT_CACHE_NAME));
         TestCache<Integer, MvccTestAccount> cache2 = new TestCache<>(node2.cache(DEFAULT_CACHE_NAME));
 
-        final Set<Integer> keys = new HashSet<>();
+        final LinkedHashSet<Integer> keys = new LinkedHashSet<>(6);
+        final Set<Integer> keysToUpdate = new HashSet<>(3);
+        final Set<Integer> keysToRemove = new HashSet<>(3);
 
         {
-            keys.add(primaryKey(grid(0).cache(DEFAULT_CACHE_NAME)));
-            keys.add(backupKey(grid(0).cache(DEFAULT_CACHE_NAME)));
-            keys.add(nearKey(grid(0).cache(DEFAULT_CACHE_NAME)));
+            keys.addAll(primaryKeys(grid(0).cache(DEFAULT_CACHE_NAME), 2));
+            keys.addAll(backupKeys(grid(0).cache(DEFAULT_CACHE_NAME), 2, 1));
+            keys.addAll(nearKeys(grid(0).cache(DEFAULT_CACHE_NAME), 2, 1));
+
+            List<Integer> keys0 = new ArrayList<>(keys);
+
+            for (int i = 0; i < 6; i++) {
+                if (i % 2 == 0)
+                    keysToUpdate.add(keys0.get(i));
+                else
+                    keysToRemove.add(keys0.get(i));
+            }
+
+            assert keys.size() == 6; //Expects no duplicates.
         }
 
         final Map<Integer, MvccTestAccount> initialVals = keys.stream().collect(
@@ -199,10 +215,12 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
                 updateStart.await();
 
                 try (Transaction tx = txs2.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-                    Map<Integer, MvccTestAccount> batch = keys.stream().collect(Collectors.toMap(Function.identity(),
+                    Map<Integer, MvccTestAccount> batch = keysToUpdate.stream().collect(Collectors.toMap(Function.identity(),
                         k -> new MvccTestAccount(k, 2)));
 
                     updateEntries(cache2, batch, writeMode);
+
+                    removeEntries(cache2, keysToRemove, writeMode);
 
                     tx.commit();
                 }
@@ -242,7 +260,7 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
             updateFinish.countDown();
         }
 
-        Map<Integer, MvccTestAccount> updatedVals = keys.stream().collect(Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 2)));
+        Map<Integer, MvccTestAccount> updatedVals = keysToUpdate.stream().collect(Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 2)));
 
         assertEquals(updatedVals, cache1.cache.getAll(keys));
     }
