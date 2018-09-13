@@ -1533,6 +1533,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** {@inheritDoc} */
         @Override protected void body() {
+            blockingSectionBegin();
+
             try {
                 allocateRemainingFiles();
             }
@@ -1547,6 +1549,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
 
                 return;
+            }
+            finally {
+                blockingSectionEnd();
             }
 
             Throwable err = null;
@@ -1570,8 +1575,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 }
 
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
-                    updateHeartbeat();
-
                     long toArchive;
 
                     synchronized (this) {
@@ -1834,8 +1837,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     }
                 }, new CI1<Integer>() {
                     @Override public void apply(Integer idx) {
-                        updateHeartbeat();
-
                         synchronized (archiver) {
                             formatted = idx;
 

@@ -1939,6 +1939,8 @@ public class GridNioServer<T> {
                 while (!closed && selector.isOpen()) {
                     SessionChangeRequest req0;
 
+                    updateHeartbeat();
+
                     while ((req0 = changeReqs.poll()) != null) {
                         updateHeartbeat();
 
@@ -2113,12 +2115,12 @@ public class GridNioServer<T> {
                     int res = 0;
 
                     for (long i = 0; i < selectorSpins && res == 0; i++) {
-                        updateHeartbeat();
-
                         res = selector.selectNow();
 
                         if (res > 0) {
                             // Walk through the ready keys collection and process network events.
+                            updateHeartbeat();
+
                             if (selectedKeys == null)
                                 processSelectedKeys(selector.selectedKeys());
                             else
@@ -2158,8 +2160,6 @@ public class GridNioServer<T> {
                             else
                                 processSelectedKeysOptimized(selectedKeys.flip());
                         }
-                        else
-                            updateHeartbeat();
 
                         // select() call above doesn't throw on interruption; checking it here to propagate timely.
                         if (!closed && !isCancelled && Thread.interrupted())

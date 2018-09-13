@@ -2990,9 +2990,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private long lastCpTs;
 
-        /** */
-        private long lastOnIdleTs = U.currentTimeMillis();
-
         /**
          * @param gridName Grid name.
          * @param name Thread name.
@@ -3138,6 +3135,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     return;
                 }
 
+                updateHeartbeat();
+
                 currCheckpointPagesCnt = chp.pagesSize;
 
                 writtenPagesCntr = new AtomicInteger();
@@ -3181,12 +3180,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 }
                                 catch (RejectedExecutionException ignore) {
                                     // Run the task synchronously.
+                                    updateHeartbeat();
+
                                     write.run();
                                 }
                             }
                         }
                         else {
                             // Single-threaded checkpoint.
+                            updateHeartbeat();
+
                             Runnable write = new WriteCheckpointPages(
                                 tracker,
                                 chp.cpPages,
@@ -3203,10 +3206,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             write.run();
                         }
 
+                        updateHeartbeat();
+
                         // Wait and check for errors.
                         doneWriteFut.get();
-
-                        updateHeartbeat();
 
                         // Must re-check shutdown flag here because threads may have skipped some pages.
                         // If so, we should not put finish checkpoint mark.
@@ -3234,8 +3237,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 finally {
                                     blockingSectionEnd();
                                 }
-
-                                updateHeartbeat();
 
                                 syncedPagesCntr.addAndGet(updStoreEntry.getValue().intValue());
                             }
@@ -3455,14 +3456,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             boolean cancel = false;
 
             try {
-                long now = U.currentTimeMillis();
-
                 long waitTimeoutMs = cctx.gridConfig().getClientFailureDetectionTimeout() / 2;
 
                 synchronized (this) {
                     long remaining;
 
-                    while ((remaining = scheduledCp.nextCpTs - now) > 0 && !isCancelled()) {
+                    while ((remaining = scheduledCp.nextCpTs - U.currentTimeMillis()) > 0 && !isCancelled()) {
                         blockingSectionBegin();
 
                         try {
@@ -3472,13 +3471,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             blockingSectionEnd();
                         }
 
-                        now = U.currentTimeMillis();
-
-                        if (now - lastOnIdleTs > waitTimeoutMs) {
-                            onIdle();
-
-                            lastOnIdleTs = now;
-                        }
+                        attemptOnIdle(waitTimeoutMs);
                     }
                 }
             }

@@ -2483,8 +2483,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             long cnt = 0;
 
             while (!isCancelled()) {
-                updateHeartbeat();
-
                 cnt++;
 
                 CachePartitionExchangeWorkerTask task = null;

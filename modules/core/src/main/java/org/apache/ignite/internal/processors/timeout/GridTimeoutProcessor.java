@@ -207,8 +207,6 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
         @Override protected void body() throws InterruptedException {
             Throwable err = null;
 
-            long lastOnIdleTs = U.currentTimeMillis();
-
             long waitTimeout = ctx.config().getFailureDetectionTimeout() / 2;
 
             try {
@@ -217,11 +215,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
                     long now = U.currentTimeMillis();
 
-                    if (now - lastOnIdleTs > waitTimeout) {
-                        onIdle();
-
-                        lastOnIdleTs = now;
-                    }
+                    attemptOnIdle(waitTimeout);
 
                     for (Iterator<GridTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
                         GridTimeoutObject timeoutObj = iter.next();
@@ -264,8 +258,6 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             // on thread notification events sent from
                             // 'addTimeoutObject(..)' method.
                             GridTimeoutObject first = timeoutObjs.firstx();
-
-                            updateHeartbeat();
 
                             if (first != null) {
                                 long waitTime = first.endTime() - U.currentTimeMillis();

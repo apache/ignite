@@ -1697,6 +1697,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override protected void body() {
+            blockingSectionBegin();
+
             try {
                 allocateRemainingFiles();
             }
@@ -1711,6 +1713,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
 
                 return;
+            }
+            finally {
+                blockingSectionEnd();
             }
 
             Throwable err = null;
@@ -2002,8 +2007,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 },
                 new CI1<Integer>() {
                     @Override public void apply(Integer idx) {
-                        updateHeartbeat();
-
                         synchronized (FileArchiver.this) {
                             formatted = idx;
 
@@ -3342,6 +3345,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             pos = val;
                     }
 
+                    updateHeartbeat();
+
                     if (pos == null)
                         continue;
                     else if (pos < UNCONDITIONAL_FLUSH) {
@@ -3366,6 +3371,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         unparkWaiters(pos);
                     }
 
+                    updateHeartbeat();
+
                     List<SegmentedRingByteBuffer.ReadSegment> segs = currentHandle().buf.poll(pos);
 
                     if (segs == null) {
@@ -3375,9 +3382,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
 
                     for (int i = 0; i < segs.size(); i++) {
-                        updateHeartbeat();
-
                         SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
+
+                        updateHeartbeat();
 
                         try {
                             writeBuffer(seg.position(), seg.buffer());
