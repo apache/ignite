@@ -44,6 +44,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -874,6 +878,21 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertFalse(U.isOldestNodeVersionAtLeast(v241, Arrays.asList(node240, node241, node250, node250ts)));
         assertTrue(U.isOldestNodeVersionAtLeast(v250, Arrays.asList(node250, node250ts)));
         assertTrue(U.isOldestNodeVersionAtLeast(v250ts, Arrays.asList(node250, node250ts)));
+    }
+
+    /**
+     *
+     */
+    public void testDoInParallel() throws Throwable {
+        CountDownLatch parallelAwaiter = new CountDownLatch(3);
+
+        IgniteUtils.doInParallel(
+            Executors.newFixedThreadPool(1),
+            Arrays.asList(1, 2, 3),
+            (i) -> parallelAwaiter.countDown()
+        );
+
+        parallelAwaiter.await(3, TimeUnit.SECONDS);
     }
 
     /**

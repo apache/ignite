@@ -128,6 +128,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.ParallelExecutionException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -135,7 +136,6 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -182,6 +182,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_C
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
+import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
  * Cache processor.
@@ -1843,16 +1844,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx.affinity().initCachesOnLocalJoin(
                 locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
 
-            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : locJoinCtx.caches()) {
-                DynamicCacheDescriptor desc = t.get1();
+            List<StartCacheInfo> startCacheInfos = locJoinCtx.caches().stream()
+                .map(cacheInfo -> new StartCacheInfo(cacheInfo.get1(), cacheInfo.get2(), exchTopVer, false))
+                .collect(Collectors.toList());
 
-                prepareCacheStart(
-                    desc.cacheConfiguration(),
-                    desc,
-                    t.get2(),
-                    exchTopVer,
-                    false);
-            }
+            prepareCachesStartInParallel(startCacheInfos);
         }
     }
 
@@ -1874,22 +1870,44 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<DynamicCacheDescriptor> startReceivedCaches(UUID nodeId, AffinityTopologyVersion exchTopVer)
         throws IgniteCheckedException {
-        List<DynamicCacheDescriptor> started = cachesInfo.cachesReceivedFromJoin(nodeId);
+        List<DynamicCacheDescriptor> receivedCaches = cachesInfo.cachesReceivedFromJoin(nodeId);
 
-        for (DynamicCacheDescriptor desc : started) {
-            IgnitePredicate<ClusterNode> filter = desc.groupDescriptor().config().getNodeFilter();
+        List<StartCacheInfo> startCacheInfos = receivedCaches.stream()
+            .filter(desc -> isLocalAffinity(desc.groupDescriptor().config()))
+            .map(desc -> new StartCacheInfo(desc, null, exchTopVer, false))
+            .collect(Collectors.toList());
 
-            if (CU.affinityNode(ctx.discovery().localNode(), filter)) {
-                prepareCacheStart(
-                    desc.cacheConfiguration(),
-                    desc,
-                    null,
-                    exchTopVer,
-                    false);
-            }
-        }
+        prepareCachesStartInParallel(startCacheInfos);
 
-        return started;
+        return receivedCaches;
+    }
+
+    /**
+     * @param cacheConfiguration Checked configuration.
+     * @return {@code true} if local node is affinity node for cache.
+     */
+    private boolean isLocalAffinity(CacheConfiguration cacheConfiguration) {
+        return CU.affinityNode(ctx.discovery().localNode(), cacheConfiguration.getNodeFilter());
+    }
+
+    /**
+     * Start all input caches in parallel.
+     *
+     * @param startCacheInfos All caches information for start.
+     * @throws ParallelExecutionException if execution was failed.
+     */
+    void prepareCachesStartInParallel(Collection<StartCacheInfo> startCacheInfos) throws ParallelExecutionException {
+        doInParallel(
+            sharedCtx.kernalContext().getSystemExecutorService(),
+            startCacheInfos,
+            startCacheInfo -> prepareCacheStart(
+                startCacheInfo.getCacheDescriptor().cacheConfiguration(),
+                startCacheInfo.getCacheDescriptor(),
+                startCacheInfo.getReqNearCfg(),
+                startCacheInfo.getExchangeTopVer(),
+                startCacheInfo.isDisabledAfterStart()
+            )
+        );
     }
 
     /**
@@ -1921,7 +1939,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ccfg.setNearConfiguration(null);
         }
-        else if (CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter()))
+        else if (isLocalAffinity(desc.groupDescriptor().config()))
             affNode = true;
         else {
             affNode = false;
@@ -4494,7 +4512,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     // Check if we were asked to start a near cache.
                     if (nearCfg != null) {
-                        if (CU.affinityNode(ctx.discovery().localNode(), descCfg.getNodeFilter())) {
+                        if (isLocalAffinity(descCfg)) {
                             // If we are on a data node and near cache was enabled, return success, else - fail.
                             if (descCfg.getNearConfiguration() != null)
                                 return null;
@@ -4506,7 +4524,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             // If local node has near cache, return success.
                             req.clientStartOnly(true);
                     }
-                    else if (!CU.affinityNode(ctx.discovery().localNode(), descCfg.getNodeFilter()))
+                    else if (!isLocalAffinity(descCfg))
                         req.clientStartOnly(true);
 
                     req.deploymentId(desc.deploymentId());
