@@ -17,8 +17,8 @@
 
 import angular from 'angular';
 
-import cols from './cols.directive.js';
-import row from './row.directive.js';
+import cols from './cols.directive';
+import row from './row.directive';
 
 export default angular
     .module('list-editable-cols', [])
