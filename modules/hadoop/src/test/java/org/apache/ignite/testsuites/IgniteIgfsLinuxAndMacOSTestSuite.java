@@ -66,7 +66,7 @@ public class IgniteIgfsLinuxAndMacOSTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfs20FileSystemShmemPrimarySelfTest.class.getName())));
 
-        //suite.addTest(new TestSuite(ldr.loadClass(IgfsNearOnlyMultiNodeSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgfsNearOnlyMultiNodeSelfTest.class.getName())));
 
         suite.addTest(IgfsEventsTestSuite.suite());
 
