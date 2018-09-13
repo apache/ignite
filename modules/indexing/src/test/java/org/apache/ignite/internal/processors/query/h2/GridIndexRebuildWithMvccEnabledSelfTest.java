@@ -40,7 +40,7 @@ public class GridIndexRebuildWithMvccEnabledSelfTest extends GridIndexRebuildSel
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration serverConfiguration(int idx, boolean filter) throws Exception {
         return super.serverConfiguration(idx, filter)
-            .setMvccVacuumTimeInterval(Integer.MAX_VALUE);
+            .setMvccVacuumFrequency(Integer.MAX_VALUE);
     }
 
     /** {@inheritDoc} */

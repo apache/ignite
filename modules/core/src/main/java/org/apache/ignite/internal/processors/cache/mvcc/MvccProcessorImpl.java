@@ -1047,11 +1047,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                     cleanupQueue = new LinkedBlockingQueue<>();
 
-                    vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCnt() + 1);
+                    vacuumWorkers = new ArrayList<>(ctx.config().getMvccVacuumThreadCount() + 1);
 
                     vacuumWorkers.add(new VacuumScheduler(ctx, log, this));
 
-                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCnt(); i++) {
+                    for (int i = 0; i < ctx.config().getMvccVacuumThreadCount(); i++) {
                         vacuumWorkers.add(new VacuumWorker(ctx, log, cleanupQueue));
                     }
 
@@ -1990,7 +1990,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         VacuumScheduler(GridKernalContext ctx, IgniteLogger log, MvccProcessorImpl prc) {
             super(ctx.igniteInstanceName(), "vacuum-scheduler", log);
 
-            this.interval = ctx.config().getMvccVacuumTimeInterval();
+            this.interval = ctx.config().getMvccVacuumFrequency();
             this.prc = prc;
         }
 

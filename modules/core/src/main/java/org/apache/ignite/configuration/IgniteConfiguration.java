@@ -218,8 +218,7 @@ public class IgniteConfiguration {
     public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
 
     /** Default time interval between vacuum process runs (ms). */
-    public static final int DFLT_MVCC_VACUUM_TIME_INTERVAL = 5000;
-
+    public static final int DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
@@ -498,7 +497,7 @@ public class IgniteConfiguration {
     private int mvccVacuumThreadCnt = DFLT_MVCC_VACUUM_THREAD_CNT;
 
     /** Time interval between vacuum process runs (ms). */
-    private int mvccVacuumTimeInterval = DFLT_MVCC_VACUUM_TIME_INTERVAL;
+    private int mvccVacuumFreq = DFLT_MVCC_VACUUM_FREQUENCY;
 
     /** User authentication enabled. */
     private boolean authEnabled;
@@ -592,8 +591,8 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
-        mvccVacuumThreadCnt = cfg.mvccVacuumThreadCnt;
-        mvccVacuumTimeInterval = cfg.mvccVacuumTimeInterval;
+        mvccVacuumThreadCnt = cfg.getMvccVacuumThreadCount();
+        mvccVacuumFreq = cfg.getMvccVacuumFrequency();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         odbcCfg = cfg.getOdbcConfiguration();
@@ -3003,7 +3002,7 @@ public class IgniteConfiguration {
      *
      * @return Number of MVCC vacuum cleanup threads.
      */
-    public int getMvccVacuumThreadCnt() {
+    public int getMvccVacuumThreadCount() {
         return mvccVacuumThreadCnt;
     }
 
@@ -3013,7 +3012,7 @@ public class IgniteConfiguration {
      * @param mvccVacuumThreadCnt Number of MVCC vacuum cleanup threads.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setMvccVacuumThreadCnt(int mvccVacuumThreadCnt) {
+    public IgniteConfiguration setMvccVacuumThreadCount(int mvccVacuumThreadCnt) {
         this.mvccVacuumThreadCnt = mvccVacuumThreadCnt;
 
         return this;
@@ -3024,18 +3023,18 @@ public class IgniteConfiguration {
      *
      * @return Time interval between vacuum runs.
      */
-    public int getMvccVacuumTimeInterval() {
-        return mvccVacuumTimeInterval;
+    public int getMvccVacuumFrequency() {
+        return mvccVacuumFreq;
     }
 
     /**
      * Sets time interval between vacuum runs.
      *
-     * @param mvccVacuumTimeInterval Time interval between vacuum runs.
+     * @param mvccVacuumFreq Time interval between vacuum runs.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setMvccVacuumTimeInterval(int mvccVacuumTimeInterval) {
-        this.mvccVacuumTimeInterval = mvccVacuumTimeInterval;
+    public IgniteConfiguration setMvccVacuumFrequency(int mvccVacuumFreq) {
+        this.mvccVacuumFreq = mvccVacuumFreq;
 
         return this;
     }

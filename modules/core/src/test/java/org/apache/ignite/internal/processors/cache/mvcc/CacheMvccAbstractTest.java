@@ -162,7 +162,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (disableScheduledVacuum)
-            cfg.setMvccVacuumTimeInterval(Integer.MAX_VALUE);
+            cfg.setMvccVacuumFrequency(Integer.MAX_VALUE);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
