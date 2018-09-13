@@ -27,6 +27,7 @@
     "win32"
   ],
   "dependencies": {
+    "@babel/plugin-transform-parameters": "7.0.0",
     "@uirouter/angularjs": "1.0.18",
     "@uirouter/core": "5.0.19",
     "@uirouter/rx": "0.4.1",

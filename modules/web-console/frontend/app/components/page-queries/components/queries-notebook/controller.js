@@ -1497,7 +1497,7 @@ export class NotebookCtrl {
             $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
                     // If we are executing only selected part of query then Notebook shouldn't be saved.
-                        if (!paragraph.partialQuery)
+                    if (!paragraph.partialQuery)
                         Notebook.save($scope.notebook).catch(Messages.showError);
 
                     paragraph.localQueryMode = local;
