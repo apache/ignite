@@ -18,25 +18,17 @@
     .modal-dialog
         .modal-content
             .modal-header
-                h4.modal-title
-                    i.fa.fa-info-circle
-                    | Activity details: {{ ctrl.user.userName }}
+                h4.modal-title Activity details: {{ ctrl.user.userName }}
                 button.close(type='button' aria-label='Close' ng-click='$hide()')
                      svg(ignite-icon='cross')
-            .modal-body.modal-body-with-scroll(id='activities-user-dialog')
+            .modal-body.modal-body-with-scroll
                 .panel--ignite
-                    table.table--ignite(scrollable-container='#activities-user-dialog' st-table='displayedRows' st-safe-src='ctrl.data')
-                        thead
-                            th(st-sort='action | translate') Description
-                            th(st-sort='action') Action
-                            th(st-sort='amount') Visited
-                        tbody
-                            tr(ng-repeat='row in displayedRows')
-                                td
-                                    .text-overflow {{ row.action | translate }}
-                                td
-                                    .text-overflow {{ row.action }}
-                                td.text-right
-                                    .text-overflow {{ row.amount }}
+                    ignite-grid-table(
+                        items='ctrl.data'
+                        column-defs='ctrl.columnDefs'
+                        grid-thin='true'
+                    )
+
             .modal-footer
-                button.btn-ignite.btn-ignite--success(id='confirm-btn-confirm' ng-click='$hide()') Close
+                div
+                    button.btn-ignite.btn-ignite--success(ng-click='$hide()') Close

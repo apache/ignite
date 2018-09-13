@@ -29,7 +29,14 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +dropdown('Node filter:', nodeFilterKind, '"nodeFilter"', 'true', 'Not set', '::$ctrl.Caches.nodeFilterKinds', 'Node filter variant')
+                +form-field__dropdown({
+                    label: 'Node filter:',
+                    model: nodeFilterKind,
+                    name: '"nodeFilter"',
+                    placeholder: 'Not set',
+                    options: '::$ctrl.Caches.nodeFilterKinds',
+                    tip: 'Node filter variant'
+                })
             .pc-form-grid-col-60(
                 ng-if=igfsFilter
             )
@@ -47,7 +54,13 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 )
                     +form-field__error({ error: 'isInCollection',  message: `Cluster doesn't have such an IGFS` })
             .pc-form-grid-col-60(ng-show=customFilter)
-                +java-class('Class name:', `${nodeFilter}.Custom.className`, '"customNodeFilter"',
-                    'true', customFilter, 'Class name of custom node filter implementation', customFilter)
+                +form-field__java-class({
+                    label: 'Class name:',
+                    model: `${nodeFilter}.Custom.className`,
+                    name: '"customNodeFilter"',
+                    required: customFilter,
+                    tip: 'Class name of custom node filter implementation',
+                    validationActive: customFilter
+                })
         .pca-form-column-6
             +preview-xml-java(model, 'cacheNodeFilter', 'igfss')

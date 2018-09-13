@@ -140,25 +140,12 @@ angular
         backdrop: 'static'
     });
 
+    scope.downloadAgentHref = '/api/v1/downloads/agent';
+
     scope.close = () => {
         dialog.hide();
 
         closePromise && closePromise.resolve();
-    };
-
-    scope.downloadAgent = () => {
-        const lnk = document.createElement('a');
-
-        lnk.setAttribute('href', '/api/v1/agent/downloads/agent');
-        lnk.setAttribute('target', '_self');
-        lnk.setAttribute('download', null);
-        lnk.style.display = 'none';
-
-        document.body.appendChild(lnk);
-
-        lnk.click();
-
-        document.body.removeChild(lnk);
     };
 
     return {
