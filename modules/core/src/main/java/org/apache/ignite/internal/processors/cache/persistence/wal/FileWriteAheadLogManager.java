@@ -1733,8 +1733,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     // once it was archived.
                 }
 
-                long lastOnIdleTs = U.currentTimeMillis();
-
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
                     long toArchive;
 
@@ -1756,11 +1754,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > cctx.gridConfig().getFailureDetectionTimeout() / 2) {
-                        onIdle();
-
-                        lastOnIdleTs = U.currentTimeMillis();
-                    }
+                    attemptOnIdle(cctx.gridConfig().getFailureDetectionTimeout() / 2);
 
                     if (stopped)
                         break;
@@ -3319,8 +3313,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         @Override protected void body() {
             Throwable err = null;
 
-            long lastOnIdleTs = U.currentTimeMillis();
-
             try {
                 while (!isCancelled()) {
                     while (waiters.isEmpty()) {
@@ -3341,11 +3333,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > cctx.gridConfig().getFailureDetectionTimeout() / 2) {
-                        onIdle();
-
-                        lastOnIdleTs = U.currentTimeMillis();
-                    }
+                    attemptOnIdle(cctx.gridConfig().getFailureDetectionTimeout() / 2);
 
                     Long pos = null;
 

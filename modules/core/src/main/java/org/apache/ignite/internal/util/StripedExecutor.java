@@ -449,9 +449,6 @@ public class StripedExecutor implements ExecutorService {
         private IgniteInClosure<Throwable> errHnd;
 
         /** */
-        private long lastOnIdleTs = U.currentTimeMillis();
-
-        /** */
         private final long idlenessInterval;
 
         /**
@@ -511,11 +508,7 @@ public class StripedExecutor implements ExecutorService {
                         blockingSectionEnd();
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > idlenessInterval) {
-                        onIdle();
-
-                        lastOnIdleTs = U.currentTimeMillis();
-                    }
+                    attemptOnIdle(idlenessInterval);
 
                     if (cmd != null) {
                         active = true;

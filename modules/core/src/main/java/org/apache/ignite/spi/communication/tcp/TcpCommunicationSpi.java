@@ -4260,9 +4260,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** */
         private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
-        /** */
-        private long lastOnIdleTs = U.currentTimeMillis();
-
         /**
          * @param igniteInstanceName Ignite instance name.
          * @param log Logger.
@@ -4290,12 +4287,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         blockingSectionEnd();
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs >
-                        ignite.configuration().getFailureDetectionTimeout() / 2) {
-                        onIdle();
-
-                        lastOnIdleTs = U.currentTimeMillis();
-                    }
+                    attemptOnIdle(ignite.configuration().getFailureDetectionTimeout() / 2);
 
                     if (disconnectData != null)
                         processDisconnect(disconnectData);

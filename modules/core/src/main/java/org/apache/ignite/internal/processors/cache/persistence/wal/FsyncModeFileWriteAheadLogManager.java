@@ -74,7 +74,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
@@ -85,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -1569,8 +1569,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     // once it was archived.
                 }
 
-                long lastOnIdleTs = U.currentTimeMillis();
-
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
                     updateHeartbeat();
 
@@ -1594,11 +1592,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         toArchive = lastAbsArchivedIdx + 1;
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > cctx.gridConfig().getFailureDetectionTimeout() / 2) {
-                        onIdle();
-
-                        lastOnIdleTs = U.currentTimeMillis();
-                    }
+                    attemptOnIdle(cctx.gridConfig().getFailureDetectionTimeout() / 2);
 
                     if (stopped)
                         break;

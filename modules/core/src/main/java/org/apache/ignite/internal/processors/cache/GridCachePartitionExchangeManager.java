@@ -2482,8 +2482,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             long cnt = 0;
 
-            long lastOnIdleTs = U.currentTimeMillis();
-
             while (!isCancelled()) {
                 updateHeartbeat();
 
@@ -2531,11 +2529,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (task == null)
                         updateHeartbeat();
 
-                    if (U.currentTimeMillis() - lastOnIdleTs > timeout) {
-                        onIdle();
-
-                        lastOnIdleTs = U.currentTimeMillis();
-                    }
+                    attemptOnIdle(timeout);
 
                     if (task == null)
                         continue; // Main while loop.
@@ -2619,11 +2613,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                     resVer = exchFut.get(exchTimeout, TimeUnit.MILLISECONDS);
 
-                                    if (U.currentTimeMillis() - lastOnIdleTs > exchTimeout) {
-                                        onIdle();
-
-                                        lastOnIdleTs = U.currentTimeMillis();
-                                    }
+                                    attemptOnIdle(exchTimeout);
 
                                     break;
                                 }

@@ -1630,9 +1630,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private boolean nodeAdded;
 
-        /** */
-        private long lastOnIdleTs = U.currentTimeMillis();
-
         /**
          * @param log Logger.
          */
@@ -1664,12 +1661,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
 
-                    if (U.currentTimeMillis() - lastOnIdleTs >
-                        spi.ignite().configuration().getFailureDetectionTimeout() / 2) {
-                        onIdle();
-
-                        lastOnIdleTs = U.currentTimeMillis();
-                    }
+                    attemptOnIdle(spi.ignite().configuration().getFailureDetectionTimeout() / 2);
 
                     if (msg == JOIN_TIMEOUT) {
                         if (state == STARTING) {

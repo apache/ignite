@@ -2682,9 +2682,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
 
-        /** */
-        private long lastOnIdleTs = U.currentTimeMillis();
-
         /**
          *
          */
@@ -2803,11 +2800,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 blockingSectionEnd();
             }
 
-            if (U.currentTimeMillis() - lastOnIdleTs > ctx.config().getFailureDetectionTimeout() / 2) {
-                onIdle();
-
-                lastOnIdleTs = U.currentTimeMillis();
-            }
+            attemptOnIdle(ctx.config().getFailureDetectionTimeout() / 2);
 
             int type = evt.get1();
 

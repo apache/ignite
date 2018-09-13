@@ -2648,9 +2648,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private long lastRingMsgTime;
 
-        /** */
-        private long lastOnIdleTs = U.currentTimeMillis();
-
         /**
          * @param log Logger.
          */
@@ -2662,12 +2659,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             setBeforeEachPollAction(() -> {
                 updateHeartbeat();
 
-                if (U.currentTimeMillis() - lastOnIdleTs >
-                    spi.ignite().configuration().getFailureDetectionTimeout() / 2) {
-                    onIdle();
-
-                    lastOnIdleTs = U.currentTimeMillis();
-                }
+                attemptOnIdle(spi.ignite().configuration().getFailureDetectionTimeout() / 2);
             });
         }
 
@@ -5830,8 +5822,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             Throwable err = null;
 
             try {
-                long lastOnIdleTs = U.currentTimeMillis();
-
                 while (!isCancelled()) {
                     blockingSectionBegin();
 
@@ -5863,12 +5853,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     spi.stats.onServerSocketInitialized(U.currentTimeMillis() - tstamp);
 
-                    if (U.currentTimeMillis() - lastOnIdleTs >
-                        spi.ignite().configuration().getFailureDetectionTimeout() / 2) {
-                        onIdle();
-
-                        lastOnIdleTs = U.currentTimeMillis();
-                    }
+                    attemptOnIdle(spi.ignite().configuration().getFailureDetectionTimeout() / 2);
                 }
             }
             catch (IOException e) {

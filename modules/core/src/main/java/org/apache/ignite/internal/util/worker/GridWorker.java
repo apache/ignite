@@ -56,6 +56,9 @@ public abstract class GridWorker implements Runnable {
     /** Timestamp to be updated by this worker periodically to indicate it's up and running. */
     private volatile long heartbeatTs;
 
+    /** Timestamp to be used for worker idleness check purpose. */
+    private long lastOnIdleTs;
+
     /** */
     private final Object mux = new Object();
 
@@ -291,9 +294,21 @@ public abstract class GridWorker implements Runnable {
         updateHeartbeat();
     }
 
-    public void onIdle() {
+    /** Can be called from {@link #runner()} thread to perform idleness handling. */
+    protected void onIdle() {
         if (lsnr != null)
             lsnr.onIdle(this);
+
+        lastOnIdleTs = U.currentTimeMillis();
+    }
+
+    /** Can be called from {@link #runner()} thread to perform idleness handling attempt.
+     *
+     * @param interval Time in milliseconds that should pass since previous call in order to perform actual handling.
+     */
+    protected void attemptOnIdle(long interval) {
+        if (U.currentTimeMillis() - lastOnIdleTs > interval)
+            onIdle();
     }
 
     /** {@inheritDoc} */
