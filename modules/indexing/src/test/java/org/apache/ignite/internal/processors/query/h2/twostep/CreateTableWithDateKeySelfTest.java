@@ -32,7 +32,9 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-/** */
+/**
+ *
+ */
 public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_COUNT = 1;
@@ -42,6 +44,20 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
 
     /** */
     private static IgniteCache<?, ?> initCache;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        ignite = startGridsMultiThreaded(NODES_COUNT, false);
+
+        initCache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setSqlSchema("PUBLIC")
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
 
     /** */
     public void testPassTableWithDateKeyCreation() {
@@ -199,18 +215,5 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
 
             assertEquals(val, rows.get(0).get(1));
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        ignite = startGridsMultiThreaded(NODES_COUNT, false);
-        initCache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setSqlSchema("PUBLIC")
-        );
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 }
