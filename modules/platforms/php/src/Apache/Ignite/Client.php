@@ -31,7 +31,10 @@ use Apache\Ignite\Internal\Cache;
 
 /**
  * @mainpage Public API specification
- * See <Classes> for the details. Start from the Client class.
+ * The thin client allows your PHP applications to work with Apache Ignite clusters via Binary Client Protocol.
+ * This is the public API specification of the client.
+ * If you open it for the first time, start from the Client class.
+ * For the usage guide and other instructions see accompanied Apache Ignite PHP Client documentation.
  */
 
 /**
