@@ -243,11 +243,18 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
         IgniteTransactions txs = node1.transactions();
         try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
             for (Integer key : allKeys) {
-                MvccTestAccount val = new MvccTestAccount(key, 1);
+                MvccTestAccount newVal = new MvccTestAccount(key, 2);
 
-                assertEquals(initialMap.get(key), cache1.cache.getAndReplace(key, val));
+                if(existedKeys.contains(key)) {
+                    assertTrue(cache1.cache.replace(key, new MvccTestAccount(key, 1), newVal));
 
-                assertEquals(initialMap.containsKey(key), cache1.cache.replace(key, val, new MvccTestAccount(key, 3)));
+                    assertEquals(newVal, cache1.cache.getAndReplace(key, new MvccTestAccount(key, 3)));
+                }
+                else {
+                    assertFalse(cache1.cache.replace(key, new MvccTestAccount(key, 1), newVal));
+
+                    assertEquals(initialMap.get(key), cache1.cache.getAndReplace(key, new MvccTestAccount(key, 3)));
+                }
             }
 
             assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
