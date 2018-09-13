@@ -85,7 +85,7 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
         Set<String> regions = new HashSet<>();
 
         Pattern ptrn = Pattern.compile("(?m).{2,}( {3}(?<name>.+) region|Ignite persistence) " +
-            "\\[used=(?<used>([-.\\d]|" + UNKNOWN_SIZE + ")).*]");
+            "\\[used=(?<used>[-.\\d]+|" + UNKNOWN_SIZE + ")?.*]");
 
         Matcher matcher = ptrn.matcher(logOutput);
 
