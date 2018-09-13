@@ -58,9 +58,11 @@ class AuthTlsExample
                 setTLSOptions($tlsOptions);
                     
             $client->connect($config);
-            
+
+            echo("Client connected successfully (with TLS and authentication enabled)" . PHP_EOL);
+
             $cache = $client->getOrCreateCache(AuthTlsExample::CACHE_NAME)->
-                setKeyType(ObjectType::INTEGER)->
+                setKeyType(ObjectType::BYTE)->
                 setValueType(ObjectType::SHORT_ARRAY);
 
             $this->putGetData($cache);
@@ -74,30 +76,32 @@ class AuthTlsExample
 
     private function putGetData(CacheInterface $cache): void
     {
-        $keys = [1, 2, 3];
-        $values = array_map(
-            function (int $key): array
-            {
-                return $this->generateValue($key);
-            },
-            $keys);
+        $values = [
+            1 => $this->generateValue(1),
+            2 => $this->generateValue(2),
+            3 => $this->generateValue(3)
+        ];
 
         // put values
-        $cache->put($keys[0], $values[0]);
-        $cache->put($keys[1], $values[1]);
-        $cache->put($keys[2], $values[2]);
-                    
-        echo('Cache values put successfully' . PHP_EOL);
+        foreach ($values as $key => $value) {
+            $cache->put($key, $value);
+        }
+        echo('Cache values put successfully:' . PHP_EOL);
+        foreach ($values as $key => $value) {
+            $this->printValue($key, $value);
+        }
 
         // get and compare values
-        for ($i = 0; $i < count($keys); $i++) {
-            $value = $cache->get($keys[$i]);
-            if (!$this->compareValues($value, $values[$i])) {
+        echo('Cache values get:' . PHP_EOL);
+        foreach ($values as $key => $value) {
+            $cacheValue = $cache->get($key);
+            $this->printValue($key, $cacheValue);
+            if (!$this->compareValues($value, $cacheValue)) {
                 echo('Unexpected cache value!' . PHP_EOL);
                 return;
             }
         }
-        echo('Cache values get successfully' . PHP_EOL);
+        echo('Cache values compared successfully' . PHP_EOL);
     }
 
     private function compareValues(array $array1, array $array2): bool
@@ -107,12 +111,17 @@ class AuthTlsExample
 
     private function generateValue(int $key): array
     {
-        $length = $key + 5;
+        $length = $key + 2;
         $result = [];
         for ($i = 0; $i < $length; $i++) {
             array_push($result, $key * 10 + $i);
         }
         return $result;
+    }
+
+    private function printValue($key, $value): void
+    {
+        echo(sprintf('  %d => [%s]%s', $key, implode(', ', $value), PHP_EOL));
     }
 }
 
