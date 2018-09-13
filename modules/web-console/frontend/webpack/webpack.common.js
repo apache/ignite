@@ -79,7 +79,7 @@ const config = {
             },
             { test: /\.worker\.js$/, use: { loader: 'worker-loader' } },
             {
-                test: /\.js$/,
+                test: /\.(js|ts)$/,
                 enforce: 'pre',
                 exclude: [/node_modules/],
                 use: [{
@@ -91,7 +91,7 @@ const config = {
                 }]
             },
             {
-                test: /\.js$/,
+                test: /\.(js|ts)$/,
                 exclude: /node_modules/,
                 use: 'babel-loader'
             },
