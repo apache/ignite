@@ -62,7 +62,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     private static final int DFLT_BATCH_SIZE = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Default cache count. */
-    private static final int DFLT_CACHE_CNT = 100;
+    private static final int DFLT_CACHE_CNT = 10;
 
     /** Number of key backups. Each test method can set this value as required. */
     private int backups = DFLT_BACKUPS;
@@ -170,21 +170,10 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
         int gridCnt = 3;
 
         startGrids(gridCnt, 1, ignites);
-        Ignite ignite = ignite(1);
-        for (int i = 0; i < cacheCnt; i++) {
-            IgniteCache<Object, Object> cache = ignite.cache("partitioned-" + i);
-
-            for (int j = 0; j < 1000; j++) {
-                cache.put(j, new byte[1024]);
-            }
-        }
-
 
         info("Grids started: " + gridCnt);
 
         stopGrids(ignites);
-
-        startGrids(gridCnt, 1, ignites);
     }
 
     /**
