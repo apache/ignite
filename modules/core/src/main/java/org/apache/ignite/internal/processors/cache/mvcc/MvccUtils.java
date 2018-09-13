@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -784,6 +784,19 @@ public class MvccUtils {
         }
 
         return snapshot;
+    }
+
+    /**
+     * Throws atomicity modes compatibility validation exception.
+     *
+     * @param ctx1 Cache context.
+     * @param ctx2 Another cache context.
+     */
+    public static void throwAtomicityModesMismatchException(GridCacheContext ctx1, GridCacheContext ctx2) {
+        throw new IgniteException("Caches with transactional_snapshot atomicity mode cannot participate in the same" +
+            " transaction with caches having another atomicity mode. [cacheName=" + ctx1.name() +
+            ", cacheMode=" + ctx1.config().getAtomicityMode() +
+            ", anotherCacheName=" + ctx2.name() + " anotherCacheMode=" + ctx2.config().getAtomicityMode() + ']');
     }
 
     /** */

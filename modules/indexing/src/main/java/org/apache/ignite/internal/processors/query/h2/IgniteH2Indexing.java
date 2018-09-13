@@ -1700,6 +1700,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Boolean mvccEnabled = null;
         Integer mvccCacheId = null;
+        GridCacheContext ctx0 = null;
 
         for (Object o : parser.objectsMap().values()) {
             if (o instanceof GridSqlAlias)
@@ -1710,11 +1711,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (mvccEnabled == null) {
                     mvccEnabled = cctx.mvccEnabled();
                     mvccCacheId = cctx.cacheId();
+                    ctx0 = cctx;
                 }
                 else if (mvccEnabled != cctx.mvccEnabled())
-                    throw new IgniteException("Transaction or a query spans over caches with the different MVCC" +
-                        " settings. Do not mix TRANSACTIONAL_SNAPSHOT caches with the caches where another atomicity " +
-                        "mode is set within the same transaction or a query.");
+                    MvccUtils.throwAtomicityModesMismatchException(ctx0, cctx);
             }
         }
 
@@ -2636,6 +2636,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheSharedContext sharedCtx = ctx.cache().context();
 
         int expectedParallelism = 0;
+        GridCacheContext cctx0 = null;
 
         boolean mvccEnabled = false;
 
@@ -2646,12 +2647,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             assert cctx != null;
 
-            if (i == 0)
+            if (i == 0) {
                 mvccEnabled = cctx.mvccEnabled();
+                cctx0 = cctx;
+            }
             else if (cctx.mvccEnabled() != mvccEnabled)
-                throw new IgniteException("Transaction or a query spans over caches with the different MVCC" +
-                    " settings. Do not mix TRANSACTIONAL_SNAPSHOT caches with the caches where another atomicity " +
-                    "mode is set within the same transaction or a query.");
+                MvccUtils.throwAtomicityModesMismatchException(cctx0, cctx);
 
             if (!cctx.isPartitioned())
                 continue;

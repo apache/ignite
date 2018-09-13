@@ -106,6 +106,6 @@ public class CacheMvccSqlConfigurationValidationTest extends CacheMvccAbstractTe
 
                 return null;
             }
-        }, CacheException.class, "Transaction or a query spans over caches with the different MVCC settings.");
+        }, CacheException.class, "Caches with transactional_snapshot atomicity mode cannot participate in the same transaction");
     }
 }

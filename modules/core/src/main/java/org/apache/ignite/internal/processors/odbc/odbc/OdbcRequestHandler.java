@@ -149,7 +149,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         log = ctx.log(getClass());
 
-        // TODO IGNITE-9484
+        // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
         worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
     }
 
