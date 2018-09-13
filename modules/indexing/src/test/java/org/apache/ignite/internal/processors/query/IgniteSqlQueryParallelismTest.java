@@ -116,12 +116,6 @@ public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
 
                 Ignite client = startGrid(4);
 
-                assertEquals(2, client.cache("pers").query(new SqlFieldsQuery(select0)).getAll().size());
-
-                qryParallelism = 6;
-
-                assertEquals(2, client.cache("pers").query(new SqlFieldsQuery(select0)).getAll().size());
-
                 return null;
             }
         }, IgniteCheckedException .class, "Query parallelism mismatch");
@@ -147,12 +141,6 @@ public class IgniteSqlQueryParallelismTest extends GridCommonAbstractTest {
                 qryParallelism = 2;
 
                 Ignite client = startGrid(4);
-
-                assertEquals(2, client.cache("pers").query(new SqlFieldsQuery(select0)).getAll().size());
-
-                qryParallelism = 6;
-
-                assertEquals(2, client.cache("pers").query(new SqlFieldsQuery(select0)).getAll().size());
 
                 return null;
             }
