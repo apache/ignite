@@ -1126,7 +1126,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (mvccTracker != null) {
                     ctx.mvccSnapshot(mvccTracker.snapshot());
 
-                    opTimeout = operationTimeout(opTimeout, checkActive(tx));
+                    tx = checkActive(tx(this.ctx));
+
+                    opTimeout = operationTimeout(opTimeout, tx);
                 }
 
                 if (forUpdate) {
