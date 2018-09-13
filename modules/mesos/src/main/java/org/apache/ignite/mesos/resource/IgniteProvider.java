@@ -17,9 +17,13 @@
 
 package org.apache.ignite.mesos.resource;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.Channels;
@@ -27,18 +31,37 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.ignite.mesos.ClusterProperties;
+
+import static org.apache.ignite.mesos.ClusterProperties.IGNITE_VERSION;
 
 /**
  * Class downloads and stores Ignite.
  */
 public class IgniteProvider {
+    /** Logger. */
+    private static final Logger log = Logger.getLogger(IgniteProvider.class.getSimpleName());
+
     // This constants are set by maven-ant-plugin.
     /** */
-    private static final String DOWNLOAD_LINK = "http://ignite.run/download_ignite.php";
-
-    /** */
     private static final String DOWNLOAD_URL_PATTERN = "https://archive.apache.org/dist/ignite/%s/apache-ignite-fabric-%s-bin.zip";
+
+    /** URL for request Ignite latest version. */
+    private final static String IGNITE_LATEST_VERSION_URL = "";
+
+    /** Mirrors. */
+    private static final String APACHE_MIRROR_URL = "";
+
+    /** Ignite on Apache URL path. */
+    private static final String IGNITE_PATH = "";
+
+    /** Version pattern. */
+    private static final Pattern VERSION_PATTERN = Pattern.compile("(?<=version=).*\\S+");
 
     /** */
     private String downloadFolder;
@@ -52,8 +75,8 @@ public class IgniteProvider {
 
     /**
      * @param ver Ignite version.
-     * @throws IOException If downloading failed.
      * @return Path to latest ignite.
+     * @throws IOException If downloading failed.
      */
     public String getIgnite(String ver) throws IOException {
         return downloadIgnite(ver);
@@ -61,31 +84,90 @@ public class IgniteProvider {
 
     /**
      * @param ver Ignite version which will be downloaded. If {@code null} will download the latest ignite version.
-     * @throws IOException If downloading failed.
      * @return Ignite archive.
+     * @throws IOException If downloading failed.
      */
     public String downloadIgnite(String ver) throws IOException {
         assert ver != null;
 
         URL url;
 
+        // get the latest version.
         if (ver.equals(ClusterProperties.DEFAULT_IGNITE_VERSION)) {
-            URL updateUrl = new URL(DOWNLOAD_LINK);
+            try {
+                ver = findLatestVersion();
 
-            HttpURLConnection conn = (HttpURLConnection)updateUrl.openConnection();
-
-            int code = conn.getResponseCode();
-
-            if (code == 200)
-                url = conn.getURL();
-            else
-                throw new RuntimeException("Failed to download ignite distributive. Maybe set incorrect version? " +
-                    "[resCode:" + code + ", ver: " + ver + "]");
+                // and try to retrieve from a mirror.
+                url = new URL(String.format(findMirror() + IGNITE_PATH, ver, ver));
+            }
+            catch (Exception e) {
+                // fallback to archive.
+                url = new URL(String.format(DOWNLOAD_URL_PATTERN, ver, ver));
+            }
         }
-        else
-            url = new URL(String.format(DOWNLOAD_URL_PATTERN, ver.replace("-incubating", ""), ver));
+        else {
+            // or from archive.
+            url = new URL(String.format(DOWNLOAD_URL_PATTERN, ver, ver));
+        }
 
         return downloadIgnite(url);
+    }
+
+    /**
+     * Attempts to retrieve the preferred mirror.
+     *
+     * @return Mirror url.
+     * @throws IOException If failed.
+     */
+    private String findMirror() throws IOException {
+        String response = getHttpContents(new URL(APACHE_MIRROR_URL));
+
+        if (response == null)
+            throw new RuntimeException("Failed to retrieve mirrors");
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode mirrorUrl = mapper.readTree(response).get("preferred");
+
+        if (mirrorUrl == null)
+            throw new RuntimeException("Failed to find the preferred mirror");
+
+        return mirrorUrl.asText();
+    }
+
+    /**
+     * Attempts to obtain the latest version.
+     *
+     * @return Latest version.
+     * @throws IOException If failed.
+     */
+    private String findLatestVersion() throws IOException {
+        String response = getHttpContents(new URL(IGNITE_LATEST_VERSION_URL));
+
+        if (response == null)
+            throw new RuntimeException("Failed to identify the latest version. Specify it with " + IGNITE_VERSION);
+
+        Matcher m = VERSION_PATTERN.matcher(response);
+        if (m.find())
+            return m.group();
+        else
+            throw new RuntimeException("Failed to retrieve the latest version. Specify it with " + IGNITE_VERSION);
+    }
+
+    /**
+     * @param url Url.
+     * @return Contents.
+     * @throws IOException If failed.
+     */
+    private String getHttpContents(URL url) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+
+        int code = conn.getResponseCode();
+
+        if (code != 200)
+            throw null;
+
+        BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+        return rd.lines().collect(Collectors.joining());
     }
 
     /**
@@ -110,7 +192,9 @@ public class IgniteProvider {
                 if (fileExist(fileName))
                     return fileName;
 
-                FileOutputStream outFile = new FileOutputStream(downloadFolder + fileName);
+                log.log(Level.INFO, "Downloading from {0}", url.toString());
+
+                FileOutputStream outFile = new FileOutputStream(Paths.get(downloadFolder, fileName).toFile());
 
                 outFile.getChannel().transferFrom(Channels.newChannel(conn.getInputStream()), 0, Long.MAX_VALUE);
 
@@ -119,7 +203,7 @@ public class IgniteProvider {
                 return fileName;
             }
             else
-                throw new RuntimeException("Got unexpected response code. Response code: " + code);
+                throw new RuntimeException("Got unexpected response code. Response code: " + code + " from " + url);
         }
         catch (IOException e) {
             throw new RuntimeException("Failed to download Ignite.", e);
