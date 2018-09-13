@@ -4419,7 +4419,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     resFut.onDone(ex);
                                 }
                             });
-                        }, tx0.system());
+                        }, true);
 
                         return resFut;
                     });
