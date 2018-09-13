@@ -192,8 +192,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             for (Map.Entry<Integer, byte[]> entry : newEncKeys.entrySet()) {
                 groupKey(entry.getKey(), entry.getValue());
 
-                if (log.isInfoEnabled())
-                    log.info("Added encryption key on local join [grpId=" + entry.getKey() + "]");
+                U.quietAndInfo(log, "Added encryption key on local join [grpId=" + entry.getKey() + "]");
             }
         });
 
@@ -241,7 +240,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                             new GenerateEncryptionKeyResponse(req.id(), encKeys), SYSTEM_POOL);
                     }
                     catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
+                        U.error(log, "Unable to send generate key response[nodeId=" + nodeId + "]");
                     }
                 }
                 else {
@@ -252,7 +251,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     if (fut != null)
                         fut.onDone(resp.encryptionKeys(), null);
                     else
-                        log.warning("Response received for a unknown request.[reqId=" + resp.requestId() + "]");
+                        U.warn(log, "Response received for a unknown request.[reqId=" + resp.requestId() + "]");
                 }
             }
         });
@@ -312,8 +311,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return res;
 
         if (!discoData.hasJoiningNodeData()) {
-            if (log.isInfoEnabled())
-                log.info("Joining node doesn't have encryption data [node=" + node.id() + "]");
+            U.quietAndInfo(log, "Joining node doesn't have encryption data [node=" + node.id() + "]");
 
             return null;
         }
@@ -321,8 +319,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         NodeEncryptionKeys nodeEncKeys = (NodeEncryptionKeys)discoData.joiningNodeData();
 
         if (nodeEncKeys == null || F.isEmpty(nodeEncKeys.knownKeys)) {
-            if (log.isInfoEnabled())
-                log.info("Joining node doesn't have stored group keys [node=" + node.id() + "]");
+            U.quietAndInfo(log, "Joining node doesn't have stored group keys [node=" + node.id() + "]");
 
             return null;
         }
@@ -382,12 +379,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             String knownGrps = F.isEmpty(knownEncKeys) ? null : F.concat(knownEncKeys.keySet(), ",");
 
             if (knownGrps != null)
-                log.info("Sending stored group keys to coordinator [grps=" + knownGrps + "]");
+                U.quietAndInfo(log, "Sending stored group keys to coordinator [grps=" + knownGrps + "]");
 
             String newGrps = F.isEmpty(newKeys) ? null : F.concat(newKeys.keySet(), ",");
 
             if (newGrps != null)
-                log.info("Sending new group keys to coordinator [grps=" + newGrps + "]");
+                U.quietAndInfo(log, "Sending new group keys to coordinator [grps=" + newGrps + "]");
         }
 
         dataBag.addJoiningNodeData(ENCRYPTION_MGR.ordinal(), new NodeEncryptionKeys(knownEncKeys, newKeys));
@@ -402,15 +399,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         for (Map.Entry<Integer, byte[]> entry : nodeEncryptionKeys.newKeys.entrySet()) {
             if (groupKey(entry.getKey()) == null) {
-                if (log.isInfoEnabled()) {
-                    log.info("Store group key received from joining node [node=" +
+                U.quietAndInfo(log, "Store group key received from joining node [node=" +
                         data.joiningNodeId() + ", grp=" + entry.getKey() + "]");
-                }
 
                 groupKey(entry.getKey(), entry.getValue());
             }
-            else if (log.isInfoEnabled()) {
-                log.info("Skip group key received from joining node. Already exists. [node=" +
+            else {
+                U.quietAndInfo(log, "Skip group key received from joining node. Already exists. [node=" +
                     data.joiningNodeId() + ", grp=" + entry.getKey() + "]");
             }
         }
@@ -451,13 +446,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         for (Map.Entry<Integer, byte[]> entry : encKeysFromCluster.entrySet()) {
             if (groupKey(entry.getKey()) == null) {
-                if (log.isInfoEnabled())
-                    log.info("Store group key received from coordinator [grp=" + entry.getKey() + "]");
+                U.quietAndInfo(log, "Store group key received from coordinator [grp=" + entry.getKey() + "]");
 
                 groupKey(entry.getKey(), entry.getValue());
             }
-            else if (log.isInfoEnabled())
-                log.info("Skip group key received from coordinator. Already exists. [grp=" + entry.getKey() + "]");
+            else {
+                U.quietAndInfo(log, "Skip group key received from coordinator. Already exists. [grp=" +
+                    entry.getKey() + "]");
+            }
         }
     }
 
@@ -510,7 +506,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     log.debug("Key removed. [grp=" + grpId + "]");
             }
             catch (IgniteCheckedException e) {
-                log.error("Failed to clear meta storage", e);
+                U.error(log, "Failed to clear meta storage", e);
             }
             finally {
                 ctx.cache().context().database().checkpointReadUnlock();
@@ -557,12 +553,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 grpEncKeys.putIfAbsent(grpId, getSpi().decryptKey(encGrpKey));
             }
 
-
-            if (log.isInfoEnabled()) {
-                if (!grpEncKeys.isEmpty()) {
-                    log.info("Encryption keys loaded from metastore. [grps=" +
-                        F.concat(grpEncKeys.keySet(), ",") + "]");
-                }
+            if (!grpEncKeys.isEmpty()) {
+                U.quietAndInfo(log, "Encryption keys loaded from metastore. [grps=" +
+                    F.concat(grpEncKeys.keySet(), ",") + "]");
             }
         }
         catch (IgniteCheckedException e) {
