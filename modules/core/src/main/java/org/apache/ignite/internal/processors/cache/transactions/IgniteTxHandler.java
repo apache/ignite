@@ -1392,7 +1392,7 @@ public class IgniteTxHandler {
                 tx.setPartitionUpdateCounters(
                     req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
 
-                tx.updateCountersMap(req.updateCountersMap());
+                tx.txCounters(true).updateCounters(req.updateCounters());
 
                 tx.commitRemoteTx();
             }

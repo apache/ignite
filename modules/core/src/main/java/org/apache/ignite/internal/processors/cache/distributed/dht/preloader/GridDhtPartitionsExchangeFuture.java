@@ -1225,8 +1225,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         boolean distributed = true;
 
-        // Do not perform distributed partition release in case of cluster activation or caches start.
-        if (activateCluster() || hasCachesToStart())
+        // Do not perform distributed partition release in case of cluster activation.
+        if (activateCluster())
             distributed = false;
 
         // On first phase we wait for finishing all local tx updates, atomic updates and lock releases on all nodes.
@@ -2920,11 +2920,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            // Don't validate partitions state in case of caches start.
-            boolean skipValidation = hasCachesToStart();
-
-            if (!skipValidation)
-                validatePartitionsState();
+            validatePartitionsState();
 
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert firstDiscoEvt instanceof DiscoveryCustomEvent;

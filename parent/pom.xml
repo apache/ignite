@@ -91,8 +91,8 @@
         <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
         <log4j.version>2.11.0</log4j.version>
-        <lucene.bundle.version>5.5.2_1</lucene.bundle.version>
-        <lucene.version>5.5.2</lucene.version>
+        <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
+        <lucene.version>7.4.0</lucene.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <mockito.version>1.10.19</mockito.version>
         <mysql.connector.version>5.1.39</mysql.connector.version>
@@ -122,7 +122,7 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
+        <zookeeper.version>3.4.13</zookeeper.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>

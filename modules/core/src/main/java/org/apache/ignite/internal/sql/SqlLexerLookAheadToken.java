@@ -49,7 +49,7 @@ public class SqlLexerLookAheadToken implements SqlLexerToken {
     }
 
     /** {@inheritDoc} */
-    public String sql() {
+    @Override public String sql() {
         return sql;
     }
 

@@ -1875,7 +1875,7 @@ public class GridNioServer<T> {
          *
          * @param req Change request.
          */
-        public void offer(SessionChangeRequest req) {
+        @Override public void offer(SessionChangeRequest req) {
             changeReqs.offer(req);
 
             if (select)
@@ -2190,7 +2190,7 @@ public class GridNioServer<T> {
         /**
          * @param ses Session.
          */
-        public final void registerWrite(GridSelectorNioSessionImpl ses) {
+        @Override public final void registerWrite(GridSelectorNioSessionImpl ses) {
             SelectionKey key = ses.key();
 
             if (key.isValid()) {
@@ -3337,17 +3337,17 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        public NioOperation operation() {
+        @Override public NioOperation operation() {
             return op;
         }
 
         /** {@inheritDoc} */
-        public Object message() {
+        @Override public Object message() {
             return msg;
         }
 
         /** {@inheritDoc} */
-        public void resetSession(GridNioSession ses) {
+        @Override public void resetSession(GridNioSession ses) {
             assert msg instanceof Message : msg;
 
             this.ses = (GridSelectorNioSessionImpl)ses;
@@ -3361,7 +3361,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        public GridSelectorNioSessionImpl session() {
+        @Override public GridSelectorNioSessionImpl session() {
             return ses;
         }
 
