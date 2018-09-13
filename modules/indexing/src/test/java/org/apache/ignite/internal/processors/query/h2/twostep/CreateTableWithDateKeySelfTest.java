@@ -83,7 +83,7 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
      * Common testing logic
      *
      * @param creationQry Create table query.
-     * @param tableName Table name.
+     * @param tblName Table name.
      * @param key Sample key.
      * @param val Sample value.
      * @param <K> Type of key.
@@ -91,13 +91,13 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
      */
     private <K, V> void checkInsertUpdateDelete(
         final String creationQry,
-        final String tableName,
+        final String tblName,
         final K key,
         final V val) {
-        final String cacheName = "TABLE_CACHE_" + tableName;
+        final String cacheName = "TABLE_CACHE_" + tblName;
 
         try (FieldsQueryCursor<List<?>> cur = initCache.query(
-            new SqlFieldsQuery(String.format(creationQry, tableName, cacheName)))) {
+            new SqlFieldsQuery(String.format(creationQry, tblName, cacheName)))) {
 
             assertNotNull(cur);
 
@@ -111,7 +111,7 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
         IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
 
         try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery(
-            "INSERT INTO " + tableName + " VALUES(?, ?)").setArgs(key, val))) {
+            "INSERT INTO " + tblName + " VALUES(?, ?)").setArgs(key, val))) {
 
             assertNotNull(cur);
 
@@ -122,13 +122,13 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
             assertEquals(1L, rows.get(0).get(0));
         }
 
-        assertSelection(tableName, cache, key, val);
+        assertSelection(tblName, cache, key, val);
 
         assertEquals(val, cache.get(key));
 
         cache.remove(key);
 
-        assertAbsence(tableName, cache, key);
+        assertAbsence(tblName, cache, key);
 
         assertFalse(cache.containsKey(key));
 
@@ -136,10 +136,10 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
 
         assertEquals(val, cache.get(key));
 
-        assertSelection(tableName, cache, key, val);
+        assertSelection(tblName, cache, key, val);
 
         try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery(
-            "DELETE FROM " + tableName + " WHERE id=?").setArgs(key))) {
+            "DELETE FROM " + tblName + " WHERE id=?").setArgs(key))) {
 
             assertNotNull(cur);
 
@@ -150,14 +150,23 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
             assertEquals(1L, rows.get(0).get(0));
         }
 
-        assertAbsence(tableName, cache, key);
+        assertAbsence(tblName, cache, key);
 
         assertFalse(cache.containsKey(key));
     }
 
-    private <K, V> void assertAbsence(final String tableName, final IgniteCache<K, V> cache, final K key) {
+    /**
+     * Check absence of key in the table.
+     *
+     * @param tblName Table name.
+     * @param cache Cache.
+     * @param key Sample key.
+     * @param <K> Type of key.
+     * @param <V> Type of value.
+     */
+    private <K, V> void assertAbsence(final String tblName, final IgniteCache<K, V> cache, final K key) {
         try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery(
-            "select * from " + tableName + " where id=?").setArgs(key))) {
+            "select * from " + tblName + " where id=?").setArgs(key))) {
             assertNotNull(cur);
 
             List<List<?>> rows = cur.getAll();
@@ -166,10 +175,20 @@ public class CreateTableWithDateKeySelfTest extends GridCommonAbstractTest {
         }
     }
 
-    private <K, V> void assertSelection(final String tableName, final IgniteCache<K, V> cache, final K key,
+    /**
+     * Check presence of key in the table.
+     *
+     * @param tblName Table name.
+     * @param cache Cache.
+     * @param key Sample key.
+     * @param val Sample value.
+     * @param <K> Type of key.
+     * @param <V> Type of value.
+     */
+    private <K, V> void assertSelection(final String tblName, final IgniteCache<K, V> cache, final K key,
         final V val) {
         try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery(
-            "select * from " + tableName + " where id=?").setArgs(key))) {
+            "select * from " + tblName + " where id=?").setArgs(key))) {
             assertNotNull(cur);
 
             List<List<?>> rows = cur.getAll();
