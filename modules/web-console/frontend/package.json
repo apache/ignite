@@ -78,6 +78,7 @@
     "@babel/plugin-proposal-object-rest-spread": "7.0.0-rc.1",
     "@babel/plugin-syntax-dynamic-import": "7.0.0-rc.1",
     "@babel/preset-env": "7.0.0-rc.1",
+    "@babel/preset-typescript": "^7.0.0",
     "@types/angular": "1.6.48",
     "@types/angular-animate": "1.5.10",
     "@types/angular-mocks": "1.5.12",
