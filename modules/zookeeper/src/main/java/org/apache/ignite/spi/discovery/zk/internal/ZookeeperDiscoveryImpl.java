@@ -476,7 +476,7 @@ public class ZookeeperDiscoveryImpl {
                     null).get();
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to wait for discovery event notification", e);
+                throw new IgniteException("Failed to wait for discovery listener notification", e);
             }
         }
 
@@ -549,7 +549,7 @@ public class ZookeeperDiscoveryImpl {
                 null).get();
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to notify about node segmentation", e);
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
         }
     }
 
@@ -2252,12 +2252,19 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
 
-        lsnr.onDiscovery(EVT_NODE_JOINED,
-            1L,
-            locNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null).get();
+        try {
+            lsnr.onDiscovery(EVT_NODE_JOINED,
+                1L,
+                locNode,
+                topSnapshot,
+                Collections.<Long, Collection<ClusterNode>>emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            joinFut.onDone(e);
+
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
 
         // Reset events (this is also notification for clients left from previous cluster).
         rtState.zkClient.setData(zkPaths.evtsPath, marshalZip(rtState.evtsData), -1);
@@ -3400,7 +3407,7 @@ public class ZookeeperDiscoveryImpl {
      * @param msg Custom message.
      */
     @SuppressWarnings("unchecked")
-    private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, final DiscoverySpiCustomMessage msg) throws IgniteCheckedException {
+    private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, final DiscoverySpiCustomMessage msg) {
         assert !(msg instanceof ZkInternalMessage) : msg;
 
         if (log.isDebugEnabled())
@@ -3421,8 +3428,14 @@ public class ZookeeperDiscoveryImpl {
             msg
         );
 
-        if (msg != null && msg.isMutable())
-            fut.get();
+        if (msg != null && msg.isMutable()) {
+            try {
+                fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to wait for discovery listener notification", e);
+            }
+        }
     }
 
     /**
@@ -3430,7 +3443,7 @@ public class ZookeeperDiscoveryImpl {
      * @param joiningData Joining node data.
      */
     @SuppressWarnings("unchecked")
-    private void notifyNodeJoin(ZkJoinedNodeEvtData joinedEvtData, ZkJoiningNodeData joiningData) throws IgniteCheckedException {
+    private void notifyNodeJoin(ZkJoinedNodeEvtData joinedEvtData, ZkJoiningNodeData joiningData) {
         final ZookeeperClusterNode joinedNode = joiningData.node();
 
         joinedNode.order(joinedEvtData.topVer);
@@ -3440,18 +3453,23 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(EVT_NODE_JOINED,
-            joinedEvtData.topVer,
-            joinedNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null).get();
+        try {
+            lsnr.onDiscovery(EVT_NODE_JOINED,
+                joinedEvtData.topVer,
+                joinedNode,
+                topSnapshot,
+                Collections.<Long, Collection<ClusterNode>>emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
     }
 
     /**
      * @param evtData Event data.
      */
-    private void notifyNodeFail(final ZkDiscoveryNodeFailEventData evtData) throws IgniteCheckedException {
+    private void notifyNodeFail(final ZkDiscoveryNodeFailEventData evtData) {
         notifyNodeFail(evtData.failedNodeInternalId(), evtData.topologyVersion());
     }
 
@@ -3459,7 +3477,7 @@ public class ZookeeperDiscoveryImpl {
      * @param nodeInternalOrder Node order.
      * @param topVer Topology version.
      */
-    private void notifyNodeFail(long nodeInternalOrder, long topVer) throws IgniteCheckedException {
+    private void notifyNodeFail(long nodeInternalOrder, long topVer) {
         final ZookeeperClusterNode failedNode = rtState.top.removeNode(nodeInternalOrder);
 
         assert failedNode != null && !failedNode.isLocal() : failedNode;
@@ -3471,12 +3489,17 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(EVT_NODE_FAILED,
-            topVer,
-            failedNode,
-            topSnapshot,
-            Collections.<Long, Collection<ClusterNode>>emptyMap(),
-            null).get();
+        try {
+            lsnr.onDiscovery(EVT_NODE_FAILED,
+                topVer,
+                failedNode,
+                topSnapshot,
+                Collections.<Long, Collection<ClusterNode>>emptyMap(),
+                null).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for discovery listener notification", e);
+        }
 
         stats.onNodeFailed();
     }

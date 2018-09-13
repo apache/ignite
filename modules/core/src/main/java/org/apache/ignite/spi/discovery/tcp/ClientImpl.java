@@ -474,7 +474,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, new TreeMap<>(topHist), null).get();
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to wait for listener notification", e);
+                    throw new IgniteException("Failed to wait for discovery listener notification", e);
                 }
             }
         }
@@ -2508,7 +2508,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist), data).get();
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to wait for discovery notification", e);
+                    throw new IgniteException("Failed to wait for discovery listener notification", e);
                 }
             }
             else if (debugLog.isDebugEnabled())
