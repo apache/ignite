@@ -222,7 +222,6 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                 catch (ExecutionException ee) {
                     Throwable e = ee.getCause();
                     Throwable sqlE = e.getCause();
-                    e.printStackTrace();
 
                     assertTrue(e instanceof CacheException);
                     assertTrue(e.getCause() instanceof TransactionTimeoutException);
