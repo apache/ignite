@@ -2021,7 +2021,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param it Entries iterator.
      * @param ret Cache operation result.
      * @param retval Return value flag.
-     * @param timeout Timeout.
+      * @param timeout Timeout.
      * @param sequential Sequential locking flag.
      * @return Operation future.
      */
@@ -2046,11 +2046,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     return true;
                 }
             }), new PLC1<GridCacheReturn>(ret) {
-                @Override protected GridCacheReturn postLock(GridCacheReturn val) throws IgniteCheckedException {
+                @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
                     CacheObject res = fut.get();
 
                     assert mvccSnapshot != null;
-                    assert res == null || retval;
+
+                    //TODO: IGNITE-7764: fix this.
+//                    ret.success(!retval ? !rmv || res != null : !rmv || res != null);
 
                     ret.value(cacheCtx, res, keepBinary);
 

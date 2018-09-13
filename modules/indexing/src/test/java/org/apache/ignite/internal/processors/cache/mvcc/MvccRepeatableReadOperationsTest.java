@@ -21,12 +21,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 
 /**
  * Test basic mvcc cache operation operations.
@@ -42,8 +45,12 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
             case GET: {
                 Map<Integer, MvccTestAccount> res = new HashMap<>();
 
-                for (Integer key : keys)
-                    res.put(key, cache.cache.get(key));
+                for (Integer key : keys) {
+                    MvccTestAccount val = cache.cache.get(key);
+
+                    if(val != null)
+                        res.put(key, val);
+                }
 
                 return res;
             }
@@ -108,36 +115,147 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
         }
     }
 
-    //TODO: IGNITE-7764: Add getAndPut and getAndRemove consistency test.
-    public void testName() throws IgniteCheckedException {
+    /**
+     * Check getAndPut/getAndRemove operations consistency.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testGetAndUpdateOperations() throws IgniteCheckedException {
         Ignite node1 = grid(0);
 
         TestCache<Integer, MvccTestAccount> cache1 = new TestCache<>(node1.cache(DEFAULT_CACHE_NAME));
 
-        final Set<Integer> keys = new HashSet<>();
+        final Set<Integer> keysForUpdate = new HashSet<>(3);
+        final Set<Integer> keysForRemove = new HashSet<>(3);
 
-        {
-            keys.add(primaryKey(grid(0).cache(DEFAULT_CACHE_NAME)));
-            keys.add(backupKey(grid(0).cache(DEFAULT_CACHE_NAME)));
-            keys.add(nearKey(grid(0).cache(DEFAULT_CACHE_NAME)));
-        }
+        final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), keysForUpdate, keysForRemove);
+
+        final Map<Integer, MvccTestAccount> initialMap = keysForRemove.stream().collect(
+            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
+
+        Map<Integer, MvccTestAccount> updateMap = keysForUpdate.stream().collect(
+            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 2)));
+
+        cache1.cache.putAll(initialMap);
 
         IgniteTransactions txs = node1.transactions();
         try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            for (Integer key : keysForUpdate) {
+                MvccTestAccount newVal1 = new MvccTestAccount(key, 1);
 
-            for (Integer key : keys) {
-                MvccTestAccount res = cache1.cache.getAndPut(key, new MvccTestAccount(0, 1));
+                assertNull(cache1.cache.getAndPut(key, newVal1)); // Check create.
 
-                assertNull(res);
+                MvccTestAccount newVal2 = new MvccTestAccount(key, 2);
 
-                res = cache1.cache.getAndPut(key, new MvccTestAccount(1, 1));
-
-                assertEquals(new MvccTestAccount(0, 1), res);
+                assertEquals(newVal1, cache1.cache.getAndPut(key, newVal2)); // Check update.
             }
+
+            for (Integer key : keysForRemove) {
+                assertEquals(initialMap.get(key), cache1.cache.getAndRemove(key)); // Check remove existed.
+
+                assertNull(cache1.cache.getAndRemove(key)); // Check remove non-existed.
+            }
+
+            assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
 
             tx.commit();
         }
+
+        assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
+        assertEquals(updateMap, cache1.cache.getAll(allKeys));
     }
 
-    //TODO: IGNITE-7764: Add putIfAbsent consistency test.
+    /**
+     * Check getAndPut/getAndRemove operations consistency.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutIfAbsentConsistency() throws IgniteCheckedException {
+        Ignite node1 = grid(0);
+
+        TestCache<Integer, MvccTestAccount> cache1 = new TestCache<>(node1.cache(DEFAULT_CACHE_NAME));
+
+        final Set<Integer> keysForUpdate = new HashSet<>(3);
+        final Set<Integer> keysForRemove = new HashSet<>(3);
+
+        final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), keysForUpdate, keysForRemove);
+
+        final Map<Integer, MvccTestAccount> initialMap = keysForRemove.stream().collect(
+            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
+
+        Map<Integer, MvccTestAccount> updateMap = keysForUpdate.stream().collect(
+            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 2)));
+
+        cache1.cache.putAll(initialMap);
+
+        IgniteTransactions txs = node1.transactions();
+        try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            for (Integer key : keysForUpdate) {
+                MvccTestAccount newVal1 = new MvccTestAccount(key, 1);
+
+                assertNull(cache1.cache.getAndPut(key, newVal1)); // Check create.
+
+                MvccTestAccount newVal2 = new MvccTestAccount(key, 2);
+
+                assertEquals(newVal1, cache1.cache.getAndPut(key, newVal2)); // Check update.
+            }
+
+            for (Integer key : keysForRemove) {
+                assertEquals(initialMap.get(key), cache1.cache.getAndRemove(key)); // Check remove existed.
+
+                assertNull(cache1.cache.getAndRemove(key)); // Check remove non-existed.
+            }
+
+            assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
+
+            tx.commit();
+        }
+
+        assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
+        assertEquals(updateMap, cache1.cache.getAll(allKeys));
+    }
+
+    /**
+     * Check getAndPut/getAndRemove operations consistency.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testReplaceConsistency() throws IgniteCheckedException {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7764");
+
+        Ignite node1 = grid(0);
+
+        TestCache<Integer, MvccTestAccount> cache1 = new TestCache<>(node1.cache(DEFAULT_CACHE_NAME));
+
+        final Set<Integer> existedKeys = new HashSet<>(3);
+        final Set<Integer> nonExistedKeys = new HashSet<>(3);
+
+        final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), existedKeys, nonExistedKeys);
+
+        final Map<Integer, MvccTestAccount> initialMap = existedKeys.stream().collect(
+            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
+
+        Map<Integer, MvccTestAccount> updateMap = existedKeys.stream().collect(
+            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 3)));
+
+        cache1.cache.putAll(initialMap);
+
+        IgniteTransactions txs = node1.transactions();
+        try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            for (Integer key : allKeys) {
+                MvccTestAccount val = new MvccTestAccount(key, 1);
+
+                assertEquals(initialMap.get(key), cache1.cache.getAndReplace(key, val));
+
+                assertEquals(initialMap.containsKey(key), cache1.cache.replace(key, val, new MvccTestAccount(key, 3)));
+            }
+
+            assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
+
+            tx.commit();
+        }
+
+        assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
+        assertEquals(updateMap, cache1.cache.getAll(allKeys));
+    }
 }
