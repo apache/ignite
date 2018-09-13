@@ -67,7 +67,7 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
             null,
             tx,
             timeout,
-            cctx);
+            cctx, null);
     }
 
     /** {@inheritDoc} */
@@ -76,9 +76,10 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected void onEntryProcessed(KeyCacheObject key,
+    @Override protected void onEntryProcessed(boolean success, KeyCacheObject key,
         CacheObject val) {
-        cnt++;
+        if(success)
+            cnt++;
     }
 
     /** {@inheritDoc} */

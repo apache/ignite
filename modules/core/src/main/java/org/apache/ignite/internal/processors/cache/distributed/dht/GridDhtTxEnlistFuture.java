@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -48,10 +49,12 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<C
     /** */
     private boolean needRes;
 
+    /** */
+    protected boolean success = true;
+
     /**
      * Constructor.
-     *
-     * @param nearNodeId Near node ID.
+     *  @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
@@ -62,6 +65,8 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<C
      * @param cctx Cache context.
      * @param rows Collection of rows.
      * @param op Operation.
+     * @param filter Filter.
+     * @param needRes Return previous value flag.
      */
     public GridDhtTxEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
@@ -74,6 +79,7 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<C
         GridCacheContext<?, ?> cctx,
         Collection<Object> rows,
         EnlistOperation op,
+        @Nullable CacheEntryPredicate filter,
         boolean needRes) {
         super(nearNodeId,
             nearLockVer,
@@ -84,7 +90,8 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<C
             null,
             tx,
             timeout,
-            cctx);
+            cctx,
+            filter);
 
         this.op = op;
         this.needRes = needRes;
@@ -107,12 +114,15 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<C
     /**
      * {@inheritDoc}
      *
+     * @param success
      * @param key
      * @param val
      */
-    @Override protected void onEntryProcessed(KeyCacheObject key,
+    @Override protected void onEntryProcessed(boolean success, KeyCacheObject key,
         CacheObject val) {
-        if (needRes)
+        this.success = success;
+
+        if (success && needRes)
             res = val;
     }
 

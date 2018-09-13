@@ -353,6 +353,7 @@ public interface GridCacheEntryEx {
      * @param op Cache operation.
      * @param needHistory Whether to collect rows created or affected by the current tx.
      * @param noCreate Entry should not be created when enabled, e.g. SQL INSERT.
+     * @param filter
      * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
@@ -370,6 +371,7 @@ public interface GridCacheEntryEx {
         GridCacheOperation op,
         boolean needHistory,
         boolean noCreate,
+        @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -379,6 +381,7 @@ public interface GridCacheEntryEx {
      * @param updateCntr Update counter.
      * @param mvccVer Mvcc version.
      * @param needHistory Whether to collect rows created or affected by the current tx.
+     * @param filter Filter.
      * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
@@ -392,6 +395,7 @@ public interface GridCacheEntryEx {
         @Nullable Long updateCntr,
         MvccSnapshot mvccVer,
         boolean needHistory,
+        @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

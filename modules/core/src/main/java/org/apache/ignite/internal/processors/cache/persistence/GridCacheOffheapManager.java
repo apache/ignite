@@ -48,6 +48,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSna
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1766,11 +1767,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             boolean primary,
             boolean needHistory,
             boolean noCreate,
-            boolean retVal) throws IgniteCheckedException {
+            CacheEntryPredicate filter, boolean retVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
             return delegate.mvccUpdate(
-                cctx, key, val, ver, expireTime, mvccVer, primary, needHistory, noCreate, retVal);
+                cctx, key, val, ver, expireTime, mvccVer, primary, needHistory, noCreate, filter, retVal);
         }
 
         /** {@inheritDoc} */
@@ -1780,10 +1781,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             MvccSnapshot mvccVer,
             boolean primary,
             boolean needHistory,
-            boolean retVal) throws IgniteCheckedException {
+            CacheEntryPredicate filter, boolean retVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccRemove(cctx, key, mvccVer, primary, needHistory, retVal);
+            return delegate.mvccRemove(cctx, key, mvccVer, primary, needHistory, filter, retVal);
         }
 
         /** {@inheritDoc} */

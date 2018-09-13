@@ -441,6 +441,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         updCntrs.get(i),
                                         snapshot,
                                         false,
+                                        null,
                                         false);
 
                                     break;
@@ -459,6 +460,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
                                         op.cacheOperation(),
                                         false,
                                         false,
+                                        null,
                                         false);
 
                                     break;

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -136,6 +137,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /** Near lock version. */
     protected final GridCacheVersion nearLockVer;
+    private final CacheEntryPredicate filter;
 
     /** Timeout object. */
     @GridToStringExclude
@@ -196,6 +198,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param tx Transaction.
      * @param timeout Lock acquisition timeout.
      * @param cctx Cache context.
+     * @param filter Filter.
      */
     protected GridDhtTxAbstractEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
@@ -206,7 +209,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         @Nullable int[] parts,
         GridDhtTxLocalAdapter tx,
         long timeout,
-        GridCacheContext<?, ?> cctx) {
+        GridCacheContext<?, ?> cctx,
+        @Nullable CacheEntryPredicate filter) {
         assert tx != null;
         assert timeout >= 0;
         assert nearNodeId != null;
@@ -223,6 +227,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         this.timeout = timeout;
         this.tx = tx;
         this.parts = parts;
+        this.filter = filter;
 
         lockVer = tx.xidVersion();
 
@@ -256,10 +261,11 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /**
      * Entry processed callback.
+     * @param success
      * @param key
      * @param val
      */
-    protected abstract void onEntryProcessed(KeyCacheObject key,
+    protected abstract void onEntryProcessed(boolean success, KeyCacheObject key,
         CacheObject val);
 
     /**
@@ -412,6 +418,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         null,
                                         mvccSnapshot,
                                         isMoving(key.partition()),
+                                        filter,
                                         needResult());
 
                                     break;
@@ -430,6 +437,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         op.cacheOperation(),
                                         isMoving(key.partition()),
                                         op.noCreate(),
+                                        filter,
                                         needResult());
 
                                     break;
@@ -592,10 +600,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         if (ptr0 != null)
             walPtr = ptr0;
 
+        onEntryProcessed(updRes.success(), entry.key(), updRes.prevValue());
+
         if (!updRes.success())
             return;
-
-        onEntryProcessed(entry.key(), updRes.prevValue());
 
         if (op != EnlistOperation.LOCK)
             addToBatch(entry.key(), val, updRes.mvccHistory(), updRes.updateCounter(), entry.context().cacheId());

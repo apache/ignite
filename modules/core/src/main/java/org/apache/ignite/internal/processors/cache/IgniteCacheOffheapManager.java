@@ -276,6 +276,7 @@ public interface IgniteCacheOffheapManager {
      * @param primary {@code True} if on primary node.
      * @param needHistory Flag to collect history.
      * @param noCreate Flag indicating that row should not be created if absent.
+     * @param filter Filter.
      * @param retVal Flag to return previous value.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
@@ -289,6 +290,7 @@ public interface IgniteCacheOffheapManager {
         boolean primary,
         boolean needHistory,
         boolean noCreate,
+        @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException;
 
     /**
@@ -296,6 +298,7 @@ public interface IgniteCacheOffheapManager {
      * @param mvccSnapshot MVCC snapshot.
      * @param primary {@code True} if on primary node.
      * @param needHistory Flag to collect history.
+     * @param filter
      * @param retVal Flag to return previous value.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
@@ -305,6 +308,7 @@ public interface IgniteCacheOffheapManager {
         MvccSnapshot mvccSnapshot,
         boolean primary,
         boolean needHistory,
+        @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException;
 
     /**
@@ -789,6 +793,7 @@ public interface IgniteCacheOffheapManager {
          * @param primary {@code True} if update is executed on primary node.
          * @param needHistory Flag to collect history.
          * @param noCreate Flag indicating that row should not be created if absent.
+         * @param filter Filter.
          * @param retVal Flag to return previous value.
          * @return Update result.
          * @throws IgniteCheckedException If failed.
@@ -803,6 +808,7 @@ public interface IgniteCacheOffheapManager {
             boolean primary,
             boolean needHistory,
             boolean noCreate,
+            CacheEntryPredicate filter,
             boolean retVal) throws IgniteCheckedException;
 
         /**
@@ -811,6 +817,7 @@ public interface IgniteCacheOffheapManager {
          * @param mvccSnapshot MVCC snapshot.
          * @param primary {@code True} if update is executed on primary node.
          * @param needHistory Flag to collect history.
+         * @param filter Filter.
          * @param retVal Flag to return previous value.
          * @return List of transactions to wait for.
          * @throws IgniteCheckedException If failed.
@@ -821,6 +828,7 @@ public interface IgniteCacheOffheapManager {
             MvccSnapshot mvccSnapshot,
             boolean primary,
             boolean needHistory,
+            CacheEntryPredicate filter,
             boolean retVal) throws IgniteCheckedException;
 
         /**

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxS
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
@@ -515,6 +516,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         boolean primary,
         boolean needHistory,
         boolean noCreate,
+        @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
@@ -530,6 +532,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             primary,
             needHistory,
             noCreate,
+            filter,
             retVal);
     }
 
@@ -539,6 +542,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         MvccSnapshot mvccSnapshot,
         boolean primary,
         boolean needHistory,
+        @Nullable CacheEntryPredicate filter,
         boolean retVal) throws IgniteCheckedException {
         if (entry.detached() || entry.isNear())
             return null;
@@ -550,6 +554,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             mvccSnapshot,
             primary,
             needHistory,
+            filter,
             retVal);
     }
 
@@ -1863,6 +1868,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             boolean primary,
             boolean needHistory,
             boolean noCreate,
+            CacheEntryPredicate filter,
             boolean retVal) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || !needHistory;
@@ -1879,6 +1885,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 key.valueBytes(coCtx);
                 val.valueBytes(coCtx);
 
+                boolean needVal = retVal || filter != null;
+
                 MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
                     cctx,
                     key,
@@ -1893,7 +1901,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     needHistory,
                     // we follow fast update visit flow here if row cannot be created by current operation
                     noCreate,
-                    retVal);
+                    needVal);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -1914,6 +1922,21 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     cleanup(cctx, updateRow.cleanupRows());
 
                     return updateRow;
+                }
+                else if (filter != null) {
+                    CacheDataRow oldRow = updateRow.oldRow();
+
+                    GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key) {
+                        @Nullable @Override public CacheObject peekVisibleValue() {
+                            return oldRow == null ? null : oldRow.value();
+                        }
+                    };
+
+                    if (!filter.apply(e)) {
+                        cleanup(cctx, updateRow.cleanupRows());
+
+                        return updateRow;
+                    }
                 }
 
                 CacheDataRow oldRow = null;
@@ -1977,7 +2000,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             MvccSnapshot mvccSnapshot,
             boolean primary,
             boolean needHistory,
-            boolean retVal) throws IgniteCheckedException {
+            CacheEntryPredicate filter, boolean retVal) throws IgniteCheckedException {
             assert mvccSnapshot != null;
             assert primary || mvccSnapshot.activeTransactions().size() == 0 : mvccSnapshot;
             assert primary || !needHistory;
@@ -1993,6 +2016,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 // Make sure value bytes initialized.
                 key.valueBytes(coCtx);
 
+                boolean needVal = retVal || filter != null;
+
                 MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
                     cctx,
                     key,
@@ -2006,7 +2031,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     false,
                     needHistory,
                     true,
-                    retVal);
+                    needVal);
 
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -2024,6 +2049,22 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return updateRow;
                 }
                 else if (res == ResultType.PREV_NOT_NULL) {
+                     if (filter != null) {
+                        assert needVal && updateRow.oldRow() != null;
+
+                        GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key) {
+                            @Nullable @Override public CacheObject peekVisibleValue() {
+                                return updateRow.oldRow().value();
+                            }
+                        };
+
+                        if (!filter.apply(e)) {
+                            cleanup(cctx, updateRow.cleanupRows());
+
+                            return updateRow;
+                        }
+                    }
+
                     CacheDataRow oldRow = updateRow.oldRow();
 
                     assert oldRow != null && oldRow.link() != 0 : oldRow;

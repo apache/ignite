@@ -578,7 +578,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (cacheCtx.mvccEnabled() && !implicit)
             return mvccPutAllAsync0(cacheCtx, Collections.singletonMap(key, val),
-                entryProcessor == null ? null : Collections.singletonMap(key, entryProcessor), invokeArgs, retval);
+                entryProcessor == null ? null : Collections.singletonMap(key, entryProcessor), invokeArgs, retval, filter);
 
         try {
             beforePut(cacheCtx, retval, false);
@@ -710,6 +710,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param invokeMap Invoke map.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param retval Key-transform value map to store.
+     * @param filter Filter.
      * @return Operation future.
      */
     private <K, V> IgniteInternalFuture mvccPutAllAsync0(
@@ -717,7 +718,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Map<? extends K, ? extends V> map,
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> invokeMap,
         @Nullable final Object[] invokeArgs,
-        final boolean retval
+        final boolean retval,
+        @Nullable final CacheEntryPredicate filter
     ) {
         try {
             if (mvccSnapshot == null) {
@@ -796,7 +798,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     return new IgniteBiTuple<>(next.getKey(), next.getValue());
                 }
-            }, ret, retval, remainingTime(), true);
+            }, ret, retval, filter, remainingTime(), true);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -832,7 +834,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     ) {
         //TODO: IGNITE-7764: Review if putAllAsync0 body can be reused (may be partly).
         if (cacheCtx.mvccEnabled() && !implicit)
-            return mvccPutAllAsync0(cacheCtx, map, invokeMap, invokeArgs, retval);
+            return mvccPutAllAsync0(cacheCtx, map, invokeMap, invokeArgs, retval, null);
 
         try {
             beforePut(cacheCtx, retval, false);
@@ -1734,7 +1736,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         init();
 
         if(cacheCtx.mvccEnabled() && !implicit)
-            return mvccRemoveAllAsync0(cacheCtx, keys, ret, retval);
+            return mvccRemoveAllAsync0(cacheCtx, keys, ret, retval, filter);
 
         final Collection<KeyCacheObject> enlisted = new ArrayList<>();
 
@@ -1888,6 +1890,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param cacheCtx Cache context.
      * @param keys Keys to remove.
      * @param retval Flag indicating whether a value should be returned.
+     * @param filter Filter.
      * @return Future for asynchronous remove.
      */
     @SuppressWarnings("unchecked")
@@ -1895,7 +1898,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final GridCacheContext cacheCtx,
         @Nullable final Collection<? extends K> keys,
         GridCacheReturn ret,
-        final boolean retval
+        final boolean retval,
+        @Nullable final CacheEntryPredicate filter
     ) {
 
         Set<KeyCacheObject> enlisted = new HashSet<>(keys.size());
@@ -1936,7 +1940,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             @Override public KeyCacheObject nextX() throws IgniteCheckedException {
                 return it.next();
             }
-        }, ret, retval, remainingTime(), true);
+        }, ret, retval, filter, remainingTime(), true);
     }
 
     /**
@@ -2021,12 +2025,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param it Entries iterator.
      * @param ret Cache operation result.
      * @param retval Return value flag.
-      * @param timeout Timeout.
-     * @param sequential Sequential locking flag.
-     * @return Operation future.
+      * @param filter
+     * @param timeout Timeout.
+    * @param sequential Sequential locking flag.
+    * @return Operation future.
      */
     public IgniteInternalFuture<GridCacheReturn> updateAsync(GridCacheContext cacheCtx,
-        UpdateSourceIterator<?> it, GridCacheReturn ret, boolean retval, long timeout, boolean sequential) {
+        UpdateSourceIterator<?> it,
+        GridCacheReturn ret,
+        boolean retval,
+        @Nullable CacheEntryPredicate filter,
+        long timeout,
+        boolean sequential) {
         try {
             beforePut(cacheCtx, retval, true);
 
@@ -2035,7 +2045,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
             GridNearTxEnlistFuture fut = new GridNearTxEnlistFuture(cacheCtx, this,
-                timeout, it, 0, sequential, retval);
+                timeout, it, 0, sequential, filter);
 
             fut.init();
 
@@ -2052,7 +2062,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     assert mvccSnapshot != null;
 
                     //TODO: IGNITE-7764: fix putIfAbsent and replace operations.
-                    ret.success(true);
+                    ret.success(fut.success);
 
                     ret.value(cacheCtx, res, keepBinary);
 

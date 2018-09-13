@@ -173,8 +173,6 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
      * @throws IgniteCheckedException If failed.
      */
     public void testPutIfAbsentConsistency() throws IgniteCheckedException {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7764");
-
         Ignite node1 = grid(0);
 
         TestCache<Integer, MvccTestAccount> cache1 = new TestCache<>(node1.cache(DEFAULT_CACHE_NAME));
@@ -187,8 +185,8 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
         final Map<Integer, MvccTestAccount> initialMap = keysForUpdate.stream().collect(
             Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
 
-        Map<Integer, MvccTestAccount> updateMap = keysForUpdate.stream().collect(
-            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 2)));
+        Map<Integer, MvccTestAccount> updatedMap = allKeys.stream().collect(
+            Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
 
         cache1.cache.putAll(initialMap);
 
@@ -198,15 +196,15 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
                 assertFalse(cache1.cache.putIfAbsent(key, new MvccTestAccount(key, 2))); // Check update.
 
             for (Integer key : keysForCreate)
-                assertTrue(cache1.cache.putIfAbsent(key, new MvccTestAccount(key, 2))); // Check create.
+                assertTrue(cache1.cache.putIfAbsent(key, new MvccTestAccount(key, 1))); // Check create.
 
-            assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
+            assertEquals(updatedMap, getEntries(cache1, allKeys, SQL));
 
             tx.commit();
         }
 
-        assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
-        assertEquals(updateMap, getEntries(cache1, allKeys, GET));
+        assertEquals(updatedMap, getEntries(cache1, allKeys, SQL));
+        assertEquals(updatedMap, getEntries(cache1, allKeys, GET));
     }
 
     /**
@@ -215,8 +213,6 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
      * @throws IgniteCheckedException If failed.
      */
     public void testReplaceConsistency() throws IgniteCheckedException {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7764");
-
         Ignite node1 = grid(0);
 
         TestCache<Integer, MvccTestAccount> cache1 = new TestCache<>(node1.cache(DEFAULT_CACHE_NAME));

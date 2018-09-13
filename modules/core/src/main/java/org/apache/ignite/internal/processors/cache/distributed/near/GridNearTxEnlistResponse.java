@@ -54,6 +54,9 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
     /** Mini future id. */
     private int miniId;
 
+    /** Result flag. */
+    private boolean success;
+
     /** Result. */
     private CacheObject res;
 
@@ -81,19 +84,22 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
      * @param futId Future id.
      * @param miniId Mini future id.
      * @param lockVer Lock version.
+     * @param success
      * @param res Result.
-     * @param dhtFutId Dht future id.
      * @param dhtVer Dht version.
+     * @param dhtFutId Dht future id.
      * @param updCntrs Update counters.
      */
     public GridNearTxEnlistResponse(int cacheId,
         IgniteUuid futId,
         int miniId,
         GridCacheVersion lockVer,
+        boolean success,
         CacheObject res,
         GridCacheVersion dhtVer,
         IgniteUuid dhtFutId,
         GridLongList updCntrs) {
+        this.success = success;
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
@@ -180,10 +186,13 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
         return updCntrs;
     }
 
+    public boolean success() {
+        return success;
+    }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */
@@ -244,6 +253,12 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
                 writer.incrementState();
 
             case 10:
+                if (!writer.writeBoolean("success", success))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
                 if (!writer.writeMessage("updCntrs", updCntrs))
                     return false;
 
@@ -322,6 +337,14 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
                 reader.incrementState();
 
             case 10:
+                success = reader.readBoolean("success");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
                 updCntrs = reader.readMessage("updCntrs");
 
                 if (!reader.isLastRead())
