@@ -266,7 +266,7 @@ export default class Clusters {
             }
         },
         evictionThreshold: {
-            step: 0.05,
+            step: 0.001,
             max: 0.999,
             min: 0.5,
             default: 0.9

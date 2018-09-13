@@ -2569,7 +2569,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return sock.toString();
         }
     }

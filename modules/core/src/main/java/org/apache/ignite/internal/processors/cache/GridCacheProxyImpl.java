@@ -445,30 +445,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.isMongoDataCache();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.isMongoMetaCache();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 

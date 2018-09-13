@@ -33,10 +33,15 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -213,9 +218,11 @@ class GridDhtPartitionSupplier {
         if (node == null)
             return;
 
-        try {
-            SupplyContext sctx;
+        IgniteRebalanceIterator iter = null;
 
+        SupplyContext sctx = null;
+
+        try {
             synchronized (scMap) {
                 sctx = scMap.remove(contextId);
 
@@ -224,7 +231,7 @@ class GridDhtPartitionSupplier {
                     scMap.put(contextId, sctx);
 
                     if (log.isDebugEnabled())
-                        log.debug("Stale demand message [grp=" + grp.cacheOrGroupName()
+                        log.debug("Stale demand message [cache=" + grp.cacheOrGroupName()
                             + ", actualContext=" + sctx
                             + ", from=" + nodeId
                             + ", demandMsg=" + d + "]");
@@ -236,7 +243,7 @@ class GridDhtPartitionSupplier {
             // Demand request should not contain empty partitions if no supply context is associated with it.
             if (sctx == null && (d.partitions() == null || d.partitions().isEmpty())) {
                 if (log.isDebugEnabled())
-                    log.debug("Empty demand message [grp=" + grp.cacheOrGroupName()
+                    log.debug("Empty demand message [cache=" + grp.cacheOrGroupName()
                         + ", from=" + nodeId
                         + ", topicId=" + topicId
                         + ", demandMsg=" + d + "]");
@@ -266,8 +273,6 @@ class GridDhtPartitionSupplier {
                     grp.groupId(),
                     d.topologyVersion(),
                     grp.deploymentEnabled());
-
-            IgniteRebalanceIterator iter;
 
             Set<Integer> remainingParts;
 
@@ -361,19 +366,44 @@ class GridDhtPartitionSupplier {
                 if (!remainingParts.contains(part))
                     continue;
 
-                GridCacheEntryInfo info = new GridCacheEntryInfo();
+                GridCacheEntryInfo info = grp.mvccEnabled() ?
+                    new GridCacheMvccEntryInfo() : new GridCacheEntryInfo();
 
                 info.key(row.key());
-                info.expireTime(row.expireTime());
-                info.version(row.version());
-                info.value(row.value());
                 info.cacheId(row.cacheId());
+
+                if (grp.mvccEnabled()) {
+                    byte txState = row.mvccTxState() != TxState.NA ? row.mvccTxState() :
+                        MvccUtils.state(grp, row.mvccCoordinatorVersion(), row.mvccCounter(),
+                        row.mvccOperationCounter());
+
+                    if (txState != TxState.COMMITTED)
+                        continue;
+
+                    ((MvccVersionAware)info).mvccVersion(row);
+                    ((GridCacheMvccEntryInfo)info).mvccTxState(TxState.COMMITTED);
+
+                    byte newTxState = row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
+                        MvccUtils.state(grp, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
+                        row.newMvccOperationCounter());
+
+                    if (newTxState != TxState.ABORTED) {
+                        ((MvccUpdateVersionAware)info).newMvccVersion(row);
+
+                        if (newTxState == TxState.COMMITTED)
+                            ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
+                    }
+                }
+
+                info.value(row.value());
+                info.version(row.version());
+                info.expireTime(row.expireTime());
 
                 if (preloadPred == null || preloadPred.apply(info))
                     s.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
                 else {
-                    if (log.isDebugEnabled())
-                        log.debug("Rebalance predicate evaluated to false (will not send " +
+                    if (log.isTraceEnabled())
+                        log.trace("Rebalance predicate evaluated to false (will not send " +
                             "cache entry): " + info);
                 }
 
@@ -422,13 +452,56 @@ class GridDhtPartitionSupplier {
                     ", topology=" + demTop + ", rebalanceId=" + d.rebalanceId() +
                     ", topicId=" + topicId + "]");
         }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send partition supply message to node: " + nodeId, e);
-        }
-        catch (IgniteSpiException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send message to node (current node is stopping?) [node=" + node.id() +
-                    ", msg=" + e.getMessage() + ']');
+        catch (Throwable t) {
+            if (grp.shared().kernalContext().isStopping())
+                return;
+
+            // Sending supply messages with error requires new protocol.
+            boolean sendErrMsg = node.version().compareTo(GridDhtPartitionSupplyMessageV2.AVAILABLE_SINCE) >= 0;
+
+            if (t instanceof IgniteSpiException) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send message to node (current node is stopping?) [node=" + node.id() +
+                        ", msg=" + t.getMessage() + ']');
+
+                sendErrMsg = false;
+            }
+            else
+                U.error(log, "Failed to continue supplying process for " +
+                    "[cache=" + grp.cacheOrGroupName() + ", node=" + nodeId
+                    + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t);
+
+            try {
+                if (sctx != null)
+                    clearContext(sctx, log);
+                else if (iter != null)
+                    iter.close();
+            }
+            catch (Throwable t1) {
+                U.error(log, "Failed to cleanup supplying context " +
+                        "[cache=" + grp.cacheOrGroupName() + ", node=" + nodeId
+                        + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t1);
+            }
+
+            if (!sendErrMsg)
+                return;
+
+            try {
+                GridDhtPartitionSupplyMessageV2 errMsg = new GridDhtPartitionSupplyMessageV2(
+                    d.rebalanceId(),
+                    grp.groupId(),
+                    d.topologyVersion(),
+                    grp.deploymentEnabled(),
+                    t
+                );
+
+                reply(node, d, errMsg, contextId);
+            }
+            catch (Throwable t1) {
+                U.error(log, "Failed to send supply error message for " +
+                    "[cache=" + grp.cacheOrGroupName() + ", node=" + nodeId
+                        + ", topicId=" + contextId.get2() + ", topVer=" + contextId.get3() + "]", t1);
+            }
         }
     }
 
@@ -519,7 +592,7 @@ class GridDhtPartitionSupplier {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(SupplyContext.class, this);
         }
     }
