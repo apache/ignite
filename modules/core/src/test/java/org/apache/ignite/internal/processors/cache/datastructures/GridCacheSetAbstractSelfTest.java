@@ -32,6 +32,7 @@ import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheMode;
@@ -721,46 +722,23 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @throws Exception If failed.
      */
     public void testCleanup() throws Exception {
-        testCleanup(false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCleanupWithNodeFilter() throws Exception {
-        if (gridCount() > 1)
-            testCleanup(false, true);
+        testCleanup(false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCleanupCollocated() throws Exception {
-        testCleanup(true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCleanupCollocatedWithNodeFilter() throws Exception {
-        if (gridCount() > 1)
-            testCleanup(true, true);
+        testCleanup(true);
     }
 
     /**
      * @param collocated Collocation flag.
-     * @param nodeFilter Use node filter to exclude affinity node.
      * @throws Exception If failed.
      */
-    private void testCleanup(boolean collocated, boolean nodeFilter) throws Exception {
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
+    private void testCleanup(boolean collocated) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
-
-        if (nodeFilter) {
-            IgnitePredicate<ClusterNode> filter = new CacheNodeFilter(grid(0).cluster().localNode());
-
-            colCfg.setNodeFilter(filter);
-            colCfg.setGroupName("withFilter");
-        }
 
         final IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg);
 
@@ -769,7 +747,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         final Collection<Set<Integer>> sets = new ArrayList<>();
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteSet<Integer> set = grid(i).set(SET_NAME, nodeFilter ? colCfg : null);
+            IgniteSet<Integer> set = grid(i).set(SET_NAME, null);
 
             assertNotNull(set);
 
@@ -865,7 +843,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < 10; i++)
             set.add(i);
 
-        Collection<Integer> c = grid(0).compute().broadcast(new IgniteCallable<Integer>() {
+        IgniteCluster cluster = grid(0).cluster();
+
+        Collection<Integer> c = grid(0).compute(cluster).broadcast(new IgniteCallable<Integer>() {
             @Override public Integer call() throws Exception {
                 assertEquals(SET_NAME, set.name());
 
@@ -1186,8 +1166,10 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         }
     }
 
-    /** */
-    private static class CacheNodeFilter implements IgnitePredicate<ClusterNode> {
+    /**
+     * Node filter to exclude one node from affinity nodes.
+     */
+    protected static class CacheNodeFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1195,9 +1177,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         private final ClusterNode excludedNode;
 
         /**
-         * @param excludedNode Node to be excluded.
+         * @param excludedNode Node to be excluded from affinity nodes.
          */
-        private CacheNodeFilter(ClusterNode excludedNode) {
+        public CacheNodeFilter(ClusterNode excludedNode) {
             this.excludedNode = excludedNode;
         }
 
