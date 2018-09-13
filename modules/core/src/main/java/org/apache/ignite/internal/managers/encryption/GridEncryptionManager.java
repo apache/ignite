@@ -114,7 +114,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Synchronization mutex. */
     private final Object metaStorageMux = new Object();
 
-    /** */
+    /** Synchronization mutex for an generate encryption keys operations. */
     private final Object genEcnKeyMux = new Object();
 
     /** Disconnected flag. */
@@ -176,7 +176,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
+    @Override protected void onKernalStart0() {
         ctx.discovery().localJoinFuture().listen(f -> {
             if (notCoordinator())
                 return;
@@ -269,7 +269,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) {
         synchronized (genEcnKeyMux) {
             assert disconnected;
 
@@ -538,7 +538,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** {@inheritDoc} */
-    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) {
         try {
             Map<String, ? extends Serializable> encKeys = metastorage.readForPredicate(ENCRYPTION_KEY_PREFIX_PRED);
 
@@ -737,7 +737,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     private Collection<byte[]> createKeys(int keyCnt) {
         if (keyCnt == 0)
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
 
         List<byte[]> encKeys = new ArrayList<>(keyCnt);
 
@@ -753,8 +753,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private void cancelFutures(String msg) {
         for (GenerateEncryptionKeyFuture fut : genEncKeyFuts.values())
             fut.onDone(new IgniteFutureCancelledException(msg));
-
-        genEncKeyFuts.clear();
     }
 
     /**
@@ -797,7 +795,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         /**  New keys i.e. keys for a local statically configured caches. */
         Map<Integer, byte[]> newKeys;
     }
-
 
     /** */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")

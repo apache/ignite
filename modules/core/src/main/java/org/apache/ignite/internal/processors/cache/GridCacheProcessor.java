@@ -2098,8 +2098,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             reuseList,
             exchTopVer,
             persistenceEnabled,
-            desc.walEnabled(),
-            desc.config().isEncryptionEnabled()
+            desc.walEnabled()
         );
 
         for (Object obj : grp.configuredUserObjects())

@@ -350,7 +350,7 @@ class ClusterCachesInfo {
         }
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "isEncryptionEnabled",
-            "Cache encrypted", locAttr.isEncrypted(), rmtAttr.isEncrypted(), true);
+            "Cache encrypted", locAttr.isEncryptionEnabled(), rmtAttr.isEncryptionEnabled(), true);
     }
 
     /**
