@@ -42,6 +42,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -68,9 +69,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_GETALL_KEY_VALUE;
 import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES_MASK;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL_KEY_VALUE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_QUERY;
@@ -117,6 +120,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     /** */
     private static final NullOutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
+
+    /** */
+    private final boolean getAllKeyValue = IgniteSystemProperties.getBoolean(IGNITE_REST_GETALL_KEY_VALUE);
 
     /** Logger. */
     private final IgniteLogger log;
@@ -602,6 +608,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             case CACHE_CONTAINS_KEYS:
             case CACHE_GET:
             case CACHE_GET_ALL:
+            case CACHE_GET_ALL_KEY_VALUE:
             case CACHE_GET_AND_PUT:
             case CACHE_GET_AND_REPLACE:
             case CACHE_PUT_IF_ABSENT:
@@ -644,7 +651,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 restReq0.ttl(longValue("exp", params, null));
 
                 if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL ||
-                    cmd == CACHE_CONTAINS_KEYS) {
+                    cmd == CACHE_CONTAINS_KEYS || cmd == CACHE_GET_ALL_KEY_VALUE) {
                     List<Object> keys = values(keyType, "k", params);
                     List<Object> vals = values(valType, "v", params);
 
@@ -945,9 +952,17 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return Command.
      */
     @Nullable private GridRestCommand command(ServletRequest req) {
-        String cmd = req.getParameter("cmd");
+        String rawCmd = req.getParameter("cmd");
 
-        return cmd == null ? null : GridRestCommand.fromKey(cmd.toLowerCase());
+        if (rawCmd == null)
+            return null;
+
+        String cmd = rawCmd.toLowerCase();
+
+        if (getAllKeyValue && cmd.equals(GridRestCommand.CACHE_GET_ALL.key()))
+            return GridRestCommand.CACHE_GET_ALL_KEY_VALUE;
+
+        return GridRestCommand.fromKey(cmd);
     }
 
     /**

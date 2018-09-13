@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteSystemProperties;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,7 +40,12 @@ public enum GridRestCommand {
     /** Contains cached values. */
     CACHE_CONTAINS_KEYS("conkeys"),
 
-    /** Get several cached values. */
+    /**
+     * Get several cached values.
+     *
+     * @deprecated Should be replaced with renamed {@link #CACHE_GET_ALL_KEY_VALUE} in Apache Ignite 3.0.
+     */
+    @Deprecated
     CACHE_GET_ALL("getall"),
 
     /** Store value in cache and return previous value. */
@@ -178,7 +184,13 @@ public enum GridRestCommand {
     REMOVE_USER("removeuser"),
 
     /** */
-    UPDATE_USER("updateuser");
+    UPDATE_USER("updateuser"),
+
+    /**
+     * Get several cached values, new format.
+     * Not supposed to be used directly by name, rather see {@link IgniteSystemProperties#IGNITE_REST_GETALL_KEY_VALUE}.
+     */
+    CACHE_GET_ALL_KEY_VALUE("getallkeyvalue");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();
