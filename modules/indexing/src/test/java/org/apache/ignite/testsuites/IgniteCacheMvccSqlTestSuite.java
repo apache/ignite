@@ -86,9 +86,6 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
 
         suite.addTestSuite(CacheMvccPartitionedSqlCoordinatorFailoverTest.class);
         suite.addTestSuite(CacheMvccReplicatedSqlCoordinatorFailoverTest.class);
-        suite.addTestSuite(CacheMvccBulkLoadTest.class);
-        suite.addTestSuite(CacheMvccStreamingInsertTest.class);
-        suite.addTestSuite(CacheMvccDmlSimpleTest.class);
 
         return suite;
     }
