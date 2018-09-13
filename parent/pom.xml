@@ -827,6 +827,7 @@
                                         <exclude>**/*.csv</exclude><!--CSV files-->
                                         <exclude>**/*.jks</exclude><!--bin-files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
+                                        <exclude>**/keystore</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->

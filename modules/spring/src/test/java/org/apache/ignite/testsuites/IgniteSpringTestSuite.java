@@ -93,9 +93,9 @@ public class IgniteSpringTestSuite extends TestSuite {
 
         suite.addTestSuite(SpringCacheTest.class);
 
-        //suite.addTestSuite(GridSpringCacheManagerMultiJvmSelfTest.class);
+        suite.addTestSuite(GridSpringCacheManagerMultiJvmSelfTest.class);
 
-        //suite.addTestSuite(GridCommandLineLoaderTest.class);
+        suite.addTestSuite(GridCommandLineLoaderTest.class);
 
         return suite;
     }

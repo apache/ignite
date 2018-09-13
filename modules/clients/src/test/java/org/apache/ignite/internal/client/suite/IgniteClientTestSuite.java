@@ -55,12 +55,10 @@ import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticati
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
-import org.apache.ignite.internal.processors.rest.MemcacheRestProcessorTest;
 import org.apache.ignite.internal.processors.rest.RestBinaryProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.RestMemcacheProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorMultiStartSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorStartSelfTest;
-import org.apache.ignite.internal.processors.rest.RestProcessorTest;
 import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.TcpRestUnmarshalVulnerabilityTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSelfTest;
@@ -86,7 +84,6 @@ public class IgniteClientTestSuite extends TestSuite {
 
         // Test memcache protocol with custom test client.
         suite.addTestSuite(RestMemcacheProtocolSelfTest.class);
-        //suite.addTestSuite(MemcacheRestProcessorTest.class);
 
         // Test custom binary protocol with test client.
         suite.addTestSuite(RestBinaryProtocolSelfTest.class);
@@ -106,7 +103,6 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTestSuite(RedisProtocolConnectSelfTest.class);
         suite.addTestSuite(RedisProtocolServerSelfTest.class);
 
-        //suite.addTestSuite(RestProcessorTest.class);
         suite.addTestSuite(RestProcessorStartSelfTest.class);
 
         // Test cache flag conversion.
@@ -143,8 +139,8 @@ public class IgniteClientTestSuite extends TestSuite {
 
         // Rest task command handler test.
         suite.addTestSuite(TaskCommandHandlerSelfTest.class);
-        //suite.addTestSuite(ChangeStateCommandHandlerTest.class);
-        //suite.addTestSuite(TaskEventSubjectIdSelfTest.class);
+        suite.addTestSuite(ChangeStateCommandHandlerTest.class);
+        suite.addTestSuite(TaskEventSubjectIdSelfTest.class);
 
         // Default cache only test.
         suite.addTestSuite(ClientDefaultCacheSelfTest.class);

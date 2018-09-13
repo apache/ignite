@@ -27,6 +27,8 @@ public class ZookeeperDiscoverySpiSaslFailedAuthTest extends ZookeeperDiscoveryS
      * @throws Exception If failed.
      */
     public void testIgniteNodeWithInvalidPasswordFailsToJoin() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-9573");
+
         System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY,
             "InvalidZookeeperClient");
 
