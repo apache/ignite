@@ -200,7 +200,7 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(CacheLazyEntry.class, this);
     }
 }
