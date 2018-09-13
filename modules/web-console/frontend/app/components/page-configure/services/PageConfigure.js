@@ -38,7 +38,8 @@ import {default as ConfigureState} from 'app/components/page-configure/services/
 import {default as ConfigSelectors} from 'app/components/page-configure/store/selectors';
 
 export default class PageConfigure {
-    static $inject = [ConfigureState.name, ConfigSelectors.name];
+    static $inject = ['ConfigureState', 'ConfigSelectors'];
+
     /**
      * @param {ConfigureState} ConfigureState
      * @param {ConfigSelectors} ConfigSelectors
