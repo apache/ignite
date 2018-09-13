@@ -85,7 +85,7 @@ public class GridDhtTxQueryEnlistResponse extends GridCacheIdMessage {
     /**
      * @return Error.
      */
-    public Throwable error() {
+    @Override public Throwable error() {
         return err;
     }
 

@@ -2517,7 +2517,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @return Non-discarded messages iterator.
          */
-        public Iterator<TcpDiscoveryAbstractMessage> iterator() {
+        @Override public Iterator<TcpDiscoveryAbstractMessage> iterator() {
             return new SkipIterator();
         }
 

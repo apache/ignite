@@ -273,17 +273,17 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        public Object call() throws Exception {
+        @Override public Object call() throws Exception {
             return null;
         }
 
         /** {@inheritDoc} */
-        public Class<?> deployClass() {
+        @Override public Class<?> deployClass() {
             return this.getClass();
         }
 
         /** {@inheritDoc} */
-        public ClassLoader classLoader() {
+        @Override public ClassLoader classLoader() {
             return clsLdr;
         }
     }

@@ -15,33 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+package org.apache.ignite.yardstick.sequence;
 
-import java.util.Map;
 import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- * Ignite atomic sequence benchmark.
+ * Abstract class for {@link IgniteAtomicSequence} benchmarks.
  */
-public class IgniteAtomicSequenceBenchmark extends IgniteAbstractBenchmark {
-    /** Cache. */
-    private IgniteAtomicSequence seq;
+public abstract class IgniteAtomicSequenceAbstractBenchmark extends IgniteAbstractBenchmark {
+    /** Bound for random operation, by default 1/10 of batchSize. */
+    protected int randomBound;
+
+    /** Sequence. */
+    protected IgniteAtomicSequence seq;
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        seq = ignite().atomicSequence("benchSequence", 0, true);
+        int batchSize = args.batch();
+        int backups = args.backups();
 
-        seq.batchSize(args.batch());
-    }
+        AtomicConfiguration acfg = new AtomicConfiguration();
 
-    /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        seq.incrementAndGet();
+        acfg.setAtomicSequenceReserveSize(batchSize);
+        acfg.setBackups(backups);
 
-        return true;
+        seq = ignite().atomicSequence("benchSequence", acfg, 0, true);
+
+        randomBound = batchSize < 10 ? 1 : batchSize / 10;
     }
 }

@@ -22,6 +22,7 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/partition';
 import 'rxjs/add/operator/takeUntil';
+import 'rxjs/add/operator/pluck';
 
 import AgentModal from './AgentModal.service';
 // @ts-ignore
@@ -117,7 +118,7 @@ class ConnectionState {
 }
 
 export default class AgentManager {
-    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', AgentModal.name, 'UserNotifications', 'IgniteVersion', ClusterLoginService.name];
+    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
 
     /** @type {ng.IScope} */
     $root;
@@ -166,6 +167,11 @@ export default class AgentManager {
         this.currentCluster$ = this.connectionSbj
             .distinctUntilChanged(({ cluster }) => prevCluster === cluster)
             .do(({ cluster }) => prevCluster = cluster);
+
+        this.clusterIsActive$ = this.connectionSbj
+            .map(({ cluster }) => cluster)
+            .filter((cluster) => Boolean(cluster))
+            .pluck('active');
 
         if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({
