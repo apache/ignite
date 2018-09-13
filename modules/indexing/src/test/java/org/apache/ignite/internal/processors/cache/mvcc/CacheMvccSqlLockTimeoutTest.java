@@ -29,8 +29,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
@@ -223,11 +221,14 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                 }
                 catch (ExecutionException ee) {
                     Throwable e = ee.getCause();
-                    if (!(e instanceof CacheException && e.getCause() instanceof TransactionTimeoutException)) {
-                        e.printStackTrace();
+                    Throwable sqlE = e.getCause();
+                    e.printStackTrace();
 
-                        fail("Timeout exception should be thrown");
-                    }
+                    assertTrue(e instanceof CacheException);
+                    assertTrue(e.getCause() instanceof TransactionTimeoutException);
+//                    assertTrue(sqlE instanceof IgniteSQLException);
+//                    assertTrue(sqlE.getCause() instanceof TransactionTimeoutException);
+//                    assertEquals(SqlStateCode.LOCK_TIMEOUT, ((IgniteSQLException)sqlE).sqlState());
                 }
 
                 // t0d0 ensure that tx1 was not timed out

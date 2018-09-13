@@ -884,7 +884,7 @@ public class GridReduceQueryExecutor {
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
 
-                            if (X.hasSuppressed(err, QueryCancelledException.class))
+                            if (wasCancelled(err))
                                 throw new QueryCancelledException(); // Throw correct exception.
 
                             if (X.hasSuppressed(err, TransactionTimeoutException.class))
