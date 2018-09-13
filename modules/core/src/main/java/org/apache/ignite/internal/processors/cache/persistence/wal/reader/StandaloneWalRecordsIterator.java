@@ -58,6 +58,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder.DFLT_HIGH_BOUND;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
@@ -317,8 +318,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 if (curIdx == walFileDescriptors.size() - 1)
                     // This means that there is no explicit last sengment, so we stop as if we reached the end
                     // of the WAL.
-                    if (highBound.index() > walFileDescriptors.get(curIdx).idx())
-                            return null;
+                    if (highBound.equals(DFLT_HIGH_BOUND))
+                        return null;
         }
 
         return super.handleRecordException(e, ptr);
