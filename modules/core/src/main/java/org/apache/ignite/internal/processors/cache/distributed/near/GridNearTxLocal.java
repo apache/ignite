@@ -2051,8 +2051,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     assert mvccSnapshot != null;
 
-                    //TODO: IGNITE-7764: fix this.
-//                    ret.success(!retval ? !rmv || res != null : !rmv || res != null);
+                    //TODO: IGNITE-7764: fix putIfAbsent and replace operations.
+                    ret.success(true);
 
                     ret.value(cacheCtx, res, keepBinary);
 

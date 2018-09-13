@@ -29,6 +29,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 
 /**
@@ -157,12 +158,13 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
             }
 
             assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
+            assertEquals(updateMap, getEntries(cache1, allKeys, GET));
 
             tx.commit();
         }
 
         assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
-        assertEquals(updateMap, cache1.cache.getAll(allKeys));
+        assertEquals(updateMap, getEntries(cache1, allKeys, GET));
     }
 
     /**
@@ -171,16 +173,18 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
      * @throws IgniteCheckedException If failed.
      */
     public void testPutIfAbsentConsistency() throws IgniteCheckedException {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7764");
+
         Ignite node1 = grid(0);
 
         TestCache<Integer, MvccTestAccount> cache1 = new TestCache<>(node1.cache(DEFAULT_CACHE_NAME));
 
+        final Set<Integer> keysForCreate = new HashSet<>(3);
         final Set<Integer> keysForUpdate = new HashSet<>(3);
-        final Set<Integer> keysForRemove = new HashSet<>(3);
 
-        final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), keysForUpdate, keysForRemove);
+        final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), keysForCreate, keysForUpdate);
 
-        final Map<Integer, MvccTestAccount> initialMap = keysForRemove.stream().collect(
+        final Map<Integer, MvccTestAccount> initialMap = keysForUpdate.stream().collect(
             Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
 
         Map<Integer, MvccTestAccount> updateMap = keysForUpdate.stream().collect(
@@ -190,21 +194,11 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
 
         IgniteTransactions txs = node1.transactions();
         try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-            for (Integer key : keysForUpdate) {
-                MvccTestAccount newVal1 = new MvccTestAccount(key, 1);
+            for (Integer key : keysForUpdate)
+                assertFalse(cache1.cache.putIfAbsent(key, new MvccTestAccount(key, 2))); // Check update.
 
-                assertNull(cache1.cache.getAndPut(key, newVal1)); // Check create.
-
-                MvccTestAccount newVal2 = new MvccTestAccount(key, 2);
-
-                assertEquals(newVal1, cache1.cache.getAndPut(key, newVal2)); // Check update.
-            }
-
-            for (Integer key : keysForRemove) {
-                assertEquals(initialMap.get(key), cache1.cache.getAndRemove(key)); // Check remove existed.
-
-                assertNull(cache1.cache.getAndRemove(key)); // Check remove non-existed.
-            }
+            for (Integer key : keysForCreate)
+                assertTrue(cache1.cache.putIfAbsent(key, new MvccTestAccount(key, 2))); // Check create.
 
             assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
 
@@ -212,7 +206,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
         }
 
         assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
-        assertEquals(updateMap, cache1.cache.getAll(allKeys));
+        assertEquals(updateMap, getEntries(cache1, allKeys, GET));
     }
 
     /**
@@ -258,11 +252,12 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
             }
 
             assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
+            assertEquals(updateMap, getEntries(cache1, allKeys, GET));
 
             tx.commit();
         }
 
         assertEquals(updateMap, getEntries(cache1, allKeys, SQL));
-        assertEquals(updateMap, cache1.cache.getAll(allKeys));
+        assertEquals(updateMap, getEntries(cache1, allKeys, GET));
     }
 }
