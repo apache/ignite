@@ -97,6 +97,11 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
                     cctx.name());
         }
 
+        if (grp.readOnly() && !read) {
+            return new IgniteCheckedException("Failed to perform cache operation " +
+                "(cache is in read only mode): " + cctx.name());
+        }
+
         if (grp.needsRecovery() || grp.topologyValidator() != null) {
             CacheValidation validation = grpValidRes.get(grp.groupId());
 

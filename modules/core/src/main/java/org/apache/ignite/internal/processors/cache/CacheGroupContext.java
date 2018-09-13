@@ -159,6 +159,9 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
+    /** Read only flag. */
+    private volatile boolean readOnly;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -1031,6 +1034,20 @@ public class CacheGroupContext {
      */
     public CacheGroupMetricsMXBean mxBean() {
         return mxBean;
+    }
+
+    /**
+     * @return Read only flag.
+     */
+    public boolean readOnly() {
+        return readOnly;
+    }
+
+    /**
+     * @param readOnly Read only flag.
+     */
+    public void readOnly(boolean readOnly) {
+        this.readOnly = readOnly;
     }
 
     /** {@inheritDoc} */
