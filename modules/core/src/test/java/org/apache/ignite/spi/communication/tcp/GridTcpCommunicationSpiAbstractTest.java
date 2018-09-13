@@ -82,7 +82,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     }
 
     /** {@inheritDoc} */
-    @Override public void testSendToManyNodes() throws Exception {
+    /*@Override public void testSendToManyNodes() throws Exception {
         super.testSendToManyNodes();
 
         // Test idle clients remove.
@@ -93,7 +93,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
 
             clients.put(UUID.randomUUID(), F.first(clients.values()));
         }
-    }
+    }*/
 
     /**
      *
