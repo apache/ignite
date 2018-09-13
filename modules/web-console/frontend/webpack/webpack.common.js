@@ -80,7 +80,7 @@ const config = {
             },
             { test: /\.worker\.js$/, use: { loader: 'worker-loader' } },
             {
-                test: /\.(js|ts)$/,
+                test: /\.(js)$/,
                 enforce: 'pre',
                 exclude: [/node_modules/],
                 use: [{
