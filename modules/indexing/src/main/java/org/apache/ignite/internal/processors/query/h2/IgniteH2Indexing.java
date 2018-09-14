@@ -205,7 +205,6 @@ import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE_PORT;
@@ -344,11 +343,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     // TODO https://issues.apache.org/jira/browse/IGNITE-9062
-    private final ThreadLocalObjectPool<H2ConnectionWrapper> connectionPool = new ThreadLocalObjectPool<>(IgniteH2Indexing.this::newConnectionWrapper, 5);
+    private final ThreadLocalObjectPool<H2ConnectionWrapper> connectionPool =
+        new ThreadLocalObjectPool<>(IgniteH2Indexing.this::newConnectionWrapper, 5);
 
     /** */
     // TODO https://issues.apache.org/jira/browse/IGNITE-9062
-    private final ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>> connCache = new ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>>() {
+    private final ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>> connCache =
+        new ThreadLocal<ThreadLocalObjectPool.Reusable<H2ConnectionWrapper>>() {
         @Override public ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> get() {
             ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> reusable = super.get();
 
@@ -399,10 +400,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         new GridBoundedConcurrentLinkedHashMap<>(TWO_STEP_QRY_CACHE_SIZE);
 
     /** */
-    private final ConcurrentMap<ReservationKey, GridReservable> reservations = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<ReservationKey, GridReservable> reservations = new ConcurrentHashMap<>();
 
     /** Map from sql string to affected caches ids list */
-    private final ConcurrentMap<String, List<Integer>> sqlToCacheIdsCache = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, List<Integer>> sqlToCacheIdsCache = new ConcurrentHashMap<>();
 
     /** */
     private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = new IgniteInClosure<IgniteInternalFuture<?>>() {
@@ -1071,40 +1072,60 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public GridQueryFieldsResult queryLocalSqlFields(String schemaName, String qry, @Nullable Collection<Object> params,
-        IndexingQueryFilter filter, boolean enforceJoinOrder, boolean startTx, int timeout,
-        GridQueryCancel cancel) throws IgniteCheckedException {
-        return queryLocalSqlFields(schemaName, qry, params, filter, enforceJoinOrder, startTx, timeout, cancel, null);
+    public GridQueryFieldsResult queryLocalSqlFields(
+        String schemaName,
+        String qry,
+        @Nullable Collection<Object> params,
+        IndexingQueryFilter filter,
+        boolean enforceJoinOrder,
+        boolean startTx,
+        int timeout,
+        GridQueryCancel cancel
+    ) throws IgniteCheckedException {
+        return queryLocalSqlFields(
+            schemaName,
+            qry,
+            params,
+            filter,
+            enforceJoinOrder,
+            startTx,
+            timeout,
+            cancel,
+            null,
+            null);
     }
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
      *
      * @param schemaName Schema name.
-     * @param qry Query.
+     * @param qryParam Query.
      * @param params Query parameters.
      * @param filter Cache name and key filter.
      * @param enforceJoinOrder Enforce join order of tables in the query.
      * @param startTx Start transaction flag.
-     * @param timeout Query timeout in milliseconds.
+     * @param timeoutParam Query timeout in milliseconds.
      * @param cancel Query cancel.
-     * @param mvccTracker Query tracker.
+     * @param mvccTrackerParam Query tracker.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    GridQueryFieldsResult queryLocalSqlFields(
+    public GridQueryFieldsResult queryLocalSqlFields(
         final String schemaName,
-        final String qry,
+        final String qryParam,
         @Nullable final Collection<Object> params,
         final IndexingQueryFilter filter,
-        boolean enforceJoinOrder,
-        boolean startTx,
-        final int timeout,
+        final boolean enforceJoinOrder,
+        final boolean startTx,
+        final int timeoutParam,
         final GridQueryCancel cancel,
-        MvccQueryTracker mvccTracker,
+        final MvccQueryTracker mvccTrackerParam,
         final int[] parts
     ) throws IgniteCheckedException {
+        String qry = qryParam;
+        int timeout = timeoutParam;
+        MvccQueryTracker mvccTracker = mvccTrackerParam;
         GridNearTxLocal tx = null; boolean mvccEnabled = mvccEnabled(kernalContext());
 
         assert mvccEnabled || mvccTracker == null;
@@ -1148,9 +1169,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             final List<GridReservable> reserved = new ArrayList<>();
 
-            if (!reservePartitions(cacheIds, topVer, parts, reserved))
-                throw new IgniteCheckedException("Failed to reserve partitions for [cacheIds=" + cacheIds +
-                    ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');
+            String err = reservePartitions(cacheIds, topVer, parts, reserved, nodeId, run.id());
+
+            if (!F.isEmpty(err))
+                throw new IgniteCheckedException(String.format(
+                    "Failed to reserve partitions for [cacheIds=%s, topVer=%s, parts=%s",
+                    cacheIds,
+                    topVer,
+                    Arrays.toString(parts)
+                ));
 
             final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
                 .filter(filter)
@@ -1611,9 +1638,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             startTx,
             timeout,
             cancel,
+            null,
             qry.getPartitions());
 
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {
             @SuppressWarnings("NullableProblems")
             @Override public Iterator<List<?>> iterator() {
                 try {
@@ -1740,8 +1768,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 parts = U.toIntArray(filteredParts);
             }
         }
-
-        if (!reservePartitions(cacheIds, topVer, parts, reserved))
+        String err = reservePartitions(cacheIds, topVer, parts, reserved, nodeId, -1L);
+        if (!F.isEmpty(err))
             throw new IgniteCheckedException("Failed to reserve partitions for [cacheIds=" + cacheIds +
                 ", topVer=" + topVer + ", parts=" + Arrays.toString(parts) + ']');
 
@@ -3886,7 +3914,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return String which is null in case of success or with causeMessage if failed
      * @throws IgniteCheckedException If failed.
      */
-    private String reservePartitions(
+    public String reservePartitions(
         @Nullable List<Integer> cacheIds,
         AffinityTopologyVersion topVer,
         final int[] explicitParts,
@@ -3915,12 +3943,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 continue;
 
             // For replicated cache topology version does not make sense.
-            final MapReservationKey grpKey = new MapReservationKey(cctx.name(), cctx.isReplicated() ? null : topVer);
+            final ReservationKey grpKey = new ReservationKey(cctx.name(), cctx.isReplicated() ? null : topVer);
 
             GridReservable r = reservations.get(grpKey);
 
             if (explicitParts == null && r != null) { // Try to reserve group partition if any and no explicits.
-                if (r != MapReplicatedReservation.INSTANCE) {
+                if (r != ReplicatedReservation.INSTANCE) {
                     if (!r.reserve())
                         return String.format("Failed to reserve partitions for query (group " +
                             "reservation failed) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
@@ -3958,7 +3986,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         }
 
                         // Mark that we checked this replicated cache.
-                        reservations.putIfAbsent(grpKey, MapReplicatedReservation.INSTANCE);
+                        reservations.putIfAbsent(grpKey, ReplicatedReservation.INSTANCE);
                     }
                 }
                 else { // Reserve primary partitions for partitioned cache (if no explicit given).

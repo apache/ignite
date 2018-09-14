@@ -351,6 +351,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 false,
                 0,
                 null,
+                null,
                 null);
 
         String[] aliases = {"N1", "A1", "N2", "A2"};
@@ -416,6 +417,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                     false,
                     false,
                     0,
+                    null,
                     null,
                     null);
 

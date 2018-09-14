@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ReservationKey;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -124,13 +125,13 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
     public void testGrpReservationFailureMessage() {
         final GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
-        final ConcurrentMap<MapReservationKey, GridReservable> reservations = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "reservations");
+        final ConcurrentMap<ReservationKey, GridReservable> reservations = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "reservations");
 
         GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
             new MockGridMapQueryExecutor(null) {
                 @Override public void onMessage(UUID nodeId, Object msg) {
                     if (GridH2QueryRequest.class.isAssignableFrom(msg.getClass())) {
-                        final MapReservationKey grpKey = new MapReservationKey(ORG, null);
+                        final ReservationKey grpKey = new ReservationKey(ORG, null);
 
                         reservations.put(grpKey, new GridReservable() {
 
@@ -267,13 +268,13 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
     public void testNonCollocatedFailureMessage() {
         final GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");
 
-        final ConcurrentMap<MapReservationKey, GridReservable> reservations = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "reservations");
+        final ConcurrentMap<ReservationKey, GridReservable> reservations = GridTestUtils.getFieldValue(mapQryExec, GridMapQueryExecutor.class, "reservations");
 
         GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec",
             new MockGridMapQueryExecutor(null) {
                 @Override public void onMessage(UUID nodeId, Object msg) {
                     if (GridH2QueryRequest.class.isAssignableFrom(msg.getClass())) {
-                        final MapReservationKey grpKey = new MapReservationKey(ORG, null);
+                        final ReservationKey grpKey = new ReservationKey(ORG, null);
 
                         reservations.put(grpKey, new GridReservable() {
 
@@ -391,11 +392,6 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override GridSpinBusyLock busyLock() {
             return startedExecutor.busyLock();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onCacheStop(String cacheName) {
-            startedExecutor.onCacheStop(cacheName);
         }
 
         /** {@inheritDoc} */

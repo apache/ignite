@@ -434,8 +434,8 @@ public class DmlStatementsProcessor {
                             false,
                             false,
                             0,
-                            null,
-                            null);
+                            null
+                        );
 
                         it = res.iterator();
                     }
@@ -653,7 +653,10 @@ public class DmlStatementsProcessor {
                 fieldsQry.isEnforceJoinOrder(),
                 false,
                 fieldsQry.getTimeout(),
-                fieldsQry.getPartitions());
+                cancel,
+                null,
+                fieldsQry.getPartitions()
+            );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -1130,10 +1133,17 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public UpdateSourceIterator<?> prepareDistributedUpdate(String schema, Connection conn,
-        PreparedStatement stmt, SqlFieldsQuery qry,
-        IndexingQueryFilter filter, GridQueryCancel cancel, boolean local,
-        AffinityTopologyVersion topVer, MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
+    public UpdateSourceIterator<?> prepareDistributedUpdate(
+        String schema,
+        Connection conn,
+        PreparedStatement stmt,
+        SqlFieldsQuery qry,
+        IndexingQueryFilter filter,
+        GridQueryCancel cancel,
+        boolean local,
+        AffinityTopologyVersion topVer,
+        MvccSnapshot mvccSnapshot
+    ) throws IgniteCheckedException {
 
         Prepared prepared = GridSqlQueryParser.prepared(stmt);
 
@@ -1173,9 +1183,17 @@ public class DmlStatementsProcessor {
                 new StaticMvccQueryTracker(cctx, mvccSnapshot), cancel).get(0);
         }
         else {
-            final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
-                F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
-                new StaticMvccQueryTracker(cctx, mvccSnapshot));
+            final GridQueryFieldsResult res = idx.queryLocalSqlFields(
+                schema,
+                plan.selectQuery(),
+                F.asList(qry.getArgs()),
+                filter,
+                qry.isEnforceJoinOrder(),
+                false, qry.getTimeout(),
+                cancel,
+                new StaticMvccQueryTracker(cctx, mvccSnapshot),
+                qry.getPartitions()
+            );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {

@@ -49,7 +49,6 @@ import org.jetbrains.annotations.NotNull;
  * Test for local query partitions reservation.
  */
 public class IgniteCacheLocalQueryReservationsTest extends GridCommonAbstractTest {
-
     /** Cache name */
     private static final String PERSON_CACHE = "person";
 
