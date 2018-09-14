@@ -675,6 +675,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 case CACHE_CONTAINS_KEY:
                 case CACHE_GET:
                 case CACHE_GET_ALL:
+                case CACHE_GET_ALL_KEY_VALUE:
                 case CACHE_PUT:
                 case CACHE_ADD:
                 case CACHE_PUT_ALL:
@@ -730,8 +731,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             Collection<Object> c = new ArrayList<>(original.size());
 
-            for (Object e : original)
-                c.add(interceptor.onSend(e));
+            for (Object e : original) {
+                if (e instanceof IgniteBiTuple) {
+                    IgniteBiTuple<Object, Object> t = (IgniteBiTuple<Object, Object>)e;
+                    c.add(new IgniteBiTuple(interceptor.onSend(t.getKey()), interceptor.onSend(t.getValue())));
+                }
+                else
+                    c.add(interceptor.onSend(e));
+            }
 
             return c;
         }
@@ -826,6 +833,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case CACHE_CONTAINS_KEY:
             case CACHE_CONTAINS_KEYS:
             case CACHE_GET_ALL:
+            case CACHE_GET_ALL_KEY_VALUE:
                 perm = SecurityPermission.CACHE_READ;
                 name = ((GridRestCacheRequest)req).cacheName();
 

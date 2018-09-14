@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
@@ -98,6 +99,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_C
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL_KEY_VALUE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_PUT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_REMOVE;
@@ -135,6 +137,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         CACHE_GET_AND_PUT_IF_ABSENT,
         CACHE_PUT_IF_ABSENT,
         CACHE_GET_ALL,
+        CACHE_GET_ALL_KEY_VALUE,
         CACHE_PUT,
         CACHE_ADD,
         CACHE_PUT_ALL,
@@ -485,6 +488,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 case CACHE_GET_ALL: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new GetAllCommand(getKeys(req0)));
+
+                    break;
+                }
+
+                case CACHE_GET_ALL_KEY_VALUE: {
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
+                        new GetAllKeyValueCommand(getKeys(req0)));
 
                     break;
                 }
@@ -1328,6 +1338,37 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return c.getAllAsync(keys);
+        }
+    }
+
+    /** */
+    private static class GetAllKeyValueCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final Collection<Object> keys;
+
+        /**
+         * @param keys Keys.
+         */
+        GetAllKeyValueCommand(Collection<Object> keys) {
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            return c.getAllAsync(keys).chain(new CX1<IgniteInternalFuture<Map<Object, Object>>, List<Object>>() {
+                @Override public List<Object> applyx(IgniteInternalFuture<Map<Object, Object>> f)
+                    throws IgniteCheckedException {
+                    List<Object> res = new ArrayList<>();
+
+                    for (Map.Entry<Object, Object> me : f.get().entrySet())
+                        res.add(new IgniteBiTuple<>(me.getKey(), me.getValue()));
+
+                    return res;
+                }
+            });
         }
     }
 
