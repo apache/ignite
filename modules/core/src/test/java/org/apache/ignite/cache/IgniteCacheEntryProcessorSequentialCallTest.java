@@ -252,7 +252,7 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
      */
     public static class NotNullCacheEntryProcessor implements CacheEntryProcessor<TestKey, TestValue, Object> {
         /** {@inheritDoc} */
-        public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
+        @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
             assertNotNull(entry.getValue());
 
             return null;

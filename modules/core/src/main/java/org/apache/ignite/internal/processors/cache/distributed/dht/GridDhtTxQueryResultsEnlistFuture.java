@@ -119,12 +119,12 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxAbstractEn
     }
 
     /** {@inheritDoc} */
-    public boolean hasNextX() {
+    @Override public boolean hasNextX() {
         return it.hasNext();
     }
 
     /** {@inheritDoc} */
-    public Object nextX() {
+    @Override public Object nextX() {
         return it.next();
     }
 }

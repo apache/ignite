@@ -25,25 +25,60 @@ include /app/helpers/jade/mixins
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title SSL configuration
     panel-description
-        | Settings for SSL configuration for creating a secure socket layer. 
+        | Settings for SSL configuration for creating a secure socket layer.
         | #[a.link-success(href="https://apacheignite.readme.io/docs/ssltls" target="_blank") More info]
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
-                +checkbox('Enabled', enabled, '"sslEnabled"', 'Flag indicating whether to configure SSL configuration')
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    model: enabled,
+                    name: '"sslEnabled"',
+                    tip: 'Flag indicating whether to configure SSL configuration'
+                })
             .pc-form-grid-col-60
-                +text-options('Algorithm to create a key manager:', `${model}.keyAlgorithm`, '"keyAlgorithm"', '["SumX509", "X509"]', enabled, 'false', 'SumX509',
-                    'Sets key manager algorithm that will be used to create a key manager<br/>\
-                    Notice that in most cased default value suites well, however, on Android platform this value need to be set to X509')
+                +form-field__typeahead({
+                    label: 'Algorithm to create a key manager:',
+                    model: `${model}.keyAlgorithm`,
+                    name: '"keyAlgorithm"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'SumX509',
+                    options: '["SumX509", "X509"]',
+                    tip: 'Sets key manager algorithm that will be used to create a key manager<br/>\
+                         Notice that in most cased default value suites well, however, on Android platform this value need to be set to X509'
+                })
+
             .pc-form-grid-col-60
-                +text-enabled('Key store file:', `${model}.keyStoreFilePath`, '"keyStoreFilePath"', enabled, enabled, 'Path to the key store file',
-                    'Path to the key store file<br/>\
-                    This is a mandatory parameter since ssl context could not be initialized without key manager')
+                +form-field__text({
+                    label: 'Key store file:',
+                    model: `${secondaryFileSystem}.keyStoreFilePath`,
+                    name: '"keyStoreFilePath"',
+                    disabled: `!(${enabled})`,
+                    required: enabled,
+                    placeholder: 'Path to the key store file',
+                    tip: 'Path to the key store file<br/>\
+                          This is a mandatory parameter since ssl context could not be initialized without key manager'
+                })
             .pc-form-grid-col-30
-                +text-options('Key store type:', `${model}.keyStoreType`, '"keyStoreType"', '["JKS", "PCKS11", "PCKS12"]', enabled, 'false', 'JKS',
-                    'Key store type used in context initialization')
+                +form-field__typeahead({
+                    label: 'Key store type:',
+                    model: `${model}.keyStoreType`,
+                    name: '"keyStoreType"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'JKS',
+                    options: '["JKS", "PCKS11", "PCKS12"]',
+                    tip: 'Key store type used in context initialization'
+                })
             .pc-form-grid-col-30
-                +text-options('Protocol:', `${model}.protocol`, '"protocol"', '["TSL", "SSL"]', enabled, 'false', 'TSL', 'Protocol for secure transport')
+                +form-field__typeahead({
+                    label: 'Protocol:',
+                    model: `${model}.protocol`,
+                    name: '"protocol"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'TSL',
+                    options: '["TSL", "SSL"]',
+                    tip: 'Protocol for secure transport'
+                })
             .pc-form-grid-col-60
                 .ignite-form-field
                     list-editable(
@@ -57,7 +92,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
 
                         list-editable-item-edit
                             +list-java-class-field('Trust manager', '$item', '"trustManager"', trust)
-                                +unique-feedback('"trustManager"', 'Such trust manager already exists!')
+                                +form-field__error({ error: 'igniteUnique', message: 'Such trust manager already exists!' })
 
                         list-editable-no-items
                             list-editable-add-item-button(
@@ -83,6 +118,14 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })
                     +form-field__error({ error: 'required', message: 'Trust store file or trust managers should be configured' })
             .pc-form-grid-col-30(ng-if-end)
-                +text-options('Trust store type:', `${model}.trustStoreType`, '"trustStoreType"', '["JKS", "PCKS11", "PCKS12"]', enabled, 'false', 'JKS', 'Trust store type used in context initialization')
+                +form-field__typeahead({
+                    label: 'Trust store type:',
+                    model: `${model}.trustStoreType`,
+                    name: '"trustStoreType"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'JKS',
+                    options: '["JKS", "PCKS11", "PCKS12"]',
+                    tip: 'Trust store type used in context initialization'
+                })
         .pca-form-column-6
             +preview-xml-java(cluster, 'clusterSsl')
