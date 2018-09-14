@@ -492,7 +492,6 @@ class BinaryObjectField {
             return BinaryUtils.TYPE_CODE.SHORT;
         }
         return BinaryUtils.TYPE_CODE.INTEGER;        
-
     }
 
     static _fromBuffer(communicator, buffer, offset, length, id) {
