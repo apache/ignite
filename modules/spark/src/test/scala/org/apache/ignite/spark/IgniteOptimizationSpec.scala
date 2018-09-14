@@ -37,7 +37,6 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
     var igniteSession: IgniteSparkSession = _
 
     describe("Optimized queries") {
-/*
         it("SELECT name as city_name FROM city") {
             val df = igniteSession.sql("SELECT name as city_name FROM city")
 
@@ -239,25 +238,24 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
 
             checkQueryData(df, data)
         }
-*/
+
         it("Should optimize union") {
-            val person1 = readTable("JPerson")
+            val data = (
+                (1, "JPerson-1"),
+                (2, "JPerson-2"))
 
-            val person2 = readTable("JPerson2")
+            val union = readTable("JPerson").union(readTable("JPerson2"))
 
-            val union = person1.union(person2)
-
-            union.show
+            checkQueryData(union, data)
         }
 
         it("Should optimize null column") {
-            val personCache = client.getOrCreateCache[Long, JPerson]("JPerson")
+            val p = readTable("JPerson").withColumn("nullColumn", lit(null).cast(StringType))
 
-            personCache.put(1L, new JPerson(1L, null))
+            val data = Tuple1(
+                (1, "JPerson-1", null))
 
-            val person = readTable("JPerson").withColumn("nullColumn", lit(null).cast(StringType))
-
-            person.show
+            checkQueryData(p, data)
         }
     }
 
@@ -319,13 +317,19 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
 
         createCityTable(client, DEFAULT_CACHE)
 
-        client.getOrCreateCache(new CacheConfiguration[Long, JPerson]()
+        val p = client.getOrCreateCache(new CacheConfiguration[Long, JPerson]()
             .setName("P")
+            .setSqlSchema("SQL_PUBLIC")
             .setIndexedTypes(classOf[Long], classOf[JPerson]))
 
-        client.getOrCreateCache(new CacheConfiguration[Long, JPerson2]()
+        p.put(1L, new JPerson(1L, "JPerson-1"))
+
+        val p2 = client.getOrCreateCache(new CacheConfiguration[Long, JPerson2]()
             .setName("P2")
+            .setSqlSchema("SQL_PUBLIC")
             .setIndexedTypes(classOf[Long], classOf[JPerson2]))
+
+        p2.put(1L, new JPerson2(2L, "JPerson-2"))
 
         val configProvider = enclose(null) (x ⇒ () ⇒ {
             val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()
