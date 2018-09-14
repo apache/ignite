@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.cache.expiry.EternalExpiryPolicy;
+import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,8 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
-import javax.cache.expiry.EternalExpiryPolicy;
-import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -128,6 +128,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.InitializationProtector;
 import org.apache.ignite.internal.util.ParallelExecutionException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -255,6 +256,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** MBean group for cache group metrics */
     private final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
+
+    /** Protector of initialization of specific value. */
+    private final InitializationProtector initializationProtector = new InitializationProtector();
 
     /**
      * @param ctx Kernal context.
@@ -1955,21 +1959,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheGroupContext grp = null;
 
         if (grpName != null) {
-            for (CacheGroupContext grp0 : cacheGrps.values()) {
-                if (grp0.sharedGroup() && grpName.equals(grp0.name())) {
-                    grp = grp0;
-
-                    break;
-                }
-            }
-
-            if (grp == null) {
-                grp = startCacheGroup(desc.groupDescriptor(),
+            grp = initializationProtector.protect(
+                desc.groupId(),
+                () -> findCacheGroup(grpName),
+                () -> startCacheGroup(
+                    desc.groupDescriptor(),
                     desc.cacheType(),
                     affNode,
                     cacheObjCtx,
-                    exchTopVer);
-            }
+                    exchTopVer
+                )
+            );
         }
         else {
             grp = startCacheGroup(desc.groupDescriptor(),
@@ -2012,6 +2012,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cacheCtx.dataStructuresCache())
                 ctx.dataStructures().restart(proxy.internalProxy());
         }
+    }
+
+    /**
+     * @param grpName Group name.
+     * @return Found group or null.
+     */
+    private CacheGroupContext findCacheGroup(String grpName) {
+        for (CacheGroupContext grp0 : cacheGrps.values()) {
+            if (grp0.sharedGroup() && grpName.equals(grp0.name()))
+                return grp0;
+        }
+
+        return null;
     }
 
     /**

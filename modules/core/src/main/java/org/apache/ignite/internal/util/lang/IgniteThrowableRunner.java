@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.lang;
+package org.apache.ignite.internal.util.lang;
 
-import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
- * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
- *
- * @param <E> Type of closure parameter.
+ * Represents a throwable runner.
  */
-public interface IgniteThrowableConsumer<E> extends Serializable {
+public interface IgniteThrowableRunner {
     /**
-     * Consumer body.
-     *
-     * @param e Consumer parameter.
-     * @throws IgniteCheckedException if body execution was failed.
+     * Execute a body.
      */
-    public void accept(E e) throws IgniteCheckedException;
+    void run() throws IgniteCheckedException;
 }
