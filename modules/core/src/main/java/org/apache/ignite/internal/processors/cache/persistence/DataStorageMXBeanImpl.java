@@ -44,7 +44,6 @@ public class DataStorageMXBeanImpl implements DataStorageMXBean {
     /** {@inheritDoc} */
     @Override public void setWalCompactionLevel(int walCompactionLevel) {
         ctx.config().getDataStorageConfiguration().setWalCompactionLevel(walCompactionLevel);
-        ctx.cache().context().wal().setWalCompactionLevel(walCompactionLevel);
     }
 
     /** {@inheritDoc} */
