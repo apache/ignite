@@ -884,7 +884,7 @@ public class GridReduceQueryExecutor {
                             if (wasCancelled(err))
                                 throw new QueryCancelledException(); // Throw correct exception.
 
-                            throw new CacheException("Failed to run map query remotely: " + err.getMessage(), err);
+                            throw err;
                         }
                         else {
                             retry = true;

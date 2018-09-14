@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.composition.boosting;
+package org.apache.ignite.yardstick.sequence;
 
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import java.util.Map;
+import org.apache.ignite.IgniteAtomicSequence;
 
 /**
- * Contains implementations of per-prediction loss functions for gradient boosting algorithm.
+ * {@link IgniteAtomicSequence#incrementAndGet()} benchmark.
  */
-public class LossGradientPerPredictionFunctions {
-    /** Mean squared error loss for regression. */
-    public static IgniteTriFunction<Long, Double, Double, Double> MSE =
-        (sampleSize, answer, prediction) -> (2.0 / sampleSize) * (prediction - answer);
+public class IgniteAtomicSequenceIncrementAndGetBenchmark extends IgniteAtomicSequenceAbstractBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        seq.incrementAndGet();
 
-    /** Logarithmic loss for binary classification. */
-    public static IgniteTriFunction<Long, Double, Double, Double> LOG_LOSS =
-        (sampleSize, answer, prediction) -> (prediction - answer) / (prediction * (1.0 - prediction));
+        return true;
+    }
 }

@@ -1310,7 +1310,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return S.toString(ContinuousQueryAsyncClosure.class, this);
         }
     }

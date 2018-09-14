@@ -15,9 +15,22 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import {igniteFormField, exposeIgniteFormFieldControl} from './directives';
+package org.apache.ignite.ml.composition.boosting.loss;
 
-export default angular
-.module('expose-ignite-form-field-control', [])
-.directive('exposeIgniteFormFieldControl', exposeIgniteFormFieldControl);
+/**
+ * Logistic regression loss function.
+ */
+public class LogLoss implements Loss {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 2251384437214194977L;
+
+    /** {@inheritDoc} */
+    @Override public double error(long sampleSize, double answer, double prediction) {
+        return -(answer * Math.log(prediction) + (1 - answer) * Math.log(1 - prediction));
+    }
+
+    /** {@inheritDoc} */
+    @Override public double gradient(long sampleSize, double answer, double prediction) {
+        return (prediction - answer) / (prediction * (1.0 - prediction));
+    }
+}

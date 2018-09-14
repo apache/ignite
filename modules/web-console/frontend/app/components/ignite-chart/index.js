@@ -32,6 +32,7 @@ export default angular
             chartHistory: '<',
             chartTitle: '<',
             chartColors: '<',
+            chartHeaderText: '<',
             maxPointsNumber: '<',
             refreshRate: '<'
         }

@@ -26,5 +26,5 @@ angular
     .module('ignite-console.agent', [
         clusterLogin.name
     ])
-    .service(AgentModal.name, AgentModal)
-    .service(AgentManager.name, AgentManager);
+    .service('AgentModal', AgentModal)
+    .service('AgentManager', AgentManager);

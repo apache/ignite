@@ -14,16 +14,18 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.modal(tabindex='-1' role='dialog')
+.modal.modal--ignite.center(tabindex='-1' role='dialog')
     .modal-dialog
         .modal-content
             .modal-header
-                button.close(ng-click='$hide()' aria-hidden='true') &times;
+                button.close(ng-click='$hide()' aria-hidden='true')
+                    svg(ignite-icon="cross")
                 h4.modal-title
-                    i.fa.fa-info-circle
+                    svg(ignite-icon="attention")
                     | {{title}}
             .modal-body(ng-show='content' style='overflow: auto; max-height: 300px;')
                 p(ng-bind-html='content.join("<br/>")' style='text-align: left; white-space: nowrap;')
             .modal-footer
-                .pull-left(ng-show='meta') {{meta}}
-                button.btn.btn-primary(id='confirm-btn-confirm' ng-click='$hide()') Ok
+                div(ng-show='meta') {{meta}}
+                div
+                    button#confirm-btn-confirm.btn-ignite.btn-ignite--success(ng-click='$hide()') Ok
