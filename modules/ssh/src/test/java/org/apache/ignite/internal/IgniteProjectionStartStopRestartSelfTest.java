@@ -113,7 +113,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     private Ignite ignite;
 
     /** */
-    private static final String HOST = "127.0.0.1";
+    private static final String HOST = "172.25.1.150";
 
     /** */
     private final AtomicInteger joinedCnt = new AtomicInteger();
