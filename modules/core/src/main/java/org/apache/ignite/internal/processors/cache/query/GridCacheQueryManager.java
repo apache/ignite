@@ -768,7 +768,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             },
             qry.partition(),
-            false);
+            false,
+            true);
 
         return scanQueryLocal(qry0, false);
     }
