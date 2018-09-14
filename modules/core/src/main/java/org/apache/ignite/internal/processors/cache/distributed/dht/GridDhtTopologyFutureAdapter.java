@@ -45,7 +45,7 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
     protected volatile Map<Integer, CacheValidation> grpValidRes;
 
     /** Whether or not cluster is active. */
-    protected boolean clusterIsActive = true;
+    protected volatile boolean clusterIsActive = true;
 
     /**
      * @param grp Cache group.
