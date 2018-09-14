@@ -353,7 +353,7 @@ public interface GridCacheEntryEx {
      * @param op Cache operation.
      * @param needHistory Whether to collect rows created or affected by the current tx.
      * @param noCreate Entry should not be created when enabled, e.g. SQL INSERT.
-     * @param filter
+     * @param filter Filter.
      * @param retVal Previous value return flag.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.

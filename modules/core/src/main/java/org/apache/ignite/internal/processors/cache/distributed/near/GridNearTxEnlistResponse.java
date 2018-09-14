@@ -335,7 +335,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 159;
+        return 160;
     }
 
     /** {@inheritDoc} */

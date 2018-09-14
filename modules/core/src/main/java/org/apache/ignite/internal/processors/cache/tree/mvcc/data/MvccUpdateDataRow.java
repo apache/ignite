@@ -253,7 +253,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 }
 
                 // TODO: optimize filter usage here. See {@link org.apache.ignite.internal.processors.cache.CacheOperationFilter}.
-                if(filter != null && applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
+                if(filter != null && !applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
                     res = FILTERED;
 
                 setFlags(LAST_COMMITTED_FOUND);
@@ -353,7 +353,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     }
 
                     // TODO: optimize filter usage here. See {@link org.apache.ignite.internal.processors.cache.CacheOperationFilter}.
-                    if(filter != null && applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
+                    if(filter != null && !applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
                         res = FILTERED;
 
                     // Lock entry for primary partition if needed.
@@ -485,7 +485,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     @NotNull private ResultType defaultResult() {
         assert res == null;
 
-        if (filter != null && applyFilter(null))
+        if (filter != null && !applyFilter(null))
             res = FILTERED;
         else
             res = ResultType.PREV_NULL; // Default.
