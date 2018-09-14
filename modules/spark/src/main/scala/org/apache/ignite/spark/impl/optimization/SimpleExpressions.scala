@@ -61,7 +61,8 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
                             //Internal representation of TimestampType is Long.
                             //So we converting from internal spark representation to CAST call.
                             case date: Long ⇒
-                                Some(s"CAST('${timestampFormat.get.format(DateTimeUtils.toJavaTimestamp(date))}' AS TIMESTAMP)")
+                                Some(s"CAST('${timestampFormat.get.format(DateTimeUtils.toJavaTimestamp(date))}' " +
+                                    s"AS TIMESTAMP)")
 
                             case _ ⇒
                                 Some(l.value.toString)
@@ -91,9 +92,11 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
                 else
                     ar.name
 
-            if (ar.metadata.contains(ALIAS) && !isAliasEqualColumnName(ar.metadata.getString(ALIAS), ar.name) && useAlias)
+            if (ar.metadata.contains(ALIAS) &&
+                !isAliasEqualColumnName(ar.metadata.getString(ALIAS), ar.name) &&
+                useAlias) {
                 Some(aliasToString(name, ar.metadata.getString(ALIAS)))
-            else
+            } else
                 Some(name)
 
         case Alias(child, name) ⇒
@@ -143,7 +146,8 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
             Set[DataType](BooleanType, StringType)(to)
 
         case ByteType ⇒
-            Set(ByteType, ShortType, IntegerType, LongType, FloatType, DoubleType, StringType, DecimalType(_, _), StringType)(to)
+            Set(ByteType, ShortType, IntegerType, LongType, FloatType, DoubleType, StringType, DecimalType(_, _),
+                StringType)(to)
 
         case ShortType ⇒
             Set(ShortType, IntegerType, LongType, FloatType, DoubleType, StringType, DecimalType(_, _))(to)

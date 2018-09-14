@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spark
 
+import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.spark.AbstractDataFrameSpec._
 import org.apache.spark.sql.DataFrame
@@ -24,7 +25,8 @@ import org.apache.spark.sql.types._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.apache.ignite.spark.IgniteDataFrameSettings._
-import org.apache.ignite.spark.model.JPersonWithAlias
+
+import scala.annotation.meta.field
 
 /**
   * Tests to check loading schema for Ignite data sources.
@@ -104,4 +106,8 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
 
         employeeDataFrame.createOrReplaceTempView("employee")
     }
+
+    case class JPersonWithAlias(
+        @(QuerySqlField @field) id: Long,
+        @(QuerySqlField @field)(name = "person_name", index = true) name: String)
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spark
 
+import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
@@ -25,10 +26,11 @@ import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, checkOptimizationResult, enclose}
 import org.apache.ignite.spark.IgniteDataFrameSettings.{FORMAT_IGNITE, OPTION_TABLE}
-import org.apache.ignite.spark.model.{JPerson, JPerson2}
 import org.apache.spark.sql.functions.lit
 import org.apache.spark.sql.types.DataTypes.StringType
 import org.apache.spark.sql.{Dataset, Row}
+
+import scala.annotation.meta.field
 
 /**
   */
@@ -240,11 +242,11 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
         }
 
         it("Should optimize union") {
+            val union = readTable("JPerson").union(readTable("JPerson2"))
+
             val data = (
                 (1, "JPerson-1"),
                 (2, "JPerson-2"))
-
-            val union = readTable("JPerson").union(readTable("JPerson2"))
 
             checkQueryData(union, data)
         }
@@ -348,4 +350,12 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
 
         igniteSession.udf.register("test_reverse", (str: String) ⇒ str.reverse)
     }
+
+    case class JPerson(
+        @(QuerySqlField @field) id: Long,
+        @(QuerySqlField @field)(index = true) name: String)
+
+    case class JPerson2(
+        @(QuerySqlField @field) id: Long,
+        @(QuerySqlField @field)(index = true) name: String)
 }
