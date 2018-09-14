@@ -833,7 +833,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval
     ) {
         //TODO: IGNITE-7764: Review if putAllAsync0 body can be reused (may be partly).
-        if (cacheCtx.mvccEnabled() && !implicit)
+        // TODO: IGNITE-9540: Fix invoke/invokeAll.
+        if (cacheCtx.mvccEnabled() && !implicit && invokeMap == null )
             return mvccPutAllAsync0(cacheCtx, map, invokeMap, invokeArgs, retval, null);
 
         try {
@@ -1668,6 +1669,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval,
         @Nullable final CacheEntryPredicate filter,
         boolean singleRmv) {
+        if(cacheCtx.mvccEnabled() && !implicit)
+            return mvccRemoveAllAsync0(cacheCtx, keys, retval, filter);
+
         try {
             checkUpdatesAllowed(cacheCtx);
         }
@@ -1737,9 +1741,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
 
         init();
-
-        if(cacheCtx.mvccEnabled() && !implicit)
-            return mvccRemoveAllAsync0(cacheCtx, keys, ret, retval, filter);
 
         final Collection<KeyCacheObject> enlisted = new ArrayList<>();
 
@@ -1900,10 +1901,38 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private <K, V> IgniteInternalFuture<GridCacheReturn> mvccRemoveAllAsync0(
         final GridCacheContext cacheCtx,
         @Nullable final Collection<? extends K> keys,
-        GridCacheReturn ret,
         final boolean retval,
         @Nullable final CacheEntryPredicate filter
     ) {
+        try {
+            if (mvccSnapshot == null) {
+                MvccUtils.mvccTracker(cacheCtx, this);
+
+                assert mvccSnapshot != null;
+            }
+
+            beforeRemove(cacheCtx, retval, true);
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture(e);
+        }
+
+        final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
+
+        if (F.isEmpty(keys)) {
+            if (implicit()) {
+                try {
+                    commit();
+                }
+                catch (IgniteCheckedException e) {
+                    return new GridFinishedFuture<>(e);
+                }
+            }
+
+            return new GridFinishedFuture<>(ret.success(true));
+        }
+
+        init();
 
         Set<KeyCacheObject> enlisted = new HashSet<>(keys.size());
 
@@ -2064,7 +2093,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     ret.set(cacheCtx, futRes.value(), futRes.success(), keepBinary);
 
-                    mvccSnapshot.incrementOperationCounter();
+                    if(futRes.success())
+                        mvccSnapshot.incrementOperationCounter();
 
                     return ret;
                 }
@@ -4636,6 +4666,28 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         checkValid();
 
         init();
+    }
+
+    /**
+     * @param cacheCtx Cache context.
+     * @param retval Return value flag.
+     * @param mvccOp SQL operation flag.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void beforeRemove(GridCacheContext cacheCtx, boolean retval, boolean mvccOp) throws IgniteCheckedException {
+        assert !mvccOp || cacheCtx.mvccEnabled();
+
+        checkUpdatesAllowed(cacheCtx);
+
+        cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+
+        if (cacheCtx.mvccEnabled() && !isOperationAllowed(mvccOp))
+            throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);
+
+        if (retval)
+            needReturnValue(true);
+
+        checkValid();
     }
 
     /**

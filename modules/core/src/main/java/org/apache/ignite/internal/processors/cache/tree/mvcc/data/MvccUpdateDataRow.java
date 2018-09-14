@@ -253,8 +253,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 }
 
                 // TODO: optimize filter usage here. See {@link org.apache.ignite.internal.processors.cache.CacheOperationFilter}.
-                if(filter != null)
-                    applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null);
+                if(filter != null && applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
+                    res = FILTERED;
 
                 setFlags(LAST_COMMITTED_FOUND);
             }
@@ -353,8 +353,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     }
 
                     // TODO: optimize filter usage here. See {@link org.apache.ignite.internal.processors.cache.CacheOperationFilter}.
-                    if(filter != null)
-                        applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null);
+                    if(filter != null && applyFilter(res == ResultType.PREV_NOT_NULL ? oldRow.value() : null))
+                        res = FILTERED;
 
                     // Lock entry for primary partition if needed.
                     // If invisible row is found for FAST_UPDATE case we should not lock row.
@@ -446,16 +446,16 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
      * Apply filter.
      *
      * @param val0 Previous value.
+     * @return Filter result.
      */
-    private void applyFilter(final CacheObject val0) {
+    private boolean applyFilter(final CacheObject val0) {
         GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key) {
             @Nullable @Override public CacheObject peekVisibleValue() {
                 return val0;
             }
         };
 
-        if (!filter.apply(e))
-            res = FILTERED;
+        return filter.apply(e);
     }
 
     /** {@inheritDoc} */
@@ -474,7 +474,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
      * @return Result type.
      */
     @NotNull @Override public ResultType resultType() {
-        return res == null ? resultType0() : res;
+        return res == null ? defaultResult() : res;
     }
 
     /**
@@ -482,13 +482,12 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
      *
      * @return Result type.
      */
-    @NotNull private ResultType resultType0() {
+    @NotNull private ResultType defaultResult() {
         assert res == null;
 
-        if (filter != null)
-            applyFilter(null);
-
-        if (res == null)
+        if (filter != null && applyFilter(null))
+            res = FILTERED;
+        else
             res = ResultType.PREV_NULL; // Default.
 
         return res;
