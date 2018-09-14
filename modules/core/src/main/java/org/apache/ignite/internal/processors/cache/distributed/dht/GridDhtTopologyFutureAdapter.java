@@ -44,6 +44,9 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
     /** Cache groups validation results. */
     protected volatile Map<Integer, CacheValidation> grpValidRes;
 
+    /** Whether or not cluster is active. */
+    protected volatile boolean clusterIsActive = true;
+
     /**
      * @param grp Cache group.
      * @param topNodes Topology nodes.
@@ -80,7 +83,7 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
         if (err != null)
             return err;
 
-        if (!cctx.shared().kernalContext().state().publicApiActiveState(true))
+        if (!clusterIsActive)
             return new CacheInvalidStateException(
                 "Failed to perform cache operation (cluster is not activated): " + cctx.name());
 
