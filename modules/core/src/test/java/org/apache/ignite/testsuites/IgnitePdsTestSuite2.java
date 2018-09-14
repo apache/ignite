@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.persistence.ChangeBaselineAndRestartNodesTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedStoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
@@ -178,5 +179,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteRebalanceScheduleResendPartitionsTest.class);
 
         suite.addTestSuite(IgniteWALTailIsReachedDuringIterationOverArchiveTest.class);
+
+        suite.addTestSuite(ChangeBaselineAndRestartNodesTest.class);
     }
 }

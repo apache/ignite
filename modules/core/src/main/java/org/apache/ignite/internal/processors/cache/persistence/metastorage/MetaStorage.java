@@ -138,8 +138,18 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         this(cctx, memPlc, memMetrics, false);
     }
 
-    /** */
+    /**
+     * @param db Database.
+     */
     public void init(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
+        init(db, null);
+    }
+
+    /**
+     * @param db Database.
+     * @param readOnlyMetaStore Read only meta store.
+     */
+    public void init(IgniteCacheDatabaseSharedManager db, MetaStorage readOnlyMetaStore) throws IgniteCheckedException {
         getOrAllocateMetas();
 
         if (!empty) {
@@ -155,6 +165,10 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             if (!readOnly)
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
         }
+
+        if (readOnlyMetaStore != null && readOnlyMetaStore.lastUpdates != null)
+            for (Map.Entry<String, byte[]> entry : readOnlyMetaStore.lastUpdates.entrySet())
+                applyUpdate(entry.getKey(), entry.getValue());
     }
 
     /** {@inheritDoc} */

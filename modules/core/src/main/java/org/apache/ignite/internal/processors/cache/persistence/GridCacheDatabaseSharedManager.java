@@ -653,8 +653,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 checkpointReadUnlock();
             }
 
-            metaStorage = null;
-
             storePageMem.stop();
         }
         catch (StorageException e) {
@@ -828,6 +826,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.pageStore().initializeForMetastorage();
 
+            MetaStorage previousMetaStore = metaStorage;
+
             metaStorage = new MetaStorage(
                 cctx,
                 dataRegionMap.get(METASTORE_DATA_REGION_NAME),
@@ -853,7 +853,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 nodeStart(ptr);
             }
 
-            metaStorage.init(this);
+            metaStorage.init(this, previousMetaStore);
 
             notifyMetastorageReadyForReadWrite();
 
