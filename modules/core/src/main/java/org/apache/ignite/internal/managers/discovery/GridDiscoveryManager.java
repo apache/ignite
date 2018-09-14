@@ -70,6 +70,7 @@ import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
@@ -103,6 +104,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -220,6 +222,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** Discovery event worker. */
     private final DiscoveryWorker discoWrk = new DiscoveryWorker();
+
+    /** Discovery event notyfier worker. */
+    private final DiscoveryMessageNotifyerWorker discoNotifierWrk = new DiscoveryMessageNotifyerWorker();
 
     /** Network segment check worker. */
     private SegmentCheckWorker segChkWrk;
@@ -583,16 +588,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
 
-            @Override public void onDiscovery(
+            @Override public IgniteInternalFuture onDiscovery(
                 final int type,
                 final long topVer,
                 final ClusterNode node,
                 final Collection<ClusterNode> topSnapshot,
                 final Map<Long, Collection<ClusterNode>> snapshots,
-                @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
-                synchronized (discoEvtMux) {
-                    onDiscovery0(type, topVer, node, topSnapshot, snapshots, spiCustomMsg);
-                }
+                @Nullable DiscoverySpiCustomMessage spiCustomMsg
+            ) {
+                GridFutureAdapter notificationFut = new GridFutureAdapter();
+
+                discoNotifierWrk.submit(notificationFut, () -> {
+                    synchronized (discoEvtMux) {
+                        onDiscovery0(type, topVer, node, topSnapshot, snapshots, spiCustomMsg);
+                    }
+                });
+
+                return notificationFut;
             }
 
             /**
@@ -918,6 +930,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
         });
+
+        new IgniteThread(discoNotifierWrk).start();
 
         startSpi();
 
@@ -1697,6 +1711,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         U.cancel(discoWrk);
 
         U.join(discoWrk, log);
+
+        U.cancel(discoNotifierWrk);
+
+        U.join(discoNotifierWrk, log);
 
         // Stop SPI itself.
         stopSpi();
@@ -2664,6 +2682,86 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
+    /**
+     *
+     */
+    private class DiscoveryMessageNotifyerWorker extends GridWorker {
+        /** Queue. */
+        private final BlockingQueue<T2<GridFutureAdapter, Runnable>> queue = new LinkedBlockingQueue<>();
+
+        /**
+         * Default constructor.
+         */
+        protected DiscoveryMessageNotifyerWorker() {
+            super(ctx.igniteInstanceName(), "disco-notyfier-worker", GridDiscoveryManager.this.log, ctx.workersRegistry());
+        }
+
+        /**
+         *
+         */
+        private void body0() throws InterruptedException {
+            T2<GridFutureAdapter, Runnable> notification = queue.take();
+
+            try {
+                notification.get2().run();
+            }
+            finally {
+                notification.get1().onDone();
+            }
+        }
+
+        /**
+         * @param cmd Command.
+         */
+        public synchronized void submit(GridFutureAdapter notificationFut, Runnable cmd) {
+            if (isCancelled()) {
+                notificationFut.onDone();
+
+                return;
+            }
+
+            queue.add(new T2<>(notificationFut, cmd));
+        }
+
+        /**
+         * Cancel thread execution and completes all notification futures.
+         */
+        @Override public synchronized void cancel() {
+            super.cancel();
+
+            while (!queue.isEmpty()) {
+                T2<GridFutureAdapter, Runnable> notification = queue.poll();
+
+                if (notification != null)
+                    notification.get1().onDone();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            while (!isCancelled()) {
+                try {
+                    body0();
+                }
+                catch (InterruptedException e) {
+                    if (!isCancelled)
+                        ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
+
+                    throw e;
+                }
+                catch (Throwable t) {
+                    U.error(log, "Exception in discovery notyfier worker thread.", t);
+
+                    FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
+
+                    ctx.failure().process(new FailureContext(type, t));
+
+                    throw t;
+                }
+            }
+        }
+    }
+
     /** Worker for discovery events. */
     private class DiscoveryWorker extends GridWorker {
         /** */
@@ -2772,15 +2870,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     throw e;
                 }
                 catch (Throwable t) {
-                    U.error(log, "Exception in discovery worker thread.", t);
+                    U.error(log, "Exception in discovery event worker thread.", t);
 
-                    if (t instanceof Error) {
-                        FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
+                    FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
 
-                        ctx.failure().process(new FailureContext(type, t));
+                    ctx.failure().process(new FailureContext(type, t));
 
-                        throw t;
-                    }
+                    throw t;
                 }
             }
         }
@@ -2795,7 +2891,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             AffinityTopologyVersion topVer = evt.get2();
 
-            if (type == EVT_NODE_METRICS_UPDATED && topVer.compareTo(discoCache.version()) < 0)
+            if (type == EVT_NODE_METRICS_UPDATED && (discoCache == null || topVer.compareTo(discoCache.version()) < 0))
                 return;
 
             ClusterNode node = evt.get3();
