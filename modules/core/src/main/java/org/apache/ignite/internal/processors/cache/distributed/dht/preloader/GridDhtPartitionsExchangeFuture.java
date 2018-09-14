@@ -326,14 +326,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param exchId Exchange ID.
      * @param exchActions Cache change requests.
      * @param affChangeMsg Affinity change message.
+     * @param stateFut Future to get cluster active state.
      */
     public GridDhtPartitionsExchangeFuture(
         GridCacheSharedContext cctx,
         ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId,
         ExchangeActions exchActions,
-        CacheAffinityChangeMessage affChangeMsg
+        CacheAffinityChangeMessage affChangeMsg,
+        IgniteInternalFuture<Boolean> stateFut
     ) {
+        super(stateFut);
+
         assert busyLock != null;
         assert exchId != null;
         assert exchId.topologyVersion() != null;

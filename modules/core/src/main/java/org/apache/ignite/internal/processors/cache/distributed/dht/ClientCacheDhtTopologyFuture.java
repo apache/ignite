@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -33,8 +35,11 @@ public class ClientCacheDhtTopologyFuture extends GridDhtTopologyFutureAdapter {
 
     /**
      * @param topVer Topology version.
+     * @param stateFut Future to get cluster active state.
      */
-    public ClientCacheDhtTopologyFuture(AffinityTopologyVersion topVer) {
+    public ClientCacheDhtTopologyFuture(AffinityTopologyVersion topVer, IgniteInternalFuture<Boolean> stateFut) {
+        super(stateFut);
+
         assert topVer != null;
 
         this.topVer = topVer;
@@ -45,8 +50,12 @@ public class ClientCacheDhtTopologyFuture extends GridDhtTopologyFutureAdapter {
     /**
      * @param topVer Topology version.
      * @param e Error.
+     * @param stateFut Future to get cluster active state.
      */
-    public ClientCacheDhtTopologyFuture(AffinityTopologyVersion topVer, IgniteCheckedException e) {
+    public ClientCacheDhtTopologyFuture(AffinityTopologyVersion topVer, IgniteCheckedException e,
+        IgniteInternalFuture<Boolean> stateFut) {
+        super(stateFut);
+
         assert e != null;
         assert topVer != null;
 

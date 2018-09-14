@@ -430,6 +430,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Map<Integer, Boolean> startedInfos = U.newHashMap(startDescs.size());
 
+        IgniteInternalFuture<Boolean> stateFut = cctx.kernalContext().state().activeStateFuture(true);
+
         for (DynamicCacheDescriptor desc : startDescs) {
             try {
                 startedCaches.add(desc.cacheName());
@@ -458,7 +460,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         assert grpHolder != null && grpHolder.affinity().idealAssignment() != null;
 
                         if (grpHolder.client()) {
-                            ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer);
+                            ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer, stateFut);
 
                             grp.topology().updateTopologyVersion(topFut,
                                 discoCache,
@@ -526,13 +528,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     assert partMap != null : res;
 
-                    topFut = new ClientCacheDhtTopologyFuture(topVer);
+                    topFut = new ClientCacheDhtTopologyFuture(topVer, stateFut);
                 }
                 else {
                     partMap = new GridDhtPartitionFullMap(cctx.localNodeId(), cctx.localNode().order(), 1);
 
                     topFut = new ClientCacheDhtTopologyFuture(topVer,
-                        new ClusterTopologyServerNotFoundException("All server nodes left grid."));
+                        new ClusterTopologyServerNotFoundException("All server nodes left grid."), stateFut);
                 }
 
                 grp.topology().updateTopologyVersion(topFut,

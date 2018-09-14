@@ -212,6 +212,61 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             return globalState.active();
     }
 
+    /**
+     * @param waitForTransition {@code True} if need to wait until active state changing in case of state transition.
+     * @return Future to get cluster state inside internal futures.
+     */
+    public IgniteInternalFuture<Boolean> activeStateFuture(boolean waitForTransition) {
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+
+        if (ctx.isDaemon()) {
+            fut.onDone(sendComputeCheckGlobalState());
+
+            return fut;
+        }
+
+        DiscoveryDataClusterState globalState = this.globalState;
+
+        assert globalState != null;
+
+        if (globalState.transition() && globalState.activeStateChanging()) {
+            Boolean transitionRes = globalState.transitionResult();
+
+            if (transitionRes != null)
+                fut.onDone(transitionRes);
+            else {
+                if (waitForTransition) {
+                    GridFutureAdapter<Void> transFut = transitionFuts.get(globalState.transitionRequestId());
+
+                    if (transFut != null) {
+                        transFut.listen(new CI1<IgniteInternalFuture<Void>>() {
+                            @Override public void apply(IgniteInternalFuture<Void> fut0) {
+                                Boolean transitionRes = globalState.transitionResult();
+
+                                assert transitionRes != null;
+
+                                fut.onDone(transitionRes, fut0.error());
+                            }
+                        });
+                    }
+                    else {
+                        transitionRes = globalState.transitionResult();
+
+                        assert transitionRes != null;
+
+                        fut.onDone(transitionRes);
+                    }
+                }
+                else
+                    fut.onDone(false);
+            }
+        }
+        else
+            fut.onDone(globalState.active());
+
+        return fut;
+    }
+
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         BaselineTopology blt = (BaselineTopology) metastorage.read(METASTORE_CURR_BLT_KEY);
