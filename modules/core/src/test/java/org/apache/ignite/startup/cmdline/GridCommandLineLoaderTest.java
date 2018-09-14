@@ -17,15 +17,21 @@
 
 package org.apache.ignite.startup.cmdline;
 
-import java.util.concurrent.CountDownLatch;
-import org.apache.ignite.IgniteState;
-import org.apache.ignite.IgnitionListener;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 
-import static org.apache.ignite.IgniteState.STARTED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 
 /**
  * Command line loader test.
@@ -35,34 +41,71 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
     /** */
     private static final String GRID_CFG_PATH = "/modules/core/src/test/config/loaders/grid-cfg.xml";
 
-    /** */
-    private final CountDownLatch latch = new CountDownLatch(2);
-
-    /** */
-    public GridCommandLineLoaderTest() {
-        super(false);
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testLoader() throws Exception {
         String path = U.getIgniteHome() + GRID_CFG_PATH;
 
-        info("Loading Grid from configuration file: " + path);
+        info("Using Grids from configuration file: " + path);
 
-        G.addListener(new IgnitionListener() {
-            @Override public void onStateChange(String name, IgniteState state) {
-                if (state == STARTED) {
-                    info("Received started notification from grid: " + name);
-
-                    latch.countDown();
-
-                    G.stop(name, true);
+        IgniteProcessProxy proxy = new IgniteProcessProxy(
+            new IgniteConfiguration().setIgniteInstanceName("fake"), log, null) {
+                @Override protected String igniteNodeRunnerClassName() throws Exception {
+                    return CommandLineStartup.class.getCanonicalName();
                 }
-            }
-        });
 
-        CommandLineStartup.main(new String[]{path});
+                @Override protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
+                    return path;
+                }
+            };
+
+        try {
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return !proxy.getProcess().getProcess().isAlive();
+                }
+            }, 150_000);
+        }
+        finally {
+            if (proxy.getProcess().getProcess().isAlive())
+                proxy.kill();
+        }
+
+        assertEquals(2, proxy.getProcess().getProcess().exitValue());
+    }
+
+    /**
+     * Kills node after it is started.
+     */
+    public static class KillerLifecycleBean implements LifecycleBean {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteException {
+            if (evt == LifecycleEventType.AFTER_NODE_START) {
+                System.setProperty(IGNITE_RESTART_CODE, Integer.toString(
+                    1 + IgniteSystemProperties.getInteger(IGNITE_RESTART_CODE, 0)));
+
+                System.out.println("Ignite instance seen, will shut it down.");
+
+                new Thread(new Runnable() {
+                    @Override public void run() {
+                        try {
+                            Thread.sleep(3000);
+                        }
+                        catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        System.out.println("Shutdown imminent.");
+
+                        ignite.close();
+                    }
+                }).start();
+            }
+        }
     }
 }

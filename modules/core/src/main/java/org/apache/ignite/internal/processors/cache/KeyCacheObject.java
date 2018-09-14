@@ -24,7 +24,7 @@ public interface KeyCacheObject extends CacheObject {
     /**
      * @return Key hash code.
      */
-    public int hashCode();
+    @Override public int hashCode();
 
     /**
      * @return {@code True} if internal cache key.
