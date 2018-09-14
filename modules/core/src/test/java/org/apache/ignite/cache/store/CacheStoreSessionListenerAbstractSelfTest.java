@@ -87,11 +87,6 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.createStatement().executeUpdate("DROP TABLE IF EXISTS Table1");

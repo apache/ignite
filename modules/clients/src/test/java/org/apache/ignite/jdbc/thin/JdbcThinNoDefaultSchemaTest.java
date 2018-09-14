@@ -100,11 +100,6 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -217,7 +212,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
 
                     return null;
                 }
-            }, SQLException.class, "Failed to parse query");
+            }, SQLException.class, "Table \"INTEGER\" not found");
 
             conn.setSchema("\"cache1\"");
 

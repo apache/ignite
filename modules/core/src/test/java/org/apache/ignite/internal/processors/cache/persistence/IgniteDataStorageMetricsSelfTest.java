@@ -57,14 +57,14 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -75,17 +75,17 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(10 * 1024 * 1024)
+                .setMaxSize(10L * 1024 * 1024)
                 .setPersistenceEnabled(true)
                 .setMetricsEnabled(true)
                 .setName("dflt-plc"))
             .setDataRegionConfigurations(new DataRegionConfiguration()
-                .setMaxSize(10 * 1024 * 1024)
+                .setMaxSize(10L * 1024 * 1024)
                 .setPersistenceEnabled(false)
                 .setMetricsEnabled(true)
                 .setName("no-persistence"))
             .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(1024)
+            .setPageSize(4 * 1024)
             .setMetricsEnabled(true);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -104,7 +104,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         super.afterTest();
     }

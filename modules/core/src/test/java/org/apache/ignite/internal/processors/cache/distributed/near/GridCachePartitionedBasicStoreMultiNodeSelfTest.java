@@ -81,8 +81,6 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         stores = null;
     }
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import java.sql.BatchUpdateException;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.Types;
@@ -27,25 +28,30 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
@@ -73,6 +79,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
+    /** Worker. */
+    private final OdbcRequestHandlerWorker worker;
+
     /** Maximum allowed cursors. */
     private final int maxCursors;
 
@@ -88,6 +97,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Replicated only flag. */
     private final boolean replicatedOnly;
 
+    /** Nested transaction behaviour. */
+    private final NestedTxMode nestedTxMode;
+
     /** Collocated flag. */
     private final boolean collocated;
 
@@ -96,6 +108,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** Update on server flag. */
     private final boolean skipReducerOnUpdate;
+
+    /** Authentication context */
+    private final AuthorizationContext actx;
+
+    /** Client version. */
+    private ClientListenerProtocolVersion ver;
 
     /**
      * Constructor.
@@ -108,10 +126,13 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param collocated Collocated flag.
      * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param nestedTxMode Nested transaction mode.
+     * @param actx Authentication context.
+     * @param ver Client protocol version.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
-        boolean collocated, boolean lazy, boolean skipReducerOnUpdate) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly, boolean collocated, boolean lazy,
+        boolean skipReducerOnUpdate, AuthorizationContext actx, NestedTxMode nestedTxMode, ClientListenerProtocolVersion ver) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -121,19 +142,60 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.collocated = collocated;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
+        this.actx = actx;
+        this.nestedTxMode = nestedTxMode;
+        this.ver = ver;
 
         log = ctx.log(getClass());
+
+        if (ctx.grid().configuration().isMvccEnabled())
+            worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
+        else
+            worker = null;
     }
 
     /** {@inheritDoc} */
     @Override public ClientListenerResponse handle(ClientListenerRequest req0) {
         assert req0 != null;
 
+        assert req0 instanceof OdbcRequest;
+
         OdbcRequest req = (OdbcRequest)req0;
 
+        if (worker == null)
+            return doHandle(req);
+        else {
+            GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
+
+            try {
+                return fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                return exceptionToResult(e);
+            }
+        }
+    }
+
+    /**
+     * Start worker, if it's present.
+     */
+    void start() {
+        if (worker != null)
+            worker.start();
+    }
+
+    /**
+     * Handle ODBC request.
+     * @param req ODBC request.
+     * @return Response.
+     */
+    public ClientListenerResponse doHandle(OdbcRequest req) {
         if (!busyLock.enterBusy())
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
-                    "Failed to handle ODBC request because node is stopping: " + req);
+                "Failed to handle ODBC request because node is stopping: " + req);
+
+        if (actx != null)
+            AuthorizationContext.context(actx);
 
         try {
             switch (req.command()) {
@@ -165,6 +227,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Unsupported ODBC request: " + req);
         }
         finally {
+            AuthorizationContext.clear();
+
             busyLock.leaveBusy();
         }
     }
@@ -186,6 +250,17 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     public void onDisconnect() {
         if (busyLock.enterBusy())
         {
+            if (worker != null) {
+                worker.cancel();
+
+                try {
+                    worker.join();
+                }
+                catch (InterruptedException e) {
+                    // No-op.
+                }
+            }
+
             try
             {
                 for (OdbcQueryResults res : qryResults.values())
@@ -202,9 +277,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param schema Schema.
      * @param sql SQL request.
      * @param args Arguments.
+     * @param autoCommit Autocommit transaction.
+     * @param timeout Query timeout.
      * @return Query instance.
      */
-    private SqlFieldsQueryEx makeQuery(String schema, String sql, Object[] args, int timeout) {
+    private SqlFieldsQueryEx makeQuery(String schema, String sql, Object[] args, int timeout, boolean autoCommit) {
         SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
 
         qry.setArgs(args);
@@ -216,6 +293,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setLazy(lazy);
         qry.setSchema(schema);
         qry.setSkipReducerOnUpdate(skipReducerOnUpdate);
+        qry.setNestedTxMode(nestedTxMode);
+        qry.setAutoCommit(autoCommit);
 
         qry.setTimeout(timeout, TimeUnit.SECONDS);
 
@@ -246,19 +325,29 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                     ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout());
+            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout(), req.autoCommit());
 
-            List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFieldsNoCache(qry, true, false);
+            List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(qry, true, false);
 
-            OdbcQueryResults results = new OdbcQueryResults(cursors);
+            OdbcQueryResults results = new OdbcQueryResults(cursors, ver);
 
-            if (!results.hasUnfetchedRows())
+            Collection<OdbcColumnMeta> fieldsMeta;
+
+            if (!results.hasUnfetchedRows()) {
                 results.closeAll();
-            else
+
+                fieldsMeta = new ArrayList<>();
+            } else {
                 qryResults.put(qryId, results);
 
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, results.currentResultSet().fieldsMeta(),
-                results.rowsAffected());
+                fieldsMeta = results.currentResultSet().fieldsMeta();
+
+                for (OdbcColumnMeta meta : fieldsMeta) {
+                    log.warning("Meta - " + meta.columnName + ", " + meta.precision + ", " + meta.scale);
+                }
+            }
+
+            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());
 
             return new OdbcResponse(res);
         }
@@ -278,9 +367,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse executeBatchQuery(OdbcQueryExecuteBatchRequest req) {
-        List<Long> rowsAffected = new ArrayList<>(req.arguments().length);
-        int currentSet = 0;
-
         try {
             String sql = OdbcEscapeUtils.parse(req.sqlQuery());
 
@@ -288,7 +374,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                         ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout());
+            SqlFieldsQueryEx qry = makeQuery(req.schema(), sql, null, req.timeout(), req.autoCommit());
 
             Object[][] paramSet = req.arguments();
 
@@ -297,18 +383,16 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                         + paramSet.length + ']');
 
             // Getting meta and do the checks for the first execution.
-            qry.setArgs(paramSet[0]);
+            for (Object[] set  : paramSet)
+                qry.addBatchedArgs(set);
 
-            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFieldsNoCache(qry, true);
+            List<FieldsQueryCursor<List<?>>> qryCurs =
+                ctx.query().querySqlFields(qry, true, true);
 
-            if (qryCur.isQuery())
-                throw new IgniteException("Batching of parameters only supported for DML statements. [query=" +
-                        req.sqlQuery() + ']');
+            List<Long> rowsAffected = new ArrayList<>(req.arguments().length);
 
-            rowsAffected.add(OdbcUtils.rowsAffected(qryCur));
-
-            for (currentSet = 1; currentSet < paramSet.length; ++currentSet)
-                rowsAffected.add(executeQuery(qry, paramSet[currentSet]));
+            for (FieldsQueryCursor<List<?>> qryCur : qryCurs)
+                rowsAffected.add(OdbcUtils.rowsAffected(qryCur));
 
             OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected);
 
@@ -317,22 +401,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return exceptionToBatchResult(e, rowsAffected, currentSet);
+            return exceptionToBatchResult(e);
         }
-    }
-
-    /**
-     * Execute query.
-     * @param qry Query
-     * @param row Row
-     * @return Affected rows.
-     */
-    private long executeQuery(SqlFieldsQuery qry, Object[] row) {
-        qry.setArgs(row);
-
-        QueryCursor<List<?>> cur = ctx.query().querySqlFieldsNoCache(qry, true);
-
-        return OdbcUtils.rowsAffected(cur);
     }
 
     /**
@@ -429,26 +499,20 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 tablePattern = req.tablePattern();
             }
 
-            GridQueryIndexing indexing = ctx.query().getIndexing();
-
-            for (String cacheName : ctx.cache().cacheNames()) {
-                String cacheSchema = indexing.schema(cacheName);
-
-                if (!matches(cacheSchema, schemaPattern))
-                    continue;
-
-                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
-
-                for (GridQueryTypeDescriptor table : tablesMeta) {
-                    if (!matches(table.name(), tablePattern))
+            for (String cacheName : ctx.cache().publicCacheNames()) {
+                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                    if (!matches(table.schemaName(), schemaPattern) ||
+                        !matches(table.tableName(), tablePattern))
                         continue;
 
                     for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
                         if (!matches(field.getKey(), req.columnPattern()))
                             continue;
 
-                    OdbcColumnMeta columnMeta = new OdbcColumnMeta(cacheSchema, table.name(),
-                        field.getKey(), field.getValue());
+                        GridQueryProperty prop = table.property(field.getKey());
+
+                        OdbcColumnMeta columnMeta = new OdbcColumnMeta(table.schemaName(), table.tableName(),
+                            field.getKey(), field.getValue(), prop.precision(), prop.scale(), ver);
 
                         if (!meta.contains(columnMeta))
                             meta.add(columnMeta);
@@ -479,25 +543,14 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             String schemaPattern = OdbcUtils.removeQuotationMarksIfNeeded(req.schema());
 
-            GridQueryIndexing indexing = ctx.query().getIndexing();
-
-            for (String cacheName : ctx.cache().cacheNames())
-            {
-                String cacheSchema = indexing.schema(cacheName);
-
-                if (!matches(cacheSchema, schemaPattern))
-                    continue;
-
-                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
-
-                for (GridQueryTypeDescriptor table : tablesMeta) {
-                    if (!matches(table.name(), req.table()))
+            for (String cacheName : ctx.cache().publicCacheNames()) {
+                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                    if (!matches(table.schemaName(), schemaPattern) ||
+                        !matches(table.tableName(), req.table()) ||
+                        !matches("TABLE", req.tableType()))
                         continue;
 
-                    if (!matches("TABLE", req.tableType()))
-                        continue;
-
-                    OdbcTableMeta tableMeta = new OdbcTableMeta(null, cacheName, table.name(), "TABLE");
+                    OdbcTableMeta tableMeta = new OdbcTableMeta(null, table.schemaName(), table.tableName(), "TABLE");
 
                     if (!meta.contains(tableMeta))
                         meta.add(tableMeta);
@@ -665,8 +718,18 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Whether string matches pattern.
      */
     private static boolean matches(String str, String ptrn) {
-        return str != null && (F.isEmpty(ptrn) ||
-            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
+        if (F.isEmpty(ptrn))
+            return true;
+
+        if (str == null)
+            return false;
+
+        String pattern = ptrn.toUpperCase().replace("%", ".*").replace("_", ".");
+
+        if (pattern.length() >= 2 && pattern.matches("['\"].*['\"]"))
+            pattern = pattern.substring(1, pattern.length() - 1);
+
+        return str.toUpperCase().matches(pattern);
     }
 
     /**
@@ -676,9 +739,35 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param e Exception to convert.
      * @return resulting {@link OdbcResponse}.
      */
-    private OdbcResponse exceptionToBatchResult(Exception e, Collection<Long> rowsAffected, long currentSet) {
-        OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, currentSet,
-            OdbcUtils.tryRetrieveSqlErrorCode(e), OdbcUtils.tryRetrieveH2ErrorMessage(e));
+    private OdbcResponse exceptionToBatchResult(Exception e) {
+        int code;
+        String msg;
+        List<Long> rowsAffected = new ArrayList<>();
+
+        if (e instanceof IgniteSQLException) {
+            BatchUpdateException batchCause = X.cause(e, BatchUpdateException.class);
+
+            if (batchCause != null) {
+                for (long cnt : batchCause.getLargeUpdateCounts())
+                    rowsAffected.add(cnt);
+
+                msg = batchCause.getMessage();
+
+                code = batchCause.getErrorCode();
+            }
+            else {
+                msg = OdbcUtils.tryRetrieveH2ErrorMessage(e);
+
+                code = ((IgniteSQLException)e).statusCode();
+            }
+        }
+        else {
+            msg = e.getMessage();
+
+            code = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, -1, code, msg);
 
         return new OdbcResponse(res);
     }

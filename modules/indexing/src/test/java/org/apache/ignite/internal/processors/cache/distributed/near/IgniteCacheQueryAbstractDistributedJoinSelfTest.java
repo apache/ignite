@@ -192,11 +192,6 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonA
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      *
      */

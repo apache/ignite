@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Reflection;
 
     /// <summary>
@@ -27,6 +28,13 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal static class ReflectionUtils
     {
+        /** */
+        private const BindingFlags BindFlags =
+            BindingFlags.Public |
+            BindingFlags.NonPublic |
+            BindingFlags.Instance |
+            BindingFlags.DeclaredOnly;
+
         /// <summary>
         /// Gets all fields, including base classes.
         /// </summary>
@@ -57,18 +65,48 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
 
             if (type.IsPrimitive)
+            {
                 yield break;
+            }
 
-            const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
-                                              BindingFlags.DeclaredOnly;
+            foreach (var t in GetSelfAndBaseTypes(type))
+            {
+                foreach (var fieldInfo in t.GetFields(BindFlags))
+                    yield return new KeyValuePair<MemberInfo, Type>(fieldInfo, fieldInfo.FieldType);
+
+                foreach (var propertyInfo in t.GetProperties(BindFlags))
+                    yield return new KeyValuePair<MemberInfo, Type>(propertyInfo, propertyInfo.PropertyType);
+            }
+        }
+
+        /// <summary>
+        /// Gets methods, including base classes.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        public static IEnumerable<MethodInfo> GetMethods(Type type)
+        {
+            Debug.Assert(type != null);
+
+            if (type.IsInterface)
+            {
+                return type.GetInterfaces().Concat(new[] {typeof(object), type})
+                    .SelectMany(t => t.GetMethods(BindFlags));
+            }
+
+            return GetSelfAndBaseTypes(type)
+                .SelectMany(t => t.GetMethods(BindFlags));
+        }
+
+        /// <summary>
+        /// Returns full type hierarchy.
+        /// </summary>
+        private static IEnumerable<Type> GetSelfAndBaseTypes(Type type)
+        {
+            Debug.Assert(type != null);
 
             while (type != typeof(object) && type != null)
             {
-                foreach (var fieldInfo in type.GetFields(bindingFlags))
-                    yield return new KeyValuePair<MemberInfo, Type>(fieldInfo, fieldInfo.FieldType);
-
-                foreach (var propertyInfo in type.GetProperties(bindingFlags))
-                    yield return new KeyValuePair<MemberInfo, Type>(propertyInfo, propertyInfo.PropertyType);
+                yield return type;
 
                 type = type.BaseType;
             }

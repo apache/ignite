@@ -31,6 +31,8 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -61,54 +63,69 @@ public interface GridQueryIndexing {
     public void stop() throws IgniteCheckedException;
 
     /**
+     * Performs necessary actions on disconnect of a stateful client (say, one associated with a transaction).
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onClientDisconnect() throws IgniteCheckedException;
+
+    /**
      * Parses SQL query into two step query and executes it.
      *
      * @param schemaName Schema name.
      * @param cacheName Cache name.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
-     * @param mainCacheId Main cache ID.    @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName, SqlQuery qry,
-        boolean keepBinary, int mainCacheId) throws IgniteCheckedException;
+        boolean keepBinary) throws IgniteCheckedException;
 
     /**
-     * Parses SQL query into two step query and executes it.
-     *
+     * Detect whether SQL query should be executed in distributed or local manner and execute it.
      * @param schemaName Schema name.
      * @param qry Query.
+     * @param cliCtx Client context.
      * @param keepBinary Keep binary flag.
-     * @param cancel Query cancel.
-     * @param mainCacheId Main cache ID.
-     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
-     *      more then one SQL statement.
+     * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
+     * @param tracker Query tracker.
      * @return Cursor.
-     * @throws IgniteCheckedException If failed.
      */
-    public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts)
-        throws IgniteCheckedException;
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
+        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel);
 
     /**
-     * Perform a MERGE statement using data streamer as receiver.
+     * Execute an INSERT statement using data streamer as receiver.
      *
      * @param schemaName Schema name.
      * @param qry Query.
      * @param params Query parameters.
      * @param streamer Data streamer to feed data to.
-     * @return Query result.
+     * @return Update counter.
      * @throws IgniteCheckedException If failed.
      */
     public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
         IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
 
     /**
+     * Execute a batched INSERT statement using data streamer as receiver.
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param params Query parameters.
+     * @param cliCtx Client connection context.
+     * @return Update counters.
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
+        SqlClientContext cliCtx) throws IgniteCheckedException;
+
+    /**
      * Executes regular query.
      *
      * @param schemaName Schema name.
      * @param cacheName Cache name.
-     *@param qry Query.
+     * @param qry Query.
      * @param filter Cache name and key filter.
      * @param keepBinary Keep binary flag.    @return Cursor.
      */
@@ -181,6 +198,21 @@ public interface GridQueryIndexing {
         boolean ifColNotExists) throws IgniteCheckedException;
 
     /**
+     * Drop columns from dynamic table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param cols Columns to drop.
+     * @param ifTblExists Ignore operation if target table does not exist (instead of throwing an error).
+     * @param ifColExists Ignore operation if column does not exist (instead of throwing an error) - is honored only
+     *     for single column case.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public void dynamicDropColumn(String schemaName, String tblName, List<String> cols, boolean ifTblExists,
+        boolean ifColExists) throws IgniteCheckedException;
+
+    /**
      * Registers cache.
      *
      * @param cacheName Cache name.
@@ -194,11 +226,33 @@ public interface GridQueryIndexing {
     /**
      * Unregisters cache.
      *
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      * @param rmvIdx If {@code true}, will remove index.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(String cacheName, boolean rmvIdx) throws IgniteCheckedException;
+    public void unregisterCache(GridCacheContext cctx, boolean rmvIdx) throws IgniteCheckedException;
+
+    /**
+     *
+     * @param cctx Cache context.
+     * @param ids Involved cache ids.
+     * @param parts Partitions.
+     * @param schema Schema name.
+     * @param qry Query string.
+     * @param params Query parameters.
+     * @param flags Flags.
+     * @param pageSize Fetch page size.
+     * @param timeout Timeout.
+     * @param topVer Topology version.
+     * @param mvccSnapshot MVCC snapshot.
+     * @param cancel Query cancel object.
+     * @return Cursor over entries which are going to be changed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
+        String schema, String qry, Object[] params, int flags,
+        int pageSize, int timeout, AffinityTopologyVersion topVer,
+        MvccSnapshot mvccSnapshot, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
@@ -221,7 +275,10 @@ public interface GridQueryIndexing {
      * @param prevRowAvailable Whether previous row is available.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row, CacheDataRow prevRow,
+    public void store(GridCacheContext cctx,
+        GridQueryTypeDescriptor type,
+        CacheDataRow row,
+        CacheDataRow prevRow,
         boolean prevRowAvailable) throws IgniteCheckedException;
 
     /**
@@ -304,10 +361,17 @@ public interface GridQueryIndexing {
     public String schema(String cacheName);
 
     /**
-     * Check if passed statement is insert statemtn.
+     * Check if passed statement is insert statement eligible for streaming, throw an {@link IgniteSQLException} if not.
      *
      * @param nativeStmt Native statement.
-     * @return {@code True} if insert.
      */
-    public boolean isInsertStatement(PreparedStatement nativeStmt);
+    public void checkStatementStreamable(PreparedStatement nativeStmt);
+
+    /**
+     * Return row cache cleaner.
+     *
+     * @param cacheGroupId Cache group id.
+     * @return Row cache cleaner.
+     */
+    public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
 }

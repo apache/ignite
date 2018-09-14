@@ -15,40 +15,42 @@
 # limitations under the License.
 #
 
-mongodb:
-  image: mongo:latest
-  volumes:
-    # External volume for persisting data. (HOST_PATH:CONTAINER_PATH).
-    - ./data/mongo:/data/db
+version: 1
 
-backend:
-  image: apacheignite/web-console-backend
-  links:
-    # Link mongodb container as with mongodb hostname.
-    - mongodb:mongodb
-  # Restart on crash.
-  restart: always  
-  environment:
-    # Port for serving frontend API
-    - server_port=3000
-    # Cookie session secret
-    - server_sessionSecret=CHANGE ME
-    # URL for mongodb connection
-    - mongodb_url=mongodb://mongodb/console
-    # Mail connection settings. Leave empty if no needed. See also settings, https://github.com/nodemailer/nodemailer
-    - mail_service=
-    - mail_sign=
-    - mail_greeting=
-    - mail_from=
-    - mail_auth_user=
-    - mail_auth_pass=
+services:
+  mongodb:
+    image: mongo:3.4
+    container_name: 'mongodb'
+    volumes:
+      # External volume for persisting data. (HOST_PATH:CONTAINER_PATH).
+      - ./data/mongo:/data/db
 
-frontend:
-  image: apacheignite/web-console-frontend
-  links:
-    # Link backend container to proxy backend requests throught nginx container.
-    - backend:backend
+  backend:
+    image: apacheignite/web-console-backend
+    depends_on:
+      - mongodb
+    # Restart on crash.
+    restart: always
+    environment:
+      # Port for serving frontend API
+      - server_port=3000
+      # Cookie session secret
+      - server_sessionSecret=CHANGE ME
+      # URL for mongodb connection
+      - mongodb_url=mongodb://mongodb/console
+      # Mail connection settings. Leave empty if no needed. See also settings, https://github.com/nodemailer/nodemailer
+      - mail_service=
+      - mail_sign=
+      - mail_greeting=
+      - mail_from=
+      - mail_auth_user=
+      - mail_auth_pass=
 
-  ports:
-    # Proxy HTTP nginx port (HOST_PORT:DOCKER_PORT)
-    - 80:80
+  frontend:
+    image: apacheignite/web-console-frontend
+    depends_on:
+      - mongodb
+      - testenv
+    ports:
+      # Proxy HTTP nginx port (HOST_PORT:DOCKER_PORT)
+      - 80:80

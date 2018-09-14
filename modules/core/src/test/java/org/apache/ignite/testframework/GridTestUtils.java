@@ -74,6 +74,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -85,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -106,9 +106,6 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.springframework.util.FileSystemUtils.deleteRecursively;
-
 /**
  * Utility class for tests.
  */
@@ -116,6 +113,9 @@ import static org.springframework.util.FileSystemUtils.deleteRecursively;
 public final class GridTestUtils {
     /** Default busy wait sleep interval in milliseconds.  */
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
+
+    /** */
+    public static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
 
     /** */
     static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
@@ -302,7 +302,7 @@ public final class GridTestUtils {
             call.call();
         }
         catch (Throwable e) {
-            if (cls != e.getClass()) {
+            if (cls != e.getClass() && !cls.isAssignableFrom(e.getClass())) {
                 if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
                     e = e.getCause();
                 else {
@@ -404,6 +404,24 @@ public final class GridTestUtils {
         }
 
         throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks whether callable throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
+     * @param runnable Runnable.
+     * @param cls Expected class.
+     * @return Thrown throwable.
+     */
+    @Nullable public static Throwable assertThrowsWithCause(Runnable runnable, Class<? extends Throwable> cls) {
+        return assertThrowsWithCause(new Callable<Integer>() {
+            @Override public Integer call() throws Exception {
+                runnable.run();
+
+                return 0;
+            }
+        }, cls);
     }
 
     /**
@@ -793,39 +811,36 @@ public final class GridTestUtils {
         final List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
         final GridTestSafeThreadFactory threadFactory = new GridTestSafeThreadFactory(threadName);
 
-        // Future that supports cancel() operation.
-        GridFutureAdapter<Long> cancelFut = new GridFutureAdapter<Long>() {
-            @Override public boolean cancel() {
-                if (onCancelled()) {
-                    threadFactory.interruptAllThreads();
+        IgniteInternalFuture<Long> runFut = runAsync(() -> runMultiThreaded(calls, threadFactory));
 
-                    onCancelled();
+        GridFutureAdapter<Long> resFut = new GridFutureAdapter<Long>() {
+            @Override public boolean cancel() throws IgniteCheckedException {
+                super.cancel();
 
-                    return true;
-                }
+                if (isDone())
+                    return false;
 
-                return false;
+                runFut.cancel();
+
+                threadFactory.interruptAllThreads();
+
+                return onCancelled();
             }
         };
 
-        // Async execution future (doesn't support cancel()).
-        IgniteInternalFuture<Long> runFut = runAsync(new Callable<Long>() {
-            @Override public Long call() throws Exception {
-                return runMultiThreaded(calls, threadFactory);
+        runFut.listen(fut -> {
+            try {
+                resFut.onDone(fut.get());
+            }
+            catch (IgniteFutureCancelledCheckedException e) {
+                resFut.onCancelled();
+            }
+            catch (Throwable e) {
+                resFut.onDone(e);
             }
         });
 
-        // Compound future, that adds cancel() support to execution future.
-        GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>(F.sumLongReducer());
-
-        compFut.add(cancelFut);
-        compFut.add(runFut);
-
-        compFut.markInitialized();
-
-        cancelFut.onDone();
-
-        return compFut;
+        return resFut;
     }
 
     /**
@@ -882,25 +897,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Create future async result.
-     *
-     * @param thrFactory Thr factory.
-     */
-    private static<T> GridFutureAdapter<T> createFutureAdapter(final GridTestSafeThreadFactory thrFactory){
-       return new GridFutureAdapter<T>() {
-            @Override public boolean cancel() throws IgniteCheckedException {
-                super.cancel();
-
-                thrFactory.interruptAllThreads();
-
-                onCancelled();
-
-                return true;
-            }
-        };
-    }
-
-    /**
      * Runs runnable task asyncronously.
      *
      * @param task Runnable.
@@ -919,32 +915,11 @@ public final class GridTestUtils {
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to start new threads (test is being stopped).");
+        return runAsync(() -> {
+            task.run();
 
-        try {
-            final GridTestSafeThreadFactory thrFactory = new GridTestSafeThreadFactory(threadName);
-
-            final GridFutureAdapter fut = createFutureAdapter(thrFactory);
-
-            thrFactory.newThread(new Runnable() {
-                @Override public void run() {
-                    try {
-                        task.run();
-
-                        fut.onDone();
-                    }
-                    catch (Throwable e) {
-                        fut.onDone(e);
-                    }
-                }
-            }).start();
-
-            return fut;
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+            return null;
+        }, threadName);
     }
 
     /**
@@ -973,19 +948,41 @@ public final class GridTestUtils {
         try {
             final GridTestSafeThreadFactory thrFactory = new GridTestSafeThreadFactory(threadName);
 
-            final GridFutureAdapter<T> fut = createFutureAdapter(thrFactory);
+            final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
+                @Override public boolean cancel() throws IgniteCheckedException {
+                    super.cancel();
 
-            thrFactory.newThread(new Runnable() {
-                @Override public void run() {
+                    if (isDone())
+                        return false;
+
+                    thrFactory.interruptAllThreads();
+
                     try {
-                        // Execute task.
-                        T res = task.call();
+                        get();
 
-                        fut.onDone(res);
+                        return false;
                     }
-                    catch (Throwable e) {
-                        fut.onDone(e);
+                    catch (IgniteFutureCancelledCheckedException e) {
+                        return true;
                     }
+                    catch (IgniteCheckedException e) {
+                        return false;
+                    }
+                }
+            };
+
+            thrFactory.newThread(() -> {
+                try {
+                    // Execute task.
+                    T res = task.call();
+
+                    fut.onDone(res);
+                }
+                catch (InterruptedException e) {
+                    fut.onCancelled();
+                }
+                catch (Throwable e) {
+                    fut.onDone(e);
                 }
             }).start();
 
@@ -1689,7 +1686,7 @@ public final class GridTestUtils {
     public static SSLContext sslContext() throws GeneralSecurityException, IOException {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
-        char[] storePass = GridTestProperties.getProperty("ssl.keystore.password").toCharArray();
+        char[] storePass = keyStorePassword().toCharArray();
 
         KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance("SunX509");
 
@@ -1716,7 +1713,7 @@ public final class GridTestUtils {
 
         factory.setKeyStoreFilePath(
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
 
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
 
@@ -1734,7 +1731,7 @@ public final class GridTestUtils {
 
         factory.setKeyStoreFilePath(
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
 
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
 
@@ -1751,14 +1748,21 @@ public final class GridTestUtils {
     public static Factory<SSLContext> sslTrustedFactory(String keyStore, String trustStore) {
         SslContextFactory factory = new SslContextFactory();
 
-        factory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty(
-            "ssl.keystore." + keyStore + ".path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
-        factory.setTrustStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty(
-            "ssl.keystore." + trustStore + ".path")).getAbsolutePath());
-        factory.setTrustStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStoreFilePath(keyStorePath(keyStore));
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
+        factory.setTrustStoreFilePath(keyStorePath(trustStore));
+        factory.setTrustStorePassword(keyStorePassword().toCharArray());
 
         return factory;
+    }
+
+    public static String keyStorePassword() {
+        return GridTestProperties.getProperty("ssl.keystore.password");
+    }
+
+    @NotNull public static String keyStorePath(String keyStore) {
+        return U.resolveIgnitePath(GridTestProperties.getProperty(
+            "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
     }
 
     /**
@@ -1968,9 +1972,20 @@ public final class GridTestUtils {
     }
 
     /**
-     * @throws Exception If failed.
+     * @param node Node.
+     * @param topVer Ready exchange version to wait for before trying to merge exchanges.
      */
-    public static void deleteDbFiles() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+    public static void mergeExchangeWaitVersion(Ignite node, long topVer) {
+        ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
+            new AffinityTopologyVersion(topVer, 0), null);
+    }
+
+    /**
+     * @param node Node.
+     * @param topVer Ready exchange version to wait for before trying to merge exchanges.
+     */
+    public static void mergeExchangeWaitVersion(Ignite node, long topVer, List mergedEvts) {
+        ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
+            new AffinityTopologyVersion(topVer, 0), mergedEvts);
     }
 }

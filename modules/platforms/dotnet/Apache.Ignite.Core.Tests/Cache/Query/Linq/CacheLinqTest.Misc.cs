@@ -237,8 +237,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         public void TestLocalQuery()
         {
             // Create partitioned cache
-            var cache =
-                Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache", typeof(int))
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache", 
+                    new QueryEntity(typeof(int), typeof(int)))
                 {
                     SqlEscapeAll = GetSqlEscapeAll()
                 });

@@ -127,15 +127,11 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         Statement st = conn.createStatement();
 
         st.execute("DROP ALL OBJECTS");
 
         conn.close();
-
-        stopAllGrids();
 
         ignite = null;
     }

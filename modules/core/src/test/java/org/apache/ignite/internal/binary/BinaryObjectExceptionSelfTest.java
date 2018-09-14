@@ -24,6 +24,9 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -147,6 +150,44 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals("Fields count must match \"Unexpected field type\" exception count", fields.length, unexpectedCnt);
+    }
+
+    /**
+     * Test verbose logging of object marshalling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testFailedMarshallingLogging() throws Exception {
+        BinaryMarshaller marshaller = createStandaloneBinaryMarshaller();
+
+        try {
+            marshaller.marshal(new Value1());
+        }
+        catch (BinaryObjectException ex) {
+            assertTrue(ex.getMessage().contains(
+                "object [typeName=org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value1"));
+
+            assertTrue(ex.getCause().getMessage().contains("field [name=objVal"));
+        }
+    }
+
+    /** */
+    private static class Value1{
+        /** */
+        Value2 objVal = new Value2();
+
+        /** */
+        static class Value2 implements Binarylizable {
+            /** */
+            @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+                throw new RuntimeException("bad object");
+            }
+
+            /** */
+            @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+                throw new RuntimeException("bad object");
+            }
+        }
     }
 
     /** */

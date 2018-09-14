@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.jsr166.ConcurrentHashMap8;
 
 import java.util.concurrent.ConcurrentMap;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class BinaryEnumCache {
     /** Cache for enum constants. */
-    private static final ConcurrentMap<Class<?>, Object[]> ENUM_CACHE = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<Class<?>, Object[]> ENUM_CACHE = new ConcurrentHashMap<>();
 
     /**
      * Get value for the given class and ordinal.

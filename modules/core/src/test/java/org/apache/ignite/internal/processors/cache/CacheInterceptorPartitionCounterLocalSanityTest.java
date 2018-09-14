@@ -96,13 +96,6 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         afterPutEvts = new BlockingArrayQueue<>();
         afterRmvEvts = new BlockingArrayQueue<>();

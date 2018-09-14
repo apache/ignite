@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 /**
  *
  */
-public class PageSnapshot extends WALRecord {
+public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware{
     /** */
     @GridToStringExclude
     private byte[] pageData;
@@ -92,9 +92,17 @@ public class PageSnapshot extends WALRecord {
                 + "],\nsuper = ["
                 + super.toString() + "]]";
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignored) {
             return "Error during call'toString' of PageSnapshot [fullPageId=" + fullPageId() +
                 ", pageData = " + Arrays.toString(pageData) + ", super=" + super.toString() + "]";
         }
+        finally {
+            GridUnsafe.cleanDirectBuffer(buf);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int groupId() {
+        return fullPageId.groupId();
     }
 }

@@ -232,6 +232,20 @@ abstract class TcpDiscoveryImpl {
     public abstract void failNode(UUID nodeId, @Nullable String warning);
 
     /**
+     * Dumps ring structure to logger.
+     *
+     * @param log Logger.
+     */
+    public abstract void dumpRingStructure(IgniteLogger log);
+
+    /**
+     * Get current topology version.
+     *
+     * @return Current topology version.
+     */
+    public abstract long getCurrentTopologyVersion();
+
+    /**
      * @param igniteInstanceName Ignite instance name.
      * @throws IgniteSpiException If failed.
      */
@@ -244,6 +258,13 @@ abstract class TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      */
     public int boundPort() throws IgniteSpiException {
+        return 0;
+    }
+
+    /**
+     * @return connection check interval.
+     */
+    public long connectionCheckInterval() {
         return 0;
     }
 
@@ -326,8 +347,9 @@ abstract class TcpDiscoveryImpl {
             }
             catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to register local node address in IP finder on start " +
-                    "(retrying every 2000 ms).");
-            }
+                    "(retrying every " + spi.getReconnectDelay() + " ms; " +
+                    "change 'reconnectDelay' to configure the frequency of retries).");
+            };
 
             if (start > 0 && (U.currentTimeMillis() - start) > spi.getJoinTimeout())
                 throw new IgniteSpiException(
@@ -337,7 +359,7 @@ abstract class TcpDiscoveryImpl {
                         "[joinTimeout=" + spi.getJoinTimeout() + ']');
 
             try {
-                U.sleep(2000);
+                U.sleep(spi.getReconnectDelay());
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);

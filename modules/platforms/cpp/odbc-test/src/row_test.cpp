@@ -23,6 +23,7 @@
 
 #include <ignite/impl/binary/binary_writer_impl.h>
 
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/row.h"
 
@@ -78,7 +79,7 @@ void CheckRowData(Row& row, size_t rowIdx)
 {
     SqlLen reslen;
 
-    long longBuf;
+    SQLINTEGER longBuf;
     char strBuf[1024];
     SQLGUID guidBuf;
     char bitBuf;

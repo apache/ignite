@@ -172,7 +172,15 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 
                 for (var i = 0; i < cnt; i++)
                 {
-                    _schema.Add(reader.ReadInt(), reader.ReadIntArray());
+                    var schemaId = reader.ReadInt();
+                    
+                    var ids = new int[reader.ReadInt()];
+                    for (var j = 0; j < ids.Length; j++)
+                    {
+                        ids[j] = reader.ReadInt();
+                    }
+
+                    _schema.Add(schemaId, ids);
                 }
             }
 

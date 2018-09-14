@@ -117,14 +117,14 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     private static class ClientMarshallerContext extends MarshallerContextImpl {
         /** */
         public ClientMarshallerContext() {
-            super(null);
+            super(null, null);
         }
 
         /**
          * @param plugins Plugins.
          */
         public ClientMarshallerContext(@Nullable List<PluginProvider> plugins) {
-            super(plugins);
+            super(plugins, null);
         }
     }
 }

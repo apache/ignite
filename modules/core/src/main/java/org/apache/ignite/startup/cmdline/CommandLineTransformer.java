@@ -18,6 +18,7 @@
 package org.apache.ignite.startup.cmdline;
 
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,8 +85,9 @@ public class CommandLineTransformer {
         PrintStream ps = null;
 
         try {
-            // Intentionality configure output stream with UTF-8 encoding to support  non-ASCII named parameter values.
-            ps = new PrintStream(System.out, true, "UTF-8");
+            String encoding = System.getProperty("file.encoding", Charset.defaultCharset().name());
+
+            ps = new PrintStream(System.out, true, encoding);
 
             ps.println(transform(args));
         }

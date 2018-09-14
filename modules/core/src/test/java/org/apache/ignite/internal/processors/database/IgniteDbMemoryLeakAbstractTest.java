@@ -79,7 +79,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     @Override protected void configure(DataStorageConfiguration mCfg) {
         mCfg.setConcurrencyLevel(CONCURRENCY_LEVEL);
 
-        long size = (1024 * (isLargePage() ? 16 : 1) + 24) * pagesMax();
+        long size = (1024 * (isLargePage() ? 16 : 4) + 24) * pagesMax();
 
         mCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration().setMaxSize(Math.max(size, MIN_PAGE_CACHE_SIZE)).setName("default"));

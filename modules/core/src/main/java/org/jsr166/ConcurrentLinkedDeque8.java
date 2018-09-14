@@ -26,6 +26,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.concurrent.atomic.LongAdder;
 import sun.misc.Unsafe;
 
 
@@ -264,7 +265,7 @@ public class ConcurrentLinkedDeque8<E>
     private transient volatile Node<E> tail;
 
     /** */
-    private final LongAdder8 size = new LongAdder8();
+    private final LongAdder size = new LongAdder();
 
     private static final Node<Object> PREV_TERMINATOR, NEXT_TERMINATOR;
 

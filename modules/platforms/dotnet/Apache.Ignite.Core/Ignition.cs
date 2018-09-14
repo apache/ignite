@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core
         /// Gets the configuration section.
         /// </summary>
         private static T GetConfigurationSection<T>(string sectionName, string configPath)
-            where T : ConfigurationSection
+            where T : class
         {
             IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
             IgniteArgumentCheck.NotNullOrEmpty(configPath, "configPath");
@@ -407,7 +407,8 @@ namespace Apache.Ignite.Core
 
             // 3. Send configuration details to Java
             cfg.Validate(log);
-            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream));  // Use system marshaller.
+            // Use system marshaller.
+            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream), ClientSocket.CurrentProtocolVersion);
         }
 
         /// <summary>

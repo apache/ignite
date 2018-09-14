@@ -225,7 +225,28 @@ namespace ignite
                  *
                  * @return Pointer to write number of parameters processed in batch.
                  */
-                SqlUlen* GetParamsProcessedPtr();
+                SqlUlen* GetParamsProcessedPtr() const;
+
+                /**
+                 * Set pointer to array in which to return the status of each
+                 * set of parameters.
+                 * @param value Value.
+                 */
+                void SetParamsStatusPtr(SQLUSMALLINT* value);
+
+                /**
+                 * Get pointer to array in which to return the status of each
+                 * set of parameters.
+                 * @return Value.
+                 */
+                SQLUSMALLINT* GetParamsStatusPtr() const;
+
+                /**
+                 * Set parameter status.
+                 * @param idx Parameter index.
+                 * @param status Status to set.
+                 */
+                void SetParamStatus(int64_t idx, SQLUSMALLINT status) const;
 
             private:
                 /**
@@ -248,6 +269,9 @@ namespace ignite
 
                 /** Processed parameters. */
                 SqlUlen* processedParamRows;
+
+                /** Parameters status. */
+                SQLUSMALLINT* paramsStatus;
 
                 /** Parameter set size. */
                 SqlUlen paramSetSize;

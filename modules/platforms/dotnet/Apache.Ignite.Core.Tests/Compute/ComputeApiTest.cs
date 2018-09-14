@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -142,9 +143,13 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsTrue(node.Addresses.Count > 0);
                 Assert.Throws<NotSupportedException>(() => node.Addresses.Add("addr"));
 
-                Assert.NotNull(node.GetAttributes());
-                Assert.IsTrue(node.GetAttributes().Count > 0);
-                Assert.Throws<NotSupportedException>(() => node.GetAttributes().Add("key", "val"));
+                Assert.NotNull(node.Attributes);
+                Assert.IsTrue(node.Attributes.Count > 0);
+                Assert.Throws<NotSupportedException>(() => node.Attributes.Add("key", "val"));
+
+#pragma warning disable 618
+                Assert.AreSame(node.Attributes, node.GetAttributes());
+#pragma warning restore 618
 
                 Assert.NotNull(node.HostNames);
                 Assert.Throws<NotSupportedException>(() => node.HostNames.Add("h"));
@@ -784,31 +789,23 @@ namespace Apache.Ignite.Core.Tests.Compute
                 _grid1.GetCluster().ForRemotes().GetCompute().Broadcast(new ExceptionalComputeAction()));
 
             Assert.IsNotNull(ex.InnerException);
-#if NETCOREAPP2_0
-            // Exceptions can't be serialized on .NET Core
-            Assert.AreEqual("Operation is not supported on this platform.",
-                ex.InnerException.Message);
-#else
             Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.",
                 ex.InnerException.Message);
             Assert.IsNotNull(ex.InnerException.InnerException);
             Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
-#endif
         }
 
-#if !NETCOREAPP2_0
         /// <summary>
         /// Tests the footer setting.
         /// </summary>
         [Test]
         public void TestFooterSetting()
         {
-            Assert.AreEqual(CompactFooter, ((Impl.Ignite) _grid1).Marshaller.CompactFooter);
+            Assert.AreEqual(CompactFooter, ((Ignite) _grid1).Marshaller.CompactFooter);
 
             foreach (var g in new[] {_grid1, _grid2, _grid3})
                 Assert.AreEqual(CompactFooter, g.GetConfiguration().BinaryConfiguration.CompactFooter);
         }
-#endif
 
         /// <summary>
         /// Create configuration.

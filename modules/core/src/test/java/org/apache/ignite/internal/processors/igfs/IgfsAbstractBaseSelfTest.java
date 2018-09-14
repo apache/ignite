@@ -75,7 +75,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
 
     /** Default block size (32Mb). */
-    protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
+    protected static final long BLOCK_SIZE = 32L * 1024 * 1024;
 
     /** Default repeat count. */
     protected static final int REPEAT_CNT = 5; // Diagnostic: up to 500; Regression: 5

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,6 +38,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -46,6 +47,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.PersistentStore;
@@ -96,6 +98,13 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cfg.AutoGenerateIgniteInstanceName);
             Assert.AreEqual(new TimeSpan(1, 2, 3), cfg.LongQueryWarningTimeout);
             Assert.IsFalse(cfg.IsActiveOnStart);
+            Assert.IsTrue(cfg.AuthenticationEnabled);
+
+            Assert.IsNotNull(cfg.SqlSchemas);
+            Assert.AreEqual(2, cfg.SqlSchemas.Count);
+            Assert.IsTrue(cfg.SqlSchemas.Contains("SCHEMA_1"));
+            Assert.IsTrue(cfg.SqlSchemas.Contains("schema_2"));
+
             Assert.AreEqual("someId012", cfg.ConsistentId);
             Assert.IsFalse(cfg.RedirectJavaConsoleOutput);
 
@@ -132,6 +141,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
             Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
             Assert.IsTrue(queryEntity.Fields.Single().NotNull);
+            Assert.AreEqual(3.456d, (double)queryEntity.Fields.Single().DefaultValue);
             Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
             Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
 
@@ -250,6 +260,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(client.TcpNoDelay);
             Assert.AreEqual(14, client.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, client.ThreadPoolSize);
+            Assert.AreEqual(19, client.IdleTimeout.TotalSeconds);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -334,6 +345,15 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(6, dr.MetricsSubIntervalCount);
             Assert.AreEqual("swap2", dr.SwapPath);
             Assert.IsFalse(dr.MetricsEnabled);
+
+            Assert.IsInstanceOf<SslContextFactory>(cfg.SslContextFactory);
+            
+            Assert.IsInstanceOf<StopNodeOrHaltFailureHandler>(cfg.FailureHandler);
+
+            var failureHandler = (StopNodeOrHaltFailureHandler)cfg.FailureHandler;
+            
+            Assert.IsTrue(failureHandler.TryStop);  
+            Assert.AreEqual(TimeSpan.Parse("0:1:0"), failureHandler.Timeout);
         }
 
         /// <summary>
@@ -676,7 +696,8 @@ namespace Apache.Ignite.Core.Tests
                                     new QueryField("field", typeof(int))
                                     {
                                         IsKeyField = true,
-                                        NotNull = true
+                                        NotNull = true,
+                                        DefaultValue = "foo"
                                     }
                                 },
                                 Indexes = new[]
@@ -895,7 +916,11 @@ namespace Apache.Ignite.Core.Tests
                     SocketReceiveBufferSize = 5,
                     SocketSendBufferSize = 6,
                     TcpNoDelay = false,
-                    ThreadPoolSize = 7
+                    ThinClientEnabled = false,
+                    OdbcEnabled = false,
+                    JdbcEnabled = false,
+                    ThreadPoolSize = 7,
+                    IdleTimeout = TimeSpan.FromMinutes(5)
                 },
                 PersistentStoreConfiguration = new PersistentStoreConfiguration
                 {
@@ -990,6 +1015,12 @@ namespace Apache.Ignite.Core.Tests
                             SwapPath = Path.GetTempPath()
                         }
                     }
+                },
+                SslContextFactory = new SslContextFactory(),
+                FailureHandler = new StopNodeOrHaltFailureHandler()
+                {
+                    TryStop = false,
+                    Timeout = TimeSpan.FromSeconds(10)
                 }
             };
         }

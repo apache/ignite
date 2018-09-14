@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
 /**
  * Tests of Map, Combine and Reduce task executions via running of job of hadoop API v1.
  */
-public class HadoopTasksV1Test extends HadoopTasksAllVersionsTest {
+public class HadoopTasksV1Test extends HadoopTasksVersionsAbstractTest {
     /**
      * Creates WordCount hadoop job for API v1.
      *

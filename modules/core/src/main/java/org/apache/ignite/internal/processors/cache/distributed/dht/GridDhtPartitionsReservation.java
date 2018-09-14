@@ -189,7 +189,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
      */
     private static void tryEvict(GridDhtLocalPartition part) {
         if (part.state() == RENTING && part.reservations() == 0)
-            part.tryEvictAsync(true);
+            part.tryContinueClearing();
     }
 
     /**
@@ -227,8 +227,6 @@ public class GridDhtPartitionsReservation implements GridReservable {
                 GridDhtLocalPartition part = arr[i];
 
                 part.removeReservation(this);
-
-                tryEvict(part);
             }
         }
 
@@ -240,7 +238,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
     }
 
     /**
-     * Must be checked in {@link GridDhtLocalPartition#tryEvict()}.
+     * Must be checked in {@link GridDhtLocalPartition#tryClear(EvictionContext)}.
      * If returns {@code true} this reservation object becomes invalid and partitions
      * can be evicted or at least cleared.
      * Also this means that after returning {@code true} here method {@link #reserve()} can not

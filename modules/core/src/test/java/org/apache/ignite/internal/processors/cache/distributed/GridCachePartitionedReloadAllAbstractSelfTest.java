@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.integration.CompletionListenerFuture;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -39,7 +40,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -58,7 +58,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Map where dummy cache store values are stored. */
-    private final Map<Integer, String> map = new ConcurrentHashMap8<>();
+    private final Map<Integer, String> map = new ConcurrentHashMap<>();
 
     /** Collection of caches, one per grid node. */
     private List<IgniteCache<Integer, String>> caches;
@@ -134,11 +134,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         map.clear();
-
-        caches = null;
     }
 
     /**

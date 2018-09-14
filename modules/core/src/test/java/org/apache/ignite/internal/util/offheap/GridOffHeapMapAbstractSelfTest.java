@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tests off-heap map.
@@ -60,7 +60,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
     protected GridOffHeapEvictListener evictLsnr;
 
     /** */
-    protected long mem = 20 * 1024 * 1024;
+    protected long mem = 20L * 1024 * 1024;
 
     /** */
     protected int loadCnt = 100000;
@@ -421,7 +421,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
 
         int threads = 5;
 
-        final Map<String, String> m = new ConcurrentHashMap8<>(max);
+        final Map<String, String> m = new ConcurrentHashMap<>(max);
 
         multithreaded(new Callable() {
             @Override public Object call() throws Exception {

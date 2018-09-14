@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -43,7 +44,6 @@ import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
@@ -186,7 +186,7 @@ public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements Load
 
     /** */
     private final Map<IgniteUuid, RoundRobinPerTaskLoadBalancer> perTaskBalancers =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Event listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {

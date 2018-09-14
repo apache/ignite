@@ -18,10 +18,13 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.ServiceProcess;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -56,23 +59,29 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStopFromJava()
         {
+            var startTime = DateTime.Now.AddSeconds(-1);
+
             var exePath = typeof(IgniteRunner).Assembly.Location;
             var springPath = Path.GetFullPath(@"config\compute\compute-grid1.xml");
+
+            JvmDll.Load(null, new NoopLogger());
+            var jvmDll = System.Diagnostics.Process.GetCurrentProcess().Modules
+                .OfType<ProcessModule>()
+                .Single(x => JvmDll.FileJvmDll.Equals(x.ModuleName, StringComparison.OrdinalIgnoreCase));
 
             IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
                 "/install",
                 "ForceTestClasspath=true",
                 "-springConfigUrl=" + springPath,
-                "-J-Xms513m",
-                "-J-Xmx555m"
+                "-jvmDll=" + jvmDll.FileName
             }).WaitForExit();
 
             var service = GetIgniteService();
             Assert.IsNotNull(service);
 
             service.Start();  // see IGNITE_HOME\work\log for service instance logs
-            service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+            WaitForStatus(service, startTime, ServiceControllerStatus.Running);
 
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
@@ -89,8 +98,33 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.IsTrue(ignite.WaitTopology(1), "Failed to stop remote node");
 
-                // Check that service has stopped
-                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+                // Check that service has stopped.
+                WaitForStatus(service, startTime, ServiceControllerStatus.Stopped);
+            }
+        }
+
+        /// <summary>
+        /// Waits for service status.
+        /// </summary>
+        private static void WaitForStatus(ServiceController service, DateTime startTime,
+            ServiceControllerStatus status)
+        {
+            try
+            {
+                service.WaitForStatus(status, TimeSpan.FromSeconds(30));
+            }
+            catch (Exception ex)
+            {
+                // Check Windows log for more details.
+                var log = EventLog.GetEventLogs().Single(x => x.Log == "Application");
+                var entries = log.Entries;
+                var recentEntries = Enumerable.Range(0, entries.Count)
+                    .Select(x => entries[x])
+                    .Where(x => x.TimeGenerated >= startTime)
+                    .Select(x => x.Message);
+                var msg = string.Join("\n===\n", recentEntries);
+
+                throw new Exception("Failed to start service. Event entries:\n" + msg, ex);
             }
         }
 
@@ -119,6 +153,20 @@ namespace Apache.Ignite.Core.Tests
         private static ServiceController GetIgniteService()
         {
             return ServiceController.GetServices().FirstOrDefault(x => x.ServiceName.StartsWith("Apache Ignite.NET"));
+        }
+
+        private class NoopLogger : ILogger
+        {
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
+                string nativeErrorInfo, Exception ex)
+            {
+                // No-op.
+            }
+
+            public bool IsEnabled(LogLevel level)
+            {
+                return false;
+            }
         }
     }
 }

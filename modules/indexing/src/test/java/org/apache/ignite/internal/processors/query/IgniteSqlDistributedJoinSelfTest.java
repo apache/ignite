@@ -66,11 +66,6 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(NODES_COUNT, false);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param name Cache name.
      * @param partitioned Partition or replicated cache.

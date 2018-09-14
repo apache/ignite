@@ -137,7 +137,7 @@ namespace Apache.Ignite
             Console.WriteLine("\t-ConfigSectionName     name of the IgniteConfigurationSection in app.config to use.");
             Console.WriteLine("\t-ConfigFileName        path to the app.config file (if not provided Apache.Ignite.exe.config is used).");
             Console.WriteLine("\t-springConfigUrl       path to Spring configuration file.");
-            Console.WriteLine("\t-jvmDllPath            path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used).");
+            Console.WriteLine("\t-jvmDll                path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used).");
             Console.WriteLine("\t-jvmClasspath          classpath passed to JVM (enlist additional jar files here).");
             Console.WriteLine("\t-suppressWarnings      whether to print warnings.");
             Console.WriteLine("\t-J<javaOption>         JVM options passed to created JVM.");

@@ -26,13 +26,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -63,7 +60,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
             memCfg.setPageSize(2048);
 
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-        memPlcCfg.setMaxSize(100 * 1000 * 1000);
+        memPlcCfg.setMaxSize(100L * 1000 * 1000);
         memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setPersistenceEnabled(true);
 
@@ -90,14 +87,14 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
@@ -135,12 +132,5 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         for (int i = 0; i < ENTRIES_COUNT; i++)
             assertEquals((Integer)i, cache.get(i));
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

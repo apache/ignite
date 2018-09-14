@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 
 /**
  * Interface to perform file I/O operations.
@@ -49,76 +50,168 @@ public interface FileIO extends AutoCloseable {
     /**
      * Reads a sequence of bytes from this file into the {@code destinationBuffer}.
      *
-     * @param destinationBuffer Destination byte buffer.
+     * @param destBuf Destination byte buffer.
      *
-     * @return Number of read bytes.
-     *
-     * @throws IOException If some I/O error occurs.
-     */
-    public int read(ByteBuffer destinationBuffer) throws IOException;
-
-    /**
-     * Reads a sequence of bytes from this file into the {@code destinationBuffer}
-     * starting from specified file {@code position}.
-     *
-     * @param destinationBuffer Destination byte buffer.
-     * @param position Starting position of file.
-     *
-     * @return Number of read bytes.
+     * @return Number of read bytes, or <tt>-1</tt> if the
+     *          given position is greater than or equal to the file's current size
      *
      * @throws IOException If some I/O error occurs.
      */
-    public int read(ByteBuffer destinationBuffer, long position) throws IOException;
+    public int read(ByteBuffer destBuf) throws IOException;
 
     /**
-     * Reads a up to {@code length} bytes from this file into the {@code buffer}.
+     * Reads a sequence of bytes from this file into the {@code destinationBuffer}.
      *
-     * @param buffer Destination byte array.
-     * @param offset The start offset in array {@code b}
-     *               at which the data is written.
-     * @param length Maximum number of bytes read.
-     *
-     * @return Number of read bytes.
-     *
-     * @throws IOException If some I/O error occurs.
-     */
-    public int read(byte[] buffer, int offset, int length) throws IOException;
-
-    /**
-     * Writes a sequence of bytes to this file from the {@code sourceBuffer}.
-     *
-     * @param sourceBuffer Source buffer.
+     * @param destBuf Destination byte buffer.
      *
      * @return Number of written bytes.
      *
      * @throws IOException If some I/O error occurs.
      */
-    public int write(ByteBuffer sourceBuffer) throws IOException;
+    public int readFully(ByteBuffer destBuf) throws IOException;
+
+    /**
+     * Reads a sequence of bytes from this file into the {@code destinationBuffer}
+     * starting from specified file {@code position}.
+     *
+     * @param destBuf Destination byte buffer.
+     * @param position Starting position of file.
+     *
+     * @return Number of read bytes, possibly zero, or <tt>-1</tt> if the
+     *          given position is greater than or equal to the file's current
+     *          size
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int read(ByteBuffer destBuf, long position) throws IOException;
+
+    /**
+     * Reads a sequence of bytes from this file into the {@code destinationBuffer}
+     * starting from specified file {@code position}.
+     *
+     * @param destBuf Destination byte buffer.
+     * @param position Starting position of file.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int readFully(ByteBuffer destBuf, long position) throws IOException;
+
+    /**
+     * Reads a up to {@code length} bytes from this file into the {@code buffer}.
+     *
+     * @param buf Destination byte array.
+     * @param off The start offset in array {@code b}
+     *               at which the data is written.
+     * @param len Maximum number of bytes read.
+     *
+     * @return Number of read bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int read(byte[] buf, int off, int len) throws IOException;
+
+    /**
+     * Reads a up to {@code length} bytes from this file into the {@code buffer}.
+     *
+     * @param buf Destination byte array.
+     * @param off The start offset in array {@code b}
+     *               at which the data is written.
+     * @param len Number of bytes read.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int readFully(byte[] buf, int off, int len) throws IOException;
+
+    /**
+     * Writes a sequence of bytes to this file from the {@code sourceBuffer}.
+     *
+     * @param srcBuf Source buffer.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int write(ByteBuffer srcBuf) throws IOException;
+
+    /**
+     * Writes a sequence of bytes to this file from the {@code sourceBuffer}.
+     *
+     * @param srcBuf Source buffer.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int writeFully(ByteBuffer srcBuf) throws IOException;
 
     /**
      * Writes a sequence of bytes to this file from the {@code sourceBuffer}
      * starting from specified file {@code position}
      *
-     * @param sourceBuffer Source buffer.
+     * @param srcBuf Source buffer.
      * @param position Starting file position.
      *
      * @return Number of written bytes.
      *
      * @throws IOException If some I/O error occurs.
      */
-    public int write(ByteBuffer sourceBuffer, long position) throws IOException;
+    public int write(ByteBuffer srcBuf, long position) throws IOException;
+
+    /**
+     * Writes a sequence of bytes to this file from the {@code sourceBuffer}
+     * starting from specified file {@code position}
+     *
+     * @param srcBuf Source buffer.
+     * @param position Starting file position.
+     *
+     * @return Number of written bytes.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public int writeFully(ByteBuffer srcBuf, long position) throws IOException;
 
     /**
      * Writes {@code length} bytes from the {@code buffer}
      * starting at offset {@code off} to this file.
      *
-     * @param buffer Source byte array.
-     * @param offset Start offset in the {@code buffer}.
-     * @param length Number of bytes to write.
+     * @param buf Source byte array.
+     * @param off Start offset in the {@code buffer}.
+     * @param len Number of bytes to write.
+     *
+     * @return Number of written bytes.
+     * 
+     * @throws IOException If some I/O error occurs.
+     */
+    public int write(byte[] buf, int off, int len) throws IOException;
+
+    /**
+     * Writes {@code length} bytes from the {@code buffer}
+     * starting at offset {@code off} to this file.
+     *
+     * @param buf Source byte array.
+     * @param off Start offset in the {@code buffer}.
+     * @param len Number of bytes to write.
+     *
+     * @return Number of written bytes.
      *
      * @throws IOException If some I/O error occurs.
      */
-    public void write(byte[] buffer, int offset, int length) throws IOException;
+    public int writeFully(byte[] buf, int off, int len) throws IOException;
+
+    /**
+     * Allocates memory mapped buffer for this file with given size.
+     *
+     * @param sizeBytes Size of buffer.
+     *
+     * @return Instance of mapped byte buffer.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public MappedByteBuffer map(int sizeBytes) throws IOException;
 
     /**
      * Forces any updates of this file to be written to the storage
@@ -127,6 +220,15 @@ public interface FileIO extends AutoCloseable {
      * @throws IOException If some I/O error occurs.
      */
     public void force() throws IOException;
+
+    /**
+     * Forces any updates of this file to be written to the storage
+     * device that contains it.
+     *
+     * @param withMetadata If {@code true} force also file metadata.
+     * @throws IOException If some I/O error occurs.
+     */
+    public void force(boolean withMetadata) throws IOException;
 
     /**
      * Returns current file size in bytes.

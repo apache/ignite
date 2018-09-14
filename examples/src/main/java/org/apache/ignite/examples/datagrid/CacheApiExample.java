@@ -18,12 +18,12 @@
 package org.apache.ignite.examples.datagrid;
 
 import java.util.concurrent.ConcurrentMap;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 
 /**
@@ -50,8 +50,13 @@ public class CacheApiExample {
             System.out.println();
             System.out.println(">>> Cache API example started.");
 
+            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
+
             // Auto-close cache at the end of the example.
-            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cfg)) {
                 // Demonstrate atomic map operations.
                 atomicMapOperations(cache);
             }
@@ -76,7 +81,7 @@ public class CacheApiExample {
         String v = cache.getAndPut(1, "1");
         assert v == null;
 
-        // Put and do not return previous value.
+        // Put and do not return previous value (all methods ending with 'x' return boolean).
         // Performs better when previous value is not needed.
         cache.put(2, "2");
 
@@ -87,14 +92,13 @@ public class CacheApiExample {
 
         // Invoke - assign new value based on previous value.
         cache.put(6, "6");
-        cache.invoke(6, new EntryProcessor<Integer, String, Object>() {
-            @Override public Object process(MutableEntry<Integer, String> entry, Object... args) {
-                String v = entry.getValue();
 
-                entry.setValue(v + "6"); // Set new value based on previous value.
+        cache.invoke(6, (entry, args) -> {
+            String val = entry.getValue();
 
-                return null;
-            }
+            entry.setValue(val + "6"); // Set new value based on previous value.
+
+            return null;
         });
 
         // Replace.

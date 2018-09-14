@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.util;
 
+import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Represents address along with port range.
  */
-public class HostAndPortRange {
+public class HostAndPortRange implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Host. */
     private final String host;
 
@@ -85,12 +89,19 @@ public class HostAndPortRange {
                 throw createParseError(addrStr, errMsgPrefix, "start port cannot be less than end port");
         }
         else {
+            // Host name not specified.
+            if (colIdx == 0)
+                throw createParseError(addrStr, errMsgPrefix, "Host name is empty");
+
             // Port is not specified, use defaults.
             host = addrStr;
 
             portFrom = dfltPortFrom;
             portTo = dfltPortTo;
         }
+
+        if (F.isEmpty(host))
+            throw createParseError(addrStr, errMsgPrefix, "Host name is empty");
 
         return new HostAndPortRange(host, portFrom, portTo);
     }
@@ -108,7 +119,7 @@ public class HostAndPortRange {
         try {
             int port = Integer.parseInt(portStr);
 
-            if (port < 0 || port > 65535)
+            if (port <= 0 || port > 65535)
                 throw createParseError(addrStr, errMsgPrefix, "port range contains invalid port " + portStr);
 
             return port;

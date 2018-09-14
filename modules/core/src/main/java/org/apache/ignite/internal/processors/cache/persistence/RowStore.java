@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 
 /**
  * Data store for H2 rows.
@@ -42,6 +44,9 @@ public class RowStore {
 
     /** */
     private final boolean persistenceEnabled;
+
+    /** Row cache cleaner. */
+    private GridQueryRowCacheCleaner rowCacheCleaner;
 
     /**
      * @param grp Cache group.
@@ -66,6 +71,9 @@ public class RowStore {
      */
     public void removeRow(long link) throws IgniteCheckedException {
         assert link != 0;
+
+        if (rowCacheCleaner != null)
+            rowCacheCleaner.remove(link);
 
         if (!persistenceEnabled)
             freeList.removeDataRowByLink(link);
@@ -93,6 +101,8 @@ public class RowStore {
 
             try {
                 freeList.insertDataRow(row);
+
+                assert row.link() != 0L;
             }
             finally {
                 ctx.database().checkpointReadUnlock();
@@ -103,13 +113,39 @@ public class RowStore {
     /**
      * @param link Row link.
      * @param row New row data.
-     * @throws IgniteCheckedException If failed.
      * @return {@code True} if was able to update row.
+     * @throws IgniteCheckedException If failed.
      */
     public boolean updateRow(long link, CacheDataRow row) throws IgniteCheckedException {
         assert !persistenceEnabled || ctx.database().checkpointLockIsHeldByThread();
 
+        if (rowCacheCleaner != null)
+            rowCacheCleaner.remove(link);
+
         return freeList.updateDataRow(link, row);
+    }
+
+    /**
+     * Run page handler operation over the row.
+     *
+     * @param link Row link.
+     * @param pageHnd Page handler.
+     * @param arg Page handler argument.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <S, R> void updateDataRow(long link, PageHandler<S, R> pageHnd, S arg) throws IgniteCheckedException {
+        if (!persistenceEnabled)
+            freeList.updateDataRow(link, pageHnd, arg);
+        else {
+            ctx.database().checkpointReadLock();
+
+            try {
+                freeList.updateDataRow(link, pageHnd, arg);
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
+        }
     }
 
     /**
@@ -117,5 +153,14 @@ public class RowStore {
      */
     public FreeList freeList() {
         return freeList;
+    }
+
+    /**
+     * Inject rows cache cleaner.
+     *
+     * @param rowCacheCleaner Rows cache cleaner.
+     */
+    public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
+        this.rowCacheCleaner = rowCacheCleaner;
     }
 }

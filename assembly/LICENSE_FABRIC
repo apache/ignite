@@ -261,7 +261,7 @@ This product bundles JTidy which is available under the following:
 Java HTML Tidy License. For details, see http://jtidy.svn.sourceforge.net/viewvc/jtidy/trunk/jtidy/LICENSE.txt?revision=95.
 
 ==============================================================================
-For tomcat-servlet-api (http://tomcat.apache.org/) org.apache.tomcat:tomcat-servlet-api:jar:8.0.23
+For tomcat-servlet-api (http://tomcat.apache.org/) org.apache.tomcat:tomcat-servlet-api:jar:9.0.10
 ==============================================================================
 This product bundles tomcat-servlet-api which is available under the following:
 Apache License, Version 2.0 and Common Development And Distribution License (CDDL) Version 1.0. For details, see http://www.apache.org/licenses/LICENSE-2.0.txt and http://www.opensource.org/licenses/cddl1.txt.

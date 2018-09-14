@@ -17,9 +17,18 @@
 
 package org.apache.ignite.internal;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
@@ -27,6 +36,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Assert;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
@@ -49,9 +59,8 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      */
-    public void testStartStop() throws Exception {
+    public void testStartStop() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setConnectorConfiguration(null);
@@ -144,7 +153,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(null);
 
-        Ignite ignite = G.start(cfg);
+        IgniteEx ignite = startGrid(cfg);
 
         assert ignite != null;
 
@@ -183,5 +192,33 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         catch (Exception e) {
             assert e instanceof IllegalStateException : "Wrong exception type.";
         }
+
+        //check all executors are terminated
+        GridKernalContext ctx = ignite.context();
+
+        Map<String, ExecutorService> executors =
+            Arrays.stream(GridKernalContext.class.getMethods())
+                .filter(method -> method.getReturnType().equals(ExecutorService.class))
+                .collect(
+                    HashMap::new,
+                    (map, method) -> {
+                        try {
+                            String mtdName = method.getName();
+                            String executorSvcKey = mtdName.startsWith("get") ? mtdName.substring(3) : mtdName;
+                            map.put(executorSvcKey, (ExecutorService)method.invoke(ctx));
+                        }
+                        catch (IllegalAccessException | InvocationTargetException e) {
+                            throw new IgniteException(e);
+                        }
+                    },
+                    HashMap::putAll
+                );
+
+        String errs = executors.entrySet().stream()
+            .filter(e -> !(e.getValue() == null || e.getValue().isTerminated()))
+            .map(e -> e.getKey() + " not terminated.")
+            .collect(Collectors.joining("\n"));
+
+        assertTrue(errs, errs == null || errs.isEmpty());
     }
 }

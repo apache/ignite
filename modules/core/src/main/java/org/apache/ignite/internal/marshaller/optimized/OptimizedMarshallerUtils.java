@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
@@ -152,9 +151,6 @@ class OptimizedMarshallerUtils {
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    /** JDK marshaller. */
-    static final JdkMarshaller JDK_MARSH = new JdkMarshaller();
-
     static {
         long mapOff;
 
@@ -207,7 +203,7 @@ class OptimizedMarshallerUtils {
             try {
                 registered = ctx.registerClassName(JAVA_ID, typeId, cls.getName());
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 

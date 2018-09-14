@@ -28,6 +28,11 @@ namespace Apache.Ignite.Core.Datastream
         /// The default per node buffer size, see <see cref="IDataStreamer{TK,TV}.PerNodeBufferSize"/>.
         /// </summary>
         public const int DefaultPerNodeBufferSize = 512;
+        
+        /// <summary>
+        /// The default per thread buffer size, see <see cref="IDataStreamer{TK,TV}.PerThreadBufferSize"/>.
+        /// </summary>
+        public const int DefaultPerThreadBufferSize = 4096;
 
         /// <summary>
         /// Default multiplier for parallel operations per node:

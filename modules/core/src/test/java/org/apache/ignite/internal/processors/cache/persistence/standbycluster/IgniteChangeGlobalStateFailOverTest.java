@@ -127,7 +127,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                 }
             });
 
-            sleep(60_000);
+            sleep(30_000);
 
             stop.set(true);
 
@@ -255,7 +255,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                 }
             });
 
-            sleep(60_000);
+            sleep(30_000);
 
             stop.set(true);
 
@@ -362,7 +362,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                 }
             });
 
-            sleep(60_000);
+            sleep(30_000);
 
             stop.set(true);
 

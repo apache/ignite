@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.offheap;
 
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -34,15 +35,14 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Manages offheap memory caches.
  */
 public class GridOffHeapProcessor extends GridProcessorAdapter {
     /** */
-    private final ConcurrentHashMap8<String, GridOffHeapPartitionedMap> offheap =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap<String, GridOffHeapPartitionedMap> offheap =
+        new ConcurrentHashMap<>();
 
     /** */
     private final Marshaller marsh;

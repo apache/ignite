@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -64,20 +65,23 @@ public class IgniteClientReconnectDiscoveryStateTest extends IgniteClientReconne
         nodeCnt.put(1, 1);
         nodeCnt.put(2, 2);
         nodeCnt.put(3, 3);
-        nodeCnt.put(4, 4);
 
-        for (Map.Entry<Integer, Integer> e : nodeCnt.entrySet()) {
-            Collection<ClusterNode> nodes = cluster.topology(e.getKey());
+        if (tcpDiscovery()) {
+            nodeCnt.put(4, 4);
 
-            assertNotNull("No nodes for topology: " + e.getKey(), nodes);
-            assertEquals((int)e.getValue(), nodes.size());
+            for (Map.Entry<Integer, Integer> e : nodeCnt.entrySet()) {
+                Collection<ClusterNode> nodes = cluster.topology(e.getKey());
+
+                assertNotNull("No nodes for topology: " + e.getKey(), nodes);
+                assertEquals((int)e.getValue(), nodes.size());
+            }
         }
 
         ClusterNode locNode = cluster.localNode();
 
         assertEquals(topVer, locNode.order());
 
-        TestTcpDiscoverySpi srvSpi = spi(clientRouter(client));
+        DiscoverySpi srvSpi = ignite(0).configuration().getDiscoverySpi();
 
         final CountDownLatch reconnectLatch = new CountDownLatch(1);
 
@@ -112,7 +116,11 @@ public class IgniteClientReconnectDiscoveryStateTest extends IgniteClientReconne
         assertEquals(topVer, locNode.order());
         assertEquals(topVer, cluster.topologyVersion());
 
-        nodeCnt.put(5, 3);
+        if (tcpDiscovery())
+            nodeCnt.put(5, 3);
+        else
+            nodeCnt.clear();
+
         nodeCnt.put(6, 4);
 
         for (Map.Entry<Integer, Integer> e : nodeCnt.entrySet()) {

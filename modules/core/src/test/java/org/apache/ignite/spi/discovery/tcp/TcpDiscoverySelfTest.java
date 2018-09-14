@@ -90,6 +90,7 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -220,9 +221,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             cfg.setFailureDetectionTimeout(6_000);
 
             cfg.setGridLogger(strLog = new GridStringLogger());
+
+            strLog.logLength(300_000);
         }
-        else if (igniteInstanceName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode"))
+        else if (igniteInstanceName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode")) {
             cfg.setGridLogger(strLog = new GridStringLogger());
+
+            strLog.logLength(300_000);
+        }
 
         cfg.setClientMode(client);
 
@@ -1670,15 +1676,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             final Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             startGrid(1);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             Ignite ignite2 = startGrid(2);
 
@@ -1694,6 +1700,18 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param failOrder Fail order.
+     * @return Failed node spi.
+     */
+    @NotNull private TestFailedNodesSpi createFailedNodeSpi(int failOrder) {
+        TestFailedNodesSpi spi = new TestFailedNodesSpi(failOrder);
+
+        spi.setConnectionRecoveryTimeout(0);
+
+        return spi;
+    }
+
+    /**
      * Coordinator is added in failed list, concurrent nodes start.
      *
      * @throws Exception If failed.
@@ -1702,11 +1720,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             startGrid(1);
 
@@ -1716,7 +1734,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 @Override public Void call() throws Exception {
                     int idx = nodeIdx.incrementAndGet();
 
-                    nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+                    nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
                     startGrid(idx);
 
@@ -1744,11 +1762,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testFailedNodes3() throws Exception {
         try {
-            nodeSpi.set(new TestFailedNodesSpi(-1));
+            nodeSpi.set(createFailedNodeSpi(-1));
 
             Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(2));
+            nodeSpi.set(createFailedNodeSpi(2));
 
             Ignite ignite1 = startGrid(1);
 
@@ -1779,15 +1797,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             final int FAIL_ORDER = 3;
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             final Ignite ignite0 = startGrid(0);
 
-            nodeSpi.set(new TestFailedNodesSpi(FAIL_ORDER));
+            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
 
             Ignite ignite1 = startGrid(1);
 
-            TestFailedNodesSpi spi = new TestFailedNodesSpi(FAIL_ORDER);
+            TestFailedNodesSpi spi = createFailedNodeSpi(FAIL_ORDER);
 
             spi.stopBeforeSndFail = true;
 
@@ -1826,7 +1844,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 final int NODES = iter == 0 ? 2 : rnd.nextInt(3, 6);
 
                 for (int i = 0; i < NODES; i++) {
-                    nodeSpi.set(new TestFailedNodesSpi(-1));
+                    nodeSpi.set(createFailedNodeSpi(-1));
 
                     startGrid(i);
                 }
@@ -2079,7 +2097,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             TestRestoreConnectedSpi.startTest = false;
 
             for (int i = 1; i < 5; i++) {
-                nodeSpi.set(new TestRestoreConnectedSpi(3));
+                TestRestoreConnectedSpi spi = new TestRestoreConnectedSpi(3);
+
+                spi.setConnectionRecoveryTimeout(0);
+
+                nodeSpi.set(spi);
 
                 startGrid(i);
             }

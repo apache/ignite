@@ -66,13 +66,6 @@ public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
         assert G.allGrids().size() == 1;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        assert G.allGrids().isEmpty();
-    }
-
     /**
      * JUnit.
      *

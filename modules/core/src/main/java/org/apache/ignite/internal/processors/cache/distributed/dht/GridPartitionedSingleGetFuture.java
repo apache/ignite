@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersion
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -124,6 +125,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     @GridToStringInclude
     private ClusterNode node;
 
+    /** */
+    protected final MvccSnapshot mvccSnapshot;
+
     /** Post processing closure. */
     private volatile BackupPostProcessingClosure postProcessingClos;
 
@@ -154,9 +158,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
-        boolean recovery
+        boolean recovery,
+        @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert key != null;
+        assert mvccSnapshot == null || cctx.mvccEnabled();
 
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
@@ -181,6 +187,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
         this.topVer = topVer;
+        this.mvccSnapshot = mvccSnapshot;
 
         futId = IgniteUuid.randomUuid();
 
@@ -235,7 +242,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc,
                 skipVals,
-                recovery);
+                recovery,
+                mvccSnapshot);
 
             final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -305,7 +313,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 /*add reader*/false,
                 needVer,
                 cctx.deploymentEnabled(),
-                recovery);
+                recovery,
+                mvccSnapshot);
 
             try {
                 cctx.io().send(node, req, cctx.ioPolicy());
@@ -335,12 +344,19 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         }
 
         boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.allowFastLocalRead(part, affNodes, topVer);
+            cctx.reserveForFastLocalGet(part, topVer);
 
-        if (fastLocGet && localGet(topVer, part))
-            return null;
+        if (fastLocGet) {
+            try {
+                if (localGet(topVer, part))
+                    return null;
+            }
+            finally {
+                cctx.releaseForFastLocalGet(part, topVer);
+            }
+        }
 
-        ClusterNode affNode = affinityNode(affNodes);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
 
         if (affNode == null) {
             onDone(serverNotFoundError(topVer));
@@ -372,7 +388,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 boolean skipEntry = readNoEntry;
 
                 if (readNoEntry) {
-                    CacheDataRow row = cctx.offheap().read(cctx, key);
+                    CacheDataRow row = mvccSnapshot != null ? cctx.offheap().mvccRead(cctx, key, mvccSnapshot) :
+                        cctx.offheap().read(cctx, key);
 
                     if (row != null) {
                         long expireTime = row.expireTime();
@@ -415,6 +432,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 taskName,
                                 expiryPlc,
                                 true,
+                                mvccSnapshot,
                                 null);
 
                             if (res != null) {
@@ -433,10 +451,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 null,
                                 taskName,
                                 expiryPlc,
-                                true);
+                                true,
+                                mvccSnapshot);
                         }
 
-                        colocated.context().evicts().touch(entry, topVer);
+                        entry.touch(topVer);
 
                         // Entry was not in memory or in swap, so we remove it from cache.
                         if (v == null) {
@@ -659,6 +678,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param ver Version.
      */
     private void setResult(@Nullable CacheObject val, @Nullable GridCacheVersion ver) {
+        cctx.shared().database().checkpointReadLock();
+
         try {
             assert !skipVals;
 
@@ -680,6 +701,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         catch (Exception e) {
             onDone(e);
         }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
     }
 
     /**
@@ -697,25 +721,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private ClusterTopologyServerNotFoundException serverNotFoundError(AffinityTopologyVersion topVer) {
         return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
             "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
-    }
-
-    /**
-     * Affinity node to send get request to.
-     *
-     * @param affNodes All affinity nodes.
-     * @return Affinity node to get key from.
-     */
-    @Nullable private ClusterNode affinityNode(List<ClusterNode> affNodes) {
-        if (!canRemap) {
-            for (ClusterNode node : affNodes) {
-                if (cctx.discovery().alive(node))
-                    return node;
-            }
-
-            return null;
-        }
-        else
-            return affNodes.get(0);
     }
 
     /** {@inheritDoc} */

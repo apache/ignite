@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
     /// <summary>
     /// Atomic reference test.
     /// </summary>
-    public class AtomicReferenceTest : IgniteTestBase
+    public class AtomicReferenceTest : SpringTestBase
     {
         /** */
         private const string AtomicRefName = "testAtomicRef";

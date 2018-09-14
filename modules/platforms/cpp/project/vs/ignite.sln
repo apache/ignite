@@ -26,6 +26,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "common", "..\..\common\proj
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jni", "..\..\jni\project\vs\jni.vcxproj", "{4F7E4917-4612-4B96-9838-025711ADE391}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "thin-client", "..\..\thin-client\project\vs\thin-client.vcxproj", "{5C037386-B5F5-4A58-9EE2-3D3A508AA866}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "thin-client-test", "..\..\thin-client-test\project\vs\thin-client-test.vcxproj", "{5662F10A-9C40-45D6-AFF8-E93573FEAABA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -98,8 +102,27 @@ Global
 		{4F7E4917-4612-4B96-9838-025711ADE391}.Release|Win32.Build.0 = Release|Win32
 		{4F7E4917-4612-4B96-9838-025711ADE391}.Release|x64.ActiveCfg = Release|x64
 		{4F7E4917-4612-4B96-9838-025711ADE391}.Release|x64.Build.0 = Release|x64
+		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Debug|Win32.Build.0 = Debug|Win32
+		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Debug|x64.ActiveCfg = Debug|x64
+		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Debug|x64.Build.0 = Debug|x64
+		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Release|Win32.ActiveCfg = Release|Win32
+		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Release|Win32.Build.0 = Release|Win32
+		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Release|x64.ActiveCfg = Release|x64
+		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Release|x64.Build.0 = Release|x64
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Debug|Win32.Build.0 = Debug|Win32
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Debug|x64.ActiveCfg = Debug|x64
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Debug|x64.Build.0 = Debug|x64
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Release|Win32.ActiveCfg = Release|Win32
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Release|Win32.Build.0 = Release|Win32
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Release|x64.ActiveCfg = Release|x64
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3761BFB8-4345-4AC4-BE04-5ACB1DCA842C}
 	EndGlobalSection
 EndGlobal

@@ -110,9 +110,8 @@ module.exports.factory = function(mongo, mailsService, usersService, authService
 
             authService.resetPasswordByToken(token, password)
                 .then((user) => mailsService.emailPasswordChanged(req.origin(), user))
-                .then((user) => user.email)
                 .then(res.api.ok)
-                .then(res.api.error);
+                .catch(res.api.error);
         });
 
         /* GET reset password page. */

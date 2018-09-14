@@ -43,31 +43,41 @@ module.exports.factory = (settings) => {
          * @throws {Error}
          * @return {Promise}
          */
-        static send(user, subject, html, sendErr) {
+        send(user, subject, html, sendErr) {
+            const options = settings.mail;
+
             return new Promise((resolve, reject) => {
-                const transportConfig = settings.mail;
+                if (_.isEmpty(options))
+                    reject(new Error('SMTP server is not configured.'));
 
-                if (_.isEmpty(transportConfig.service) || _.isEmpty(transportConfig.auth.user) || _.isEmpty(transportConfig.auth.pass))
-                    throw new Error('Failed to send email. SMTP server is not configured. Please ask webmaster to setup SMTP server!');
+                if (!_.isEmpty(options.service)) {
+                    if (_.isEmpty(options.auth) || _.isEmpty(options.auth.user) || _.isEmpty(options.auth.pass))
+                        reject(new Error(`Credentials is not configured for service: ${options.service}`));
+                }
 
-                const mailer = nodemailer.createTransport(transportConfig);
+                resolve(nodemailer.createTransport(options));
+            })
+                .then((transporter) => {
+                    return transporter.verify().then(() => transporter);
+                })
+                .then((transporter) => {
+                    const sign = options.sign ? `<br><br>--------------<br>${options.sign}<br>` : '';
+                    const to = `"${user.firstName} ${user.lastName}" <${user.email}>`;
 
-                const sign = settings.mail.sign ? `<br><br>--------------<br>${settings.mail.sign}<br>` : '';
+                    const mail = {
+                        from: options.from,
+                        to,
+                        subject,
+                        html: html + sign
+                    };
 
-                const mail = {
-                    from: settings.mail.from,
-                    to: settings.mail.address(`${user.firstName} ${user.lastName}`, user.email),
-                    subject,
-                    html: html + sign
-                };
+                    return transporter.sendMail(mail);
+                })
+                .catch((err) => {
+                    console.log('Failed to send email.', err);
 
-                mailer.sendMail(mail, (err) => {
-                    if (err)
-                        return reject(sendErr ? new Error(sendErr) : err);
-
-                    resolve(user);
+                    return Promise.reject(sendErr ? new Error(sendErr) : err);
                 });
-            });
         }
 
         /**
@@ -75,10 +85,10 @@ module.exports.factory = (settings) => {
          * @param host
          * @param user
          */
-        static emailUserSignUp(host, user) {
+        emailUserSignUp(host, user) {
             const resetLink = `${host}/password/reset?token=${user.resetPasswordToken}`;
 
-            return MailsService.send(user, `Thanks for signing up for ${settings.mail.greeting}.`,
+            return this.send(user, `Thanks for signing up for ${settings.mail.greeting}.`,
                 `Hello ${user.firstName} ${user.lastName}!<br><br>` +
                 `You are receiving this email because you have signed up to use <a href="${host}">${settings.mail.greeting}</a>.<br><br>` +
                 'If you have not done the sign up and do not know what this email is about, please ignore it.<br>' +
@@ -91,10 +101,10 @@ module.exports.factory = (settings) => {
          * @param host
          * @param user
          */
-        static emailUserResetLink(host, user) {
+        emailUserResetLink(host, user) {
             const resetLink = `${host}/password/reset?token=${user.resetPasswordToken}`;
 
-            return MailsService.send(user, 'Password Reset',
+            return this.send(user, 'Password Reset',
                 `Hello ${user.firstName} ${user.lastName}!<br><br>` +
                 'You are receiving this because you (or someone else) have requested the reset of the password for your account.<br><br>' +
                 'Please click on the following link, or paste this into your browser to complete the process:<br><br>' +
@@ -108,8 +118,8 @@ module.exports.factory = (settings) => {
          * @param host
          * @param user
          */
-        static emailPasswordChanged(host, user) {
-            return MailsService.send(user, 'Your password has been changed',
+        emailPasswordChanged(host, user) {
+            return this.send(user, 'Your password has been changed',
                 `Hello ${user.firstName} ${user.lastName}!<br><br>` +
                 `This is a confirmation that the password for your account on <a href="${host}">${settings.mail.greeting}</a> has just been changed.<br><br>`,
                 'Password was changed, but failed to send confirmation email!');
@@ -120,13 +130,13 @@ module.exports.factory = (settings) => {
          * @param host
          * @param user
          */
-        static emailUserDeletion(host, user) {
-            return MailsService.send(user, 'Your account was removed',
+        emailUserDeletion(host, user) {
+            return this.send(user, 'Your account was removed',
                 `Hello ${user.firstName} ${user.lastName}!<br><br>` +
                 `You are receiving this email because your account for <a href="${host}">${settings.mail.greeting}</a> was removed.`,
                 'Account was removed, but failed to send email notification to user!');
         }
     }
 
-    return MailsService;
+    return new MailsService();
 };

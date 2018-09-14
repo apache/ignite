@@ -1,0 +1,10 @@
+{ "id": 1, "name": "Ivan Ivanov", "department": "Executive commitee" }
+{ "id": 2, "name": "Petr Petrov", "department": "Executive commitee" }
+{ "id": 3, "name": "Jonh Doe", "department": "Production" }
+{ "id": 4, "name": "Smith Ann", "department": "Production" }
+{ "id": 5, "name": "Sergey Smirnov", "department": "Accounting" }
+{ "id": 6, "name": "Alexandra Sergeeva", "department": "Accounting" }
+{ "id": 7, "name": "Adam West", "department": "IT" }
+{ "id": 8, "name": "Beverley Chase", "department": "Head Office" }
+{ "id": 9, "name": "Igor Rozhkov", "department": "Head Office" }
+{ "id": 10, "name": "Anastasia Borisova", "department": "IT" }

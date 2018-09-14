@@ -154,7 +154,18 @@ namespace ignite
                  * @return Result.
                  */
                 SqlResult::Type MakeRequestMoreResults();
-                
+
+                /**
+                 * Process column conversion operation result.
+                 *
+                 * @param convRes Conversion result.
+                 * @param rowIdx Row index.
+                 * @param columnIdx Column index.
+                 * @return General SQL result.
+                 */
+                SqlResult::Type ProcessConversionResult(app::ConversionResult::Type convRes, int32_t rowIdx,
+                    int32_t columnIdx);
+
                 /**
                  * Close query.
                  *

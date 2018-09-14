@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
@@ -51,17 +52,22 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
         return commit;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridNearTxLocal tx() {
+        return tx;
+    }
+
     /**
-     *
+     * @param clearThreadMap {@code True} if need remove tx from thread map.
      */
-    public void finish() {
+    @Override public void finish(boolean commit, boolean clearThreadMap, boolean onTimeout) {
         try {
             if (commit) {
                 tx.state(PREPARING);
                 tx.state(PREPARED);
                 tx.state(COMMITTING);
 
-                tx.context().tm().fastFinishTx(tx, true);
+                tx.context().tm().fastFinishTx(tx, true, true);
 
                 tx.state(COMMITTED);
             }
@@ -70,7 +76,7 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
                 tx.state(PREPARED);
                 tx.state(ROLLING_BACK);
 
-                tx.context().tm().fastFinishTx(tx, false);
+                tx.context().tm().fastFinishTx(tx, false, clearThreadMap);
 
                 tx.state(ROLLED_BACK);
             }
@@ -78,5 +84,10 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
         finally {
             onDone(tx);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onNodeStop(IgniteCheckedException e) {
+        onDone(tx, e);
     }
 }

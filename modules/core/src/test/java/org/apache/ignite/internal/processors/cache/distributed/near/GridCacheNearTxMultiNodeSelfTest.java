@@ -242,7 +242,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings( {"unchecked"})
     private void checkTm(Ignite g, IgniteTxManager tm) {
-        Collection<IgniteInternalTx> txs = tm.txs();
+        Collection<IgniteInternalTx> txs = tm.activeTransactions();
 
         info(">>> Number of transactions in the set [size=" + txs.size() +
             ", nodeId=" + g.cluster().localNode().id() + ']');

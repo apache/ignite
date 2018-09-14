@@ -24,6 +24,26 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// </summary>
     public class DataStorageMetricsParityTest
     {
+        /** Properties that are missing on .NET side. */
+        private static readonly string[] MissingProperties =
+        {
+            // IGNITE-7305
+            "WalBuffPollSpinsRate",
+            "WalTotalSize",
+            "WalLastRollOverTime",
+            "CheckpointTotalTime",
+            "DirtyPages",
+            "PagesRead",
+            "PagesWritten",
+            "PagesReplaced",
+            "OffHeapSize",
+            "OffheapUsedSize",
+            "TotalAllocatedSize",
+            "UsedCheckpointBufferPages",
+            "UsedCheckpointBufferSize",
+            "CheckpointBufferSize"
+        };
+
         /// <summary>
         /// Tests the API parity.
         /// </summary>
@@ -32,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             ParityTest.CheckInterfaceParity(
                 @"modules\core\src\main\java\org\apache\ignite\DataStorageMetrics.java",
-                typeof(IDataStorageMetrics));
+                typeof(IDataStorageMetrics), knownMissingMembers: MissingProperties);
         }
     }
 }

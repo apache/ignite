@@ -68,11 +68,11 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     private void cleanUpSwapDir() {
         Path relDir = Paths.get(U.getIgniteHome(), RELATIVE_SWAP_PATH);
 
-        deleteRecursively(relDir.toFile());
+        U.delete(relDir.toFile());
 
         Path absDir = Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH);
 
-        deleteRecursively(absDir.toFile());
+        U.delete(absDir.toFile());
     }
 
     /**
@@ -124,7 +124,9 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
 
         Object memProvider = U.field(pageMem, "directMemoryProvider");
 
-        return ((File) U.field(memProvider, "allocationPath")).getAbsolutePath();
+        Object memProvider0 = U.field(memProvider, "memProvider");
+
+        return ((File) U.field(memProvider0, "allocationPath")).getAbsolutePath();
     }
 
     /**
@@ -136,7 +138,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("default");
-        memPlcCfg.setMaxSize(20 * 1024 * 1024);
+        memPlcCfg.setMaxSize(20L * 1024 * 1024);
 
         if (isRelativePath)
             memPlcCfg.setSwapPath(RELATIVE_SWAP_PATH);

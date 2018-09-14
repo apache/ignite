@@ -27,7 +27,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
@@ -56,7 +55,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.TransactionException;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
@@ -111,6 +109,34 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         cnt++;
 
         return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCloseWithCancellation() throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        Ignite g1 = grid(1);
+
+        List<IgniteFuture> futures = new ArrayList<>();
+
+        IgniteDataStreamer<Object, Object> dataLdr = g1.dataStreamer(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100; i++)
+            futures.add(dataLdr.addData(i, i));
+
+        try {
+            dataLdr.close(true);
+        }
+        catch (CacheException e) {
+            // No-op.
+        }
+
+        for (IgniteFuture fut : futures)
+            assertTrue(fut.isDone());
     }
 
     /**
@@ -241,6 +267,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             IgniteFuture fut = null;
 
             try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+                streamer.perThreadBufferSize(1);
+
                 fut = streamer.addData(1, "1");
 
                 streamer.flush();
@@ -336,6 +364,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         final IgniteDataStreamer ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        ldr.perThreadBufferSize(1);
 
         final IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
@@ -470,6 +500,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
 
+        streamer.perThreadBufferSize(1);
+
         ((DataStreamerImpl)streamer).maxRemapCount(0);
 
         streamer.addData(1, 1);
@@ -488,6 +520,25 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
 
         fail("Expected exception wasn't thrown");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDataStreamerWaitsUntilDynamicCacheStartIsFinished() throws Exception {
+        final Ignite ignite0 = startGrids(2);
+        final Ignite ignite1 = grid(1);
+
+        final String cacheName = "testCache";
+
+        IgniteCache<Integer, Integer> cache = ignite0.getOrCreateCache(
+            new CacheConfiguration<Integer, Integer>().setName(cacheName));
+
+        try (IgniteDataStreamer<Integer, Integer> ldr = ignite1.dataStreamer(cacheName)) {
+            ldr.addData(0, 0);
+        }
+
+        assertEquals(Integer.valueOf(0), cache.get(0));
     }
 
     /**

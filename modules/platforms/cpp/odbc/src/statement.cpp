@@ -41,6 +41,7 @@ namespace ignite
             connection(parent),
             columnBindings(),
             currentQuery(),
+            rowBindType(SQL_BIND_BY_COLUMN),
             rowsFetched(0),
             rowStatuses(0),
             columnBindOffset(0),
@@ -243,6 +244,13 @@ namespace ignite
                     break;
                 }
 
+                case SQL_ATTR_ROW_BIND_TYPE:
+                {
+                    rowBindType = reinterpret_cast<SqlUlen>(value);
+
+                    break;
+                }
+
                 case SQL_ATTR_ROWS_FETCHED_PTR:
                 {
                     SetRowsFetchedPtr(reinterpret_cast<size_t*>(value));
@@ -282,6 +290,12 @@ namespace ignite
                 {
                     parameters.SetParamsProcessedPtr(reinterpret_cast<SqlUlen*>(value));
 
+                    break;
+                }
+
+                case SQL_ATTR_PARAM_STATUS_PTR:
+                {
+                    parameters.SetParamsStatusPtr(reinterpret_cast<SQLUSMALLINT*>(value));
                     break;
                 }
 
@@ -347,6 +361,15 @@ namespace ignite
 
                     if (valueLen)
                         *valueLen = SQL_IS_POINTER;
+
+                    break;
+                }
+
+                case SQL_ATTR_ROW_BIND_TYPE:
+                {
+                    SqlUlen* val = reinterpret_cast<SqlUlen*>(buf);
+
+                    *val = rowBindType;
 
                     break;
                 }
@@ -428,6 +451,18 @@ namespace ignite
                     SqlUlen** val = reinterpret_cast<SqlUlen**>(buf);
 
                     *val = parameters.GetParamsProcessedPtr();
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAM_STATUS_PTR:
+                {
+                    SQLUSMALLINT** val = reinterpret_cast<SQLUSMALLINT**>(buf);
+
+                    *val = parameters.GetParamsStatusPtr();
 
                     if (valueLen)
                         *valueLen = SQL_IS_POINTER;

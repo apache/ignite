@@ -25,6 +25,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -36,6 +37,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.MAX_ITEMID_NUM;
 
 /**
  * Base class for all the data structures based on {@link PageMemory}.
@@ -91,14 +93,26 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /**
+     * Shorthand for {@code allocatePage(bag, true)}.
+     *
      * @param bag Reuse bag.
      * @return Allocated page.
      * @throws IgniteCheckedException If failed.
      */
     protected final long allocatePage(ReuseBag bag) throws IgniteCheckedException {
+        return allocatePage(bag, true);
+    }
+
+    /**
+     * @param bag Reuse Bag.
+     * @param useRecycled Use recycled page.
+     * @return Allocated page.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final long allocatePage(ReuseBag bag, boolean useRecycled) throws IgniteCheckedException {
         long pageId = bag != null ? bag.pollFreePage() : 0;
 
-        if (pageId == 0 && reuseList != null)
+        if (pageId == 0 && useRecycled && reuseList != null)
             pageId = reuseList.takeRecycledPage();
 
         if (pageId == 0)
@@ -124,7 +138,8 @@ public abstract class DataStructure implements PageLockListener {
      */
     protected final long acquirePage(long pageId) throws IgniteCheckedException {
         assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
-            PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID : U.hexLong(pageId);
+            PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID :
+            U.hexLong(pageId) + " flag=" + PageIdUtils.flag(pageId) + " part=" + PageIdUtils.partId(pageId);
 
         return pageMem.acquirePage(grpId, pageId);
     }
@@ -333,7 +348,7 @@ public abstract class DataStructure implements PageLockListener {
      * @param page Page pointer.
      * @param pageAddr Page address.
      * @param walPlc Full page WAL record policy.
-     * @return Rotated page ID.
+     * @return Recycled page ID.
      * @throws IgniteCheckedException If failed.
      */
     protected final long recyclePage(
@@ -341,14 +356,34 @@ public abstract class DataStructure implements PageLockListener {
         long page,
         long pageAddr,
         Boolean walPlc) throws IgniteCheckedException {
-        long rotated = PageIdUtils.rotatePageId(pageId);
+        long recycled = 0;
 
-        PageIO.setPageId(pageAddr, rotated);
+        boolean needWalDeltaRecord = needWalDeltaRecord(pageId, page, walPlc);
 
-        if (needWalDeltaRecord(pageId, page, walPlc))
-            wal.log(new RecycleRecord(grpId, pageId, rotated));
+        if (PageIdUtils.tag(pageId) == FLAG_DATA) {
+            int rotatedIdPart = PageIO.getRotatedIdPart(pageAddr);
 
-        return rotated;
+            if (rotatedIdPart != 0) {
+                recycled = PageIdUtils.link(pageId, rotatedIdPart > MAX_ITEMID_NUM ? 1 : rotatedIdPart);
+
+                PageIO.setRotatedIdPart(pageAddr, 0);
+
+                if (needWalDeltaRecord)
+                    wal.log(new RotatedIdPartRecord(grpId, pageId, 0));
+            }
+        }
+
+        if (recycled == 0)
+            recycled = PageIdUtils.rotatePageId(pageId);
+
+        assert PageIdUtils.itemId(recycled) > 0 && PageIdUtils.itemId(recycled) <= MAX_ITEMID_NUM : U.hexLong(recycled);
+
+        PageIO.setPageId(pageAddr, recycled);
+
+        if (needWalDeltaRecord)
+            wal.log(new RecycleRecord(grpId, pageId, recycled));
+
+        return recycled;
     }
 
     /**

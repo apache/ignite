@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Client.Cache
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -65,7 +66,6 @@ namespace Apache.Ignite.Core.Client.Cache
             CopyOnRead = CacheConfiguration.DefaultCopyOnRead;
             WriteSynchronizationMode = CacheConfiguration.DefaultWriteSynchronizationMode;
             EagerTtl = CacheConfiguration.DefaultEagerTtl;
-            Invalidate = CacheConfiguration.DefaultInvalidate;
             LockTimeout = CacheConfiguration.DefaultLockTimeout;
             MaxConcurrentAsyncOperations = CacheConfiguration.DefaultMaxConcurrentAsyncOperations;
             ReadFromBackup = CacheConfiguration.DefaultReadFromBackup;
@@ -116,12 +116,12 @@ namespace Apache.Ignite.Core.Client.Cache
             {
                 using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    ClientCacheConfigurationSerializer.Write(stream, other);
+                    ClientCacheConfigurationSerializer.Write(stream, other, ClientSocket.CurrentProtocolVersion, true);
 
                     stream.SynchronizeOutput();
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    ClientCacheConfigurationSerializer.Read(stream, this);
+                    ClientCacheConfigurationSerializer.Read(stream, this, ClientSocket.CurrentProtocolVersion);
                 }
 
                 CopyLocalProperties(other);
@@ -157,11 +157,11 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheClientConfiguration"/> class.
         /// </summary>
-        internal CacheClientConfiguration(IBinaryStream stream)
+        internal CacheClientConfiguration(IBinaryStream stream, ClientProtocolVersion srvVer)
         {
             Debug.Assert(stream != null);
 
-            ClientCacheConfigurationSerializer.Read(stream, this);
+            ClientCacheConfigurationSerializer.Read(stream, this, srvVer);
         }
 
         /// <summary>
@@ -238,12 +238,6 @@ namespace Apache.Ignite.Core.Client.Cache
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:00")]
         public TimeSpan LockTimeout { get; set; }
-
-        /// <summary>
-        /// Invalidation flag. If true, values will be invalidated (nullified) upon commit in near cache.
-        /// </summary>
-        [DefaultValue(CacheConfiguration.DefaultInvalidate)]
-        public bool Invalidate { get; set; }
 
         /// <summary>
         /// Gets or sets cache rebalance mode.

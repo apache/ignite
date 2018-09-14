@@ -26,7 +26,9 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     MLPTest.class,
-    MLPLocalTrainerTest.class,
+    MLPTrainerTest.class,
+    MLPTrainerIntegrationTest.class,
+    LossFunctionsTest.class
 })
 public class MLPTestSuite {
     // No-op.

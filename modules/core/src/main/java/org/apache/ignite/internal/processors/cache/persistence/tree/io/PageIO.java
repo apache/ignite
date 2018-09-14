@@ -25,17 +25,24 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.MetadataStorage;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogInnerIO;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogLeafIO;
+import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -86,6 +93,12 @@ public abstract class PageIO {
     /** */
     private static IOVersions<? extends BPlusLeafIO<?>> h2LeafIOs;
 
+    /** */
+    private static IOVersions<? extends BPlusInnerIO<?>> h2MvccInnerIOs;
+
+    /** */
+    private static IOVersions<? extends BPlusLeafIO<?>> h2MvccLeafIOs;
+
     /** Maximum payload size. */
     public static final short MAX_PAYLOAD_SIZE = 2048;
 
@@ -94,6 +107,12 @@ public abstract class PageIO {
 
     /** */
     private static List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+
+    /** */
+    private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraMvccInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+
+    /** */
+    private static List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraMvccLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
 
     /** */
     public static final int TYPE_OFF = 0;
@@ -108,16 +127,31 @@ public abstract class PageIO {
     public static final int PAGE_ID_OFF = CRC_OFF + 4;
 
     /** */
-    private static final int RESERVED_1_OFF = PAGE_ID_OFF + 8;
+    public static final int ROTATED_ID_PART_OFF = PAGE_ID_OFF + 8;
 
     /** */
-    private static final int RESERVED_2_OFF = RESERVED_1_OFF + 8;
+    private static final int RESERVED_BYTE_OFF = ROTATED_ID_PART_OFF + 1;
+
+    /** */
+    private static final int RESERVED_SHORT_OFF = RESERVED_BYTE_OFF + 1;
+
+    /** */
+    private static final int RESERVED_INT_OFF = RESERVED_SHORT_OFF + 2;
+
+    /** */
+    private static final int RESERVED_2_OFF = RESERVED_INT_OFF + 4;
 
     /** */
     private static final int RESERVED_3_OFF = RESERVED_2_OFF + 8;
 
     /** */
-    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+reserved(3*8)
+    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+rotatedIdPart(1)+reserved(1+2+4+2*8)
+
+    /** */
+    public static final int MVCC_HINTS_MASK = 0xC0000000;
+
+    /** */
+    public static final int MVCC_HINTS_BIT_OFF = 30;
 
     /* All the page types. */
 
@@ -181,17 +215,62 @@ public abstract class PageIO {
     /** */
     public static final short T_PART_CNTRS = 20;
 
+    /** */
+    public static final short T_DATA_METASTORAGE = 21;
+
+    /** */
+    public static final short T_DATA_REF_METASTORAGE_INNER = 22;
+
+    /** */
+    public static final short T_DATA_REF_METASTORAGE_LEAF = 23;
+
+    /** */
+    public static final short T_DATA_REF_MVCC_INNER = 24;
+
+    /** */
+    public static final short T_DATA_REF_MVCC_LEAF = 25;
+
+    /** */
+    public static final short T_CACHE_ID_DATA_REF_MVCC_INNER = 26;
+
+    /** */
+    public static final short T_CACHE_ID_DATA_REF_MVCC_LEAF = 27;
+
+    /** */
+    public static final short T_H2_MVCC_REF_LEAF = 28;
+
+    /** */
+    public static final short T_H2_MVCC_REF_INNER = 29;
+
+    /** */
+    public static final short T_TX_LOG_LEAF = 30;
+
+    /** */
+    public static final short T_TX_LOG_INNER = 31;
+
     /** Index for payload == 1. */
-    public static final short T_H2_EX_REF_LEAF_START = 10000;
+    public static final short T_H2_EX_REF_LEAF_START = 10_000;
 
     /** */
     public static final short T_H2_EX_REF_LEAF_END = T_H2_EX_REF_LEAF_START + MAX_PAYLOAD_SIZE - 1;
 
     /** */
-    public static final short T_H2_EX_REF_INNER_START = 20000;
+    public static final short T_H2_EX_REF_INNER_START = 20_000;
 
     /** */
     public static final short T_H2_EX_REF_INNER_END = T_H2_EX_REF_INNER_START + MAX_PAYLOAD_SIZE - 1;
+
+    /** */
+    public static final short T_H2_EX_REF_MVCC_LEAF_START = 23_000;
+
+    /** */
+    public static final short T_H2_EX_REF_MVCC_LEAF_END = T_H2_EX_REF_MVCC_LEAF_START + MAX_PAYLOAD_SIZE - 1;
+
+    /** */
+    public static final short T_H2_EX_REF_MVCC_INNER_START = 26_000;
+
+    /** */
+    public static final short T_H2_EX_REF_MVCC_INNER_END = T_H2_EX_REF_MVCC_INNER_START + MAX_PAYLOAD_SIZE - 1;
 
     /** */
     private final int ver;
@@ -204,8 +283,8 @@ public abstract class PageIO {
      * @param ver Page format version.
      */
     protected PageIO(int type, int ver) {
-        assert ver > 0 && ver < 65535: ver;
-        assert type > 0 && type < 65535: type;
+        assert ver > 0 && ver < 65535 : ver;
+        assert type > 0 && type < 65535 : type;
 
         this.type = type;
         this.ver = ver;
@@ -234,7 +313,7 @@ public abstract class PageIO {
     public static void setType(long pageAddr, int type) {
         PageUtils.putShort(pageAddr, TYPE_OFF, (short)type);
 
-        assert getType(pageAddr) == type;
+        assert getType(pageAddr) == type : getType(pageAddr);
     }
 
     /**
@@ -257,7 +336,7 @@ public abstract class PageIO {
      * @param pageAddr Page address.
      * @param ver Version.
      */
-    private static void setVersion(long pageAddr, int ver) {
+    protected static void setVersion(long pageAddr, int ver) {
         PageUtils.putShort(pageAddr, VER_OFF, (short)ver);
 
         assert getVersion(pageAddr) == ver;
@@ -287,6 +366,24 @@ public abstract class PageIO {
         PageUtils.putLong(pageAddr, PAGE_ID_OFF, pageId);
 
         assert getPageId(pageAddr) == pageId;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Rotated page ID part.
+     */
+    public static int getRotatedIdPart(long pageAddr) {
+        return PageUtils.getUnsignedByte(pageAddr, ROTATED_ID_PART_OFF);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param rotatedIdPart Rotated page ID part.
+     */
+    public static void setRotatedIdPart(long pageAddr, int rotatedIdPart) {
+        PageUtils.putUnsignedByte(pageAddr, ROTATED_ID_PART_OFF, rotatedIdPart);
+
+        assert getRotatedIdPart(pageAddr) == rotatedIdPart;
     }
 
     /**
@@ -326,13 +423,19 @@ public abstract class PageIO {
      *
      * @param innerIOs Inner IO versions.
      * @param leafIOs Leaf IO versions.
+     * @param mvccInnerIOs Inner IO versions with mvcc enabled.
+     * @param mvccLeafIOs Leaf IO versions with mvcc enabled.
      */
     public static void registerH2(
         IOVersions<? extends BPlusInnerIO<?>> innerIOs,
-        IOVersions<? extends BPlusLeafIO<?>> leafIOs
+        IOVersions<? extends BPlusLeafIO<?>> leafIOs,
+        IOVersions<? extends BPlusInnerIO<?>> mvccInnerIOs,
+        IOVersions<? extends BPlusLeafIO<?>> mvccLeafIOs
     ) {
         h2InnerIOs = innerIOs;
         h2LeafIOs = leafIOs;
+        h2MvccInnerIOs = mvccInnerIOs;
+        h2MvccLeafIOs = mvccLeafIOs;
     }
 
     /**
@@ -340,8 +443,10 @@ public abstract class PageIO {
      *
      * @param innerExtIOs Extra versions.
      */
-    public static void registerH2ExtraInner(IOVersions<? extends BPlusInnerIO<?>> innerExtIOs) {
-        h2ExtraInnerIOs.add(innerExtIOs);
+    public static void registerH2ExtraInner(IOVersions<? extends BPlusInnerIO<?>> innerExtIOs, boolean mvcc) {
+        List<IOVersions<? extends BPlusInnerIO<?>>> ios = mvcc ? h2ExtraMvccInnerIOs : h2ExtraInnerIOs;
+
+        ios.add(innerExtIOs);
     }
 
     /**
@@ -349,24 +454,30 @@ public abstract class PageIO {
      *
      * @param leafExtIOs Extra versions.
      */
-    public static void registerH2ExtraLeaf(IOVersions<? extends BPlusLeafIO<?>> leafExtIOs) {
-        h2ExtraLeafIOs.add(leafExtIOs);
+    public static void registerH2ExtraLeaf(IOVersions<? extends BPlusLeafIO<?>> leafExtIOs, boolean mvcc) {
+        List<IOVersions<? extends BPlusLeafIO<?>>> ios = mvcc ? h2ExtraMvccLeafIOs : h2ExtraLeafIOs;
+
+        ios.add(leafExtIOs);
     }
 
     /**
      * @param idx Index.
      * @return IOVersions for given idx.
      */
-    public static IOVersions<? extends BPlusInnerIO<?>> getInnerVersions(int idx) {
-        return h2ExtraInnerIOs.get(idx);
+    public static IOVersions<? extends BPlusInnerIO<?>> getInnerVersions(int idx, boolean mvcc) {
+        List<IOVersions<? extends BPlusInnerIO<?>>> ios = mvcc ? h2ExtraMvccInnerIOs : h2ExtraInnerIOs;
+
+        return ios.get(idx);
     }
 
     /**
      * @param idx Index.
      * @return IOVersions for given idx.
      */
-    public static IOVersions<? extends BPlusLeafIO<?>> getLeafVersions(int idx) {
-        return h2ExtraLeafIOs.get(idx);
+    public static IOVersions<? extends BPlusLeafIO<?>> getLeafVersions(int idx, boolean mvcc) {
+        List<IOVersions<? extends BPlusLeafIO<?>>> ios = mvcc ? h2ExtraMvccLeafIOs : h2ExtraLeafIOs;
+
+        return ios.get(idx);
     }
 
     /**
@@ -405,7 +516,7 @@ public abstract class PageIO {
         setPageId(pageAddr, pageId);
         setCrc(pageAddr, 0);
 
-        PageUtils.putLong(pageAddr, RESERVED_1_OFF, 0L);
+        PageUtils.putLong(pageAddr, ROTATED_ID_PART_OFF, 0L); // 1 + reserved(1+2+4)
         PageUtils.putLong(pageAddr, RESERVED_2_OFF, 0L);
         PageUtils.putLong(pageAddr, RESERVED_3_OFF, 0L);
     }
@@ -460,6 +571,9 @@ public abstract class PageIO {
             case T_PAGE_UPDATE_TRACKING:
                 return (Q)TrackingPageIO.VERSIONS.forVersion(ver);
 
+            case T_DATA_METASTORAGE:
+                return (Q)SimpleDataPageIO.VERSIONS.forVersion(ver);
+
             default:
                 return (Q)getBPlusIO(type, ver);
         }
@@ -485,12 +599,17 @@ public abstract class PageIO {
      */
     @SuppressWarnings("unchecked")
     public static <Q extends BPlusIO<?>> Q getBPlusIO(int type, int ver) throws IgniteCheckedException {
-
         if (type >= T_H2_EX_REF_LEAF_START && type <= T_H2_EX_REF_LEAF_END)
             return (Q)h2ExtraLeafIOs.get(type - T_H2_EX_REF_LEAF_START).forVersion(ver);
 
         if (type >= T_H2_EX_REF_INNER_START && type <= T_H2_EX_REF_INNER_END)
             return (Q)h2ExtraInnerIOs.get(type - T_H2_EX_REF_INNER_START).forVersion(ver);
+
+        if (type >= T_H2_EX_REF_MVCC_LEAF_START && type <= T_H2_EX_REF_MVCC_LEAF_END)
+            return (Q)h2ExtraMvccLeafIOs.get(type - T_H2_EX_REF_MVCC_LEAF_START).forVersion(ver);
+
+        if (type >= T_H2_EX_REF_MVCC_INNER_START && type <= T_H2_EX_REF_MVCC_INNER_END)
+            return (Q)h2ExtraMvccInnerIOs.get(type - T_H2_EX_REF_MVCC_INNER_START).forVersion(ver);
 
         switch (type) {
             case T_H2_REF_INNER:
@@ -505,6 +624,24 @@ public abstract class PageIO {
 
                 return (Q)h2LeafIOs.forVersion(ver);
 
+            case T_H2_MVCC_REF_INNER:
+                if (h2MvccInnerIOs == null)
+                    break;
+
+                return (Q)h2MvccInnerIOs.forVersion(ver);
+
+            case T_H2_MVCC_REF_LEAF:
+                if (h2MvccLeafIOs == null)
+                    break;
+
+                return (Q)h2MvccLeafIOs.forVersion(ver);
+
+            case T_TX_LOG_INNER:
+                return (Q)TxLogInnerIO.VERSIONS.forVersion(ver);
+
+            case T_TX_LOG_LEAF:
+                return (Q)TxLogLeafIO.VERSIONS.forVersion(ver);
+
             case T_DATA_REF_INNER:
                 return (Q)DataInnerIO.VERSIONS.forVersion(ver);
 
@@ -517,11 +654,23 @@ public abstract class PageIO {
             case T_CACHE_ID_AWARE_DATA_REF_LEAF:
                 return (Q)CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
 
+            case T_CACHE_ID_DATA_REF_MVCC_INNER:
+                return (Q) MvccCacheIdAwareDataInnerIO.VERSIONS.forVersion(ver);
+
+            case T_CACHE_ID_DATA_REF_MVCC_LEAF:
+                return (Q) MvccCacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_MVCC_INNER:
+                return (Q)MvccDataInnerIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_MVCC_LEAF:
+                return (Q)MvccDataLeafIO.VERSIONS.forVersion(ver);
+
             case T_METASTORE_INNER:
-                return (Q)MetadataStorage.MetaStoreInnerIO.VERSIONS.forVersion(ver);
+                return (Q)IndexStorageImpl.MetaStoreInnerIO.VERSIONS.forVersion(ver);
 
             case T_METASTORE_LEAF:
-                return (Q)MetadataStorage.MetaStoreLeafIO.VERSIONS.forVersion(ver);
+                return (Q)IndexStorageImpl.MetaStoreLeafIO.VERSIONS.forVersion(ver);
 
             case T_PENDING_REF_INNER:
                 return (Q)PendingEntryInnerIO.VERSIONS.forVersion(ver);
@@ -534,6 +683,12 @@ public abstract class PageIO {
 
             case T_CACHE_ID_AWARE_PENDING_REF_LEAF:
                 return (Q)CacheIdAwarePendingEntryLeafIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_METASTORAGE_INNER:
+                return (Q)MetastorageTree.MetastorageInnerIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_METASTORAGE_LEAF:
+                return (Q)MetastorageTree.MetastoreLeafIO.VERSIONS.forVersion(ver);
 
             default:
                 // For tests.
@@ -560,7 +715,7 @@ public abstract class PageIO {
      * @param pageSize Page size.
      * @param sb Sb.
      */
-    protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException ;
+    protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException;
 
     /**
      * @param addr Address.

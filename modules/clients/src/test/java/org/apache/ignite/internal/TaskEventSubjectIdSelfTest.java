@@ -107,8 +107,6 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         GridClientFactory.stop(client.id());
-
-        stopGrid();
     }
 
     /** {@inheritDoc} */
@@ -175,7 +173,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            IgniteCheckedException.class,
+            IgniteException.class,
             null
         );
 
@@ -330,7 +328,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_STARTED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertEquals(nodeId, evt.subjectId());
 
         assert it.hasNext();
 
@@ -339,7 +337,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_REDUCED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertEquals(nodeId, evt.subjectId());
 
         assert it.hasNext();
 
@@ -348,7 +346,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assert evt != null;
 
         assertEquals(EVT_TASK_FINISHED, evt.type());
-        assertEquals(client.id(), evt.subjectId());
+        assertEquals(nodeId, evt.subjectId());
 
         assert !it.hasNext();
     }

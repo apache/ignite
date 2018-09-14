@@ -70,7 +70,7 @@ public class IgniteDataIntegrityTests extends TestCase {
 
         buf.rewind();
 
-        fileInput.io().write(buf);
+        fileInput.io().writeFully(buf);
         fileInput.io().force();
     }
 
@@ -180,12 +180,12 @@ public class IgniteDataIntegrityTests extends TestCase {
 
         byte[] buf = new byte[1];
 
-        fileInput.io().read(buf, 0, 1);
+        fileInput.io().readFully(buf, 0, 1);
 
         buf[0] ^= (1 << 3);
 
         fileInput.io().position(pos);
-        fileInput.io().write(buf, 0, 1);
+        fileInput.io().writeFully(buf, 0, 1);
         fileInput.io().force();
     }
 

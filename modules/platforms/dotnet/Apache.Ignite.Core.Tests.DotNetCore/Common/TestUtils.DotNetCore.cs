@@ -41,7 +41,8 @@ namespace Apache.Ignite.Core.Tests
                 Localhost = "127.0.0.1",
                 JvmOptions = TestJavaOptions(),
                 IgniteInstanceName = name,
-                Logger = TestLogger.Instance
+                Logger = TestLogger.Instance,
+                WorkDirectory = WorkDir
             };
         }
 

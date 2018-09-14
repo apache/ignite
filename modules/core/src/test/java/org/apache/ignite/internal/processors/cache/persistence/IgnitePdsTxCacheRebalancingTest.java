@@ -36,7 +36,6 @@ public class IgnitePdsTxCacheRebalancingTest extends IgnitePdsCacheRebalancingAb
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setBackups(1);
-        ccfg.setRebalanceDelay(10_000);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 

@@ -840,7 +840,7 @@ public class VisorTaskUtils {
      * @param start Start time.
      */
     public static void logFinish(@Nullable IgniteLogger log, Class<?> clazz, long start) {
-        final long end = U.currentTimeMillis();
+        final long end = System.currentTimeMillis();
 
         log0(log, end, String.format("[%s]: FINISHED, duration: %s", clazz.getSimpleName(), formatDuration(end - start)));
     }
@@ -853,7 +853,7 @@ public class VisorTaskUtils {
      * @param nodes Mapped nodes.
      */
     public static void logMapped(@Nullable IgniteLogger log, Class<?> clazz, Collection<ClusterNode> nodes) {
-        log0(log, U.currentTimeMillis(),
+        log0(log, System.currentTimeMillis(),
             String.format("[%s]: MAPPED: %s", clazz.getSimpleName(), U.toShortString(nodes)));
     }
 
@@ -867,7 +867,7 @@ public class VisorTaskUtils {
      * @return Time when message was logged.
      */
     public static long log(@Nullable IgniteLogger log, String msg, Class<?> clazz, long start) {
-        final long end = U.currentTimeMillis();
+        final long end = System.currentTimeMillis();
 
         log0(log, end, String.format("[%s]: %s, duration: %s", clazz.getSimpleName(), msg, formatDuration(end - start)));
 
@@ -881,7 +881,7 @@ public class VisorTaskUtils {
      * @param msg Message.
      */
     public static void log(@Nullable IgniteLogger log, String msg) {
-        log0(log, U.currentTimeMillis(), " " + msg);
+        log0(log, System.currentTimeMillis(), " " + msg);
     }
 
     /**

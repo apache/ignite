@@ -88,13 +88,6 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
         startGrid(1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

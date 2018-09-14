@@ -35,7 +35,6 @@ import java.util.Comparator;
 import java.util.TreeSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
-
 /**
  * Serialized classes generator.
  */
@@ -50,6 +49,21 @@ public class ClassesGenerator {
     private static final String[] EXCLUDED_PACKAGES = {
         "org.apache.ignite.tools"
     };
+
+    /** Empty URL array. */
+    private static final URL[] EMPTY_URL_ARR = new URL[0];
+
+    /** Builtin class loader class.
+     *
+     * Note: needs for compatibility with Java 9.
+     */
+    private static final Class bltClsLdrCls = defaultClassLoaderClass();
+
+    /** Url class loader field.
+     *
+     * Note: needs for compatibility with Java 9.
+     */
+    private static final Field urlClsLdrField = urlClassLoaderField();
 
     /**
      * @param args Arguments.
@@ -67,9 +81,6 @@ public class ClassesGenerator {
 
         gen.generate();
     }
-
-    /** */
-    private final URLClassLoader ldr = (URLClassLoader)getClass().getClassLoader();
 
     /** */
     private final Collection<Class> classes = new TreeSet<>(new Comparator<Class>() {
@@ -112,7 +123,8 @@ public class ClassesGenerator {
     private void generate() throws Exception {
         System.out.println("Generating classnames.properties...");
 
-        for (URL url : ldr.getURLs())
+
+        for (URL url : classLoaderUrls(getClass().getClassLoader()))
             processUrl(url);
 
         if (!errs.isEmpty()) {
@@ -185,6 +197,51 @@ public class ClassesGenerator {
     }
 
     /**
+     * Returns URLs of class loader
+     *
+     * @param clsLdr Class loader.
+     */
+    public static URL[] classLoaderUrls(ClassLoader clsLdr) {
+        if (clsLdr == null)
+            return EMPTY_URL_ARR;
+        else if (clsLdr instanceof URLClassLoader)
+            return ((URLClassLoader)clsLdr).getURLs();
+        else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
+            try {
+                return ((URLClassLoader)urlClsLdrField.get(clsLdr)).getURLs();
+            }
+            catch (IllegalAccessException e) {
+                return EMPTY_URL_ARR;
+            }
+        }
+        else
+            return EMPTY_URL_ARR;
+    }
+
+    /** */
+    private static Class defaultClassLoaderClass() {
+        try {
+            return Class.forName("jdk.internal.loader.BuiltinClassLoader");
+        }
+        catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    /** */
+    private static Field urlClassLoaderField() {
+        try {
+            Class cls = defaultClassLoaderClass();
+
+            return cls == null ? null : cls.getDeclaredField("ucp");
+        }
+        catch (NoSuchFieldException e) {
+            return null;
+        }
+    }
+
+
+    /**
      * @param path File path.
      * @param prefixLen Prefix length.
      * @throws Exception In case of error.
@@ -209,7 +266,7 @@ public class ClassesGenerator {
         }
 
         if (included) {
-            Class<?> cls = Class.forName(clsName, false, ldr);
+            Class<?> cls = Class.forName(clsName, false, getClass().getClassLoader());
 
             if (Serializable.class.isAssignableFrom(cls) &&
                 !(cls.getName().endsWith("Future") || cls.getName().endsWith("FutureAdapter"))) {

@@ -29,7 +29,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class AtomicConfiguration {
     /** */
-    public static final int DFLT_BACKUPS = 0;
+    public static final int DFLT_BACKUPS = 1;
 
     /** */
     public static final CacheMode DFLT_CACHE_MODE = PARTITIONED;

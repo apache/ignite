@@ -32,22 +32,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             {"name", "CacheName"}
         };
 
-        /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties =
-        {
-            // IGNITE-7126
-            "HeapEntriesCount",
-            "TotalPartitionsCount",
-            "RebalancingPartitionsCount",
-            "KeysToRebalanceLeft",
-            "RebalancingKeysRate",
-            "RebalancingBytesRate",
-            "isValidForReading",
-            "isValidForWriting",
-            "EstimatedRebalancingFinishTime",
-            "RebalancingStartTime"
-        };
-
         /// <summary>
         /// Tests the API parity.
         /// </summary>
@@ -57,8 +41,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             ParityTest.CheckInterfaceParity(
                 @"modules\core\src\main\java\org\apache\ignite\cache\CacheMetrics.java",
                 typeof(ICacheMetrics),
-                knownMappings: KnownMappings,
-                knownMissingMembers: MissingProperties);
+                knownMappings: KnownMappings);
         }
     }
 }

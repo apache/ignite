@@ -21,10 +21,10 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jsr166.LongAdder8;
 
 /**
  * Adapter for {@link QueryMetrics}.
@@ -40,7 +40,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
     private final GridAtomicLong maxTime = new GridAtomicLong();
 
     /** Sum of execution time for all completed queries. */
-    private final LongAdder8 sumTime = new LongAdder8();
+    private final LongAdder sumTime = new LongAdder();
 
     /** Average time of execution.
      * If doesn't equal zero then this metrics set is copy from remote node and doesn't actually update.
@@ -48,13 +48,13 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
     private double avgTime;
 
     /** Number of executions. */
-    private final LongAdder8 execs = new LongAdder8();
+    private final LongAdder execs = new LongAdder();
 
     /** Number of completed executions. */
-    private final LongAdder8 completed = new LongAdder8();
+    private final LongAdder completed = new LongAdder();
 
     /** Number of fails. */
-    private final LongAdder8 fails = new LongAdder8();
+    private final LongAdder fails = new LongAdder();
 
     /** {@inheritDoc} */
     @Override public long minimumTime() {

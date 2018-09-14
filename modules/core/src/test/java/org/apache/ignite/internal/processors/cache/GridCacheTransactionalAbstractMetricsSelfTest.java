@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -30,6 +32,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
+import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /**
  * Transactional cache metrics test.
@@ -37,6 +40,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends GridCacheAbstractMetricsSelfTest {
     /** */
     private static final int TX_CNT = 3;
+
+    /** Transaction timeout. */
+    private static final long TX_TIMEOUT = 500L;
 
     /**
      * @throws Exception If failed.
@@ -207,6 +213,27 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticSuspendedReadCommittedTxTimeoutRollbacks() throws Exception {
+        doTestSuspendedTxTimeoutRollbacks(OPTIMISTIC, READ_COMMITTED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticSuspendedRepeatableReadTxTimeoutRollbacks() throws Exception {
+        doTestSuspendedTxTimeoutRollbacks(OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticSuspendedSerializableTxTimeoutRollbacks() throws Exception {
+        doTestSuspendedTxTimeoutRollbacks(OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /**
      * @param concurrency Concurrency control.
      * @param isolation Isolation level.
      * @param put Put some data if {@code true}.
@@ -238,7 +265,9 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
                 if (put) {
                     assertEquals(TX_CNT, cacheMetrics.getCacheTxCommits());
-                    assert cacheMetrics.getAverageTxCommitTime() > 0;
+
+                    // Expected metric value should be in microseconds.
+                    assert cacheMetrics.getAverageTxCommitTime() > 1000 : cacheMetrics.getAverageTxCommitTime();
                 }
             }
             else {
@@ -286,13 +315,65 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
                 if (put) {
                     assertEquals(TX_CNT, cacheMetrics.getCacheTxRollbacks());
-                    assert cacheMetrics.getAverageTxRollbackTime() > 0;
+
+                    // Expected metric value should be in microseconds.
+                    assert cacheMetrics.getAverageTxRollbackTime() > 1000 : cacheMetrics.getAverageTxRollbackTime();
                 }
             }
             else {
                 assertEquals(0, metrics.txRollbacks());
                 assertEquals(0, cacheMetrics.getCacheTxRollbacks());
             }
+        }
+    }
+
+    /**
+     * Metrics test for transaction timeout rollback.
+     *
+     * @param concurrency Concurrency control.
+     * @param isolation Isolation level.
+     * @throws Exception If failed.
+     */
+    private void doTestSuspendedTxTimeoutRollbacks(TransactionConcurrency concurrency, TransactionIsolation isolation)
+        throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        IgniteTransactions transactions = grid(0).transactions();
+
+        for (int i = 0; i < TX_CNT; i++) {
+            Transaction tx = transactions.txStart(concurrency, isolation, TX_TIMEOUT, 0);
+
+            cache.put(1, 1);
+
+            tx.suspend();
+
+            boolean res = GridTestUtils.waitForCondition(() -> tx.state() == ROLLED_BACK, TX_TIMEOUT * 10);
+
+            assertTrue(res);
+
+            tx.close();
+        }
+
+        TransactionMetrics txMetrics = transactions.metrics();
+        CacheMetrics cacheMetrics = cache.localMetrics();
+
+        assertEquals(0, txMetrics.txCommits());
+        assertEquals(0, cacheMetrics.getCacheTxCommits());
+
+        assertEquals(TX_CNT, txMetrics.txRollbacks());
+        assertEquals(TX_CNT, cacheMetrics.getCacheTxRollbacks());
+
+        assertTrue(cacheMetrics.getAverageTxRollbackTime() > 0);
+
+        for (int i = 1; i < gridCount(); i++) {
+            txMetrics = grid(i).transactions().metrics();
+            cacheMetrics = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
+
+            assertEquals(0, txMetrics.txCommits());
+            assertEquals(0, cacheMetrics.getCacheTxCommits());
+
+            assertEquals(0, txMetrics.txRollbacks());
+            assertEquals(0, cacheMetrics.getCacheTxRollbacks());
         }
     }
 }

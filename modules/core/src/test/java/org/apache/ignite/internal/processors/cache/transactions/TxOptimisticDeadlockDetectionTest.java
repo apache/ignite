@@ -128,13 +128,6 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
             startGrid(i + NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -182,7 +175,12 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
      * @return Created cache.
      */
     @SuppressWarnings("unchecked")
-    private IgniteCache createCache(CacheMode cacheMode, CacheWriteSynchronizationMode syncMode, boolean near) {
+    private IgniteCache createCache(CacheMode cacheMode, CacheWriteSynchronizationMode syncMode, boolean near)
+        throws IgniteInterruptedCheckedException, InterruptedException {
+        awaitPartitionMapExchange();
+
+        int minorTopVer = grid(0).context().discovery().topologyVersionEx().minorTopologyVersion();
+
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
@@ -202,6 +200,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                 client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
             }
         }
+
+        waitForLateAffinityAssignment(minorTopVer);
 
         return cache;
     }
@@ -303,7 +303,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
 
                 Ignite ignite = ignite(clientTx ? threadNum - 1 + txCnt : threadNum - 1);
 
-                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME);
+                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
                 List<Object> keys = keySets.get(threadNum - 1);
 
@@ -478,14 +478,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                     if (TX_IDS.contains(txId) && TX_IDS.size() < TX_CNT) {
                         GridTestUtils.runAsync(new Callable<Void>() {
                             @Override public Void call() throws Exception {
-                                while (TX_IDS.size() < TX_CNT) {
-                                    try {
-                                        U.sleep(50);
-                                    }
-                                    catch (IgniteInterruptedCheckedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
+                                while (TX_IDS.size() < TX_CNT)
+                                    U.sleep(50);
 
                                 TestCommunicationSpi.super.sendMessage(node, msg, ackC);
 

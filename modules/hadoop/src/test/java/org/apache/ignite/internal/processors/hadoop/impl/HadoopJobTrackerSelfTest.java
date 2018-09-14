@@ -71,13 +71,6 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         latch.put("mapAwaitLatch", new CountDownLatch(1));
         latch.put("reduceAwaitLatch", new CountDownLatch(1));

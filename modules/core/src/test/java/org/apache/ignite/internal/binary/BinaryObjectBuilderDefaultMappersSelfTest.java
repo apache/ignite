@@ -101,11 +101,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         startGrids(1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return Whether to use compact footer.
      */

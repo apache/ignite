@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +36,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -42,6 +45,7 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteUuid;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.CommandInterface;
@@ -98,6 +102,8 @@ import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
+import org.h2.value.DataType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
@@ -149,6 +155,15 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<Select, int[]> GROUP_INDEXES = getter(Select.class, "groupIndex");
+
+    /** */
+    private static final Getter<Select, Boolean> SELECT_IS_FOR_UPDATE = getter(Select.class, "isForUpdate");
+
+    /** */
+    private static final Getter<Select, Boolean> SELECT_IS_GROUP_QUERY = getter(Select.class, "isGroupQuery");
+
+    /** */
+    private static final Getter<SelectUnion, Boolean> UNION_IS_FOR_UPDATE = getter(SelectUnion.class, "isForUpdate");
 
     /** */
     private static final Getter<Operation, Integer> OPERATION_TYPE = getter(Operation.class, "opType");
@@ -410,10 +425,13 @@ public class GridSqlQueryParser {
     /** */
     private static final Getter<Command, String> REMAINING;
 
+    /** */
+    public static final String ORG_H2_COMMAND_COMMAND_LIST = "org.h2.command.CommandList";
+
     static {
         try {
             CLS_COMMAND_LIST = (Class<? extends Command>)CommandContainer.class.getClassLoader()
-                .loadClass("org.h2.command.CommandList");
+                .loadClass(ORG_H2_COMMAND_COMMAND_LIST);
 
             LIST_COMMAND = getter(CLS_COMMAND_LIST, "command");
 
@@ -431,6 +449,10 @@ public class GridSqlQueryParser {
     /** */
     private static final Getter<AlterTableAlterColumn, ArrayList<Column>> ALTER_COLUMN_NEW_COLS =
         getter(AlterTableAlterColumn.class, "columnsToAdd");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, ArrayList<Column>> ALTER_COLUMN_REMOVE_COLS =
+        getter(AlterTableAlterColumn.class, "columnsToRemove");
 
     /** */
     private static final Getter<AlterTableAlterColumn, Boolean> ALTER_COLUMN_IF_NOT_EXISTS =
@@ -515,11 +537,21 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * @param stmt Prepared statement to check.
+     * @return {@code true} in case of multiple statements.
+     */
+    public static boolean checkMultipleStatements(PreparedStatement stmt) {
+        Command cmd = extractCommand(stmt);
+
+        return ORG_H2_COMMAND_COMMAND_LIST.equals(cmd.getClass().getName());
+    }
+
+    /**
      * @param stmt Prepared statement.
      * @return Parsed select.
      */
     public static Prepared prepared(PreparedStatement stmt) {
-        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+        Command cmd = extractCommand(stmt);
 
         assert cmd instanceof CommandContainer;
 
@@ -531,19 +563,97 @@ public class GridSqlQueryParser {
      * @return Parsed select.
      */
     public static PreparedWithRemaining preparedWithRemaining(PreparedStatement stmt) {
-        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+        Command cmd = extractCommand(stmt);
 
         if (cmd instanceof CommandContainer)
             return new PreparedWithRemaining(PREPARED.get(cmd), null);
         else {
             Class<?> cmdCls = cmd.getClass();
 
-            if (cmdCls.getName().equals("org.h2.command.CommandList")) {
+            if (cmdCls.getName().equals(ORG_H2_COMMAND_COMMAND_LIST))
                 return new PreparedWithRemaining(PREPARED.get(LIST_COMMAND.get(cmd)), REMAINING.get(cmd));
-            }
             else
                 throw new IgniteSQLException("Unexpected statement command");
         }
+    }
+
+    /** */
+    private static Command extractCommand(PreparedStatement stmt) {
+        try {
+            return COMMAND.get(stmt.unwrap(JdbcPreparedStatement.class));
+        } catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+    }
+
+    /**
+     * @param p Prepared.
+     * @return Whether {@code p} is an {@code SELECT FOR UPDATE} query.
+     */
+    public static boolean isForUpdateQuery(Prepared p) {
+        boolean union;
+
+        if (p.getClass() == Select.class)
+            union = false;
+        else if (p.getClass() == SelectUnion.class)
+            union = true;
+        else
+            return false;
+
+        boolean forUpdate = (!union && SELECT_IS_FOR_UPDATE.get((Select)p)) ||
+            (union && UNION_IS_FOR_UPDATE.get((SelectUnion)p));
+
+        if (union && forUpdate)
+            throw new IgniteSQLException("SELECT UNION FOR UPDATE is not supported.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        return forUpdate;
+    }
+
+    /**
+     * @param p Statement to rewrite, if needed.
+     * @param inTx Whether there is an active transaction.
+     * @return Query with {@code key} and {@code val} columns appended to the list of columns,
+     *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
+     */
+    @NotNull public static String rewriteQueryForUpdateIfNeeded(Prepared p, boolean inTx) {
+        GridSqlStatement gridStmt = new GridSqlQueryParser(false).parse(p);
+        return rewriteQueryForUpdateIfNeeded(gridStmt, inTx);
+    }
+
+    /**
+     * @param stmt Statement to rewrite, if needed.
+     * @param inTx Whether there is an active transaction.
+     * @return Query with {@code key} and {@code val} columns appended to the list of columns,
+     *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
+     */
+    @NotNull public static String rewriteQueryForUpdateIfNeeded(GridSqlStatement stmt, boolean inTx) {
+        // We have checked above that it's not an UNION query, so it's got to be SELECT.
+        assert stmt instanceof GridSqlSelect;
+
+        GridSqlSelect sel = (GridSqlSelect)stmt;
+
+        // How'd we get here otherwise?
+        assert sel.isForUpdate();
+
+        if (inTx) {
+            GridSqlAst from = sel.from();
+
+            GridSqlTable gridTbl = from instanceof GridSqlTable ? (GridSqlTable)from :
+                ((GridSqlAlias)from).child();
+
+            GridH2Table tbl = gridTbl.dataTable();
+
+            Column keyCol = tbl.getColumn(0);
+
+            sel.addColumn(new GridSqlAlias("_key_" + IgniteUuid.vmId(),
+                new GridSqlColumn(keyCol, null, keyCol.getName()), true), true);
+        }
+
+        // We need to remove this flag for final flag we'll feed to H2.
+        sel.forUpdate(false);
+
+        return sel.getSQL();
     }
 
     /**
@@ -637,6 +747,8 @@ public class GridSqlQueryParser {
                 res.addChild(parseExpression(RANGE_MIN.get((RangeTable)tbl), false));
                 res.addChild(parseExpression(RANGE_MAX.get((RangeTable)tbl), false));
             }
+            else if (tbl instanceof MetaTable)
+                res = new GridSqlTable(tbl);
             else
                 assert0(false, "Unexpected Table implementation [cls=" + tbl.getClass().getSimpleName() + ']');
 
@@ -667,6 +779,8 @@ public class GridSqlQueryParser {
         ArrayList<TableFilter> tableFilters = new ArrayList<>();
 
         TableFilter filter = select.getTopTableFilter();
+
+        boolean isForUpdate = SELECT_IS_FOR_UPDATE.get(select);
 
         do {
             assert0(filter != null, select);
@@ -699,6 +813,30 @@ public class GridSqlQueryParser {
 
         res.from(from);
 
+        if (isForUpdate) {
+            if (!(from instanceof GridSqlTable ||
+                (from instanceof GridSqlAlias && from.size() == 1 && from.child() instanceof GridSqlTable)))
+                throw new IgniteSQLException("SELECT FOR UPDATE with joins is not supported.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            GridSqlTable gridTbl = from instanceof GridSqlTable ? (GridSqlTable)from :
+                ((GridSqlAlias)from).child();
+
+            GridH2Table tbl = gridTbl.dataTable();
+
+            if (tbl == null)
+                throw new IgniteSQLException("SELECT FOR UPDATE query must involve Ignite table.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (select.getLimit() != null || select.getOffset() != null)
+                throw new IgniteSQLException("LIMIT/OFFSET clauses are not supported for SELECT FOR UPDATE.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (SELECT_IS_GROUP_QUERY.get(select))
+                throw new IgniteSQLException("SELECT FOR UPDATE with aggregates and/or GROUP BY is not supported.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+
         ArrayList<Expression> expressions = select.getExpressions();
 
         for (int i = 0; i < expressions.size(); i++)
@@ -713,6 +851,8 @@ public class GridSqlQueryParser {
 
         if (havingIdx >= 0)
             res.havingColumn(havingIdx);
+
+        res.forUpdate(isForUpdate);
 
         processSortOrder(select.getSortOrder(), res);
 
@@ -1047,7 +1187,9 @@ public class GridSqlQueryParser {
         for (IndexColumn pkIdxCol : pkIdxCols) {
             GridSqlColumn gridCol = cols.get(pkIdxCol.columnName);
 
-            assert gridCol != null;
+            if (gridCol == null)
+                throw new IgniteSQLException("PRIMARY KEY column is not defined: " + pkIdxCol.columnName,
+                    IgniteQueryErrorCode.PARSING);
 
             pkCols.add(gridCol.columnName());
         }
@@ -1179,6 +1321,9 @@ public class GridSqlQueryParser {
             case CommandInterface.ALTER_TABLE_ADD_COLUMN:
                 return parseAddColumn(stmt);
 
+            case CommandInterface.ALTER_TABLE_DROP_COLUMN:
+                return parseDropColumn(stmt);
+
             default: {
                 String stmtName = null;
 
@@ -1191,11 +1336,6 @@ public class GridSqlQueryParser {
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_SELECTIVITY:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_VISIBILITY:
                         stmtName = "ALTER COLUMN";
-
-                        break;
-
-                    case CommandInterface.ALTER_TABLE_DROP_COLUMN:
-                        stmtName = "DROP COLUMN";
 
                         break;
                 }
@@ -1226,9 +1366,23 @@ public class GridSqlQueryParser {
             throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        if (col.getDefaultExpression() != null)
-            throw new IgniteSQLException("DEFAULT expressions are not supported [colName=" + col.getName() + ']',
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        if (col.getDefaultExpression() != null) {
+            if (!col.getDefaultExpression().isConstant()) {
+                throw new IgniteSQLException("Non-constant DEFAULT expressions are not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
+
+            DataType colType = DataType.getDataType(col.getType());
+            DataType dfltType = DataType.getDataType(col.getDefaultExpression().getType());
+
+            if ((DataType.isStringType(colType.type) && !DataType.isStringType(dfltType.type))
+                || (DataType.supportsAdd(colType.type) && !DataType.supportsAdd(dfltType.type))) {
+                throw new IgniteSQLException("Invalid default value for column. [colName=" + col.getName()
+                    + ", colType=" + colType.name
+                    + ", dfltValueType=" + dfltType.name + ']',
+                    IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+            }
+        }
 
         if (col.getSequence() != null)
             throw new IgniteSQLException("SEQUENCE columns are not supported [colName=" + col.getName() + ']',
@@ -1252,13 +1406,15 @@ public class GridSqlQueryParser {
     /**
      * Parse {@code ALTER TABLE ... ADD COLUMN} statement.
      * @param addCol H2 statement.
+     * @return Grid SQL statement.
+     *
      * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
      */
     private GridSqlStatement parseAddColumn(AlterTableAlterColumn addCol) {
         assert addCol.getType() == CommandInterface.ALTER_TABLE_ADD_COLUMN;
 
         if (ALTER_COLUMN_BEFORE_COL.get(addCol) != null || ALTER_COLUMN_AFTER_COL.get(addCol) != null)
-            throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported",
+            throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported" ,
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
@@ -1267,8 +1423,15 @@ public class GridSqlQueryParser {
 
         GridSqlColumn[] gridNewCols = new GridSqlColumn[h2NewCols.size()];
 
-        for (int i = 0; i < h2NewCols.size(); i++)
+        for (int i = 0; i < h2NewCols.size(); i++) {
+            Column col = h2NewCols.get(i);
+
+            if (col.getDefaultExpression() != null)
+                throw new IgniteSQLException("ALTER TABLE ADD COLUMN with DEFAULT value is not supported " +
+                    "[col=" + col.getName() + ']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
             gridNewCols[i] = parseColumn(h2NewCols.get(i));
+        }
 
         res.columns(gridNewCols);
 
@@ -1282,6 +1445,39 @@ public class GridSqlQueryParser {
         res.schemaName(schema.getName());
 
         res.tableName(ALTER_COLUMN_TBL_NAME.get(addCol));
+
+        return res;
+    }
+
+    /**
+     * Parse {@code ALTER TABLE ... DROP COLUMN} statement.
+     * @param dropCol H2 statement.
+     * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
+     */
+    private GridSqlStatement parseDropColumn(AlterTableAlterColumn dropCol) {
+        assert dropCol.getType() == CommandInterface.ALTER_TABLE_DROP_COLUMN;
+
+        GridSqlAlterTableDropColumn res = new GridSqlAlterTableDropColumn();
+
+        ArrayList<Column> h2DropCols = ALTER_COLUMN_REMOVE_COLS.get(dropCol);
+
+        String[] gridDropCols = new String[h2DropCols.size()];
+
+        for (int i = 0; i < h2DropCols.size(); i++)
+            gridDropCols[i] = h2DropCols.get(i).getName();
+
+        res.columns(gridDropCols);
+
+        if (gridDropCols.length == 1)
+            res.ifExists(!ALTER_COLUMN_IF_NOT_EXISTS.get(dropCol));
+
+        res.ifTableExists(ALTER_COLUMN_IF_TBL_EXISTS.get(dropCol));
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(dropCol);
+
+        res.schemaName(schema.getName());
+
+        res.tableName(ALTER_COLUMN_TBL_NAME.get(dropCol));
 
         return res;
     }
@@ -1465,7 +1661,7 @@ public class GridSqlQueryParser {
         try {
             return Integer.parseInt(val);
         }
-        catch (NumberFormatException e) {
+        catch (NumberFormatException ignored) {
             throw new IgniteSQLException("Parameter value must be an integer [name=" + name + ", value=" + val + ']',
                 IgniteQueryErrorCode.PARSING);
         }
@@ -1505,6 +1701,84 @@ public class GridSqlQueryParser {
             return query(EXPLAIN_COMMAND.get((Explain)qry));
 
         throw new CacheException("Unsupported query: " + qry);
+    }
+
+    /**
+     * @param stmt Prepared.
+     * @return Target table.
+     */
+    @NotNull public static GridH2Table dmlTable(@NotNull Prepared stmt) {
+        Table table;
+
+        if (stmt.getClass() == Insert.class)
+            table = INSERT_TABLE.get((Insert)stmt);
+        else if (stmt.getClass() == Merge.class)
+            table = MERGE_TABLE.get((Merge)stmt);
+        else if (stmt.getClass() == Delete.class)
+            table = DELETE_FROM.get((Delete)stmt).getTable();
+        else if (stmt.getClass() == Update.class)
+            table = UPDATE_TARGET.get((Update)stmt).getTable();
+        else
+            throw new IgniteException("Unsupported statement: " + stmt);
+
+        assert table instanceof GridH2Table : table;
+
+        return (GridH2Table) table;
+    }
+
+    /**
+     * Check if query may be run locally on all caches mentioned in the query.
+     * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
+     * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
+     *     to run distributed query.
+     * @see SqlFieldsQuery#isReplicatedOnly()
+     */
+    public boolean isLocalQuery(boolean replicatedOnlyQry) {
+        boolean hasCaches = false;
+
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null) {
+                    hasCaches = true;
+
+                    GridCacheContext cctx = tbl.cache();
+
+                    if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
+                        return false;
+                }
+            }
+        }
+
+        // For consistency with old logic, let's not force locality in absence of caches -
+        // if there are no caches, original SqlFieldsQuery's isLocal flag will be used.
+        return hasCaches;
+    }
+
+    /**
+     * Get first (i.e. random, as we need any one) partitioned cache from parsed query
+     *     to determine expected query parallelism.
+     * @return Context for the first of partitioned caches mentioned in the query,
+     *     or {@code null} if it does not involve partitioned caches.
+     */
+    public GridCacheContext getFirstPartitionedCache() {
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null && tbl.cache().isPartitioned())
+                    return tbl.cache();
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -1553,6 +1827,13 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * @return H2 to Grid objects map.
+     */
+    public Map<Object, Object> objectsMap() {
+        return h2ObjToGridObj;
+    }
+
+    /**
      * @param qry Query.
      * @return Parsed query AST.
      */
@@ -1571,6 +1852,10 @@ public class GridSqlQueryParser {
      * @return Parsed AST.
      */
     private GridSqlUnion parseUnion(SelectUnion union) {
+        if (UNION_IS_FOR_UPDATE.get(union))
+            throw new IgniteSQLException("SELECT UNION FOR UPDATE is not supported.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         GridSqlUnion res = (GridSqlUnion)h2ObjToGridObj.get(union);
 
         if (res != null)
@@ -1887,6 +2172,18 @@ public class GridSqlQueryParser {
 
         throw new IgniteException("Unsupported expression: " + expression + " [type=" +
             expression.getClass().getSimpleName() + ']');
+    }
+
+    /**
+     * Check if passed statement is insert statement eligible for streaming.
+     *
+     * @param nativeStmt Native statement.
+     * @return {@code True} if streamable insert.
+     */
+    public static boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
+        Prepared prep = prepared(nativeStmt);
+
+        return prep instanceof Insert && INSERT_QUERY.get((Insert)prep) == null;
     }
 
     /**

@@ -36,5 +36,5 @@ public interface IgniteTriConsumer<A, B, C> extends Serializable {
      * @param second Second parameter.
      * @param third Third parameter.
      */
-    void accept(A first, B second, C third);
+    public void accept(A first, B second, C third);
 }

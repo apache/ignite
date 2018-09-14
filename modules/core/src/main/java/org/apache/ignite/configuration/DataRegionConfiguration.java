@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
@@ -38,8 +39,8 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA
  *             <property name="defaultRegionConfiguration">
  *                 <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
  *                     <property name="name" value="Default_Region"/>
- *                     <property name="initialSize" value="#{100 * 1024 * 1024}"/>
- *                     <property name="maxSize" value="#{5 * 1024 * 102 * 1024}"/>
+ *                     <property name="initialSize" value="#{100L * 1024 * 1024}"/>
+ *                     <property name="maxSize" value="#{5L * 1024 * 1024 * 1024}"/>
  *                 </bean>
  *             </property>
  *
@@ -49,14 +50,14 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA
  *                 <list>
  *                      <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
  *                          <property name="name" value="20MB_Region_Eviction"/>
- *                          <property name="initialSize" value="#{20 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{20L * 1024 * 1024}"/>
  *                          <property name="pageEvictionMode" value="RANDOM_2_LRU"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
  *                          <property name="name" value="25MB_Region_Swapping"/>
- *                          <property name="initialSize" value="#{25 * 1024 * 1024}"/>
- *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{25L * 1024 * 1024}"/>
+ *                          <property name="maxSize" value="#{100L * 1024 * 1024}"/>
  *                          <property name="swapPath" value="db/swap"/>
  *                      </bean>
  *                  </list>
@@ -430,5 +431,10 @@ public final class DataRegionConfiguration implements Serializable {
         this.checkpointPageBufSize = checkpointPageBufSize;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataRegionConfiguration.class, this);
     }
 }

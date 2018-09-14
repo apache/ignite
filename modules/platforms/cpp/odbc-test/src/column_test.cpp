@@ -60,32 +60,32 @@ BOOST_AUTO_TEST_CASE(TestColumnShort)
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == 2);
+    BOOST_REQUIRE_EQUAL(column.GetSize(), 2);
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 2);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 2);
 
     short shortBuf = 0;
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(type_traits::OdbcNativeType::AI_SIGNED_SHORT, &shortBuf, sizeof(shortBuf), &reslen);
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == 2);
+    BOOST_REQUIRE_EQUAL(column.GetSize(), 2);
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 0);
 
-    BOOST_REQUIRE(shortBuf == data);
+    BOOST_REQUIRE_EQUAL(shortBuf, data);
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_NO_DATA);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_NO_DATA);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == 2);
+    BOOST_REQUIRE_EQUAL(column.GetSize(), 2);
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(TestColumnString)
@@ -107,32 +107,32 @@ BOOST_AUTO_TEST_CASE(TestColumnString)
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), data.size());
 
     char strBuf[1024] = {};
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(type_traits::OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 0);
 
-    BOOST_REQUIRE(std::string(strBuf) == data);
+    BOOST_REQUIRE_EQUAL(std::string(strBuf), data);
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_NO_DATA);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_NO_DATA);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(TestColumnStringSeveral)
@@ -154,9 +154,9 @@ BOOST_AUTO_TEST_CASE(TestColumnStringSeveral)
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), data.size());
 
     std::string res;
 
@@ -165,45 +165,45 @@ BOOST_AUTO_TEST_CASE(TestColumnStringSeveral)
 
     ApplicationDataBuffer appBuf(type_traits::OdbcNativeType::AI_CHAR, &strBuf[0], strBuf.size(), &reslen);
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_VARLEN_DATA_TRUNCATED);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == data.size() - (strBuf.size() - 1));
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), data.size() - (strBuf.size() - 1));
 
     res.append(strBuf.c_str());
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_VARLEN_DATA_TRUNCATED);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == data.size() - 2 * (strBuf.size() - 1));
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), data.size() - 2 * (strBuf.size() - 1));
 
     res.append(strBuf.c_str());
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 0);
 
     res.append(strBuf.c_str());
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_NO_DATA);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_NO_DATA);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 0);
 
-    BOOST_REQUIRE(res == data);
+    BOOST_REQUIRE_EQUAL(res, data);
 }
 
 BOOST_AUTO_TEST_CASE(TestColumnMultiString)
@@ -231,56 +231,56 @@ BOOST_AUTO_TEST_CASE(TestColumnMultiString)
 
     BOOST_REQUIRE(column1.IsValid());
 
-    BOOST_REQUIRE(column1.GetSize() == data1.size());
+    BOOST_REQUIRE_EQUAL(column1.GetSize(), data1.size());
 
-    BOOST_REQUIRE(column1.GetUnreadDataLength() == data1.size());
+    BOOST_REQUIRE_EQUAL(column1.GetUnreadDataLength(), data1.size());
 
     BOOST_REQUIRE(column2.IsValid());
 
-    BOOST_REQUIRE(column2.GetSize() == data2.size());
+    BOOST_REQUIRE_EQUAL(column2.GetSize(), data2.size());
 
-    BOOST_REQUIRE(column2.GetUnreadDataLength() == data2.size());
+    BOOST_REQUIRE_EQUAL(column2.GetUnreadDataLength(), data2.size());
 
     char strBuf[1024] = {};
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(type_traits::OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
 
-    BOOST_REQUIRE(column1.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column1.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(column1.IsValid());
 
-    BOOST_REQUIRE(column1.GetSize() == data1.size());
+    BOOST_REQUIRE_EQUAL(column1.GetSize(), data1.size());
 
-    BOOST_REQUIRE(column1.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column1.GetUnreadDataLength(), 0);
 
-    BOOST_REQUIRE(std::string(strBuf) == data1);
+    BOOST_REQUIRE_EQUAL(std::string(strBuf), data1);
 
-    BOOST_REQUIRE(column1.ReadToBuffer(reader, appBuf) == SqlResult::AI_NO_DATA);
+    BOOST_REQUIRE_EQUAL(column1.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_NO_DATA);
 
     BOOST_REQUIRE(column1.IsValid());
 
-    BOOST_REQUIRE(column1.GetSize() == data1.size());
+    BOOST_REQUIRE_EQUAL(column1.GetSize(), data1.size());
 
-    BOOST_REQUIRE(column1.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column1.GetUnreadDataLength(), 0);
 
-    BOOST_REQUIRE(column2.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
-
-    BOOST_REQUIRE(column2.IsValid());
-
-    BOOST_REQUIRE(column2.GetSize() == data2.size());
-
-    BOOST_REQUIRE(column2.GetUnreadDataLength() == 0);
-
-    BOOST_REQUIRE(std::string(strBuf) == data2);
-
-    BOOST_REQUIRE(column2.ReadToBuffer(reader, appBuf) == SqlResult::AI_NO_DATA);
+    BOOST_REQUIRE_EQUAL(column2.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(column2.IsValid());
 
-    BOOST_REQUIRE(column2.GetSize() == data2.size());
+    BOOST_REQUIRE_EQUAL(column2.GetSize(), data2.size());
 
-    BOOST_REQUIRE(column2.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column2.GetUnreadDataLength(), 0);
+
+    BOOST_REQUIRE_EQUAL(std::string(strBuf), data2);
+
+    BOOST_REQUIRE_EQUAL(column2.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_NO_DATA);
+
+    BOOST_REQUIRE(column2.IsValid());
+
+    BOOST_REQUIRE_EQUAL(column2.GetSize(), data2.size());
+
+    BOOST_REQUIRE_EQUAL(column2.GetUnreadDataLength(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(TestColumnByteArray)
@@ -302,32 +302,32 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArray)
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), data.size());
 
     std::vector<int8_t> buf(data.size());
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(type_traits::OdbcNativeType::AI_BINARY, &buf[0], buf.size(), &reslen);
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 0);
 
     BOOST_REQUIRE_EQUAL_COLLECTIONS(buf.begin(), buf.end(), data.begin(), data.end());
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_NO_DATA);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_NO_DATA);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
@@ -338,7 +338,7 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
 
     const int8_t bytes[] = { 'A','B','C','D','E','F','G','H','I','J' };
     std::vector<int8_t> data(bytes, bytes + sizeof(bytes)/sizeof(bytes[0]));
-    BOOST_REQUIRE(0 == data.size() % 2);
+    BOOST_REQUIRE_EQUAL(0, data.size() % 2);
 
     writer.WriteInt8Array(&data[0], static_cast<int32_t>(data.size()));
 
@@ -351,44 +351,44 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), data.size());
 
     std::vector<int8_t> buf(data.size()/2);
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(type_traits::OdbcNativeType::AI_BINARY, &buf[0], buf.size(), &reslen);
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == data.size() - buf.size());
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), data.size() - buf.size());
 
     std::vector<int8_t> result;
     result.reserve(data.size());
     std::copy(buf.begin(), buf.end(), std::back_inserter(result));
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 0);
     
     std::copy(buf.begin(), buf.end(), std::back_inserter(result));
 
-    BOOST_REQUIRE(column.ReadToBuffer(reader, appBuf) == SqlResult::AI_NO_DATA);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_NO_DATA);
 
     BOOST_REQUIRE(column.IsValid());
 
-    BOOST_REQUIRE(column.GetSize() == data.size());
+    BOOST_REQUIRE_EQUAL(column.GetSize(), data.size());
 
-    BOOST_REQUIRE(column.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column.GetUnreadDataLength(), 0);
 
     BOOST_REQUIRE_EQUAL_COLLECTIONS(result.begin(), result.end(), data.begin(), data.end());
 }
@@ -417,56 +417,56 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayTwoColumns)
 
     BOOST_REQUIRE(column1.IsValid());
 
-    BOOST_REQUIRE(column1.GetSize() == data1.size());
+    BOOST_REQUIRE_EQUAL(column1.GetSize(), data1.size());
 
-    BOOST_REQUIRE(column1.GetUnreadDataLength() == data1.size());
+    BOOST_REQUIRE_EQUAL(column1.GetUnreadDataLength(), data1.size());
 
     BOOST_REQUIRE(column2.IsValid());
 
-    BOOST_REQUIRE(column2.GetSize() == data2.size());
+    BOOST_REQUIRE_EQUAL(column2.GetSize(), data2.size());
 
-    BOOST_REQUIRE(column2.GetUnreadDataLength() == data2.size());
+    BOOST_REQUIRE_EQUAL(column2.GetUnreadDataLength(), data2.size());
 
     int8_t buf[1024] = {};
     SqlLen reslen = 0;
 
     ApplicationDataBuffer appBuf(type_traits::OdbcNativeType::AI_BINARY, &buf, sizeof(buf), &reslen);
 
-    BOOST_REQUIRE(column1.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column1.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(column1.IsValid());
 
-    BOOST_REQUIRE(column1.GetSize() == data1.size());
+    BOOST_REQUIRE_EQUAL(column1.GetSize(), data1.size());
 
-    BOOST_REQUIRE(column1.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column1.GetUnreadDataLength(), 0);
 
     BOOST_REQUIRE_EQUAL_COLLECTIONS(buf, buf + reslen, data1.begin(), data1.end());
 
-    BOOST_REQUIRE(column1.ReadToBuffer(reader, appBuf) == SqlResult::AI_NO_DATA);
+    BOOST_REQUIRE_EQUAL(column1.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_NO_DATA);
 
     BOOST_REQUIRE(column1.IsValid());
 
-    BOOST_REQUIRE(column1.GetSize() == data1.size());
+    BOOST_REQUIRE_EQUAL(column1.GetSize(), data1.size());
 
-    BOOST_REQUIRE(column1.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column1.GetUnreadDataLength(), 0);
 
-    BOOST_REQUIRE(column2.ReadToBuffer(reader, appBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column2.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(column2.IsValid());
 
-    BOOST_REQUIRE(column2.GetSize() == data1.size());
+    BOOST_REQUIRE_EQUAL(column2.GetSize(), data1.size());
 
-    BOOST_REQUIRE(column2.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column2.GetUnreadDataLength(), 0);
 
     BOOST_REQUIRE_EQUAL_COLLECTIONS(buf, buf + reslen, data2.begin(), data2.end());
 
-    BOOST_REQUIRE(column2.ReadToBuffer(reader, appBuf) == SqlResult::AI_NO_DATA);
+    BOOST_REQUIRE_EQUAL(column2.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_NO_DATA);
 
     BOOST_REQUIRE(column2.IsValid());
 
-    BOOST_REQUIRE(column2.GetSize() == data1.size());
+    BOOST_REQUIRE_EQUAL(column2.GetSize(), data1.size());
 
-    BOOST_REQUIRE(column2.GetUnreadDataLength() == 0);
+    BOOST_REQUIRE_EQUAL(column2.GetUnreadDataLength(), 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

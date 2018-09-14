@@ -17,15 +17,17 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    using System;
+
     /// <summary>
     /// Write Ahead Log mode.
     /// </summary>
     public enum WalMode
     {
         /// <summary>
-        /// Default mode: full-sync disk writes. These writes survive power loss scenarios.
+        /// FSYNC mode: full-sync disk writes. These writes survive power loss scenarios.
         /// </summary>
-        Default,
+        Fsync,
 
         /// <summary>
         /// Log only mode: flushes application buffers. These writes survive process crash.
@@ -40,6 +42,11 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// WAL disabled.
         /// </summary>
-        None
+        None,
+        
+        /// <summary>
+        /// Default mode: full-sync disk writes. These writes survive power loss scenarios.
+        /// </summary>
+        [Obsolete("Use Fsync mode.")]Default
     }
 }

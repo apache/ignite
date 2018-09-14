@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -35,10 +36,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
 import javax.management.JMException;
@@ -67,8 +72,11 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -81,10 +89,13 @@ import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
@@ -110,10 +121,10 @@ import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteState.STOPPED;
+import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
 import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
@@ -130,6 +141,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
@@ -156,10 +168,10 @@ public class IgnitionEx {
     public static final String DFLT_CFG = "config/default-config.xml";
 
     /** Map of named Ignite instances. */
-    private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap<>();
 
     /** Map of grid states ever started in this JVM. */
-    private static final Map<Object, IgniteState> gridStates = new ConcurrentHashMap8<>();
+    private static final Map<Object, IgniteState> gridStates = new ConcurrentHashMap<>();
 
     /** Mutex to synchronize updates of default grid reference. */
     private static final Object dfltGridMux = new Object();
@@ -384,6 +396,36 @@ public class IgnitionEx {
         U.warn(null, "Ignoring stopping Ignite instance that was already stopped or never started: " + name);
 
         return false;
+    }
+
+    /**
+     * Behavior of the method is the almost same as {@link IgnitionEx#stop(String, boolean, boolean)}.
+     * If node stopping process will not be finished within {@code timeoutMs} whole JVM will be killed.
+     *
+     * @param timeoutMs Timeout to wait graceful stopping.
+     */
+    public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted, long timeoutMs) {
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+        // Schedule delayed node killing if graceful stopping will be not finished within timeout.
+        executor.schedule(new Runnable() {
+            @Override
+            public void run() {
+                if (state(name) == IgniteState.STARTED) {
+                    U.error(null, "Unable to gracefully stop node within timeout " + timeoutMs +
+                            " milliseconds. Killing node...");
+
+                    // We are not able to kill only one grid so whole JVM will be stopped.
+                    Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
+                }
+            }
+        }, timeoutMs, TimeUnit.MILLISECONDS);
+
+        boolean success = stop(name, cancel, stopNotStarted);
+
+        executor.shutdownNow();
+
+        return success;
     }
 
     /**
@@ -1726,6 +1768,13 @@ public class IgnitionEx {
 
             validateThreadPoolSize(cfg.getPublicThreadPoolSize(), "public");
 
+            UncaughtExceptionHandler oomeHnd = new UncaughtExceptionHandler() {
+                @Override public void uncaughtException(Thread t, Throwable e) {
+                    if (grid != null && X.hasCause(e, OutOfMemoryError.class))
+                        grid.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                }
+            };
+
             execSvc = new IgniteThreadPoolExecutor(
                 "pub",
                 cfg.getIgniteInstanceName(),
@@ -1733,7 +1782,8 @@ public class IgnitionEx {
                 cfg.getPublicThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.PUBLIC_POOL);
+                GridIoPolicy.PUBLIC_POOL,
+                oomeHnd);
 
             execSvc.allowCoreThreadTimeOut(true);
 
@@ -1746,7 +1796,8 @@ public class IgnitionEx {
                 cfg.getServiceThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.SERVICE_POOL);
+                GridIoPolicy.SERVICE_POOL,
+                oomeHnd);
 
             svcExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1759,17 +1810,27 @@ public class IgnitionEx {
                 cfg.getSystemThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.SYSTEM_POOL);
+                GridIoPolicy.SYSTEM_POOL,
+                oomeHnd);
 
             sysExecSvc.allowCoreThreadTimeOut(true);
 
             validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
+            WorkersRegistry workerRegistry = new WorkersRegistry();
+
             stripedExecSvc = new StripedExecutor(
                 cfg.getStripedPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "sys",
-                log);
+                log,
+                new IgniteInClosure<Throwable>() {
+                    @Override public void apply(Throwable t) {
+                        if (grid != null)
+                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
+                },
+                workerRegistry);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1784,7 +1845,8 @@ public class IgnitionEx {
                 cfg.getManagementThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.MANAGEMENT_POOL);
+                GridIoPolicy.MANAGEMENT_POOL,
+                oomeHnd);
 
             mgmtExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1800,7 +1862,8 @@ public class IgnitionEx {
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.P2P_POOL);
+                GridIoPolicy.P2P_POOL,
+                oomeHnd);
 
             p2pExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1809,7 +1872,14 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "data-streamer",
                 log,
-                true);
+                new IgniteInClosure<Throwable>() {
+                    @Override public void apply(Throwable t) {
+                        if (grid != null)
+                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
+                },
+                true,
+                workerRegistry);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
@@ -1829,7 +1899,8 @@ public class IgnitionEx {
             callbackExecSvc = new IgniteStripedThreadPoolExecutor(
                 cfg.getAsyncCallbackPoolSize(),
                 cfg.getIgniteInstanceName(),
-                "callback");
+                "callback",
+                oomeHnd);
 
             if (myCfg.getConnectorConfiguration() != null) {
                 validateThreadPoolSize(myCfg.getConnectorConfiguration().getThreadPoolSize(), "connector");
@@ -1840,7 +1911,9 @@ public class IgnitionEx {
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     DFLT_THREAD_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>()
+                    new LinkedBlockingQueue<Runnable>(),
+                    GridIoPolicy.UNDEFINED,
+                    oomeHnd
                 );
 
                 restExecSvc.allowCoreThreadTimeOut(true);
@@ -1855,7 +1928,8 @@ public class IgnitionEx {
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheKeepAliveTime(),
                 new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.UTILITY_CACHE_POOL);
+                GridIoPolicy.UTILITY_CACHE_POOL,
+                oomeHnd);
 
             utilityCacheExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1866,7 +1940,8 @@ public class IgnitionEx {
                 1,
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.AFFINITY_POOL);
+                GridIoPolicy.AFFINITY_POOL,
+                oomeHnd);
 
             affExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1880,7 +1955,8 @@ public class IgnitionEx {
                     cpus * 2,
                     3000L,
                     new LinkedBlockingQueue<Runnable>(1000),
-                    GridIoPolicy.IDX_POOL
+                    GridIoPolicy.IDX_POOL,
+                    oomeHnd
                 );
             }
 
@@ -1893,7 +1969,8 @@ public class IgnitionEx {
                 cfg.getQueryThreadPoolSize(),
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.QUERY_POOL);
+                GridIoPolicy.QUERY_POOL,
+                oomeHnd);
 
             qryExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1904,7 +1981,8 @@ public class IgnitionEx {
                 2,
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(),
-                GridIoPolicy.SCHEMA_POOL);
+                GridIoPolicy.SCHEMA_POOL,
+                oomeHnd);
 
             schemaExecSvc.allowCoreThreadTimeOut(true);
 
@@ -1920,7 +1998,9 @@ public class IgnitionEx {
                         execCfg.getSize(),
                         execCfg.getSize(),
                         DFLT_THREAD_KEEP_ALIVE_TIME,
-                        new LinkedBlockingQueue<Runnable>());
+                        new LinkedBlockingQueue<Runnable>(),
+                        GridIoPolicy.UNDEFINED,
+                        oomeHnd);
 
                     customExecSvcs.put(execCfg.getName(), exec);
                 }
@@ -1959,7 +2039,8 @@ public class IgnitionEx {
                         @Override public void apply() {
                             startLatch.countDown();
                         }
-                    }
+                    },
+                    workerRegistry
                 );
 
                 state = STARTED;
@@ -2178,8 +2259,7 @@ public class IgnitionEx {
                         "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
                         "Switching to standard JDK marshalling - " +
-                        "object serialization performance will be significantly slower.",
-                        "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
+                        "object serialization performance will be significantly slower.");
 
                     marsh = new JdkMarshaller();
                 }
@@ -2206,6 +2286,8 @@ public class IgnitionEx {
             }
 
             initializeDefaultSpi(myCfg);
+
+            GridDiscoveryManager.initCommunicationErrorResolveConfiguration(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
 
@@ -2267,12 +2349,8 @@ public class IgnitionEx {
                         "like TcpDiscoverySpi)");
 
                 for (CacheConfiguration ccfg : userCaches) {
-                    if (CU.isHadoopSystemCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isUtilityCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
+                    if (CU.isReservedCacheName(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + ccfg.getName() +
                             "\" because it is reserved for internal purposes.");
 
                     if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
@@ -2521,7 +2599,12 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                state = grid0.context().segmented() ? STOPPED_ON_SEGMENTATION : STOPPED;
+                if (grid0.context().segmented())
+                    state = STOPPED_ON_SEGMENTATION;
+                else if (grid0.context().invalid())
+                    state = STOPPED_ON_FAILURE;
+                else
+                    state = STOPPED;
 
                 grid = null;
 
@@ -2560,6 +2643,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), execSvc, log);
 
             execSvc = null;
+
+            U.shutdownNow(getClass(), svcExecSvc, log);
+
+            svcExecSvc = null;
 
             U.shutdownNow(getClass(), sysExecSvc, log);
 

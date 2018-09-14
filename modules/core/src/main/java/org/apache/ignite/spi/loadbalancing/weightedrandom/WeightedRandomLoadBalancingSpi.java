@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -48,7 +49,6 @@ import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
@@ -207,7 +207,7 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
 
     /** Task topologies. First pair value indicates whether or not jobs have been mapped. */
     private ConcurrentMap<IgniteUuid, IgniteBiTuple<Boolean, WeightedTopology>> taskTops =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /**
      * Sets a flag to indicate whether node weights should be checked when

@@ -25,6 +25,8 @@ import java.sql.Statement;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
 import org.apache.ignite.lang.IgniteCallable;
 
+import static org.junit.Assert.assertArrayEquals;
+
 /**
  * Test SQLSTATE codes propagation with thin client driver.
  */
@@ -46,7 +48,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08001");
+        }, "08001", "Failed to connect to server [host=unknown.host");
     }
 
     /**
@@ -61,7 +63,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08001");
+        }, "08001", "port range contains invalid port 1000000");
     }
 
     /**
@@ -74,7 +76,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
             @Override public void run(Connection conn) throws Exception {
                 conn.setTransactionIsolation(1000);
             }
-        }, "0700E");
+        }, "0700E", "Invalid transaction isolation level.");
     }
 
     /**
@@ -96,12 +98,14 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                 fail("BatchUpdateException is expected");
             }
             catch (BatchUpdateException e) {
-                assertEquals(2, e.getUpdateCounts().length);
+                assertEquals(3, e.getUpdateCounts().length);
 
-                for (int updCnt : e.getUpdateCounts())
-                    assertEquals(1, updCnt);
+                assertArrayEquals("", new int[] {1, 1, Statement.EXECUTE_FAILED}, e.getUpdateCounts());
 
                 assertEquals("42000", e.getSQLState());
+
+                assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage() != null &&
+                    e.getMessage().contains("Failed to parse query. Column \"ID1\" not found"));
             }
         }
     }

@@ -74,8 +74,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     return registered.save()
                         .then(() => mongo.Space.create({name: 'Personal space', owner: registered._id}))
                         .then(() => {
-                            mailsService.emailUserSignUp(host, registered)
-                                .catch((err) => console.error(err));
+                            mailsService.emailUserSignUp(host, registered);
 
                             return registered;
                         });
@@ -136,6 +135,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
 
         /**
          * Get list of user accounts and summary information.
+         *
          * @returns {mongo.Account[]} - returns all accounts with counters object
          */
         static list(params) {
@@ -221,7 +221,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                         .catch((err) => console.error(`Failed to cleanup spaces [user=${user.username}, err=${err}`))
                         .then(() => user);
                 })
-                .then((user) => mailsService.emailUserDeletion(host, user).catch((err) => console.error(err)));
+                .then((user) => mailsService.emailUserDeletion(host, user));
         }
 
         /**

@@ -92,13 +92,6 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
         startGrid(NODES - 1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

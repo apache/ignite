@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,7 +28,15 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /** Properties that are not needed on .NET side. */
         private static readonly string[] UnneededProperties =
         {
-            "FileIOFactory"
+            "FileIOFactory",
+            "isWalHistorySizeParameterUsed"
+        };
+
+        /** Properties that are missing on .NET side. */
+        private static readonly string[] MissingProperties =
+        {
+            // IGNITE-7305
+            "WalBufferSize"
         };
 
         /// <summary>
@@ -40,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             ParityTest.CheckConfigurationParity(
                 @"modules\core\src\main\java\org\apache\ignite\configuration\DataStorageConfiguration.java", 
                 typeof(DataStorageConfiguration),
-                UnneededProperties);
+                UnneededProperties, MissingProperties);
         }
     }
 }

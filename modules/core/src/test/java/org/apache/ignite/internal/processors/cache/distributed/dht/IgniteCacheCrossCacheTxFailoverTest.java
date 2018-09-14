@@ -103,13 +103,6 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
         startGrids(4);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @param name Cache name.
      * @param cacheMode Cache mode.

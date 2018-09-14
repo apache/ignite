@@ -213,6 +213,35 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests the execution of the CACHE_CLEAR command.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheClear() throws Exception {
+        GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
+
+        GridRestCacheRequest req = new GridRestCacheRequest();
+
+        req.cacheName(DEFAULT_CACHE_NAME);
+
+        req.command(GridRestCommand.CACHE_CLEAR);
+
+        try {
+            // Change cache state.
+            for (int i = 0; i < 10; i++ ) {
+                jcache().put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+            }
+
+            assertTrue(jcache().size() == 10);
+
+            assertTrue((Boolean) hnd.handleAsync(req).get().getResponse());
+        }
+        finally {
+            assertTrue(jcache().size() == 0);
+        }
+    }
+
+    /**
      * Test command handler.
      */
     private static class TestableCacheCommandHandler extends GridCacheCommandHandler {
@@ -248,10 +277,15 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
                             return fut;
                         }
+
                         // Rewriting flagOn result to keep intercepting invocations after it.
-                        else if ("setSkipStore".equals(mtd.getName()))
+                        if ("setSkipStore".equals(mtd.getName()))
                             return proxy;
-                        else if ("forSubjectId".equals(mtd.getName()))
+
+                        if ("forSubjectId".equals(mtd.getName()))
+                            return proxy;
+
+                        if ("keepBinary".equals(mtd.getName()))
                             return proxy;
 
                         return mtd.invoke(cache, args);

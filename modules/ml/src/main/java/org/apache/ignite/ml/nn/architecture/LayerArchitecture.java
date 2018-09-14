@@ -17,10 +17,12 @@
 
 package org.apache.ignite.ml.nn.architecture;
 
+import java.io.Serializable;
+
 /**
  * Layer architecture.
  */
-public class LayerArchitecture {
+public class LayerArchitecture implements Serializable {
     /**
      * Count of neurons on layer.
      */
@@ -37,6 +39,7 @@ public class LayerArchitecture {
 
     /**
      * Get count of neurons in layer.
+     *
      * @return Count of neurons in layer.
      */
     public int neuronsCount() {

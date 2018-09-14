@@ -24,6 +24,7 @@ import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
@@ -243,7 +244,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @return a Future representing pending completion of the commit.
      * @throws IgniteException If commit failed.
      * @throws TransactionTimeoutException If transaction is timed out.
-     * @throws TransactionRollbackException If transaction is automatically rolled back.
+     * @throws TransactionRollbackException If transaction is manually/automatically rolled back.
      * @throws TransactionOptimisticException If transaction concurrency is {@link TransactionConcurrency#OPTIMISTIC}
      * and commit is optimistically failed.
      * @throws TransactionHeuristicException If transaction has entered an unknown state.
@@ -259,6 +260,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
 
     /**
      * Rolls back this transaction.
+     * Note, that it's allowed to roll back transaction from any thread at any time.
      *
      * @throws IgniteException If rollback failed.
      */
@@ -267,6 +269,7 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
 
     /**
      * Asynchronously rolls back this transaction.
+     * Note, that it's allowed to roll back transaction from any thread at any time.
      *
      * @return a Future representing pending completion of the rollback.
      * @throws IgniteException If rollback failed.
@@ -274,16 +277,25 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     public IgniteFuture<Void> rollbackAsync() throws IgniteException;
 
     /**
-     * Resume transaction if it was previously suspended. <strong>Supported only for optimistic transactions.</strong>
+     * Resume a transaction if it was previously suspended. <strong>Supported only for optimistic transactions.</strong>
      *
      * @throws IgniteException If resume failed.
      */
     public void resume() throws IgniteException;
 
     /**
-     * Suspends transaction. It could be resumed later. <strong>Supported only for optimistic transactions.</strong>
+     * Suspends a transaction. It could be resumed later. <strong>Supported only for optimistic transactions.</strong>
      *
      * @throws IgniteException If suspension failed.
      */
     public void suspend() throws IgniteException;
+
+    /**
+     * Returns transaction's label.
+     * <p>
+     * Use {@link IgniteTransactions#withLabel(java.lang.String)} to assign a label to a newly created transaction.
+     *
+     * @return Label.
+     */
+    public @Nullable String label();
 }

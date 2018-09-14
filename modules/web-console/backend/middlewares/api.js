@@ -19,6 +19,8 @@
 
 // Fire me up!
 
+const _ = require('lodash');
+
 module.exports = {
     implements: 'middlewares:api'
 };
@@ -32,18 +34,21 @@ module.exports.factory = () => {
 
         res.api = {
             error(err) {
-                if (err.name === 'MongoError')
+                if (_.includes(['MongoError', 'MongooseError'], err.name))
                     return res.status(500).send(err.message);
 
                 res.status(err.httpCode || err.code || 500).send(err.message);
             },
+
             ok(data) {
+                if (_.isNil(data))
+                    return res.sendStatus(404);
+
                 res.status(200).json(data);
             },
-            serverError(err) {
-                err.httpCode = 500;
 
-                res.api.error(err);
+            done() {
+                res.sendStatus(200);
             }
         };
 

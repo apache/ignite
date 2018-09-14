@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Scan query request.
@@ -80,6 +81,8 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        authorize(ctx, SecurityPermission.CACHE_READ);
+
         IgniteCache cache = filterPlatform == FILTER_PLATFORM_JAVA && !isKeepBinary() ? rawCache(ctx) : cache(ctx);
 
         ScanQuery qry = new ScanQuery()

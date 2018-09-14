@@ -29,12 +29,10 @@ public class IgniteNeedReconnectException extends IgniteCheckedException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param locNode Local node.
+     * @param node Node that should reconnect.
      * @param cause Cause.
      */
-    public IgniteNeedReconnectException(ClusterNode locNode, @Nullable Throwable cause) {
-        super("Local node need try to reconnect [locNodeId=" + locNode.id() + ']', cause);
-
-        assert locNode.isClient() : locNode;
+    public IgniteNeedReconnectException(ClusterNode node, @Nullable Throwable cause) {
+        super("Node need try to reconnect [nodeId=" + node.id() + ']', cause);
     }
 }

@@ -15,6 +15,15 @@
  * limitations under the License.
  */
 
+import {outdent} from 'outdent/lib';
+import VersionService from 'app/services/Version.service';
+import POM_DEPENDENCIES from 'app/data/pom-dependencies.json';
+import get from 'lodash/get';
+
+const version = new VersionService();
+
+const ALPINE_DOCKER_SINCE = '2.1.0';
+
 /**
  * Docker file generation entry point.
  */
@@ -29,10 +38,10 @@ export default class IgniteDockerGenerator {
      * @returns {String}
      */
     from(cluster, targetVer) {
-        return [
-            '# Start from Apache Ignite image.',
-            `FROM apacheignite/ignite:${targetVer.ignite}`
-        ].join('\n');
+        return outdent`
+            # Start from Apache Ignite image.',
+            FROM apacheignite/ignite:${targetVer.ignite}
+        `;
     }
 
     /**
@@ -42,36 +51,59 @@ export default class IgniteDockerGenerator {
      * @param {Object} targetVer Target version.
      */
     generate(cluster, targetVer) {
+        return outdent`
+            ${this.from(cluster, targetVer)}
+
+            # Set config uri for node.
+            ENV CONFIG_URI ${this.escapeFileName(cluster.name)}-server.xml
+
+            # Copy optional libs.
+            ENV OPTION_LIBS ${this.optionLibs(cluster, targetVer).join(',')}
+
+            # Update packages and install maven.
+            ${this.packages(cluster, targetVer)}
+            
+            # Append project to container.
+            ADD . ${cluster.name}
+
+            # Build project in container.
+            RUN mvn -f ${cluster.name}/pom.xml clean package -DskipTests
+
+            # Copy project jars to node classpath.
+            RUN mkdir $IGNITE_HOME/libs/${cluster.name} && \\
+               find ${cluster.name}/target -name "*.jar" -type f -exec cp {} $IGNITE_HOME/libs/${cluster.name} \\;
+        `;
+    }
+
+    optionLibs(cluster, targetVer) {
         return [
-            this.from(cluster, targetVer),
-            '',
-            '# Set config uri for node.',
-            `ENV CONFIG_URI ${this.escapeFileName(cluster.name)}-server.xml`,
-            '',
-            '# Copy ignite-http-rest from optional.',
-            'ENV OPTION_LIBS ignite-rest-http',
-            '',
-            '# Update packages and install maven.',
-            'RUN \\',
-            '   apt-get update &&\\',
-            '   apt-get install -y maven',
-            '',
-            '# Append project to container.',
-            `ADD . ${cluster.name}`,
-            '',
-            '# Build project in container.',
-            `RUN mvn -f ${cluster.name}/pom.xml clean package -DskipTests`,
-            '',
-            '# Copy project jars to node classpath.',
-            `RUN mkdir $IGNITE_HOME/libs/${cluster.name} && \\`,
-            `   find ${cluster.name}/target -name "*.jar" -type f -exec cp {} $IGNITE_HOME/libs/${cluster.name} \\;`
-        ].join('\n');
+            'ignite-rest-http',
+            get(POM_DEPENDENCIES, [get(cluster, 'discovery.kind'), 'artifactId'])
+        ].filter(Boolean);
+    }
+
+    packages(cluster, targetVer) {
+        return version.since(targetVer.ignite, ALPINE_DOCKER_SINCE)
+            ? outdent`
+                RUN set -x \\
+                    && apk add --no-cache \\
+                        openjdk8
+
+                RUN apk --update add \\
+                    maven \\
+                    && rm -rfv /var/cache/apk/*
+            `
+            : outdent`
+                RUN \\
+                   apt-get update &&\\
+                   apt-get install -y maven
+            `;
     }
 
     ignoreFile() {
-        return [
-            'target',
-            'Dockerfile'
-        ].join('\n');
+        return outdent`
+            target
+            Dockerfile
+        `;
     }
 }

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
@@ -34,6 +35,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         private readonly string _tempDir = TestUtils.GetTempDirectoryName();
 
         /// <summary>
+        /// Sets up the test.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            TestUtils.ClearWorkDir();
+        }
+
+        /// <summary>
         /// Tears down the test.
         /// </summary>
         [TearDown]
@@ -45,6 +55,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 Directory.Delete(_tempDir, true);
             }
+
+            TestUtils.ClearWorkDir();
         }
 
         /// <summary>
@@ -84,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Start Ignite, put data, stop.
             using (var ignite = Ignition.Start(cfg))
             {
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
 
                 // Create cache with default region (persistence enabled), add data.
                 var cache = ignite.CreateCache<int, int>(cacheName);
@@ -110,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Start Ignite, verify data survival.
             using (var ignite = Ignition.Start(cfg))
             {
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
 
                 // Persistent cache already exists and contains data.
                 var cache = ignite.GetCache<int, int>(cacheName);
@@ -127,22 +139,19 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Start Ignite, verify data loss.
             using (var ignite = Ignition.Start(cfg))
             {
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
 
                 Assert.IsFalse(ignite.GetCacheNames().Contains(cacheName));
             }
         }
 
         /// <summary>
-        /// Checks the data storage metrics.
+        /// Checks that data storage metrics reflect some write operations.
         /// </summary>
         private static void CheckDataStorageMetrics(IIgnite ignite)
         {
-            // Check metrics.
             var metrics = ignite.GetDataStorageMetrics();
             Assert.Greater(metrics.WalLoggingRate, 0);
-            Assert.Greater(metrics.WalWritingRate, 0);
-            Assert.Greater(metrics.WalFsyncTimeAverage, 0);
         }
 
         /// <summary>
@@ -151,27 +160,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGridActivationWithPersistence()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                DataStorageConfiguration = new DataStorageConfiguration
-                {
-                    DefaultDataRegionConfiguration = new DataRegionConfiguration
-                    {
-                        PersistenceEnabled = true,
-                        Name = "foo"
-                    }
-                }
-            };
+            var cfg = GetPersistentConfiguration();
 
             // Default config, inactive by default (IsActiveOnStart is ignored when persistence is enabled).
             using (var ignite = Ignition.Start(cfg))
             {
                 CheckIsActive(ignite, false);
 
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
                 CheckIsActive(ignite, true);
 
-                ignite.SetActive(false);
+                ignite.GetCluster().SetActive(false);
                 CheckIsActive(ignite, false);
             }
         }
@@ -189,10 +188,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 CheckIsActive(ignite, true);
 
-                ignite.SetActive(false);
+                ignite.GetCluster().SetActive(false);
                 CheckIsActive(ignite, false);
 
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
                 CheckIsActive(ignite, true);
             }
 
@@ -202,11 +201,112 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 CheckIsActive(ignite, false);
 
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
                 CheckIsActive(ignite, true);
 
-                ignite.SetActive(false);
+                ignite.GetCluster().SetActive(false);
                 CheckIsActive(ignite, false);
+            }
+        }
+
+        /// <summary>
+        /// Tests the baseline topology.
+        /// </summary>
+        [Test]
+        public void TestBaselineTopology()
+        {
+            var cfg1 = new IgniteConfiguration(GetPersistentConfiguration())
+            {
+                ConsistentId = "node1"
+            };
+            var cfg2 = new IgniteConfiguration(GetPersistentConfiguration())
+            {
+                ConsistentId = "node2",
+                IgniteInstanceName = "2"
+            };
+
+            using (var ignite = Ignition.Start(cfg1))
+            {
+                // Start and stop to bump topology version.
+                Ignition.Start(cfg2);
+                Ignition.Stop(cfg2.IgniteInstanceName, true);
+
+                var cluster = ignite.GetCluster();
+                Assert.AreEqual(3, cluster.TopologyVersion);
+
+                // Can not set baseline while inactive.
+                var ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));
+                Assert.AreEqual("Changing BaselineTopology on inactive cluster is not allowed.", ex.Message);
+
+                // Set with version.
+                cluster.SetActive(true);
+                cluster.SetBaselineTopology(2);
+
+                var res = cluster.GetBaselineTopology();
+                CollectionAssert.AreEquivalent(new[] {"node1", "node2"}, res.Select(x => x.ConsistentId));
+
+                cluster.SetBaselineTopology(1);
+                Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
+
+                // Set with nodes.
+                cluster.SetBaselineTopology(res);
+                
+                res = cluster.GetBaselineTopology();
+                CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
+
+                cluster.SetBaselineTopology(cluster.GetTopology(1));
+                Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
+
+                // Set to two nodes.
+                cluster.SetBaselineTopology(cluster.GetTopology(2));
+            }
+
+            // Check auto activation on cluster restart.
+            using (var ignite = Ignition.Start(cfg1))
+            using (Ignition.Start(cfg2))
+            {
+                var cluster = ignite.GetCluster();
+                Assert.IsTrue(cluster.IsActive());
+                
+                var res = cluster.GetBaselineTopology();
+                CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
+            }
+        }
+
+        /// <summary>
+        /// Tests the wal disable/enable functionality.
+        /// </summary>
+        [Test]
+        public void TestWalDisableEnable()
+        {
+            using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+            {
+                var cluster = ignite.GetCluster();
+                cluster.SetActive(true);
+
+                var cache = ignite.CreateCache<int, int>("foo");
+                Assert.IsTrue(cluster.IsWalEnabled(cache.Name));
+                cache[1] = 1;
+
+                cluster.DisableWal(cache.Name);
+                Assert.IsFalse(cluster.IsWalEnabled(cache.Name));
+                cache[2] = 2;
+
+                cluster.EnableWal(cache.Name);
+                Assert.IsTrue(cluster.IsWalEnabled(cache.Name));
+
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                // Check exceptions.
+                var ex = Assert.Throws<IgniteException>(() => cluster.IsWalEnabled("bar"));
+                Assert.AreEqual("Cache not found: bar", ex.Message);
+
+                ex = Assert.Throws<IgniteException>(() => cluster.DisableWal("bar"));
+                Assert.AreEqual("Cache doesn't exist: bar", ex.Message);
+
+                ex = Assert.Throws<IgniteException>(() => cluster.EnableWal("bar"));
+                Assert.AreEqual("Cache doesn't exist: bar", ex.Message);
             }
         }
 
@@ -215,7 +315,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// </summary>
         private static void CheckIsActive(IIgnite ignite, bool isActive)
         {
-            Assert.AreEqual(isActive, ignite.IsActive());
+            Assert.AreEqual(isActive, ignite.GetCluster().IsActive());
 
             if (isActive)
             {
@@ -229,6 +329,24 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual("Can not perform the operation because the cluster is inactive.",
                     ex.Message.Substring(0, 62));
             }
+        }
+
+        /// <summary>
+        /// Gets the persistent configuration.
+        /// </summary>
+        private static IgniteConfiguration GetPersistentConfiguration()
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                DataStorageConfiguration = new DataStorageConfiguration
+                {
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        PersistenceEnabled = true,
+                        Name = "foo"
+                    }
+                }
+            };
         }
     }
 }

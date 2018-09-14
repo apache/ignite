@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -49,7 +50,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
@@ -99,7 +99,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
         missedRsrcCacheSize = ctx.config().getPeerClassLoadingMissedResourcesCacheSize();
 
-        rsrcCache = new ConcurrentHashMap8<>();
+        rsrcCache = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -722,7 +722,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (found || missedRsrcCacheSize > 0) {
                     if (ldrRsrcCache == null)
                         ldrRsrcCache = F.addIfAbsent(rsrcCache, meta.classLoaderId(),
-                            new ConcurrentHashMap8<String, Boolean>());
+                            new ConcurrentHashMap<String, Boolean>());
 
                     // This is the only place where cache could have been changed,
                     // so we remove only here if classloader have been undeployed

@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
@@ -51,8 +52,11 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.AbstractContinuousQuery;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -62,6 +66,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -76,6 +81,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static javax.cache.event.EventType.CREATED;
 import static javax.cache.event.EventType.REMOVED;
+import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -131,13 +137,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         client = true;
 
         startGrid(getServerNodeCount());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -464,7 +463,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         IgniteCache<QueryTestKey, QueryTestValue> cache = grid(getClientIndex()).createCache(ccfg);
 
         try {
-            ContinuousQuery<QueryTestKey, QueryTestValue> qry = new ContinuousQuery<>();
+            AbstractContinuousQuery<QueryTestKey, QueryTestValue> qry = createQuery();
 
             final List<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> evts =
                 new CopyOnWriteArrayList<>();
@@ -472,13 +471,20 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             if (noOpFilterFactory() != null)
                 qry.setRemoteFilterFactory(noOpFilterFactory());
 
-            qry.setLocalListener(new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
-                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
-                    ? extends QueryTestValue>> events) throws CacheEntryListenerException {
-                    for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
-                        evts.add(e);
-                }
-            });
+            if (qry instanceof ContinuousQuery) {
+                ((ContinuousQuery<QueryTestKey, QueryTestValue>)qry).setLocalListener(new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
+                    @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
+                        ? extends QueryTestValue>> events) throws CacheEntryListenerException {
+                        for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
+                            evts.add(e);
+                    }
+                });
+            }
+            else if (qry instanceof ContinuousQueryWithTransformer)
+                initQueryWithTransformer(
+                    (ContinuousQueryWithTransformer<QueryTestKey, QueryTestValue, CacheEntryEvent>)qry, evts);
+            else
+                fail("Unknown query type");
 
             QueryTestKey key = new QueryTestKey(1);
 
@@ -549,12 +555,12 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     }, 5_000);
 
                     checkSingleEvent(evts.get(0), CREATED, new QueryTestValue(1), null);
-                    checkSingleEvent(evts.get(1), REMOVED, null, new QueryTestValue(1));
+                    checkSingleEvent(evts.get(1), REMOVED, new QueryTestValue(1), new QueryTestValue(1));
                     checkSingleEvent(evts.get(2), CREATED, new QueryTestValue(2), null);
-                    checkSingleEvent(evts.get(3), REMOVED, null, new QueryTestValue(2));
+                    checkSingleEvent(evts.get(3), REMOVED, new QueryTestValue(2), new QueryTestValue(2));
                     checkSingleEvent(evts.get(4), CREATED, new QueryTestValue(3), null);
                     checkSingleEvent(evts.get(5), EventType.UPDATED, new QueryTestValue(4), new QueryTestValue(3));
-                    checkSingleEvent(evts.get(6), REMOVED, null, new QueryTestValue(4));
+                    checkSingleEvent(evts.get(6), REMOVED, new QueryTestValue(4), new QueryTestValue(4));
                     checkSingleEvent(evts.get(7), CREATED, new QueryTestValue(5), null);
                     checkSingleEvent(evts.get(8), EventType.UPDATED, new QueryTestValue(6), new QueryTestValue(5));
 
@@ -595,7 +601,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         IgniteCache<QueryTestKey, QueryTestValue> cache = grid(getClientIndex()).createCache(ccfg);
 
         try {
-            ContinuousQuery<QueryTestKey, QueryTestValue> qry = new ContinuousQuery<>();
+            AbstractContinuousQuery<QueryTestKey, QueryTestValue> qry = createQuery();
 
             final List<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> evts =
                 new CopyOnWriteArrayList<>();
@@ -603,13 +609,20 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             if (noOpFilterFactory() != null)
                 qry.setRemoteFilterFactory(noOpFilterFactory());
 
-            qry.setLocalListener(new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
-                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
-                    ? extends QueryTestValue>> events) throws CacheEntryListenerException {
-                    for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
-                        evts.add(e);
-                }
-            });
+            if (qry instanceof ContinuousQuery) {
+                ((ContinuousQuery<QueryTestKey, QueryTestValue>)qry).setLocalListener(new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
+                    @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
+                        ? extends QueryTestValue>> events) throws CacheEntryListenerException {
+                        for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
+                            evts.add(e);
+                    }
+                });
+            }
+            else if (qry instanceof ContinuousQueryWithTransformer)
+                initQueryWithTransformer(
+                    (ContinuousQueryWithTransformer<QueryTestKey, QueryTestValue, CacheEntryEvent>)qry, evts);
+            else
+                fail("Unknown query type");
 
             Map<QueryTestKey, QueryTestValue> map = new TreeMap<>();
 
@@ -687,7 +700,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 if (e.getKey().equals(keyVal)) {
                     checkSingleEvent(e,
                         evtType,
-                        evtType == CREATED ? new QueryTestValue(key) : null,
+                        evtType != UPDATED ? new QueryTestValue(key) : null,
                         evtType == REMOVED ? new QueryTestValue(key) : null);
 
                     keyVal = null;
@@ -834,16 +847,23 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             Collection<QueryCursor<?>> curs = new ArrayList<>();
 
             if (deploy == CLIENT) {
-                ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+                AbstractContinuousQuery<Object, Object> qry = createQuery();
 
                 final BlockingQueue<CacheEntryEvent<?, ?>> evtsQueue = new ArrayBlockingQueue<>(50_000);
 
-                qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
-                    @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
-                        for (CacheEntryEvent<?, ?> evt : evts)
-                            evtsQueue.add(evt);
-                    }
-                });
+                if (qry instanceof ContinuousQuery) {
+                    ((ContinuousQuery<Object, Object>)qry).setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+                        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                            for (CacheEntryEvent<?, ?> evt : evts)
+                                evtsQueue.add(evt);
+                        }
+                    });
+                }
+                else if (qry instanceof ContinuousQueryWithTransformer)
+                    initQueryWithTransformer(
+                        (ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent>)qry, evtsQueue);
+                else
+                    fail("Unknown query type");
 
                 evtsQueues.add(evtsQueue);
 
@@ -852,16 +872,23 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 curs.add(cur);
             }
             else if (deploy == SERVER) {
-                ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+                AbstractContinuousQuery<Object, Object> qry = createQuery();
 
                 final BlockingQueue<CacheEntryEvent<?, ?>> evtsQueue = new ArrayBlockingQueue<>(50_000);
 
-                qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
-                    @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
-                        for (CacheEntryEvent<?, ?> evt : evts)
-                            evtsQueue.add(evt);
-                    }
-                });
+                if (qry instanceof ContinuousQuery) {
+                    ((ContinuousQuery<Object, Object>)qry).setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+                        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                            for (CacheEntryEvent<?, ?> evt : evts)
+                                evtsQueue.add(evt);
+                        }
+                    });
+                }
+                else if (qry instanceof ContinuousQueryWithTransformer)
+                    initQueryWithTransformer(
+                        (ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent>)qry, evtsQueue);
+                else
+                    fail("Unknown query type");
 
                 evtsQueues.add(evtsQueue);
 
@@ -871,16 +898,23 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             }
             else {
                 for (int i = 0; i <= getServerNodeCount(); i++) {
-                    ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+                    AbstractContinuousQuery<Object, Object> qry = createQuery();
 
                     final BlockingQueue<CacheEntryEvent<?, ?>> evtsQueue = new ArrayBlockingQueue<>(50_000);
 
-                    qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
-                        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
-                            for (CacheEntryEvent<?, ?> evt : evts)
-                                evtsQueue.add(evt);
-                        }
-                    });
+                    if (qry instanceof ContinuousQuery) {
+                        ((ContinuousQuery<Object, Object>)qry).setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+                            @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                                for (CacheEntryEvent<?, ?> evt : evts)
+                                    evtsQueue.add(evt);
+                            }
+                        });
+                    }
+                    else if (qry instanceof ContinuousQueryWithTransformer)
+                        initQueryWithTransformer(
+                            (ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent>)qry, evtsQueue);
+                    else
+                        fail("Unknown query type");
 
                     evtsQueues.add(evtsQueue);
 
@@ -999,7 +1033,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
                     updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 
@@ -1014,7 +1048,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
                     updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 
@@ -1044,7 +1078,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
                     updatePartitionCounter(cache, key, partCntr, expEvtCntrs);
 
-                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, null, oldVal);
+                    waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 
                     expData.remove(key);
 
@@ -1417,6 +1451,15 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
     }
 
     /**
+     * @param <K> Key type.
+     * @param <V> Value type.
+     * @return New instance of continuous query.
+     */
+    protected <K, V> AbstractContinuousQuery<K, V> createQuery() {
+        return new ContinuousQuery<>();
+    }
+
+    /**
      *
      */
     private static class TestStoreFactory implements Factory<CacheStore<Object, Object>> {
@@ -1585,5 +1628,38 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      */
     protected enum ContinuousDeploy {
         CLIENT, SERVER, ALL
+    }
+
+    /**
+     * Initialize continuous query with transformer.
+     * Query will accumulate all events in accumulator.
+     *
+     * @param qry Continuous query.
+     * @param acc Accumulator for events.
+     * @param <K> Key type.
+     * @param <V> Value type.
+     */
+    private <K, V> void initQueryWithTransformer(
+        ContinuousQueryWithTransformer<K, V, CacheEntryEvent> qry,
+        Collection<CacheEntryEvent<? extends K, ? extends V>> acc) {
+
+        IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, CacheEntryEvent> transformer =
+            new IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, CacheEntryEvent>() {
+                @Override public CacheEntryEvent apply(CacheEntryEvent<? extends K, ? extends V> event) {
+                    return event;
+                }
+            };
+
+        ContinuousQueryWithTransformer<K, V, CacheEntryEvent> qry0 =
+            (ContinuousQueryWithTransformer<K, V, CacheEntryEvent>)qry;
+
+        qry0.setRemoteTransformerFactory(FactoryBuilder.factoryOf(transformer));
+
+        qry0.setLocalListener(new EventListener<CacheEntryEvent>() {
+            @Override public void onUpdated(Iterable<? extends CacheEntryEvent> events) {
+                for (CacheEntryEvent e : events)
+                    acc.add(e);
+            }
+        });
     }
 }

@@ -24,21 +24,26 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -48,6 +53,15 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
  * Tests cross cache queries.
  */
 public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final String PART_CACHE_NAME = "partitioned";
+
+    /** */
+    private static final String REPL_PROD_CACHE_NAME = "replicated-prod";
+
+    /** */
+    private static final String REPL_STORE_CACHE_NAME = "replicated-store";
+
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -65,9 +79,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         c.setDiscoverySpi(disco);
 
         c.setCacheConfiguration(
-            createCache("partitioned", CacheMode.PARTITIONED, Integer.class, FactPurchase.class),
-            createCache("replicated-prod", CacheMode.REPLICATED, Integer.class, DimProduct.class),
-            createCache("replicated-store", CacheMode.REPLICATED, Integer.class, DimStore.class));
+            createCache(PART_CACHE_NAME, CacheMode.PARTITIONED, Integer.class, FactPurchase.class),
+            createCache(REPL_PROD_CACHE_NAME, CacheMode.REPLICATED, Integer.class, DimProduct.class),
+            createCache(REPL_STORE_CACHE_NAME, CacheMode.REPLICATED, Integer.class, DimStore.class));
 
         return c;
     }
@@ -115,8 +129,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTwoStepGroupAndAggregates() throws Exception {
-        IgniteInternalCache<Integer, FactPurchase> cache =
-            ((IgniteKernal)ignite).getCache("partitioned");
+        IgniteInternalCache<Integer, FactPurchase> cache = ((IgniteKernal)ignite).getCache(PART_CACHE_NAME);
 
         GridQueryProcessor qryProc = ((IgniteKernal) ignite).context().query();
 
@@ -127,7 +140,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         SqlFieldsQuery qry = new SqlFieldsQuery("select f.productId, p.name, f.price " +
             "from FactPurchase f, \"replicated-prod\".DimProduct p where p.id = f.productId ");
 
-        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, false).getAll()) {
+        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, null, false, true).get(0).getAll()) {
             X.println("___ -> " + o);
 
             set1.add((Integer)o.get(0));
@@ -141,7 +154,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         qry = new SqlFieldsQuery("select productId from FactPurchase group by productId");
 
-        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, false).getAll()) {
+        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, null, false, true).get(0).getAll()) {
             X.println("___ -> " + o);
 
             assertTrue(set0.add((Integer) o.get(0)));
@@ -160,7 +173,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             "where p.id = f.productId " +
             "group by f.productId, p.name");
 
-        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, false).getAll()) {
+        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, null, false, true).get(0).getAll()) {
             X.println("___ -> " + o);
 
             assertTrue(names.add((String)o.get(0)));
@@ -177,7 +190,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             "group by f.productId, p.name " +
             "having s >= 15");
 
-        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, false).getAll()) {
+        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, null, false, true).get(0).getAll()) {
             X.println("___ -> " + o);
 
             assertTrue(i(o, 1) >= 15);
@@ -190,7 +203,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         qry = new SqlFieldsQuery("select top 3 distinct productId " +
             "from FactPurchase f order by productId desc ");
 
-        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, false).getAll()) {
+        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, null, false, true).get(0).getAll()) {
             X.println("___ -> " + o);
 
             assertEquals(top--, o.get(0));
@@ -203,7 +216,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         qry = new SqlFieldsQuery("select distinct productId " +
             "from FactPurchase f order by productId desc limit 2 offset 1");
 
-        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, false).getAll()) {
+        for (List<?> o : qryProc.querySqlFields(cache.context(), qry, null, false, true).get(0).getAll()) {
             X.println("___ -> " + o);
 
             assertEquals(top--, o.get(0));
@@ -216,7 +229,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testApiQueries() throws Exception {
-        IgniteCache<Object,Object> c = ignite.cache("partitioned");
+        IgniteCache<Object,Object> c = ignite.cache(PART_CACHE_NAME);
 
         c.query(new SqlFieldsQuery("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
 
@@ -227,9 +240,46 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         assertEquals("aaa", res.get(0).get(0));
     }
 
-//    @Override protected long getTestTimeout() {
-//        return 10 * 60 * 1000;
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultiStatement() throws Exception {
+        final IgniteInternalCache<Integer, FactPurchase> cache = ((IgniteKernal)ignite).getCache(PART_CACHE_NAME);
+
+        final GridQueryProcessor qryProc = ((IgniteKernal) ignite).context().query();
+
+        final SqlFieldsQuery qry = new SqlFieldsQuery(
+            "insert into FactPurchase(_key, id, productId, storeId, price) values (555, 555, 555, 555, 555);" +
+            "select count(*) from FactPurchase"
+        );
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    qryProc.querySqlFields(cache.context(), qry, null, false, true);
+
+                    return null;
+                }
+            }, IgniteSQLException.class, "Multiple statements queries are not supported");
+
+        List<FieldsQueryCursor<List<?>>> cursors = qryProc.querySqlFields(cache.context(), qry, null, false, false);
+
+        assertEquals(2, cursors.size());
+
+        for(FieldsQueryCursor<List<?>> cur : cursors)
+            U.closeQuiet(cur);
+
+        qry.setLocal(true);
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    qryProc.querySqlFields(cache.context(), qry, null, false, false);
+
+                    return null;
+                }
+            }, IgniteSQLException.class, "Multiple statements queries are not supported for local queries");
+    }
 
     /**
      * @param l List.
@@ -246,8 +296,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     private void fillCaches() throws IgniteCheckedException {
         int idGen = 0;
 
-        GridCacheAdapter<Integer, DimProduct> dimCacheProd = ((IgniteKernal)ignite).internalCache("replicated-prod");
-        GridCacheAdapter<Integer, DimStore> dimCacheStore = ((IgniteKernal)ignite).internalCache("replicated-store");
+        GridCacheAdapter<Integer, DimProduct> dimCacheProd = ((IgniteKernal)ignite).internalCache(REPL_PROD_CACHE_NAME);
+        GridCacheAdapter<Integer, DimStore> dimCacheStore = ((IgniteKernal)ignite).internalCache(REPL_STORE_CACHE_NAME);
 
         List<DimStore> dimStores = new ArrayList<>();
 
@@ -273,17 +323,17 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             dimProds.add(v);
         }
 
-        GridCacheAdapter<Integer, FactPurchase> factCache = ((IgniteKernal)ignite).internalCache("partitioned");
+        GridCacheAdapter<Integer, FactPurchase> factCache = ((IgniteKernal)ignite).internalCache(PART_CACHE_NAME);
 
         Collections.sort(dimStores, new Comparator<DimStore>() {
             @Override public int compare(DimStore o1, DimStore o2) {
-                return o1.getId() > o2.getId() ? 1 : o1.getId() < o2.getId() ? -1 : 0;
+                return Integer.compare(o1.getId(), o2.getId());
             }
         });
 
         Collections.sort(dimProds, new Comparator<DimProduct>() {
             @Override public int compare(DimProduct o1, DimProduct o2) {
-                return o1.getId() > o2.getId() ? 1 : o1.getId() < o2.getId() ? -1 : 0;
+                return Integer.compare(o1.getId(), o2.getId());
             }
         });
 

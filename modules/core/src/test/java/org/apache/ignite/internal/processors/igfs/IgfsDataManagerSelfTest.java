@@ -145,11 +145,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         startGrids(NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test file system structure in meta-cache.
      *
@@ -196,7 +191,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(
                     grid(j).cachex(grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
-                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().activeTransactions();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -289,7 +284,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(
                     grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
-                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().activeTransactions();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -374,7 +369,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(
                     grid(j).cachex(grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
-                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().activeTransactions();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }

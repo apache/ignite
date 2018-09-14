@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.session;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -32,14 +33,13 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  */
 public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /** Sessions (initialized to 2K number of concurrent sessions). */
     private final ConcurrentMap<IgniteUuid, GridTaskSessionImpl> sesMap =
-        new ConcurrentHashMap8<>(2048);
+        new ConcurrentHashMap<>(2048);
 
     /**
      * @param ctx Grid kernal context.

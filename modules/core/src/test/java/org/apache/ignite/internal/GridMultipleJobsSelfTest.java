@@ -63,14 +63,6 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-
-        assertEquals(0, G.allGrids().size());
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
     }

@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             using (var client = Ignition.StartClient(cfg))
             {
                 var serverCache = Ignition.GetIgnite().GetOrCreateCache<int?, Person>(
-                    new CacheConfiguration("person", typeof(Person)));
+                    new CacheConfiguration("person", new QueryEntity(typeof(int?), typeof(Person))));
 
                 var clientCache = client.GetCache<int?, Person>(serverCache.Name);
 

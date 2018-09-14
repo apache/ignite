@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.examples.BasicExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.BasicExamplesSelfTest;
 import org.apache.ignite.examples.CacheClientBinaryExampleTest;
+import org.apache.ignite.examples.CacheContinuousQueryExamplesSelfTest;
 import org.apache.ignite.examples.CacheExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.CacheExamplesSelfTest;
 import org.apache.ignite.examples.CheckpointExamplesSelfTest;
@@ -43,13 +44,14 @@ import org.apache.ignite.examples.MonteCarloExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.MonteCarloExamplesSelfTest;
 import org.apache.ignite.examples.SpringBeanExamplesSelfTest;
 import org.apache.ignite.examples.SpringDataExampleSelfTest;
+import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
 
 /**
  * Examples test suite.
  * <p>
- * Contains only Spring ignite examples tests.
+ * Contains all Ignite examples tests.</p>
  */
 public class IgniteExamplesSelfTestSuite extends TestSuite {
     /**
@@ -63,6 +65,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
         suite.addTest(new TestSuite(CacheExamplesSelfTest.class));
+        suite.addTest(new TestSuite(SqlExamplesSelfTest.class));
         suite.addTest(new TestSuite(BasicExamplesSelfTest.class));
         suite.addTest(new TestSuite(ContinuationExamplesSelfTest.class));
         suite.addTest(new TestSuite(ContinuousMapperExamplesSelfTest.class));
@@ -78,6 +81,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsExamplesSelfTest.class));
         suite.addTest(new TestSuite(CheckpointExamplesSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupExampleSelfTest.class));
+        suite.addTest(new TestSuite(CacheContinuousQueryExamplesSelfTest.class));
 
         // Multi-node.
         suite.addTest(new TestSuite(CacheExamplesMultiNodeSelfTest.class));
@@ -93,6 +97,9 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         // Binary.
         suite.addTest(new TestSuite(CacheClientBinaryExampleTest.class));
         suite.addTest(new TestSuite(ComputeClientBinaryExampleTest.class));
+
+        // ML Grid.
+        suite.addTest(IgniteExamplesMLTestSuite.suite());
 
         return suite;
     }

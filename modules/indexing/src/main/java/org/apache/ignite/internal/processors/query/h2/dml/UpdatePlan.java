@@ -19,26 +19,35 @@ package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapterEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.dml.UpdateMode.BULK_LOAD;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
@@ -182,6 +191,10 @@ public final class UpdatePlan {
      * @throws IgniteCheckedException if failed.
      */
     public IgniteBiTuple<?, ?> processRow(List<?> row) throws IgniteCheckedException {
+        if (mode != BULK_LOAD && row.size() != colNames.length)
+            throw new IgniteSQLException("Not enough values in a row: " + row.size() + " instead of " + colNames.length,
+                IgniteQueryErrorCode.ENTRY_PROCESSING);
+
         GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
         GridQueryTypeDescriptor desc = rowDesc.type();
 
@@ -205,7 +218,8 @@ public final class UpdatePlan {
 
         if (key == null) {
             if (F.isEmpty(desc.keyFieldName()))
-                throw new IgniteSQLException("Key for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_KEY);
+                throw new IgniteSQLException("Key for INSERT, COPY, or MERGE must not be null",
+                    IgniteQueryErrorCode.NULL_KEY);
             else
                 throw new IgniteSQLException("Null value is not allowed for column '" + desc.keyFieldName() + "'",
                     IgniteQueryErrorCode.NULL_KEY);
@@ -213,16 +227,18 @@ public final class UpdatePlan {
 
         if (val == null) {
             if (F.isEmpty(desc.valueFieldName()))
-                throw new IgniteSQLException("Value for INSERT, MERGE, or UPDATE must not be null",
+                throw new IgniteSQLException("Value for INSERT, COPY, MERGE, or UPDATE must not be null",
                     IgniteQueryErrorCode.NULL_VALUE);
             else
                 throw new IgniteSQLException("Null value is not allowed for column '" + desc.valueFieldName() + "'",
                     IgniteQueryErrorCode.NULL_VALUE);
         }
 
+        int actualColCnt = Math.min(colNames.length, row.size());
+
         Map<String, Object> newColVals = new HashMap<>();
 
-        for (int i = 0; i < colNames.length; i++) {
+        for (int i = 0; i < actualColCnt; i++) {
             if (i == keyColIdx || i == valColIdx)
                 continue;
 
@@ -237,16 +253,18 @@ public final class UpdatePlan {
             newColVals.put(colName, DmlUtils.convert(row.get(i), rowDesc, expCls, colTypes[i]));
         }
 
+        desc.setDefaults(key, val);
+
         // We update columns in the order specified by the table for a reason - table's
         // column order preserves their precedence for correct update of nested properties.
-        Column[] cols = tbl.getColumns();
+        Column[] tblCols = tbl.getColumns();
 
         // First 3 columns are _key, _val and _ver. Skip 'em.
-        for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
+        for (int i = DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
             if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
                 continue;
 
-            String colName = cols[i].getName();
+            String colName = tblCols[i].getName();
 
             if (!newColVals.containsKey(colName))
                 continue;
@@ -274,6 +292,7 @@ public final class UpdatePlan {
      *
      * @param row Row to process.
      * @throws IgniteCheckedException if failed.
+     * @return Tuple contains: [key, old value, new value]
      */
     public T3<Object, Object, Object> processRowForUpdate(List<?> row) throws IgniteCheckedException {
         GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
@@ -347,6 +366,13 @@ public final class UpdatePlan {
     }
 
     /**
+     * @return {@code True} if DML can be fast processed.
+     */
+    public boolean fastResult() {
+        return fastUpdate != null;
+    }
+
+    /**
      * Process fast DML operation if possible.
      *
      * @param args QUery arguments.
@@ -369,8 +395,12 @@ public final class UpdatePlan {
 
     /**
      * Extract rows from plan without performing any query.
+     *
      * @param args Original query arguments.
-     * @return Rows from plan.
+     * @return {@link List} of rows from the plan for a single query.
+     * For example, if we have multiple args in a query: <br/>
+     * {@code INSERT INTO person VALUES (k1, v1), (k2, v2), (k3, v3);} <br/>
+     * we will get a {@link List} of {@link List} with items {@code {[k1, v1], [k2, v2], [k3, v3]}}.
      * @throws IgniteCheckedException if failed.
      */
     public List<List<?>> createRows(Object[] args) throws IgniteCheckedException {
@@ -379,6 +409,59 @@ public final class UpdatePlan {
         List<List<?>> res = new ArrayList<>(rowsNum);
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        extractArgsValues(args, res, desc);
+
+        return res;
+    }
+
+    /**
+     * Extract rows from plan without performing any query.
+     *
+     * @param argss Batch of arguments.
+     * @return {@link List} of rows from the plan for each query.
+     * For example, if we have a batch of queries with multiple args: <br/>
+     * <code>
+     * INSERT INTO person VALUES (k1, v1), (k2, v2), (k3, v3); <br/>
+     * INSERT INTO person VALUES (k4, v4), (k5, v5), (k6, v6);<br/>
+     * </code>
+     * we will get a {@link List} of {@link List} of {@link List} with items: <br/>
+     * <code>
+     * {[k1, v1], [k2, v2], [k3, v3]},<br/>
+     * {[k4, v4], [k5, v5], [k6, v6]}<br/>
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<List<List<?>>> createRows(List<Object[]> argss) throws IgniteCheckedException {
+        assert rowsNum > 0 && !F.isEmpty(colNames);
+        assert argss != null;
+
+        List<List<List<?>>> resPerQry = new ArrayList<>(argss.size());
+
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        for (Object[] args : argss) {
+            List<List<?>> res = new ArrayList<>();
+
+            resPerQry.add(res);
+
+            extractArgsValues(args, res, desc);
+        }
+
+        return resPerQry;
+    }
+
+    /**
+     * Extracts values from arguments.
+     *
+     * @param args Arguments.
+     * @param res Result list where to put values to.
+     * @param desc Row descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void extractArgsValues(Object[] args, List<List<?>> res, GridH2RowDescriptor desc)
+        throws IgniteCheckedException {
+        assert res != null;
 
         for (List<DmlArgument> row : rows) {
             List<Object> resRow = new ArrayList<>();
@@ -397,8 +480,48 @@ public final class UpdatePlan {
 
             res.add(resRow);
         }
+    }
 
-        return res;
+    /**
+     * Create iterator for transaction.
+     *
+     * @param idx Indexing.
+     * @param cur Cursor.
+     * @return Iterator.
+     */
+    public UpdateSourceIterator<?> iteratorForTransaction(IgniteH2Indexing idx, QueryCursor<List<?>> cur) {
+        switch (mode) {
+            case MERGE:
+                return new InsertIterator(idx, cur, this, EnlistOperation.UPSERT);
+            case INSERT:
+                return new InsertIterator(idx, cur, this, EnlistOperation.INSERT);
+            case UPDATE:
+                return new UpdateIterator(idx, cur, this, EnlistOperation.UPDATE);
+            case DELETE:
+                return new DeleteIterator(idx, cur, this, EnlistOperation.DELETE);
+
+            default:
+                throw new IllegalArgumentException(String.valueOf(mode));
+        }
+    }
+
+    /**
+     * @param updMode Update plan mode.
+     * @return Operation.
+     */
+    public static EnlistOperation enlistOperation(UpdateMode updMode) {
+        switch (updMode) {
+            case INSERT:
+                return EnlistOperation.INSERT;
+            case MERGE:
+                return EnlistOperation.UPSERT;
+            case UPDATE:
+                return EnlistOperation.UPDATE;
+            case DELETE:
+                return EnlistOperation.DELETE;
+            default:
+                throw new IllegalArgumentException(String.valueOf(updMode));
+        }
     }
 
     /**
@@ -439,7 +562,183 @@ public final class UpdatePlan {
     /**
      * @return Local subquery flag.
      */
-    @Nullable public boolean isLocalSubquery() {
+    public boolean isLocalSubquery() {
         return isLocSubqry;
+    }
+
+    /**
+     * @param args Query parameters.
+     * @return Iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public IgniteBiTuple getFastRow(Object[] args) throws IgniteCheckedException {
+        if (fastUpdate != null)
+            return fastUpdate.getRow(args);
+
+        return null;
+    }
+
+    /**
+     * @param row Row.
+     * @return Resulting entry.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Object processRowForTx(List<?> row) throws IgniteCheckedException {
+        switch (mode()) {
+            case INSERT:
+            case MERGE:
+                return processRow(row);
+
+            case UPDATE: {
+                T3<Object, Object, Object> row0 = processRowForUpdate(row);
+
+                return new IgniteBiTuple<>(row0.get1(), row0.get3());
+            }
+            case DELETE:
+                return row.get(0);
+
+            default:
+                throw new UnsupportedOperationException(String.valueOf(mode()));
+        }
+    }
+
+    /**
+     * Abstract iterator.
+     */
+    private abstract static class AbstractIterator extends GridCloseableIteratorAdapterEx<Object>
+        implements UpdateSourceIterator<Object> {
+        /** */
+        private final IgniteH2Indexing idx;
+
+        /** */
+        private final QueryCursor<List<?>> cur;
+
+        /** */
+        protected final UpdatePlan plan;
+
+        /** */
+        private final Iterator<List<?>> it;
+
+        /** */
+        private final EnlistOperation op;
+
+        /** */
+        private volatile ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn;
+
+        /**
+         * @param idx Indexing.
+         * @param cur Query cursor.
+         * @param plan Update plan.
+         * @param op Operation.
+         */
+        private AbstractIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
+            this.idx = idx;
+            this.cur = cur;
+            this.plan = plan;
+            this.op = op;
+
+            it = cur.iterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public EnlistOperation operation() {
+            return op;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeDetach() {
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn = idx.detach();
+
+            if (isClosed())
+                conn0.recycle();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onClose() {
+            cur.close();
+
+            ThreadLocalObjectPool.Reusable<H2ConnectionWrapper> conn0 = conn;
+
+            if (conn0 != null)
+                conn0.recycle();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Object onNext() throws IgniteCheckedException {
+            return process(it.next());
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
+            return it.hasNext();
+        }
+
+        /** */
+        protected abstract Object process(List<?> row) throws IgniteCheckedException;
+    }
+
+    /** */
+    private static final class UpdateIterator extends AbstractIterator {
+        /** */
+        private static final long serialVersionUID = -4949035950470324961L;
+
+        /**
+         * @param idx Indexing.
+         * @param cur Query cursor.
+         * @param plan Update plan.
+         * @param op Operation.
+         */
+        private UpdateIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
+            super(idx, cur, plan, op);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Object process(List<?> row) throws IgniteCheckedException {
+            T3<Object, Object, Object> row0 = plan.processRowForUpdate(row);
+
+            return new IgniteBiTuple<>(row0.get1(), row0.get3());
+        }
+    }
+
+    /** */
+    private static final class DeleteIterator extends AbstractIterator {
+        /** */
+        private static final long serialVersionUID = -4949035950470324961L;
+
+        /**
+         * @param idx Indexing.
+         * @param cur Query cursor.
+         * @param plan Update plan.
+         * @param op Operation.
+         */
+        private DeleteIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
+            super(idx, cur, plan, op);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Object process(List<?> row) throws IgniteCheckedException {
+            return row.get(0);
+        }
+    }
+
+    /** */
+    private static final class InsertIterator extends AbstractIterator {
+        /** */
+        private static final long serialVersionUID = -4949035950470324961L;
+
+        /**
+         * @param idx Indexing.
+         * @param cur Query cursor.
+         * @param plan Update plan.
+         * @param op Operation.
+         */
+        private InsertIterator(IgniteH2Indexing idx, QueryCursor<List<?>> cur, UpdatePlan plan, EnlistOperation op) {
+            super(idx, cur, plan, op);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Object process(List<?> row) throws IgniteCheckedException {
+            return plan.processRow(row);
+        }
     }
 }

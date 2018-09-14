@@ -75,11 +75,6 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
         startGrids(GRID_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return Distribution mode.
      */

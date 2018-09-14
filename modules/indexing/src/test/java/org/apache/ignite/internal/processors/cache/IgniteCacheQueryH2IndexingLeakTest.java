@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CAX;
@@ -106,8 +107,6 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD,
             origCacheCleanupPeriod != null ? origCacheCleanupPeriod : "");
 
@@ -122,9 +121,14 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
         IgniteH2Indexing h2Idx = GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
 
-        ConcurrentMap stmtCache = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "stmtCache");
+        ConcurrentMap<Thread, H2ConnectionWrapper> conns = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "conns");
 
-        return stmtCache.size();
+        int cntr = 0;
+
+        for (H2ConnectionWrapper w : conns.values())
+            cntr += w.statementCacheSize();
+
+        return cntr;
     }
 
     /**
@@ -157,7 +161,11 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                 // Wait for stmt cache entry is created for each thread.
                 assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        return getStatementCacheSize(qryProc) == THREAD_COUNT;
+                        // '>' case is for lazy query flag turned on - in this case, there's more threads
+                        // than those run by test explicitly, and we can't rely on exact number.
+                        // Still the main check for this test is that all threads, no matter how many of them
+                        // is out there, are terminated and their statement caches are cleaned up.
+                        return getStatementCacheSize(qryProc) >= THREAD_COUNT;
                     }
                 }, STMT_CACHE_CLEANUP_TIMEOUT));
             }

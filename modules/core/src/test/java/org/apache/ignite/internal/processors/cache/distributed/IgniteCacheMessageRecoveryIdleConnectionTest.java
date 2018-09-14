@@ -81,13 +81,6 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
         startGridsMultiThreaded(NODES);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

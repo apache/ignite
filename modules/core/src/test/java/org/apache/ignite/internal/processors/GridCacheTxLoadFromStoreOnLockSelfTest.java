@@ -65,11 +65,6 @@ public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTe
         startGridsMultiThreaded(4);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

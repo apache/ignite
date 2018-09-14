@@ -32,9 +32,9 @@
         <add key="Ignite.Assembly.2" value="test-2.dll" />
         <add key="Ignite.JvmOption.1" value="-DOPT1" />
         <add key="Ignite.JvmOption.2" value="-DOPT2" />
-        <add key="Ignite.JvmOption.3" value="-Xms601m" />
+        <add key="Ignite.JvmOption.3" value="-Xms602m" />
         <add key="Ignite.JvmOption.4" value="-Xmx702m" />
-        <add key="Ignite.JvmInitialMemoryMB" value="601" />
+        <add key="Ignite.JvmInitialMemoryMB" value="602" />
         <add key="Ignite.JvmMaxMemoryMB" value="702" />
     </appSettings>
 

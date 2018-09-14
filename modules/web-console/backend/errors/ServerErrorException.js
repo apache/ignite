@@ -23,7 +23,6 @@ class ServerErrorException extends Error {
 
         this.name = this.constructor.name;
         this.code = 500;
-        this.httpCode = 500;
         this.message = message;
 
         if (typeof Error.captureStackTrace === 'function')

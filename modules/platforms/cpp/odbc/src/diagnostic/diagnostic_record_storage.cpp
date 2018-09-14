@@ -50,6 +50,11 @@ namespace ignite
                 rowsAffected = 0;
             }
 
+            void DiagnosticRecordStorage::AddStatusRecord(SqlState::Type sqlState, const std::string& message)
+            {
+                statusRecords.push_back(DiagnosticRecord(sqlState, message, "", "", 0, 0));
+            }
+
             void DiagnosticRecordStorage::AddStatusRecord(const DiagnosticRecord& record)
             {
                 statusRecords.push_back(record);

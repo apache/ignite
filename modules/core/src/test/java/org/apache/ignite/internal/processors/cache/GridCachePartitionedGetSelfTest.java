@@ -106,11 +106,6 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         received.set(false);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

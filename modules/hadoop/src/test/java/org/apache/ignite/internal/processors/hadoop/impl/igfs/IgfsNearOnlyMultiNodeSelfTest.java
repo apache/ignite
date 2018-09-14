@@ -69,10 +69,6 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(nodeCount());
-
-        grid(0).createNearCache("data", new NearCacheConfiguration());
-
-        grid(0).createNearCache("meta", new NearCacheConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -89,8 +85,10 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setName("igfs");
-        igfsCfg.setDataCacheConfiguration(cacheConfiguration(igniteInstanceName, "data"));
-        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(igniteInstanceName, "meta"));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(igniteInstanceName, "data")
+            .setNearConfiguration(new NearCacheConfiguration()));
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(igniteInstanceName, "meta")
+            .setNearConfiguration(new NearCacheConfiguration()));
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
@@ -158,7 +156,7 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     protected URI getFileSystemURI(int grid) {
         try {
-            return new URI("igfs://127.0.0.1:" + (IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
+            return new URI("igfs://igfs@127.0.0.1:" + (IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
         }
         catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -170,10 +168,10 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         try (FileSystem fs = FileSystem.get(getFileSystemURI(0), getFileSystemConfig())) {
             Collection<IgniteBiTuple<String, Long>> files = F.asList(
                 F.t("/dir1/dir2/file1", 1024L),
-                F.t("/dir1/dir2/file2", 8 * 1024L),
-                F.t("/dir1/file1", 1024 * 1024L),
-                F.t("/dir1/file2", 5 * 1024 * 1024L),
-                F.t("/file1", 64 * 1024L + 13),
+                F.t("/dir1/dir2/file2", 8L * 1024),
+                F.t("/dir1/file1", 1024L * 1024),
+                F.t("/dir1/file2", 5L * 1024 * 1024),
+                F.t("/file1", 64L * 1024 + 13),
                 F.t("/file2", 13L),
                 F.t("/file3", 123764L)
             );

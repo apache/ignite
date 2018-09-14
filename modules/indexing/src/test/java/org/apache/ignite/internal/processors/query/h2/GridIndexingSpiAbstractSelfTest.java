@@ -342,8 +342,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         // Fields query
         GridQueryFieldsResult fieldsRes =
-            spi.queryLocalSqlFields(spi.schema("A"), "select a.a.name n1, a.a.age a1, b.a.name n2, " +
-            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null, false, 0, null, null);
+            spi.queryLocalSqlFields(
+                spi.schema("A"),
+                "select a.a.name n1, a.a.age a1, b.a.name n2, b.a.age a2 from a.a, b.a where a.a.id = b.a.id ",
+                Collections.emptySet(),
+                null,
+                false,
+                false,
+                0,
+                null,
+                null);
 
         String[] aliases = {"N1", "A1", "N2", "A2"};
         Object[] vals = { "Valera", 19, "Kolya", 25};
@@ -400,8 +408,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 time = now;
                 range *= 3;
 
-                GridQueryFieldsResult res = spi.queryLocalSqlFields(spi.schema("A"), sql, Arrays.<Object>asList(1,
-                    range), null, false, 0, null, null);
+                GridQueryFieldsResult res = spi.queryLocalSqlFields(
+                    spi.schema("A"),
+                    sql,
+                    Arrays.<Object>asList(1,range),
+                    null,
+                    false,
+                    false,
+                    0,
+                    null,
+                    null);
 
                 assert res.iterator().hasNext();
 
@@ -560,6 +576,21 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 @Override public boolean notNull() {
                     return false;
                 }
+
+                /** */
+                @Override public Object defaultValue() {
+                    return null;
+                }
+
+                /** */
+                @Override public int precision() {
+                    return -1;
+                }
+
+                /** */
+                @Override public int scale() {
+                    return -1;
+                }
             };
         }
 
@@ -652,6 +683,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public void validateKeyAndValue(Object key, Object value) throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setDefaults(Object key, Object val) throws IgniteCheckedException {
             // No-op.
         }
     }

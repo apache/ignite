@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.annotation.Annotation;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Caches class loaders for classes.
@@ -32,7 +32,7 @@ public final class GridAnnotationsCache {
     /** Annotation cache. */
     private static final ConcurrentMap<Class<?>,
         ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>>> anns =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /**
      * @param cls Class.
@@ -44,7 +44,7 @@ public final class GridAnnotationsCache {
 
         if (clsAnns == null) {
             ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>> old = anns.putIfAbsent(cls,
-                clsAnns = new ConcurrentHashMap8<>());
+                clsAnns = new ConcurrentHashMap<>());
 
             if (old != null)
                 clsAnns = old;

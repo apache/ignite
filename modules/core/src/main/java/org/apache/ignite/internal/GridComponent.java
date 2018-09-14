@@ -61,7 +61,13 @@ public interface GridComponent {
         BINARY_PROC,
 
         /** Query processor. */
-        QUERY_PROC
+        QUERY_PROC,
+
+        /** Authentication processor. */
+        AUTH_PROC,
+
+        /** */
+        CACHE_CRD_PROC
     }
 
     /**
@@ -145,6 +151,9 @@ public interface GridComponent {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
+
+    /** */
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData);
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value

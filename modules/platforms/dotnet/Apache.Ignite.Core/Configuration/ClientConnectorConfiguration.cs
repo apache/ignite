@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Core.Configuration
 {
+    using System;
     using System.ComponentModel;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Client connector configuration (ODBC, JDBC, Thin Client).
@@ -55,6 +57,26 @@ namespace Apache.Ignite.Core.Configuration
         /// Default SQL connector thread pool size.
         /// </summary>
         public static readonly int DefaultThreadPoolSize = IgniteConfiguration.DefaultThreadPoolSize;
+        
+        /// <summary>
+        /// Default idle timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultIdleTimeout = TimeSpan.Zero;
+
+        /// <summary>
+        /// Default value for <see cref="ThinClientEnabled"/> property.
+        /// </summary>
+        public const bool DefaultThinClientEnabled = true;
+
+        /// <summary>
+        /// Default value for <see cref="JdbcEnabled"/> property.
+        /// </summary>
+        public const bool DefaultJdbcEnabled = true;
+
+        /// <summary>
+        /// Default value for <see cref="OdbcEnabled"/> property.
+        /// </summary>
+        public const bool DefaultOdbcEnabled = true;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientConnectorConfiguration"/> class.
@@ -68,6 +90,11 @@ namespace Apache.Ignite.Core.Configuration
             TcpNoDelay = DefaultTcpNoDelay;
             MaxOpenCursorsPerConnection = DefaultMaxOpenCursorsPerConnection;
             ThreadPoolSize = DefaultThreadPoolSize;
+            IdleTimeout = DefaultIdleTimeout;
+
+            ThinClientEnabled = DefaultThinClientEnabled;
+            OdbcEnabled = DefaultOdbcEnabled;
+            JdbcEnabled = DefaultJdbcEnabled;
         }
 
         /// <summary>
@@ -85,6 +112,11 @@ namespace Apache.Ignite.Core.Configuration
             TcpNoDelay = reader.ReadBoolean();
             MaxOpenCursorsPerConnection = reader.ReadInt();
             ThreadPoolSize = reader.ReadInt();
+            IdleTimeout = reader.ReadLongAsTimespan();
+
+            ThinClientEnabled = reader.ReadBoolean();
+            OdbcEnabled = reader.ReadBoolean();
+            JdbcEnabled = reader.ReadBoolean();
         }
 
         /// <summary>
@@ -102,6 +134,11 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteBoolean(TcpNoDelay);
             writer.WriteInt(MaxOpenCursorsPerConnection);
             writer.WriteInt(ThreadPoolSize);
+            writer.WriteTimeSpanAsLong(IdleTimeout);
+
+            writer.WriteBoolean(ThinClientEnabled);
+            writer.WriteBoolean(OdbcEnabled);
+            writer.WriteBoolean(JdbcEnabled);
         }
 
         /// <summary>
@@ -155,5 +192,30 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the size of the thread pool.
         /// </summary>
         public int ThreadPoolSize { get; set; }
+        
+        /// <summary>
+        /// Gets or sets idle timeout for client connections on the server side.
+        /// If no packets come within idle timeout, the connection is closed by the server.
+        /// Zero or negative means no timeout.
+        /// </summary>
+        public TimeSpan IdleTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether thin client connector is enabled.
+        /// </summary>
+        [DefaultValue(DefaultThinClientEnabled)]
+        public bool ThinClientEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether JDBC connector is enabled.
+        /// </summary>
+        [DefaultValue(DefaultJdbcEnabled)]
+        public bool JdbcEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether ODBC connector is enabled.
+        /// </summary>
+        [DefaultValue(DefaultOdbcEnabled)]
+        public bool OdbcEnabled { get; set; }
     }
 }

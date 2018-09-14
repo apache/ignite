@@ -57,13 +57,6 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        assertEquals(0, G.allGrids().size());
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 

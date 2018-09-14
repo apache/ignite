@@ -82,9 +82,6 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_IGFS = ATTR_PREFIX + ".igfs";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_MONGO = ATTR_PREFIX + ".mongo";
-
-    /** Internal attribute name constant. */
     public static final String ATTR_DAEMON = ATTR_PREFIX + ".daemon";
 
     /** Internal attribute name constant. */
@@ -120,11 +117,17 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_MACS = ATTR_PREFIX + ".macs";
 
+    /** Allows to override {@link #ATTR_MACS} by adding this attribute in the user attributes. */
+    public static final String ATTR_MACS_OVERRIDE = "override." + ATTR_MACS;
+
     /** Internal attribute name constant. */
     public static final String ATTR_PHY_RAM = ATTR_PREFIX + ".phy.ram";
 
     /** Internal attribute name constant. */
     public static final String ATTR_OFFHEAP_SIZE = ATTR_PREFIX + ".offheap.size";
+
+    /** Internal attribute name constant. */
+    public static final String ATTR_DATA_REGIONS_OFFHEAP_SIZE = ATTR_PREFIX + ".data.regions.offheap.size";
 
     /** Internal attribute name constant. */
     public static final String ATTR_JVM_PID = ATTR_PREFIX + ".jvm.pid";
@@ -189,6 +192,18 @@ public final class IgniteNodeAttributes {
 
     /** Data storage configuration. */
     public static final String ATTR_DATA_STORAGE_CONFIG = ATTR_PREFIX + ".data.storage.config";
+
+    /** User authentication enabled flag. */
+    public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
+
+    /** Rebalance thread pool size. */
+    public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";
+
+    /** Internal attribute name constant. */
+    public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
+
+    /** Mvcc enabled flag. */
+    public static final String ATTR_MVCC_ENABLED = ATTR_PREFIX + ".mvcc.enabled";
 
     /**
      * Enforces singleton.

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -46,17 +47,22 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
     }
 
     /**
-     * @param grpId Cache group ID.
+     * @param grpId Group ID.
      * @param partId Partition ID.
+     * @param cntrSince Partition update counter since history supplying is requested.
      * @return Supplier UUID.
      */
-    @Nullable public synchronized UUID getSupplier(int grpId, int partId) {
+    @Nullable public synchronized UUID getSupplier(int grpId, int partId, long cntrSince) {
         if (map == null)
             return null;
 
         for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
-            if (e.getValue().containsKey(new T2<>(grpId, partId)))
-                return e.getKey();
+            UUID supplierNode = e.getKey();
+
+            Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
+
+            if (historyCounter != null && historyCounter <= cntrSince)
+                return supplierNode;
         }
 
         return null;
@@ -106,5 +112,10 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      */
     public synchronized void putAll(IgniteDhtPartitionHistorySuppliersMap that) {
         map = that.map;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteDhtPartitionHistorySuppliersMap.class, this);
     }
 }

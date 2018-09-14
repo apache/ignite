@@ -24,6 +24,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRe
  * {@link AbstractWalRecordsIterator}.
  */
 public class FilteredRecord extends WALRecord {
+    /** Instance. */
+    public static final FilteredRecord INSTANCE = new FilteredRecord();
+
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return null;

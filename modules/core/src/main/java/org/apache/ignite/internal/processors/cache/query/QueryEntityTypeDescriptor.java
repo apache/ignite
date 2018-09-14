@@ -54,6 +54,12 @@ public class QueryEntityTypeDescriptor {
     /** */
     private Set<String> notNullFields = new HashSet<>();
 
+    /** Precision information. */
+    private Map<String, Integer> fieldsPrecision = new HashMap<>();
+
+    /** Scale information. */
+    private Map<String, Integer> fieldsScale = new HashMap<>();
+
     /** */
     private QueryEntityIndexDescriptor fullTextIdx;
 
@@ -187,10 +193,44 @@ public class QueryEntityTypeDescriptor {
     }
 
     /**
+     * Adds fieldsPrecision info.
+     *
+     * @param field Field.
+     * @param precision Precision.
+     */
+    public void addPrecision(String field, Integer precision) {
+        fieldsPrecision.put(field, precision);
+    }
+
+    /**
+     * Adds fieldsScale info.
+     *
+     * @param field Field.
+     * @param scale Scale.
+     */
+    public void addScale(String field, int scale) {
+        fieldsScale.put(field, scale);
+    }
+
+    /**
      * @return notNull fields.
      */
     public Set<String> notNullFields() {
         return notNullFields;
+    }
+
+    /**
+     * @return Precision info for fields.
+     */
+    public Map<String, Integer> fieldsPrecision() {
+        return fieldsPrecision;
+    }
+
+    /**
+     * @return Scale info for fields.
+     */
+    public Map<String, Integer> fieldsScale() {
+        return fieldsScale;
     }
 
     /**

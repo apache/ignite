@@ -1,8 +1,8 @@
-# Apache Ignite In-Memory Computing Platform
+# Apache Ignite
 
 <a href="https://ignite.apache.org/"><img src="https://ignite.apache.org/images/logo3.png" hspace="20"/></a>
 
-<a href="https://ci.ignite.apache.org/viewType.html?buildTypeId=Ignite20Tests_RunAll&branch_Ignite20Tests=%3Cdefault%3E"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:Ignite20Tests_RunAll)/statusIcon.svg"/></a>
+<a href="https://ci.ignite.apache.org/viewType.html?buildTypeId=IgniteTests24Java8_RunAll&branch_IgniteTests24Java8=%3Cdefault%3E"><img src="https://ci.ignite.apache.org/app/rest/builds/buildType:(id:IgniteTests24Java8_RunAll)/statusIcon.svg"/></a>
 
 
 ## Getting Started
@@ -16,9 +16,9 @@ You can find the full Apache Ignite documentation here: [Full documentation][doc
 
 ## What is Apache Ignite?
 
-[Apache Ignite][apache-ignite-homepage] is the <b>in-memory</b> computing platform
-that is <b>durable</b>, <b>strongly consistent</b>, and <b>highly available</b>
-with powerful <b>SQL</b>, <b>key-value</b> and <b>processing</b> APIs.
+[Apache Ignite][apache-ignite-homepage] is a memory-centric multi-model distributed
+ <strong>database</strong>, <strong>caching</strong>, and <strong>processing</strong> platform for
+ transactional, analytical, and streaming workloads, delivering in-memory speeds at petabyte scale.
 
 <p align="center">
     <a href="https://apacheignite.readme.io/docs">

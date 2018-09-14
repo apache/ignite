@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Class loader that is able to resolve task subclasses and resources
@@ -179,7 +179,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         missedRsrcs = missedResourcesCacheSize > 0 ?
             new GridBoundedLinkedHashSet<String>(missedResourcesCacheSize) : null;
 
-        byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap8<String, byte[]>() : null;
+        byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap<String, byte[]>() : null;
 
         this.quiet = quiet;
     }
@@ -251,7 +251,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         missedRsrcs = missedResourcesCacheSize > 0 ?
             new GridBoundedLinkedHashSet<String>(missedResourcesCacheSize) : null;
 
-        byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap8<String, byte[]>() : null;
+        byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap<String, byte[]>() : null;
 
         this.quiet = quiet;
     }

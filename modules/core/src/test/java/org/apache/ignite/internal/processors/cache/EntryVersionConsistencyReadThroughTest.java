@@ -99,13 +99,6 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
         startGrid(NODES_CNT - 1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

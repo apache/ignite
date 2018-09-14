@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -195,10 +196,10 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
     private final ConcurrentLinkedDeque8<HashEntry<K, V>> entryQ;
 
     /** Atomic variable containing map size. */
-    private final LongAdder8 size = new LongAdder8();
+    private final LongAdder size = new LongAdder();
 
     /** */
-    private final LongAdder8 modCnt = new LongAdder8();
+    private final LongAdder modCnt = new LongAdder();
 
     /** */
     private final int maxCap;
@@ -987,29 +988,6 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
             return oldVal;
         }
-
-        /**
-         *
-         */
-        void clear() {
-            if (cnt != 0) {
-                writeLock().lock();
-
-                try {
-                    HashEntry<K, V>[] tab = tbl;
-
-                    for (int i = 0; i < tab.length ; i++)
-                        tab[i] = null;
-
-                    ++modCnt;
-
-                    cnt = 0; // write-volatile
-                }
-                finally {
-                    writeLock().unlock();
-                }
-            }
-        }
     }
 
     /* ---------------- Public operations -------------- */
@@ -1570,8 +1548,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      * Removes all of the mappings from this map.
      */
     @Override public void clear() {
-        for (Segment<K, V> segment : segments)
-            segment.clear();
+        throw new UnsupportedOperationException();
     }
 
     /**

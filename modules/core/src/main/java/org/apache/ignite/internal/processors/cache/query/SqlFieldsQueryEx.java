@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * {@link SqlFieldsQuery} with experimental and internal features.
@@ -33,12 +37,22 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     /** Whether server side DML should be enabled. */
     private boolean skipReducerOnUpdate;
 
+    /** Auto commit flag. */
+    private boolean autoCommit = true;
+
+    /** Nested transactions handling mode. */
+    private NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
+
+    /** Batched arguments list. */
+    private List<Object[]> batchedArgs;
+
     /**
      * @param sql SQL query.
      * @param isQry Flag indicating whether this object denotes a query or an update operation.
      */
     public SqlFieldsQueryEx(String sql, Boolean isQry) {
         super(sql);
+
         this.isQry = isQry;
     }
 
@@ -50,6 +64,9 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
 
         this.isQry = qry.isQry;
         this.skipReducerOnUpdate = qry.skipReducerOnUpdate;
+        this.autoCommit = qry.autoCommit;
+        this.nestedTxMode = qry.nestedTxMode;
+        this.batchedArgs = qry.batchedArgs;
     }
 
     /**
@@ -151,8 +168,75 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
         return skipReducerOnUpdate;
     }
 
+    /**
+     * @return Nested transactions handling mode - behavior when the user attempts to open a transaction in scope of
+     * another transaction.
+     */
+    public NestedTxMode getNestedTxMode() {
+        return nestedTxMode;
+    }
+
+    /**
+     * @param nestedTxMode Nested transactions handling mode - behavior when the user attempts to open a transaction
+     * in scope of another transaction.
+     */
+    public void setNestedTxMode(NestedTxMode nestedTxMode) {
+        this.nestedTxMode = nestedTxMode;
+    }
+
+    /**
+     * @return Auto commit flag.
+     */
+    public boolean isAutoCommit() {
+        return autoCommit;
+    }
+
+    /**
+     * @param autoCommit Auto commit flag.
+     */
+    public void setAutoCommit(boolean autoCommit) {
+        this.autoCommit = autoCommit;
+    }
+
     /** {@inheritDoc} */
     @Override public SqlFieldsQuery copy() {
         return new SqlFieldsQueryEx(this);
+    }
+
+    /**
+     * Adds batched arguments.
+     *
+     * @param args Batched arguments.
+     */
+    public void addBatchedArgs(Object[] args) {
+        if (this.batchedArgs == null)
+            this.batchedArgs = new ArrayList<>();
+
+        this.batchedArgs.add(args);
+    }
+
+    /**
+     * Clears batched arguments.
+     */
+    public void clearBatchedArgs() {
+        this.batchedArgs = null;
+    }
+
+    /**
+     * Returns batched arguments.
+     *
+     * @return Batched arguments.
+     */
+    public List<Object[]> batchedArguments() {
+        return this.batchedArgs;
+    }
+
+    /**
+     * Checks if query is batched.
+     *
+     * @return {@code True} if batched.
+     */
+    public boolean isBatched() {
+        return !F.isEmpty(batchedArgs);
     }
 }

@@ -21,6 +21,9 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <properties>
+        <commons.math.version>3.6.1</commons.math.version>
+    </properties>
 
     <parent>
         <artifactId>ignite-parent</artifactId>
@@ -30,13 +33,8 @@
     </parent>
 
     <artifactId>ignite-ml</artifactId>
-    <version>2.4.0-SNAPSHOT</version>
+    <version>2.7.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <netlibjava.version>1.1.2</netlibjava.version>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -51,6 +49,19 @@
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+	    <groupId>org.apache.ignite</groupId>
+	    <artifactId>ignite-indexing</artifactId>
+	    <version>${project.version}</version>
+        </dependency>
+
+
+        <dependency>
+	    <groupId>org.apache.ignite</groupId>
+	    <artifactId>ignite-spring</artifactId>
+	    <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -103,12 +114,24 @@
             <artifactId>SparseBitSet</artifactId>
             <version>1.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>${commons.math.version}</version>
+        </dependency>
     </dependencies>
 
     <profiles>
         <profile>
             <id>lgpl</id>
-
             <dependencies>
                 <dependency>
                     <groupId>com.github.fommil.netlib</groupId>
@@ -119,16 +142,4 @@
             </dependencies>
         </profile>
     </profiles>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

@@ -1,0 +1,17 @@
+[Unit]
+Description=Apache Ignite In-Memory Computing Platform Service
+After=syslog.target network.target
+
+[Service]
+Type=forking
+User=#user#
+WorkingDirectory=/usr/share/#name#/work
+PermissionsStartOnly=true
+ExecStartPre=-/usr/bin/mkdir -p /var/run/#name#
+ExecStartPre=-/usr/bin/chown #user#:#user# /var/run/#name#
+ExecStartPre=-/usr/bin/env bash /usr/share/#name#/bin/service.sh set-firewall
+ExecStart=/usr/share/#name#/bin/service.sh start %i
+PIDFile=/var/run/#name#/%i.pid
+
+[Install]
+WantedBy=multi-user.target

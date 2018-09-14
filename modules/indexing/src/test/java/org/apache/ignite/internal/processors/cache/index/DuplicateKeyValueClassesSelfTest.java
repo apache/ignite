@@ -43,11 +43,6 @@ public class DuplicateKeyValueClassesSelfTest extends GridCommonAbstractTest {
         grid(0).destroyCache(CACHE_NAME);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test duplicate key class.
      *

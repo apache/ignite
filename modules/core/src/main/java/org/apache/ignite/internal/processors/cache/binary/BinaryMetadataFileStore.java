@@ -58,8 +58,8 @@ class BinaryMetadataFileStore {
         final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
-        @Nullable final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
-
+        @Nullable final File binaryMetadataFileStoreDir
+    ) throws IgniteCheckedException {
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
         this.log = log;

@@ -87,6 +87,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** Conflict expire times. */
     private GridLongList conflictExpireTimes;
+
     /** Optional arguments for entry processor. */
     @GridDirectTransient
     private Object[] invokeArgs;

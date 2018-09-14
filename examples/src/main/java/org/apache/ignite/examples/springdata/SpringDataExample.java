@@ -108,7 +108,7 @@ public class SpringDataExample {
      */
     private static void findPersons() {
         // Getting Person with specific ID.
-        Person person = repo.findOne(2L);
+        Person person = repo.findById(2L).orElse(null);
 
         System.out.println("\n>>> Found Person [id=" + 2L + ", val=" + person + "]");
 
@@ -119,7 +119,7 @@ public class SpringDataExample {
         for (long i = 0; i < 5; i++)
             ids.add(i);
 
-        Iterator<Person> persons = repo.findAll(ids).iterator();
+        Iterator<Person> persons = repo.findAllById(ids).iterator();
 
         System.out.println("\n>>> Persons list for specific ids: ");
 

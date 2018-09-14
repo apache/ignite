@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -51,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCa
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
@@ -75,7 +75,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
@@ -130,7 +129,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
     /** Timeout object. */
     @GridToStringExclude
-    private LockTimeoutObject timeoutObj;
+    private volatile LockTimeoutObject timeoutObj;
 
     /** Lock timeout. */
     private final long timeout;
@@ -238,7 +237,13 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridNearLockFuture.class);
 
-        valMap = new ConcurrentHashMap8<>();
+        valMap = new ConcurrentHashMap<>();
+
+        if (tx != null && !tx.updateLockFuture(null, this)) {
+            err = tx.timedOut() ? tx.timeoutException() : tx.rollbackException();
+
+            onComplete(false, false);
+        }
     }
 
     /** {@inheritDoc} */
@@ -436,7 +441,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param success Success flag.
      */
     public void complete(boolean success) {
-        onComplete(success, true, true);
+        onComplete(success, true);
     }
 
     /**
@@ -476,34 +481,63 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param nodeId Sender.
      * @param res Result.
      */
+    @SuppressWarnings("SynchronizeOnNonFinalField")
     void onResult(UUID nodeId, GridNearLockResponse res) {
-        if (!isDone()) {
-            if (log.isDebugEnabled())
-                log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
+        boolean done = isDone();
 
-            MiniFuture mini = miniFuture(res.miniId());
-
-            if (mini != null) {
-                assert mini.node().id().equals(nodeId);
-
-                if (log.isDebugEnabled())
-                    log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
-
-                mini.onResult(res);
-
-                if (log.isDebugEnabled())
-                    log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
-                        ", res=" + res + ']');
+        if (!done) {
+            // onResult is always called after map() and timeoutObj is never reset to null, so this is
+            // a race-free null check.
+            if (timeoutObj == null) {
+                onResult0(nodeId, res);
 
                 return;
             }
 
-            U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
-                ", fut=" + this + ']');
+            synchronized (timeoutObj) {
+                if (!isDone()) {
+                    if (onResult0(nodeId, res))
+                        return;
+                }
+                else
+                    done = true;
+            }
         }
-        else if (log.isDebugEnabled())
+
+        if (done && log.isDebugEnabled())
             log.debug("Ignoring lock response from node (future is done) [nodeId=" + nodeId + ", res=" + res +
                 ", fut=" + this + ']');
+    }
+
+    /**
+     * @param nodeId Sender.
+     * @param res Result.
+     */
+    private boolean onResult0(UUID nodeId, GridNearLockResponse res) {
+        if (log.isDebugEnabled())
+            log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
+
+        MiniFuture mini = miniFuture(res.miniId());
+
+        if (mini != null) {
+            assert mini.node().id().equals(nodeId);
+
+            if (log.isDebugEnabled())
+                log.debug("Found mini future for response [mini=" + mini + ", res=" + res + ']');
+
+            mini.onResult(res);
+
+            if (log.isDebugEnabled())
+                log.debug("Future after processed lock response [fut=" + this + ", mini=" + mini +
+                    ", res=" + res + ']');
+
+            return true;
+        }
+
+        U.warn(log, "Failed to find mini future for response (perhaps due to stale message) [res=" + res +
+            ", fut=" + this + ']');
+
+        return false;
     }
 
     /**
@@ -657,7 +691,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                     log.debug("Local lock acquired for entries [fut=" + this + ", entries=" + entries + "]");
             }
 
-            onComplete(true, true, true);
+            onComplete(true, true);
 
             return true;
         }
@@ -665,12 +699,14 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         return false;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Cancellation has special meaning for lock futures. It's called then lock must be released on rollback.
+     */
     @Override public boolean cancel() {
-        if (onCancelled())
-            onComplete(false, true, true);
+        if (inTx())
+            onError(tx.rollbackException());
 
-        return isCancelled();
+        return onComplete(false, true);
     }
 
     /** {@inheritDoc} */
@@ -692,7 +728,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (err != null)
             success = false;
 
-        return onComplete(success, true, true);
+        return onComplete(success, true);
     }
 
     /**
@@ -700,10 +736,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      *
      * @param success {@code True} if lock was acquired.
      * @param distribute {@code True} if need to distribute lock removal in case of failure.
-     * @param restoreTimeout {@code True} if need restore tx timeout callback.
      * @return {@code True} if complete by this operation.
      */
-    private boolean onComplete(boolean success, boolean distribute, boolean restoreTimeout) {
+    private boolean onComplete(boolean success, boolean distribute) {
         if (log.isDebugEnabled()) {
             log.debug("Received onComplete(..) callback [success=" + success + ", distribute=" + distribute +
                 ", fut=" + this + ']');
@@ -718,12 +753,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (tx != null) {
             cctx.tm().txContext(tx);
 
-            if (restoreTimeout && tx.trackTimeout()) {
-                // Need restore timeout before onDone is called and next tx operation can proceed.
-                boolean add = tx.addTimeoutHandler();
-
-                assert add;
-            }
+            if (success)
+                tx.clearLockFuture(this);
         }
 
         if (super.onDone(success, err)) {
@@ -785,23 +816,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * part. Note that if primary node leaves grid, the future will fail and transaction will be rolled back.
      */
     void map() {
-        if (tx != null && tx.trackTimeout()) {
-            if (!tx.removeTimeoutHandler()) {
-                tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                        IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Failed to " +
-                            "acquire lock, transaction was rolled back on timeout [timeout=" + tx.timeout() +
-                            ", tx=" + tx + ']');
-
-                        onError(err);
-
-                        onComplete(false, false, false);
-                    }
-                });
-
-                return;
-            }
-        }
+        if (isDone()) // Possible due to async rollback.
+            return;
 
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
@@ -1020,7 +1036,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                     if (log.isDebugEnabled())
                                         log.debug("Entry being locked did not pass filter (will not lock): " + entry);
 
-                                    onComplete(false, false, true);
+                                    onComplete(false, false);
 
                                     return;
                                 }
@@ -1476,44 +1492,53 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
             timedOut = true;
 
-            if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
-                synchronized (GridNearLockFuture.this) {
-                    requestedKeys = requestedKeys0();
+            if (inTx()) {
+                if (cctx.tm().deadlockDetectionEnabled()) {
+                    synchronized (GridNearLockFuture.this) {
+                        requestedKeys = requestedKeys0();
 
-                    clear(); // Stop response processing.
-                }
-
-                Set<IgniteTxKey> keys = new HashSet<>();
-
-                for (IgniteTxEntry txEntry : tx.allEntries()) {
-                    if (!txEntry.locked())
-                        keys.add(txEntry.txKey());
-                }
-
-                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
-
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
-                    @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
-                        try {
-                            TxDeadlock deadlock = fut.get();
-
-                            if (deadlock != null)
-                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                                        "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
-                                        new TransactionDeadlockException(deadlock.toString(cctx.shared())));
-                        }
-                        catch (IgniteCheckedException e) {
-                            err = e;
-
-                            U.warn(log, "Failed to detect deadlock.", e);
-                        }
-
-                        onComplete(false, true, true);
+                        clear(); // Stop response processing.
                     }
-                });
+
+                    Set<IgniteTxKey> keys = new HashSet<>();
+
+                    for (IgniteTxEntry txEntry : tx.allEntries()) {
+                        if (!txEntry.locked())
+                            keys.add(txEntry.txKey());
+                    }
+
+                    IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
+
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
+                        @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
+                            try {
+                                TxDeadlock deadlock = fut.get();
+
+                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
+                                    "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
+                                    deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx.shared())) :
+                                        null);
+                            }
+                            catch (IgniteCheckedException e) {
+                                err = e;
+
+                                U.warn(log, "Failed to detect deadlock.", e);
+                            }
+
+                            synchronized (LockTimeoutObject.this) {
+                                onComplete(false, true);
+                            }
+                        }
+                    });
+                }
+                else
+                    err = tx.timeoutException();
             }
-            else
-                onComplete(false, true, true);
+            else {
+                synchronized (this) {
+                    onComplete(false, true);
+                }
+            }
         }
 
         /** {@inheritDoc} */

@@ -33,6 +33,11 @@ namespace Apache.Ignite.Core
         long TotalAllocatedPages { get; }
 
         /// <summary>
+        /// Gets the size of allocated pages in bytes.
+        /// </summary>
+        long TotalAllocatedSize { get; }
+
+        /// <summary>
         /// Gets the allocation rate, in pages per second.
         /// </summary>
         float AllocationRate { get; }
@@ -51,5 +56,45 @@ namespace Apache.Ignite.Core
         /// Gets the page fill factor: free space to overall size ratio across all pages.
         /// </summary>
         float PageFillFactor { get; }
+
+        /// <summary>
+        /// Gets the number of dirty RAM pages.
+        /// </summary>
+        long DirtyPages { get; }
+
+        /// <summary>
+        /// Gets the rate (pages per second) at which pages get replaced with other pages from persistent storage.
+        /// </summary>
+        float PageReplaceRate { get; }
+
+        /// <summary>
+        /// Gets the average age (in milliseconds) for pages being replaced from persistent storage.
+        /// </summary>
+        float PageReplaceAge { get; }
+
+        /// <summary>
+        /// Gets the count of pages loaded to RAM.
+        /// </summary>
+        long PhysicalMemoryPages { get; }
+
+        /// <summary>
+        /// Gets the size of pages loaded to RAM in bytes.
+        /// </summary>
+        long PhysicalMemorySize { get; }
+
+        /// <summary>
+        /// Gets checkpointing buffer size in pages.
+        /// </summary>
+        long CheckpointBufferPages { get; }
+
+        /// <summary>
+        /// Gets checkpointing buffer size in bytes.
+        /// </summary>
+        long CheckpointBufferSize { get; }
+
+        /// <summary>
+        /// Gets memory page size in bytes.
+        /// </summary>
+        int PageSize { get; }
     }
 }

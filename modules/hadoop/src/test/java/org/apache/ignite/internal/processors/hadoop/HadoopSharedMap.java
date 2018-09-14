@@ -17,18 +17,18 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * For tests.
  */
 public class HadoopSharedMap {
     /** */
-    private static final ConcurrentMap<String, HadoopSharedMap> maps = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<String, HadoopSharedMap> maps = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<String, Object> map = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, Object> map = new ConcurrentHashMap<>();
 
     /**
      * Private.

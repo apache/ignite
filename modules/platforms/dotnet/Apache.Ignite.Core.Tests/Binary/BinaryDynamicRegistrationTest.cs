@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                         };
 
                         var tasks = Enumerable.Range(0, threads)
-                            .Select(x => Task.Factory.StartNew(registerType))
+                            .Select(x => TaskRunner.Run(registerType))
                             .ToArray();
 
                         Task.WaitAll(tasks);

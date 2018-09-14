@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.IO;
     using System.Linq;
@@ -170,6 +171,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(tx.DefaultTransactionIsolation, resTx.DefaultTransactionIsolation);
                 Assert.AreEqual(tx.PessimisticTransactionLogLinger, resTx.PessimisticTransactionLogLinger);
                 Assert.AreEqual(tx.PessimisticTransactionLogSize, resTx.PessimisticTransactionLogSize);
+                Assert.AreEqual(tx.DefaultTimeoutOnPartitionMapExchange, resTx.DefaultTimeoutOnPartitionMapExchange);
 
                 var com = (TcpCommunicationSpi) cfg.CommunicationSpi;
                 var resCom = (TcpCommunicationSpi) resCfg.CommunicationSpi;
@@ -239,6 +241,11 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(sql.ThreadPoolSize, resSql.ThreadPoolSize);
 
                 AssertExtensions.ReflectionEqual(cfg.DataStorageConfiguration, resCfg.DataStorageConfiguration);
+
+                Assert.IsNotNull(resCfg.SqlSchemas);
+                Assert.AreEqual(2, resCfg.SqlSchemas.Count);
+                Assert.IsTrue(resCfg.SqlSchemas.Contains("SCHEMA_3"));
+                Assert.IsTrue(resCfg.SqlSchemas.Contains("schema_4"));
             }
         }
 
@@ -426,6 +433,7 @@ namespace Apache.Ignite.Core.Tests
                 using (var ignite = Ignition.Start(cfg))
                 {
                     Assert.AreEqual(id, ignite.GetConfiguration().ConsistentId);
+                    Assert.AreEqual(id ?? "127.0.0.1:47500", ignite.GetCluster().GetLocalNode().ConsistentId);
                 }
             }
         }
@@ -489,6 +497,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultClientConnectorConfigurationEnabled, 
                 cfg.ClientConnectorConfigurationEnabled);
             Assert.AreEqual(IgniteConfiguration.DefaultRedirectJavaConsoleOutput, cfg.RedirectJavaConsoleOutput);
+            Assert.AreEqual(IgniteConfiguration.DefaultAuthenticationEnabled, cfg.AuthenticationEnabled);
 
             // Thread pools.
             Assert.AreEqual(IgniteConfiguration.DefaultManagementThreadPoolSize, cfg.ManagementThreadPoolSize);
@@ -594,6 +603,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
             Assert.AreEqual(ClientConnectorConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
             Assert.AreEqual(ClientConnectorConfiguration.DefaultThreadPoolSize, cfg.ThreadPoolSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultIdleTimeout, cfg.IdleTimeout);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultThinClientEnabled, cfg.ThinClientEnabled);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultJdbcEnabled, cfg.JdbcEnabled);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultOdbcEnabled, cfg.OdbcEnabled);
         }
 
         /// <summary>
@@ -693,7 +706,8 @@ namespace Apache.Ignite.Core.Tests
                     DefaultTimeout = TimeSpan.FromSeconds(25),
                     DefaultTransactionIsolation = TransactionIsolation.Serializable,
                     PessimisticTransactionLogLinger = TimeSpan.FromHours(1),
-                    PessimisticTransactionLogSize = 240
+                    PessimisticTransactionLogSize = 240,
+                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromSeconds(25)
                 },
                 CommunicationSpi = new TcpCommunicationSpi
                 {
@@ -820,7 +834,10 @@ namespace Apache.Ignite.Core.Tests
                             SwapPath = TestUtils.GetTempDirectoryName()
                         }
                     }
-                }
+                },
+                AuthenticationEnabled = false,
+
+                SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" }
             };
         }
 

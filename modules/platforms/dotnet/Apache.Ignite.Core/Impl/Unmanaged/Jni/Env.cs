@@ -236,8 +236,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             if (res == IntPtr.Zero)
             {
-                throw new IgniteException("Java class is not found (did you set IGNITE_HOME environment " +
-                                          "variable?): " + name);
+                var msg = "Java class is not found (did you set IGNITE_HOME environment variable?): " + name;
+
+                throw new IgniteException(msg);
             }
 
             return NewGlobalRef(res);

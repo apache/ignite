@@ -64,6 +64,15 @@ public interface DataRegionMetrics {
     public long getTotalAllocatedPages();
 
     /**
+     * Gets a total size of memory allocated in the data region. When persistence is disabled, this
+     * metric shows the total size of pages in memory. When persistence is enabled, this metric shows the
+     * total size of pages in memory and on disk.
+     *
+     * @return Total size of memory allocated, in bytes.
+     */
+    public long getTotalAllocatedSize();
+
+    /**
      * Gets pages allocation rate of a memory region.
      *
      * @return Number of allocated pages per second.
@@ -127,4 +136,75 @@ public interface DataRegionMetrics {
      * @return Total number of pages loaded to RAM.
      */
     public long getPhysicalMemoryPages();
+
+    /**
+     * Gets total size of pages loaded to the RAM. When persistence is disabled, this metric is equal
+     * to {@link #getTotalAllocatedSize()}.
+     *
+     * @return Total size of pages loaded to RAM in bytes.
+     */
+    public long getPhysicalMemorySize();
+
+    /**
+     * Gets used checkpoint buffer size in pages.
+     *
+     * @return Checkpoint buffer size in pages.
+     */
+    public long getUsedCheckpointBufferPages();
+
+    /**
+     * Gets used checkpoint buffer size in bytes.
+     *
+     * @return Checkpoint buffer size in bytes.
+     */
+    public long getUsedCheckpointBufferSize();
+
+    /**
+     * Gets checkpoint buffer size in bytes.
+     *
+     * @return Checkpoint buffer size in bytes.
+     */
+    public long getCheckpointBufferSize();
+
+    /**
+     * Gets memory page size.
+     *
+     * @return Page size in bytes.
+     */
+    public int getPageSize();
+
+    /**
+     * The number of read pages from last restart.
+     *
+     * @return The number of read pages from last restart.
+     */
+    public long getPagesRead();
+
+    /**
+     * The number of written pages from last restart.
+     *
+     * @return The number of written pages from last restart.
+     */
+    public long getPagesWritten();
+
+    /**
+     * The number of replaced pages from last restart .
+     *
+     * @return The number of replaced pages from last restart .
+     */
+    public long getPagesReplaced();
+
+    /**
+     * Total offheap size in bytes.
+     *
+     * @return Total offheap size in bytes.
+     */
+    public long getOffHeapSize();
+
+    /**
+     * Total used offheap size in bytes.
+     *
+     * @return Total used offheap size in bytes.
+     */
+    public long getOffheapUsedSize();
 }

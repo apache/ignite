@@ -46,7 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents single class deployment.
@@ -84,30 +84,30 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
     @GridToStringExclude
     private final ConcurrentMap<Class<?>,
         ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>>> anns =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Classes. */
     @GridToStringExclude
-    private final ConcurrentMap<String, Class<?>> clss = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, Class<?>> clss = new ConcurrentHashMap<>();
 
     /** Task classes 'internal' flags. */
     @GridToStringExclude
-    private final ConcurrentMap<Class<?>, Boolean> internalTasks = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Class<?>, Boolean> internalTasks = new ConcurrentHashMap<>();
 
     /** Field cache. */
     @GridToStringExclude
     private final ConcurrentMap<Class<?>, ConcurrentMap<Class<? extends Annotation>, Collection<Field>>> fieldCache =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Method cache. */
     @GridToStringExclude
     private final ConcurrentMap<Class<?>, ConcurrentMap<Class<? extends Annotation>, Collection<Method>>> mtdCache =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Default constructor cache. */
     @GridToStringExclude
     private final ConcurrentMap<Class<?>, GridTuple<Constructor<?>>> dfltCtorsCache =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /**
      * @param depMode Deployment mode.
@@ -342,7 +342,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
 
         if (clsAnns == null) {
             ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>> old = anns.putIfAbsent(cls,
-                clsAnns = new ConcurrentHashMap8<>());
+                clsAnns = new ConcurrentHashMap<>());
 
             if (old != null)
                 clsAnns = old;

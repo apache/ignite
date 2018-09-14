@@ -1,0 +1,55 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+//- Static discovery
+mixin discovery-vm(modelAt = '$ctrl.clonedCluster')
+    -const model = `${modelAt}.discovery.Vm`
+    -const addresses = `${model}.addresses`
+
+    .pc-form-grid-row&attributes(attributes=attributes)
+        .pc-form-grid-col-60
+            .form-field.ignite-form-field
+                +list-addresses({
+                    items: addresses,
+                    name: 'vmAddresses',
+                    tip: `Addresses may be represented as follows:
+                        <ul>
+                            <li>IP address (e.g. 127.0.0.1, 9.9.9.9, etc)</li>
+                            <li>IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc)</li>
+                            <li>IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc)</li>
+                            <li>Hostname (e.g. host1.com, host2, etc)</li>
+                            <li>Hostname and port (e.g. host1.com:47500, host2:47502, etc)</li>
+                            <li>Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)</li>
+                        </ul>
+                        If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)<br />
+                        If port range is provided (e.g. host:port1..port2) the following should be considered:
+                        </ul>
+                        <ul>
+                            <li> port1 &lt; port2 should be true</li>
+                            <li> Both port1 and port2 should be greater than 0</li>
+                        </ul>`
+                })(
+                    ng-required='true'
+                    ng-ref='$vmAddresses'
+                    ng-ref-read='ngModel'
+                )
+                .form-field__errors(
+                    ng-messages=`$vmAddresses.$error`
+                    ng-show=`$vmAddresses.$invalid`
+                )
+                    +form-field__error({ error: 'required', message: 'Addresses should be configured' })

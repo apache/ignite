@@ -17,20 +17,24 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import java.util.HashSet;
-import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * ODBC Connection Context.
  */
-public class OdbcConnectionContext implements ClientListenerConnectionContext {
+public class OdbcConnectionContext extends ClientListenerAbstractConnectionContext {
     /** Version 2.1.0. */
     public static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
 
@@ -43,14 +47,17 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.3.2: added multiple statements support. */
     public static final ClientListenerProtocolVersion VER_2_3_2 = ClientListenerProtocolVersion.create(2, 3, 2);
 
+    /** Version 2.5.0: added authentication. */
+    public static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
+
+    /** Version 2.7.0: added precision and scale. */
+    public static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_2;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_7_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
-
-    /** Context. */
-    private final GridKernalContext ctx;
 
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -66,7 +73,9 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_5_0);
         SUPPORTED_VERS.add(VER_2_3_0);
+        SUPPORTED_VERS.add(VER_2_3_2);
         SUPPORTED_VERS.add(VER_2_1_5);
         SUPPORTED_VERS.add(VER_2_1_0);
     }
@@ -75,10 +84,12 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
      * Constructor.
      * @param ctx Kernal Context.
      * @param busyLock Shutdown busy lock.
+     * @param connId
      * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
-        this.ctx = ctx;
+    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId, int maxCursors) {
+        super(ctx, connId);
+
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
     }
@@ -94,13 +105,15 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
+    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+        throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported ODBC protocol version.";
 
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
         boolean replicatedOnly = reader.readBoolean();
         boolean collocated = reader.readBoolean();
+
         boolean lazy = false;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
@@ -111,10 +124,28 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
-        handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate);
+        String user = null;
+        String passwd = null;
+
+        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
+
+        if (ver.compareTo(VER_2_5_0) >= 0) {
+            user = reader.readString();
+            passwd = reader.readString();
+
+            byte nestedTxModeVal = reader.readByte();
+
+            nestedTxMode = NestedTxMode.fromByte(nestedTxModeVal);
+        }
+
+        AuthorizationContext actx = authenticate(user, passwd);
+
+        handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
+            replicatedOnly, collocated, lazy, skipReducerOnUpdate, actx, nestedTxMode, ver);
 
         parser = new OdbcMessageParser(ctx, ver);
+
+        handler.start();
     }
 
     /** {@inheritDoc} */

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.client.router.impl;
 
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
@@ -53,9 +51,6 @@ import org.jetbrains.annotations.Nullable;
  * Wrapper class for router process.
  */
 public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, LifecycleAware {
-    /** */
-    private static final String ENT_NIO_LSNR_CLS = "org.apache.ignite.client.router.impl.GridTcpRouterNioListenerEntImpl";
-
     /** Id. */
     private final UUID id = UUID.randomUUID();
 
@@ -108,23 +103,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
             throw new IgniteException("Failed to initialise embedded client.", e);
         }
 
-        GridNioServerListener<GridClientMessage> lsnr;
-
-        try {
-            Class<?> cls = Class.forName(ENT_NIO_LSNR_CLS);
-
-            Constructor<?> cons = cls.getDeclaredConstructor(IgniteLogger.class, GridRouterClientImpl.class);
-
-            cons.setAccessible(true);
-
-            lsnr = (GridNioServerListener<GridClientMessage>)cons.newInstance(log, client);
-        }
-        catch (ClassNotFoundException ignored) {
-            lsnr = new GridTcpRouterNioListenerOsImpl(log, client);
-        }
-        catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw new IgniteException("Failed to create NIO listener.", e);
-        }
+        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRouterNioListenerOsImpl(log, client);
 
         parser = new GridTcpRouterNioParser();
 

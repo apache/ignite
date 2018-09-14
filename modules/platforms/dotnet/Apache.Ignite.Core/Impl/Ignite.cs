@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
@@ -83,7 +84,15 @@ namespace Apache.Ignite.Core.Impl
             LoggerIsLevelEnabled = 19,
             LoggerLog = 20,
             GetBinaryProcessor = 21,
-            ReleaseStart = 22
+            ReleaseStart = 22,
+            AddCacheConfiguration = 23,
+            SetBaselineTopologyVersion = 24,
+            SetBaselineTopologyNodes = 25,
+            GetBaselineTopology = 26,
+            DisableWal = 27,
+            EnableWal = 28,
+            IsWalEnabled = 29,
+            SetTxTimeoutOnPartitionMapExchange = 30
         }
 
         /** */
@@ -112,9 +121,6 @@ namespace Apache.Ignite.Core.Impl
 
         /** Local node. */
         private IClusterNode _locNode;
-
-        /** Transactions facade. */
-        private readonly Lazy<TransactionsImpl> _transactions;
 
         /** Callbacks */
         private readonly UnmanagedCallbacks _cbs;
@@ -164,10 +170,6 @@ namespace Apache.Ignite.Core.Impl
             _binaryProc = new BinaryProcessor(DoOutOpObject((int) Op.GetBinaryProcessor));
 
             cbs.Initialize(this);
-
-            // Grid is not completely started here, can't initialize interop transactions right away.
-            _transactions = new Lazy<TransactionsImpl>(
-                () => new TransactionsImpl(DoOutOpObject((int) Op.GetTransactions), GetLocalNode().Id));
 
             // Set reconnected task to completed state for convenience.
             _clientReconnectTaskCompletionSource.SetResult(false);
@@ -482,7 +484,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 var w = BinaryUtils.Marshaller.StartMarshal(s);
 
-                configuration.Write(w);
+                configuration.Write(w, ClientSocket.CurrentProtocolVersion);
 
                 if (nearConfiguration != null)
                 {
@@ -516,7 +518,7 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         public static ICache<TK, TV> GetCache<TK, TV>(IPlatformTargetInternal nativeCache, bool keepBinary = false)
         {
-            return new CacheImpl<TK, TV>(nativeCache, false, keepBinary, false, false);
+            return new CacheImpl<TK, TV>(nativeCache, false, keepBinary, false, false, false);
         }
 
         /** <inheritdoc /> */
@@ -606,7 +608,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ITransactions GetTransactions()
         {
-            return _transactions.Value;
+            return new TransactionsImpl(this, DoOutOpObject((int) Op.GetTransactions), GetLocalNode().Id);
         }
 
         /** <inheritdoc /> */
@@ -682,7 +684,8 @@ namespace Apache.Ignite.Core.Impl
         public IgniteConfiguration GetConfiguration()
         {
             return DoInOp((int) Op.GetIgniteConfiguration,
-                s => new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(s), _cfg));
+                s => new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(s), _cfg,
+                    ClientSocket.CurrentProtocolVersion));
         }
 
         /** <inheritdoc /> */
@@ -780,6 +783,70 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public void SetBaselineTopology(long topologyVersion)
+        {
+            DoOutInOp((int) Op.SetBaselineTopologyVersion, topologyVersion);
+        }
+
+        /** <inheritdoc /> */
+        public void SetBaselineTopology(IEnumerable<IBaselineNode> nodes)
+        {
+            IgniteArgumentCheck.NotNull(nodes, "nodes");
+
+            DoOutOp((int) Op.SetBaselineTopologyNodes, w =>
+            {
+                var pos = w.Stream.Position;
+                w.WriteInt(0);
+                var cnt = 0;
+
+                foreach (var node in nodes)
+                {
+                    cnt++;
+                    BaselineNode.Write(w, node);
+                }
+
+                w.Stream.WriteInt(pos, cnt);
+            });
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<IBaselineNode> GetBaselineTopology()
+        {
+            return DoInOp((int) Op.GetBaselineTopology,
+                s => Marshaller.StartUnmarshal(s).ReadCollectionRaw(r => (IBaselineNode) new BaselineNode(r)));
+        }
+
+        /** <inheritdoc /> */
+        public void DisableWal(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
+            DoOutOp((int) Op.DisableWal, w => w.WriteString(cacheName));
+        }
+
+        /** <inheritdoc /> */
+        public void EnableWal(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+            
+            DoOutOp((int) Op.EnableWal, w => w.WriteString(cacheName));
+        }
+
+        /** <inheritdoc /> */
+        public bool IsWalEnabled(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
+            return DoOutOp((int) Op.IsWalEnabled, w => w.WriteString(cacheName)) == True;
+        }
+
+        public void SetTxTimeoutOnPartitionMapExchange(TimeSpan timeout)
+        {
+            DoOutOp((int) Op.SetTxTimeoutOnPartitionMapExchange, 
+                (BinaryWriter w) => w.WriteLong((long) timeout.TotalMilliseconds));
+        }
+
+        /** <inheritdoc /> */
 #pragma warning disable 618
         public IPersistentStoreMetrics GetPersistentStoreMetrics()
         {
@@ -803,6 +870,15 @@ namespace Apache.Ignite.Core.Impl
         public IDataStorageMetrics GetDataStorageMetrics()
         {
             return _prj.GetDataStorageMetrics();
+        }
+
+        /** <inheritdoc /> */
+        public void AddCacheConfiguration(CacheConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            DoOutOp((int) Op.AddCacheConfiguration,
+                s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s), ClientSocket.CurrentProtocolVersion));
         }
 
         /// <summary>
@@ -870,6 +946,24 @@ namespace Apache.Ignite.Core.Impl
             node.Init(this);
 
             _nodes[node.Id] = node;
+        }
+        
+        /// <summary>
+        /// Returns instance of Ignite Transactions to mark a transaction with a special label.
+        /// </summary>
+        /// <param name="label"></param>
+        /// <returns><see cref="ITransactions"/></returns>
+        internal ITransactions GetTransactionsWithLabel(string label)
+        {
+            Debug.Assert(label != null);
+            
+            var platformTargetInternal = DoOutOpObject((int) Op.GetTransactions, s =>
+            {
+                var w = BinaryUtils.Marshaller.StartMarshal(s);
+                w.WriteString(label);
+            });
+            
+            return new TransactionsImpl(this, platformTargetInternal, GetLocalNode().Id);
         }
 
         /// <summary>

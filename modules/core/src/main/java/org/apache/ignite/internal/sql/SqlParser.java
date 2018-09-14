@@ -17,21 +17,44 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
+import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
+import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
+import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
 import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
+import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
+import static org.apache.ignite.internal.sql.SqlKeyword.SET;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
+import static org.apache.ignite.internal.sql.SqlKeyword.START;
+import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
+import static org.apache.ignite.internal.sql.SqlKeyword.STREAMING;
+import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
+import static org.apache.ignite.internal.sql.SqlKeyword.WORK;
+import static org.apache.ignite.internal.sql.SqlKeyword.USER;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesOptionalKeyword;
 
 /**
  * SQL parser.
@@ -90,6 +113,16 @@ public class SqlParser {
                     SqlCommand cmd = null;
 
                     switch (lex.token()) {
+                        case BEGIN:
+                            cmd = processBegin();
+
+                            break;
+
+                        case COMMIT:
+                            cmd = processCommit();
+
+                            break;
+
                         case CREATE:
                             cmd = processCreate();
 
@@ -99,6 +132,34 @@ public class SqlParser {
                             cmd = processDrop();
 
                             break;
+
+                        case ROLLBACK:
+                            cmd = processRollback();
+
+                            break;
+
+                        case START:
+                            cmd = processStart();
+
+                            break;
+
+                        case COPY:
+                            try {
+                                cmd = processCopy();
+
+                                break;
+                            }
+                            catch (SqlParseException e) {
+                                throw new SqlStrictParseException(e);
+                            }
+
+                        case SET:
+                            cmd = processSet();
+
+                            break;
+
+                        case ALTER:
+                            cmd = processAlter();
                     }
 
                     if (cmd != null) {
@@ -109,7 +170,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, CREATE, DROP);
+                        throw errorUnexpectedToken(lex, BEGIN, COMMIT, CREATE, DROP, ROLLBACK, COPY, SET, ALTER, START);
 
                 case QUOTED:
                 case MINUS:
@@ -121,6 +182,55 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex);
             }
         }
+    }
+
+    /**
+     * Process BEGIN keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processBegin() {
+        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
+
+        skipIfMatchesOptionalKeyword(lex, WORK);
+
+        return new SqlBeginTransactionCommand();
+    }
+
+    /**
+     * Process COMMIT keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processCommit() {
+        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
+
+        return new SqlCommitTransactionCommand();
+    }
+
+    /**
+     * Process SET keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processSet() {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (lex.token()) {
+                case STREAMING:
+                    return new SqlSetStreamingCommand().parse(lex);
+            }
+        }
+
+        throw errorUnexpectedToken(lex, STREAMING);
+    }
+
+    /**
+     * Processes COPY command.
+     *
+     * @return The {@link SqlBulkLoadCommand} command.
+     */
+    private SqlCommand processCopy() {
+        return new SqlBulkLoadCommand().parse(lex);
     }
 
     /**
@@ -145,6 +255,12 @@ public class SqlParser {
                         throw errorUnexpectedToken(lex, INDEX);
 
                     break;
+
+                case USER:
+                    cmd = new SqlCreateUserCommand();
+
+                    break;
+
             }
 
             if (cmd != null)
@@ -153,7 +269,7 @@ public class SqlParser {
             errorUnsupportedIfMatchesKeyword(lex, HASH, PRIMARY, UNIQUE);
         }
 
-        throw errorUnexpectedToken(lex, INDEX, SPATIAL);
+        throw errorUnexpectedToken(lex, INDEX, SPATIAL, USER);
     }
 
     /**
@@ -170,12 +286,67 @@ public class SqlParser {
                     cmd = new SqlDropIndexCommand();
 
                     break;
+
+                case USER:
+                    cmd = new SqlDropUserCommand();
+
+                    break;
             }
 
             if (cmd != null)
                 return cmd.parse(lex);
         }
 
-        throw errorUnexpectedToken(lex, INDEX);
+        throw errorUnexpectedToken(lex, INDEX, USER);
+    }
+
+    /**
+     * Process ROLLBACK keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processRollback() {
+        skipIfMatchesOptionalKeyword(lex, TRANSACTION);
+
+        return new SqlRollbackTransactionCommand();
+    }
+
+    /**
+     * Process START keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processStart() {
+        skipIfMatchesKeyword(lex, TRANSACTION);
+
+        return new SqlBeginTransactionCommand();
+    }
+
+    /**
+     * Process ALTER keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processAlter() {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+            SqlCommand cmd = null;
+
+            switch (lex.token()) {
+                case TABLE:
+                    cmd = new SqlAlterTableCommand();
+
+                    break;
+
+                case USER:
+                    cmd = new SqlAlterUserCommand();
+
+                    break;
+            }
+
+            if (cmd != null)
+                return cmd.parse(lex);
+        }
+
+        throw errorUnexpectedToken(lex, TABLE, USER);
     }
 }
