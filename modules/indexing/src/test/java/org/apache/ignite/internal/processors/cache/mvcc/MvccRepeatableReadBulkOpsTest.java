@@ -319,15 +319,15 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
             assertEquals(initialVals, vals2);
 
             for (ReadMode readMode : new ReadMode[] {GET, SQL}) {
-                    int updCnt0 = ++updCnt;
+                int updCnt0 = ++updCnt;
 
-                    updatedVals = keysForUpdate.stream().collect(Collectors.toMap(Function.identity(),
-                        k -> new MvccTestAccount(k, updCnt0)));
+                updatedVals = keysForUpdate.stream().collect(Collectors.toMap(Function.identity(),
+                    k -> new MvccTestAccount(k, updCnt0)));
 
-                    updateEntries(cache, updatedVals, writeMode);
-                    removeEntries(cache, keysForRemove, writeMode);
+                updateEntries(cache, updatedVals, writeMode);
+                removeEntries(cache, keysForRemove, writeMode);
 
-                    assertEquals(String.valueOf(readMode), updatedVals, getEntries(cache, allKeys, readMode));
+                assertEquals(String.valueOf(readMode), updatedVals, getEntries(cache, allKeys, readMode));
             }
 
             tx.commit();

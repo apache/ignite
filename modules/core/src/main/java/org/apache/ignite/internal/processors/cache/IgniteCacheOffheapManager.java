@@ -298,7 +298,7 @@ public interface IgniteCacheOffheapManager {
      * @param mvccSnapshot MVCC snapshot.
      * @param primary {@code True} if on primary node.
      * @param needHistory Flag to collect history.
-     * @param filter
+     * @param filter Filter.
      * @param retVal Flag to return previous value.
      * @return Update result.
      * @throws IgniteCheckedException If failed.

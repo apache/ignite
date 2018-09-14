@@ -80,11 +80,4 @@ public abstract class GridDhtTxQueryAbstractEnlistFuture extends GridDhtTxAbstra
         if(res.success())
             cnt++;
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
-        assert res != null || err != null;
-
-        return super.onDone(res, err);
-    }
 }

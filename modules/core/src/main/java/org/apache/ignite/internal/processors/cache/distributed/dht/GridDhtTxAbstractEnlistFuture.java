@@ -137,6 +137,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /** Near lock version. */
     protected final GridCacheVersion nearLockVer;
+
+    /** Filter. */
     private final CacheEntryPredicate filter;
 
     /** Timeout object. */
@@ -252,6 +254,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     protected abstract T result0();
 
     /**
+     * Gets need previous value flag.
      *
      * @return {@code True} if previous value is required.
      */
@@ -1006,6 +1009,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable T res, @Nullable Throwable err) {
+        assert res != null || err != null;
+
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
 

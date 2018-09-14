@@ -1677,6 +1677,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
+        if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
+            return txTypeMismatchFinishFuture();
+
         if (retval)
             needReturnValue(true);
 

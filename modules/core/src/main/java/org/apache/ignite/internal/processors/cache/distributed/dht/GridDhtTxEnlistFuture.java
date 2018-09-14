@@ -52,7 +52,8 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
 
     /**
      * Constructor.
-     *  @param nearNodeId Near node ID.
+     *
+     * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
      * @param mvccSnapshot Mvcc snapshot.
      * @param threadId Thread ID.
@@ -113,8 +114,6 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
 
     /** {@inheritDoc} */
     @Override protected void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult txRes) {
-        assert res.emptyResult();
-
         if (needRes && txRes.success())
             res.set(cctx, txRes.prevValue(), txRes.success(), true);
         else
@@ -145,5 +144,4 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
     @Override public String toString() {
         return S.toString(GridDhtTxEnlistFuture.class, this);
     }
-
 }

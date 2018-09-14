@@ -42,7 +42,8 @@ public final class NearTxResultHandler implements CI1<IgniteInternalFuture<GridC
     private static final NearTxResultHandler INSTANCE = new NearTxResultHandler();
 
     /** */
-    private NearTxResultHandler() {}
+    private NearTxResultHandler() {
+    }
 
     /**
      * @return Handler instance.
@@ -81,7 +82,6 @@ public final class NearTxResultHandler implements CI1<IgniteInternalFuture<GridC
                 id = fut.futId;
                 updCntrs = fut.nearUpdCntrs;
             }
-
 
             return new GridNearTxEnlistResponse(fut.cctx.cacheId(), fut.nearFutId, fut.nearMiniId,
                 fut.nearLockVer, res, ver, id, updCntrs);

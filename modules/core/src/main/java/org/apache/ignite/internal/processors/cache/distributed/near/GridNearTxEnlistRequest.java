@@ -44,8 +44,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Request to enlist into transaction and acquire locks for entries produced
- * with Cache API operations.
+ * Request to enlist into transaction and acquire locks for entries produced with Cache API operations.
  *
  * One request per batch of entries is used.
  */
@@ -297,7 +296,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
                     val = ((IgniteBiTuple)row).getValue();
                 }
 
-                assert key != null && (keysOnly || val != null): "key=" + key + ", val=" + val;
+                assert key != null && (keysOnly || val != null) : "key=" + key + ", val=" + val;
 
                 KeyCacheObject key0 = cctx.toCacheKeyObject(key);
 
@@ -321,7 +320,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
             }
         }
 
-        if(filter != null)
+        if (filter != null)
             filter.prepareMarshal(cctx);
     }
 
@@ -351,7 +350,7 @@ public class GridNearTxEnlistRequest extends GridCacheIdMessage {
             values = null;
         }
 
-        if(filter != null)
+        if (filter != null)
             filter.finishUnmarshal(ctx.cacheContext(cacheId), ldr);
     }
 

@@ -275,10 +275,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             fut.listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> future) {
-                    if(future.isDone()) {
-
+                    if(future.isDone())
                         mvccTracker0.onDone();
-                    }
                 }
             });
         }
@@ -371,10 +369,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             fut.listen(new CI1<IgniteInternalFuture<Map<K, V>>>() {
                 @Override public void apply(IgniteInternalFuture<Map<K, V>> future) {
-                    if(future.isDone()) {
-
+                    if(future.isDone())
                         mvccTracker0.onDone();
-                    }
                 }
             });
         }

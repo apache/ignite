@@ -61,8 +61,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * A future tracking requests for remote nodes transaction enlisting and locking
- * produces by cache API operations.
+ * A future tracking requests for remote nodes transaction enlisting and locking produces by cache API operations.
  */
 public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridCacheReturn> {
     /** */
@@ -195,7 +194,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         if (isDone() || SKIP_UPD.getAndIncrement(this) != 0)
             return null;
 
-        ArrayList<Batch> res = null; Batch batch = null;
+        ArrayList<Batch> res = null;
+        Batch batch = null;
 
         boolean flush = false;
 
@@ -310,7 +310,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     }
 
     /**
-     *
      * @param primaryId Primary node id.
      * @param rows Rows.
      * @param dhtVer Dht version assigned at primary node.
@@ -386,7 +385,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     }
 
     /**
-     *
      * @param node Node.
      * @param batch Batch.
      * @param first First mapping flag.
@@ -412,7 +410,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * @param batchFut Mini-future for the batch.
      * @param clientFirst {@code true} if originating node is client and it is a first request to any data node.
      */
-    private void sendBatch(int batchId, UUID nodeId, Batch batchFut, boolean clientFirst) throws IgniteCheckedException {
+    private void sendBatch(int batchId, UUID nodeId, Batch batchFut,
+        boolean clientFirst) throws IgniteCheckedException {
         assert batchFut != null;
 
         GridNearTxEnlistRequest req = new GridNearTxEnlistRequest(cctx.cacheId(),
@@ -431,13 +430,12 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             it.operation(),
             needRes,
             filter
-            );
+        );
 
         sendRequest(req, nodeId);
     }
 
     /**
-     *
      * @param req Request.
      * @param nodeId Remote node ID
      * @throws IgniteCheckedException if failed to send.
@@ -680,5 +678,4 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             this.ready = ready;
         }
     }
-
 }
