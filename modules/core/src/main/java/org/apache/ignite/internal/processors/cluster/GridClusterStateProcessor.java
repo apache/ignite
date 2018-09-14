@@ -510,13 +510,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
 
+                DiscoveryDataClusterState prevState = globalState;
+
                 globalState = DiscoveryDataClusterState.createTransitionState(
-                    globalState,
+                    prevState,
                     msg.activate(),
-                    msg.activate() ? msg.baselineTopology() : globalState.baselineTopology(),
+                    msg.activate() ? msg.baselineTopology() : prevState.baselineTopology(),
                     msg.requestId(),
                     topVer,
-                    nodeIds);
+                    nodeIds
+                );
 
                 if (msg.forceChangeBaselineTopology())
                     globalState.setTransitionResult(msg.requestId(), msg.activate());
