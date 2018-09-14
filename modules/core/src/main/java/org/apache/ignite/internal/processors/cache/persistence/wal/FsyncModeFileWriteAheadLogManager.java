@@ -74,10 +74,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -679,8 +680,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("TooBroadScope")
-    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
+        return log(record, RolloverType.NONE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALPointer log(WALRecord record, RolloverType rolloverType) throws IgniteCheckedException {
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
@@ -696,13 +701,35 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         record.size(serializer.size(record));
 
         while (true) {
-            if (record.rollOver()){
+            WALPointer ptr;
+
+            if (rolloverType == RolloverType.NONE)
+                ptr = currWrHandle.addRecord(record);
+            else {
                 assert cctx.database().checkpointLockIsHeldByThread();
 
-                currWrHandle = rollOver(currWrHandle);
-            }
+                if (rolloverType == RolloverType.NEXT_SEGMENT) {
+                    currWrHandle = rollOver(currWrHandle);
 
-            WALPointer ptr = currWrHandle.addRecord(record);
+                    ptr = currWrHandle.addRecord(record);
+                }
+                else {
+                    assert rolloverType == RolloverType.CURRENT_SEGMENT;
+
+                    FileWriteHandle h = currWrHandle;
+
+                    h.lock.lock();
+
+                    try {
+                        ptr = h.addRecord(record);
+
+                        currWrHandle = rollOver(h);
+                    }
+                    finally {
+                        h.lock.unlock();
+                    }
+                }
+            }
 
             if (ptr != null) {
                 metrics.onWalRecordLogged();

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalS
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalDeletionArchiveFsyncTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalDeletionArchiveLogOnlyTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverTypesTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteDataIntegrityTests;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteWalReaderTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
@@ -178,5 +179,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteRebalanceScheduleResendPartitionsTest.class);
 
         suite.addTestSuite(IgniteWALTailIsReachedDuringIterationOverArchiveTest.class);
+
+        suite.addTestSuite(WalRolloverTypesTest.class);
     }
 }

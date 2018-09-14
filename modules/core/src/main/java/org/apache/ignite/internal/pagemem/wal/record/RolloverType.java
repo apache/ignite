@@ -17,49 +17,20 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 /**
- * Wal snapshot record.
+ * Defines WAL logging type with regard to segment rollover.
  */
-public class SnapshotRecord extends WALRecord {
-    /** Snapshot id. */
-    private long snapshotId;
-
-    /** Full snapshot or incremental. */
-    private boolean full;
+public enum RolloverType {
+    /** Record being logged is not a rollover record. */
+    NONE,
 
     /**
-     *
+     * Record being logged is a rollover record and it should become the last record in the current segment.
      */
-    public SnapshotRecord(long snapshotId, boolean full) {
-        this.snapshotId = snapshotId;
-        this.full = full;
-    }
+    CURRENT_SEGMENT,
 
     /**
-     *
+     * Record being logged is a rollover record and it should get to the next segment.
      */
-    public long getSnapshotId() {
-        return snapshotId;
-    }
-
-    /**
-     *
-     */
-    public boolean isFull() {
-        return full;
-    }
-
-    /**
-     *
-     */
-    @Override public RecordType type() {
-        return RecordType.SNAPSHOT;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SnapshotRecord.class, this, "super", super.toString());
-    }
+    NEXT_SEGMENT;
 }

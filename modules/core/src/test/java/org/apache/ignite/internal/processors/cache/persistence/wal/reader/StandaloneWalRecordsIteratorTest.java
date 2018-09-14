@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -108,7 +109,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
             sharedMgr.checkpointReadLock();
 
             try {
-                walMgr.log(new SnapshotRecord(i, false));
+                walMgr.log(new SnapshotRecord(i, false), RolloverType.NEXT_SEGMENT);
             }
             finally {
                 sharedMgr.checkpointReadUnlock();
