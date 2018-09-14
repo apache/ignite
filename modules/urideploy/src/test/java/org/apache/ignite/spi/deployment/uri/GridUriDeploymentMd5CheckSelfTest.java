@@ -47,26 +47,22 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
     public void testMd5FileCheck() throws Exception {
         undeployCntr.set(0);
 
-        DeploymentResource task = getSpi().findResource("GridUriDeploymentTestWithNameTask7");
+        String taskName = "GridUriDeploymentTestWithNameTask7";
+
+        DeploymentResource task = getSpi().findResource(taskName);
 
         assert task == null;
 
-        U.copy(getGarFile(), new File(getDeployDir(), "uri1.gar"), true);
+        atomicCopy(getGarFile(), getDeployDir(), "uri1.gar");
 
-        Thread.sleep(500);
+        waitForTask(taskName, true, 10000);
 
-        task = getSpi().findResource("GridUriDeploymentTestWithNameTask7");
-
-        assert task != null;
         assert undeployCntr.get() == 0;
 
-        U.copy(getGarFile(), new File(getDeployDir(), "uri2.gar"), true);
+        atomicCopy(getGarFile(), getDeployDir(), "uri2.gar");
 
-        Thread.sleep(500);
+        waitForTask(taskName, true, 10000);
 
-        task = getSpi().findResource("GridUriDeploymentTestWithNameTask7");
-
-        assert task != null;
         assert undeployCntr.get() == 0;
     }
 
@@ -78,31 +74,43 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
     public void testMd5DirectoryCheck() throws Exception {
         undeployCntr.set(0);
 
-        DeploymentResource task = getSpi().findResource("GridUriDeploymentTestWithNameTask6");
+        String taskName = "GridUriDeploymentTestWithNameTask6";
+
+        DeploymentResource task = getSpi().findResource(taskName);
 
         assert task == null;
 
-        U.copy(getGarDir(), new File(getDeployDir(), "uri1.gar"), true);
+        atomicCopy(getGarDir(), getDeployDir(), "uri1.gar");
 
-        Thread.sleep(500);
+        waitForTask(taskName, true, 10000);
 
-        task = getSpi().findResource("GridUriDeploymentTestWithNameTask6");
-
-        assert task != null;
         assert undeployCntr.get() == 0;
 
-        U.copy(getGarDir(), new File(getDeployDir(), "uri2.gar"), true);
+        atomicCopy(getGarDir(), getDeployDir(), "uri2.gar");
 
-        Thread.sleep(500);
+        waitForTask(taskName, true, 10000);
 
-        task = getSpi().findResource("GridUriDeploymentTestWithNameTask6");
-
-        assert task != null;
         assert undeployCntr.get() == 0;
+    }
 
+    /** {@inheritDoc} */
+    protected void afterTest() throws Exception {
         U.delete(getGarDir());
         U.delete(new File(getDeployDir(), "uri1.gar"));
         U.delete(new File(getDeployDir(), "uri2.gar"));
+
+        Thread.sleep(500);
+    }
+
+    /**
+     * First copies to parent directory, when moves atomically to destination directory.
+     */
+    private static void atomicCopy(File src, File destDir, String fileName) throws IOException {
+        File destParent = new File(destDir.getParent(), fileName);
+
+        U.copy(src, destParent, true);
+
+        destParent.renameTo(new File(destDir, fileName));
     }
 
     /**
@@ -127,7 +135,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
      * @return a valid .gar file path.
      */
     private File getGarFile() {
-        File gar = new File(GridTestProperties.getProperty("ant.urideployment.gar.file"));
+        File gar = U.resolveIgnitePath(GridTestProperties.getProperty("ant.urideployment.gar.file"));
 
         assert gar.isFile();
 
