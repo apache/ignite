@@ -322,7 +322,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
 
             Set<UUID> ids = clients.keySet();
 
-            if (ids.size() > 0) {
+            if (!ids.isEmpty()) {
                 log.info("Close TCP clients: " + ids);
 
                 for (UUID nodeId : ids) {

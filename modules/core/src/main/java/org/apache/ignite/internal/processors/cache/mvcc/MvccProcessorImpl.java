@@ -725,7 +725,7 @@ class MvccProcessorImpl extends GridProcessorAdapter implements MvccProcessor, D
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> waitTxsFuture(UUID crdId, GridLongList txs) {
         assert crdId != null;
-        assert txs != null && txs.size() > 0;
+        assert txs != null && !txs.isEmpty();
 
         WaitAckFuture fut = new WaitAckFuture(futIdCntr.incrementAndGet(), crdId, false);
 
