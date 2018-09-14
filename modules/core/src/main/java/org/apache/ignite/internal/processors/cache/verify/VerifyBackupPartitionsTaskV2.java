@@ -69,7 +69,7 @@ import org.jetbrains.annotations.Nullable;
 @GridInternal
 public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVerifyTaskArg, IdleVerifyResultV2> {
     /** First version of Ignite that is capable of executing Idle Verify V2. */
-    public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.3");
+    public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.0");
 
     /** */
     private static final long serialVersionUID = 0L;
