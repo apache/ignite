@@ -31,9 +31,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxEnlistFuture;
@@ -64,7 +64,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * A future tracking requests for remote nodes transaction enlisting and locking
  * produces by cache API operations.
  */
-public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<CacheObject> {
+public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridCacheReturn> {
     /** */
     private static final long serialVersionUID = 4339957209840477447L;
 
@@ -81,8 +81,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<Cache
     /** */
     private final UpdateSourceIterator<?> it;
 
-    public volatile boolean success;
-
     /** */
     private int batchSize;
 
@@ -95,7 +93,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<Cache
     private volatile int skipCntr;
 
     /** */
-    private volatile CacheObject res;
+    @GridToStringExclude
+    private volatile GridCacheReturn res;
 
     /** */
     private final Map<UUID, Batch> batches = new ConcurrentHashMap<>();
@@ -112,6 +111,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<Cache
     /** */
     private final CacheEntryPredicate filter;
 
+    /** */
+    private final boolean needRes;
+
     /**
      * @param cctx Cache context.
      * @param tx Transaction.
@@ -120,6 +122,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<Cache
      * @param batchSize Batch size.
      * @param sequential Sequential locking flag.
      * @param filter Filter.
+     * @param needRes Need previous value flag.
      */
     public GridNearTxEnlistFuture(GridCacheContext<?, ?> cctx,
         GridNearTxLocal tx,
@@ -127,14 +130,15 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<Cache
         UpdateSourceIterator<?> it,
         int batchSize,
         boolean sequential,
-        @Nullable CacheEntryPredicate filter) {
-        //TODO: IGNITE-7764: check if reducer really needed here.
+        @Nullable CacheEntryPredicate filter,
+        boolean needRes) {
         super(cctx, tx, timeout, null);
 
         this.it = it;
         this.batchSize = batchSize > 0 ? batchSize : DFLT_BATCH_SIZE;
         this.sequential = sequential;
         this.filter = filter;
+        this.needRes = needRes;
     }
 
     /** {@inheritDoc} */
@@ -425,7 +429,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<Cache
             tx.taskNameHash(),
             batchFut.rows(),
             it.operation(),
-            tx.needReturnValue(),
+            needRes,
             filter
             );
 
@@ -478,12 +482,12 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<Cache
             rows,
             it.operation(),
             filter,
-            tx.needReturnValue());
+            needRes);
 
         updateLocalFuture(fut);
 
-        fut.listen(new CI1<IgniteInternalFuture<CacheObject>>() {
-            @Override public void apply(IgniteInternalFuture<CacheObject> fut) {
+        fut.listen(new CI1<IgniteInternalFuture<GridCacheReturn>>() {
+            @Override public void apply(IgniteInternalFuture<GridCacheReturn> fut) {
                 try {
                     clearLocalFuture((GridDhtTxAbstractEnlistFuture)fut);
 
@@ -579,8 +583,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<Cache
 
         assert res != null;
 
-        this.success = res.success();
         this.res = res.result();
+
+        assert this.res != null && (this.res.emptyResult() || needRes || !this.res.success());
 
         return true;
     }

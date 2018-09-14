@@ -1106,7 +1106,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
                 throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
-            else if (noCreate && res.resultType() == ResultType.PREV_NULL)
+            else if (res.resultType() == FILTERED || (noCreate && res.resultType() == ResultType.PREV_NULL))
                 return new GridCacheUpdateTxResult(false);
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
@@ -1125,19 +1125,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else if (op == CREATE && tx.local() && (res.resultType() == ResultType.PREV_NOT_NULL ||
                 res.resultType() == ResultType.VERSION_FOUND))
                 throw new IgniteSQLException("Duplicate key during INSERT [key=" + key + ']', DUPLICATE_KEY);
-            else if (filter != null) {
-                MvccUpdateDataRow res0 = (MvccUpdateDataRow)res;
-
-                GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key) {
-                    @Nullable @Override public CacheObject peekVisibleValue() {
-                        return res0.oldRow() == null ? null : res0.oldRow().value();
-                    }
-                };
-
-                if (!filter.apply(e)) {
-                    return new GridCacheUpdateTxResult(false);
-                }
-            }
 
 
             if (cctx.deferredDelete() && deletedUnlocked() && !detached())
@@ -1232,7 +1219,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (res.resultType() == ResultType.VERSION_MISMATCH)
                 throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
-            else if (res.resultType() == ResultType.PREV_NULL)
+            else if (res.resultType() == ResultType.PREV_NULL || res.resultType() == FILTERED)
                 return new GridCacheUpdateTxResult(false);
             else if (res.resultType() == ResultType.LOCKED) {
                 unlockEntry();
@@ -5056,7 +5043,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     return;
                 }
-                else if (res.resultType() == ResultType.PREV_NULL) {
+                else if (res.resultType() == ResultType.PREV_NULL || res.resultType() == FILTERED) {
                     resFut.onDone(new GridCacheUpdateTxResult(false));
 
                     return;

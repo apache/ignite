@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.ExceptionAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -54,11 +54,8 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
     /** Mini future id. */
     private int miniId;
 
-    /** Result flag. */
-    private boolean success;
-
     /** Result. */
-    private CacheObject res;
+    private GridCacheReturn res;
 
     /** */
     private GridCacheVersion lockVer;
@@ -84,7 +81,6 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
      * @param futId Future id.
      * @param miniId Mini future id.
      * @param lockVer Lock version.
-     * @param success
      * @param res Result.
      * @param dhtVer Dht version.
      * @param dhtFutId Dht future id.
@@ -94,12 +90,10 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
         IgniteUuid futId,
         int miniId,
         GridCacheVersion lockVer,
-        boolean success,
-        CacheObject res,
+        GridCacheReturn res,
         GridCacheVersion dhtVer,
         IgniteUuid dhtFutId,
         GridLongList updCntrs) {
-        this.success = success;
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
@@ -150,7 +144,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
     /**
      * @return Result.
      */
-    public CacheObject result() {
+    public GridCacheReturn result() {
         return res;
     }
 
@@ -186,13 +180,9 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
         return updCntrs;
     }
 
-    public boolean success() {
-        return success;
-    }
-
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 11;
     }
 
     /** {@inheritDoc} */
@@ -253,12 +243,6 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeBoolean("success", success))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
                 if (!writer.writeMessage("updCntrs", updCntrs))
                     return false;
 
@@ -337,14 +321,6 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
                 reader.incrementState();
 
             case 10:
-                success = reader.readBoolean("success");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
                 updCntrs = reader.readMessage("updCntrs");
 
                 if (!reader.isLastRead())
@@ -372,7 +348,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
             errBytes = U.marshal(ctx.marshaller(), err);
 
         if (res != null)
-            res.prepareMarshal(cctx.cacheObjectContext());
+            res.prepareMarshal(cctx);
     }
 
     /** {@inheritDoc} */
@@ -385,7 +361,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
             err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (res != null)
-            res.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+            res.finishUnmarshal(cctx, ldr);
     }
 
     /** {@inheritDoc} */

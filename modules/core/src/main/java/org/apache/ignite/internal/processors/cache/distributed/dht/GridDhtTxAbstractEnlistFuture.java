@@ -261,12 +261,11 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /**
      * Entry processed callback.
-     * @param success
-     * @param key
-     * @param val
+     *
+     * @param key Entry key.
+     * @param res Update result.
      */
-    protected abstract void onEntryProcessed(boolean success, KeyCacheObject key,
-        CacheObject val);
+    protected abstract void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult res);
 
     /**
      *
@@ -600,7 +599,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         if (ptr0 != null)
             walPtr = ptr0;
 
-        onEntryProcessed(updRes.success(), entry.key(), updRes.prevValue());
+        onEntryProcessed(entry.key(), updRes);
 
         if (!updRes.success())
             return;

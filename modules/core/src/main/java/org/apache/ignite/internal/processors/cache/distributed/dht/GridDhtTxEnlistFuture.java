@@ -22,8 +22,9 @@ import java.util.Iterator;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -36,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Future processing transaction enlisting and locking of entries produces by cache API operations.
  */
-public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<CacheObject> implements UpdateSourceIterator<Object> {
+public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<GridCacheReturn> implements UpdateSourceIterator<Object> {
     /** */
     private EnlistOperation op;
 
@@ -44,13 +45,10 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<C
     private Iterator<Object> it;
 
     /** */
-    private CacheObject res;
+    private GridCacheReturn res;
 
     /** */
     private boolean needRes;
-
-    /** */
-    protected boolean success = true;
 
     /**
      * Constructor.
@@ -98,6 +96,8 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<C
 
         it = rows.iterator();
 
+        res = new GridCacheReturn(cctx.localNodeId().equals(nearNodeId), false);
+
         skipNearNodeUpdates = true;
     }
 
@@ -107,23 +107,18 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<C
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable protected CacheObject result0() {
+    @Override @Nullable protected GridCacheReturn result0() {
         return res;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param success
-     * @param key
-     * @param val
-     */
-    @Override protected void onEntryProcessed(boolean success, KeyCacheObject key,
-        CacheObject val) {
-        this.success = success;
+    /** {@inheritDoc} */
+    @Override protected void onEntryProcessed(KeyCacheObject key, GridCacheUpdateTxResult txRes) {
+        assert res.emptyResult();
 
-        if (success && needRes)
-            res = val;
+        if (needRes && txRes.success())
+            res.set(cctx, txRes.prevValue(), txRes.success(), true);
+        else
+            res.success(txRes.success());
     }
 
     /** {@inheritDoc} */

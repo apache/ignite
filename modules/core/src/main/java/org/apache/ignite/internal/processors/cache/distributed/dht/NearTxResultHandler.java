@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
@@ -34,7 +34,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  *
  */
-public final class NearTxResultHandler implements CI1<IgniteInternalFuture<CacheObject>> {
+public final class NearTxResultHandler implements CI1<IgniteInternalFuture<GridCacheReturn>> {
     /** */
     private static final long serialVersionUID = 0;
 
@@ -70,7 +70,7 @@ public final class NearTxResultHandler implements CI1<IgniteInternalFuture<Cache
     /** Response constructor. */
     public static GridNearTxEnlistResponse createResponse(GridDhtTxEnlistFuture fut) {
         try {
-            CacheObject res = fut.get();
+            GridCacheReturn res = fut.get();
 
             GridCacheVersion ver = null;
             IgniteUuid id = null;
@@ -84,7 +84,7 @@ public final class NearTxResultHandler implements CI1<IgniteInternalFuture<Cache
 
 
             return new GridNearTxEnlistResponse(fut.cctx.cacheId(), fut.nearFutId, fut.nearMiniId,
-                fut.nearLockVer, fut.success, res, ver, id, updCntrs);
+                fut.nearLockVer, res, ver, id, updCntrs);
         }
         catch (IgniteCheckedException e) {
             return new GridNearTxEnlistResponse(fut.cctx.cacheId(), fut.nearFutId, fut.nearMiniId, fut.nearLockVer, e);
@@ -92,7 +92,7 @@ public final class NearTxResultHandler implements CI1<IgniteInternalFuture<Cache
     }
 
     /** {@inheritDoc} */
-    @Override public void apply(IgniteInternalFuture<CacheObject> fut0) {
+    @Override public void apply(IgniteInternalFuture<GridCacheReturn> fut0) {
         GridDhtTxAbstractEnlistFuture fut = (GridDhtTxAbstractEnlistFuture)fut0;
 
         GridCacheContext<?, ?> cctx = fut.cctx;

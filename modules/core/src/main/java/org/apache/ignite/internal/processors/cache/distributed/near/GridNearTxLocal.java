@@ -2025,10 +2025,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param it Entries iterator.
      * @param ret Cache operation result.
      * @param retval Return value flag.
-      * @param filter
+     * @param filter Filter.
      * @param timeout Timeout.
-    * @param sequential Sequential locking flag.
-    * @return Operation future.
+     * @param sequential Sequential locking flag.
+     * @return Operation future.
      */
     public IgniteInternalFuture<GridCacheReturn> updateAsync(GridCacheContext cacheCtx,
         UpdateSourceIterator<?> it,
@@ -2045,26 +2045,23 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
             GridNearTxEnlistFuture fut = new GridNearTxEnlistFuture(cacheCtx, this,
-                timeout, it, 0, sequential, filter);
+                timeout, it, 0, sequential, filter, retval);
 
             fut.init();
 
-            return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<CacheObject>, Boolean>() {
-                @Override public Boolean applyx(IgniteInternalFuture<CacheObject> fut0) throws IgniteCheckedException {
+            return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<GridCacheReturn>, Boolean>() {
+                @Override public Boolean applyx(IgniteInternalFuture<GridCacheReturn> fut0) throws IgniteCheckedException {
                     fut0.get();
 
                     return true;
                 }
             }), new PLC1<GridCacheReturn>(ret) {
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
-                    CacheObject res = fut.get();
+                    GridCacheReturn futRes = fut.get();
 
                     assert mvccSnapshot != null;
 
-                    //TODO: IGNITE-7764: fix putIfAbsent and replace operations.
-                    ret.success(fut.success);
-
-                    ret.value(cacheCtx, res, keepBinary);
+                    ret.set(cacheCtx, futRes.value(), futRes.success(), keepBinary);
 
                     mvccSnapshot.incrementOperationCounter();
 

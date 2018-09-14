@@ -243,7 +243,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
                 else {
                     assertFalse(cache1.cache.replace(key, new MvccTestAccount(key, 1), newVal));
 
-                    assertEquals(initialMap.get(key), cache1.cache.getAndReplace(key, new MvccTestAccount(key, 3)));
+                    assertNull(cache1.cache.getAndReplace(key, new MvccTestAccount(key, 3)));
                 }
             }
 
