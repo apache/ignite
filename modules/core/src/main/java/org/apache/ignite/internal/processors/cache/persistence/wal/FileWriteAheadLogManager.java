@@ -478,7 +478,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 archivedMonitor.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
 
             if (dsCfg.isWalCompactionEnabled()) {
-                compressor = new FileCompressor(dsCfg.getWalCompactionLevel());
+                compressor = new FileCompressor();
 
                 if (decompressor == null) {  // Preventing of two file-decompressor thread instantiations.
                     decompressor = new FileDecompressor(log);
@@ -1443,11 +1443,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void setWalCompactionLevel(int walCompactionLevel){
-        compressor.setLevel(walCompactionLevel);
-    }
-
     /**
      * Clears whole the file, fills with zeros for Default mode.
      *
@@ -1989,9 +1984,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private class FileCompressor extends Thread {
 
-        /** ZIP level.*/
-        private int level;
-
         /** Current thread stopping advice. */
         private volatile boolean stopped;
 
@@ -2001,17 +1993,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** All segments prior to this (inclusive) can be compressed. */
         private volatile long minUncompressedIdxToKeep = -1L;
 
-        /**
-         * @param level ZIP level.
-         */
-        FileCompressor(int level) {
+        /** */
+        FileCompressor() {
             super("wal-file-compressor%" + cctx.igniteInstanceName());
-            this.level = level;
         }
 
-        /**
-         *
-         */
+        /** */
         private void init() {
             File[] toDel = walArchiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
@@ -2173,7 +2160,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
-                zos.setLevel(level);
+                zos.setLevel(dsCfg.getWalCompactionLevel());
                 zos.putNextEntry(new ZipEntry(""));
 
                 ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
@@ -2239,15 +2226,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             U.join(this);
-        }
-
-        /**
-         * Sets ZIP level to WAL compaction.
-         *
-         * @param level ZIP level.
-         */
-        public void setLevel(int level){
-            this.level=level;
         }
     }
 
