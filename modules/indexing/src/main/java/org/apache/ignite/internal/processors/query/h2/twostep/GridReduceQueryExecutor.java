@@ -101,7 +101,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionException;
-import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Index;
@@ -114,7 +113,9 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.*;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
@@ -291,8 +292,6 @@ public class GridReduceQueryExecutor {
 
             if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR)
                 e.addSuppressed(new QueryCancelledException());
-            else if (failCode == GridQueryFailResponse.TX_TIMEOUT)
-                e.addSuppressed(new TransactionTimeoutException(null));
 
             r.setStateOnException(nodeId, e);
         }
@@ -886,9 +885,6 @@ public class GridReduceQueryExecutor {
 
                             if (wasCancelled(err))
                                 throw new QueryCancelledException(); // Throw correct exception.
-
-                            if (X.hasSuppressed(err, TransactionTimeoutException.class))
-                                throw new TransactionTimeoutException(err.getMessage());
 
                             throw err;
                         }

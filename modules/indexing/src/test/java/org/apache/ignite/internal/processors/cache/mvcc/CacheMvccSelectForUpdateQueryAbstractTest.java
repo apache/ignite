@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -31,17 +32,16 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.connect;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.execute;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Test for {@code SELECT FOR UPDATE} queries.
@@ -301,8 +301,19 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
         for (IgniteInternalFuture fut : calls) {
             if (!locked)
                 fut.get(TX_TIMEOUT);
-            else
-                assertThrowsWithCause(() -> fut.get(TX_TIMEOUT), TransactionTimeoutException.class);
+            else {
+                try {
+                    fut.get();
+                }
+                catch (Exception e) {
+                    CacheException e0 = X.cause(e, CacheException.class);
+
+                    assert e0 != null;
+
+                    assert e0.getMessage() != null &&
+                        e0.getMessage().contains("Failed to acquire lock within provided timeout");
+                }
+            }
         }
     }
 

@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
@@ -585,9 +584,6 @@ public class DmlStatementsProcessor {
                     toCommit.commit();
 
                 return res;
-            }
-            catch (IgniteTxTimeoutCheckedException e) {
-                throw U.convertException(e);
             }
             catch (IgniteCheckedException e) {
                 checkSqlException(e);

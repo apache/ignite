@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -34,9 +33,6 @@ public class GridQueryFailResponse implements Message {
 
     /** Cancelled by originator failure type. */
     public static final byte CANCELLED_BY_ORIGINATOR = 1;
-
-    /** Transaction timeout failure type. */
-    public static final byte TX_TIMEOUT = 2;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -64,12 +60,7 @@ public class GridQueryFailResponse implements Message {
     public GridQueryFailResponse(long qryReqId, Throwable err) {
         this.qryReqId = qryReqId;
         this.errMsg = err.getMessage();
-        if (err instanceof QueryCancelledException)
-            this.failCode = CANCELLED_BY_ORIGINATOR;
-        else if (err instanceof IgniteTxTimeoutCheckedException)
-            this.failCode = TX_TIMEOUT;
-        else
-            this.failCode = GENERAL_ERROR;
+        this.failCode = err instanceof QueryCancelledException ? CANCELLED_BY_ORIGINATOR : GENERAL_ERROR;
     }
 
     /**

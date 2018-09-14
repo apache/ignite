@@ -32,10 +32,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionState;
-import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -234,10 +234,12 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                     fail("Timeout exception should be thrown");
                 }
                 catch (ExecutionException ee) {
+                    // t0d0 remove
                     ee.printStackTrace();
-                    assertTrue(X.hasCause(ee, TransactionTimeoutException.class)
+                    assertTrue(X.hasCause(ee, IgniteTxTimeoutCheckedException.class)
                         || X.hasCause(ee, IgniteTxRollbackCheckedException.class)
-                        || (ee.getMessage() != null && ee.getMessage().contains("rolled back")));
+                        || msgContains(ee, "Failed to acquire lock within provided timeout for transaction")
+                        || msgContains(ee, "Failed to finish transaction because it has been rolled back"));
                 }
 
                 assertEquals(TransactionState.ACTIVE, tx1.state());
@@ -257,6 +259,11 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
             return timeoutMode == TimeoutMode.TX
                 ? ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT_MILLIS, 1)
                 : ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+        }
+
+        /** */
+        private static boolean msgContains(Throwable e, String str) {
+            return e.getMessage() != null && e.getMessage().contains(str);
         }
     }
 
