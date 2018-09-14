@@ -4082,9 +4082,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     public static void main(String[] arg){
         System.out.println(
-            //nearXidVer=GridCacheVersion [topVer=148146435, order=1536666432496, nodeOrder=1]
+            //topVer=148146433, order=1536666432485, nodeOrder=4
             //GridCacheVersion(int topVer, int nodeOrderDrId, long order) {
-            new GridCacheVersion(148146435, 1, 1536666432496L).asGridUuid()
+            new GridCacheVersion(148146433, 4, 1536666432485l).asGridUuid()
         );
     }
 
@@ -4095,7 +4095,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         TransactionState state = state();
 
         log.info(
-            "MY_DEBUG tx.close [id=" + xid() + ", state=" + state + ", trackTimeout=" + trackTimeout + "]"
+            cctx.localNode().consistentId()+" MY_DEBUG tx.close [id=" + xid() + ", state=" + state + ", trackTimeout=" + trackTimeout + "]"
         );
 
         try {

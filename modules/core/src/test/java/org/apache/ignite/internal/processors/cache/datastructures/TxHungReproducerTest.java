@@ -60,6 +60,7 @@ public class TxHungReproducerTest extends IgniteCollectionAbstractTest {
     Map<String, Thread> map = new ConcurrentHashMap<>();
     CountDownLatch lockWait = new CountDownLatch(1);
     CountDownLatch txWait = new CountDownLatch(1);
+    CountDownLatch endLockLatch = new CountDownLatch(1);
     UUID nearNodeId;
     UUID txNodeId;
     GridCacheLockImpl nearLockImpl;
@@ -82,7 +83,7 @@ public class TxHungReproducerTest extends IgniteCollectionAbstractTest {
 
             IgniteLock nearLock = nearIgn.reentrantLock("MY_TEST_LOCK", false, true, false);
 
-            nearLockImpl = (GridCacheLockImpl) nearLock;
+            nearLockImpl = (GridCacheLockImpl)nearLock;
             nearLock.lock();
             try {
                 TimeUnit.MILLISECONDS.sleep(500);
@@ -135,6 +136,8 @@ public class TxHungReproducerTest extends IgniteCollectionAbstractTest {
                             return null;
                         }
                         finally {
+                            endLockLatch.countDown();
+
                             nearLock.unlock();
                         }
 
@@ -147,7 +150,7 @@ public class TxHungReproducerTest extends IgniteCollectionAbstractTest {
                 TimeUnit.MILLISECONDS.sleep(500);
             }
 
-            for(Ignite ignite: G.allGrids()) {
+            for (Ignite ignite : G.allGrids()) {
 
                 GridCacheSharedContext cctx = ((IgniteEx)ignite).context().cache().context();
                 log.info("TEST_LOG Pending transactions [node=" + ((IgniteEx)ignite).localNode().id() + "]:");
@@ -203,8 +206,14 @@ public class TxHungReproducerTest extends IgniteCollectionAbstractTest {
                     if (lockWait.getCount() == 0 && node.id().equals(nearNodeId)) {
                         Thread th = map.get("lock-thread");
                         log.info("TEST LOG: interrupt thread [thread=" + th + "]");
-                        nearLockImpl.setInterruptAll(true);
+                        nearLockImpl.broke();
                         th.interrupt();
+                        try {
+                            endLockLatch.await();
+                        }
+                        catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
 
                 }

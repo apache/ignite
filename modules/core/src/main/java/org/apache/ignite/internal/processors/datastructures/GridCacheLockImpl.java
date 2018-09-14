@@ -106,8 +106,9 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         return key;
     }
 
-    public void setInterruptAll(boolean b){
-        interruptAll = b;
+    public void broke(){
+        sync.setBroken(true);
+        sync.interruptAll();
     }
 
     /**

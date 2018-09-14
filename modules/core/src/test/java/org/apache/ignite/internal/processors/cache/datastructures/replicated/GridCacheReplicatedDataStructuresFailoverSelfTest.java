@@ -39,17 +39,21 @@ public class GridCacheReplicatedDataStructuresFailoverSelfTest
         return TRANSACTIONAL;
     }
 
-    /**
-     *
-     */
-    @Override public void testFairReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-6454");
+    @Override protected long getTestTimeout() {
+        return 60 * 1000;
     }
 
     /**
      *
      */
-    @Override public void testReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() {
+    /*@Override public void testFairReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() {
         fail("https://issues.apache.org/jira/browse/IGNITE-6454");
-    }
+    }*/
+
+    /**
+     *
+     */
+    /*@Override public void testReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6454");
+    }*/
 }
