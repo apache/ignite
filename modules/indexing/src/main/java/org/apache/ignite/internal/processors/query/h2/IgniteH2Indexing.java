@@ -1747,13 +1747,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             final MvccQueryTracker tracker = mvccTracker == null && qry.mvccEnabled() ?
                 MvccUtils.mvccTracker(ctx.cache().context().cacheContext(qry.cacheIds().get(0)), startTx) : mvccTracker;
 
+            GridNearTxLocal tx = tx(ctx);
+
             if (qry.forUpdate())
-                qry.forUpdate(checkActive(tx(ctx)) != null);
+                qry.forUpdate(checkActive(tx) != null);
+
+            int opTimeout = operationTimeout(qryTimeout, tx);
 
             return new Iterable<List<?>>() {
                 @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
-                    return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, qryTimeout,
+                    return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, opTimeout,
                         cancel, params, parts, lazy, tracker);
                 }
             };
