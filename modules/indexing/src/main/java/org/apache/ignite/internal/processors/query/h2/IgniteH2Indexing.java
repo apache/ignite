@@ -1272,7 +1272,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Timeout for opearation in milliseconds based on query and tx timeouts.
      */
     public static int operationTimeout(int qryTimeout, IgniteTxAdapter tx) {
-        // t0d0 check zero and negative timeout
         if (tx != null) {
             int tm1 = (int)tx.remainingTime(), tm2 = qryTimeout;
 

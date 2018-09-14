@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -166,12 +165,12 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     /** */
     private static class TimeoutChecker {
         /** */
-        final Ignite ignite;
+        final IgniteEx ignite;
         /** */
         final String cacheName;
 
         /** */
-        TimeoutChecker(Ignite ignite, String cacheName) {
+        TimeoutChecker(IgniteEx ignite, String cacheName) {
             this.ignite = ignite;
             this.cacheName = cacheName;
         }
@@ -229,13 +228,14 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                             if (tx2 != null)
                                 tx2.commit();
                         }
+                        finally {
+                            ignite.context().cache().context().tm().resetContext();
+                        }
                     }).get();
 
                     fail("Timeout exception should be thrown");
                 }
                 catch (ExecutionException ee) {
-                    // t0d0 remove
-                    ee.printStackTrace();
                     assertTrue(X.hasCause(ee, IgniteTxTimeoutCheckedException.class)
                         || X.hasCause(ee, IgniteTxRollbackCheckedException.class)
                         || msgContains(ee, "Failed to acquire lock within provided timeout for transaction")
