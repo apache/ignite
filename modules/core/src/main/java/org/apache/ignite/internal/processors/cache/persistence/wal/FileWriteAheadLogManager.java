@@ -1443,6 +1443,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void setWalCompactionLevel(int walCompactionLevel){
+        compressor.setLevel(walCompactionLevel);
+    }
+
     /**
      * Clears whole the file, fills with zeros for Default mode.
      *
@@ -1985,7 +1990,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private class FileCompressor extends Thread {
 
         /** ZIP level.*/
-        private final int level;
+        private int level;
 
         /** Current thread stopping advice. */
         private volatile boolean stopped;
@@ -2234,6 +2239,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             U.join(this);
+        }
+
+        /**
+         * Sets ZIP level to WAL compaction.
+         *
+         * @param level ZIP level.
+         */
+        public void setLevel(int level){
+            this.level=level;
         }
     }
 

@@ -167,4 +167,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Cleanup all directories relating to WAL (e.g. work WAL dir, archive WAL dir).
      */
     public void cleanupWalDirectories() throws IgniteCheckedException;
+
+    /**
+     * Sets ZIP level to WAL compaction.
+     *
+     * @param walCompactionLevel ZIP level.
+     */
+    void setWalCompactionLevel(int walCompactionLevel);
 }

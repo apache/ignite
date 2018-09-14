@@ -1007,6 +1007,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void setWalCompactionLevel(int walCompactionLevel){
+        compressor.setLevel(walCompactionLevel);
+    }
+
     /**
      * Lists files in archive directory and returns the index of last archived file.
      *
@@ -1814,7 +1819,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private class FileCompressor extends Thread {
 
         /** ZIP level.*/
-        private final int level;
+        private int level;
 
         /** Current thread stopping advice. */
         private volatile boolean stopped;
@@ -2044,6 +2049,15 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
 
             U.join(this);
+        }
+
+        /**
+         * Sets ZIP level to WAL compaction.
+         *
+         * @param level ZIP level.
+         */
+        public void setLevel(int level){
+            this.level=level;
         }
     }
 

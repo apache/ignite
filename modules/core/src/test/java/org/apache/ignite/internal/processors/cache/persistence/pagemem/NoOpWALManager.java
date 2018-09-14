@@ -166,4 +166,9 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     @Override public long maxArchivedSegmentToDelete() {
         return -1;
     }
+
+    /** {@inheritDoc} */
+    @Override public void setWalCompactionLevel(int walCompactionLevel) {
+        // No-op.
+    }
 }
