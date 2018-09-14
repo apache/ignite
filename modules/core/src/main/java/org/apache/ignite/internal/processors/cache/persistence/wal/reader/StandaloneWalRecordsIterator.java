@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -310,17 +311,14 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull Exception e,
         @Nullable FileWALPointer ptr
     ) {
-        if (e instanceof IgniteCheckedException) {
-            IgniteCheckedException ice = (IgniteCheckedException)e;
-
-            if (ice.hasCause(IgniteDataIntegrityViolationException.class))
+        if (e instanceof IgniteCheckedException)
+            if (X.hasCause(e, IgniteDataIntegrityViolationException.class))
                 // "curIdx" is an index in walFileDescriptors list.
                 if (curIdx == walFileDescriptors.size() - 1)
                     // This means that there is no explicit last sengment, so we stop as if we reached the end
                     // of the WAL.
                     if (highBound.equals(DFLT_HIGH_BOUND))
                         return null;
-        }
 
         return super.handleRecordException(e, ptr);
     }

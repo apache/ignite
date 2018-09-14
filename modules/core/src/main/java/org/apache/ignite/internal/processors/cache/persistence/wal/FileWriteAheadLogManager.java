@@ -112,6 +112,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -3208,39 +3209,41 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             @NotNull Exception e,
             @Nullable FileWALPointer ptr) {
 
-            if (e instanceof IgniteCheckedException) {
-                IgniteCheckedException ice = (IgniteCheckedException)e;
-
-                if (ice.hasCause(IgniteDataIntegrityViolationException.class))
+            if (e instanceof IgniteCheckedException)
+                if (X.hasCause(e, IgniteDataIntegrityViolationException.class))
                     // This means that there is no explicit last sengment, so we iterate unil the very end.
                     if (end == null) {
                         long nextWalSegmentIdx = curWalSegmIdx + 1;
 
                         // Check that we should not look this segment up in archive directory.
                         // Basically the same check as in "advanceSegment" method.
-                        if (archiver != null && !canReadArchiveOrReserveWork(nextWalSegmentIdx)) {
-                            long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
+                        if (archiver != null)
+                            if (!canReadArchiveOrReserveWork(nextWalSegmentIdx))
+                                try {
+                                    long workIdx = nextWalSegmentIdx % dsCfg.getWalSegments();
 
-                            FileDescriptor fd = new FileDescriptor(
-                                new File(walWorkDir, FileDescriptor.fileName(workIdx)),
-                                nextWalSegmentIdx
-                            );
+                                    FileDescriptor fd = new FileDescriptor(
+                                        new File(walWorkDir, FileDescriptor.fileName(workIdx)),
+                                        nextWalSegmentIdx
+                                    );
 
-                            try {
-                                ReadFileHandle nextHandle = initReadHandle(fd, null);
+                                    try {
+                                        ReadFileHandle nextHandle = initReadHandle(fd, null);
 
-                                // "nextHandle == null" is true only if current segment is the last one in the whole
-                                // history. Only in such case we ignore crc validation error and just stop as if we
-                                // reached the end of the WAL.
-                                if (nextHandle == null)
-                                    return null;
-                            }
-                            catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
-                                e.addSuppressed(initReadHandleException);
-                            }
-                        }
+                                        // "nextHandle == null" is true only if current segment is the last one in the
+                                        // whole history. Only in such case we ignore crc validation error and just stop
+                                        // as if we reached the end of the WAL.
+                                        if (nextHandle == null)
+                                            return null;
+                                    }
+                                    catch (IgniteCheckedException | FileNotFoundException initReadHandleException) {
+                                        e.addSuppressed(initReadHandleException);
+                                    }
+                                }
+                                finally {
+                                    releaseWorkSegment(nextWalSegmentIdx);
+                                }
                     }
-            }
 
             return super.handleRecordException(e, ptr);
         }
