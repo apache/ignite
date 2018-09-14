@@ -21,15 +21,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.CacheException;
+import java.util.function.UnaryOperator;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -41,10 +46,19 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     /** */
     private static final int TIMEOUT_MILLIS = 200;
+
+    /** */
+    private UnaryOperator<IgniteConfiguration> cfgCustomizer = UnaryOperator.identity();
+
     // t0d0 write concurrent test
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         throw new RuntimeException("Is not used in current test");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        return cfgCustomizer.apply(super.getConfiguration(gridName));
     }
 
     /**
@@ -124,11 +138,12 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
 
     /** */
     private void checkLockTimeoutsAfterDefaultTxTimeout(CacheConfiguration<?, ?> ccfg) throws Exception {
+        cfgCustomizer = cfg ->
+            cfg.setTransactionConfiguration(new TransactionConfiguration().setDefaultTxTimeout(TIMEOUT_MILLIS));
+
         startGridsMultiThreaded(2);
 
         IgniteEx ignite = grid(0);
-
-        ignite.configuration().getTransactionConfiguration().setDefaultTxTimeout(TIMEOUT_MILLIS);
 
         ignite.createCache(ccfg);
 
@@ -166,14 +181,13 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
             // 999 is used as bound to enforce query execution with obtaining cursor before enlist
             assert key <= 999;
 
-            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 60_000, 1)) {
                 ignite.cache(cacheName).query(new SqlFieldsQuery("merge into Integer(_key, _val) values(?, 1)")
                     .setArgs(key));
 
                 tx.commit();
             }
 
-            // t0d0 pay attention on INSERT timeout, duplicate key error could add impact
             ensureTimeIsOut("insert into Integer(_key, _val) values(?, 42)", key, timeoutMode, txStartMode);
             ensureTimeIsOut("merge into Integer(_key, _val) values(?, 42)", key, timeoutMode, txStartMode);
             ensureTimeIsOut("update Integer set _val = 42 where _key = ?", key, timeoutMode, txStartMode);
@@ -220,17 +234,14 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                     fail("Timeout exception should be thrown");
                 }
                 catch (ExecutionException ee) {
-                    Throwable e = ee.getCause();
-                    Throwable sqlE = e.getCause();
-
-                    assertTrue(e instanceof CacheException);
-                    assertTrue(e.getCause() instanceof TransactionTimeoutException);
-//                    assertTrue(sqlE instanceof IgniteSQLException);
-//                    assertTrue(sqlE.getCause() instanceof TransactionTimeoutException);
-//                    assertEquals(SqlStateCode.LOCK_TIMEOUT, ((IgniteSQLException)sqlE).sqlState());
+                    ee.printStackTrace();
+                    assertTrue(X.hasCause(ee, TransactionTimeoutException.class)
+                        || X.hasCause(ee, IgniteTxRollbackCheckedException.class)
+                        || (ee.getMessage() != null && ee.getMessage().contains("rolled back")));
                 }
 
-                // t0d0 ensure that tx1 was not timed out
+                assertEquals(TransactionState.ACTIVE, tx1.state());
+
                 tx1.rollback();
             }
 
