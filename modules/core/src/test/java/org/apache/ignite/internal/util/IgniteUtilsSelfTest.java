@@ -46,6 +46,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -885,11 +886,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
         IgniteUtils.doInParallel(
-            Executors.newFixedThreadPool(1),
+            Executors.newFixedThreadPool(3),
             Arrays.asList(1, 2, 3),
             (i) -> {
                 try {
-                    barrier.await();
+                    barrier.await(3, TimeUnit.SECONDS);
                 }
                 catch (Exception e) {
                     throw new IgniteCheckedException(e);
