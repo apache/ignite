@@ -25,6 +25,8 @@ import org.apache.ignite.IgniteCheckedException;
  * This exception appears during execution of parallel calculation.
  */
 public class ParallelExecutionException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
     /** List of failed data. */
     private final List<Object> failedDatas = new ArrayList<>();
 
