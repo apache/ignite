@@ -44,10 +44,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -884,15 +882,43 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testDoInParallel() throws Throwable {
-        CountDownLatch parallelAwaiter = new CountDownLatch(3);
+        CyclicBarrier barrier = new CyclicBarrier(3);
 
         IgniteUtils.doInParallel(
             Executors.newFixedThreadPool(1),
             Arrays.asList(1, 2, 3),
-            (i) -> parallelAwaiter.countDown()
+            (i) -> {
+                try {
+                    barrier.await();
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
         );
+    }
 
-        parallelAwaiter.await(3, TimeUnit.SECONDS);
+    /**
+     *
+     */
+    public void testDoInParallelException() {
+        try {
+            IgniteUtils.doInParallel(
+                Executors.newFixedThreadPool(1),
+                Arrays.asList(1, 2, 3),
+                (i) -> {
+                    if (i < 3)
+                        throw new IgniteCheckedException("");
+                }
+            );
+
+            fail("Should throw ParallelExecutionException");
+        }
+        catch (ParallelExecutionException e) {
+            assertEquals(2, e.getFailedDatas().size());
+            assertTrue(e.getFailedDatas().contains(1));
+            assertTrue(e.getFailedDatas().contains(2));
+        }
     }
 
     /**
