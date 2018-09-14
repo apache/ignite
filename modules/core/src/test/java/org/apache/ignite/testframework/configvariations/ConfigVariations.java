@@ -86,6 +86,7 @@ public class ConfigVariations {
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigParameter[][] {
         Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), binaryMarshallerFactory()),
         Parameters.booleanParameters("setPeerClassLoadingEnabled"),
+        Parameters.booleanParameters("setMvccEnabled"),
     };
 
     /** */
