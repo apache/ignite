@@ -126,7 +126,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                         if (acc.groupBy.isDefined) {
                             val tableAlias = acc.igniteQueryContext.uniqueTableAlias
 
-                            accumulator.SingleTableSQLAccumulator(
+                            SingleTableSQLAccumulator(
                                 igniteQueryContext = acc.igniteQueryContext,
                                 table = None,
                                 tableExpression = Some((acc, tableAlias)),
@@ -141,7 +141,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     case acc: QueryAccumulator ⇒
                         val tableAlias = acc.igniteQueryContext.uniqueTableAlias
 
-                        accumulator.SingleTableSQLAccumulator(
+                        SingleTableSQLAccumulator(
                             igniteQueryContext = acc.igniteQueryContext,
                             table = None,
                             tableExpression = Some((acc, tableAlias)),

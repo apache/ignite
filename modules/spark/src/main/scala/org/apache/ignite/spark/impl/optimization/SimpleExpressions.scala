@@ -48,41 +48,42 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
     /** @inheritdoc */
     override def toString(expr: Expression, childToString: Expression ⇒ String, useQualifier: Boolean,
         useAlias: Boolean): Option[String] = expr match {
-        case l: Literal ⇒ l.dataType match {
-            case StringType ⇒
-                Some("'" + l.value.toString + "'")
+        case l: Literal ⇒
+            if (l.value == null)
+                Some("null")
+            else {
+                l.dataType match {
+                    case StringType ⇒
+                        Some("'" + l.value.toString + "'")
 
-            case TimestampType ⇒
-                l.value match {
-                    //Internal representation of TimestampType is Long.
-                    //So we converting from internal spark representation to CAST call.
-                    case date: Long ⇒
-                        Some(s"CAST('${timestampFormat.get.format(DateTimeUtils.toJavaTimestamp(date))}' AS TIMESTAMP)")
+                    case TimestampType ⇒
+                        l.value match {
+                            //Internal representation of TimestampType is Long.
+                            //So we converting from internal spark representation to CAST call.
+                            case date: Long ⇒
+                                Some(s"CAST('${timestampFormat.get.format(DateTimeUtils.toJavaTimestamp(date))}' AS TIMESTAMP)")
+
+                            case _ ⇒
+                                Some(l.value.toString)
+                        }
+
+                    case DateType ⇒
+                        l.value match {
+                            //Internal representation of DateType is Int.
+                            //So we converting from internal spark representation to CAST call.
+                            case days: Integer ⇒
+                                val date = new java.util.Date(DateTimeUtils.daysToMillis(days))
+
+                                Some(s"CAST('${dateFormat.get.format(date)}' AS DATE)")
+
+                            case _ ⇒
+                                Some(l.value.toString)
+                        }
 
                     case _ ⇒
                         Some(l.value.toString)
                 }
-
-            case DateType ⇒
-                l.value match {
-                    //Internal representation of DateType is Int.
-                    //So we converting from internal spark representation to CAST call.
-                    case days: Integer ⇒
-                        val date = new java.util.Date(DateTimeUtils.daysToMillis(days))
-
-                        Some(s"CAST('${dateFormat.get.format(date)}' AS DATE)")
-
-                    case _ ⇒
-                        Some(l.value.toString)
-                }
-
-            case _ ⇒
-                if (l.value == null)
-                    Some("null")
-                else
-                    Some(l.value.toString)
-        }
-
+            }
         case ar: AttributeReference ⇒
             val name =
                 if (useQualifier)

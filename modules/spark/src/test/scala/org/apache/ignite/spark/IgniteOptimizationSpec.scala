@@ -17,12 +17,18 @@
 
 package org.apache.ignite.spark
 
+import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, checkOptimizationResult, enclose}
+import org.apache.ignite.spark.IgniteDataFrameSettings.{FORMAT_IGNITE, OPTION_TABLE}
+import org.apache.ignite.spark.model.{JPerson, JPerson2}
+import org.apache.spark.sql.functions.lit
+import org.apache.spark.sql.types.DataTypes.StringType
+import org.apache.spark.sql.{Dataset, Row}
 
 /**
   */
@@ -31,6 +37,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
     var igniteSession: IgniteSparkSession = _
 
     describe("Optimized queries") {
+/*
         it("SELECT name as city_name FROM city") {
             val df = igniteSession.sql("SELECT name as city_name FROM city")
 
@@ -232,6 +239,26 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
 
             checkQueryData(df, data)
         }
+*/
+        it("Should optimize union") {
+            val person1 = readTable("JPerson")
+
+            val person2 = readTable("JPerson2")
+
+            val union = person1.union(person2)
+
+            union.show
+        }
+
+        it("Should optimize null column") {
+            val personCache = client.getOrCreateCache[Long, JPerson]("JPerson")
+
+            personCache.put(1L, new JPerson(1L, null))
+
+            val person = readTable("JPerson").withColumn("nullColumn", lit(null).cast(StringType))
+
+            person.show
+        }
     }
 
     describe("Not Optimized Queries") {
@@ -278,12 +305,27 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
         }
     }
 
+    def readTable(tblName: String): Dataset[Row] =
+        igniteSession.read
+            .format(FORMAT_IGNITE)
+            .option(OPTION_TABLE, tblName)
+            .option(IgniteDataFrameSettings.OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+            .load
+
     override protected def beforeAll(): Unit = {
         super.beforeAll()
 
         createPersonTable(client, DEFAULT_CACHE)
 
         createCityTable(client, DEFAULT_CACHE)
+
+        client.getOrCreateCache(new CacheConfiguration[Long, JPerson]()
+            .setName("P")
+            .setIndexedTypes(classOf[Long], classOf[JPerson]))
+
+        client.getOrCreateCache(new CacheConfiguration[Long, JPerson2]()
+            .setName("P2")
+            .setIndexedTypes(classOf[Long], classOf[JPerson2]))
 
         val configProvider = enclose(null) (x ⇒ () ⇒ {
             val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()
