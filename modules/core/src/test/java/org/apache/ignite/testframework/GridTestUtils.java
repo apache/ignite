@@ -156,9 +156,10 @@ public final class GridTestUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
+        @Override public IgniteInternalFuture onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
             hook.handleDiscoveryMessage(spiCustomMsg);
-            delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+            return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
         }
 
         /** {@inheritDoc} */
