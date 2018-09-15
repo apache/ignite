@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
 
-import com.fasterxml.jackson.annotation.JsonRootName;
-import com.google.common.collect.Sets;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.google.common.collect.Sets;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
+import org.codehaus.jackson.map.annotate.JsonRootName;
 
 /**
  * This TCP Discovery IP Finder uses Apache ZooKeeper (ZK) to locate peer nodes when bootstrapping in order to join
@@ -111,7 +111,7 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     private String serviceName = SERVICE_NAME;
 
     /** Whether to allow or not duplicate registrations. See setter doc. */
-    private boolean allowDuplicateRegistrations = false;
+    private boolean allowDuplicateRegistrations;
 
     /** The Service Discovery recipe. */
     private ServiceDiscovery<IgniteInstanceDetails> discovery;
@@ -131,7 +131,7 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
 
         String sysPropZkConnString = System.getProperty(PROP_ZK_CONNECTION_STRING);
 
-        if (sysPropZkConnString != null && sysPropZkConnString.trim().length() > 0)
+        if (sysPropZkConnString != null && !sysPropZkConnString.trim().isEmpty())
             zkConnectionString = sysPropZkConnString;
 
         if (log.isInfoEnabled())
