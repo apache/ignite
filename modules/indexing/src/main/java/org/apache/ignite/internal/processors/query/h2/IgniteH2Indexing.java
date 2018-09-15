@@ -1180,7 +1180,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridNearTxSelectForUpdateFuture sfuFut0 = sfuFut;
             PreparedStatement stmt0 = stmt;
             String qry0 = qry;
-            int timeout0 = qryTimeout;
+            int timeout0 = opTimeout;
 
             return new GridQueryFieldsResultAdapter(meta, null) {
                 @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
