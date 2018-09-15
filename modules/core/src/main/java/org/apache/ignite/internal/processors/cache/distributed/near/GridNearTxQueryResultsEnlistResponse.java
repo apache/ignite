@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -38,9 +37,6 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
     /** */
     private IgniteUuid dhtFutId;
 
-    /** */
-    private GridLongList updCntrs;
-
     /**
      * Default-constructor.
      */
@@ -56,7 +52,6 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
      * @param res Result.
      * @param dhtFutId Dht future id.
      * @param dhtVer Dht version.
-     * @param updCntrs Update counters.
      */
     public GridNearTxQueryResultsEnlistResponse(int cacheId,
         IgniteUuid futId,
@@ -64,13 +59,11 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
         GridCacheVersion lockVer,
         long res,
         GridCacheVersion dhtVer,
-        IgniteUuid dhtFutId,
-        GridLongList updCntrs) {
+        IgniteUuid dhtFutId) {
         super(cacheId, futId, miniId, lockVer, res, false);
 
         this.dhtVer = dhtVer;
         this.dhtFutId = dhtFutId;
-        this.updCntrs = updCntrs;
     }
 
     /**
@@ -102,16 +95,10 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
         return dhtFutId;
     }
 
-    /**
-     * @return Update counters.
-     */
-    public GridLongList updateCounters() {
-        return updCntrs;
-    }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 11;
     }
 
     /** {@inheritDoc} */
@@ -137,12 +124,6 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
 
             case 10:
                 if (!writer.writeMessage("dhtVer", dhtVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeMessage("updCntrs", updCntrs))
                     return false;
 
                 writer.incrementState();
@@ -172,14 +153,6 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
 
             case 10:
                 dhtVer = reader.readMessage("dhtVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                updCntrs = reader.readMessage("updCntrs");
 
                 if (!reader.isLastRead())
                     return false;

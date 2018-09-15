@@ -79,7 +79,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
      * @throws Exception If failed.
      */
     public void testAccountsTxDmlSql_SingleNode_SinglePartition() throws Exception {
-        accountsTxReadAll(1, 0, 0, 1,
+        accountsTxReadAll(4, 0, 2, 1,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
     }
 

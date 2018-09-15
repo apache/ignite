@@ -99,16 +99,14 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
 
             GridCacheVersion ver = null;
             IgniteUuid id = null;
-            GridLongList updCntrs = null;
 
             if (future.hasNearNodeUpdates) {
                 ver = future.cctx.tm().mappedVersion(future.nearLockVer);
                 id = future.futId;
-                updCntrs = future.nearUpdCntrs;
             }
 
             return new GridNearTxQueryResultsEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
-                future.nearLockVer, future.cnt, ver, id, updCntrs);
+                future.nearLockVer, future.cnt, ver, id);
         }
         catch (IgniteCheckedException e) {
             return new GridNearTxQueryResultsEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,

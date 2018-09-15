@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -976,17 +977,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return Current mvcc update counter value.
+     * @return Current update index.
      */
-    public long mvccUpdateCounter() {
-        return store.mvccUpdateCounter();
-    }
-
-    /**
-     * @return Next mvcc update counter.
-     */
-    public long nextMvccUpdateCounter() {
-        return store.nextMvccUpdateCounter();
+    public void updateCounter(long start, long delta, TxKey txKey) {
+         store.updateCounter(start, delta, txKey);
     }
 
     /**
@@ -1001,6 +995,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public void updateCounter(long val) {
         store.updateCounter(val);
+    }
+
+    public long getAndIncrementUpdateCounter(long delta) {
+        return store.getAndIncrementUpdateCounter(delta);
     }
 
     /**

@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteRebalanceIteratorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -1400,24 +1401,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** */
         private final CacheDataTree dataTree;
 
-        /** Update counter. */
-        protected final AtomicLong cntr = new AtomicLong();
-
-        /**
-         * Mvcc update counter. This counter is used for an mvcc-style entries updates where this counter is
-         * incremented on each entry write (which happens before commit), but main update counter is updated
-         * on commit phase only.
-         */
-        protected final AtomicLong mvccUpdCntr = new AtomicLong();
+        protected final PartitionUpdateCounter pCntr = new PartitionUpdateCounter();
 
         /** Partition size. */
         private final AtomicLong storageSize = new AtomicLong();
 
         /** */
         private final ConcurrentMap<Integer, AtomicLong> cacheSizes = new ConcurrentHashMap<>();
-
-        /** Initial update counter. */
-        protected long initCntr;
 
         /** Mvcc remove handler. */
         private final PageHandler<MvccVersion, Boolean> mvccUpdateMarker = new MvccMarkUpdatedHandler();
@@ -1514,35 +1504,41 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long nextUpdateCounter() {
-            return cntr.incrementAndGet();
+            return pCntr.next();
+        }
+
+        @Override public long getAndIncrementUpdateCounter(long delta) {
+            return pCntr.getAndAdd(delta);
         }
 
         /** {@inheritDoc} */
         @Override public long updateCounter() {
-            return cntr.get();
+            return pCntr.get();
         }
 
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
-            while (true) {
-                long val0 = cntr.get();
+            pCntr.update(val);
+        }
 
-                if (val0 >= val)
-                    break;
-
-                if (cntr.compareAndSet(val0, val))
-                    break;
-            }
+        /**
+         * @param start
+         * @param delta
+         * @param tx
+         * @return Update counter.
+         */
+        @Override public void updateCounter(long start, long delta, TxKey tx) {
+            pCntr.update(start, delta, tx);
         }
 
         /** {@inheritDoc} */
-        @Override public long nextMvccUpdateCounter() {
-            return mvccUpdCntr.incrementAndGet();
+        @Override public long initialUpdateCounter() {
+            return pCntr.initial();
         }
 
         /** {@inheritDoc} */
-        @Override public long mvccUpdateCounter() {
-            return mvccUpdCntr.get();
+        @Override public void updateInitialCounter(long cntr) {
+            pCntr.updateInitial(cntr);
         }
 
         /** {@inheritDoc} */
@@ -2771,29 +2767,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public long initialUpdateCounter() {
-            return initCntr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateInitialCounter(long cntr) {
-            if (updateCounter() < cntr)
-                updateCounter(cntr);
-
-            initCntr = cntr;
-        }
-
-        /** {@inheritDoc} */
         @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
             rowStore().setRowCacheCleaner(rowCacheCleaner);
         }
 
         /** {@inheritDoc} */
         @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
-            initCntr = updCntr;
-            storageSize.set(size);
+            pCntr.init(updCntr);
 
-            cntr.set(updCntr);
+            storageSize.set(size);
 
             if (cacheSizes != null) {
                 for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())

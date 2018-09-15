@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
@@ -64,6 +65,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -1129,6 +1132,11 @@ public class IgniteTxHandler {
             nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
             dhtTx = startRemoteTx(nodeId, req, res);
 
+            if (dhtTx == null)
+                applyPartitionsUpdateCounters(req);
+            else if (req.updateCounters() != null)
+                dhtTx.txCounters(true).updateCounters(F.asList(req.updateCounters()));
+
             // Set evicted keys from near transaction.
             if (nearTx != null)
                 res.nearEvicted(nearTx.evicted());
@@ -1182,6 +1190,8 @@ public class IgniteTxHandler {
             }
             else
                 U.error(log, "Failed to process prepare request: " + req, e);
+
+            applyPartitionsUpdateCounters(req);
 
             if (nearTx != null)
                 try {
@@ -1366,15 +1376,22 @@ public class IgniteTxHandler {
             else
                 ctx.tm().addRolledbackTx(tx, req.version());
 
+            applyPartitionsUpdateCounters(req);
+
             if (log.isDebugEnabled())
                 log.debug("Received finish request for non-existing transaction (added to completed set) " +
                     "[senderNodeId=" + nodeId + ", res=" + req + ']');
 
             return;
         }
-        else if (log.isDebugEnabled())
-            log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
-                ", tx=" + tx + ']');
+        else {
+            if (req.updateCounters() != null)
+                tx.txCounters(true).updateCounters(F.asList(req.updateCounters()));
+
+            if (log.isDebugEnabled())
+                log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
+                    ", tx=" + tx + ']');
+        }
 
         req.txState(tx.txState());
 
@@ -1390,8 +1407,6 @@ public class IgniteTxHandler {
 
                 tx.setPartitionUpdateCounters(
                     req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
-
-                tx.txCounters(true).updateCounters(req.updateCounters());
 
                 tx.commitRemoteTx();
             }
@@ -1981,5 +1996,42 @@ public class IgniteTxHandler {
             res.txState(fut.tx().txState());
 
         fut.onResult(nodeId, res);
+    }
+
+
+    // TODO IGNITE-9538 Extract interface
+    private void applyPartitionsUpdateCounters(GridDhtTxPrepareRequest req) {
+        applyPartitionUpdateCounters(req.mvccSnapshot(), req.updateCounters());
+    }
+
+    private void applyPartitionsUpdateCounters(GridDhtTxFinishRequest req) {
+        applyPartitionUpdateCounters(req.mvccSnapshot(), req.updateCounters());
+    }
+
+    private void applyPartitionUpdateCounters(MvccSnapshot snapshot,
+        Collection<PartitionUpdateCountersMessage> counters) {
+        if (counters != null) {
+            assert snapshot != null;
+
+            TxKey tx = new TxKey(snapshot.coordinatorVersion(), snapshot.counter());
+
+            int cacheId = CU.UNDEFINED_CACHE_ID;
+            GridDhtPartitionTopology top = null;
+
+            for (PartitionUpdateCountersMessage counter : F.asList(counters)) {
+                if (counter.cacheId() != cacheId)
+                    top = ctx.cacheContext(cacheId = counter.cacheId()).topology();
+
+                assert top != null;
+
+                for (int i = 0; i < counter.size(); i++) {
+                    GridDhtLocalPartition part = top.localPartition(counter.partition(i));
+
+                    assert part != null;
+
+                    part.updateCounter(counter.initialCounter(i), counter.updatesCount(i), tx);
+                }
+            }
+        }
     }
 }

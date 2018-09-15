@@ -20,11 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -74,8 +72,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private MvccSnapshot mvccSnapshot;
 
     /** */
-    @GridDirectMap(keyType = Integer.class, valueType = PartitionUpdateCounters.class)
-    private Map<Integer, PartitionUpdateCounters> updCntrs;
+    @GridDirectCollection(PartitionUpdateCountersMessage.class)
+    private Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -133,7 +131,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean addDepInfo,
         boolean retVal,
         boolean waitRemoteTxs,
-        MvccSnapshot mvccSnapshot
+        MvccSnapshot mvccSnapshot,
+        Collection<PartitionUpdateCountersMessage> updCntrs
     ) {
         super(
             xidVer,
@@ -163,6 +162,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.isolation = isolation;
         this.miniId = miniId;
         this.mvccSnapshot = mvccSnapshot;
+        this.updCntrs = updCntrs;
 
         needReturnValue(retVal);
         waitRemoteTransactions(waitRemoteTxs);
@@ -221,7 +221,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean retVal,
         boolean waitRemoteTxs,
         MvccSnapshot mvccSnapshot,
-        Map<Integer, PartitionUpdateCounters> updCntrs
+        Collection<PartitionUpdateCountersMessage> updCntrs
     ) {
         this(nearNodeId,
             futId,
@@ -247,7 +247,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             addDepInfo,
             retVal,
             waitRemoteTxs,
-            mvccSnapshot);
+            mvccSnapshot,
+            updCntrs);
 
         if (updateIdxs != null && !updateIdxs.isEmpty()) {
             partUpdateCnt = new GridLongList(updateIdxs.size());
@@ -255,8 +256,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             for (Long idx : updateIdxs)
                 partUpdateCnt.add(idx);
         }
-
-        this.updCntrs = updCntrs;
     }
 
     /**
@@ -367,7 +366,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Partition counters update deferred until transaction commit.
      */
-    public Map<Integer, PartitionUpdateCounters> updateCounters() {
+    public Collection<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs;
     }
 
@@ -429,7 +428,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 28:
-                if (!writer.writeMap("updCntrs", updCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -511,7 +510,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 28:
-                updCntrs = reader.readMap("updCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
