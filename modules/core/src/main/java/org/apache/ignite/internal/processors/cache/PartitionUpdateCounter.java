@@ -68,19 +68,19 @@ public class PartitionUpdateCounter {
     }
 
     public synchronized void update(long start, long delta, TxKey tx) {
+        long cur = cntr.get(), next;
+
+        if (cur > start)
+            return; // TODO warning??
+
+        if (cur < start) {
+            // backup node with gaps
+            offer(new Item(start, delta, tx));
+
+            return;
+        }
+
         while (true) {
-            long cur = cntr.get(), next;
-
-            if (cur > start)
-                return; // TODO warning??
-
-            if (cur < start) {
-                // backup node with gaps
-                offer(new Item(start, delta, tx));
-
-                return;
-            }
-
             boolean res = cntr.compareAndSet(cur, next = start + delta);
 
             assert res;
@@ -96,7 +96,7 @@ public class PartitionUpdateCounter {
 
             start = item.start;
             delta = item.delta;
-            tx = item.tx;
+            cur = next;
         }
     }
 
