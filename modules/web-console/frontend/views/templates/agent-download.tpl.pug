@@ -16,12 +16,11 @@
 
 include /app/helpers/jade/mixins
 
-.modal.modal--ignite.theme--ignite.center(tabindex='-1' role='dialog')
+.modal.modal--ignite.center(tabindex='-1' role='dialog')
     .modal-dialog(ng-switch='ctrl.status')
         .modal-content(ng-switch-when='agentMissing')
             .modal-header.header
                 h4.modal-title
-                    i.fa.fa-download
                     span Connection to Ignite Web Agent is not established
             .modal-body.agent-download
                 p Please download and run #[a(href='/api/v1/downloads/agent' target='_self') ignite-web-agent] to use this functionality:
@@ -45,8 +44,9 @@ include /app/helpers/jade/mixins
                     )
 
             .modal-footer
-                button.btn-ignite.btn-ignite--link-success(ng-click='ctrl.back()') {{::ctrl.backText}}
-                a.btn-ignite.btn-ignite--success(href='/api/v1/downloads/agent' target='_self') Download agent
+                div
+                    button.btn-ignite.btn-ignite--link-success(ng-click='ctrl.back()') {{::ctrl.backText}}
+                    a.btn-ignite.btn-ignite--success(href='/api/v1/downloads/agent' target='_self') Download agent
 
         .modal-content(ng-switch-when='nodeMissing')
             .modal-header.header
@@ -65,4 +65,5 @@ include /app/helpers/jade/mixins
                         li Refer to #[b README.txt] in the ignite-web-agent folder for more information.
 
             .modal-footer
-                button.btn-ignite.btn-ignite--link-success(ng-click='ctrl.back()') {{::ctrl.backText}}
+                div
+                    button.btn-ignite.btn-ignite--link-success(ng-click='ctrl.back()') {{::ctrl.backText}}

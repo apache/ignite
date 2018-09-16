@@ -129,7 +129,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
 
             return Collections.singletonList(new ComputeJobAdapter() {
                     /** {@inheritDoc} */
-                    @SuppressWarnings({"ObjectEquality"})
+                    @Override @SuppressWarnings({"ObjectEquality"})
                     public Serializable execute() {
                         assert getClass().getClassLoader() == ldr;
 
