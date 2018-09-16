@@ -16,8 +16,12 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collection;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 
 /**
@@ -74,6 +78,12 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
     /** */
     private IgniteWriteAheadLogManager wal;
+
+    /** */
+    private volatile IgniteOutClosure<Long> walSizeProvider;
+
+    /** */
+    private volatile Collection<DataRegionMetrics> regionMetrics;
 
     /**
      * @param metricsEnabled Metrics enabled flag.
@@ -226,11 +236,53 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         resetRates();
     }
 
+    /** {@inheritDoc} */
+    @Override public long getWalTotalSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        IgniteOutClosure<Long> walSize = this.walSizeProvider;
+
+        return walSize != null ? walSize.apply() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long totalAllocatedSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            totalAllocatedSize += rm.getTotalAllocatedSize();
+
+        return totalAllocatedSize;
+    }
+
     /**
      * @param wal Write-ahead log manager.
      */
     public void wal(IgniteWriteAheadLogManager wal) {
         this.wal = wal;
+    }
+
+    /**
+     * @param walSizeProvider Wal size provider.
+     */
+    public void setWalSizeProvider(IgniteOutClosure<Long> walSizeProvider){
+        this.walSizeProvider = walSizeProvider;
+    }
+
+    /**
+     *
+     */
+    public void regionMetrics(Collection<DataRegionMetrics> regionMetrics){
+        this.regionMetrics = regionMetrics;
     }
 
     /**
