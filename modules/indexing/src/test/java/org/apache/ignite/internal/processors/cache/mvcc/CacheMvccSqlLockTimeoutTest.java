@@ -34,7 +34,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionState;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -227,7 +226,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                 .query(new SqlFieldsQuery("select _val from Integer where _key = ?").setArgs(key))
                 .getAll().get(0).get(0);
 
-            try (Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 60_000, 1)) {
+            try (Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 6_000, 1)) {
                 cache.query(new SqlFieldsQuery("update Integer set _val = 42 where _key = ?").setArgs(key));
 
                 try {
@@ -255,7 +254,8 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                         || msgContains(e, "Failed to finish transaction because it has been rolled back"));
                 }
 
-                assertEquals(TransactionState.ACTIVE, tx1.state());
+                // assert that outer tx has not timed out
+                cache.query(new SqlFieldsQuery("update Integer set _val = 42 where _key = ?").setArgs(key));
 
                 tx1.rollback();
             }
