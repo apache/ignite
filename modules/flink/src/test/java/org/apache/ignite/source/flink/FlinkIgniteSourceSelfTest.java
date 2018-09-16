@@ -77,6 +77,8 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     /** List of Cache Events */
     List<CacheEvent> cacheEvents;
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     public void beforeTest() throws Exception{
         context = mock(SourceFunction.SourceContext.class);
         ignite = mock(Ignite.class);
@@ -105,21 +107,33 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         when(igniteCluster.forCacheNodes(TEST_CACHE)).thenReturn(clsGrp);
     }
 
+    /** {@inheritDoc} */
     public void afterTest() throws Exception{
         igniteSrc.cancel();
     }
 
+    /** Creates streaming runtime context */
     private RuntimeContext createRuntimeContext() {
         StreamingRuntimeContext runtimeContext = mock(StreamingRuntimeContext.class);
         when(runtimeContext.isCheckpointingEnabled()).thenReturn(true);
         return runtimeContext;
     }
 
+    /**
+     * Tests Ignite source start operation.
+     *
+     * @throws Exception {@link Exception}
+     */
     public void testIgniteSourceStart() throws Exception {
         igniteSrc.start(null, EventType.EVT_CACHE_OBJECT_PUT);
         verify(ignite.events(clsGrp), times(1));
     }
 
+    /**
+     * Tests Ignite source run operation.
+     *
+     * @throws Exception {@link Exception}
+     */
     public void testIgniteSourceRun() throws Exception {
         long endTime = System.currentTimeMillis() + 2000;
 
@@ -131,7 +145,6 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
                 }
                 catch (Exception e) {
                     e.printStackTrace();
-                    fail("Stream execution process failed.");
                 }
             }
         });
@@ -142,6 +155,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
             }
         }, 3000);
 
-        assert f.error() == null;
+        igniteSrc.stopped.set(true);
+        f.get();
     }
 }
