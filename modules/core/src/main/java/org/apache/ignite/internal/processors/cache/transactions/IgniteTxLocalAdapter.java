@@ -927,7 +927,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             finally {
                 cctx.database().checkpointReadUnlock();
 
-                notifyDrManager(state() == COMMITTING && err == null);
+                cctx.mvccCaching().onTxFinished(this, state() == COMMITTING && err == null);
+
+                //notifyDrManager(state() == COMMITTING && err == null);
 
                 cctx.tm().resetContext();
             }
@@ -1062,7 +1064,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     @Override public void userRollback(boolean clearThreadMap) throws IgniteCheckedException {
         TransactionState state = state();
 
-        notifyDrManager(false);
+        cctx.mvccCaching().onTxFinished(this, false);
+
+        //notifyDrManager(false);
 
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
             setRollbackOnly();

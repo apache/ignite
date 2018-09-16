@@ -1145,6 +1145,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             update(val, expireTime, ttl, newVer, true);
 
+            // TODO oldVal
+            cctx.shared().mvccCaching().addEnlisted(key, val, ttl, expireTime, ver, null, tx.local(),
+                topVer, mvccVer, cctx.cacheId(), tx);
+
             mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, val, newVer, topVer, mvccVer);
 
             recordNodeId(affNodeId, topVer);
@@ -1234,7 +1238,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             update(null, 0, 0, newVer, true);
 
-            mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, null, newVer, topVer, mvccVer);
+            // TODO oldVal
+            cctx.shared().mvccCaching().addEnlisted(key, null, 0, 0, ver, res.oldValue(), tx.local(),
+                topVer, mvccVer, cctx.cacheId(), tx);
+
+            //mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, null, newVer, topVer, mvccVer);
 
             recordNodeId(affNodeId, topVer);
         }
@@ -1325,6 +1333,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     private void mvccDrReplicate(GridDrType drType, CacheObject val, GridCacheVersion ver,
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccVer) throws IgniteCheckedException {
+        // TODO remove method
 
         if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
             cctx.dr().mvccReplicate(key, val, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType, topVer, mvccVer);
@@ -1400,7 +1409,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean internal = isInternal() || !context().userCache();
 
             Map<UUID, CacheContinuousQueryListener> lsnrCol =
-                notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
+                cctx.continuousQueries().notifyContinuousQueries(tx) ?
+                    cctx.continuousQueries().updateListeners(internal, false) : null;
 
             if (startVer && (retval || intercept || lsnrCol != null))
                 unswap(retval);
@@ -1634,7 +1644,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean internal = isInternal() || !context().userCache();
 
             Map<UUID, CacheContinuousQueryListener> lsnrCol =
-                notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
+                cctx.continuousQueries().notifyContinuousQueries(tx) ?
+                    cctx.continuousQueries().updateListeners(internal, false) : null;
 
             if (startVer && (retval || intercept || lsnrCol != null))
                 unswap();
@@ -1786,16 +1797,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             return new GridCacheUpdateTxResult(true, updateCntr0, logPtr, mvccWaitTxs);
         else
             return new GridCacheUpdateTxResult(false, logPtr);
-    }
-
-    /**
-     * @param tx Transaction.
-     * @return {@code True} if should notify continuous query manager.
-     */
-    private boolean notifyContinuousQueries(@Nullable IgniteInternalTx tx) {
-        return cctx.isLocal() ||
-            cctx.isReplicated() ||
-            (!isNear() && !(tx != null && tx.onePhaseCommit() && !tx.local()));
     }
 
     /** {@inheritDoc} */
@@ -5053,7 +5054,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 entry.update(null, 0, 0, newVer, true);
 
-                entry.mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, null, newVer, topVer, mvccVer);
+                // TODO oldVal
+                cctx.shared().mvccCaching().addEnlisted(entry.key(), null, 0, 0, tx.xidVersion(), null, tx.local(),
+                    topVer, mvccVer, cctx.cacheId(), tx);
+
+                //entry.mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, null, newVer, topVer, mvccVer);
 
                 entry.recordNodeId(affNodeId, topVer);
             }
@@ -5343,7 +5348,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 entry.update(val, expireTime, ttl, newVer, true);
 
-                entry.mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, val, newVer, topVer, mvccVer);
+                // TODO oldVal
+                cctx.shared().mvccCaching().addEnlisted(entry.key(), val, ttl, expireTime, tx.xidVersion(), null, tx.local(),
+                    topVer, mvccVer, cctx.cacheId(), tx);
+
+                //entry.mvccDrReplicate(tx.local() ? DR_PRIMARY : DR_BACKUP, val, newVer, topVer, mvccVer);
 
                 entry.recordNodeId(affNodeId, topVer);
             }
@@ -6520,7 +6529,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             update(val, expireTime, ttl, ver, true);
 
-            mvccDrReplicate(DR_BACKUP, val, ver, topVer, mvccVer);
+            // TODO oldVal
+            cctx.shared().mvccCaching().addEnlisted(key, val, ttl, expireTime, ver, null, tx.local(),
+                topVer, mvccVer, cctx.cacheId(), tx);
+
+            //mvccDrReplicate(DR_BACKUP, val, ver, topVer, mvccVer);
 
             recordNodeId(affNodeId, topVer);
         }

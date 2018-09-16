@@ -92,6 +92,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTransactionEnlistCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -2499,6 +2500,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
 
+        MvccTransactionEnlistCachingManager mvccCachingMgr = new MvccTransactionEnlistCachingManager();
+
         return new GridCacheSharedContext(
             kernalCtx,
             tm,
@@ -2516,7 +2519,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ttl,
             evict,
             jta,
-            storeSesLsnrs
+            storeSesLsnrs,
+            mvccCachingMgr
         );
     }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 
@@ -36,8 +37,12 @@ public interface MvccUpdateResult {
     public MvccVersion resultVersion();
 
     /**
-     *
      * @return Collection of row created or affected by the current tx.
      */
     public List<MvccLinkAwareSearchRow> history();
+
+    /**
+     * @return Old value of updated entry.
+     */
+    public CacheObject oldValue();
 }

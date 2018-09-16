@@ -199,7 +199,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             }
         }
 
-        MvccDataRow row = (MvccDataRow)tree.getRow(io, pageAddr, idx, RowData.LINK_WITH_HEADER);
+        MvccDataRow row = (MvccDataRow)tree.getRow(io, pageAddr, idx, RowData.NO_KEY);
 
         // Check whether the row was updated by current transaction.
         // In this case the row is already locked by current transaction and visible to it.
@@ -461,6 +461,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             historyRows = new ArrayList<>();
 
         return historyRows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject oldValue() {
+        return oldRow != null ? oldRow.value() : null;
     }
 
     /** */
