@@ -67,6 +67,13 @@ public interface DataStorageMetrics {
     public long getWalBuffPollSpinsRate();
 
     /**
+     * Total size in bytes for storage wal files.
+     *
+     * @return Total size in bytes for storage wal files.
+     */
+    public long getWalTotalSize();
+
+    /**
      * Gets the duration of the last checkpoint in milliseconds.
      *
      * @return Total checkpoint duration in milliseconds.
@@ -121,4 +128,11 @@ public interface DataStorageMetrics {
      * @return Total number of pages copied to a temporary checkpoint buffer during the last checkpoint.
      */
     public long getLastCheckpointCopiedOnWritePagesNumber();
+
+    /**
+     * Total size of memory allocated in bytes.
+     *
+     * @return Total size of memory allocated in bytes.
+     */
+    public long getTotalAllocatedSize();
 }
