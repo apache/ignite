@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -30,9 +33,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionState;
 
@@ -49,7 +49,6 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     /** */
     private UnaryOperator<IgniteConfiguration> cfgCustomizer = UnaryOperator.identity();
 
-    // t0d0 write concurrent test
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         throw new RuntimeException("Is not used in current test");
@@ -64,44 +63,60 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
      * @throws Exception if failed.
      */
     public void testLockTimeoutsForPartitionedCache() throws Exception {
-        checkLockTimeouts(
-            baseCacheConfig()
-                .setCacheMode(PARTITIONED)
-                .setBackups(1)
-        );
+        checkLockTimeouts(partitionedCacheConfig());
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testLockTimeoutsForReplicatedCache() throws Exception {
-        checkLockTimeouts(baseCacheConfig().setCacheMode(REPLICATED));
+        checkLockTimeouts(replicatedCacheConfig());
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testLockTimeoutsAfterDefaultTxTimeoutForPartitionedCache() throws Exception {
-        checkLockTimeoutsAfterDefaultTxTimeout(
-            baseCacheConfig()
-                .setCacheMode(PARTITIONED)
-                .setBackups(1)
-        );
+        checkLockTimeoutsAfterDefaultTxTimeout(partitionedCacheConfig());
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testLockTimeoutsAfterDefaultTxTimeoutForReplicatedCache() throws Exception {
-        checkLockTimeoutsAfterDefaultTxTimeout(baseCacheConfig().setCacheMode(REPLICATED));
+        checkLockTimeoutsAfterDefaultTxTimeout(replicatedCacheConfig());
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testConcurrentForPartitionedCache() throws Exception {
+        checkTimeoutsConcurrent(partitionedCacheConfig());
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testConcurrentForReplicatedCache() throws Exception {
+        checkTimeoutsConcurrent(replicatedCacheConfig());
+    }
+
+    /** */
+    private CacheConfiguration<?, ?> partitionedCacheConfig() {
+        return baseCacheConfig()
+            .setCacheMode(PARTITIONED)
+            .setBackups(1);
+    }
+
+    /** */
+    private CacheConfiguration<?, ?> replicatedCacheConfig() {
+        return baseCacheConfig().setCacheMode(REPLICATED);
     }
 
     /** */
     private CacheConfiguration<?, ?> baseCacheConfig() {
         return new CacheConfiguration<>("test")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setCacheMode(PARTITIONED)
-            .setBackups(1)
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, Integer.class);
     }
@@ -235,11 +250,9 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
 
                     fail("Timeout exception should be thrown");
                 }
-                catch (ExecutionException ee) {
-                    assertTrue(X.hasCause(ee, IgniteTxTimeoutCheckedException.class)
-                        || X.hasCause(ee, IgniteTxRollbackCheckedException.class)
-                        || msgContains(ee, "Failed to acquire lock within provided timeout for transaction")
-                        || msgContains(ee, "Failed to finish transaction because it has been rolled back"));
+                catch (ExecutionException e) {
+                    assertTrue(msgContains(e, "Failed to acquire lock within provided timeout for transaction")
+                        || msgContains(e, "Failed to finish transaction because it has been rolled back"));
                 }
 
                 assertEquals(TransactionState.ACTIVE, tx1.state());
@@ -260,11 +273,11 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                 ? ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TIMEOUT_MILLIS, 1)
                 : ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
         }
+    }
 
-        /** */
-        private static boolean msgContains(Throwable e, String str) {
-            return e.getMessage() != null && e.getMessage().contains(str);
-        }
+    /** */
+    private static boolean msgContains(Throwable e, String str) {
+        return e.getMessage() != null && e.getMessage().contains(str);
     }
 
     /** */
@@ -283,5 +296,58 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
         EXPLICIT,
         /** */
         IMPLICIT
+    }
+
+    /** */
+    private void checkTimeoutsConcurrent(CacheConfiguration<?, ?> ccfg) throws Exception {
+        startGridsMultiThreaded(2);
+
+        IgniteEx ignite = grid(0);
+
+        IgniteCache<?, ?> cache = ignite.createCache(ccfg);
+
+        AtomicInteger keyCntr = new AtomicInteger();
+
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < 5; i++)
+            keys.add(keyForNode(grid(0).affinity("test"), keyCntr, ignite.localNode()));
+
+        for (int i = 0; i < 5; i++)
+            keys.add(keyForNode(grid(1).affinity("test"), keyCntr, ignite.localNode()));
+
+        CompletableFuture.allOf(
+            CompletableFuture.runAsync(() -> mergeInRandomOrder(ignite, cache, keys)),
+            CompletableFuture.runAsync(() -> mergeInRandomOrder(ignite, cache, keys)),
+            CompletableFuture.runAsync(() -> mergeInRandomOrder(ignite, cache, keys))
+        ).join();
+    }
+
+    /** */
+    private void mergeInRandomOrder(IgniteEx ignite, IgniteCache<?, ?> cache, List<Integer> keys) {
+        List<Integer> keys0 = new ArrayList<>(keys);
+
+        for (int i = 0; i < 100; i++) {
+            Collections.shuffle(keys0);
+
+            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                SqlFieldsQuery qry = new SqlFieldsQuery("merge into Integer(_key, _val) values(?, ?)")
+                    .setTimeout(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+                int op = 0;
+
+                for (Integer key : keys0)
+                    cache.query(qry.setArgs(key, op++));
+
+                tx.commit();
+            }
+            catch (Exception e) {
+                assertTrue(msgContains(e, "Failed to acquire lock within provided timeout for transaction")
+                    || msgContains(e, "Mvcc version mismatch"));
+            }
+            finally {
+                ignite.context().cache().context().tm().resetContext();
+            }
+        }
     }
 }
