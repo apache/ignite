@@ -210,7 +210,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 90 * 1000;
+        return 300 * 1000;
     }
 
     /**
