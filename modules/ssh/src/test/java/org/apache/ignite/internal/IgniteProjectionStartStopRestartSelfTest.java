@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteState;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.events.Event;
@@ -128,7 +129,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     private volatile CountDownLatch leftLatch;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() {
+    @Override protected void beforeTest() throws InterruptedException {
         if (SSH_KEY != null) {
             key = new File(SSH_KEY);
 
@@ -143,6 +144,13 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         log.info("Key path: " + key);
 
         G.setDaemon(true);
+
+        CountDownLatch startedLatch = new CountDownLatch(1);
+
+        G.addListener((name, state) -> {
+            if (state == IgniteState.STARTED)
+                startedLatch.countDown();
+        });
 
         ignite = G.start(CFG_NO_ATTR);
 
@@ -166,6 +174,8 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
             return true;
         }, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        startedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
     }
 
     /** {@inheritDoc} */
